@@ -1,3 +1,6 @@
+using Concertable.Concert.Infrastructure.Data;
+using Concertable.Messaging.Domain;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.Concert.Infrastructure.Services.Payment;
@@ -5,11 +8,16 @@ namespace Concertable.Concert.Infrastructure.Services.Payment;
 internal class SettlementPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
     private readonly IConcertWorkflowModule concertWorkflowModule;
+    private readonly ConcertDbContext context;
     private readonly ILogger<SettlementPaymentProcessor> logger;
 
-    public SettlementPaymentProcessor(IConcertWorkflowModule concertWorkflowModule, ILogger<SettlementPaymentProcessor> logger)
+    public SettlementPaymentProcessor(
+        IConcertWorkflowModule concertWorkflowModule,
+        ConcertDbContext context,
+        ILogger<SettlementPaymentProcessor> logger)
     {
         this.concertWorkflowModule = concertWorkflowModule;
+        this.context = context;
         this.logger = logger;
     }
 
@@ -18,10 +26,18 @@ internal class SettlementPaymentProcessor : IIntegrationEventHandler<PaymentSucc
         if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Settlement)
             return;
 
+        if (await context.Set<InboxMessageEntity>().AnyAsync(
+            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(SettlementPaymentProcessor), ct))
+            return;
+
         var bookingId = int.Parse(@event.Metadata["bookingId"]);
         logger.LogDebug(
             "Settlement webhook received: payment intent {TransactionId} for booking {BookingId}",
             @event.TransactionId, bookingId);
+
+        context.Set<InboxMessageEntity>().Add(
+            InboxMessageEntity.Create(envelope.MessageId, nameof(SettlementPaymentProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
+
         await concertWorkflowModule.SettleAsync(bookingId, ct);
     }
 }
