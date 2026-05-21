@@ -1,8 +1,8 @@
+using Concertable.Artist.Contracts.Events;
 using Concertable.Artist.Domain;
 using Concertable.Artist.Infrastructure.Data;
 using Concertable.Concert.Contracts.Events;
 using Concertable.Messaging.Domain;
-using Concertable.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Artist.Infrastructure.Handlers;
@@ -10,10 +10,12 @@ namespace Concertable.Artist.Infrastructure.Handlers;
 internal class ArtistReviewProjectionHandler : IIntegrationEventHandler<ReviewSubmittedEvent>
 {
     private readonly ArtistDbContext context;
+    private readonly IBus bus;
 
-    public ArtistReviewProjectionHandler(ArtistDbContext context)
+    public ArtistReviewProjectionHandler(ArtistDbContext context, IBus bus)
     {
         this.context = context;
+        this.bus = bus;
     }
 
     public async Task HandleAsync(ReviewSubmittedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
@@ -28,22 +30,30 @@ internal class ArtistReviewProjectionHandler : IIntegrationEventHandler<ReviewSu
         var projection = await context.ArtistRatingProjections
             .FirstOrDefaultAsync(p => p.ArtistId == e.ArtistId, ct);
 
+        double averageRating;
+        int reviewCount;
+
         if (projection is null)
         {
+            averageRating = e.Stars;
+            reviewCount = 1;
             context.ArtistRatingProjections.Add(new ArtistRatingProjection
             {
                 ArtistId = e.ArtistId,
-                AverageRating = e.Stars,
-                ReviewCount = 1
+                AverageRating = averageRating,
+                ReviewCount = reviewCount
             });
         }
         else
         {
             var total = projection.AverageRating * projection.ReviewCount + e.Stars;
-            projection.ReviewCount++;
-            projection.AverageRating = Math.Round(total / projection.ReviewCount, 1);
+            reviewCount = projection.ReviewCount + 1;
+            averageRating = Math.Round(total / reviewCount, 1);
+            projection.ReviewCount = reviewCount;
+            projection.AverageRating = averageRating;
         }
 
+        await bus.PublishAsync(new ArtistRatingUpdatedEvent(e.ArtistId, averageRating, reviewCount), ct);
         await context.SaveChangesAsync(ct);
     }
 }

@@ -1,5 +1,6 @@
 using Concertable.Concert.Contracts.Events;
 using Concertable.Messaging.Domain;
+using Concertable.Venue.Contracts.Events;
 using Concertable.Venue.Domain;
 using Concertable.Venue.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,12 @@ namespace Concertable.Venue.Infrastructure.Handlers;
 internal class VenueReviewProjectionHandler : IIntegrationEventHandler<ReviewSubmittedEvent>
 {
     private readonly VenueDbContext context;
+    private readonly IBus bus;
 
-    public VenueReviewProjectionHandler(VenueDbContext context)
+    public VenueReviewProjectionHandler(VenueDbContext context, IBus bus)
     {
         this.context = context;
+        this.bus = bus;
     }
 
     public async Task HandleAsync(ReviewSubmittedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
@@ -27,22 +30,30 @@ internal class VenueReviewProjectionHandler : IIntegrationEventHandler<ReviewSub
         var projection = await context.VenueRatingProjections
             .FirstOrDefaultAsync(p => p.VenueId == e.VenueId, ct);
 
+        double averageRating;
+        int reviewCount;
+
         if (projection is null)
         {
+            averageRating = e.Stars;
+            reviewCount = 1;
             context.VenueRatingProjections.Add(new VenueRatingProjection
             {
                 VenueId = e.VenueId,
-                AverageRating = e.Stars,
-                ReviewCount = 1
+                AverageRating = averageRating,
+                ReviewCount = reviewCount
             });
         }
         else
         {
             var total = projection.AverageRating * projection.ReviewCount + e.Stars;
-            projection.ReviewCount++;
-            projection.AverageRating = Math.Round(total / projection.ReviewCount, 1);
+            reviewCount = projection.ReviewCount + 1;
+            averageRating = Math.Round(total / reviewCount, 1);
+            projection.ReviewCount = reviewCount;
+            projection.AverageRating = averageRating;
         }
 
+        await bus.PublishAsync(new VenueRatingUpdatedEvent(e.VenueId, averageRating, reviewCount), ct);
         await context.SaveChangesAsync(ct);
     }
 }
