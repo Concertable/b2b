@@ -118,14 +118,13 @@ services.AddAzureServiceBusTransport(
     reg =>
     {
         reg.SubscribeTo<ReviewSubmittedEvent>();
-        reg.SubscribeTo<ArtistChangedEvent>();
-        reg.SubscribeTo<VenueChangedEvent>();
         reg.SubscribeTo<PaymentSucceededEvent>();
         reg.SubscribeTo<PaymentFailedEvent>();
     });
 services.AddDirectBusKeyed("webhook");
 services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("B2BDb")));
 services.AddInbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("B2BDb")));
+services.AddInProcessEventDispatch();
 if (!builder.Environment.IsEnvironment("Testing"))
 {
     services.AddScoped<IDbInitializer, DevDbInitializer>();
