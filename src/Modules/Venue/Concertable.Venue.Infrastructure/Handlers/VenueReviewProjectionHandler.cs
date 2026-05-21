@@ -1,5 +1,6 @@
 using Concertable.Concert.Contracts.Events;
 using Concertable.Messaging.Domain;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.Venue.Contracts.Events;
 using Concertable.Venue.Domain;
 using Concertable.Venue.Infrastructure.Data;
@@ -11,11 +12,13 @@ internal class VenueReviewProjectionHandler : IIntegrationEventHandler<ReviewSub
 {
     private readonly VenueDbContext context;
     private readonly IBus bus;
+    private readonly IDbContextAccessor contextAccessor;
 
-    public VenueReviewProjectionHandler(VenueDbContext context, IBus bus)
+    public VenueReviewProjectionHandler(VenueDbContext context, IBus bus, IDbContextAccessor contextAccessor)
     {
         this.context = context;
         this.bus = bus;
+        this.contextAccessor = contextAccessor;
     }
 
     public async Task HandleAsync(ReviewSubmittedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
@@ -53,6 +56,7 @@ internal class VenueReviewProjectionHandler : IIntegrationEventHandler<ReviewSub
             projection.AverageRating = averageRating;
         }
 
+        contextAccessor.Context = context;
         await bus.PublishAsync(new VenueRatingUpdatedEvent(e.VenueId, averageRating, reviewCount), ct);
         await context.SaveChangesAsync(ct);
     }

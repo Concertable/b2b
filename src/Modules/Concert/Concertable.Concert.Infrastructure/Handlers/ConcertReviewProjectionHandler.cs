@@ -2,6 +2,7 @@ using Concertable.Concert.Contracts.Events;
 using Concertable.Concert.Domain;
 using Concertable.Concert.Infrastructure.Data;
 using Concertable.Messaging.Domain;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Concert.Infrastructure.Handlers;
@@ -10,11 +11,13 @@ internal class ConcertReviewProjectionHandler : IIntegrationEventHandler<ReviewS
 {
     private readonly ConcertDbContext context;
     private readonly IBus bus;
+    private readonly IDbContextAccessor contextAccessor;
 
-    public ConcertReviewProjectionHandler(ConcertDbContext context, IBus bus)
+    public ConcertReviewProjectionHandler(ConcertDbContext context, IBus bus, IDbContextAccessor contextAccessor)
     {
         this.context = context;
         this.bus = bus;
+        this.contextAccessor = contextAccessor;
     }
 
     public async Task HandleAsync(ReviewSubmittedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
@@ -52,6 +55,7 @@ internal class ConcertReviewProjectionHandler : IIntegrationEventHandler<ReviewS
             projection.AverageRating = averageRating;
         }
 
+        contextAccessor.Context = context;
         await bus.PublishAsync(new ConcertRatingUpdatedEvent(e.ConcertId, averageRating, reviewCount), ct);
         await context.SaveChangesAsync(ct);
     }

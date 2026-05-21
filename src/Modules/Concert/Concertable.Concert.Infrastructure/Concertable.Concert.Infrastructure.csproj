@@ -36,6 +36,7 @@
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Shared.Email\Concertable.Shared.Email.Application\Concertable.Shared.Email.Application.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.Messaging\Concertable.Messaging.Contracts\Concertable.Messaging.Contracts.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.Messaging\Concertable.Messaging.Domain\Concertable.Messaging.Domain.csproj" />
+    <ProjectReference Include="..\..\..\..\Concertable.Messaging\Concertable.Messaging.Infrastructure\Concertable.Messaging.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
