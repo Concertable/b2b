@@ -43,7 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddReadDbContext(configuration);
 
         services.AddScoped<IDbConnection>(_ =>
-            new SqlConnection(configuration.GetConnectionString("DefaultConnection")));
+            new SqlConnection(configuration.GetConnectionString("B2BDb")));
 
         return services;
     }

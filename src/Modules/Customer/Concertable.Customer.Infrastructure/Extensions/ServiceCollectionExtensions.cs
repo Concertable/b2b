@@ -19,7 +19,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddCustomerModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<CustomerDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
+            opts.UseSqlServer(configuration.GetConnectionString("B2BDb"))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<DomainEventDispatchInterceptor>()));

@@ -36,7 +36,7 @@ internal static class ServiceCollectionExtensions
         services.AddInMemoryTransport();
         services.AddDirectBusKeyed("webhook");
         services.AddOutbox(
-            opt => opt.UseSqlServer(configuration.GetConnectionString("DefaultConnection")),
+            opt => opt.UseSqlServer(configuration.GetConnectionString("B2BDb")),
             runDispatcher: false);
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<DomainEventDispatchInterceptor>();

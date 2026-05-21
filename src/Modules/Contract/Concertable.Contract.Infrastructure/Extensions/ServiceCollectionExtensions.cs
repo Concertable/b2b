@@ -20,7 +20,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddContractModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<ContractDbContext>((sp, opt) =>
-            opt.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
+            opt.UseSqlServer(configuration.GetConnectionString("B2BDb"))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<DomainEventDispatchInterceptor>()));

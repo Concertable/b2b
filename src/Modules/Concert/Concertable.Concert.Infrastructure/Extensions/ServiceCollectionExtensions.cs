@@ -38,7 +38,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<ConcertDbContext>((sp, opts) =>
             opts.UseSqlServer(
-                    configuration.GetConnectionString("DefaultConnection"),
+                    configuration.GetConnectionString("B2BDb"),
                     sql => sql.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),

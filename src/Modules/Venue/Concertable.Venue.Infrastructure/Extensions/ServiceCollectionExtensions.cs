@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<VenueDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    configuration.GetConnectionString("DefaultConnection"),
+                    configuration.GetConnectionString("B2BDb"),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),

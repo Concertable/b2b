@@ -15,7 +15,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddOrganizationModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<OrganizationDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
+            opts.UseSqlServer(configuration.GetConnectionString("B2BDb"))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<DomainEventDispatchInterceptor>()));
