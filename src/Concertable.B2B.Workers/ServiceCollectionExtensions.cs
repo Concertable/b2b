@@ -1,0 +1,65 @@
+using Concertable.Authorization.Infrastructure.Extensions;
+using Concertable.Organization.Infrastructure.Extensions;
+using Concertable.Concert.Infrastructure.Extensions;
+using Concertable.Contract.Infrastructure.Extensions;
+using Concertable.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure.Extensions;
+using Concertable.Shared.Blob.Infrastructure.Extensions;
+using Concertable.Shared.Email.Infrastructure.Extensions;
+using Concertable.Shared.Geocoding.Infrastructure.Extensions;
+using Concertable.Shared.Imaging.Infrastructure.Extensions;
+using Concertable.Shared.Pdf.Infrastructure.Extensions;
+using Concertable.Shared.Infrastructure.Extensions;
+using Concertable.User.Infrastructure.Extensions;
+using Concertable.Conversations.Infrastructure.Extensions;
+using Concertable.Messaging.Infrastructure.Extensions;
+using Microsoft.EntityFrameworkCore;
+using Concertable.Notification.Infrastructure.Extensions;
+using Concertable.Payment.Client.Extensions;
+using Concertable.Shared.Infrastructure.Extensions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Concertable.DataAccess.Infrastructure;
+
+namespace Concertable.B2B.Workers;
+
+internal static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddSharedInfrastructure(configuration);
+        services.AddSharedBlob(configuration);
+        services.AddSharedEmail(configuration);
+        services.AddSharedGeocoding();
+        services.AddSharedImaging();
+        services.AddSharedPdf();
+        services.AddInMemoryTransport();
+        services.AddDirectBusKeyed("webhook");
+        services.AddOutbox(
+            opt => opt.UseSqlServer(configuration.GetConnectionString("DefaultConnection")),
+            runDispatcher: false);
+        services.AddScoped<AuditInterceptor>();
+        services.AddScoped<DomainEventDispatchInterceptor>();
+
+        services.AddReadDbContext(configuration);
+
+        services.AddAuthorizationModule();
+        services.AddOrganizationModule(configuration);
+        services.AddUserModule(configuration);
+        services.AddConcertModule(configuration);
+        services.AddContractModule(configuration);
+        services.AddClientCredentials(opts =>
+        {
+            opts.Authority = configuration["Auth:Authority"] ?? configuration["services__auth__https__0"] ?? "";
+            opts.ClientId = configuration["ServiceAuth:ClientId"] ?? "";
+            opts.ClientSecret = configuration["ServiceAuth:ClientSecret"] ?? "";
+        });
+        services.AddPaymentClient(configuration);
+        services.AddNotificationModule();
+        services.AddConversationsModule(configuration);
+
+        services.AddSingleton(TimeProvider.System);
+
+        return services;
+    }
+}

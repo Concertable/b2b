@@ -1,0 +1,11 @@
+global using Concertable.Shared;
+global using Concertable.Messaging;
+global using Concertable.Artist.Domain;
+global using Concertable.Artist.Contracts;
+global using Concertable.Artist.Application.DTOs;
+global using Concertable.Artist.Application.Interfaces;
+global using Concertable.DataAccess.Infrastructure;
+global using Concertable.DataAccess.Infrastructure;
+global using Concertable.DataAccess;
+global using Concertable.Authorization.Contracts;
+global using Concertable.User.Contracts;

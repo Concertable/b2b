@@ -1,0 +1,23 @@
+using Concertable.Messaging;
+using Concertable.Shared;
+
+namespace Concertable.Concert.Contracts.Events;
+
+public record ConcertChangedEvent(
+    int ConcertId,
+    string Name,
+    string? Avatar,
+    int TotalTickets,
+    int AvailableTickets,
+    decimal Price,
+    DateRange Period,
+    DateTime? DatePosted,
+    int ArtistId,
+    string ArtistName,
+    int VenueId,
+    string VenueName,
+    double Latitude,
+    double Longitude,
+    IReadOnlyCollection<Genre> Genres,
+    Guid PayeeUserId,
+    string ContractType) : IIntegrationEvent;

@@ -1,0 +1,10 @@
+global using Concertable.Shared;
+global using Concertable.DataAccess;
+global using Concertable.Concert.Domain;
+global using Concertable.Concert.Contracts;
+global using Concertable.Contract.Contracts;
+global using Concertable.User.Contracts;
+global using Concertable.Artist.Contracts;
+global using Concertable.Venue.Contracts;
+global using Concertable.Payment.Client;
+global using Concertable.Payment.Domain;
