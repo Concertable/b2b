@@ -1,18 +1,14 @@
-using Concertable.Auth.Contracts;
+using Concertable.Auth.Contracts.Events;
 using Concertable.DataAccess;
 using Concertable.User.Infrastructure.Mappers;
 using Concertable.DataAccess.Infrastructure;
 using Concertable.Seeding;
-using Concertable.Shared.Email;
 using Concertable.Artist.Contracts.Events;
 using Concertable.User.Application.Validators;
-using Concertable.User.Domain.Events;
 using Concertable.User.Infrastructure.Authorization;
 using Concertable.User.Infrastructure.Data;
 using Concertable.User.Infrastructure.Data.Seeders;
 using Concertable.User.Infrastructure.Events;
-using Concertable.User.Infrastructure.ProfileClaims;
-using Concertable.User.Infrastructure.Services.Email;
 using Concertable.Venue.Contracts.Events;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -41,13 +37,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserModule, UserModule>();
-        services.AddScoped<IProfileClaimsProvider, UserProfileClaimsProvider>();
 
-        var useRealEmail = configuration.GetSection("ExternalServices").GetValue<bool>("UseRealEmail");
-        if (!useRealEmail)
-            services.AddScoped<IEmailSender, AutoVerifyingFakeEmailSender>();
-
-        services.AddScoped<IDomainEventHandler<UserCreatedDomainEvent>, UserCreatedDomainEventHandler>();
+        services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, CredentialRegisteredHandler>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistManagerSyncHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueManagerSyncHandler>();
 

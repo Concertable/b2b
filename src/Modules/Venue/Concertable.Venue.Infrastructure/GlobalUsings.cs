@@ -8,5 +8,5 @@ global using Concertable.Venue.Application.Mappers;
 global using Concertable.DataAccess.Infrastructure;
 global using Concertable.DataAccess.Infrastructure;
 global using Concertable.DataAccess;
-global using Concertable.Authorization.Contracts;
+global using Concertable.Shared.Infrastructure.Identity;
 global using Concertable.User.Contracts;

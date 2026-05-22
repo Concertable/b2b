@@ -28,7 +28,6 @@ internal class ConcertDevSeeder : IDevSeeder
     public async Task SeedAsync(CancellationToken ct = default)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        var customerIds = seed.CustomerIds;
         var artistManagerIds = seed.ArtistManagerIds;
 
         await context.Opportunities.SeedIfEmptyAsync(async () =>

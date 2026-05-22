@@ -14,7 +14,7 @@ using Concertable.Payment.Domain.Events;
 using Concertable.Concert.Contracts.Events;
 using Concertable.Artist.Contracts.Events;
 using Concertable.Venue.Contracts.Events;
-using Concertable.User.Contracts.Events;
+using Concertable.Auth.Contracts.Events;
 using Concertable.Messaging.Application;
 using Concertable.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.AzureServiceBus;
@@ -123,11 +123,8 @@ services.AddAzureServiceBusTransport(
         reg.Publishes<VenueRatingUpdatedEvent>();
         reg.Publishes<ConcertChangedEvent>();
         reg.Publishes<ConcertRatingUpdatedEvent>();
-        reg.Publishes<CustomerRegisteredEvent>();
-        reg.Publishes<VenueManagerRegisteredEvent>();
-        reg.Publishes<ArtistManagerRegisteredEvent>();
-        reg.Publishes<AdminRegisteredEvent>();
 
+        reg.SubscribeTo<CredentialRegisteredEvent>();
         reg.SubscribeTo<ReviewSubmittedEvent>();
         reg.SubscribeTo<PaymentSucceededEvent>();
         reg.SubscribeTo<PaymentFailedEvent>();
