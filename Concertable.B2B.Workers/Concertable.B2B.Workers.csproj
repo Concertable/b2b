@@ -35,6 +35,7 @@
     <ProjectReference Include="..\..\Shared\Concertable.Shared.Pdf\Concertable.Shared.Pdf.Infrastructure\Concertable.Shared.Pdf.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Concertable.Messaging\Concertable.Messaging.Infrastructure\Concertable.Messaging.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Concertable.Payment\Concertable.Payment.Client\Concertable.Payment.Client.csproj" />
+    <ProjectReference Include="..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.csproj" />
   </ItemGroup>
 
 </Project>
