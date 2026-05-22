@@ -2,7 +2,6 @@ using Concertable.Application.Interfaces.Geometry;
 using Concertable.Shared.Infrastructure.Services.Geometry;
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
-using Concertable.Seeding.Factories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -32,23 +31,19 @@ internal class UserTestSeeder : ITestSeeder
     {
         await context.Users.SeedIfEmptyAsync(async () =>
         {
-            var hash = BCrypt.Net.BCrypt.HashPassword(SeedData.TestPassword);
+            seedData.VenueManager1 = UserEntity.FromRegistration(SeedIds.VenueManager(1), "venuemanager1@test.com", Role.VenueManager);
+            seedData.VenueManager2 = UserEntity.FromRegistration(SeedIds.VenueManager(2), "venuemanager2@test.com", Role.VenueManager);
+            seedData.ArtistManager1 = UserEntity.FromRegistration(SeedIds.ArtistManager(1), "artistmanager1@test.com", Role.ArtistManager);
 
-            seedData.Customer = UserFactory.Customer("customer1@test.com", hash);
-            seedData.VenueManager1 = UserFactory.VenueManager("venuemanager1@test.com", hash);
-            seedData.VenueManager2 = UserFactory.VenueManager("venuemanager2@test.com", hash);
-            seedData.ArtistManager1 = UserFactory.ArtistManager("artistmanager1@test.com", hash);
-
-            seedData.ArtistManagerNoArtist = UserFactory.ArtistManager("artistmanager2@test.com", hash);
+            seedData.ArtistManagerNoArtist = UserEntity.FromRegistration(SeedIds.ArtistManager(2), "artistmanager2@test.com", Role.ArtistManager);
             seedData.ArtistManagerNoArtist.UpdateLocation(geometryProvider.CreatePoint(51, 0), new Address("Test County", "Test Town"));
             seedData.ArtistManagerNoArtist.UpdateAvatar("avatar.jpg");
 
-            seedData.Admin = UserFactory.Admin("admin@test.com", hash);
+            seedData.Admin = UserEntity.FromRegistration(SeedIds.Admin, "admin@test.com", Role.Admin);
             seedData.Admin.UpdateLocation(geometryProvider.CreatePoint(51, 0));
             seedData.Admin.UpdateAvatar("avatar.jpg");
 
             context.Users.AddRange(
-                seedData.Customer,
                 seedData.VenueManager1,
                 seedData.VenueManager2,
                 seedData.ArtistManager1,

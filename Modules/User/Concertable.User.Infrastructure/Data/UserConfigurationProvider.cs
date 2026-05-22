@@ -12,7 +12,5 @@ internal sealed class UserConfigurationProvider : IEntityTypeConfigurationProvid
         modelBuilder.ApplyConfiguration(new VenueManagerProfileEntityConfiguration());
         modelBuilder.ApplyConfiguration(new ArtistManagerProfileEntityConfiguration());
         modelBuilder.ApplyConfiguration(new AdminProfileEntityConfiguration());
-        modelBuilder.ApplyConfiguration(new EmailVerificationTokenEntityConfiguration());
-        modelBuilder.ApplyConfiguration(new PasswordResetTokenEntityConfiguration());
     }
 }

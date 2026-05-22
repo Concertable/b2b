@@ -25,7 +25,7 @@ internal sealed class VenueManagerMapper : IRoleMapper
             County = user.Address?.County,
             Town = user.Address?.Town,
             VenueId = profile?.VenueId,
-            IsEmailVerified = user.IsEmailVerified,
+            IsEmailVerified = true,
         };
     }
 }

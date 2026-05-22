@@ -12,6 +12,6 @@ internal sealed class AdminMapper : IRoleMapper
         Longitude = user.Location.ToLongitude(),
         County = user.Address?.County,
         Town = user.Address?.Town,
-        IsEmailVerified = user.IsEmailVerified,
+        IsEmailVerified = true,
     });
 }

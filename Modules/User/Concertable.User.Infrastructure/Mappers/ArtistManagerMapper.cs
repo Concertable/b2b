@@ -25,7 +25,7 @@ internal sealed class ArtistManagerMapper : IRoleMapper
             County = user.Address?.County,
             Town = user.Address?.Town,
             ArtistId = profile?.ArtistId,
-            IsEmailVerified = user.IsEmailVerified,
+            IsEmailVerified = true,
         };
     }
 }
