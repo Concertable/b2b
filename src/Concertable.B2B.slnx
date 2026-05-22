@@ -1,7 +1,9 @@
 <Solution>
+  <Project Path="Concertable.B2B.AppHost/Concertable.B2B.AppHost.csproj" />
   <Project Path="Concertable.B2B.Web/Concertable.B2B.Web.csproj" />
   <Project Path="Concertable.B2B.Workers/Concertable.B2B.Workers.csproj" />
   <Project Path="Concertable.B2B.DataAccess/Concertable.B2B.DataAccess.csproj" />
+  <Project Path="../Concertable.AppHost.Shared/Concertable.AppHost.Shared.csproj" />
   <Folder Name="/Modules/Artist/">
     <Project Path="Modules/Artist/Concertable.Artist.Api/Concertable.Artist.Api.csproj" />
     <Project Path="Modules/Artist/Concertable.Artist.Application/Concertable.Artist.Application.csproj" />
