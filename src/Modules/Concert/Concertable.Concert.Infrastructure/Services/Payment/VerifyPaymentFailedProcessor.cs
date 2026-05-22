@@ -1,4 +1,5 @@
 using Concertable.Concert.Infrastructure.Data;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -40,6 +41,13 @@ internal class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFa
 
         context.Set<InboxMessageEntity>().Add(
             InboxMessageEntity.Create(envelope.MessageId, nameof(VerifyPaymentFailedProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
-        await context.SaveChangesAsync(ct);
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.IsDuplicateKey())
+        {
+            logger.LogDebug("Duplicate inbox message {MessageId}; skipping", envelope.MessageId);
+        }
     }
 }

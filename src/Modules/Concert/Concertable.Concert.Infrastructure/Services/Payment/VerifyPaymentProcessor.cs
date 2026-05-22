@@ -1,4 +1,5 @@
 using Concertable.Concert.Infrastructure.Data;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -38,6 +39,13 @@ internal class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentSucceede
         context.Set<InboxMessageEntity>().Add(
             InboxMessageEntity.Create(envelope.MessageId, nameof(VerifyPaymentProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
 
-        await concertWorkflowModule.VerifyAsync(applicationId, ct);
+        try
+        {
+            await concertWorkflowModule.VerifyAsync(applicationId, ct);
+        }
+        catch (DbUpdateException ex) when (ex.IsDuplicateKey())
+        {
+            logger.LogDebug("Duplicate inbox message {MessageId}; skipping", envelope.MessageId);
+        }
     }
 }

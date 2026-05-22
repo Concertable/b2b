@@ -1,4 +1,5 @@
 using Concertable.Concert.Infrastructure.Data;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -38,6 +39,13 @@ internal class EscrowPaymentProcessor : IIntegrationEventHandler<PaymentSucceede
         context.Set<InboxMessageEntity>().Add(
             InboxMessageEntity.Create(envelope.MessageId, nameof(EscrowPaymentProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
 
-        await concertWorkflowModule.SettleAsync(bookingId, ct);
+        try
+        {
+            await concertWorkflowModule.SettleAsync(bookingId, ct);
+        }
+        catch (DbUpdateException ex) when (ex.IsDuplicateKey())
+        {
+            logger.LogDebug("Duplicate inbox message {MessageId}; skipping", envelope.MessageId);
+        }
     }
 }
