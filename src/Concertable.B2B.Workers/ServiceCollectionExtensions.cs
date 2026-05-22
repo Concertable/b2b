@@ -63,7 +63,7 @@ internal static class ServiceCollectionExtensions
             opts.ClientSecret = configuration["ServiceAuth:ClientSecret"] ?? "";
         });
         services.AddPaymentClient(configuration);
-        services.AddNotificationModule();
+        services.AddNotificationClient();
         services.AddConversationsModule(configuration);
 
         services.AddSingleton(TimeProvider.System);

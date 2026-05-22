@@ -2,13 +2,13 @@ namespace Concertable.Conversations.Infrastructure.Services;
 
 internal class ConversationsNotifier : IConversationsNotifier
 {
-    private readonly INotificationModule notification;
+    private readonly INotificationClient notificationClient;
 
-    public ConversationsNotifier(INotificationModule notification)
+    public ConversationsNotifier(INotificationClient notificationClient)
     {
-        this.notification = notification;
+        this.notificationClient = notificationClient;
     }
 
     public Task MessageReceivedAsync(string userId, object payload) =>
-        notification.SendAsync(userId, "MessageReceived", payload);
+        notificationClient.SendAsync(userId, "MessageReceived", payload);
 }

@@ -5,10 +5,10 @@ namespace Concertable.Notification.Infrastructure.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddNotificationModule(this IServiceCollection services)
+    public static IServiceCollection AddNotificationClient(this IServiceCollection services)
     {
         services.AddSignalR();
-        services.AddSingleton<INotificationModule, SignalRNotificationModule>();
+        services.AddSingleton<INotificationClient, SignalRNotificationClient>();
         return services;
     }
 }

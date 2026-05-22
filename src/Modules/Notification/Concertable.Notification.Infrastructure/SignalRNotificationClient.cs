@@ -5,12 +5,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.Notification.Infrastructure;
 
-internal class SignalRNotificationModule : INotificationModule
+internal class SignalRNotificationClient : INotificationClient
 {
     private readonly IHubContext<NotificationHub> hubContext;
-    private readonly ILogger<SignalRNotificationModule> logger;
+    private readonly ILogger<SignalRNotificationClient> logger;
 
-    public SignalRNotificationModule(IHubContext<NotificationHub> hubContext, ILogger<SignalRNotificationModule> logger)
+    public SignalRNotificationClient(IHubContext<NotificationHub> hubContext, ILogger<SignalRNotificationClient> logger)
     {
         this.hubContext = hubContext;
         this.logger = logger;
@@ -18,7 +18,7 @@ internal class SignalRNotificationModule : INotificationModule
 
     public Task SendAsync(string userId, string eventName, object payload)
     {
-        logger.LogInformation("[SignalRNotificationModule] send userId={UserId} event={EventName}", userId, eventName);
+        logger.LogInformation("[SignalRNotificationClient] send userId={UserId} event={EventName}", userId, eventName);
         return hubContext.Clients.Group(userId).SendAsync(eventName, payload);
     }
 }

@@ -2,19 +2,19 @@ namespace Concertable.Concert.Infrastructure.Services;
 
 internal class ConcertNotifier : IConcertNotifier
 {
-    private readonly INotificationModule notification;
+    private readonly INotificationClient notificationClient;
 
-    public ConcertNotifier(INotificationModule notification)
+    public ConcertNotifier(INotificationClient notificationClient)
     {
-        this.notification = notification;
+        this.notificationClient = notificationClient;
     }
 
     public Task ConcertDraftCreatedAsync(string userId, object payload) =>
-        notification.SendAsync(userId, "ConcertDraftCreated", payload);
+        notificationClient.SendAsync(userId, "ConcertDraftCreated", payload);
 
     public Task ConcertPostedAsync(string userId, object payload) =>
-        notification.SendAsync(userId, "ConcertPosted", payload);
+        notificationClient.SendAsync(userId, "ConcertPosted", payload);
 
     public Task VerifyPaymentFailedAsync(string userId, object payload) =>
-        notification.SendAsync(userId, "VerifyPaymentFailed", payload);
+        notificationClient.SendAsync(userId, "VerifyPaymentFailed", payload);
 }

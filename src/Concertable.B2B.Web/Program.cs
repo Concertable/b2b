@@ -153,7 +153,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
 }
 services.AddServices(builder.Configuration);
 services.AddRepositories();
-services.AddNotificationModule();
+services.AddNotificationClient();
 services.AddOrganizationApi(builder.Configuration);
 services.AddConversationsApi(builder.Configuration);
 services.AddArtistApi(builder.Configuration);
