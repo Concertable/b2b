@@ -17,7 +17,7 @@ internal static class QueryableArtistMappers
             Name = a.Name,
             Avatar = a.Avatar,
             Rating = rating == null ? 0.0 : rating.AverageRating,
-            Genres = a.ArtistGenres.Select(ag => ag.Genre)
+            Genres = a.Genres
         };
 
     public static IQueryable<ArtistDto> ToDto(
@@ -38,6 +38,6 @@ internal static class QueryableArtistMappers
             Town = a.Address!.Town,
             Email = a.Email ?? string.Empty,
             Rating = rating == null ? 0.0 : rating.AverageRating,
-            Genres = a.ArtistGenres.Select(ag => ag.Genre)
+            Genres = a.Genres
         };
 }

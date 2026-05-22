@@ -31,6 +31,6 @@ internal class ConcertPostedDomainEventHandler : IPreCommitDomainEventHandler<Co
             concert.DatePosted!.Value,
             venue.Location?.Y,
             venue.Location?.X,
-            concert.ConcertGenres.Select(g => g.Genre).ToArray()), ct);
+            concert.Genres.ToArray()), ct);
     }
 }

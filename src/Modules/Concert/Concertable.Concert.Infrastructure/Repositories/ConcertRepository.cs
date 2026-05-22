@@ -25,8 +25,6 @@ internal class ConcertRepository : Repository<ConcertEntity>, IConcertRepository
                 .ThenInclude(b => b.Application)
                     .ThenInclude(a => a.Opportunity)
                 .ThenInclude(o => o.Venue)
-            .Include(e => e.ConcertGenres)
-                .ThenInclude(eg => eg.Genre)
             .FirstOrDefaultAsync();
     }
 

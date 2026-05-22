@@ -17,8 +17,6 @@ internal class OpportunityRepository : Repository<OpportunityEntity>, IOpportuni
         var query = context.Opportunities
             .Where(o => o.VenueId == id && o.Period.Start >= timeProvider.GetUtcNow())
             .Where(o => !o.Applications.Any(a => a.Status == ApplicationStatus.Accepted))
-            .Include(o => o.OpportunityGenres)
-            .ThenInclude(og => og.Genre)
             .OrderBy(o => o.Period.Start);
 
         return await query.ToPaginationAsync(pageParams);
@@ -29,8 +27,6 @@ internal class OpportunityRepository : Repository<OpportunityEntity>, IOpportuni
         return await context.Opportunities
             .Where(o => o.VenueId == venueId && o.Period.Start >= timeProvider.GetUtcNow())
             .Where(o => !o.Applications.Any(a => a.Status == ApplicationStatus.Accepted))
-            .Include(o => o.OpportunityGenres)
-            .ThenInclude(og => og.Genre)
             .OrderBy(o => o.Period.Start)
             .ToListAsync();
     }
@@ -55,8 +51,6 @@ internal class OpportunityRepository : Repository<OpportunityEntity>, IOpportuni
     {
         return await context.Opportunities
             .Where(o => o.Id == id)
-            .Include(o => o.OpportunityGenres)
-                .ThenInclude(og => og.Genre)
             .FirstOrDefaultAsync();
     }
 
@@ -71,8 +65,6 @@ internal class OpportunityRepository : Repository<OpportunityEntity>, IOpportuni
     public async Task<OpportunityEntity?> GetByApplicationIdAsync(int id)
     {
         return await context.Opportunities
-            .Include(o => o.OpportunityGenres)
-                .ThenInclude(og => og.Genre)
             .Include(o => o.Venue)
             .Where(o => o.Applications.Any(a => a.Id == id))
             .FirstOrDefaultAsync();

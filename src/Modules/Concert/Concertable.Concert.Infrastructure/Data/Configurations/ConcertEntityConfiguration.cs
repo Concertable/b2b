@@ -30,5 +30,6 @@ internal class ConcertEntityConfiguration : IEntityTypeConfiguration<ConcertEnti
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.Property(e => e.Location).HasColumnType("geography");
+        builder.PrimitiveCollection(e => e.Genres);
     }
 }

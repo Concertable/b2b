@@ -21,6 +21,7 @@ internal class OpportunityEntityConfiguration : IEntityTypeConfiguration<Opportu
             .OnDelete(DeleteBehavior.NoAction);
         builder.Property(o => o.ContractId).IsRequired();
         builder.HasIndex(o => o.ContractId).IsUnique();
+        builder.PrimitiveCollection(o => o.Genres);
     }
 }
 

@@ -18,10 +18,7 @@ internal class ApplicationRepository : Repository<ApplicationEntity>, IApplicati
             .Where(ca => ca.OpportunityId == id)
             .Include(ca => ca.Artist)
                 .ThenInclude(a => a.Genres)
-                    .ThenInclude(g => g.Genre)
             .Include(ca => ca.Opportunity)
-                .ThenInclude(o => o.OpportunityGenres)
-                    .ThenInclude(og => og.Genre)
             .ToListAsync();
     }
 
@@ -56,10 +53,7 @@ internal class ApplicationRepository : Repository<ApplicationEntity>, IApplicati
             .Where(ca => ca.Id == id)
             .Include(ca => ca.Artist)
                 .ThenInclude(a => a.Genres)
-                    .ThenInclude(g => g.Genre)
             .Include(ca => ca.Opportunity)
-                .ThenInclude(o => o.OpportunityGenres)
-                    .ThenInclude(og => og.Genre)
             .FirstOrDefaultAsync();
     }
 

@@ -15,20 +15,7 @@ internal class ArtistEntityConfiguration : IEntityTypeConfiguration<ArtistEntity
             a.Property(x => x.County).HasColumnName("County");
             a.Property(x => x.Town).HasColumnName("Town");
         });
-    }
-}
-
-internal class ArtistGenreEntityConfiguration : IEntityTypeConfiguration<ArtistGenreEntity>
-{
-    public void Configure(EntityTypeBuilder<ArtistGenreEntity> builder)
-    {
-        builder.ToTable("ArtistGenres", Schema.Name);
-        builder.HasKey(ag => new { ag.ArtistId, ag.Genre });
-        builder.HasOne(ag => ag.Artist)
-            .WithMany(a => a.ArtistGenres)
-            .HasForeignKey(ag => ag.ArtistId)
-            .OnDelete(DeleteBehavior.Cascade)
-            .IsRequired();
+        builder.PrimitiveCollection(a => a.Genres);
     }
 }
 

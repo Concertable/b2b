@@ -24,7 +24,7 @@ public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, I
     public BookingEntity Booking { get; set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
     public VenueReadModel Venue { get; set; } = null!;
-    public HashSet<ConcertGenreEntity> ConcertGenres { get; private set; } = [];
+    public List<Genre> Genres { get; private set; } = [];
     public ICollection<ConcertImageEntity> Images { get; private set; } = [];
 
     private readonly EventRaiser _events = new();
@@ -48,7 +48,7 @@ public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, I
         Period = period,
         Name = name,
         About = about,
-        ConcertGenres = genres.Select(g => new ConcertGenreEntity { Genre = g }).ToHashSet()
+        Genres = genres.ToList()
     };
 
     public static ConcertEntity CreateDraft(
@@ -68,7 +68,7 @@ public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, I
         Name = name,
         About = about,
         ContractType = contractType,
-        ConcertGenres = genres.Select(g => new ConcertGenreEntity { Genre = g }).ToHashSet()
+        Genres = genres.ToList()
     };
 
     public void AdvanceStage(ConcertStage next)

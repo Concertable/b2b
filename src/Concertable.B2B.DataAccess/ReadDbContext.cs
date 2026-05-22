@@ -22,14 +22,11 @@ internal class ReadDbContext : DbContextBase, IReadDbContext
 
     public IQueryable<UserEntity> Users => Set<UserEntity>().AsNoTracking();
     public IQueryable<ArtistEntity> Artists => Set<ArtistEntity>().AsNoTracking();
-    public IQueryable<ArtistGenreEntity> ArtistGenres => Set<ArtistGenreEntity>().AsNoTracking();
     public IQueryable<VenueEntity> Venues => Set<VenueEntity>().AsNoTracking();
     public IQueryable<VenueImageEntity> VenueImages => Set<VenueImageEntity>().AsNoTracking();
     public IQueryable<ConcertEntity> Concerts => Set<ConcertEntity>().AsNoTracking();
-    public IQueryable<ConcertGenreEntity> ConcertGenres => Set<ConcertGenreEntity>().AsNoTracking();
     public IQueryable<ConcertImageEntity> ConcertImages => Set<ConcertImageEntity>().AsNoTracking();
     public IQueryable<OpportunityEntity> Opportunities => Set<OpportunityEntity>().AsNoTracking();
-    public IQueryable<OpportunityGenreEntity> OpportunityGenres => Set<OpportunityGenreEntity>().AsNoTracking();
     public IQueryable<ApplicationEntity> Applications => Set<ApplicationEntity>().AsNoTracking();
     public IQueryable<BookingEntity> Bookings => Set<BookingEntity>().AsNoTracking();
     public IQueryable<MessageEntity> Messages => Set<MessageEntity>().AsNoTracking();

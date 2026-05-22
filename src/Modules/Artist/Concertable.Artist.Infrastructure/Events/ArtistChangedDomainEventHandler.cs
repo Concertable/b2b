@@ -20,6 +20,6 @@ internal class ArtistChangedDomainEventHandler(IBus bus)
             artist.Location.Y,
             artist.Location.X,
             artist.Email,
-            artist.ArtistGenres.Select(g => g.Genre).ToArray()), ct);
+            artist.Genres.ToArray()), ct);
     }
 }

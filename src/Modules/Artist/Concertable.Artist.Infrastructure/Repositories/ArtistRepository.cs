@@ -11,13 +11,11 @@ internal class ArtistRepository(ArtistDbContext context)
     public async Task<ArtistEntity?> GetByUserIdAsync(Guid id) =>
         await context.Artists
             .Where(a => a.UserId == id)
-            .Include(a => a.ArtistGenres)
             .FirstOrDefaultAsync();
 
     public async Task<ArtistEntity?> GetFullByIdAsync(int id) =>
         await context.Artists
             .Where(a => a.Id == id)
-            .Include(a => a.ArtistGenres)
             .FirstOrDefaultAsync();
 
     public async Task<ArtistSummaryDto?> GetSummaryAsync(int id) =>
@@ -47,6 +45,6 @@ internal class ArtistRepository(ArtistDbContext context)
     public async Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
         await context.Artists.AsNoTracking()
             .Where(a => a.Id == id)
-            .SelectMany(a => a.ArtistGenres.Select(ag => ag.Genre))
+            .SelectMany(a => a.Genres)
             .ToHashSetAsync();
 }

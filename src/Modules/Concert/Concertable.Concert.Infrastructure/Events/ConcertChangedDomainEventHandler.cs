@@ -35,7 +35,7 @@ internal class ConcertChangedDomainEventHandler(
             venue.Name,
             venue.Location.Y,
             venue.Location.X,
-            concert.ConcertGenres.Select(g => g.Genre).ToArray(),
+            concert.Genres.ToArray(),
             payeeUserId,
             concert.ContractType.ToString()), ct);
     }

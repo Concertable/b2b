@@ -12,14 +12,11 @@ public interface IReadDbContext
 {
     IQueryable<UserEntity> Users { get; }
     IQueryable<ArtistEntity> Artists { get; }
-    IQueryable<ArtistGenreEntity> ArtistGenres { get; }
     IQueryable<VenueEntity> Venues { get; }
     IQueryable<VenueImageEntity> VenueImages { get; }
     IQueryable<ConcertEntity> Concerts { get; }
-    IQueryable<ConcertGenreEntity> ConcertGenres { get; }
     IQueryable<ConcertImageEntity> ConcertImages { get; }
     IQueryable<OpportunityEntity> Opportunities { get; }
-    IQueryable<OpportunityGenreEntity> OpportunityGenres { get; }
     IQueryable<ApplicationEntity> Applications { get; }
     IQueryable<BookingEntity> Bookings { get; }
     IQueryable<MessageEntity> Messages { get; }

@@ -32,7 +32,7 @@ internal class ConcertDraftService : IConcertDraftService
         var venue = opportunity.Venue;
 
         var artistGenres = artist.Genres.Select(g => g.Genre);
-        var opportunityGenres = opportunity.OpportunityGenres.Select(og => og.Genre);
+        var opportunityGenres = opportunity.Genres;
 
         var matchingGenres = opportunityGenres.Any()
             ? artistGenres.Intersect(opportunityGenres)

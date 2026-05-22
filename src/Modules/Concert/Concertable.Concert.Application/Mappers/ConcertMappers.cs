@@ -39,7 +39,7 @@ internal static class ConcertMappers
         EndDate = concert.Booking.Application.Opportunity.Period.End,
         Venue = concert.Booking.Application.Opportunity.Venue.ToConcertVenueDto(),
         Artist = concert.Booking.Application.Artist.ToConcertArtistDto(),
-        Genres = concert.ConcertGenres.Select(eg => eg.Genre)
+        Genres = concert.Genres
     };
 
     public static ConcertSnapshot ToSnapshotDto(this ConcertEntity concert) => new()

@@ -19,7 +19,6 @@ internal class BookingRepository : Repository<BookingEntity>, IBookingRepository
                     .ThenInclude(o => o.Venue)
             .Include(b => b.Application)
                 .ThenInclude(a => a.Opportunity)
-                    .ThenInclude(o => o.OpportunityGenres)
             .Include(b => b.Concert)
             .FirstOrDefaultAsync();
     }

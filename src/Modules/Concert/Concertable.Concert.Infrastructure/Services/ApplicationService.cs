@@ -120,7 +120,7 @@ internal class ApplicationService : IApplicationService
             throw new BadRequestException(result.Errors);
 
         var artistGenres = await artistModule.GetGenresAsync(artistId);
-        var opportunityGenres = opportunity.OpportunityGenres.Select(og => og.Genre).ToHashSet();
+        var opportunityGenres = opportunity.Genres.ToHashSet();
 
         if (opportunityGenres.Count > 0 && !artistGenres.Overlaps(opportunityGenres))
             throw new BadRequestException("You need to have the same genres as the Concert Opportunity to be able to apply to it");

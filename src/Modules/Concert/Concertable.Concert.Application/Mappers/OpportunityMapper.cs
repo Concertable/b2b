@@ -52,6 +52,6 @@ internal static class OpportunityMappers
         Contract = contract,
         StartDate = opportunity.Period.Start,
         EndDate = opportunity.Period.End,
-        Genres = opportunity.OpportunityGenres.Select(og => og.Genre).ToList()
+        Genres = opportunity.Genres
     };
 }

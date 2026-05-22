@@ -12,38 +12,22 @@ public class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opportunit
     public VenueReadModel Venue { get; set; } = null!;
     public int ContractId { get; private set; }
     public HashSet<ApplicationEntity> Applications { get; private set; } = [];
-    public HashSet<OpportunityGenreEntity> OpportunityGenres { get; private set; } = [];
+    public List<Genre> Genres { get; private set; } = [];
 
-    public static OpportunityEntity Create(int venueId, DateRange period, int contractId, IEnumerable<Genre>? genres = null)
-    {
-        var opportunity = new OpportunityEntity
+    public static OpportunityEntity Create(int venueId, DateRange period, int contractId, IEnumerable<Genre>? genres = null) =>
+        new()
         {
             VenueId = venueId,
             Period = period,
-            ContractId = contractId
+            ContractId = contractId,
+            Genres = genres?.ToList() ?? []
         };
-
-        if (genres is not null)
-            opportunity.SyncGenres(genres);
-
-        return opportunity;
-    }
 
     public void Update(DateRange period, int contractId, IEnumerable<Genre> genres)
     {
         Period = period;
         ContractId = contractId;
-        SyncGenres(genres);
-    }
-
-    public void SyncGenres(IEnumerable<Genre> genres)
-    {
-        var target = genres.ToHashSet();
-        OpportunityGenres.RemoveWhere(og => !target.Contains(og.Genre));
-        var existing = OpportunityGenres.Select(og => og.Genre).ToHashSet();
-        foreach (var g in target)
-            if (!existing.Contains(g))
-                OpportunityGenres.Add(new OpportunityGenreEntity { Genre = g });
+        Genres = genres.ToList();
     }
 
     public bool Equals(OpportunityEntity? other) => other is not null && Id == other.Id;

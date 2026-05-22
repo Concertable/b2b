@@ -20,7 +20,7 @@ public class ArtistEntity : IIdEntity, IHasName, IEventRaiser
     public string Avatar { get; private set; } = null!;
     public string Email { get; private set; } = null!;
 
-    public HashSet<ArtistGenreEntity> ArtistGenres { get; private set; } = [];
+    public List<Genre> Genres { get; private set; } = [];
 
     public IReadOnlyList<IDomainEvent> DomainEvents => _events.DomainEvents;
     public void ClearDomainEvents() => _events.Clear();
@@ -98,15 +98,8 @@ public class ArtistEntity : IIdEntity, IHasName, IEventRaiser
         _events.Raise(new ArtistChangedDomainEvent(this));
     }
 
-    private void SyncGenresInternal(IEnumerable<Genre> genres)
-    {
-        var target = genres.ToHashSet();
-        ArtistGenres.RemoveWhere(ag => !target.Contains(ag.Genre));
-        var existing = ArtistGenres.Select(ag => ag.Genre).ToHashSet();
-        foreach (var g in target)
-            if (!existing.Contains(g))
-                ArtistGenres.Add(new ArtistGenreEntity { Genre = g });
-    }
+    private void SyncGenresInternal(IEnumerable<Genre> genres) =>
+        Genres = genres.ToList();
 
     private static void Validate(string name, string about, string bannerUrl, string avatar, Point location, Address address, string email)
     {
