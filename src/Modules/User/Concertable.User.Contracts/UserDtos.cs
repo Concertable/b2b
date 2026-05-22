@@ -4,7 +4,6 @@ namespace Concertable.User.Contracts;
 
 [JsonDerivedType(typeof(VenueManagerDto), "venueManager")]
 [JsonDerivedType(typeof(ArtistManagerDto), "artistManager")]
-[JsonDerivedType(typeof(CustomerDto), "customer")]
 [JsonDerivedType(typeof(AdminDto), "admin")]
 public interface IUser
 {
@@ -60,15 +59,3 @@ public record ArtistManagerDto : IUser
     public bool IsEmailVerified { get; set; }
 }
 
-public record CustomerDto : IUser
-{
-    public Guid Id { get; set; }
-    public required string Email { get; set; }
-    public Role Role { get; } = Role.Customer;
-    public double? Latitude { get; set; }
-    public double? Longitude { get; set; }
-    public string? County { get; set; }
-    public string? Town { get; set; }
-    public string BaseUrl { get; set; } = "/";
-    public bool IsEmailVerified { get; set; }
-}

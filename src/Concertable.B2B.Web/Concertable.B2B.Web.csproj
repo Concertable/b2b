@@ -37,7 +37,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Modules\Authorization\Concertable.Authorization.Infrastructure\Concertable.Authorization.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Organization\Concertable.Organization.Api\Concertable.Organization.Api.csproj" />
     <ProjectReference Include="..\Modules\User\Concertable.User.Api\Concertable.User.Api.csproj" />
     <ProjectReference Include="..\Modules\Artist\Concertable.Artist.Api\Concertable.Artist.Api.csproj" />

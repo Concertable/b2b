@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Concertable.User.Application.Requests;
 using Concertable.User.Contracts;
 
@@ -37,23 +37,23 @@ public class UserApiTests : IAsyncLifetime
     public async Task UpdateLocation_ShouldReturn200_WhenAuthenticated()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.Customer);
+        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
 
         // Act
         var response = await client.PutAsync("/api/User/location", new UpdateLocationRequest(51.5, -0.1));
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var user = await response.Content.ReadAsync<CustomerDto>();
+        var user = await response.Content.ReadAsync<VenueManagerDto>();
         Assert.NotNull(user);
-        Assert.Equal(fixture.SeedData.Customer.Id, user.Id);
+        Assert.Equal(fixture.SeedData.VenueManager1.Id, user.Id);
     }
 
     [Fact]
     public async Task UpdateLocation_ShouldPersistCoordinates()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.Customer);
+        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
         const double latitude = 53.4808;
         const double longitude = -2.2426;
 
@@ -62,7 +62,7 @@ public class UserApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var user = await response.Content.ReadAsync<CustomerDto>();
+        var user = await response.Content.ReadAsync<VenueManagerDto>();
         Assert.NotNull(user);
         Assert.NotNull(user.Latitude);
         Assert.NotNull(user.Longitude);

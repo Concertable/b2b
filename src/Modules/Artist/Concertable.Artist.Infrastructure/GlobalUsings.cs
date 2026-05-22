@@ -7,5 +7,5 @@ global using Concertable.Artist.Application.Interfaces;
 global using Concertable.DataAccess.Infrastructure;
 global using Concertable.DataAccess.Infrastructure;
 global using Concertable.DataAccess;
-global using Concertable.Authorization.Contracts;
+global using Concertable.Shared.Infrastructure.Identity;
 global using Concertable.User.Contracts;

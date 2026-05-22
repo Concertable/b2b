@@ -2,9 +2,8 @@ using Concertable.Application.Interfaces.Geometry;
 using Concertable.Shared.Infrastructure.Services.Geometry;
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
-using Microsoft.EntityFrameworkCore;
 using Concertable.Seeding.Factories;
-using Concertable.Seeding.Fakers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.User.Infrastructure.Data.Seeders;
@@ -16,18 +15,15 @@ internal class UserTestSeeder : ITestSeeder
     private readonly UserDbContext context;
     private readonly SeedData seedData;
     private readonly IGeometryProvider geometryProvider;
-    private readonly ILocationFaker locationFaker;
 
     public UserTestSeeder(
         UserDbContext context,
         SeedData seedData,
-        [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider,
-        ILocationFaker locationFaker)
+        [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.context = context;
         this.seedData = seedData;
         this.geometryProvider = geometryProvider;
-        this.locationFaker = locationFaker;
     }
 
     public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
@@ -38,6 +34,7 @@ internal class UserTestSeeder : ITestSeeder
         {
             var hash = BCrypt.Net.BCrypt.HashPassword(SeedData.TestPassword);
 
+            seedData.Customer = UserFactory.Customer("customer1@test.com", hash);
             seedData.VenueManager1 = UserFactory.VenueManager("venuemanager1@test.com", hash);
             seedData.VenueManager2 = UserFactory.VenueManager("venuemanager2@test.com", hash);
             seedData.ArtistManager1 = UserFactory.ArtistManager("artistmanager1@test.com", hash);
@@ -46,23 +43,18 @@ internal class UserTestSeeder : ITestSeeder
             seedData.ArtistManagerNoArtist.UpdateLocation(geometryProvider.CreatePoint(51, 0), new Address("Test County", "Test Town"));
             seedData.ArtistManagerNoArtist.UpdateAvatar("avatar.jpg");
 
-            seedData.Customer = UserFactory.Customer("customer@test.com", hash);
-            seedData.Customer.UpdateLocation(geometryProvider.CreatePoint(51, 0));
-            seedData.Customer.UpdateAvatar("avatar.jpg");
-
             seedData.Admin = UserFactory.Admin("admin@test.com", hash);
             seedData.Admin.UpdateLocation(geometryProvider.CreatePoint(51, 0));
             seedData.Admin.UpdateAvatar("avatar.jpg");
 
             context.Users.AddRange(
+                seedData.Customer,
                 seedData.VenueManager1,
                 seedData.VenueManager2,
                 seedData.ArtistManager1,
                 seedData.ArtistManagerNoArtist,
-                seedData.Customer,
                 seedData.Admin);
 
-            // IDs are set by EF after AddRange
             context.VenueManagerProfiles.AddRange(
                 new VenueManagerProfileEntity(seedData.VenueManager1.Id),
                 new VenueManagerProfileEntity(seedData.VenueManager2.Id));

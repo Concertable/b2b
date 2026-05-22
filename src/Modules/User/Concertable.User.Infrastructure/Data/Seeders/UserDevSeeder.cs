@@ -3,7 +3,6 @@ using Concertable.Shared.Infrastructure.Services.Geometry;
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
 using Concertable.Seeding.Factories;
-using Concertable.Seeding.Fakers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,18 +15,15 @@ internal class UserDevSeeder : IDevSeeder
     private readonly UserDbContext context;
     private readonly SeedData seedData;
     private readonly IGeometryProvider geometryProvider;
-    private readonly ILocationFaker locationFaker;
 
     public UserDevSeeder(
         UserDbContext context,
         SeedData seedData,
-        [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider,
-        ILocationFaker locationFaker)
+        [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.context = context;
         this.seedData = seedData;
         this.geometryProvider = geometryProvider;
-        this.locationFaker = locationFaker;
     }
 
     public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
@@ -43,20 +39,10 @@ internal class UserDevSeeder : IDevSeeder
             seedData.Admin.UpdateAvatar("avatar.jpg");
             context.Users.Add(seedData.Admin);
 
-            var customerLoc = locationFaker.Next();
             seedData.Customer = UserFactory.Customer("customer1@test.com", hash);
-            seedData.Customer.UpdateLocation(geometryProvider.CreatePoint(customerLoc.Latitude, customerLoc.Longitude), new Address(customerLoc.County, customerLoc.Town));
-            seedData.Customer.UpdateAvatar("avatar.jpg");
             context.Users.Add(seedData.Customer);
-
-            for (int i = 2; i <= 6; i++)
-            {
-                var loc = locationFaker.Next();
-                var c = UserFactory.Customer($"customer{i}@test.com", hash);
-                c.UpdateLocation(geometryProvider.CreatePoint(loc.Latitude, loc.Longitude), new Address(loc.County, loc.Town));
-                c.UpdateAvatar("avatar.jpg");
-                context.Users.Add(c);
-            }
+            context.Users.Add(UserFactory.Customer("customer2@test.com", hash));
+            context.Users.Add(UserFactory.Customer("customer3@test.com", hash));
 
             seedData.ArtistManager1 = UserFactory.ArtistManager("artistmanager1@test.com", hash);
             context.Users.Add(seedData.ArtistManager1);
@@ -76,10 +62,8 @@ internal class UserDevSeeder : IDevSeeder
             for (int i = 3; i <= 35; i++)
                 context.Users.Add(UserFactory.VenueManager($"venuemanager{i}@test.com", hash));
 
-            // EF assigns GUIDs when entities are tracked, so IDs are available before SaveChanges
             await context.SaveChangesAsync(ct);
 
-            // Insert profiles for all B2B managers and admins
             var venueManagerIds = await context.Users
                 .Where(u => u.Role == Role.VenueManager)
                 .Select(u => u.Id)
@@ -101,11 +85,9 @@ internal class UserDevSeeder : IDevSeeder
             await context.SaveChangesAsync(ct);
         });
 
-        // Always resolve IDs from DB so downstream seeders work on first run and restarts
         var usersByEmail = await context.Users.ToDictionaryAsync(u => u.Email, u => u.Id, ct);
 
-        var customerEmails = new List<string> { "customer1@test.com" };
-        for (int i = 2; i <= 6; i++) customerEmails.Add($"customer{i}@test.com");
+        var customerEmails = new List<string> { "customer1@test.com", "customer2@test.com", "customer3@test.com" };
         seedData.CustomerEmails = customerEmails;
         seedData.CustomerIds = [.. customerEmails.Select(e => usersByEmail[e])];
 

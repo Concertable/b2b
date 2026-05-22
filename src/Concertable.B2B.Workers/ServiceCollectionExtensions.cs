@@ -1,5 +1,4 @@
 using Concertable.Artist.Infrastructure.Extensions;
-using Concertable.Authorization.Infrastructure.Extensions;
 using Concertable.Customer.Infrastructure.Extensions;
 using Concertable.Organization.Infrastructure.Extensions;
 using Concertable.Concert.Infrastructure.Extensions;
@@ -48,7 +47,7 @@ internal static class ServiceCollectionExtensions
 
         services.AddGeometry();
 
-        services.AddAuthorizationModule();
+        services.AddCurrentUser();
         services.AddOrganizationModule(configuration);
         services.AddUserModule(configuration);
         services.AddArtistModule(configuration);

@@ -1,4 +1,6 @@
+using Concertable.Auth.Contracts;
 using Concertable.DataAccess;
+using Concertable.User.Infrastructure.Mappers;
 using Concertable.DataAccess.Infrastructure;
 using Concertable.Seeding;
 using Concertable.Shared.Email;
@@ -9,6 +11,7 @@ using Concertable.User.Infrastructure.Authorization;
 using Concertable.User.Infrastructure.Data;
 using Concertable.User.Infrastructure.Data.Seeders;
 using Concertable.User.Infrastructure.Events;
+using Concertable.User.Infrastructure.ProfileClaims;
 using Concertable.User.Infrastructure.Services.Email;
 using Concertable.Venue.Contracts.Events;
 using FluentValidation;
@@ -31,9 +34,14 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<DomainEventDispatchInterceptor>()));
 
+        services.AddKeyedScoped<IRoleMapper, VenueManagerMapper>(Role.VenueManager);
+        services.AddKeyedScoped<IRoleMapper, ArtistManagerMapper>(Role.ArtistManager);
+        services.AddKeyedScoped<IRoleMapper, AdminMapper>(Role.Admin);
+        services.AddScoped<IUserMapper, UserMapper>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserModule, UserModule>();
+        services.AddScoped<IProfileClaimsProvider, UserProfileClaimsProvider>();
 
         var useRealEmail = configuration.GetSection("ExternalServices").GetValue<bool>("UseRealEmail");
         if (!useRealEmail)

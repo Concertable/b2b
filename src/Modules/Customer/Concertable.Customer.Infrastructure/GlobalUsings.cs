@@ -4,7 +4,7 @@ global using Concertable.Customer.Application.Mappers;
 global using Concertable.Customer.Application.Requests;
 global using Concertable.Customer.Domain;
 global using Concertable.DataAccess.Infrastructure;
-global using Concertable.Authorization.Contracts;
+global using Concertable.Shared.Infrastructure.Identity;
 global using Concertable.User.Contracts;
 global using Concertable.Shared;
 global using Concertable.DataAccess.Infrastructure;

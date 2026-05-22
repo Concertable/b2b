@@ -1,7 +1,7 @@
 global using Concertable.Shared;
 global using Concertable.Messaging;
 global using Concertable.DataAccess.Infrastructure;
-global using Concertable.Authorization.Contracts;
+global using Concertable.Shared.Infrastructure.Identity;
 global using Concertable.User.Contracts;
 global using Concertable.Artist.Contracts;
 global using Concertable.Venue.Contracts;

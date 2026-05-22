@@ -1,3 +1,4 @@
+using Concertable.User.Contracts;
 using Concertable.User.Domain.Events;
 using NetTopologySuite.Geometries;
 

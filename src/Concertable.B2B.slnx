@@ -11,10 +11,6 @@
   <Folder Name="/Modules/Artist/Tests/">
     <Project Path="Modules/Artist/Tests/Concertable.Artist.IntegrationTests/Concertable.Artist.IntegrationTests.csproj" />
   </Folder>
-  <Folder Name="/Modules/Authorization/">
-    <Project Path="Modules/Authorization/Concertable.Authorization.Contracts/Concertable.Authorization.Contracts.csproj" />
-    <Project Path="Modules/Authorization/Concertable.Authorization.Infrastructure/Concertable.Authorization.Infrastructure.csproj" />
-  </Folder>
   <Folder Name="/Modules/Concert/">
     <Project Path="Modules/Concert/Concertable.Concert.Api/Concertable.Concert.Api.csproj" />
     <Project Path="Modules/Concert/Concertable.Concert.Application/Concertable.Concert.Application.csproj" />

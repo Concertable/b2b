@@ -1,5 +1,5 @@
 ﻿using Concertable.Artist.Contracts;
-using Concertable.Authorization.Contracts;
+using Concertable.Shared.Infrastructure.Identity;
 using Concertable.Concert.Api.Mappers;
 using Concertable.Concert.Api.Requests;
 using Concertable.Concert.Api.Responses;

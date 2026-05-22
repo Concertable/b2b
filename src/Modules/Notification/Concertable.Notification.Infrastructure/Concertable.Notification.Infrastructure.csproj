@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Concertable.Notification.Contracts\Concertable.Notification.Contracts.csproj" />
-    <ProjectReference Include="..\..\Authorization\Concertable.Authorization.Contracts\Concertable.Authorization.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
   </ItemGroup>
 
 </Project>
