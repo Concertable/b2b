@@ -1,4 +1,3 @@
-using Concertable.Concert.Api.Handlers;
 using Concertable.Concert.Api.Mappers;
 using Concertable.Concert.Api.Responses;
 using Microsoft.AspNetCore.Authorization;
@@ -11,17 +10,10 @@ namespace Concertable.Concert.Api.Controllers;
 internal class ConcertController : ControllerBase
 {
     private readonly IConcertService concertService;
-    private readonly IConcertNotifier notifier;
-    private readonly IConcertPostedHandler concertPostedHandler;
 
-    public ConcertController(
-        IConcertService concertService,
-        IConcertNotifier notifier,
-        IConcertPostedHandler concertPostedHandler)
+    public ConcertController(IConcertService concertService)
     {
         this.concertService = concertService;
-        this.notifier = notifier;
-        this.concertPostedHandler = concertPostedHandler;
     }
 
     [HttpGet("{id}")]
@@ -83,32 +75,7 @@ internal class ConcertController : ControllerBase
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
     {
-        var result = await concertService.PostAsync(id, request);
-        await concertPostedHandler.HandleAsync(result);
+        await concertService.PostAsync(id, request);
         return NoContent();
-    }
-
-    [HttpGet("test-signalr")]
-    public async Task<IActionResult> TestSignalR(
-        [FromQuery] int userId,
-        [FromQuery] string? name,
-        [FromQuery] string? imageUrl)
-    {
-        var concertSnapshot = new ConcertSnapshot
-        {
-            Id = 1,
-            Name = name ?? "The Rockers performing at the Grand Venue",
-            ImageUrl = imageUrl ?? "rockers.jpg",
-            County = "Surrey",
-            Town = "Ashtead",
-            Rating = 4.7,
-            StartDate = new DateTime(2025, 8, 10, 17, 0, 0),
-            EndDate = new DateTime(2025, 8, 10, 23, 30, 0),
-            DatePosted = DateTime.UtcNow
-        };
-
-        await notifier.ConcertPostedAsync(userId.ToString(), concertSnapshot);
-
-        return Ok($"SignalR test message sent to User {userId}");
     }
 }

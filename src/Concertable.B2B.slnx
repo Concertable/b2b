@@ -39,13 +39,6 @@
     <Project Path="Modules/Conversations/Concertable.Conversations.Domain/Concertable.Conversations.Domain.csproj" />
     <Project Path="Modules/Conversations/Concertable.Conversations.Infrastructure/Concertable.Conversations.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/Modules/Customer/">
-    <Project Path="Modules/Customer/Concertable.Customer.Api/Concertable.Customer.Api.csproj" />
-    <Project Path="Modules/Customer/Concertable.Customer.Application/Concertable.Customer.Application.csproj" />
-    <Project Path="Modules/Customer/Concertable.Customer.Contracts/Concertable.Customer.Contracts.csproj" />
-    <Project Path="Modules/Customer/Concertable.Customer.Domain/Concertable.Customer.Domain.csproj" />
-    <Project Path="Modules/Customer/Concertable.Customer.Infrastructure/Concertable.Customer.Infrastructure.csproj" />
-  </Folder>
   <Folder Name="/Modules/Notification/">
     <Project Path="Modules/Notification/Concertable.Notification.Contracts/Concertable.Notification.Contracts.csproj" />
     <Project Path="Modules/Notification/Concertable.Notification.Infrastructure/Concertable.Notification.Infrastructure.csproj" />

@@ -1,5 +1,4 @@
-﻿using Concertable.Customer.Contracts;
-using Concertable.Shared.Email;
+﻿using Concertable.Shared.Email;
 using Concertable.Shared.Exceptions;
 using FluentResults;
 
@@ -12,7 +11,6 @@ internal class ConcertService : IConcertService
     private readonly ICurrentUser currentUser;
     private readonly IApplicationValidator applicationValidator;
     private readonly IEmailSender emailSender;
-    private readonly ICustomerModule customerModule;
     private readonly IConcertDraftService concertDraftService;
     private readonly TimeProvider timeProvider;
 
@@ -22,7 +20,6 @@ internal class ConcertService : IConcertService
         ICurrentUser currentUser,
         IApplicationValidator applicationValidator,
         IEmailSender emailSender,
-        ICustomerModule customerModule,
         IConcertDraftService concertDraftService,
         TimeProvider timeProvider)
     {
@@ -31,7 +28,6 @@ internal class ConcertService : IConcertService
         this.currentUser = currentUser;
         this.applicationValidator = applicationValidator;
         this.emailSender = emailSender;
-        this.customerModule = customerModule;
         this.concertDraftService = concertDraftService;
         this.timeProvider = timeProvider;
     }
@@ -87,7 +83,7 @@ internal class ConcertService : IConcertService
         };
     }
 
-    public async Task<ConcertPostResponse> PostAsync(int id, UpdateConcertRequest request)
+    public async Task PostAsync(int id, UpdateConcertRequest request)
     {
         var concertEntity = await concertRepository.GetFullByIdAsync(id)
             ?? throw new NotFoundException("Concert not found");
@@ -99,21 +95,6 @@ internal class ConcertService : IConcertService
         concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime);
 
         await concertRepository.SaveChangesAsync();
-
-        var concertHeaderDto = concertEntity.ToSnapshotDto();
-        // BROKEN Phase 1: rating came from IConcertReviewRepository.GetSummaryByConcertAsync (moved to Customer.Review).
-        // Snapshot omits rating until B2B's ConcertRatingProjection (fed by ReviewSubmittedEvent) is read here, or
-        // the notification payload drops rating entirely. Posting-time rating is always null/zero anyway.
-
-        var location = concertEntity.Booking.Application.Opportunity.Venue.Location;
-
-        if (location is null)
-            return new ConcertPostResponse { ConcertHeader = concertHeaderDto, UserIds = [] };
-
-        var genres = concertEntity.ConcertGenres.Select(cg => cg.Genre).ToList();
-        var userIdsToNotify = await customerModule.GetUserIdsByLocationAndGenresAsync(location.Y, location.X, genres);
-
-        return new ConcertPostResponse { ConcertHeader = concertHeaderDto, UserIds = userIdsToNotify.ToList() };
     }
 
     public Task<IEnumerable<ConcertSummaryDto>> GetUnpostedByArtistIdAsync(int id) =>

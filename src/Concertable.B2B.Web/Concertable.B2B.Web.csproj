@@ -47,9 +47,7 @@
     <ProjectReference Include="..\Modules\Contract\Concertable.Contract.Api\Concertable.Contract.Api.csproj" />
     <ProjectReference Include="..\Modules\Notification\Concertable.Notification.Infrastructure\Concertable.Notification.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Conversations\Concertable.Conversations.Api\Concertable.Conversations.Api.csproj" />
-    <ProjectReference Include="..\Modules\Customer\Concertable.Customer.Api\Concertable.Customer.Api.csproj" />
-    <ProjectReference Include="..\Modules\Customer\Concertable.Customer.Infrastructure\Concertable.Customer.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\Seeding\Concertable.Seeding\Concertable.Seeding.csproj" />
+<ProjectReference Include="..\..\Seeding\Concertable.Seeding\Concertable.Seeding.csproj" />
     <ProjectReference Include="..\..\Concertable.ServiceDefaults\Concertable.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
     <ProjectReference Include="..\..\Shared\Concertable.Shared.Api\Concertable.Shared.Api.csproj" />

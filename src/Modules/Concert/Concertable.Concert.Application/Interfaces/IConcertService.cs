@@ -13,7 +13,7 @@ internal interface IConcertService
     Task<IEnumerable<ConcertSummaryDto>> GetUpcomingByArtistIdAsync(int id);
     Task<Result<ConcertEntity>> CreateDraftAsync(int applicationId);
     Task<ConcertUpdateResponse> UpdateAsync(int id, UpdateConcertRequest request);
-    Task<ConcertPostResponse> PostAsync(int id, UpdateConcertRequest request);
+    Task PostAsync(int id, UpdateConcertRequest request);
     Task<IEnumerable<ConcertSummaryDto>> GetHistoryByArtistIdAsync(int id);
     Task<IEnumerable<ConcertSummaryDto>> GetHistoryByVenueIdAsync(int id);
     Task<IEnumerable<ConcertSummaryDto>> GetUnpostedByArtistIdAsync(int id);

@@ -19,8 +19,6 @@ using Concertable.Messaging.Application;
 using Concertable.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.AzureServiceBus;
 using Concertable.Messaging.Infrastructure.Extensions;
-using Concertable.Customer.Api.Extensions;
-using Concertable.Customer.Infrastructure.Extensions;
 using Concertable.Organization.Api.Extensions;
 using Concertable.User.Api.Extensions;
 using Concertable.User.Infrastructure.Extensions;
@@ -122,6 +120,7 @@ services.AddAzureServiceBusTransport(
         reg.Publishes<VenueChangedEvent>();
         reg.Publishes<VenueRatingUpdatedEvent>();
         reg.Publishes<ConcertChangedEvent>();
+        reg.Publishes<ConcertPostedEvent>();
         reg.Publishes<ConcertRatingUpdatedEvent>();
 
         reg.SubscribeTo<CredentialRegisteredEvent>();
@@ -145,7 +144,6 @@ if (!builder.Environment.IsEnvironment("Testing"))
     services.AddContractDevSeeder();
     services.AddConcertDevSeeder();
     services.AddConversationsDevSeeder();
-    services.AddCustomerDevSeeder();
 }
 services.AddServices(builder.Configuration);
 services.AddRepositories();
@@ -157,7 +155,6 @@ services.AddVenueApi(builder.Configuration);
 services.AddConcertApi(builder.Configuration);
 services.AddContractApi(builder.Configuration);
 services.AddPaymentClient(builder.Configuration);
-services.AddCustomerApi(builder.Configuration);
 services.AddQueueHostedService();
 services.AddCurrentUser();
 services.AddUserApi(builder.Configuration);

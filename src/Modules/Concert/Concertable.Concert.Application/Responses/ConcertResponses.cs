@@ -1,12 +1,4 @@
-using Concertable.Concert.Application.DTOs;
-
 namespace Concertable.Concert.Application.Responses;
-
-internal record ConcertPostResponse
-{
-    public required ConcertSnapshot ConcertHeader { get; set; }
-    public IReadOnlyList<Guid> UserIds { get; set; } = [];
-}
 
 internal record ConcertUpdateResponse
 {

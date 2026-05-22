@@ -95,5 +95,6 @@ public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, I
         TotalTickets = totalTickets;
         DatePosted = now;
         _events.Raise(new ConcertChangedDomainEvent(Id, totalTickets, price, Period, now));
+        _events.Raise(new ConcertPostedDomainEvent(Id));
     }
 }

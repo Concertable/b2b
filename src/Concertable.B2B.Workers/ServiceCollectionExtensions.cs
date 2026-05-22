@@ -1,5 +1,4 @@
 using Concertable.Artist.Infrastructure.Extensions;
-using Concertable.Customer.Infrastructure.Extensions;
 using Concertable.Organization.Infrastructure.Extensions;
 using Concertable.Concert.Infrastructure.Extensions;
 using Concertable.Contract.Infrastructure.Extensions;
@@ -54,7 +53,6 @@ internal static class ServiceCollectionExtensions
         services.AddVenueModule(configuration);
         services.AddConcertModule(configuration);
         services.AddContractModule(configuration);
-        services.AddCustomerModule(configuration);
         services.AddClientCredentials(opts =>
         {
             opts.Authority = configuration["Auth:Authority"] ?? configuration["services__auth__https__0"] ?? "";

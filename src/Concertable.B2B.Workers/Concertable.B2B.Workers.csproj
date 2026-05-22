@@ -20,8 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Modules\Artist\Concertable.Artist.Infrastructure\Concertable.Artist.Infrastructure.csproj" />
-    <ProjectReference Include="..\Modules\Customer\Concertable.Customer.Infrastructure\Concertable.Customer.Infrastructure.csproj" />
-    <ProjectReference Include="..\Modules\Organization\Concertable.Organization.Infrastructure\Concertable.Organization.Infrastructure.csproj" />
+<ProjectReference Include="..\Modules\Organization\Concertable.Organization.Infrastructure\Concertable.Organization.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\User\Concertable.User.Infrastructure\Concertable.User.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Concert\Concertable.Concert.Infrastructure\Concertable.Concert.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Contract\Concertable.Contract.Infrastructure\Concertable.Contract.Infrastructure.csproj" />
