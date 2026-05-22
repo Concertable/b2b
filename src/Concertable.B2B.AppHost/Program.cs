@@ -1,6 +1,6 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var sql = builder.AddSqlServer("concertable-b2b-sql-data");
+var sql = builder.AddSqlServerContainer("concertable-b2b-sql-data");
 var b2bDb = sql.AddDatabase("B2BDb");
 var authDb = sql.AddDatabase("AuthDb");
 var searchDb = sql.AddDatabase("SearchDb");
