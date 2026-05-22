@@ -1,19 +1,15 @@
 using Concertable.DataAccess;
-using Concertable.Application.Interfaces.Geometry;
 using Concertable.Application.Serializers;
 using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Shared.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Repositories;
-using Concertable.Shared.Infrastructure.Services.Geometry;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using NetTopologySuite;
-using NetTopologySuite.Geometries;
 using System.Data;
 
 namespace Concertable.B2B.Web.Extensions;
@@ -23,11 +19,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton(TimeProvider.System);
-
-        services.AddKeyedSingleton<IGeometryProvider, GeographicGeometryProvider>(GeometryProviderType.Geographic, (_, _) =>
-            new GeographicGeometryProvider(NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326)));
-        services.AddKeyedSingleton<IGeometryProvider, MetricGeometryProvider>(GeometryProviderType.Metric, (_, _) =>
-            new MetricGeometryProvider(NtsGeometryServices.Instance.CreateGeometryFactory(srid: 3857)));
 
         services.AddDatabase(configuration);
 
@@ -50,7 +41,7 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IGeometryCalculator, GeometryCalculator>();
+        services.AddGeometry();
 
         return services;
     }

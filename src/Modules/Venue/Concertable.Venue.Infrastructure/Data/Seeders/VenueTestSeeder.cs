@@ -34,6 +34,7 @@ internal class VenueTestSeeder : ITestSeeder
         await context.Venues.SeedIfEmptyAsync(async () =>
         {
             seed.Venue = VenueFaker.GetFaker(
+                1,
                 seed.VenueManager1.Id,
                 "Test Venue",
                 "venue.jpg",
@@ -43,7 +44,7 @@ internal class VenueTestSeeder : ITestSeeder
                 seed.VenueManager1.Email).Generate();
 
             context.Venues.Add(seed.Venue);
-            await context.SaveChangesAsync(ct);
+            await context.SaveWithIdsAsync<VenueEntity>(ct);
         });
     }
 }

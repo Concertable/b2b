@@ -1,4 +1,4 @@
-namespace Concertable.User.Domain;
+namespace Concertable.User.Contracts;
 
 public enum Role
 {

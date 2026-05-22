@@ -34,6 +34,7 @@ internal class ArtistTestSeeder : ITestSeeder
         await context.Artists.SeedIfEmptyAsync(async () =>
         {
             seed.Artist = ArtistFaker.GetFaker(
+                1,
                 seed.ArtistManager1.Id,
                 "Test Artist",
                 "artist.jpg",
@@ -44,7 +45,7 @@ internal class ArtistTestSeeder : ITestSeeder
                 [Genre.Rock]).Generate();
 
             context.Artists.Add(seed.Artist);
-            await context.SaveChangesAsync(ct);
+            await context.SaveWithIdsAsync<ArtistEntity>(ct);
         });
     }
 }

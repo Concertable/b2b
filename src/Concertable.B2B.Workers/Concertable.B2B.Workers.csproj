@@ -19,11 +19,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Modules\Artist\Concertable.Artist.Infrastructure\Concertable.Artist.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Authorization\Concertable.Authorization.Infrastructure\Concertable.Authorization.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Customer\Concertable.Customer.Infrastructure\Concertable.Customer.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Organization\Concertable.Organization.Infrastructure\Concertable.Organization.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\User\Concertable.User.Infrastructure\Concertable.User.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Concert\Concertable.Concert.Infrastructure\Concertable.Concert.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Contract\Concertable.Contract.Infrastructure\Concertable.Contract.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Venue\Concertable.Venue.Infrastructure\Concertable.Venue.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Notification\Concertable.Notification.Infrastructure\Concertable.Notification.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Conversations\Concertable.Conversations.Infrastructure\Concertable.Conversations.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />

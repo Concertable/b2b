@@ -81,6 +81,7 @@ internal class ArtistDevSeeder : IDevSeeder
             {
                 var loc = locationFaker.Next();
                 return ArtistFaker.GetFaker(
+                    i + 1,
                     artistManagerIds[i],
                     b.Name,
                     b.Banner,
@@ -92,7 +93,7 @@ internal class ArtistDevSeeder : IDevSeeder
             }).ToArray();
 
             context.Artists.AddRange(artists);
-            await context.SaveChangesAsync(ct);
+            await context.SaveWithIdsAsync<ArtistEntity>(ct);
         });
     }
 }
