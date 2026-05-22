@@ -6,6 +6,12 @@ using Concertable.B2B.Workers;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
+builder.ConfigureContainer(new DefaultServiceProviderFactory(new ServiceProviderOptions
+{
+    ValidateOnBuild = true,
+    ValidateScopes = true
+}));
+
 builder.ConfigureFunctionsWebApplication();
 
 builder.Services

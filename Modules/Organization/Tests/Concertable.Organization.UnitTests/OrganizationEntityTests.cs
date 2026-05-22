@@ -1,3 +1,5 @@
+using Concertable.Organization.Domain;
+
 namespace Concertable.Organization.UnitTests;
 
 public class OrganizationEntityTests

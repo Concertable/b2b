@@ -39,6 +39,7 @@ internal class VenueDevSeeder : IDevSeeder
         await context.Venues.SeedIfEmptyAsync(async () =>
         {
             seed.Venue = VenueFaker.GetFaker(
+                1,
                 seed.VenueManager1.Id,
                 "The Grand Venue",
                 "grandvenue.jpg",
@@ -89,6 +90,7 @@ internal class VenueDevSeeder : IDevSeeder
             {
                 var loc = locationFaker.Next();
                 return VenueFaker.GetFaker(
+                    i + 2,
                     venueManagerIds[i + 1],
                     v.Name,
                     v.Banner,
@@ -100,7 +102,7 @@ internal class VenueDevSeeder : IDevSeeder
 
             context.Venues.Add(seed.Venue);
             context.Venues.AddRange(venues);
-            await context.SaveChangesAsync(ct);
+            await context.SaveWithIdsAsync<VenueEntity>(ct);
         });
     }
 }
