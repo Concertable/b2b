@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Infrastructure;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Completion;
@@ -11,16 +12,16 @@ internal class ConcertCompletionRunner(
     {
         var concertIds = (await concertRepository.GetEndedConfirmedIdsAsync()).ToList();
 
-        logger.LogInformation("ConcertCompletionRunner: found {Count} ended confirmed concert(s) to settle", concertIds.Count);
+        logger.FoundConcertsToSettle(concertIds.Count);
 
         foreach (var concertId in concertIds)
         {
             var result = await completionDispatcher.FinishAsync(concertId);
 
             if (result.IsFailed)
-                logger.LogError("Failed to finish concert {ConcertId}: {Errors}", concertId, result.Errors);
+                logger.ConcertCompletionFailed(concertId, result.Errors);
             else
-                logger.LogInformation("Finished concert {ConcertId}", concertId);
+                logger.ConcertFinished(concertId);
         }
     }
 }

@@ -18,7 +18,8 @@ internal class SignalRNotificationClient : INotificationClient
 
     public Task SendAsync(string userId, string eventName, object payload)
     {
-        logger.LogInformation("[SignalRNotificationClient] send userId={UserId} event={EventName}", userId, eventName);
+        logger.SendingSignalRNotification(userId, eventName);
         return hubContext.Clients.Group(userId).SendAsync(eventName, payload);
     }
 }
+

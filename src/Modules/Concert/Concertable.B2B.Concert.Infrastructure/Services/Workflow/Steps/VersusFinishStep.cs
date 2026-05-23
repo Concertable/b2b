@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Contract.Contracts;
 using Concertable.Kernel.Enums;
 using Concertable.Kernel.Exceptions;
@@ -41,19 +42,13 @@ internal class VersusFinishStep : IFinishStep
         var totalRevenue = await concertRepository.GetTotalRevenueByConcertIdAsync(concertId);
         var artistShare = contract.Guarantee + (totalRevenue * (contract.ArtistDoorPercent / 100));
 
-        logger.LogDebug(
-            "Calculated versus artist share for concert {ConcertId}: {Guarantee} guarantee + ({Revenue} revenue at {Percent}%) = {Share}",
-            concertId, contract.Guarantee, totalRevenue, contract.ArtistDoorPercent, artistShare);
+        logger.VersusArtistShareCalculated(concertId, contract.Guarantee, totalRevenue, contract.ArtistDoorPercent, artistShare);
 
         var marked = await bookingService.MarkAwaitingPaymentByConcertIdAsync(concertId);
         if (marked is not DeferredBooking deferred)
             throw new BadRequestException("Concert finish requires a DeferredBooking");
 
-        logger.LogInformation(
-            "Settling concert {ConcertId} (booking {BookingId}): paying {Amount} GBP from {PayerId} to {PayeeId}",
-            concertId, marked.Id, artistShare,
-            booking.Application.Opportunity.Venue.UserId,
-            booking.Application.Artist.UserId);
+        logger.SettlingConcert(concertId, marked.Id, artistShare, booking.Application.Opportunity.Venue.UserId, booking.Application.Artist.UserId);
 
         var payment = await managerPaymentClient.PayAsync(
             booking.Application.Opportunity.Venue.UserId,

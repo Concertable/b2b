@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Contract.Contracts;
 using Concertable.Kernel.Enums;
 using Concertable.Kernel.Exceptions;
@@ -52,9 +53,7 @@ internal class VenueHireAcceptStep : ISimpleAcceptStep
         var contract = (VenueHireContract)await contractLoader.LoadByApplicationIdAsync(applicationId);
         var booking = await bookingService.CreateStandardAsync(applicationId);
 
-        logger.LogInformation(
-            "Accepting application {ApplicationId} (booking {BookingId}): charging {Amount} GBP from {PayerId} on behalf of {PayeeId}",
-            applicationId, booking.Id, contract.HireFee, artistManagerId, venueManagerId);
+        logger.AcceptingVenueHireApplication(applicationId, booking.Id, contract.HireFee, artistManagerId, venueManagerId);
 
         var hold = await escrowClient.DepositAsync(artistManagerId, venueManagerId, contract.HireFee, prepaid.PaymentMethodId, PaymentSession.OffSession, booking.Id);
         if (hold.IsFailed)

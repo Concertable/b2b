@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -33,9 +34,7 @@ internal class SettlementPaymentProcessor : IIntegrationEventHandler<PaymentSucc
             return;
 
         var bookingId = int.Parse(@event.Metadata["bookingId"]);
-        logger.LogDebug(
-            "Settlement webhook received: payment intent {TransactionId} for booking {BookingId}",
-            @event.TransactionId, bookingId);
+        logger.SettlementWebhookReceived(@event.TransactionId, bookingId);
 
         context.Set<InboxMessageEntity>().Add(
             InboxMessageEntity.Create(envelope.MessageId, nameof(SettlementPaymentProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
@@ -46,7 +45,7 @@ internal class SettlementPaymentProcessor : IIntegrationEventHandler<PaymentSucc
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
-            logger.LogDebug("Duplicate inbox message {MessageId}; skipping", envelope.MessageId);
+            logger.DuplicateInboxMessage(envelope.MessageId);
         }
     }
 }

@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -33,9 +34,7 @@ internal class EscrowPaymentProcessor : IIntegrationEventHandler<PaymentSucceede
             return;
 
         var bookingId = int.Parse(@event.Metadata["bookingId"]);
-        logger.LogDebug(
-            "Escrow webhook received: payment intent {TransactionId} for booking {BookingId}",
-            @event.TransactionId, bookingId);
+        logger.EscrowWebhookReceived(@event.TransactionId, bookingId);
 
         context.Set<InboxMessageEntity>().Add(
             InboxMessageEntity.Create(envelope.MessageId, nameof(EscrowPaymentProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
@@ -46,7 +45,7 @@ internal class EscrowPaymentProcessor : IIntegrationEventHandler<PaymentSucceede
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
-            logger.LogDebug("Duplicate inbox message {MessageId}; skipping", envelope.MessageId);
+            logger.DuplicateInboxMessage(envelope.MessageId);
         }
     }
 }

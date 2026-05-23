@@ -1,3 +1,4 @@
+using Concertable.B2B.Notification.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
@@ -19,9 +20,7 @@ public class NotificationHub : Hub
     {
         string? userId = Context.User?.GetId();
 
-        logger.LogInformation(
-            "[NotificationHub] connected userId={UserId} userIdentifier={UserIdentifier} connectionId={ConnectionId}",
-            userId, Context.UserIdentifier, Context.ConnectionId);
+        logger.NotificationHubConnected(userId, Context.UserIdentifier, Context.ConnectionId);
 
         if (!string.IsNullOrEmpty(userId))
             await Groups.AddToGroupAsync(Context.ConnectionId, userId);
@@ -39,3 +38,4 @@ public class NotificationHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 }
+

@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -33,9 +34,7 @@ internal class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentSucceede
             return;
 
         var applicationId = int.Parse(@event.Metadata["applicationId"]);
-        logger.LogDebug(
-            "Verify webhook received: payment intent {TransactionId} for application {ApplicationId}",
-            @event.TransactionId, applicationId);
+        logger.VerifyWebhookReceived(@event.TransactionId, applicationId);
 
         context.Set<InboxMessageEntity>().Add(
             InboxMessageEntity.Create(envelope.MessageId, nameof(VerifyPaymentProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
@@ -46,7 +45,7 @@ internal class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentSucceede
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
-            logger.LogDebug("Duplicate inbox message {MessageId}; skipping", envelope.MessageId);
+            logger.DuplicateInboxMessage(envelope.MessageId);
         }
     }
 }

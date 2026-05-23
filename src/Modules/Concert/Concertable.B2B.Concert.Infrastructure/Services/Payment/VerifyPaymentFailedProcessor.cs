@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -34,9 +35,7 @@ internal class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFa
 
         var applicationId = int.Parse(@event.Metadata["applicationId"]);
         var venueManagerId = @event.Metadata["venueManagerId"];
-        logger.LogWarning(
-            "Verify payment failed for application {ApplicationId}: [{FailureCode}] {FailureMessage}",
-            applicationId, @event.FailureCode, @event.FailureMessage);
+        logger.VerifyPaymentFailed(applicationId, @event.FailureCode, @event.FailureMessage);
 
         await concertNotifier.VerifyPaymentFailedAsync(venueManagerId, new { applicationId, @event.FailureMessage });
 
@@ -48,7 +47,7 @@ internal class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFa
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
-            logger.LogDebug("Duplicate inbox message {MessageId}; skipping", envelope.MessageId);
+            logger.DuplicateInboxMessage(envelope.MessageId);
         }
     }
 }

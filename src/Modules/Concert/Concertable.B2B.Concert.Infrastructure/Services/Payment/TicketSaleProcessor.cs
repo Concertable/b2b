@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -38,7 +39,7 @@ internal class TicketSaleProcessor : IIntegrationEventHandler<PaymentSucceededEv
         if (concert is not null)
             concert.IncrementTicketsSold(quantity);
         else
-            logger.LogWarning("Concert {ConcertId} not found for ticket sale", concertId);
+            logger.ConcertNotFoundForTicketSale(concertId);
 
         try
         {
@@ -46,7 +47,7 @@ internal class TicketSaleProcessor : IIntegrationEventHandler<PaymentSucceededEv
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
-            logger.LogDebug("Duplicate inbox message {MessageId}; skipping", envelope.MessageId);
+            logger.DuplicateInboxMessage(envelope.MessageId);
         }
     }
 }

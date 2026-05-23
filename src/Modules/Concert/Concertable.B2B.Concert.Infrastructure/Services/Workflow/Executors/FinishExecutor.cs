@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Infrastructure;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 
@@ -36,7 +37,7 @@ internal class FinishExecutor : IFinishExecutor
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to finish concert {ConcertId}", concertId);
+            logger.FailedToFinishConcert(concertId, ex);
             return Result.Fail(ex.Message);
         }
     }

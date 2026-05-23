@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -34,9 +35,7 @@ internal class BookingPaymentFailedProcessor : IIntegrationEventHandler<PaymentF
             return;
 
         var bookingId = int.Parse(@event.Metadata["bookingId"]);
-        logger.LogWarning(
-            "Payment failed for booking {BookingId}: [{FailureCode}] {FailureMessage}",
-            bookingId, @event.FailureCode, @event.FailureMessage);
+        logger.BookingPaymentFailed(bookingId, @event.FailureCode, @event.FailureMessage);
 
         context.Set<InboxMessageEntity>().Add(
             InboxMessageEntity.Create(envelope.MessageId, nameof(BookingPaymentFailedProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
@@ -47,7 +46,7 @@ internal class BookingPaymentFailedProcessor : IIntegrationEventHandler<PaymentF
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
-            logger.LogDebug("Duplicate inbox message {MessageId}; skipping", envelope.MessageId);
+            logger.DuplicateInboxMessage(envelope.MessageId);
         }
     }
 }
