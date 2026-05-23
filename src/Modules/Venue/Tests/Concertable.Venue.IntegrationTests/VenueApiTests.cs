@@ -98,7 +98,7 @@ public class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetDetailsForCurrentUser_ShouldReturn404_WhenNoVenueExists()
+    public async Task GetDetailsForCurrentUser_ShouldReturn204_WhenNoVenueExists()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedData.VenueManager2);
@@ -107,7 +107,7 @@ public class VenueApiTests : IAsyncLifetime
         var response = await client.GetAsync("/api/Venue/user");
 
         // Assert
-        await response.ShouldBe(HttpStatusCode.NotFound);
+        await response.ShouldBe(HttpStatusCode.NoContent);
     }
 
     #endregion

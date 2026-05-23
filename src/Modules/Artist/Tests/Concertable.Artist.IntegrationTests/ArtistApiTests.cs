@@ -83,13 +83,13 @@ public class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetDetailsForCurrentUser_ShouldReturn404_WhenNoArtistExists()
+    public async Task GetDetailsForCurrentUser_ShouldReturn204_WhenNoArtistExists()
     {
         var client = fixture.CreateClient(fixture.SeedData.ArtistManagerNoArtist);
 
         var response = await client.GetAsync("/api/Artist/user");
 
-        await response.ShouldBe(HttpStatusCode.NotFound);
+        await response.ShouldBe(HttpStatusCode.NoContent);
     }
 
     #endregion
