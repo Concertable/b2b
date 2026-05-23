@@ -1,5 +1,4 @@
 using Concertable.B2B.Artist.Contracts.Events;
-using Concertable.Messaging.Domain;
 using Concertable.B2B.User.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
@@ -22,12 +21,10 @@ internal class ArtistManagerSyncHandler : IIntegrationEventHandler<ArtistChanged
 
     public async Task HandleAsync(ArtistChangedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (await db.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(ArtistManagerSyncHandler), ct))
+        if (await db.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(ArtistManagerSyncHandler), ct))
             return;
 
-        db.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(ArtistManagerSyncHandler), envelope.MessageType, DateTimeOffset.UtcNow));
+        db.AddInboxMessage(envelope, nameof(ArtistManagerSyncHandler));
 
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == e.UserId, ct);
         if (user is not null)

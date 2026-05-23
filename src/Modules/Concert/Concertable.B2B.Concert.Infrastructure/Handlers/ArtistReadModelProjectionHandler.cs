@@ -2,7 +2,6 @@ using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Concert.Domain;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
-using Concertable.Messaging.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Handlers;
@@ -18,12 +17,10 @@ internal class ArtistReadModelProjectionHandler : IIntegrationEventHandler<Artis
 
     public async Task HandleAsync(ArtistChangedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (await context.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(ArtistReadModelProjectionHandler), ct))
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(ArtistReadModelProjectionHandler), ct))
             return;
 
-        context.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(ArtistReadModelProjectionHandler), envelope.MessageType, DateTimeOffset.UtcNow));
+        context.AddInboxMessage(envelope, nameof(ArtistReadModelProjectionHandler));
 
         var artist = await context.ArtistReadModels
             .Include(a => a.Genres)

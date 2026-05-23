@@ -1,6 +1,5 @@
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Messaging.Contracts;
-using Concertable.Messaging.Domain;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.B2B.Venue.Domain;
@@ -24,12 +23,10 @@ internal class VenueReviewProjectionHandler : IIntegrationEventHandler<CustomerR
 
     public async Task HandleAsync(CustomerReviewSubmittedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (await context.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(VenueReviewProjectionHandler), ct))
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VenueReviewProjectionHandler), ct))
             return;
 
-        context.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(VenueReviewProjectionHandler), envelope.MessageType, DateTimeOffset.UtcNow));
+        context.AddInboxMessage(envelope, nameof(VenueReviewProjectionHandler));
 
         var projection = await context.VenueRatingProjections
             .FirstOrDefaultAsync(p => p.VenueId == e.VenueId, ct);

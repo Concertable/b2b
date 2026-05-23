@@ -3,7 +3,6 @@ using Concertable.B2B.Concert.Domain;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Messaging.Contracts;
-using Concertable.Messaging.Domain;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,12 +23,10 @@ internal class ConcertReviewProjectionHandler : IIntegrationEventHandler<Custome
 
     public async Task HandleAsync(CustomerReviewSubmittedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (await context.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(ConcertReviewProjectionHandler), ct))
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(ConcertReviewProjectionHandler), ct))
             return;
 
-        context.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(ConcertReviewProjectionHandler), envelope.MessageType, DateTimeOffset.UtcNow));
+        context.AddInboxMessage(envelope, nameof(ConcertReviewProjectionHandler));
 
         var projection = await context.ConcertRatingProjections
             .FirstOrDefaultAsync(p => p.ConcertId == e.ConcertId, ct);

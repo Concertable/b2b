@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
-using Concertable.Messaging.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -29,15 +28,13 @@ internal class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentSucceede
         if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Verify)
             return;
 
-        if (await context.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(VerifyPaymentProcessor), ct))
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentProcessor), ct))
             return;
 
         var applicationId = int.Parse(@event.Metadata["applicationId"]);
         logger.VerifyWebhookReceived(@event.TransactionId, applicationId);
 
-        context.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(VerifyPaymentProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
+        context.AddInboxMessage(envelope, nameof(VerifyPaymentProcessor));
 
         try
         {
