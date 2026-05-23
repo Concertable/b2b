@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.Kernel.Exceptions;
 using FluentResults;
 using Microsoft.Extensions.Logging;
@@ -23,7 +24,7 @@ internal class ConcertDraftService : IConcertDraftService
 
     public async Task<Result<ConcertEntity>> CreateAsync(int bookingId)
     {
-        logger.LogInformation("Creating concert draft for booking {BookingId}", bookingId);
+        logger.CreatingConcertDraft(bookingId);
 
         var bookingConcert = await bookingRepository.GetByIdAsync(bookingId)
             ?? throw new NotFoundException("Booking not found");
@@ -41,9 +42,7 @@ internal class ConcertDraftService : IConcertDraftService
 
         if (!matchingGenres.Any())
         {
-            logger.LogWarning(
-                "Concert draft creation failed for booking {BookingId}: artist {ArtistId} has no matching genres for opportunity {OpportunityId}",
-                bookingId, artist.Id, opportunity.Id);
+            logger.ConcertDraftCreationFailed(bookingId, artist.Id, opportunity.Id);
             return Result.Fail("The artist does not match any genres required by the concert opportunity");
         }
 
@@ -59,9 +58,7 @@ internal class ConcertDraftService : IConcertDraftService
         bookingConcert.Confirm(concert);
         await bookingRepository.SaveChangesAsync();
 
-        logger.LogInformation(
-            "Concert draft {ConcertId} created for booking {BookingId} (artist {ArtistId}, venue {VenueId}); notifying users",
-            concert.Id, bookingId, artist.Id, venue.Id);
+        logger.ConcertDraftCreated(concert.Id, bookingId, artist.Id, venue.Id);
 
         await notifier.ConcertDraftCreatedAsync(artist.UserId.ToString(), concert.Id);
         await notifier.ConcertDraftCreatedAsync(venue.UserId.ToString(), concert.Id);

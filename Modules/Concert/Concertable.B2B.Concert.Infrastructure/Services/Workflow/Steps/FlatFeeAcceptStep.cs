@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Contract.Contracts;
 using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -46,9 +47,7 @@ internal class FlatFeeAcceptStep : ISimpleAcceptStep
 
         var paymentIntentId = await managerPaymentClient.FindHeldIntentAsync(venueManagerId, applicationId);
 
-        logger.LogInformation(
-            "Accepting application {ApplicationId} (booking {BookingId}): binding pre-authorised PaymentIntent {PaymentIntentId} for {Amount} {Currency} from {PayerId} on behalf of {PayeeId}",
-            applicationId, booking.Id, paymentIntentId, contract.Fee, "GBP", venueManagerId, artistManagerId);
+        logger.AcceptingFlatFeeApplication(applicationId, booking.Id, paymentIntentId, contract.Fee, "GBP", venueManagerId, artistManagerId);
 
         var bind = await escrowClient.CaptureAsync(venueManagerId, artistManagerId, contract.Fee, paymentIntentId, booking.Id);
         if (bind.IsFailed)
