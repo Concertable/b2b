@@ -5,7 +5,7 @@ using Concertable.B2B.User.Domain;
 using Concertable.B2B.Conversations.Domain;
 using Concertable.B2B.Venue.Domain;
 
-namespace Concertable.DataAccess;
+namespace Concertable.B2B.DataAccess;
 
 public interface IReadDbContext
 {

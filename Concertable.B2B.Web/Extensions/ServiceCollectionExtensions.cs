@@ -1,5 +1,4 @@
 using Concertable.Kernel.Serializers;
-using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -11,6 +10,7 @@ using System.Data;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel.Extensions;
+using Concertable.B2B.DataAccess;
 
 namespace Concertable.B2B.Web.Extensions;
 

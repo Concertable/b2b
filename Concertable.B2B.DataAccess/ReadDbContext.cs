@@ -1,9 +1,9 @@
 using Concertable.B2B.Contract.Domain;
-using Concertable.DataAccess;
 using Concertable.B2B.Conversations.Domain;
 using Microsoft.EntityFrameworkCore;
+using Concertable.DataAccess.Infrastructure;
 
-namespace Concertable.DataAccess.Infrastructure;
+namespace Concertable.B2B.DataAccess;
 
 internal class ReadDbContext : DbContextBase, IReadDbContext
 {
@@ -57,6 +57,6 @@ internal class ReadDbContext : DbContextBase, IReadDbContext
     public override int SaveChanges()
         => throw new NotSupportedException("ReadDbContext is read-only.");
 
-    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    public override int SaveChanges(bool _)
         => throw new NotSupportedException("ReadDbContext is read-only.");
 }

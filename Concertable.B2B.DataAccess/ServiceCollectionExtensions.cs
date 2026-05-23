@@ -1,8 +1,9 @@
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Concertable.DataAccess.Infrastructure.Extensions;
+namespace Concertable.B2B.DataAccess;
 
 public static class ServiceCollectionExtensions
 {
