@@ -13,7 +13,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260523154318_InitialCreate")]
+    [Migration("20260523204833_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -343,6 +343,25 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.ToTable("VenueReadModels", "concert");
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Venue.Domain.VenueRatingProjection", b =>
+                {
+                    b.Property<int>("VenueId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("AverageRating")
+                        .HasColumnType("float");
+
+                    b.Property<int>("ReviewCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("VenueId");
+
+                    b.ToTable("VenueRatingProjections", "venue", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
                 {
                     b.Property<Guid>("MessageId")
@@ -404,25 +423,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Outbox", "messaging", t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
-                });
-
-            modelBuilder.Entity("Concertable.B2B.Venue.Domain.VenueRatingProjection", b =>
-                {
-                    b.Property<int>("VenueId")
-                        .HasColumnType("int");
-
-                    b.Property<double>("AverageRating")
-                        .HasColumnType("float");
-
-                    b.Property<int>("ReviewCount")
-                        .HasColumnType("int");
-
-                    b.HasKey("VenueId");
-
-                    b.ToTable("VenueRatingProjections", "venue", t =>
                         {
                             t.ExcludeFromMigrations();
                         });

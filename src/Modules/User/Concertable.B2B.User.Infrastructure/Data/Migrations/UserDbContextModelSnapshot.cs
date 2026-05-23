@@ -24,6 +24,70 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Concertable.B2B.User.Domain.UserEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Avatar")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Point>("Location")
+                        .HasColumnType("geography");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email", "Role")
+                        .IsUnique();
+
+                    b.ToTable("Users", "user");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.User.Infrastructure.Data.AdminProfileEntity", b =>
+                {
+                    b.Property<Guid>("Sub")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Sub");
+
+                    b.ToTable("AdminProfiles", "user");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.User.Infrastructure.Data.ArtistManagerProfileEntity", b =>
+                {
+                    b.Property<Guid>("Sub")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("ArtistId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Sub");
+
+                    b.ToTable("ArtistManagerProfiles", "user");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.User.Infrastructure.Data.VenueManagerProfileEntity", b =>
+                {
+                    b.Property<Guid>("Sub")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("VenueId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Sub");
+
+                    b.ToTable("VenueManagerProfiles", "user");
+                });
+
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
                 {
                     b.Property<Guid>("MessageId")
@@ -88,70 +152,6 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
-                });
-
-            modelBuilder.Entity("Concertable.B2B.User.Domain.UserEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Avatar")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<Point>("Location")
-                        .HasColumnType("geography");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Email", "Role")
-                        .IsUnique();
-
-                    b.ToTable("Users", "user");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.User.Infrastructure.Data.AdminProfileEntity", b =>
-                {
-                    b.Property<Guid>("Sub")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Sub");
-
-                    b.ToTable("AdminProfiles", "user");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.User.Infrastructure.Data.ArtistManagerProfileEntity", b =>
-                {
-                    b.Property<Guid>("Sub")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("ArtistId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Sub");
-
-                    b.ToTable("ArtistManagerProfiles", "user");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.User.Infrastructure.Data.VenueManagerProfileEntity", b =>
-                {
-                    b.Property<Guid>("Sub")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("VenueId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Sub");
-
-                    b.ToTable("VenueManagerProfiles", "user");
                 });
 
             modelBuilder.Entity("Concertable.B2B.User.Domain.UserEntity", b =>
