@@ -10,76 +10,76 @@
   <Project Path="../Concertable.Search/Concertable.Search.Web/Concertable.Search.Web.csproj" />
   <Project Path="../Concertable.Search/Concertable.Search.Workers/Concertable.Search.Workers.csproj" />
   <Folder Name="/Modules/Artist/">
-    <Project Path="Modules/Artist/Concertable.Artist.Api/Concertable.Artist.Api.csproj" />
-    <Project Path="Modules/Artist/Concertable.Artist.Application/Concertable.Artist.Application.csproj" />
-    <Project Path="Modules/Artist/Concertable.Artist.Contracts/Concertable.Artist.Contracts.csproj" />
-    <Project Path="Modules/Artist/Concertable.Artist.Domain/Concertable.Artist.Domain.csproj" />
-    <Project Path="Modules/Artist/Concertable.Artist.Infrastructure/Concertable.Artist.Infrastructure.csproj" />
+    <Project Path="Modules/Artist/Concertable.B2B.Artist.Api/Concertable.B2B.Artist.Api.csproj" />
+    <Project Path="Modules/Artist/Concertable.B2B.Artist.Application/Concertable.B2B.Artist.Application.csproj" />
+    <Project Path="Modules/Artist/Concertable.B2B.Artist.Contracts/Concertable.B2B.Artist.Contracts.csproj" />
+    <Project Path="Modules/Artist/Concertable.B2B.Artist.Domain/Concertable.B2B.Artist.Domain.csproj" />
+    <Project Path="Modules/Artist/Concertable.B2B.Artist.Infrastructure/Concertable.B2B.Artist.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/Artist/Tests/">
-    <Project Path="Modules/Artist/Tests/Concertable.Artist.IntegrationTests/Concertable.Artist.IntegrationTests.csproj" />
+    <Project Path="Modules/Artist/Tests/Concertable.B2B.Artist.IntegrationTests/Concertable.B2B.Artist.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/Modules/Concert/">
-    <Project Path="Modules/Concert/Concertable.Concert.Api/Concertable.Concert.Api.csproj" />
-    <Project Path="Modules/Concert/Concertable.Concert.Application/Concertable.Concert.Application.csproj" />
-    <Project Path="Modules/Concert/Concertable.Concert.Contracts/Concertable.Concert.Contracts.csproj" />
-    <Project Path="Modules/Concert/Concertable.Concert.Domain/Concertable.Concert.Domain.csproj" />
-    <Project Path="Modules/Concert/Concertable.Concert.Infrastructure/Concertable.Concert.Infrastructure.csproj" />
+    <Project Path="Modules/Concert/Concertable.B2B.Concert.Api/Concertable.B2B.Concert.Api.csproj" />
+    <Project Path="Modules/Concert/Concertable.B2B.Concert.Application/Concertable.B2B.Concert.Application.csproj" />
+    <Project Path="Modules/Concert/Concertable.B2B.Concert.Contracts/Concertable.B2B.Concert.Contracts.csproj" />
+    <Project Path="Modules/Concert/Concertable.B2B.Concert.Domain/Concertable.B2B.Concert.Domain.csproj" />
+    <Project Path="Modules/Concert/Concertable.B2B.Concert.Infrastructure/Concertable.B2B.Concert.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/Concert/Tests/">
-    <Project Path="Modules/Concert/Tests/Concertable.Concert.IntegrationTests/Concertable.Concert.IntegrationTests.csproj" />
-    <Project Path="Modules/Concert/Tests/Concertable.Concert.UnitTests/Concertable.Concert.UnitTests.csproj" />
+    <Project Path="Modules/Concert/Tests/Concertable.B2B.Concert.IntegrationTests/Concertable.B2B.Concert.IntegrationTests.csproj" />
+    <Project Path="Modules/Concert/Tests/Concertable.B2B.Concert.UnitTests/Concertable.B2B.Concert.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Modules/Contract/">
-    <Project Path="Modules/Contract/Concertable.Contract.Api/Concertable.Contract.Api.csproj" />
-    <Project Path="Modules/Contract/Concertable.Contract.Application/Concertable.Contract.Application.csproj" />
-    <Project Path="Modules/Contract/Concertable.Contract.Contracts/Concertable.Contract.Contracts.csproj" />
-    <Project Path="Modules/Contract/Concertable.Contract.Domain/Concertable.Contract.Domain.csproj" />
-    <Project Path="Modules/Contract/Concertable.Contract.Infrastructure/Concertable.Contract.Infrastructure.csproj" />
+    <Project Path="Modules/Contract/Concertable.B2B.Contract.Api/Concertable.B2B.Contract.Api.csproj" />
+    <Project Path="Modules/Contract/Concertable.B2B.Contract.Application/Concertable.B2B.Contract.Application.csproj" />
+    <Project Path="Modules/Contract/Concertable.B2B.Contract.Contracts/Concertable.B2B.Contract.Contracts.csproj" />
+    <Project Path="Modules/Contract/Concertable.B2B.Contract.Domain/Concertable.B2B.Contract.Domain.csproj" />
+    <Project Path="Modules/Contract/Concertable.B2B.Contract.Infrastructure/Concertable.B2B.Contract.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/Contract/Tests/">
-    <Project Path="Modules/Contract/Tests/Concertable.Contract.UnitTests/Concertable.Contract.UnitTests.csproj" />
+    <Project Path="Modules/Contract/Tests/Concertable.B2B.Contract.UnitTests/Concertable.B2B.Contract.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Modules/Conversations/">
-    <Project Path="Modules/Conversations/Concertable.Conversations.Api/Concertable.Conversations.Api.csproj" />
-    <Project Path="Modules/Conversations/Concertable.Conversations.Application/Concertable.Conversations.Application.csproj" />
-    <Project Path="Modules/Conversations/Concertable.Conversations.Contracts/Concertable.Conversations.Contracts.csproj" />
-    <Project Path="Modules/Conversations/Concertable.Conversations.Domain/Concertable.Conversations.Domain.csproj" />
-    <Project Path="Modules/Conversations/Concertable.Conversations.Infrastructure/Concertable.Conversations.Infrastructure.csproj" />
+    <Project Path="Modules/Conversations/Concertable.B2B.Conversations.Api/Concertable.B2B.Conversations.Api.csproj" />
+    <Project Path="Modules/Conversations/Concertable.B2B.Conversations.Application/Concertable.B2B.Conversations.Application.csproj" />
+    <Project Path="Modules/Conversations/Concertable.B2B.Conversations.Contracts/Concertable.B2B.Conversations.Contracts.csproj" />
+    <Project Path="Modules/Conversations/Concertable.B2B.Conversations.Domain/Concertable.B2B.Conversations.Domain.csproj" />
+    <Project Path="Modules/Conversations/Concertable.B2B.Conversations.Infrastructure/Concertable.B2B.Conversations.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/Notification/">
-    <Project Path="Modules/Notification/Concertable.Notification.Contracts/Concertable.Notification.Contracts.csproj" />
-    <Project Path="Modules/Notification/Concertable.Notification.Infrastructure/Concertable.Notification.Infrastructure.csproj" />
+    <Project Path="Modules/Notification/Concertable.B2B.Notification.Contracts/Concertable.B2B.Notification.Contracts.csproj" />
+    <Project Path="Modules/Notification/Concertable.B2B.Notification.Infrastructure/Concertable.B2B.Notification.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/Organization/">
-    <Project Path="Modules/Organization/Concertable.Organization.Api/Concertable.Organization.Api.csproj" />
-    <Project Path="Modules/Organization/Concertable.Organization.Application/Concertable.Organization.Application.csproj" />
-    <Project Path="Modules/Organization/Concertable.Organization.Contracts/Concertable.Organization.Contracts.csproj" />
-    <Project Path="Modules/Organization/Concertable.Organization.Domain/Concertable.Organization.Domain.csproj" />
-    <Project Path="Modules/Organization/Concertable.Organization.Infrastructure/Concertable.Organization.Infrastructure.csproj" />
+    <Project Path="Modules/Organization/Concertable.B2B.Organization.Api/Concertable.B2B.Organization.Api.csproj" />
+    <Project Path="Modules/Organization/Concertable.B2B.Organization.Application/Concertable.B2B.Organization.Application.csproj" />
+    <Project Path="Modules/Organization/Concertable.B2B.Organization.Contracts/Concertable.B2B.Organization.Contracts.csproj" />
+    <Project Path="Modules/Organization/Concertable.B2B.Organization.Domain/Concertable.B2B.Organization.Domain.csproj" />
+    <Project Path="Modules/Organization/Concertable.B2B.Organization.Infrastructure/Concertable.B2B.Organization.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/Organization/Tests/">
-    <Project Path="Modules/Organization/Tests/Concertable.Organization.IntegrationTests/Concertable.Organization.IntegrationTests.csproj" />
-    <Project Path="Modules/Organization/Tests/Concertable.Organization.UnitTests/Concertable.Organization.UnitTests.csproj" />
+    <Project Path="Modules/Organization/Tests/Concertable.B2B.Organization.IntegrationTests/Concertable.B2B.Organization.IntegrationTests.csproj" />
+    <Project Path="Modules/Organization/Tests/Concertable.B2B.Organization.UnitTests/Concertable.B2B.Organization.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Modules/User/">
-    <Project Path="Modules/User/Concertable.User.Api/Concertable.User.Api.csproj" />
-    <Project Path="Modules/User/Concertable.User.Application/Concertable.User.Application.csproj" />
-    <Project Path="Modules/User/Concertable.User.Contracts/Concertable.User.Contracts.csproj" />
-    <Project Path="Modules/User/Concertable.User.Domain/Concertable.User.Domain.csproj" />
-    <Project Path="Modules/User/Concertable.User.Infrastructure/Concertable.User.Infrastructure.csproj" />
+    <Project Path="Modules/User/Concertable.B2B.User.Api/Concertable.B2B.User.Api.csproj" />
+    <Project Path="Modules/User/Concertable.B2B.User.Application/Concertable.B2B.User.Application.csproj" />
+    <Project Path="Modules/User/Concertable.B2B.User.Contracts/Concertable.B2B.User.Contracts.csproj" />
+    <Project Path="Modules/User/Concertable.B2B.User.Domain/Concertable.B2B.User.Domain.csproj" />
+    <Project Path="Modules/User/Concertable.B2B.User.Infrastructure/Concertable.B2B.User.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/User/Tests/">
-    <Project Path="Modules/User/Tests/Concertable.User.IntegrationTests/Concertable.User.IntegrationTests.csproj" />
+    <Project Path="Modules/User/Tests/Concertable.B2B.User.IntegrationTests/Concertable.B2B.User.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/Modules/Venue/">
-    <Project Path="Modules/Venue/Concertable.Venue.Api/Concertable.Venue.Api.csproj" />
-    <Project Path="Modules/Venue/Concertable.Venue.Application/Concertable.Venue.Application.csproj" />
-    <Project Path="Modules/Venue/Concertable.Venue.Contracts/Concertable.Venue.Contracts.csproj" />
-    <Project Path="Modules/Venue/Concertable.Venue.Domain/Concertable.Venue.Domain.csproj" />
-    <Project Path="Modules/Venue/Concertable.Venue.Infrastructure/Concertable.Venue.Infrastructure.csproj" />
+    <Project Path="Modules/Venue/Concertable.B2B.Venue.Api/Concertable.B2B.Venue.Api.csproj" />
+    <Project Path="Modules/Venue/Concertable.B2B.Venue.Application/Concertable.B2B.Venue.Application.csproj" />
+    <Project Path="Modules/Venue/Concertable.B2B.Venue.Contracts/Concertable.B2B.Venue.Contracts.csproj" />
+    <Project Path="Modules/Venue/Concertable.B2B.Venue.Domain/Concertable.B2B.Venue.Domain.csproj" />
+    <Project Path="Modules/Venue/Concertable.B2B.Venue.Infrastructure/Concertable.B2B.Venue.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/Venue/Tests/">
-    <Project Path="Modules/Venue/Tests/Concertable.Venue.IntegrationTests/Concertable.Venue.IntegrationTests.csproj" />
+    <Project Path="Modules/Venue/Tests/Concertable.B2B.Venue.IntegrationTests/Concertable.B2B.Venue.IntegrationTests.csproj" />
   </Folder>
 </Solution>

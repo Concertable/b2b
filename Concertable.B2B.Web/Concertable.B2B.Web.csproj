@@ -37,16 +37,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Modules\Organization\Concertable.Organization.Api\Concertable.Organization.Api.csproj" />
-    <ProjectReference Include="..\Modules\User\Concertable.User.Api\Concertable.User.Api.csproj" />
-    <ProjectReference Include="..\Modules\Artist\Concertable.Artist.Api\Concertable.Artist.Api.csproj" />
-    <ProjectReference Include="..\Modules\Venue\Concertable.Venue.Api\Concertable.Venue.Api.csproj" />
-    <ProjectReference Include="..\Modules\Venue\Concertable.Venue.Infrastructure\Concertable.Venue.Infrastructure.csproj" />
-    <ProjectReference Include="..\Modules\Concert\Concertable.Concert.Api\Concertable.Concert.Api.csproj" />
-    <ProjectReference Include="..\Modules\Concert\Concertable.Concert.Infrastructure\Concertable.Concert.Infrastructure.csproj" />
-    <ProjectReference Include="..\Modules\Contract\Concertable.Contract.Api\Concertable.Contract.Api.csproj" />
-    <ProjectReference Include="..\Modules\Notification\Concertable.Notification.Infrastructure\Concertable.Notification.Infrastructure.csproj" />
-    <ProjectReference Include="..\Modules\Conversations\Concertable.Conversations.Api\Concertable.Conversations.Api.csproj" />
+    <ProjectReference Include="..\Modules\Organization\Concertable.B2B.Organization.Api\Concertable.B2B.Organization.Api.csproj" />
+    <ProjectReference Include="..\Modules\User\Concertable.B2B.User.Api\Concertable.B2B.User.Api.csproj" />
+    <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Api\Concertable.B2B.Artist.Api.csproj" />
+    <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Api\Concertable.B2B.Venue.Api.csproj" />
+    <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Infrastructure\Concertable.B2B.Venue.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Api\Concertable.B2B.Concert.Api.csproj" />
+    <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Contract\Concertable.B2B.Contract.Api\Concertable.B2B.Contract.Api.csproj" />
+    <ProjectReference Include="..\Modules\Notification\Concertable.B2B.Notification.Infrastructure\Concertable.B2B.Notification.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Conversations\Concertable.B2B.Conversations.Api\Concertable.B2B.Conversations.Api.csproj" />
 <ProjectReference Include="..\..\Seeding\Concertable.Seeding\Concertable.Seeding.csproj" />
     <ProjectReference Include="..\..\Concertable.ServiceDefaults\Concertable.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />

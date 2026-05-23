@@ -1,6 +1,6 @@
-using Concertable.Contract.Domain;
+using Concertable.B2B.Contract.Domain;
 using Concertable.DataAccess;
-using Concertable.Conversations.Domain;
+using Concertable.B2B.Conversations.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.DataAccess.Infrastructure;
