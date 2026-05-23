@@ -1,9 +1,9 @@
-using Concertable.Artist.Domain;
-using Concertable.Concert.Domain;
-using Concertable.Contract.Domain;
-using Concertable.User.Domain;
-using Concertable.Conversations.Domain;
-using Concertable.Venue.Domain;
+using Concertable.B2B.Artist.Domain;
+using Concertable.B2B.Concert.Domain;
+using Concertable.B2B.Contract.Domain;
+using Concertable.B2B.User.Domain;
+using Concertable.B2B.Conversations.Domain;
+using Concertable.B2B.Venue.Domain;
 
 namespace Concertable.DataAccess;
 

@@ -1,0 +1,8 @@
+global using Concertable.Kernel;
+global using Concertable.Contracts;
+global using Concertable.DataAccess;
+global using Concertable.B2B.User.Contracts;
+global using Concertable.B2B.User.Domain;
+global using Concertable.B2B.User.Application.Interfaces;
+global using Concertable.B2B.User.Application.Interfaces.Auth;
+global using Concertable.B2B.User.Application.Validators;

@@ -1,4 +1,4 @@
-using Concertable.Concert.Application.Interfaces;
+using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.Seeding;
 using Concertable.DataAccess.Application;
 using Concertable.Kernel;

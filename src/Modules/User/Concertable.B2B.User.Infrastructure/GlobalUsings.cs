@@ -1,0 +1,13 @@
+global using Concertable.Kernel;
+global using Concertable.Contracts;
+global using Concertable.Messaging;
+global using Concertable.DataAccess;
+global using Concertable.B2B.User.Infrastructure.Mappers;
+global using Concertable.Kernel.Identity;
+global using Concertable.B2B.User.Contracts;
+global using Concertable.B2B.User.Domain;
+global using Concertable.B2B.Concert.Domain;
+global using Concertable.B2B.User.Application.Interfaces;
+global using Concertable.B2B.User.Application.Interfaces.Auth;
+global using Concertable.B2B.User.Infrastructure.Repositories;
+global using Concertable.B2B.User.Infrastructure.Services;
