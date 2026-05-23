@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Domain;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
-using Concertable.Messaging.Domain;
 using Concertable.B2B.Venue.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
@@ -23,12 +22,10 @@ internal class VenueReadModelProjectionHandler : IIntegrationEventHandler<VenueC
 
     public async Task HandleAsync(VenueChangedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (await context.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(VenueReadModelProjectionHandler), ct))
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VenueReadModelProjectionHandler), ct))
             return;
 
-        context.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(VenueReadModelProjectionHandler), envelope.MessageType, DateTimeOffset.UtcNow));
+        context.AddInboxMessage(envelope, nameof(VenueReadModelProjectionHandler));
 
         var venue = await context.VenueReadModels.FirstOrDefaultAsync(v => v.Id == e.VenueId, ct);
         var location = GeometryFactory.CreatePoint(new Coordinate(e.Longitude, e.Latitude));

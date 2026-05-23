@@ -1,4 +1,3 @@
-using Concertable.Messaging.Domain;
 using Concertable.B2B.User.Infrastructure.Data;
 using Concertable.B2B.Venue.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
@@ -22,12 +21,10 @@ internal class VenueManagerSyncHandler : IIntegrationEventHandler<VenueChangedEv
 
     public async Task HandleAsync(VenueChangedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (await db.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(VenueManagerSyncHandler), ct))
+        if (await db.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VenueManagerSyncHandler), ct))
             return;
 
-        db.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(VenueManagerSyncHandler), envelope.MessageType, DateTimeOffset.UtcNow));
+        db.AddInboxMessage(envelope, nameof(VenueManagerSyncHandler));
 
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == e.UserId, ct);
         if (user is not null)

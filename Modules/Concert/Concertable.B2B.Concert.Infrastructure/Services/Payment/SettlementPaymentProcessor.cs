@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
-using Concertable.Messaging.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -29,15 +28,13 @@ internal class SettlementPaymentProcessor : IIntegrationEventHandler<PaymentSucc
         if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Settlement)
             return;
 
-        if (await context.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(SettlementPaymentProcessor), ct))
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(SettlementPaymentProcessor), ct))
             return;
 
         var bookingId = int.Parse(@event.Metadata["bookingId"]);
         logger.SettlementWebhookReceived(@event.TransactionId, bookingId);
 
-        context.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(SettlementPaymentProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
+        context.AddInboxMessage(envelope, nameof(SettlementPaymentProcessor));
 
         try
         {

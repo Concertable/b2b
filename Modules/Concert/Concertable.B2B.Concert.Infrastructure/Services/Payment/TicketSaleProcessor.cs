@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
-using Concertable.Messaging.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -24,16 +23,14 @@ internal class TicketSaleProcessor : IIntegrationEventHandler<PaymentSucceededEv
         if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Ticket)
             return;
 
-        if (await context.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(TicketSaleProcessor), ct))
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(TicketSaleProcessor), ct))
             return;
 
         var meta = @event.Metadata;
         var concertId = int.Parse(meta["concertId"]);
         var quantity = meta.TryGetValue("quantity", out var q) ? int.Parse(q) : 1;
 
-        context.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(TicketSaleProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
+        context.AddInboxMessage(envelope, nameof(TicketSaleProcessor));
 
         var concert = await context.Concerts.FirstOrDefaultAsync(c => c.Id == concertId, ct);
         if (concert is not null)

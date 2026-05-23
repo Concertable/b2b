@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
-using Concertable.Messaging.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -30,15 +29,13 @@ internal class BookingPaymentFailedProcessor : IIntegrationEventHandler<PaymentF
         if (type != TransactionTypes.Settlement && type != TransactionTypes.Escrow)
             return;
 
-        if (await context.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(BookingPaymentFailedProcessor), ct))
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(BookingPaymentFailedProcessor), ct))
             return;
 
         var bookingId = int.Parse(@event.Metadata["bookingId"]);
         logger.BookingPaymentFailed(bookingId, @event.FailureCode, @event.FailureMessage);
 
-        context.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(BookingPaymentFailedProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
+        context.AddInboxMessage(envelope, nameof(BookingPaymentFailedProcessor));
 
         try
         {

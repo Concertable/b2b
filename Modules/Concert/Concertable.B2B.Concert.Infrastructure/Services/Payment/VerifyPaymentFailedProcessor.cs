@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
-using Concertable.Messaging.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -29,8 +28,7 @@ internal class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFa
         if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Verify)
             return;
 
-        if (await context.Set<InboxMessageEntity>().AnyAsync(
-            m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(VerifyPaymentFailedProcessor), ct))
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentFailedProcessor), ct))
             return;
 
         var applicationId = int.Parse(@event.Metadata["applicationId"]);
@@ -39,8 +37,7 @@ internal class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFa
 
         await concertNotifier.VerifyPaymentFailedAsync(venueManagerId, new { applicationId, @event.FailureMessage });
 
-        context.Set<InboxMessageEntity>().Add(
-            InboxMessageEntity.Create(envelope.MessageId, nameof(VerifyPaymentFailedProcessor), envelope.MessageType, DateTimeOffset.UtcNow));
+        context.AddInboxMessage(envelope, nameof(VerifyPaymentFailedProcessor));
         try
         {
             await context.SaveChangesAsync(ct);
