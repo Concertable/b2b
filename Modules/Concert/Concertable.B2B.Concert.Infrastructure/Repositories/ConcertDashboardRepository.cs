@@ -26,7 +26,7 @@ internal class ConcertDashboardRepository : IConcertDashboardRepository
 
     public Task<VenueDashboardCountsDto?> GetVenueCountsAsync(int venueId, CancellationToken ct = default)
     {
-        var applications = opportunityUpcoming.ApplyExpression(
+        var applications = opportunityUpcoming.ApplyVia(
             context.Applications
                 .Where(a => a.Status == ApplicationStatus.Pending && a.Opportunity.VenueId == venueId),
             a => a.Opportunity);
@@ -47,7 +47,7 @@ internal class ConcertDashboardRepository : IConcertDashboardRepository
 
     public Task<ArtistDashboardCountsDto?> GetArtistCountsAsync(int artistId, CancellationToken ct = default)
     {
-        var applications = opportunityUpcoming.ApplyExpression(
+        var applications = opportunityUpcoming.ApplyVia(
             context.Applications
                 .Where(a => a.Status == ApplicationStatus.Pending && a.ArtistId == artistId),
             a => a.Opportunity);
