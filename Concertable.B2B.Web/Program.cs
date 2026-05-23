@@ -45,6 +45,7 @@ builder.AddAzureBlobClient("blobs");
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddControllers()
+    .AddApplicationPart(typeof(Concertable.Shared.Api.Controllers.GenreController).Assembly)
 .AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.IncludeFields = true;
