@@ -4,6 +4,11 @@
   <Project Path="Concertable.B2B.Workers/Concertable.B2B.Workers.csproj" />
   <Project Path="Concertable.B2B.DataAccess/Concertable.B2B.DataAccess.csproj" />
   <Project Path="../Concertable.AppHost.Shared/Concertable.AppHost.Shared.csproj" />
+  <Project Path="../Concertable.Auth/Concertable.Auth.csproj" />
+  <Project Path="../Concertable.Payment/Concertable.Payment.Web/Concertable.Payment.Web.csproj" />
+  <Project Path="../Concertable.Payment/Concertable.Payment.Workers/Concertable.Payment.Workers.csproj" />
+  <Project Path="../Concertable.Search/Concertable.Search.Web/Concertable.Search.Web.csproj" />
+  <Project Path="../Concertable.Search/Concertable.Search.Workers/Concertable.Search.Workers.csproj" />
   <Folder Name="/Modules/Artist/">
     <Project Path="Modules/Artist/Concertable.Artist.Api/Concertable.Artist.Api.csproj" />
     <Project Path="Modules/Artist/Concertable.Artist.Application/Concertable.Artist.Application.csproj" />

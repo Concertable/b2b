@@ -6,7 +6,9 @@ namespace Concertable.Concert.Contracts.Events;
 public record ConcertChangedEvent(
     int ConcertId,
     string Name,
+    string About,
     string? Avatar,
+    string? BannerUrl,
     int TotalTickets,
     int AvailableTickets,
     decimal Price,

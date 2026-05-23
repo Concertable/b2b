@@ -48,6 +48,10 @@ namespace Concertable.Artist.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.PrimitiveCollection<string>("Genres")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Point>("Location")
                         .IsRequired()
                         .HasColumnType("geography");
@@ -62,19 +66,6 @@ namespace Concertable.Artist.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Artists", "artist");
-                });
-
-            modelBuilder.Entity("Concertable.Artist.Domain.ArtistGenreEntity", b =>
-                {
-                    b.Property<int>("ArtistId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Genre")
-                        .HasColumnType("int");
-
-                    b.HasKey("ArtistId", "Genre");
-
-                    b.ToTable("ArtistGenres", "artist");
                 });
 
             modelBuilder.Entity("Concertable.Artist.Domain.ArtistRatingProjection", b =>
@@ -186,22 +177,6 @@ namespace Concertable.Artist.Infrastructure.Data.Migrations
 
                     b.Navigation("Address")
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Concertable.Artist.Domain.ArtistGenreEntity", b =>
-                {
-                    b.HasOne("Concertable.Artist.Domain.ArtistEntity", "Artist")
-                        .WithMany("ArtistGenres")
-                        .HasForeignKey("ArtistId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Artist");
-                });
-
-            modelBuilder.Entity("Concertable.Artist.Domain.ArtistEntity", b =>
-                {
-                    b.Navigation("ArtistGenres");
                 });
 #pragma warning restore 612, 618
         }

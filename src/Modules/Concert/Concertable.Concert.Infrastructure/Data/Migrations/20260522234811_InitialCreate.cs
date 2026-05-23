@@ -96,7 +96,8 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                     VenueId = table.Column<int>(type: "int", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ContractId = table.Column<int>(type: "int", nullable: false)
+                    ContractId = table.Column<int>(type: "int", nullable: false),
+                    Genres = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -139,26 +140,6 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                         principalSchema: "concert",
                         principalTable: "Opportunities",
                         principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "OpportunityGenres",
-                schema: "concert",
-                columns: table => new
-                {
-                    OpportunityId = table.Column<int>(type: "int", nullable: false),
-                    Genre = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OpportunityGenres", x => new { x.OpportunityId, x.Genre });
-                    table.ForeignKey(
-                        name: "FK_OpportunityGenres_Opportunities_OpportunityId",
-                        column: x => x.OpportunityId,
-                        principalSchema: "concert",
-                        principalTable: "Opportunities",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -207,7 +188,8 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                     DatePosted = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Location = table.Column<Point>(type: "geography", nullable: true),
                     ContractType = table.Column<int>(type: "int", nullable: false),
-                    CurrentStage = table.Column<int>(type: "int", nullable: false)
+                    CurrentStage = table.Column<int>(type: "int", nullable: false),
+                    Genres = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -230,26 +212,6 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                         principalSchema: "concert",
                         principalTable: "VenueReadModels",
                         principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ConcertGenres",
-                schema: "concert",
-                columns: table => new
-                {
-                    ConcertId = table.Column<int>(type: "int", nullable: false),
-                    Genre = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ConcertGenres", x => new { x.ConcertId, x.Genre });
-                    table.ForeignKey(
-                        name: "FK_ConcertGenres_Concerts_ConcertId",
-                        column: x => x.ConcertId,
-                        principalSchema: "concert",
-                        principalTable: "Concerts",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -356,19 +318,11 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                 schema: "concert");
 
             migrationBuilder.DropTable(
-                name: "ConcertGenres",
-                schema: "concert");
-
-            migrationBuilder.DropTable(
                 name: "ConcertImages",
                 schema: "concert");
 
             migrationBuilder.DropTable(
                 name: "ConcertRatingProjections",
-                schema: "concert");
-
-            migrationBuilder.DropTable(
-                name: "OpportunityGenres",
                 schema: "concert");
 
             migrationBuilder.DropTable(

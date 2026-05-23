@@ -13,6 +13,7 @@ internal class ArtistChangedDomainEventHandler(IBus bus)
             artist.Id,
             artist.UserId,
             artist.Name,
+            artist.About,
             artist.Avatar,
             artist.BannerUrl,
             artist.Address.County,

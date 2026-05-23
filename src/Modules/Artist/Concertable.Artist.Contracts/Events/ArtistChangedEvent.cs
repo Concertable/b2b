@@ -7,6 +7,7 @@ public record ArtistChangedEvent(
     int ArtistId,
     Guid UserId,
     string Name,
+    string About,
     string Avatar,
     string BannerUrl,
     string County,
