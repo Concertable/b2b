@@ -33,7 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVenueReviewService, VenueReviewService>();
         services.AddScoped<IVenueRepository, VenueRepository>();
         services.AddScoped<IVenueModule, VenueModule>();
-        services.AddScoped<IIntegrationEventHandler<ReviewSubmittedEvent>, VenueReviewProjectionHandler>();
+        services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, VenueReviewProjectionHandler>();
         services.AddScoped<IDomainEventHandler<VenueChangedDomainEvent>, VenueChangedDomainEventHandler>();
 
         services.AddSingleton<VenueConfigurationProvider>();

@@ -156,16 +156,10 @@ internal class ConcertRepository : Repository<ConcertEntity>, IConcertRepository
             .ToListAsync();
     }
 
-    public async Task<decimal> GetTotalRevenueByConcertIdAsync(int concertId)
-    {
-        // BROKEN Phase 1: sold count is now Customer.Concert.ConcertEntity (TotalTickets - AvailableTickets).
-        // Cross-IVT to Customer.Concert here, or query the future ConcertSalesProjection populated from
-        // TicketPurchasedEvent. Returning 0 until Phase 2.
-        var price = await context.Concerts
+    public Task<decimal> GetTotalRevenueByConcertIdAsync(int concertId) =>
+        context.Concerts
             .Where(c => c.Id == concertId)
-            .Select(c => c.Price)
+            .Select(c => c.TicketsSold * c.Price)
             .FirstOrDefaultAsync();
-        return 0m;
-    }
 
 }

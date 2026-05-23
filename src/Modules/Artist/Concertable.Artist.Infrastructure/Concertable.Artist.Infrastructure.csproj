@@ -14,6 +14,7 @@
     <ProjectReference Include="..\Concertable.Artist.Contracts\Concertable.Artist.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.Artist.Application\Concertable.Artist.Application.csproj" />
     <ProjectReference Include="..\..\Concert\Concertable.Concert.Contracts\Concertable.Concert.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\..\Concertable.Customer\Modules\Review\Concertable.Customer.Review.Contracts\Concertable.Customer.Review.Contracts.csproj" />
     <ProjectReference Include="..\..\User\Concertable.User.Contracts\Concertable.User.Contracts.csproj" />
     <ProjectReference Include="..\..\User\Concertable.User.Application\Concertable.User.Application.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.DataAccess\Concertable.DataAccess.Infrastructure\Concertable.DataAccess.Infrastructure.csproj" />

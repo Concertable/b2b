@@ -6,9 +6,9 @@ internal class ConcertValidator : IConcertValidator
 {
     public Result CanUpdate(ConcertEntity concert, int newTotalTickets)
     {
-        // BROKEN Phase 1: tickets-sold validation needs Customer.Concert.ConcertEntity.AvailableTickets via
-        // ICustomerConcertModule facade (not yet introduced). Accepting any value pending Phase 2.
-        return Result.Ok();
+        return newTotalTickets >= concert.TicketsSold
+            ? Result.Ok()
+            : Result.Fail($"Cannot reduce total tickets below the {concert.TicketsSold} already sold.");
     }
 
     public Result CanPost(ConcertEntity concert)

@@ -35,7 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IArtistReviewService, ArtistReviewService>();
         services.AddScoped<IArtistRepository, ArtistRepository>();
         services.AddScoped<IArtistModule, ArtistModule>();
-        services.AddScoped<IIntegrationEventHandler<ReviewSubmittedEvent>, ArtistReviewProjectionHandler>();
+        services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ArtistReviewProjectionHandler>();
         services.AddScoped<IDomainEventHandler<ArtistChangedDomainEvent>, ArtistChangedDomainEventHandler>();
 
         services.AddSingleton<ArtistConfigurationProvider>();

@@ -1,13 +1,14 @@
 using Concertable.Concert.Contracts.Events;
 using Concertable.Concert.Domain;
 using Concertable.Concert.Infrastructure.Data;
+using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Messaging.Domain;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Concert.Infrastructure.Handlers;
 
-internal class ConcertReviewProjectionHandler : IIntegrationEventHandler<ReviewSubmittedEvent>
+internal class ConcertReviewProjectionHandler : IIntegrationEventHandler<CustomerReviewSubmittedEvent>
 {
     private readonly ConcertDbContext context;
     private readonly IBus bus;
@@ -20,7 +21,7 @@ internal class ConcertReviewProjectionHandler : IIntegrationEventHandler<ReviewS
         this.contextAccessor = contextAccessor;
     }
 
-    public async Task HandleAsync(ReviewSubmittedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
+    public async Task HandleAsync(CustomerReviewSubmittedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
         if (await context.Set<InboxMessageEntity>().AnyAsync(
             m => m.MessageId == envelope.MessageId && m.ConsumerName == nameof(ConcertReviewProjectionHandler), ct))

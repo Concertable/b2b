@@ -16,6 +16,7 @@ public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, I
     public string? Avatar { get; private set; }
     public decimal Price { get; private set; }
     public int TotalTickets { get; private set; }
+    public int TicketsSold { get; private set; }
     public DateRange Period { get; private set; } = null!;
     public DateTime? DatePosted { get; private set; }
     public Point? Location { get; set; }
@@ -70,6 +71,8 @@ public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, I
         ContractType = contractType,
         Genres = genres.ToList()
     };
+
+    public void IncrementTicketsSold(int quantity) => TicketsSold += quantity;
 
     public void AdvanceStage(ConcertStage next)
     {
