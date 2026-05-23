@@ -3,7 +3,6 @@ using Concertable.B2B.Organization.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Contract.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
-using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
 using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
@@ -19,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel.Extensions;
+using Concertable.B2B.DataAccess;
 
 namespace Concertable.B2B.Workers;
 
