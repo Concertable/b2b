@@ -1,4 +1,4 @@
-using Concertable.Shared;
+using Concertable.Kernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

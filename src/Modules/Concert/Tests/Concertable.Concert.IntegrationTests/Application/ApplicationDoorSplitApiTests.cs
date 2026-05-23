@@ -2,9 +2,10 @@
 using Concertable.Concert.Application.DTOs;
 using Concertable.Concert.Application.Responses;
 using Concertable.Concert.Api.Responses;
-using Concertable.Testing.Integration;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Concertable.Concert.Domain.Enums;
+using Concertable.Testing.Integration.B2B;
 
 namespace Concertable.Concert.IntegrationTests.Application;
 

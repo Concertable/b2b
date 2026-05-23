@@ -1,4 +1,4 @@
-using Concertable.Messaging;
+using Concertable.Messaging.Contracts;
 
 namespace Concertable.Concert.Contracts.Events;
 

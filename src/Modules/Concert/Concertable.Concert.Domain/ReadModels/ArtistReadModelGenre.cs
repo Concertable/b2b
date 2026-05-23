@@ -1,6 +1,6 @@
-using Concertable.Shared;
+using Concertable.Contracts;
 
-namespace Concertable.Concert.Domain;
+namespace Concertable.Concert.Domain.ReadModels;
 
 public class ArtistReadModelGenre
 {

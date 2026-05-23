@@ -1,3 +1,4 @@
+using Concertable.Contract.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Contract.Infrastructure.Data;

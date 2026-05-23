@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.Contract.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ContractDbContext))]
-    [Migration("20260522234825_InitialCreate")]
+    [Migration("20260523154331_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -26,7 +26,7 @@ namespace Concertable.Contract.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Concertable.Contract.Domain.ContractEntity", b =>
+            modelBuilder.Entity("Concertable.Contract.Domain.Entities.ContractEntity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -110,9 +110,9 @@ namespace Concertable.Contract.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Concertable.Contract.Domain.DoorSplitContractEntity", b =>
+            modelBuilder.Entity("Concertable.Contract.Domain.Entities.DoorSplitContractEntity", b =>
                 {
-                    b.HasBaseType("Concertable.Contract.Domain.ContractEntity");
+                    b.HasBaseType("Concertable.Contract.Domain.Entities.ContractEntity");
 
                     b.Property<decimal>("ArtistDoorPercent")
                         .HasColumnType("decimal(18,2)");
@@ -120,9 +120,9 @@ namespace Concertable.Contract.Infrastructure.Data.Migrations
                     b.ToTable("DoorSplitContracts", "contract");
                 });
 
-            modelBuilder.Entity("Concertable.Contract.Domain.FlatFeeContractEntity", b =>
+            modelBuilder.Entity("Concertable.Contract.Domain.Entities.FlatFeeContractEntity", b =>
                 {
-                    b.HasBaseType("Concertable.Contract.Domain.ContractEntity");
+                    b.HasBaseType("Concertable.Contract.Domain.Entities.ContractEntity");
 
                     b.Property<decimal>("Fee")
                         .HasColumnType("decimal(18,2)");
@@ -130,9 +130,9 @@ namespace Concertable.Contract.Infrastructure.Data.Migrations
                     b.ToTable("FlatFeeContracts", "contract");
                 });
 
-            modelBuilder.Entity("Concertable.Contract.Domain.VenueHireContractEntity", b =>
+            modelBuilder.Entity("Concertable.Contract.Domain.Entities.VenueHireContractEntity", b =>
                 {
-                    b.HasBaseType("Concertable.Contract.Domain.ContractEntity");
+                    b.HasBaseType("Concertable.Contract.Domain.Entities.ContractEntity");
 
                     b.Property<decimal>("HireFee")
                         .HasColumnType("decimal(18,2)");
@@ -140,9 +140,9 @@ namespace Concertable.Contract.Infrastructure.Data.Migrations
                     b.ToTable("VenueHireContracts", "contract");
                 });
 
-            modelBuilder.Entity("Concertable.Contract.Domain.VersusContractEntity", b =>
+            modelBuilder.Entity("Concertable.Contract.Domain.Entities.VersusContractEntity", b =>
                 {
-                    b.HasBaseType("Concertable.Contract.Domain.ContractEntity");
+                    b.HasBaseType("Concertable.Contract.Domain.Entities.ContractEntity");
 
                     b.Property<decimal>("ArtistDoorPercent")
                         .HasColumnType("decimal(18,2)");
@@ -153,38 +153,38 @@ namespace Concertable.Contract.Infrastructure.Data.Migrations
                     b.ToTable("VersusContracts", "contract");
                 });
 
-            modelBuilder.Entity("Concertable.Contract.Domain.DoorSplitContractEntity", b =>
+            modelBuilder.Entity("Concertable.Contract.Domain.Entities.DoorSplitContractEntity", b =>
                 {
-                    b.HasOne("Concertable.Contract.Domain.ContractEntity", null)
+                    b.HasOne("Concertable.Contract.Domain.Entities.ContractEntity", null)
                         .WithOne()
-                        .HasForeignKey("Concertable.Contract.Domain.DoorSplitContractEntity", "Id")
+                        .HasForeignKey("Concertable.Contract.Domain.Entities.DoorSplitContractEntity", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Concertable.Contract.Domain.FlatFeeContractEntity", b =>
+            modelBuilder.Entity("Concertable.Contract.Domain.Entities.FlatFeeContractEntity", b =>
                 {
-                    b.HasOne("Concertable.Contract.Domain.ContractEntity", null)
+                    b.HasOne("Concertable.Contract.Domain.Entities.ContractEntity", null)
                         .WithOne()
-                        .HasForeignKey("Concertable.Contract.Domain.FlatFeeContractEntity", "Id")
+                        .HasForeignKey("Concertable.Contract.Domain.Entities.FlatFeeContractEntity", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Concertable.Contract.Domain.VenueHireContractEntity", b =>
+            modelBuilder.Entity("Concertable.Contract.Domain.Entities.VenueHireContractEntity", b =>
                 {
-                    b.HasOne("Concertable.Contract.Domain.ContractEntity", null)
+                    b.HasOne("Concertable.Contract.Domain.Entities.ContractEntity", null)
                         .WithOne()
-                        .HasForeignKey("Concertable.Contract.Domain.VenueHireContractEntity", "Id")
+                        .HasForeignKey("Concertable.Contract.Domain.Entities.VenueHireContractEntity", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Concertable.Contract.Domain.VersusContractEntity", b =>
+            modelBuilder.Entity("Concertable.Contract.Domain.Entities.VersusContractEntity", b =>
                 {
-                    b.HasOne("Concertable.Contract.Domain.ContractEntity", null)
+                    b.HasOne("Concertable.Contract.Domain.Entities.ContractEntity", null)
                         .WithOne()
-                        .HasForeignKey("Concertable.Contract.Domain.VersusContractEntity", "Id")
+                        .HasForeignKey("Concertable.Contract.Domain.Entities.VersusContractEntity", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

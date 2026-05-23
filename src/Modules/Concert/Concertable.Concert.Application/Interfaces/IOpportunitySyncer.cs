@@ -1,5 +1,6 @@
-using Concertable.DataAccess.Diffing;
 using Concertable.Concert.Application.Requests;
+using Concertable.Concert.Domain.Entities;
+using Concertable.DataAccess.Application.Diffing;
 
 namespace Concertable.Concert.Application.Interfaces;
 

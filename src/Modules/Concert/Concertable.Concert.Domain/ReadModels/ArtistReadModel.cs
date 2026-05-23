@@ -1,4 +1,6 @@
-namespace Concertable.Concert.Domain;
+using Concertable.Kernel;
+
+namespace Concertable.Concert.Domain.ReadModels;
 
 public class ArtistReadModel : IIdEntity
 {

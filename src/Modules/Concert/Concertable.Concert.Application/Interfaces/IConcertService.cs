@@ -1,6 +1,7 @@
 using Concertable.Concert.Application.DTOs;
 using Concertable.Concert.Application.Requests;
 using Concertable.Concert.Application.Responses;
+using Concertable.Concert.Domain.Entities;
 using FluentResults;
 
 namespace Concertable.Concert.Application.Interfaces;

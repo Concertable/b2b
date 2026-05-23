@@ -3,11 +3,14 @@ using Concertable.Concert.Application.DTOs;
 using Concertable.Concert.Application.Requests;
 using Concertable.Concert.Application.Responses;
 using Concertable.Concert.Api.Responses;
-using Concertable.Concert.Domain;
-using Concertable.Testing.Integration;
-using Concertable.Shared;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.Enums;
+using Concertable.Contract.Contracts;
+using Concertable.Contracts;
+using Concertable.Payment.Domain;
+using Concertable.Testing.Integration.B2B;
 
 namespace Concertable.Concert.IntegrationTests.Application;
 

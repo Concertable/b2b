@@ -5,6 +5,7 @@ using Concertable.Seeding.Extensions;
 using Concertable.Seeding.Factories;
 using Concertable.Seeding.Fakers;
 using Microsoft.EntityFrameworkCore;
+using Concertable.Concert.Domain.Entities;
 
 namespace Concertable.Concert.Infrastructure.Data.Seeders;
 

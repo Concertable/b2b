@@ -21,20 +21,8 @@
     <ProjectReference Include="..\..\..\..\..\Tests\Concertable.Testing\Concertable.Testing.csproj" />
     <ProjectReference Include="..\..\..\..\..\Concertable.Messaging\Concertable.Messaging.Domain\Concertable.Messaging.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\..\Concertable.Messaging\Concertable.Messaging.Infrastructure\Concertable.Messaging.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Concertable.Concert.Domain\Concertable.Concert.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Using Include="Xunit" />
-    <Using Include="Concertable.Testing.Integration" />
-    <Using Include="Concertable.Testing.Integration.Mocks" />
-    <Using Include="Concertable.Testing" />
-    <Using Include="Concertable.Concert.Application.DTOs" />
-    <Using Include="Concertable.Concert.Application.Requests" />
-    <Using Include="Concertable.Concert.Application.Responses" />
-    <Using Include="Concertable.Contract.Contracts" />
-    <Using Include="Concertable.Payment.Domain" />
-    <Using Include="Concertable.Concert.Domain" />
-    <Using Include="Concertable.Shared" />
-  </ItemGroup>
 
 </Project>

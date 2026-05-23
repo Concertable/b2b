@@ -1,3 +1,4 @@
+using Concertable.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.Venue.Api.Controllers;

@@ -1,3 +1,6 @@
+using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.Enums;
+using Concertable.Kernel.Identity;
 using FluentResults;
 
 namespace Concertable.Concert.Infrastructure.Validators;

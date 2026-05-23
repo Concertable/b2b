@@ -1,6 +1,6 @@
-using Concertable.DataAccess;
 using Concertable.Seeding;
 using Concertable.Artist.Contracts.Events;
+using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Concert.Application.Mappers;
 using Concertable.Concert.Application.Validators;
 using Concertable.Concert.Application.Workflow;
@@ -22,13 +22,15 @@ using Concertable.Concert.Infrastructure.Services.Workflow;
 using Concertable.Concert.Infrastructure.Services.Completion;
 using Concertable.Concert.Infrastructure.Services.Payment;
 using Concertable.Concert.Infrastructure.Validators;
-using Concertable.DataAccess.Infrastructure;
-using Concertable.Shared;
 using Concertable.Venue.Contracts.Events;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.DataAccess.Application;
+using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Messaging.Contracts;
+using Concertable.Kernel;
 
 namespace Concertable.Concert.Infrastructure.Extensions;
 

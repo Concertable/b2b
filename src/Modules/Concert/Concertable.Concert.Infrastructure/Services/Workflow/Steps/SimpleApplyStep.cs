@@ -1,4 +1,5 @@
 using Concertable.Concert.Application.Workflow.Steps;
+using Concertable.Concert.Domain.Entities;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow.Steps;
 

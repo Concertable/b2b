@@ -1,5 +1,5 @@
 using Concertable.Contract.Application.Interfaces;
-using Concertable.Shared.Exceptions;
+using Concertable.Kernel.Exceptions;
 
 namespace Concertable.Contract.Application.Services;
 

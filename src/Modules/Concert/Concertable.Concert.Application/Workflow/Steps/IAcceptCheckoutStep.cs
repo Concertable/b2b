@@ -1,4 +1,5 @@
 using Concertable.Concert.Application.Responses;
+using Concertable.Concert.Domain.Enums;
 
 namespace Concertable.Concert.Application.Workflow.Steps;
 

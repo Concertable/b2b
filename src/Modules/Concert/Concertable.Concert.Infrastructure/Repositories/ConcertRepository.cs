@@ -1,3 +1,5 @@
+using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.Enums;
 using Concertable.Concert.Infrastructure.Data;
 using Concertable.Concert.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;

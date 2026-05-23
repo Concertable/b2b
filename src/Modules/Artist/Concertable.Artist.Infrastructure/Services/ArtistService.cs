@@ -1,11 +1,12 @@
-﻿using Concertable.Application.Interfaces.Geometry;
 using Concertable.Artist.Application.Mappers;
 using Concertable.Artist.Application.Requests;
-using Concertable.Shared.Geocoding;
-using Concertable.Shared.Imaging;
-using Concertable.Shared.Infrastructure.Services.Geometry;
-using Concertable.Shared.Exceptions;
+using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.Kernel.Geometry;
+using Concertable.Kernel.Identity;
+using Concertable.Kernel.Services.Geometry;
+using Concertable.Shared.Geocoding.Application;
+using Concertable.Shared.Imaging.Application;
 
 namespace Concertable.Artist.Infrastructure.Services;
 

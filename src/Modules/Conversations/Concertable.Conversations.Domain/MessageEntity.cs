@@ -1,5 +1,5 @@
 using Concertable.Conversations.Contracts;
-using Concertable.Shared;
+using Concertable.Kernel;
 
 namespace Concertable.Conversations.Domain;
 

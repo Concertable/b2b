@@ -1,3 +1,4 @@
+using Concertable.Contracts;
 using Concertable.Conversations.Application.DTOs;
 
 namespace Concertable.Conversations.Application.Interfaces;

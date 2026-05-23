@@ -1,5 +1,8 @@
+using Concertable.Concert.Domain.Entities;
 using Concertable.Contract.Contracts;
-using Concertable.Shared.Exceptions;
+using Concertable.Contracts;
+using Concertable.Kernel.Identity;
+using Concertable.Kernel.Exceptions;
 
 namespace Concertable.Concert.Infrastructure.Services;
 

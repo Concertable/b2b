@@ -7,11 +7,10 @@ using Concertable.Contract.Infrastructure.Data;
 using Concertable.Contract.Infrastructure.Data.Seeders;
 using Concertable.Contract.Infrastructure.Repositories;
 using Concertable.Contract.Infrastructure.Services.Updaters;
-using Concertable.DataAccess.Infrastructure;
-using Concertable.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.DataAccess.Infrastructure.Data;
 
 namespace Concertable.Contract.Infrastructure.Extensions;
 

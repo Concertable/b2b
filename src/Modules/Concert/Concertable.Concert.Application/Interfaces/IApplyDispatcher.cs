@@ -1,3 +1,5 @@
+using Concertable.Concert.Domain.Entities;
+
 namespace Concertable.Concert.Application.Interfaces;
 
 internal interface IApplyDispatcher

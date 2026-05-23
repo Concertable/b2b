@@ -1,4 +1,8 @@
-﻿namespace Concertable.Concert.Application.Interfaces;
+﻿using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.ReadModels;
+using Concertable.DataAccess.Application;
+
+namespace Concertable.Concert.Application.Interfaces;
 
 internal interface IApplicationRepository : IIdRepository<ApplicationEntity>
 {

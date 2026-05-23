@@ -1,8 +1,8 @@
-using Concertable.Application.Interfaces.Geometry;
+using Concertable.Kernel.Geometry;
+using Concertable.Kernel.Services.Geometry;
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
 using Concertable.Seeding.Fakers;
-using Concertable.Shared.Infrastructure.Services.Geometry;
 using Concertable.Venue.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

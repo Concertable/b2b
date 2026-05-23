@@ -1,4 +1,5 @@
 ﻿using Concertable.DataAccess.Infrastructure;
+using Concertable.Kernel;
 using Concertable.User.Infrastructure.Data;
 
 namespace Concertable.User.Infrastructure.Repositories;

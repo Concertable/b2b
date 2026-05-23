@@ -1,5 +1,5 @@
-using Concertable.Messaging;
-using Concertable.Shared;
+using Concertable.Contracts;
+using Concertable.Messaging.Contracts;
 
 namespace Concertable.Artist.Contracts.Events;
 

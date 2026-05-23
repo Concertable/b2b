@@ -1,5 +1,7 @@
 using Concertable.Concert.Contracts.Events;
 using Concertable.Concert.Domain.Events;
+using Concertable.Kernel;
+using Concertable.Messaging.Contracts;
 
 namespace Concertable.Concert.Infrastructure.Events;
 

@@ -1,4 +1,5 @@
 using Concertable.Contract.Contracts;
+using Concertable.Contract.Domain.Entities;
 
 namespace Concertable.Contract.Application.Interfaces;
 

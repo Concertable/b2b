@@ -1,4 +1,5 @@
 ﻿using Concertable.Artist.Contracts;
+using Concertable.Concert.Domain.Enums;
 
 namespace Concertable.Concert.Application.DTOs;
 

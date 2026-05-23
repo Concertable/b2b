@@ -1,4 +1,4 @@
-using Concertable.Shared;
+using Concertable.Contracts;
 using Concertable.Venue.Application.Interfaces;
 using Concertable.Venue.Infrastructure.Data;
 using Concertable.Venue.Infrastructure.Mappers;

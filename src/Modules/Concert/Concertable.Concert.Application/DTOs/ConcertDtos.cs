@@ -1,3 +1,5 @@
+using Concertable.Contracts;
+
 namespace Concertable.Concert.Application.DTOs;
 
 internal record ConcertDto

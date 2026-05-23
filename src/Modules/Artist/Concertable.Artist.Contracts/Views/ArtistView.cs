@@ -1,4 +1,4 @@
-﻿using Concertable.Shared;
+﻿using Concertable.Kernel;
 
 namespace Concertable.Artist.Contracts.Views;
 

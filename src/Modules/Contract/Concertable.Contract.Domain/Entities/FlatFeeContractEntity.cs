@@ -1,4 +1,4 @@
-namespace Concertable.Contract.Domain;
+namespace Concertable.Contract.Domain.Entities;
 
 public class FlatFeeContractEntity : ContractEntity
 {

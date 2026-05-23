@@ -1,4 +1,6 @@
-﻿using Concertable.Shared.Exceptions;
+using Concertable.Contracts;
+using Concertable.Kernel.Identity;
+using Concertable.Kernel.Exceptions;
 
 namespace Concertable.Conversations.Infrastructure.Services;
 

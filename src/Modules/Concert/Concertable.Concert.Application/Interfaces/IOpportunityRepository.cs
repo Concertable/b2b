@@ -1,3 +1,7 @@
+using Concertable.Concert.Domain.Entities;
+using Concertable.Contracts;
+using Concertable.DataAccess.Application;
+
 namespace Concertable.Concert.Application.Interfaces;
 
 internal interface IOpportunityRepository : IIdRepository<OpportunityEntity>

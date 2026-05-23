@@ -1,3 +1,4 @@
+using Concertable.Contracts;
 using Concertable.Conversations.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 

@@ -1,3 +1,5 @@
+using Concertable.Contracts;
+
 namespace Concertable.Concert.Api.Responses;
 
 internal record ConcertDetailsResponse

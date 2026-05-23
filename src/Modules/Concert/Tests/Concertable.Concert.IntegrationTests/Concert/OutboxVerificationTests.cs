@@ -1,8 +1,9 @@
 using System.Net;
 using Concertable.Concert.Contracts.Events;
-using Concertable.Messaging;
+using Concertable.Messaging.Contracts;
 using Concertable.Messaging.Domain;
 using Concertable.Messaging.Infrastructure.Outbox;
+using Concertable.Testing.Integration.B2B;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using static Concertable.Concert.IntegrationTests.Concert.ConcertRequestBuilders;

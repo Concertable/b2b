@@ -1,8 +1,11 @@
+using Concertable.Concert.Domain.Enums;
 using Concertable.Concert.Domain.Events;
-using Concertable.Shared;
+using Concertable.Concert.Domain.ReadModels;
+using Concertable.Contracts;
+using Concertable.Kernel;
 using NetTopologySuite.Geometries;
 
-namespace Concertable.Concert.Domain;
+namespace Concertable.Concert.Domain.Entities;
 
 public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, ILifecycleEntity, IEventRaiser
 {

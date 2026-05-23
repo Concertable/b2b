@@ -1,3 +1,4 @@
+using Concertable.Concert.Domain.Entities;
 using FluentResults;
 
 namespace Concertable.Concert.Application.Interfaces;

@@ -1,3 +1,5 @@
+using Concertable.Concert.Domain.Enums;
+
 namespace Concertable.Concert.Application.Workflow;
 
 internal delegate Task<TEntity> CreateStep<TEntity>() where TEntity : class, ILifecycleEntity;

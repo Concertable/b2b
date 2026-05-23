@@ -1,7 +1,9 @@
 using Concertable.Concert.Application.Workflow;
 using Concertable.Concert.Application.Workflow.Capabilities;
 using Concertable.Concert.Application.Workflow.Executors;
-using Concertable.Shared.Exceptions;
+using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.Enums;
+using Concertable.Kernel.Exceptions;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow.Executors;
 

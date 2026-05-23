@@ -1,5 +1,6 @@
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
+using Concertable.Messaging.Contracts;
 using Concertable.Messaging.Domain;
 using Concertable.User.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;

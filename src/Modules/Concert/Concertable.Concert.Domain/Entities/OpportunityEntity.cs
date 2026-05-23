@@ -1,6 +1,8 @@
-using Concertable.Shared;
+using Concertable.Concert.Domain.ReadModels;
+using Concertable.Contracts;
+using Concertable.Kernel;
 
-namespace Concertable.Concert.Domain;
+namespace Concertable.Concert.Domain.Entities;
 
 public class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<OpportunityEntity>
 {

@@ -1,5 +1,6 @@
 using Concertable.Concert.Api.Mappers;
 using Concertable.Concert.Api.Responses;
+using Concertable.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

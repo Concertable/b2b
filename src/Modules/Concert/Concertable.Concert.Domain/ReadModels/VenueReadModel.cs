@@ -1,6 +1,7 @@
+using Concertable.Kernel;
 using NetTopologySuite.Geometries;
 
-namespace Concertable.Concert.Domain;
+namespace Concertable.Concert.Domain.ReadModels;
 
 public class VenueReadModel : IIdEntity
 {

@@ -1,5 +1,4 @@
-using Concertable.DataAccess;
-using Concertable.Application.Serializers;
+using Concertable.Kernel.Serializers;
 using Concertable.B2B.Web;
 using Concertable.Artist.Api.Extensions;
 using Concertable.Artist.Infrastructure.Extensions;
@@ -13,11 +12,10 @@ using Concertable.Payment.Client.Extensions;
 using Concertable.Payment.Domain.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Artist.Contracts.Events;
+using Concertable.Concert.Contracts.Events;
 using Concertable.Venue.Contracts.Events;
 using Concertable.Auth.Contracts.Events;
-using Concertable.Messaging.Application;
 using Concertable.Conversations.Infrastructure.Extensions;
-using Concertable.Messaging.AzureServiceBus;
 using Concertable.Messaging.Infrastructure.Extensions;
 using Concertable.Organization.Api.Extensions;
 using Concertable.User.Api.Extensions;
@@ -28,12 +26,16 @@ using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
-using Concertable.Shared.Infrastructure.Extensions;
 using Concertable.Seeding.Fakers;
 using Concertable.B2B.Web.Extensions;
 using Concertable.Notification.Infrastructure.Hubs;
 using Concertable.Notification.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Concertable.ServiceDefaults;
+using Concertable.DataAccess.Application;
+using Concertable.Messaging.Application.Extensions;
+using Concertable.Messaging.AzureServiceBus.Extensions;
+using Concertable.Kernel.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 

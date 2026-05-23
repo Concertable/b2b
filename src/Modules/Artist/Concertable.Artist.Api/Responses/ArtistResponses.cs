@@ -1,3 +1,5 @@
+using Concertable.Contracts;
+
 namespace Concertable.Artist.Api.Responses;
 
 public record ArtistDetailsResponse

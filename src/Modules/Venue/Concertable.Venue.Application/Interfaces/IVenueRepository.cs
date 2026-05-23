@@ -1,4 +1,4 @@
-using Concertable.DataAccess;
+using Concertable.DataAccess.Application;
 using Concertable.Venue.Application.DTOs;
 
 namespace Concertable.Venue.Application.Interfaces;

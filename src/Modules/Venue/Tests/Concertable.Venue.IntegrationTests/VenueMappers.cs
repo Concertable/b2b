@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using Concertable.Testing.Integration.B2B;
 using Concertable.Venue.Application.Requests;
 using Microsoft.AspNetCore.Http;
 

@@ -1,5 +1,8 @@
 using Concertable.Concert.Contracts.Events;
-using Concertable.DataAccess.Infrastructure;
+using Concertable.Customer.Review.Contracts.Events;
+using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Kernel;
+using Concertable.Messaging.Contracts;
 using Concertable.Seeding;
 using Concertable.Venue.Application.Validators;
 using Concertable.Venue.Domain.Events;

@@ -1,4 +1,4 @@
-namespace Concertable.Concert.Domain;
+namespace Concertable.Concert.Domain.ReadModels;
 
 public class ConcertRatingProjection
 {

@@ -1,3 +1,4 @@
+using Concertable.Kernel;
 using Concertable.Venue.Infrastructure.Data;
 
 namespace Concertable.Venue.Infrastructure.Repositories;

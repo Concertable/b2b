@@ -1,6 +1,6 @@
-using Concertable.DataAccess;
 using Concertable.Artist.Application.DTOs;
-using Concertable.Shared;
+using Concertable.DataAccess.Application;
+using Concertable.Contracts;
 
 namespace Concertable.Artist.Application.Interfaces;
 

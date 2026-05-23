@@ -2,6 +2,7 @@ using System.Net;
 using Concertable.Artist.Application.DTOs;
 using Concertable.Artist.Api.Responses;
 using static Concertable.Artist.IntegrationTests.ArtistRequestBuilders;
+using Concertable.Testing.Integration.B2B;
 
 namespace Concertable.Artist.IntegrationTests;
 

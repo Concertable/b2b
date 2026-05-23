@@ -1,4 +1,6 @@
-using Concertable.DataAccess.Diffing;
+using Concertable.Concert.Domain.Entities;
+using Concertable.DataAccess.Application;
+using Concertable.DataAccess.Application.Diffing;
 
 namespace Concertable.Concert.Infrastructure.Sync;
 

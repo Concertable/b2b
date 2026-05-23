@@ -1,4 +1,6 @@
-﻿namespace Concertable.Concert.Application.Models;
+﻿using Concertable.Concert.Domain.Entities;
+
+namespace Concertable.Concert.Application.Models;
 
 internal class ApplicationWithStatus
 {

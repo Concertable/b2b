@@ -1,4 +1,5 @@
-using Concertable.Shared;
+using Concertable.Concert.Domain.Enums;
+using Concertable.Kernel;
 
 namespace Concertable.Concert.Domain;
 

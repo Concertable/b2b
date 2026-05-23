@@ -1,3 +1,5 @@
+using Concertable.Contracts;
+
 namespace Concertable.Conversations.Application.DTOs;
 
 internal record MessageDto

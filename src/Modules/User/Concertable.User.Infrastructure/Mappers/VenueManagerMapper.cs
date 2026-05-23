@@ -1,3 +1,4 @@
+using Concertable.Kernel;
 using Concertable.User.Infrastructure.Data;
 
 namespace Concertable.User.Infrastructure.Mappers;

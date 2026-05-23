@@ -1,4 +1,5 @@
 using Concertable.Customer.Review.Contracts.Events;
+using Concertable.Messaging.Contracts;
 using Concertable.Messaging.Domain;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.Venue.Contracts.Events;

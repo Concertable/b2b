@@ -1,3 +1,5 @@
+using Concertable.Contract.Domain.Entities;
+
 namespace Concertable.Contract.Application.Interfaces;
 
 internal interface IContractMapper

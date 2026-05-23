@@ -3,18 +3,20 @@ using Concertable.Artist.Contracts;
 using Concertable.Artist.Domain.Events;
 using Concertable.Artist.Infrastructure.Data;
 using Concertable.Artist.Infrastructure.Data.Seeders;
-using Concertable.DataAccess.Infrastructure;
 using Concertable.Artist.Infrastructure.Events;
 using Concertable.Artist.Infrastructure.Handlers;
 using Concertable.Artist.Infrastructure.Repositories;
 using Concertable.Artist.Infrastructure.Services;
 using Concertable.Concert.Contracts.Events;
+using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Seeding;
-using Concertable.Shared;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Messaging.Contracts;
+using Concertable.Kernel;
 
 namespace Concertable.Artist.Infrastructure.Extensions;
 

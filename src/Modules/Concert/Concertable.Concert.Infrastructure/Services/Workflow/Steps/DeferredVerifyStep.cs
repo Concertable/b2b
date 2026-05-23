@@ -1,5 +1,5 @@
 using Concertable.Concert.Application.Workflow.Steps;
-using Concertable.Shared.Exceptions;
+using Concertable.Kernel.Exceptions;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow.Steps;
 

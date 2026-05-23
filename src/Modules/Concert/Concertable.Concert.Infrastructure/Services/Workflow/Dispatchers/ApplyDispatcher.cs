@@ -1,4 +1,5 @@
 using Concertable.Concert.Application.Workflow.Executors;
+using Concertable.Concert.Domain.Entities;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow.Dispatchers;
 

@@ -1,4 +1,6 @@
 
+using Concertable.DataAccess.Application;
+
 namespace Concertable.User.Application.Interfaces;
 
 internal interface IUserRepository : IGuidRepository<UserEntity>

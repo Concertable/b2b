@@ -1,5 +1,6 @@
 using Concertable.Concert.Application.Workflow;
 using Concertable.Concert.Application.Workflow.Steps;
+using Concertable.Concert.Domain.Enums;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow;

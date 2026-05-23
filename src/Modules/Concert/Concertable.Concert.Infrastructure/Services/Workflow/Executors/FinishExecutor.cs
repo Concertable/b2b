@@ -1,5 +1,7 @@
 using Concertable.Concert.Application.Workflow;
 using Concertable.Concert.Application.Workflow.Executors;
+using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.Enums;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 

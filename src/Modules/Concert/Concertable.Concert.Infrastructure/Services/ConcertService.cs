@@ -1,5 +1,7 @@
-﻿using Concertable.Shared.Email;
-using Concertable.Shared.Exceptions;
+using Concertable.Concert.Domain.Entities;
+using Concertable.Kernel.Identity;
+using Concertable.Shared.Email.Application;
+using Concertable.Kernel.Exceptions;
 using FluentResults;
 
 namespace Concertable.Concert.Infrastructure.Services;

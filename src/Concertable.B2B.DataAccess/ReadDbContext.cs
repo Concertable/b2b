@@ -1,7 +1,6 @@
 using Concertable.Contract.Domain;
 using Concertable.DataAccess;
 using Concertable.Conversations.Domain;
-using Concertable.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.DataAccess.Infrastructure;

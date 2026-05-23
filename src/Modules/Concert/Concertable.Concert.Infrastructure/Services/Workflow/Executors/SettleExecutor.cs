@@ -1,5 +1,7 @@
 using Concertable.Concert.Application.Workflow;
 using Concertable.Concert.Application.Workflow.Executors;
+using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.Enums;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow.Executors;
 

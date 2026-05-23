@@ -1,4 +1,6 @@
 using Concertable.Concert.Contracts;
+using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.ReadModels;
 using Concertable.Venue.Domain;
 
 namespace Concertable.Concert.Infrastructure.Mappers;

@@ -1,4 +1,5 @@
 using Concertable.Contract.Contracts;
+using Concertable.Contracts;
 
 namespace Concertable.Concert.Api.Responses;
 

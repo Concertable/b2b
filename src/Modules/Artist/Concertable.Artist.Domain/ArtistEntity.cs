@@ -1,5 +1,6 @@
 using Concertable.Artist.Domain.Events;
-using Concertable.Shared;
+using Concertable.Contracts;
+using Concertable.Kernel;
 using NetTopologySuite.Geometries;
 
 namespace Concertable.Artist.Domain;

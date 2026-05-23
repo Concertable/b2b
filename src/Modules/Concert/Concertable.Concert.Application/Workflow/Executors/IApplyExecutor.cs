@@ -1,3 +1,5 @@
+using Concertable.Concert.Domain.Entities;
+
 namespace Concertable.Concert.Application.Workflow.Executors;
 
 internal interface IApplyExecutor

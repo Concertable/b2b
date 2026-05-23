@@ -1,3 +1,5 @@
+using Concertable.Kernel;
+
 namespace Concertable.User.Infrastructure.Mappers;
 
 internal sealed class AdminMapper : IRoleMapper

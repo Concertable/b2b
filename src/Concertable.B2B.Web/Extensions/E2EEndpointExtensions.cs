@@ -1,7 +1,7 @@
-using Concertable.DataAccess;
 using Concertable.Concert.Application.Interfaces;
 using Concertable.Seeding;
-using Concertable.Shared;
+using Concertable.DataAccess.Application;
+using Concertable.Kernel;
 
 namespace Concertable.B2B.Web.Extensions;
 

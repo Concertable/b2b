@@ -1,4 +1,5 @@
 using Concertable.Concert.Application.Workflow;
+using Concertable.Concert.Domain.Enums;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow;
 

@@ -2,6 +2,7 @@ using System.Net;
 using Concertable.Venue.Application.DTOs;
 using Concertable.Venue.Api.Responses;
 using static Concertable.Venue.IntegrationTests.VenueRequestBuilders;
+using Concertable.Testing.Integration.B2B;
 
 namespace Concertable.Venue.IntegrationTests;
 

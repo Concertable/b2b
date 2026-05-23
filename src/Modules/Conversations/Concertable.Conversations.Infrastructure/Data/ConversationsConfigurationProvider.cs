@@ -1,6 +1,6 @@
-using Concertable.DataAccess.Infrastructure;
 using Concertable.Conversations.Infrastructure.Data.Configurations;
 using Microsoft.EntityFrameworkCore;
+using Concertable.DataAccess.Infrastructure.Data;
 
 namespace Concertable.Conversations.Infrastructure.Data;
 

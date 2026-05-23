@@ -1,8 +1,9 @@
-global using Concertable.Shared;
+global using Concertable.Kernel;
+global using Concertable.Contracts;
 global using Concertable.Messaging;
 global using Concertable.DataAccess;
-global using Concertable.Application.Mappers;
-global using Concertable.Shared.Infrastructure.Identity;
+global using Concertable.User.Infrastructure.Mappers;
+global using Concertable.Kernel.Identity;
 global using Concertable.User.Contracts;
 global using Concertable.User.Domain;
 global using Concertable.Concert.Domain;

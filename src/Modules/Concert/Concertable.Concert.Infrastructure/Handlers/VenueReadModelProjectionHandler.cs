@@ -1,7 +1,7 @@
 using Concertable.Concert.Domain;
 using Concertable.Concert.Infrastructure.Data;
+using Concertable.Messaging.Contracts;
 using Concertable.Messaging.Domain;
-using Concertable.Shared;
 using Concertable.Venue.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;

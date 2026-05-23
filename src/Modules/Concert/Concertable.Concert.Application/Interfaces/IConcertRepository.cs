@@ -1,4 +1,6 @@
 using Concertable.Concert.Application.DTOs;
+using Concertable.Concert.Domain.Entities;
+using Concertable.DataAccess.Application;
 
 namespace Concertable.Concert.Application.Interfaces;
 

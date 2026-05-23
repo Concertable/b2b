@@ -1,3 +1,5 @@
+using Concertable.Kernel;
+using Concertable.Messaging.Contracts;
 using Concertable.Venue.Contracts.Events;
 using Concertable.Venue.Domain.Events;
 

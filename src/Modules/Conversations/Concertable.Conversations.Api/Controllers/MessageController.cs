@@ -1,7 +1,7 @@
+using Concertable.Contracts;
 using Concertable.Conversations.Application.DTOs;
 using Concertable.Conversations.Application.Interfaces;
 using Concertable.Conversations.Application.Requests;
-using Concertable.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.Conversations.Api.Controllers;

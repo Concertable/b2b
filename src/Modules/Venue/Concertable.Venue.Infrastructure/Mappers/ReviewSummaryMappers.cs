@@ -1,4 +1,4 @@
-using Concertable.Shared;
+using Concertable.Contracts;
 using Concertable.Venue.Domain;
 
 namespace Concertable.Venue.Infrastructure.Mappers;

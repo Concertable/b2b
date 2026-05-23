@@ -1,3 +1,4 @@
+using Concertable.Kernel;
 using Concertable.User.Contracts;
 using NetTopologySuite.Geometries;
 

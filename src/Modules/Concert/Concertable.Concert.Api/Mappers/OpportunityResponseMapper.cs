@@ -3,7 +3,7 @@ using Concertable.Concert.Application.DTOs;
 using Concertable.Concert.Application.Interfaces;
 using Concertable.Concert.Application.Workflow;
 using Concertable.Concert.Application.Workflow.Capabilities;
-using Concertable.Shared;
+using Concertable.Contracts;
 
 namespace Concertable.Concert.Api.Mappers;
 

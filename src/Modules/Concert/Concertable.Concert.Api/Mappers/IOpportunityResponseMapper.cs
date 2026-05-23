@@ -1,6 +1,6 @@
 using Concertable.Concert.Api.Responses;
 using Concertable.Concert.Application.DTOs;
-using Concertable.Shared;
+using Concertable.Contracts;
 
 namespace Concertable.Concert.Api.Mappers;
 

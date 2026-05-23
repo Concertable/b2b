@@ -1,6 +1,8 @@
+using Concertable.Concert.Domain.Enums;
 using Concertable.Concert.Domain.Events;
+using Concertable.Kernel;
 
-namespace Concertable.Concert.Domain;
+namespace Concertable.Concert.Domain.Entities;
 
 public abstract class BookingEntity : IIdEntity, ILifecycleEntity, IEventRaiser
 {

@@ -1,4 +1,6 @@
 using Concertable.Concert.Application.DTOs;
+using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.ReadModels;
 
 namespace Concertable.Concert.Application.Mappers;
 

@@ -1,10 +1,10 @@
 using Concertable.Artist.Contracts.Events;
 using Concertable.Messaging.Domain;
 using Concertable.User.Infrastructure.Data;
-using Concertable.Shared;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
+using Concertable.Messaging.Contracts;
 
 namespace Concertable.User.Infrastructure.Events;
 

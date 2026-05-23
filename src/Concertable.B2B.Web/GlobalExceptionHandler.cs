@@ -1,4 +1,5 @@
-using Concertable.Shared.Exceptions;
+using Concertable.Kernel;
+using Concertable.Kernel.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

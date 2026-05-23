@@ -3,7 +3,6 @@ using Concertable.Concert.Domain;
 using Concertable.Contract.Domain;
 using Concertable.User.Domain;
 using Concertable.Conversations.Domain;
-using Concertable.Shared;
 using Concertable.Venue.Domain;
 
 namespace Concertable.DataAccess;

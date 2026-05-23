@@ -1,5 +1,6 @@
 using Concertable.Concert.Application.Workflow;
-using Concertable.Shared.Exceptions;
+using Concertable.Concert.Domain.Enums;
+using Concertable.Kernel.Exceptions;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow;
 

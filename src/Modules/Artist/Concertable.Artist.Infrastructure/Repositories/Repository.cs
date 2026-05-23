@@ -1,4 +1,5 @@
 using Concertable.Artist.Infrastructure.Data;
+using Concertable.Kernel;
 
 namespace Concertable.Artist.Infrastructure.Repositories;
 

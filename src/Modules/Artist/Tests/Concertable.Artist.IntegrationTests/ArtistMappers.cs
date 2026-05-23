@@ -1,4 +1,5 @@
 using Concertable.Artist.Application.Requests;
+using Concertable.Testing.Integration.B2B;
 
 namespace Concertable.Artist.IntegrationTests;
 

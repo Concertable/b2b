@@ -1,6 +1,9 @@
+using Concertable.Concert.Domain.Enums;
 using Concertable.Concert.Domain.Events;
+using Concertable.Concert.Domain.ReadModels;
+using Concertable.Kernel;
 
-namespace Concertable.Concert.Domain;
+namespace Concertable.Concert.Domain.Entities;
 
 public abstract class ApplicationEntity : IIdEntity, ILifecycleEntity, IEventRaiser
 {

@@ -1,3 +1,5 @@
+using Concertable.Contracts;
+
 namespace Concertable.Conversations.Application.Interfaces;
 
 internal interface IMessageRepository

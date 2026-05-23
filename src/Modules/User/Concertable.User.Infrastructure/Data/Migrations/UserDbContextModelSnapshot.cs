@@ -156,7 +156,7 @@ namespace Concertable.User.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.User.Domain.UserEntity", b =>
                 {
-                    b.OwnsOne("Concertable.Shared.Address", "Address", b1 =>
+                    b.OwnsOne("Concertable.Kernel.Address", "Address", b1 =>
                         {
                             b1.Property<Guid>("UserEntityId")
                                 .HasColumnType("uniqueidentifier");

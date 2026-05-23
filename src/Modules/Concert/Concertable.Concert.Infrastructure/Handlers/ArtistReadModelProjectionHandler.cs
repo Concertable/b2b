@@ -1,8 +1,8 @@
 using Concertable.Artist.Contracts.Events;
 using Concertable.Concert.Domain;
 using Concertable.Concert.Infrastructure.Data;
+using Concertable.Messaging.Contracts;
 using Concertable.Messaging.Domain;
-using Concertable.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Concert.Infrastructure.Handlers;

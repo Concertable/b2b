@@ -1,7 +1,8 @@
 using Concertable.Concert.Application.Workflow.Steps;
+using Concertable.Concert.Domain.Entities;
 using Concertable.Contract.Contracts;
-using Concertable.Shared.Enums;
-using Concertable.Shared.Exceptions;
+using Concertable.Kernel.Enums;
+using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow.Steps;

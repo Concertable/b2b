@@ -1,5 +1,5 @@
 using Concertable.Artist.Domain;
-using Concertable.Shared;
+using Concertable.Contracts;
 
 namespace Concertable.Artist.Infrastructure.Mappers;
 

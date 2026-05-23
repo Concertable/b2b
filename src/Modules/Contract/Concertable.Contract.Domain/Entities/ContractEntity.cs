@@ -1,4 +1,6 @@
-namespace Concertable.Contract.Domain;
+using Concertable.Kernel;
+
+namespace Concertable.Contract.Domain.Entities;
 
 public abstract class ContractEntity : IIdEntity
 {

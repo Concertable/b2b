@@ -1,8 +1,5 @@
-using Concertable.DataAccess;
-using Concertable.Application.Serializers;
-using Concertable.DataAccess.Infrastructure;
+using Concertable.Kernel.Serializers;
 using Concertable.DataAccess.Infrastructure.Extensions;
-using Concertable.Shared.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -11,6 +8,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Data;
+using Concertable.DataAccess.Application;
+using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Kernel.Extensions;
 
 namespace Concertable.B2B.Web.Extensions;
 

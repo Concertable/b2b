@@ -1,8 +1,10 @@
-using Concertable.DataAccess.Specifications;
 using Concertable.Concert.Contracts;
 using Concertable.Concert.Infrastructure.Data;
 using Concertable.Concert.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
+using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.Enums;
+using Concertable.DataAccess.Application.Specifications;
 
 namespace Concertable.Concert.Infrastructure.Repositories;
 

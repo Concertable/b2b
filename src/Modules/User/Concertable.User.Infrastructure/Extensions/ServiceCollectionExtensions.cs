@@ -1,7 +1,6 @@
 using Concertable.Auth.Contracts.Events;
 using Concertable.DataAccess;
 using Concertable.User.Infrastructure.Mappers;
-using Concertable.DataAccess.Infrastructure;
 using Concertable.Seeding;
 using Concertable.Artist.Contracts.Events;
 using Concertable.User.Application.Validators;
@@ -15,6 +14,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Messaging.Contracts;
 
 namespace Concertable.User.Infrastructure.Extensions;
 

@@ -1,3 +1,4 @@
+using Concertable.Kernel;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Concertable.Venue.Domain;

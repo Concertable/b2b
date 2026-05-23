@@ -1,5 +1,6 @@
 ﻿using Concertable.Concert.Application.DTOs;
 using Concertable.Concert.Application.Responses;
+using Concertable.Concert.Domain.ReadModels;
 
 namespace Concertable.Concert.Application.Interfaces;
 

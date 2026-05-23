@@ -2,10 +2,11 @@ using System.Net;
 using Concertable.Concert.Application.DTOs;
 
 using Concertable.Concert.Api.Responses;
-using Concertable.Testing.Integration;
-using Concertable.Shared;
 using Xunit;
 using static Concertable.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
+using Concertable.Contract.Contracts;
+using Concertable.Contracts;
+using Concertable.Testing.Integration.B2B;
 
 namespace Concertable.Concert.IntegrationTests.Opportunity;
 

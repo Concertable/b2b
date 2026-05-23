@@ -1,4 +1,4 @@
-using Concertable.Concert.Domain;
+using Concertable.Concert.Domain.ReadModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using Concertable.Contract.Contracts;
 using Concertable.Contract.Application.Interfaces;
+using Concertable.Contract.Domain.Entities;
 
 namespace Concertable.Contract.Infrastructure.Services.Updaters;
 

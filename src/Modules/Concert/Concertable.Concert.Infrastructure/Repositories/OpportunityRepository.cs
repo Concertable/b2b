@@ -1,4 +1,7 @@
-﻿using Concertable.Concert.Infrastructure.Data;
+﻿using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.Enums;
+using Concertable.Concert.Infrastructure.Data;
+using Concertable.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Concert.Infrastructure.Repositories;

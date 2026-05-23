@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using Concertable.Shared.Infrastructure.Identity;
+using Concertable.Kernel.Identity;
 
 namespace Concertable.Notification.Infrastructure.Hubs;
 

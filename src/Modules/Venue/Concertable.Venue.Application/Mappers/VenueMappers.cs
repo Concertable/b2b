@@ -1,4 +1,4 @@
-using Concertable.Shared.Exceptions;
+using Concertable.Kernel.Exceptions;
 using Concertable.Venue.Application.DTOs;
 
 namespace Concertable.Venue.Application.Mappers;

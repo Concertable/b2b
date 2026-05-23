@@ -1,5 +1,6 @@
-using Concertable.Messaging;
-using Concertable.Shared;
+using Concertable.Contracts;
+using Concertable.Kernel;
+using Concertable.Messaging.Contracts;
 
 namespace Concertable.Concert.Contracts.Events;
 

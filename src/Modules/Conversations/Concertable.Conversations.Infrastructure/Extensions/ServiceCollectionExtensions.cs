@@ -1,5 +1,4 @@
 using Concertable.DataAccess;
-using Concertable.DataAccess.Infrastructure;
 using Concertable.Seeding;
 using Concertable.Conversations.Application.Interfaces;
 using Concertable.Conversations.Contracts;
@@ -10,6 +9,7 @@ using Concertable.Conversations.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.DataAccess.Infrastructure.Data;
 
 namespace Concertable.Conversations.Infrastructure.Extensions;
 

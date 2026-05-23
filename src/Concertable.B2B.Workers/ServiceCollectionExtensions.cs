@@ -3,24 +3,22 @@ using Concertable.Organization.Infrastructure.Extensions;
 using Concertable.Concert.Infrastructure.Extensions;
 using Concertable.Contract.Infrastructure.Extensions;
 using Concertable.Venue.Infrastructure.Extensions;
-using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
 using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
-using Concertable.Shared.Infrastructure.Extensions;
 using Concertable.User.Infrastructure.Extensions;
 using Concertable.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Concertable.Notification.Infrastructure.Extensions;
 using Concertable.Payment.Client.Extensions;
-using Concertable.Shared.Infrastructure.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Concertable.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Kernel.Extensions;
 
 namespace Concertable.B2B.Workers;
 

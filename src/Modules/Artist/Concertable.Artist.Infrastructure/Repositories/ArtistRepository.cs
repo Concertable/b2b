@@ -1,6 +1,6 @@
 using Concertable.Artist.Infrastructure.Data;
 using Concertable.Artist.Infrastructure.Mappers;
-using Concertable.Shared;
+using Concertable.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Artist.Infrastructure.Repositories;

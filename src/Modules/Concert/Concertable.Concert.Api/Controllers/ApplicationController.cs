@@ -1,12 +1,11 @@
-﻿using Concertable.Artist.Contracts;
-using Concertable.Shared.Infrastructure.Identity;
+using Concertable.Artist.Contracts;
 using Concertable.Concert.Api.Mappers;
 using Concertable.Concert.Api.Requests;
 using Concertable.Concert.Api.Responses;
-using Concertable.Shared;
 using Concertable.User.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Concertable.Kernel.Identity;
 
 namespace Concertable.Concert.Api.Controllers;
 

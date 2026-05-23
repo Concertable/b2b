@@ -1,7 +1,9 @@
+using Concertable.Concert.Domain.ReadModels;
 using Concertable.Conversations.Contracts;
-using Concertable.Shared.Email;
-using Concertable.Shared.Enums;
-using Concertable.Shared.Exceptions;
+using Concertable.Kernel.Identity;
+using Concertable.Shared.Email.Application;
+using Concertable.Kernel.Enums;
+using Concertable.Kernel.Exceptions;
 using Concertable.User.Contracts;
 
 namespace Concertable.Concert.Infrastructure.Services;

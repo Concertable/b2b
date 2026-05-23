@@ -1,7 +1,7 @@
-﻿using Concertable.Concert.Application.Responses;
+using Concertable.Concert.Application.Responses;
 using Concertable.Concert.Application.Workflow;
 using Concertable.Concert.Application.Workflow.Capabilities;
-using Concertable.Shared.Exceptions;
+using Concertable.Kernel.Exceptions;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow.Dispatchers;
 

@@ -1,4 +1,5 @@
-using Concertable.DataAccess;
+using Concertable.Contract.Domain.Entities;
+using Concertable.DataAccess.Application;
 
 namespace Concertable.Contract.Application.Interfaces;
 

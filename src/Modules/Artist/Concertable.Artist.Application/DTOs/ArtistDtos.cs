@@ -1,3 +1,6 @@
+using Concertable.Contracts;
+using Concertable.Kernel;
+
 namespace Concertable.Artist.Application.DTOs;
 
 public record ArtistDto : IAddress

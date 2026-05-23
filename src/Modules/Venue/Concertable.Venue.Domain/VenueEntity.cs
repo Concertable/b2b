@@ -1,3 +1,4 @@
+using Concertable.Kernel;
 using Concertable.Venue.Domain.Events;
 using NetTopologySuite.Geometries;
 

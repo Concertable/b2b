@@ -1,3 +1,4 @@
+using Concertable.Contracts;
 using Microsoft.AspNetCore.Http;
 
 namespace Concertable.Venue.Application.Requests;

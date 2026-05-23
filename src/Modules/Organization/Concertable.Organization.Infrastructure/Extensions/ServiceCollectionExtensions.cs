@@ -1,4 +1,3 @@
-using Concertable.DataAccess.Infrastructure;
 using Concertable.Organization.Contracts;
 using Concertable.Organization.Application.Interfaces;
 using Concertable.Organization.Infrastructure.Data;
@@ -7,6 +6,7 @@ using Concertable.Organization.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.DataAccess.Infrastructure.Data;
 
 namespace Concertable.Organization.Infrastructure.Extensions;
 

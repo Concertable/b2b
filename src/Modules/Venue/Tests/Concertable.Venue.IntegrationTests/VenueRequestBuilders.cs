@@ -1,3 +1,4 @@
+using Concertable.Testing.Integration.B2B;
 using Concertable.Venue.Application.Requests;
 
 namespace Concertable.Venue.IntegrationTests;

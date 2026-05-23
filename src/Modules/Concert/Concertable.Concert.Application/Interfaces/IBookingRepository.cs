@@ -1,4 +1,7 @@
-﻿namespace Concertable.Concert.Application.Interfaces;
+﻿using Concertable.Concert.Domain.Entities;
+using Concertable.DataAccess.Application;
+
+namespace Concertable.Concert.Application.Interfaces;
 
 internal interface IBookingRepository : IIdRepository<BookingEntity>
 {

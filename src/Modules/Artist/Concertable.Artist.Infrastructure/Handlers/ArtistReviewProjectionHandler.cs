@@ -2,6 +2,7 @@ using Concertable.Artist.Contracts.Events;
 using Concertable.Artist.Domain;
 using Concertable.Artist.Infrastructure.Data;
 using Concertable.Customer.Review.Contracts.Events;
+using Concertable.Messaging.Contracts;
 using Concertable.Messaging.Domain;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;

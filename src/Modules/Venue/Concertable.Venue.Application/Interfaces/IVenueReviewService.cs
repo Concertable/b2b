@@ -1,4 +1,4 @@
-using Concertable.Shared;
+using Concertable.Contracts;
 
 namespace Concertable.Venue.Application.Interfaces;
 

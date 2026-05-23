@@ -1,8 +1,10 @@
 using Concertable.Concert.Application.Workflow;
 using Concertable.Concert.Application.Workflow.Capabilities;
 using Concertable.Concert.Application.Workflow.Executors;
+using Concertable.Concert.Domain.Entities;
+using Concertable.Concert.Domain.Enums;
 using Concertable.DataAccess.Infrastructure.Extensions;
-using Concertable.Shared.Exceptions;
+using Concertable.Kernel.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Concert.Infrastructure.Services.Workflow.Executors;

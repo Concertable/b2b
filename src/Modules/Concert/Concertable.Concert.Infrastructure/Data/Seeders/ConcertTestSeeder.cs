@@ -4,8 +4,8 @@ using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
 using Concertable.Seeding.Factories;
 using Concertable.Seeding.Fakers;
-using Concertable.Shared;
 using Microsoft.EntityFrameworkCore;
+using Concertable.Contracts;
 
 namespace Concertable.Concert.Infrastructure.Data.Seeders;
 

@@ -1,4 +1,5 @@
-using Concertable.Shared.Exceptions;
+using Concertable.Concert.Domain.Entities;
+using Concertable.Kernel.Exceptions;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 

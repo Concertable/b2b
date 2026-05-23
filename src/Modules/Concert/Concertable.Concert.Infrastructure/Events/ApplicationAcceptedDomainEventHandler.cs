@@ -1,6 +1,7 @@
 using Concertable.Concert.Domain.Events;
-using Concertable.Shared;
-using Concertable.Shared.Exceptions;
+using Concertable.Contracts;
+using Concertable.Kernel;
+using Concertable.Kernel.Exceptions;
 
 namespace Concertable.Concert.Infrastructure.Events;
 

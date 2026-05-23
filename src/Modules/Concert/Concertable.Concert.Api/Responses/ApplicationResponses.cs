@@ -1,4 +1,5 @@
 ﻿using Concertable.Artist.Contracts;
+using Concertable.Concert.Domain.Enums;
 using Concertable.Contract.Contracts;
 
 namespace Concertable.Concert.Api.Responses;

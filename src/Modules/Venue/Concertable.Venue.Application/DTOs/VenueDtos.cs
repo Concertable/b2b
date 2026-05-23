@@ -1,3 +1,5 @@
+using Concertable.Kernel;
+
 namespace Concertable.Venue.Application.DTOs;
 
 public record VenueDto : IAddress

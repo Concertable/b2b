@@ -1,4 +1,4 @@
-global using Concertable.Shared.Infrastructure.Identity;
+global using Concertable.Kernel.Identity;
 global using Concertable.User.Contracts;
 global using Concertable.Payment.Domain;
 global using Concertable.User.Application.Interfaces;

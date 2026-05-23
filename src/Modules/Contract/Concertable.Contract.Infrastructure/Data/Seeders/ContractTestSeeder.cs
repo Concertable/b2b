@@ -1,3 +1,4 @@
+using Concertable.Contract.Domain.Entities;
 using Concertable.DataAccess;
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
