@@ -9,7 +9,9 @@ public record VenueChangedEvent(
     string Name,
     string About,
     string Avatar,
+    string BannerUrl,
     string County,
     string Town,
     double Latitude,
-    double Longitude) : IIntegrationEvent;
+    double Longitude,
+    string Email) : IIntegrationEvent;

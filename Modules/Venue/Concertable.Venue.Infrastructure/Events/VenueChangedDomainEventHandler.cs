@@ -15,9 +15,11 @@ internal class VenueChangedDomainEventHandler(IBus bus)
             venue.Name,
             venue.About,
             venue.Avatar,
+            venue.BannerUrl,
             venue.Address.County,
             venue.Address.Town,
             venue.Location.Y,
-            venue.Location.X), ct);
+            venue.Location.X,
+            venue.Email), ct);
     }
 }

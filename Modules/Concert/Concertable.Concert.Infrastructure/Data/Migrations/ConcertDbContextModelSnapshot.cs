@@ -203,6 +203,10 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("DatePosted")
                         .HasColumnType("datetime2");
 
+                    b.PrimitiveCollection<string>("Genres")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Point>("Location")
                         .HasColumnType("geography");
 
@@ -229,19 +233,6 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                     b.HasIndex("VenueId");
 
                     b.ToTable("Concerts", "concert");
-                });
-
-            modelBuilder.Entity("Concertable.Concert.Domain.ConcertGenreEntity", b =>
-                {
-                    b.Property<int>("ConcertId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Genre")
-                        .HasColumnType("int");
-
-                    b.HasKey("ConcertId", "Genre");
-
-                    b.ToTable("ConcertGenres", "concert");
                 });
 
             modelBuilder.Entity("Concertable.Concert.Domain.ConcertImageEntity", b =>
@@ -296,6 +287,10 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("ContractId")
                         .HasColumnType("int");
 
+                    b.PrimitiveCollection<string>("Genres")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("VenueId")
                         .HasColumnType("int");
 
@@ -307,19 +302,6 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                     b.HasIndex("VenueId");
 
                     b.ToTable("Opportunities", "concert");
-                });
-
-            modelBuilder.Entity("Concertable.Concert.Domain.OpportunityGenreEntity", b =>
-                {
-                    b.Property<int>("OpportunityId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Genre")
-                        .HasColumnType("int");
-
-                    b.HasKey("OpportunityId", "Genre");
-
-                    b.ToTable("OpportunityGenres", "concert");
                 });
 
             modelBuilder.Entity("Concertable.Concert.Domain.VenueReadModel", b =>
@@ -568,17 +550,6 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                     b.Navigation("Venue");
                 });
 
-            modelBuilder.Entity("Concertable.Concert.Domain.ConcertGenreEntity", b =>
-                {
-                    b.HasOne("Concertable.Concert.Domain.ConcertEntity", "Concert")
-                        .WithMany("ConcertGenres")
-                        .HasForeignKey("ConcertId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Concert");
-                });
-
             modelBuilder.Entity("Concertable.Concert.Domain.ConcertImageEntity", b =>
                 {
                     b.HasOne("Concertable.Concert.Domain.ConcertEntity", "Concert")
@@ -625,17 +596,6 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
                     b.Navigation("Venue");
                 });
 
-            modelBuilder.Entity("Concertable.Concert.Domain.OpportunityGenreEntity", b =>
-                {
-                    b.HasOne("Concertable.Concert.Domain.OpportunityEntity", "Opportunity")
-                        .WithMany("OpportunityGenres")
-                        .HasForeignKey("OpportunityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Opportunity");
-                });
-
             modelBuilder.Entity("Concertable.Concert.Domain.ApplicationEntity", b =>
                 {
                     b.Navigation("Booking");
@@ -653,16 +613,12 @@ namespace Concertable.Concert.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.Concert.Domain.ConcertEntity", b =>
                 {
-                    b.Navigation("ConcertGenres");
-
                     b.Navigation("Images");
                 });
 
             modelBuilder.Entity("Concertable.Concert.Domain.OpportunityEntity", b =>
                 {
                     b.Navigation("Applications");
-
-                    b.Navigation("OpportunityGenres");
                 });
 #pragma warning restore 612, 618
         }

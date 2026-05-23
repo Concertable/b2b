@@ -23,7 +23,9 @@ internal class ConcertChangedDomainEventHandler(
         await bus.PublishAsync(new ConcertChangedEvent(
             concert.Id,
             concert.Name,
+            concert.About,
             concert.Avatar,
+            concert.BannerUrl,
             e.TotalTickets,
             e.TotalTickets,
             e.Price,
