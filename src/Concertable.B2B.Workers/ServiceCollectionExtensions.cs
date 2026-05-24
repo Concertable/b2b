@@ -12,7 +12,7 @@ using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Concertable.B2B.Notification.Infrastructure.Extensions;
+using Concertable.Shared.Notification.Infrastructure.Extensions;
 using Concertable.Payment.Client.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

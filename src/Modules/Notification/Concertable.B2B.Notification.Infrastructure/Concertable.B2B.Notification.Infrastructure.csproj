@@ -11,7 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Concertable.B2B.Notification.Contracts\Concertable.B2B.Notification.Contracts.csproj" />
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
   </ItemGroup>
 

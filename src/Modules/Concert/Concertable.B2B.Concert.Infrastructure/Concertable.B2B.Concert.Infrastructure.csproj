@@ -30,7 +30,6 @@
     <ProjectReference Include="..\..\Venue\Concertable.B2B.Venue.Domain\Concertable.B2B.Venue.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.Payment\Concertable.Payment.Client\Concertable.Payment.Client.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.Payment\Concertable.Payment.Domain\Concertable.Payment.Domain.csproj" />
-    <ProjectReference Include="..\..\Notification\Concertable.B2B.Notification.Contracts\Concertable.B2B.Notification.Contracts.csproj" />
     <ProjectReference Include="..\..\Conversations\Concertable.B2B.Conversations.Contracts\Concertable.B2B.Conversations.Contracts.csproj" />
 <ProjectReference Include="..\..\..\..\Seeding\Concertable.Seeding\Concertable.Seeding.csproj" />
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />

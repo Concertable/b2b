@@ -45,7 +45,7 @@
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Api\Concertable.B2B.Concert.Api.csproj" />
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Contract\Concertable.B2B.Contract.Api\Concertable.B2B.Contract.Api.csproj" />
-    <ProjectReference Include="..\Modules\Notification\Concertable.B2B.Notification.Infrastructure\Concertable.B2B.Notification.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\Concertable.Shared.Notification\Concertable.Shared.Notification.Infrastructure\Concertable.Shared.Notification.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Conversations\Concertable.B2B.Conversations.Api\Concertable.B2B.Conversations.Api.csproj" />
 <ProjectReference Include="..\..\Seeding\Concertable.Seeding\Concertable.Seeding.csproj" />
     <ProjectReference Include="..\..\Concertable.ServiceDefaults\Concertable.ServiceDefaults.csproj" />

@@ -51,6 +51,9 @@
     <Project Path="Modules/Notification/Concertable.B2B.Notification.Contracts/Concertable.B2B.Notification.Contracts.csproj" />
     <Project Path="Modules/Notification/Concertable.B2B.Notification.Infrastructure/Concertable.B2B.Notification.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Shared/Notification/">
+    <Project Path="../Shared/Concertable.Shared.Notification/Concertable.Shared.Notification.Infrastructure/Concertable.Shared.Notification.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/Modules/Organization/">
     <Project Path="Modules/Organization/Concertable.B2B.Organization.Api/Concertable.B2B.Organization.Api.csproj" />
     <Project Path="Modules/Organization/Concertable.B2B.Organization.Application/Concertable.B2B.Organization.Application.csproj" />
