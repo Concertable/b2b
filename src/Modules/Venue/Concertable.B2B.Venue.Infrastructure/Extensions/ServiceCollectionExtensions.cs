@@ -4,6 +4,7 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Concertable.Seeding;
+using Concertable.Seeding.Extensions;
 using Concertable.B2B.Venue.Application.Validators;
 using Concertable.B2B.Venue.Domain.Events;
 using Concertable.B2B.Venue.Infrastructure.Data;
@@ -29,7 +30,8 @@ public static class ServiceCollectionExtensions
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<DomainEventDispatchInterceptor>()));
+                    sp.GetRequiredService<DomainEventDispatchInterceptor>())
+                .UseSeedingSupport(sp));
 
         services.AddScoped<IVenueService, VenueService>();
         services.AddScoped<IVenueDashboardService, VenueDashboardService>();

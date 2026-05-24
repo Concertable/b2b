@@ -44,7 +44,7 @@ internal class VenueTestSeeder : ITestSeeder
                 seed.VenueManager1.Email).Generate();
 
             context.Venues.Add(seed.Venue);
-            await context.SaveWithIdsAsync<VenueEntity>(ct);
+            await context.SaveChangesAsync(ct);
         });
     }
 }

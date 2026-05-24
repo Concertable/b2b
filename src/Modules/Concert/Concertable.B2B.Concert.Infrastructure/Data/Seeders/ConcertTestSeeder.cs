@@ -94,7 +94,7 @@ internal class ConcertTestSeeder : ITestSeeder
                 seed.PostedVersusApp,
                 seed.PostedVenueHireApp);
 
-            await context.SaveWithIdsAsync<BookingEntity>(ct);
+            await context.SaveChangesAsync(ct);
 
             context.Concerts.AddRange(
                 ConcertFaker.GetFaker(1, seed.ConfirmedBooking.Id, "Draft Concert", 0m, 100, seed.Artist.Id, seed.Venue.Id, opps[1].Period.Start, opps[1].Period.End).Generate(),
@@ -104,7 +104,7 @@ internal class ConcertTestSeeder : ITestSeeder
                 ConcertFaker.GetFaker(5, seed.PostedVersusBooking.Id, "Posted Versus Concert", 10.00m, 100, seed.Artist.Id, seed.Venue.Id, opps[8].Period.Start, opps[8].Period.End, [Genre.Rock]).Generate().With("DatePosted", now),
                 ConcertFaker.GetFaker(6, seed.PostedVenueHireBooking.Id, "Posted VenueHire Concert", 10.00m, 100, seed.Artist.Id, seed.Venue.Id, opps[9].Period.Start, opps[9].Period.End, [Genre.Rock]).Generate().With("DatePosted", now));
 
-            await context.SaveWithIdsAsync<ConcertEntity>(ct);
+            await context.SaveChangesAsync(ct);
         });
     }
 }

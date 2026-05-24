@@ -298,7 +298,7 @@ internal class ConcertDevSeeder : IDevSeeder
             };
 
             context.Applications.AddRange(applications);
-            await context.SaveWithIdsAsync<BookingEntity>(ct);
+            await context.SaveChangesAsync(ct);
 
             // ====== Step 3: Concerts ======
 
@@ -351,7 +351,7 @@ internal class ConcertDevSeeder : IDevSeeder
                 ConcertFaker.GetFaker(46, seed.Bookings[45].Id, "Night Drive",                25m, 160, 5,  opps[46].VenueId, opps[46].Period.Start, opps[46].Period.End).Generate().With("DatePosted", now.AddDays(12)),
                 ConcertFaker.GetFaker(47, seed.Bookings[46].Id, "Weekend Rush",               15m, 120, 6,  opps[47].VenueId, opps[47].Period.Start, opps[47].Period.End).Generate().With("DatePosted", now.AddDays(14)));
 
-            await context.SaveWithIdsAsync<ConcertEntity>(ct);
+            await context.SaveChangesAsync(ct);
 
             // ====== Step 4: Post searchable concerts to trigger Search projection ======
 

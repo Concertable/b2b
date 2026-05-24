@@ -2,6 +2,7 @@ using Concertable.Auth.Contracts.Events;
 using Concertable.DataAccess;
 using Concertable.B2B.User.Infrastructure.Mappers;
 using Concertable.Seeding;
+using Concertable.Seeding.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.User.Application.Validators;
 using Concertable.B2B.User.Infrastructure.Authorization;
@@ -29,7 +30,8 @@ public static class ServiceCollectionExtensions
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<DomainEventDispatchInterceptor>()));
+                    sp.GetRequiredService<DomainEventDispatchInterceptor>())
+                .UseSeedingSupport(sp));
 
         services.AddKeyedScoped<IRoleMapper, VenueManagerMapper>(Role.VenueManager);
         services.AddKeyedScoped<IRoleMapper, ArtistManagerMapper>(Role.ArtistManager);
