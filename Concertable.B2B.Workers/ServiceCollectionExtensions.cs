@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess;
+using Concertable.Seeding.Extensions;
 
 namespace Concertable.B2B.Workers;
 
@@ -26,6 +27,7 @@ internal static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSeedingInfrastructure();
         services.AddSharedInfrastructure(configuration);
         services.AddSharedBlob(configuration);
         services.AddSharedEmail(configuration);

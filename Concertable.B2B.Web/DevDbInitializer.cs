@@ -2,6 +2,7 @@ using Concertable.Messaging.Infrastructure.Inbox;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.Seeding;
 using Concertable.Seeding.Fakers;
+using Concertable.Seeding.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.DataAccess.Application;
@@ -19,6 +20,7 @@ public class DevDbInitializer : IDbInitializer
     private readonly IEnumerable<IDevSeeder> seeders;
     private readonly OutboxDbContext outbox;
     private readonly InboxDbContext inbox;
+    private readonly SeedingScope seedingScope;
 
     public DevDbInitializer(
         SeedData seedData,
@@ -27,7 +29,8 @@ public class DevDbInitializer : IDbInitializer
         ILocationFaker locationFaker,
         IEnumerable<IDevSeeder> seeders,
         OutboxDbContext outbox,
-        InboxDbContext inbox)
+        InboxDbContext inbox,
+        SeedingScope seedingScope)
     {
         this.seedData = seedData;
         this.timeProvider = timeProvider;
@@ -36,6 +39,7 @@ public class DevDbInitializer : IDbInitializer
         this.seeders = seeders;
         this.outbox = outbox;
         this.inbox = inbox;
+        this.seedingScope = seedingScope;
     }
 
     public async Task InitializeAsync()
@@ -46,7 +50,10 @@ public class DevDbInitializer : IDbInitializer
         foreach (var seeder in seeders.OrderBy(s => s.Order))
             await seeder.MigrateAsync();
 
-        foreach (var seeder in seeders.OrderBy(s => s.Order))
-            await seeder.SeedAsync();
+        using (seedingScope.Activate())
+        {
+            foreach (var seeder in seeders.OrderBy(s => s.Order))
+                await seeder.SeedAsync();
+        }
     }
 }

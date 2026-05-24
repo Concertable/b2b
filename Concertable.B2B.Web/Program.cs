@@ -27,6 +27,7 @@ using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
 using Concertable.Seeding.Fakers;
+using Concertable.Seeding.Extensions;
 using Concertable.B2B.Web.Extensions;
 using Concertable.B2B.Notification.Infrastructure.Hubs;
 using Concertable.B2B.Notification.Infrastructure.Extensions;
@@ -135,6 +136,7 @@ services.AddDirectBusKeyed("webhook");
 services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("B2BDb")));
 services.AddInbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("B2BDb")));
 services.AddInProcessEventDispatch();
+services.AddSeedingInfrastructure();
 if (!builder.Environment.IsEnvironment("Testing"))
 {
     services.AddScoped<IDbInitializer, DevDbInitializer>();

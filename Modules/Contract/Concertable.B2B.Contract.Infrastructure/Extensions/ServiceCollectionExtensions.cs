@@ -1,5 +1,6 @@
 using Concertable.DataAccess;
 using Concertable.Seeding;
+using Concertable.Seeding.Extensions;
 using Concertable.B2B.Contract.Application.Interfaces;
 using Concertable.B2B.Contract.Application.Mappers;
 using Concertable.B2B.Contract.Application.Services;
@@ -22,7 +23,8 @@ public static class ServiceCollectionExtensions
             opt.UseSqlServer(configuration.GetConnectionString("B2BDb"))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<DomainEventDispatchInterceptor>()));
+                    sp.GetRequiredService<DomainEventDispatchInterceptor>())
+                .UseSeedingSupport(sp));
 
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IContractMapper, ContractMapper>();

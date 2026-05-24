@@ -102,7 +102,7 @@ internal class VenueDevSeeder : IDevSeeder
 
             context.Venues.Add(seed.Venue);
             context.Venues.AddRange(venues);
-            await context.SaveWithIdsAsync<VenueEntity>(ct);
+            await context.SaveChangesAsync(ct);
         });
     }
 }

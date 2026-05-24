@@ -10,6 +10,7 @@ using Concertable.B2B.Artist.Infrastructure.Services;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Seeding;
+using Concertable.Seeding.Extensions;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -30,7 +31,8 @@ public static class ServiceCollectionExtensions
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<DomainEventDispatchInterceptor>()));
+                    sp.GetRequiredService<DomainEventDispatchInterceptor>())
+                .UseSeedingSupport(sp));
 
         services.AddScoped<IArtistService, ArtistService>();
         services.AddScoped<IArtistDashboardService, ArtistDashboardService>();

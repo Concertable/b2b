@@ -93,7 +93,7 @@ internal class ArtistDevSeeder : IDevSeeder
             }).ToArray();
 
             context.Artists.AddRange(artists);
-            await context.SaveWithIdsAsync<ArtistEntity>(ct);
+            await context.SaveChangesAsync(ct);
         });
     }
 }

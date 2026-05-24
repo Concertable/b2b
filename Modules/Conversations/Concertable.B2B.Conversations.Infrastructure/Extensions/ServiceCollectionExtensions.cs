@@ -1,5 +1,6 @@
 using Concertable.DataAccess;
 using Concertable.Seeding;
+using Concertable.Seeding.Extensions;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;
@@ -21,7 +22,8 @@ public static class ServiceCollectionExtensions
             opts.UseSqlServer(configuration.GetConnectionString("B2BDb"))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<DomainEventDispatchInterceptor>()));
+                    sp.GetRequiredService<DomainEventDispatchInterceptor>())
+                .UseSeedingSupport(sp));
 
         services.AddSingleton<ConversationsConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConversationsConfigurationProvider>());

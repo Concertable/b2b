@@ -45,7 +45,7 @@ internal class ArtistTestSeeder : ITestSeeder
                 [Genre.Rock]).Generate();
 
             context.Artists.Add(seed.Artist);
-            await context.SaveWithIdsAsync<ArtistEntity>(ct);
+            await context.SaveChangesAsync(ct);
         });
     }
 }
