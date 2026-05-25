@@ -1,5 +1,6 @@
 using Concertable.B2B.Contract.Api.Controllers;
 using Concertable.B2B.Contract.Infrastructure.Extensions;
+using Concertable.Shared.Api.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,9 +12,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddContractModule(configuration);
         services.AddControllers()
-            .AddApplicationPart(typeof(ContractController).Assembly)
-            .ConfigureApplicationPartManager(apm =>
-                apm.FeatureProviders.Add(new InternalControllerFeatureProvider()));
+            .AddInternalControllers(typeof(ContractController).Assembly);
         return services;
     }
 }

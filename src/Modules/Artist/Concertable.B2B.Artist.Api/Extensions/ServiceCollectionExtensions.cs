@@ -1,5 +1,6 @@
 using Concertable.B2B.Artist.Api.Controllers;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
+using Concertable.Shared.Api.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,9 +12,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddArtistModule(configuration);
         services.AddControllers()
-            .AddApplicationPart(typeof(ArtistController).Assembly)
-            .ConfigureApplicationPartManager(apm =>
-                apm.FeatureProviders.Add(new InternalControllerFeatureProvider()));
+            .AddInternalControllers(typeof(ArtistController).Assembly);
         return services;
     }
 }

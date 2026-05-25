@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Shared\Concertable.Shared.Api\Concertable.Shared.Api.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Venue.Contracts\Concertable.B2B.Venue.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Venue.Application\Concertable.B2B.Venue.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Venue.Infrastructure\Concertable.B2B.Venue.Infrastructure.csproj" />
