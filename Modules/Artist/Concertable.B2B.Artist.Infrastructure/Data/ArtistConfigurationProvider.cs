@@ -10,5 +10,6 @@ internal sealed class ArtistConfigurationProvider : IEntityTypeConfigurationProv
     {
         modelBuilder.ApplyConfiguration(new ArtistEntityConfiguration());
         modelBuilder.ApplyConfiguration(new ArtistRatingProjectionConfiguration());
+        modelBuilder.ApplyConfiguration(new ArtistReviewConfiguration());
     }
 }

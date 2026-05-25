@@ -10,6 +10,7 @@ internal class VenueDbContext(
     public DbSet<VenueEntity> Venues => Set<VenueEntity>();
     public DbSet<VenueImageEntity> VenueImages => Set<VenueImageEntity>();
     public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
+    public DbSet<VenueReview> VenueReviews => Set<VenueReview>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

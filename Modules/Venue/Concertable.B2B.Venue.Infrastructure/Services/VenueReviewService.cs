@@ -15,4 +15,12 @@ internal class VenueReviewService(VenueDbContext context) : IVenueReviewService
             .FirstOrDefaultAsync(p => p.VenueId == venueId);
         return projection.ToReviewSummaryDto();
     }
+
+    public Task<IPagination<ReviewDto>> GetPagedAsync(int venueId, IPageParams pageParams) =>
+        context.VenueReviews
+            .AsNoTracking()
+            .Where(r => r.VenueId == venueId)
+            .OrderByDescending(r => r.Id)
+            .Select(r => new ReviewDto { Id = r.Id, Email = r.Email, Stars = (int)r.Stars, Details = r.Details })
+            .ToPaginationAsync(pageParams);
 }

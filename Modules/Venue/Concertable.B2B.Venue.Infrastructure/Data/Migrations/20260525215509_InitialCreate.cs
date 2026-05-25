@@ -30,6 +30,23 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "VenueReviews",
+                schema: "venue",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    VenueId = table.Column<int>(type: "int", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Stars = table.Column<double>(type: "float", nullable: false),
+                    Details = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_VenueReviews", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Venues",
                 schema: "venue",
                 columns: table => new
@@ -79,6 +96,12 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                 schema: "venue",
                 table: "VenueImages",
                 column: "VenueId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_VenueReviews_VenueId",
+                schema: "venue",
+                table: "VenueReviews",
+                column: "VenueId");
         }
 
         /// <inheritdoc />
@@ -90,6 +113,10 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "VenueRatingProjections",
+                schema: "venue");
+
+            migrationBuilder.DropTable(
+                name: "VenueReviews",
                 schema: "venue");
 
             migrationBuilder.DropTable(

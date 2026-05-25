@@ -18,6 +18,16 @@ internal class VenueEntityConfiguration : IEntityTypeConfiguration<VenueEntity>
     }
 }
 
+internal class VenueReviewConfiguration : IEntityTypeConfiguration<VenueReview>
+{
+    public void Configure(EntityTypeBuilder<VenueReview> builder)
+    {
+        builder.ToTable("VenueReviews", Schema.Name);
+        builder.HasIndex(r => r.VenueId);
+        builder.Property(r => r.Email).HasMaxLength(256).IsRequired();
+    }
+}
+
 public class VenueRatingProjectionConfiguration : IEntityTypeConfiguration<VenueRatingProjection>
 {
     public void Configure(EntityTypeBuilder<VenueRatingProjection> builder)

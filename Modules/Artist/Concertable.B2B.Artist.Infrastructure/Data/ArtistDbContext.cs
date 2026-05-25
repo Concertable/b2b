@@ -9,6 +9,7 @@ internal class ArtistDbContext(
 {
     public DbSet<ArtistEntity> Artists => Set<ArtistEntity>();
     public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();
+    public DbSet<ArtistReview> ArtistReviews => Set<ArtistReview>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

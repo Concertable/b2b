@@ -54,6 +54,14 @@ internal class VenueReviewProjectionHandler : IIntegrationEventHandler<CustomerR
             projection.AverageRating = averageRating;
         }
 
+        context.VenueReviews.Add(new VenueReview
+        {
+            VenueId = e.VenueId,
+            Email = e.Email,
+            Stars = e.Stars,
+            Details = e.Details
+        });
+
         contextAccessor.Context = context;
         await bus.PublishAsync(new VenueRatingUpdatedEvent(e.VenueId, averageRating, reviewCount), ct);
         await context.SaveChangesAsync(ct);

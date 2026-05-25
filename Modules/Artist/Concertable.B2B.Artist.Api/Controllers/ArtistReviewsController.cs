@@ -14,6 +14,10 @@ internal class ArtistReviewsController : ControllerBase
         this.reviewService = reviewService;
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IPagination<ReviewDto>>> GetReviews(int artistId, [FromQuery] PageParams pageParams) =>
+        Ok(await reviewService.GetPagedAsync(artistId, pageParams));
+
     [HttpGet("summary")]
     public async Task<ActionResult<ReviewSummaryDto>> GetSummary(int artistId) =>
         Ok(await reviewService.GetSummaryAsync(artistId));

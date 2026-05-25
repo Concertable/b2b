@@ -19,6 +19,16 @@ internal class ArtistEntityConfiguration : IEntityTypeConfiguration<ArtistEntity
     }
 }
 
+internal class ArtistReviewConfiguration : IEntityTypeConfiguration<ArtistReview>
+{
+    public void Configure(EntityTypeBuilder<ArtistReview> builder)
+    {
+        builder.ToTable("ArtistReviews", Schema.Name);
+        builder.HasIndex(r => r.ArtistId);
+        builder.Property(r => r.Email).HasMaxLength(256).IsRequired();
+    }
+}
+
 public class ArtistRatingProjectionConfiguration : IEntityTypeConfiguration<ArtistRatingProjection>
 {
     public void Configure(EntityTypeBuilder<ArtistRatingProjection> builder)
