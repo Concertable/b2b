@@ -4,5 +4,6 @@ public enum Role
 {
     VenueManager,
     ArtistManager,
-    Admin
+    Admin,
+    Customer
 }
