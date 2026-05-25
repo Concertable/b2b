@@ -15,4 +15,12 @@ internal class ArtistReviewService(ArtistDbContext context) : IArtistReviewServi
             .FirstOrDefaultAsync(p => p.ArtistId == artistId);
         return projection.ToReviewSummaryDto();
     }
+
+    public Task<IPagination<ReviewDto>> GetPagedAsync(int artistId, IPageParams pageParams) =>
+        context.ArtistReviews
+            .AsNoTracking()
+            .Where(r => r.ArtistId == artistId)
+            .OrderByDescending(r => r.Id)
+            .Select(r => new ReviewDto { Id = r.Id, Email = r.Email, Stars = (int)r.Stars, Details = r.Details })
+            .ToPaginationAsync(pageParams);
 }

@@ -54,6 +54,14 @@ internal class ArtistReviewProjectionHandler : IIntegrationEventHandler<Customer
             projection.AverageRating = averageRating;
         }
 
+        context.ArtistReviews.Add(new ArtistReview
+        {
+            ArtistId = e.ArtistId,
+            Email = e.Email,
+            Stars = e.Stars,
+            Details = e.Details
+        });
+
         contextAccessor.Context = context;
         await bus.PublishAsync(new ArtistRatingUpdatedEvent(e.ArtistId, averageRating, reviewCount), ct);
         await context.SaveChangesAsync(ct);

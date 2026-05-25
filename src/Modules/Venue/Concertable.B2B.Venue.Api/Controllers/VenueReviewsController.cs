@@ -14,6 +14,10 @@ internal class VenueReviewsController : ControllerBase
         this.reviewService = reviewService;
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IPagination<ReviewDto>>> GetReviews(int venueId, [FromQuery] PageParams pageParams) =>
+        Ok(await reviewService.GetPagedAsync(venueId, pageParams));
+
     [HttpGet("summary")]
     public async Task<ActionResult<ReviewSummaryDto>> GetSummary(int venueId) =>
         Ok(await reviewService.GetSummaryAsync(venueId));

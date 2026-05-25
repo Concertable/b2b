@@ -10,5 +10,6 @@ internal sealed class VenueConfigurationProvider : IEntityTypeConfigurationProvi
     {
         modelBuilder.ApplyConfiguration(new VenueEntityConfiguration());
         modelBuilder.ApplyConfiguration(new VenueRatingProjectionConfiguration());
+        modelBuilder.ApplyConfiguration(new VenueReviewConfiguration());
     }
 }

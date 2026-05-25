@@ -30,6 +30,23 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ArtistReviews",
+                schema: "artist",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ArtistId = table.Column<int>(type: "int", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Stars = table.Column<double>(type: "float", nullable: false),
+                    Details = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ArtistReviews", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Artists",
                 schema: "artist",
                 columns: table => new
@@ -51,6 +68,12 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
                 {
                     table.PrimaryKey("PK_Artists", x => x.Id);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArtistReviews_ArtistId",
+                schema: "artist",
+                table: "ArtistReviews",
+                column: "ArtistId");
         }
 
         /// <inheritdoc />
@@ -58,6 +81,10 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "ArtistRatingProjections",
+                schema: "artist");
+
+            migrationBuilder.DropTable(
+                name: "ArtistReviews",
                 schema: "artist");
 
             migrationBuilder.DropTable(
