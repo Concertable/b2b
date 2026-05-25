@@ -1,5 +1,6 @@
 using Concertable.B2B.User.Api.Controllers;
 using Concertable.B2B.User.Infrastructure.Extensions;
+using Concertable.Shared.Api.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,9 +17,7 @@ public static class ServiceCollectionExtensions
                 p.RequireClaim("scope", "user:claims"));
         });
         services.AddControllers()
-            .AddApplicationPart(typeof(UserController).Assembly)
-            .ConfigureApplicationPartManager(apm =>
-                apm.FeatureProviders.Add(new InternalControllerFeatureProvider()));
+            .AddInternalControllers(typeof(UserController).Assembly);
         return services;
     }
 }

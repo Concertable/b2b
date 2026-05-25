@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Api.Controllers;
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
+using Concertable.Shared.Api.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,9 +15,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IApplicationResponseMapper, ApplicationResponseMapper>();
         services.AddSingleton<IOpportunityResponseMapper, OpportunityResponseMapper>();
         services.AddControllers()
-            .AddApplicationPart(typeof(ConcertController).Assembly)
-            .ConfigureApplicationPartManager(apm =>
-                apm.FeatureProviders.Add(new InternalControllerFeatureProvider()));
+            .AddInternalControllers(typeof(ConcertController).Assembly);
         return services;
     }
 }

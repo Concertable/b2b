@@ -1,5 +1,6 @@
 using Concertable.B2B.Venue.Api.Controllers;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
+using Concertable.Shared.Api.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,9 +12,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddVenueModule(configuration);
         services.AddControllers()
-            .AddApplicationPart(typeof(VenueController).Assembly)
-            .ConfigureApplicationPartManager(apm =>
-                apm.FeatureProviders.Add(new InternalControllerFeatureProvider()));
+            .AddInternalControllers(typeof(VenueController).Assembly);
         return services;
     }
 }
