@@ -4,6 +4,7 @@ using Concertable.Messaging.Contracts;
 
 namespace Concertable.B2B.Concert.Contracts.Events;
 
+[MessageType("concertable.b2b.concert-changed.v1")]
 public record ConcertChangedEvent(
     int ConcertId,
     string Name,
@@ -22,5 +23,4 @@ public record ConcertChangedEvent(
     double Latitude,
     double Longitude,
     IReadOnlyCollection<Genre> Genres,
-    Guid PayeeUserId,
-    string ContractType) : IIntegrationEvent;
+    Guid PayeeUserId) : IIntegrationEvent;

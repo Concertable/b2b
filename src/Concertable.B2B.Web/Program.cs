@@ -26,8 +26,12 @@ using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
-using Concertable.Seeding.Fakers;
+using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
+using Concertable.Seeding.Fakers;
+using Concertable.B2B.Seeding;
+using Concertable.B2B.Seeding.Fakers;
+using Concertable.Payment.Seeding;
 using Concertable.B2B.Web.Extensions;
 using Concertable.Shared.Notification.Infrastructure.Hubs;
 using Concertable.Shared.Notification.Infrastructure.Extensions;
@@ -140,7 +144,7 @@ services.AddSeedingInfrastructure();
 if (!builder.Environment.IsEnvironment("Testing"))
 {
     services.AddScoped<IDbInitializer, DevDbInitializer>();
-    services.AddScoped<Concertable.Seeding.SeedData>();
+    services.AddScoped<SeedData>();
     services.AddScoped<ILocationFaker, LocationFaker>();
     services.AddBlobDevSeeder();
     services.AddUserDevSeeder();
@@ -168,6 +172,9 @@ services.AddValidation();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+if (builder.Environment.IsEnvironment("E2E"))
+    services.AddSingleton<StripeE2EAccountResolver>();
 
 var app = builder.Build();
 

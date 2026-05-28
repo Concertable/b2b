@@ -4,6 +4,7 @@ using Concertable.Messaging.Contracts;
 
 namespace Concertable.B2B.Concert.Contracts.Events;
 
+[MessageType("concertable.b2b.concert-posted.v1")]
 public record ConcertPostedEvent(
     int ConcertId,
     string Name,

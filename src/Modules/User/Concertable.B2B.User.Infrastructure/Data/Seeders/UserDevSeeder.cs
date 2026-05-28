@@ -1,5 +1,6 @@
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
+using Concertable.B2B.Seeding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel.Geometry;
@@ -37,52 +38,68 @@ internal class UserDevSeeder : IDevSeeder
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        await context.Users.SeedIfEmptyAsync(async () =>
+        if (!await context.Users.AnyAsync(u => u.Id == SeedIds.Admin, ct))
         {
             seedData.Admin = UserEntity.FromRegistration(SeedIds.Admin, "admin@test.com", Role.Admin);
             seedData.Admin.UpdateLocation(geometryProvider.CreatePoint(51.0, -0.5), new Address("Leicestershire", "Loughborough"));
             seedData.Admin.UpdateAvatar("avatar.jpg");
             context.Users.Add(seedData.Admin);
+        }
 
-            seedData.ArtistManager1 = UserEntity.FromRegistration(SeedIds.ArtistManager(1), "artistmanager1@test.com", Role.ArtistManager);
+        var existingManagerIds = await context.Users
+            .Where(u => u.Role == Role.ArtistManager || u.Role == Role.VenueManager)
+            .Select(u => u.Id)
+            .ToHashSetAsync(ct);
+
+        seedData.ArtistManager1 = UserEntity.FromRegistration(SeedIds.ArtistManager(1), "artistmanager1@test.com", Role.ArtistManager);
+        if (!existingManagerIds.Contains(SeedIds.ArtistManager(1)))
             context.Users.Add(seedData.ArtistManager1);
 
+        if (!existingManagerIds.Contains(SeedIds.ArtistManager(2)))
             context.Users.Add(UserEntity.FromRegistration(SeedIds.ArtistManager(2), "artistmanager2@test.com", Role.ArtistManager));
 
-            for (int i = 3; i <= 35; i++)
+        for (int i = 3; i <= 35; i++)
+        {
+            if (!existingManagerIds.Contains(SeedIds.ArtistManager(i)))
                 context.Users.Add(UserEntity.FromRegistration(SeedIds.ArtistManager(i), $"artistmanager{i}@test.com", Role.ArtistManager));
+        }
 
-            seedData.VenueManager1 = UserEntity.FromRegistration(SeedIds.VenueManager(1), "venuemanager1@test.com", Role.VenueManager);
+        seedData.VenueManager1 = UserEntity.FromRegistration(SeedIds.VenueManager(1), "venuemanager1@test.com", Role.VenueManager);
+        if (!existingManagerIds.Contains(SeedIds.VenueManager(1)))
             context.Users.Add(seedData.VenueManager1);
 
-            seedData.VenueManager2 = UserEntity.FromRegistration(SeedIds.VenueManager(2), "venuemanager2@test.com", Role.VenueManager);
+        seedData.VenueManager2 = UserEntity.FromRegistration(SeedIds.VenueManager(2), "venuemanager2@test.com", Role.VenueManager);
+        if (!existingManagerIds.Contains(SeedIds.VenueManager(2)))
             context.Users.Add(seedData.VenueManager2);
 
-            for (int i = 3; i <= 35; i++)
+        for (int i = 3; i <= 35; i++)
+        {
+            if (!existingManagerIds.Contains(SeedIds.VenueManager(i)))
                 context.Users.Add(UserEntity.FromRegistration(SeedIds.VenueManager(i), $"venuemanager{i}@test.com", Role.VenueManager));
+        }
 
+        if (context.ChangeTracker.HasChanges())
             await context.SaveChangesAsync(ct);
 
-            var venueManagerIds = await context.Users
-                .Where(u => u.Role == Role.VenueManager)
-                .Select(u => u.Id)
-                .ToListAsync(ct);
-            context.VenueManagerProfiles.AddRange(venueManagerIds.Select(id => new VenueManagerProfileEntity(id)));
+        var existingArtistProfileSubs = await context.ArtistManagerProfiles.Select(p => p.Sub).ToHashSetAsync(ct);
+        var existingVenueProfileSubs = await context.VenueManagerProfiles.Select(p => p.Sub).ToHashSetAsync(ct);
 
-            var artistManagerIds = await context.Users
-                .Where(u => u.Role == Role.ArtistManager)
-                .Select(u => u.Id)
-                .ToListAsync(ct);
-            context.ArtistManagerProfiles.AddRange(artistManagerIds.Select(id => new ArtistManagerProfileEntity(id)));
+        for (int i = 1; i <= 35; i++)
+        {
+            if (!existingArtistProfileSubs.Contains(SeedIds.ArtistManager(i)))
+                context.ArtistManagerProfiles.Add(new ArtistManagerProfileEntity(SeedIds.ArtistManager(i)));
+        }
+        for (int i = 1; i <= 35; i++)
+        {
+            if (!existingVenueProfileSubs.Contains(SeedIds.VenueManager(i)))
+                context.VenueManagerProfiles.Add(new VenueManagerProfileEntity(SeedIds.VenueManager(i)));
+        }
 
-            var adminIds = await context.Users
-                .Where(u => u.Role == Role.Admin)
-                .Select(u => u.Id)
-                .ToListAsync(ct);
-            context.AdminProfiles.AddRange(adminIds.Select(id => new AdminProfileEntity(id)));
+        if (!await context.AdminProfiles.AnyAsync(p => p.Sub == SeedIds.Admin, ct))
+            context.AdminProfiles.Add(new AdminProfileEntity(SeedIds.Admin));
 
+        if (context.ChangeTracker.HasChanges())
             await context.SaveChangesAsync(ct);
-        });
 
         var usersByEmail = await context.Users.ToDictionaryAsync(u => u.Email, u => u.Id, ct);
 
@@ -95,5 +112,7 @@ internal class UserDevSeeder : IDevSeeder
         for (int i = 3; i <= 35; i++) venueManagerEmails.Add($"venuemanager{i}@test.com");
         seedData.VenueManagerEmails = venueManagerEmails;
         seedData.VenueManagerIds = [.. venueManagerEmails.Select(e => usersByEmail[e])];
+
+        seedData.Users = await context.Users.ToListAsync(ct);
     }
 }

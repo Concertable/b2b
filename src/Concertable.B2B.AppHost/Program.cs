@@ -7,7 +7,12 @@ var searchDb = sql.AddDatabase("SearchDb");
 var paymentDb = sql.AddDatabase("PaymentDb");
 
 var (storage, blobs) = builder.AddAzureStorage();
-var asb = builder.AddServiceBus(b2b: true, search: true, payment: true);
+var asb = builder.AddServiceBus();
+
+asb.Topology()
+   .AddB2BTopology()
+   .AddSearchTopology()
+   .AddPaymentTopology();
 
 var auth = builder.AddAuth<Projects.Concertable_Auth>(authDb, b2bDb, asb);
 var paymentWeb = builder.AddPaymentWeb<Projects.Concertable_Payment_Web>(auth, paymentDb, asb);
@@ -16,7 +21,7 @@ var api = builder.AddApi<Projects.Concertable_B2B_Web>(b2bDb, auth, storage, blo
 auth.WithEnvironment("Services__B2BApiUrl", api.GetEndpoint("https"));
 auth.WithEnvironment("ServiceAuth__AuthClientId", "concertable-auth");
 
-builder.AddWorkers<Projects.Concertable_B2B_Workers>(b2bDb);
+builder.AddWorkers<Projects.Concertable_B2B_Workers>(b2bDb, paymentWeb);
 builder.AddPaymentWorkers<Projects.Concertable_Payment_Workers>(paymentDb, asb);
 builder.AddSearchWeb<Projects.Concertable_Search_Web>(auth, searchDb);
 builder.AddSearchWorkers<Projects.Concertable_Search_Workers>(searchDb, asb);

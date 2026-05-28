@@ -7,6 +7,11 @@ using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
+/// <summary>
+/// Represents a published concert within the B2B platform.
+/// Holds denormalized <see cref="ArtistReadModel"/> and <see cref="VenueReadModel"/> references
+/// so the Concert module can satisfy queries in a single DB context without crossing module boundaries.
+/// </summary>
 public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, ILifecycleEntity, IEventRaiser
 {
     public int Id { get; private set; }

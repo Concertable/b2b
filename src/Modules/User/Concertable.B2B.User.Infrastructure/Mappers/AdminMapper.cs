@@ -6,7 +6,7 @@ internal sealed class AdminMapper : IRoleMapper
 {
     public Role Role => Role.Admin;
 
-    public Task<IUser> ToDtoAsync(UserEntity user) => Task.FromResult<IUser>(new AdminDto
+    public Task<UserBase> ToDtoAsync(UserEntity user) => Task.FromResult<UserBase>(new AdminDto
     {
         Id = user.Id,
         Email = user.Email,

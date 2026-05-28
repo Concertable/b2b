@@ -26,7 +26,7 @@ public class OutboxVerificationTests : IAsyncLifetime
         // Arrange
         var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
         var concertId = fixture.SeedData.ConfirmedBooking.Concert!.Id;
-        var expectedType = MessageEnvelope.TypeNameFor(typeof(ConcertChangedEvent));
+        var expectedType = MessageTypeAttribute.Resolve(typeof(ConcertChangedEvent));
 
         // Act
         var response = await client.PutAsync($"/api/Concert/post/{concertId}", BuildPostRequest());

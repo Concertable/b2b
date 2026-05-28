@@ -17,16 +17,16 @@ internal class UserModule : IUserModule
         this.userMapper = userMapper;
     }
 
-    public async Task<IUser?> GetByIdAsync(Guid id)
+    public async Task<UserBase?> GetByIdAsync(Guid id)
     {
         var user = await userRepository.GetByIdAsync(id);
         return user is null ? null : await userMapper.ToDtoAsync(user);
     }
 
-    public async Task<IReadOnlyCollection<IUser>> GetByIdsAsync(IEnumerable<Guid> ids)
+    public async Task<IReadOnlyCollection<UserBase>> GetByIdsAsync(IEnumerable<Guid> ids)
     {
         var users = await userRepository.GetByIdsAsync(ids);
-        var result = new List<IUser>(users.Count);
+        var result = new List<UserBase>(users.Count);
         foreach (var user in users)
         {
             var dto = await userMapper.ToDtoAsync(user);

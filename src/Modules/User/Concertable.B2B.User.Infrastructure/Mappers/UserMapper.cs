@@ -11,7 +11,7 @@ internal sealed class UserMapper : IUserMapper
         this.keyedServiceProvider = keyedServiceProvider;
     }
 
-    public async Task<IUser?> ToDtoAsync(UserEntity user)
+    public async Task<UserBase?> ToDtoAsync(UserEntity user)
     {
         var mapper = keyedServiceProvider.GetKeyedService<IRoleMapper>(user.Role);
         if (mapper is null)

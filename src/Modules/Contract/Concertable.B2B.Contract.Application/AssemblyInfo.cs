@@ -6,4 +6,5 @@
 [assembly: InternalsVisibleTo("Concertable.B2B.Concert.Infrastructure")]
 [assembly: InternalsVisibleTo("Concertable.Workers.UnitTests")]
 [assembly: InternalsVisibleTo("Concertable.E2ETests.Api")]
+[assembly: InternalsVisibleTo("Concertable.B2B.E2ETests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]

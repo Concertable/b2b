@@ -1,5 +1,8 @@
 <Solution>
   <Project Path="Concertable.B2B.AppHost/Concertable.B2B.AppHost.csproj" />
+  <Project Path="Concertable.B2B.AppHost.Extensions/Concertable.B2B.AppHost.Extensions.csproj" />
+  <Project Path="../Concertable.Search/Concertable.Search.AppHost.Extensions/Concertable.Search.AppHost.Extensions.csproj" />
+  <Project Path="../Concertable.Payment/Concertable.Payment.AppHost.Extensions/Concertable.Payment.AppHost.Extensions.csproj" />
   <Project Path="Concertable.B2B.Web/Concertable.B2B.Web.csproj" />
   <Project Path="Concertable.B2B.Workers/Concertable.B2B.Workers.csproj" />
   <Project Path="Concertable.B2B.DataAccess/Concertable.B2B.DataAccess.csproj" />
@@ -84,5 +87,9 @@
   </Folder>
   <Folder Name="/Modules/Venue/Tests/">
     <Project Path="Modules/Venue/Tests/Concertable.B2B.Venue.IntegrationTests/Concertable.B2B.Venue.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/Tests/E2ETests/">
+    <Project Path="Tests/E2ETests/Concertable.B2B.E2ETests/Concertable.B2B.E2ETests.csproj" />
+    <Project Path="Tests/E2ETests/Concertable.B2B.E2ETests.Ui/Concertable.B2B.E2ETests.Ui.csproj" />
   </Folder>
 </Solution>

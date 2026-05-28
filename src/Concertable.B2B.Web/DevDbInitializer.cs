@@ -1,7 +1,6 @@
 using Concertable.Messaging.Infrastructure.Inbox;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.Seeding;
-using Concertable.Seeding.Fakers;
 using Concertable.Seeding.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,29 +12,17 @@ namespace Concertable.B2B.Web;
 
 public class DevDbInitializer : IDbInitializer
 {
-    private readonly SeedData seedData;
-    private readonly TimeProvider timeProvider;
-    private readonly IGeometryProvider geometryProvider;
-    private readonly ILocationFaker locationFaker;
     private readonly IEnumerable<IDevSeeder> seeders;
     private readonly OutboxDbContext outbox;
     private readonly InboxDbContext inbox;
     private readonly SeedingScope seedingScope;
 
     public DevDbInitializer(
-        SeedData seedData,
-        TimeProvider timeProvider,
-        [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider,
-        ILocationFaker locationFaker,
         IEnumerable<IDevSeeder> seeders,
         OutboxDbContext outbox,
         InboxDbContext inbox,
         SeedingScope seedingScope)
     {
-        this.seedData = seedData;
-        this.timeProvider = timeProvider;
-        this.geometryProvider = geometryProvider;
-        this.locationFaker = locationFaker;
         this.seeders = seeders;
         this.outbox = outbox;
         this.inbox = inbox;

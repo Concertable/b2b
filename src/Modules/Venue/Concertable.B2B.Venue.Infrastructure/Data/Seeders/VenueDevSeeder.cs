@@ -1,5 +1,7 @@
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
+using Concertable.B2B.Seeding;
+using Concertable.B2B.Seeding.Fakers;
 using Concertable.Seeding.Fakers;
 using Concertable.B2B.Venue.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -104,5 +106,8 @@ internal class VenueDevSeeder : IDevSeeder
             context.Venues.AddRange(venues);
             await context.SaveChangesAsync(ct);
         });
+
+        seed.Venues = await context.Venues.OrderBy(v => v.Id).ToListAsync(ct);
+        seed.Venue = seed.Venues[0];
     }
 }

@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Application.Responses;
+using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.User.Contracts;
 using Microsoft.EntityFrameworkCore;

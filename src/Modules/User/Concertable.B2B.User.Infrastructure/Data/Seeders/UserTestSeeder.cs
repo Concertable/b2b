@@ -1,5 +1,6 @@
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
+using Concertable.B2B.Seeding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel.Geometry;

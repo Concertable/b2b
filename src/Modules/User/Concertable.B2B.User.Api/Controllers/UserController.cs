@@ -21,14 +21,14 @@ internal class UserController : ControllerBase
     }
 
     [HttpPut("location")]
-    public async Task<ActionResult<IUser>> UpdateLocation([FromBody] UpdateLocationRequest request)
+    public async Task<ActionResult<UserBase>> UpdateLocation([FromBody] UpdateLocationRequest request)
     {
         var updatedUser = await userService.SaveLocationAsync(request.Latitude, request.Longitude);
         return Ok(updatedUser);
     }
 
     [HttpGet("/api/auth/me")]
-    public async Task<ActionResult<IUser>> Me()
+    public async Task<ActionResult<UserBase>> Me()
     {
         var user = await userModule.GetByIdAsync(currentUser.GetId());
         if (user is null) return Unauthorized();

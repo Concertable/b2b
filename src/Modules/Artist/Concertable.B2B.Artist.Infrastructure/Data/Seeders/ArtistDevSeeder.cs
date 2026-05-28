@@ -1,5 +1,7 @@
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
+using Concertable.B2B.Seeding;
+using Concertable.B2B.Seeding.Fakers;
 using Concertable.Seeding.Fakers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -95,5 +97,8 @@ internal class ArtistDevSeeder : IDevSeeder
             context.Artists.AddRange(artists);
             await context.SaveChangesAsync(ct);
         });
+
+        seed.Artists = await context.Artists.OrderBy(a => a.Id).ToListAsync(ct);
+        seed.Artist = seed.Artists[0];
     }
 }

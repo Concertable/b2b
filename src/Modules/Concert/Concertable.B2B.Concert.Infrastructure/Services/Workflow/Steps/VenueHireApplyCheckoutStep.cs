@@ -6,6 +6,11 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
+/// <summary>
+/// Apply-checkout step for <see cref="VenueHireContract"/>. The artist is the payer: this creates a
+/// <em>setup session</em> (via <see cref="IManagerPaymentClient.CreateSetupSessionAsync"/>) to save the
+/// artist's card for the off-session hold that follows acceptance, rather than charging immediately.
+/// </summary>
 internal class VenueHireApplyCheckoutStep : IApplyCheckoutStep
 {
     private readonly IPayerLookup payerLookup;

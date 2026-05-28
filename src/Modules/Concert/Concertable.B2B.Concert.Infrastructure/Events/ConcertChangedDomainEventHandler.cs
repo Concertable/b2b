@@ -40,7 +40,6 @@ internal class ConcertChangedDomainEventHandler(
             venue.Location.Y,
             venue.Location.X,
             concert.Genres.ToArray(),
-            payeeUserId,
-            concert.ContractType.ToString()), ct);
+            payeeUserId), ct);
     }
 }

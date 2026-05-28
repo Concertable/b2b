@@ -1,61 +1,40 @@
 using System.Text.Json.Serialization;
+using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.User.Contracts;
 
 [JsonDerivedType(typeof(VenueManagerDto), "venueManager")]
 [JsonDerivedType(typeof(ArtistManagerDto), "artistManager")]
 [JsonDerivedType(typeof(AdminDto), "admin")]
-public interface IUser
-{
-    Guid Id { get; set; }
-    string Email { get; set; }
-    Role Role { get; }
-    double? Latitude { get; set; }
-    double? Longitude { get; set; }
-    string? County { get; set; }
-    string? Town { get; set; }
-    string BaseUrl { get; set; }
-    bool IsEmailVerified { get; set; }
-}
-
-public record AdminDto : IUser
+public abstract record UserBase : IUser
 {
     public Guid Id { get; set; }
     public required string Email { get; set; }
-    public Role Role { get; } = Role.Admin;
+    public abstract Role Role { get; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public string? County { get; set; }
     public string? Town { get; set; }
-    public string BaseUrl { get; set; } = "/admin";
+    public abstract string BaseUrl { get; set; }
     public bool IsEmailVerified { get; set; }
 }
 
-public record VenueManagerDto : IUser
+public record AdminDto : UserBase
 {
-    public Guid Id { get; set; }
-    public required string Email { get; set; }
-    public Role Role { get; } = Role.VenueManager;
-    public double? Latitude { get; set; }
-    public double? Longitude { get; set; }
-    public string? County { get; set; }
-    public string? Town { get; set; }
+    public override Role Role { get; } = Role.Admin;
+    public override string BaseUrl { get; set; } = "/admin";
+}
+
+public record VenueManagerDto : UserBase
+{
+    public override Role Role { get; } = Role.VenueManager;
     public int? VenueId { get; set; }
-    public string BaseUrl { get; set; } = "/venue";
-    public bool IsEmailVerified { get; set; }
+    public override string BaseUrl { get; set; } = "/venue";
 }
 
-public record ArtistManagerDto : IUser
+public record ArtistManagerDto : UserBase
 {
-    public Guid Id { get; set; }
-    public required string Email { get; set; }
-    public Role Role { get; } = Role.ArtistManager;
-    public double? Latitude { get; set; }
-    public double? Longitude { get; set; }
-    public string? County { get; set; }
-    public string? Town { get; set; }
+    public override Role Role { get; } = Role.ArtistManager;
     public int? ArtistId { get; set; }
-    public string BaseUrl { get; set; } = "/artist";
-    public bool IsEmailVerified { get; set; }
+    public override string BaseUrl { get; set; } = "/artist";
 }
-

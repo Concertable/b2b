@@ -2,6 +2,7 @@ using Concertable.B2B.Contract.Domain.Entities;
 using Concertable.DataAccess;
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
+using Concertable.B2B.Seeding;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Contract.Infrastructure.Data.Seeders;

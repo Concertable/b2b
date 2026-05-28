@@ -14,7 +14,7 @@ internal sealed class ArtistManagerMapper : IRoleMapper
 
     public Role Role => Role.ArtistManager;
 
-    public async Task<IUser> ToDtoAsync(UserEntity user)
+    public async Task<UserBase> ToDtoAsync(UserEntity user)
     {
         var profile = await context.ArtistManagerProfiles.FindAsync(user.Id);
         return new ArtistManagerDto

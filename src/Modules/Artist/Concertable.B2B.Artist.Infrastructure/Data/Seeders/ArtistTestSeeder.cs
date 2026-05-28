@@ -3,7 +3,8 @@ using Concertable.Kernel.Geometry;
 using Concertable.Kernel.Services.Geometry;
 using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
-using Concertable.Seeding.Fakers;
+using Concertable.B2B.Seeding;
+using Concertable.B2B.Seeding.Fakers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

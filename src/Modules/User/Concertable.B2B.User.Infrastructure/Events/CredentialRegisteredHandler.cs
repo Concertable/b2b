@@ -2,6 +2,7 @@ using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
 using Concertable.Messaging.Contracts;
 using Concertable.B2B.User.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.User.Infrastructure.Events;
 
@@ -28,6 +29,9 @@ internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<Cre
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(CredentialRegisteredHandler), ct))
+            return;
+
+        if (await context.Users.AnyAsync(u => u.Id == e.UserId, ct))
             return;
 
         context.AddInboxMessage(envelope, nameof(CredentialRegisteredHandler));

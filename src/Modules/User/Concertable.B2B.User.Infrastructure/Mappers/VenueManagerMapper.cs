@@ -14,7 +14,7 @@ internal sealed class VenueManagerMapper : IRoleMapper
 
     public Role Role => Role.VenueManager;
 
-    public async Task<IUser> ToDtoAsync(UserEntity user)
+    public async Task<UserBase> ToDtoAsync(UserEntity user)
     {
         var profile = await context.VenueManagerProfiles.FindAsync(user.Id);
         return new VenueManagerDto
