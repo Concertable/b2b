@@ -2,11 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Concertable.B2B.User.Api.Authorization;
 
-public sealed class AuthorizeAdminAttribute : AuthorizeAttribute
+public sealed class AdminAttribute : AuthorizeAttribute
 {
-    public AuthorizeAdminAttribute()
+    public AdminAttribute()
     {
         Policy = "Admin";
-        Roles = "Admin";
     }
 }

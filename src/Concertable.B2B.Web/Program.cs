@@ -189,7 +189,6 @@ app.UseStaticFiles();
 app.MapDefaultEndpoints();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hub/notifications");
-app.MapGet("/health", () => Results.Ok());
 
 if (app.Environment.IsEnvironment("E2E"))
     app.MapE2EEndpoints();

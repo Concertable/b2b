@@ -171,10 +171,7 @@ public class AppFixture : IAsyncLifetime
                 services.AddContractDevSeeder();
                 services.AddConcertDevSeeder();
                 services.AddConversationsDevSeeder();
-                services.AddSingleton<DbHealthWaiter>();
-                services.AddScoped<IHealthWaiter, B2BUserHealthWaiter>();
-                services.AddScoped<B2BDevDbInitializer>();
-                services.AddScoped<IDbInitializer, E2EDbInitializer>();
+                services.AddScoped<IDbInitializer, B2BDevDbInitializer>();
             })
             .Build();
 
