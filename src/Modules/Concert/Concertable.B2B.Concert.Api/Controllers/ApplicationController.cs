@@ -2,8 +2,8 @@ using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Requests;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.User.Api.Authorization;
 using Concertable.B2B.User.Contracts;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Concertable.Kernel.Identity;
 
@@ -33,7 +33,7 @@ internal class ApplicationController : ControllerBase
         this.mapper = mapper;
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpGet("opportunity/{id}")]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetAllByOpportunityId(int id)
     {
@@ -41,7 +41,7 @@ internal class ApplicationController : ControllerBase
         return Ok(mapper.ToResponses(applications));
     }
 
-    [Authorize(Policy = "ArtistManager")]
+    [AuthorizeArtistManager]
     [HttpPost("{opportunityId}")]
     public async Task<IActionResult> Apply(int opportunityId, [FromBody] ApplyRequest? request = null)
     {
@@ -52,7 +52,7 @@ internal class ApplicationController : ControllerBase
     }
 
     [HttpGet("artist/pending")]
-    [Authorize(Policy = "ArtistManager")]
+    [AuthorizeArtistManager]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetPendingForArtist()
     {
         var applications = await applicationService.GetPendingForArtistAsync();
@@ -60,7 +60,7 @@ internal class ApplicationController : ControllerBase
     }
 
     [HttpGet("artist/recently-denied")]
-    [Authorize(Policy = "ArtistManager")]
+    [AuthorizeArtistManager]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetRecentDeniedForArtist()
     {
         var applications = await applicationService.GetRecentDeniedForArtistAsync();
@@ -74,7 +74,7 @@ internal class ApplicationController : ControllerBase
         return Ok(mapper.ToResponse(application));
     }
 
-    [Authorize(Policy = "ArtistManager")]
+    [AuthorizeArtistManager]
     [HttpGet("opportunity/{opportunityId}/eligibility")]
     public async Task<ActionResult<bool>> CanApply(int opportunityId)
     {
@@ -85,7 +85,7 @@ internal class ApplicationController : ControllerBase
         return Ok(result.IsSuccess);
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpGet("{applicationId}/eligibility")]
     public async Task<ActionResult<bool>> CanAccept(int applicationId)
     {
@@ -93,7 +93,7 @@ internal class ApplicationController : ControllerBase
         return Ok(result.IsSuccess);
     }
 
-    [Authorize(Policy = "ArtistManager")]
+    [AuthorizeArtistManager]
     [HttpPost("opportunity/{opportunityId}/checkout")]
     public async Task<IActionResult> ApplyCheckout(int opportunityId)
     {
@@ -101,7 +101,7 @@ internal class ApplicationController : ControllerBase
         return Ok(checkout);
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpPost("{applicationId}/checkout")]
     public async Task<IActionResult> AcceptCheckout(int applicationId)
     {
@@ -109,7 +109,7 @@ internal class ApplicationController : ControllerBase
         return Ok(checkout);
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpPost("{applicationId}/accept")]
     public async Task<IActionResult> Accept(int applicationId, [FromBody] AcceptRequest? request = null)
     {

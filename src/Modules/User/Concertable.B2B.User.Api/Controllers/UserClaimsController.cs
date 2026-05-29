@@ -6,11 +6,11 @@ namespace Concertable.B2B.User.Api.Controllers;
 [ApiController]
 [Route("internal/users")]
 [Authorize("UserClaimsScope")]
-internal class InternalUserController : ControllerBase
+internal class UserClaimsController : ControllerBase
 {
     private readonly IUserModule userModule;
 
-    public InternalUserController(IUserModule userModule)
+    public UserClaimsController(IUserModule userModule)
     {
         this.userModule = userModule;
     }

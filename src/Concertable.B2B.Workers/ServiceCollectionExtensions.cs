@@ -40,7 +40,7 @@ internal static class ServiceCollectionExtensions
             opt => opt.UseSqlServer(configuration.GetConnectionString("B2BDb")),
             runDispatcher: false);
         services.AddScoped<AuditInterceptor>();
-        services.AddScoped<DomainEventDispatchInterceptor>();
+        services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddReadDbContext(configuration);
 

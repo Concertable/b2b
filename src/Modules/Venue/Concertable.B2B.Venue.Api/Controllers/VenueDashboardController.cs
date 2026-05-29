@@ -1,12 +1,12 @@
+using Concertable.B2B.User.Api.Authorization;
 using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Venue.Api.Controllers;
 
 [ApiController]
-[Authorize(Policy = "VenueManager")]
+[AuthorizeVenueManager]
 [Route("api/[controller]")]
 internal class VenueDashboardController : ControllerBase
 {

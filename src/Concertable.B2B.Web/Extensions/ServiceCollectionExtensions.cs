@@ -29,7 +29,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddSharedInfrastructure(configuration);
         services.AddScoped<AuditInterceptor>();
-        services.AddScoped<DomainEventDispatchInterceptor>();
+        services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddReadDbContext(configuration);
 
@@ -71,7 +71,8 @@ public static class ServiceCollectionExtensions
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ClockSkew = TimeSpan.Zero,
-                    ValidateIssuer = !environment.IsDevelopment()
+                    ValidateIssuer = !environment.IsDevelopment(),
+                    RoleClaimType = "role"
                 };
                 options.Events = new JwtBearerEvents
                 {

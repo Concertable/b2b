@@ -26,11 +26,12 @@ using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
+using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Seeding;
+using Concertable.Seeding.Events;
 using Concertable.Seeding.Extensions;
-using Concertable.Seeding.Fakers;
 using Concertable.B2B.Seeding;
-using Concertable.B2B.Seeding.Fakers;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Concertable.Payment.Seeding;
 using Concertable.B2B.Web.Extensions;
 using Concertable.Shared.Notification.Infrastructure.Hubs;
@@ -143,9 +144,9 @@ services.AddInProcessEventDispatch();
 services.AddSeedingInfrastructure();
 if (!builder.Environment.IsEnvironment("Testing"))
 {
+    services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
     services.AddScoped<IDbInitializer, DevDbInitializer>();
     services.AddScoped<SeedData>();
-    services.AddScoped<ILocationFaker, LocationFaker>();
     services.AddBlobDevSeeder();
     services.AddUserDevSeeder();
     services.AddArtistDevSeeder();

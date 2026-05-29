@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\..\..\Tests\Concertable.E2ETests\Concertable.E2ETests.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.AppHost\Concertable.B2B.AppHost.csproj" />
     <ProjectReference Include="..\..\..\..\Seeding\Concertable.Seeding.Shared\Concertable.Seeding.Shared.csproj" />
+    <ProjectReference Include="..\..\..\..\Seeding\Concertable.Seeding.Infrastructure\Concertable.Seeding.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\..\Seeding\Concertable.B2B.Seeding\Concertable.B2B.Seeding.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.Payment\Concertable.Payment.Seeding\Concertable.Payment.Seeding.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.Web\Concertable.B2B.Web.csproj" />

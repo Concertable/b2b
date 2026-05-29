@@ -1,12 +1,12 @@
 using Concertable.B2B.Artist.Application.DTOs;
 using Concertable.B2B.Artist.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
+using Concertable.B2B.User.Api.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Artist.Api.Controllers;
 
 [ApiController]
-[Authorize(Policy = "ArtistManager")]
+[AuthorizeArtistManager]
 [Route("api/[controller]")]
 internal class ArtistDashboardController : ControllerBase
 {

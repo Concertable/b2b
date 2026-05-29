@@ -1,5 +1,6 @@
 using Aspire.Hosting;
 using Respawn;
+using Respawn.Graph;
 
 namespace Concertable.B2B.E2ETests;
 
@@ -19,7 +20,15 @@ public sealed class DbFixture
     {
         await b2b.InitializeAsync(app, AppHostConstants.Databases.B2B, new RespawnerOptions
         {
-            TablesToIgnore = ["__EFMigrationsHistory"],
+            TablesToIgnore =
+            [
+                "__EFMigrationsHistory",
+                new Table("Users", "user"),
+                new Table("ArtistManagerProfiles", "user"),
+                new Table("VenueManagerProfiles", "user"),
+                new Table("AdminProfiles", "user"),
+                new Table("Inbox", "messaging"),
+            ],
             DbAdapter = DbAdapter.SqlServer,
             WithReseed = true
         });

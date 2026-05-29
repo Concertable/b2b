@@ -1,6 +1,6 @@
 using Concertable.B2B.Artist.Api.Mappers;
 using Concertable.B2B.Artist.Api.Responses;
-using Microsoft.AspNetCore.Authorization;
+using Concertable.B2B.User.Api.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Artist.Api.Controllers;
@@ -22,7 +22,7 @@ internal class ArtistController : ControllerBase
         return Ok((await artistService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
-    [Authorize(Policy = "ArtistManager")]
+    [AuthorizeArtistManager]
     [HttpGet("user")]
     public async Task<ActionResult<ArtistDetailsResponse>> GetDetailsForCurrentUser()
     {
@@ -30,7 +30,7 @@ internal class ArtistController : ControllerBase
         return artist is null ? NoContent() : Ok(artist.ToDetailsResponse());
     }
 
-    [Authorize(Policy = "ArtistManager")]
+    [AuthorizeArtistManager]
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateArtistRequest request)
     {
@@ -38,7 +38,7 @@ internal class ArtistController : ControllerBase
         return CreatedAtAction(nameof(GetDetailsById), new { Id = artistDto.Id }, artistDto);
     }
 
-    [Authorize(Policy = "ArtistManager")]
+    [AuthorizeArtistManager]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] UpdateArtistRequest request)
     {

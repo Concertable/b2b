@@ -1,6 +1,6 @@
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Responses;
-using Microsoft.AspNetCore.Authorization;
+using Concertable.B2B.User.Api.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
@@ -64,14 +64,14 @@ internal class ConcertController : ControllerBase
         return Ok((await concertService.GetUnpostedByArtistIdAsync(id)).ToSummaryResponses());
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpPut("{id}")]
     public async Task<ActionResult<ConcertUpdateResponse>> Update(int id, [FromBody] UpdateConcertRequest request)
     {
         return Ok(await concertService.UpdateAsync(id, request));
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
     {

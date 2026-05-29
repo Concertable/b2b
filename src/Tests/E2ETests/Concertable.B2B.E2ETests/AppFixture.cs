@@ -19,9 +19,8 @@ using Concertable.Messaging.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Inbox;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.Seeding;
+using Concertable.Seeding.Events;
 using Concertable.Seeding.Extensions;
-using Concertable.Seeding.Fakers;
-using Concertable.Seeding.Identity;
 using Microsoft.EntityFrameworkCore;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
 using Microsoft.Extensions.Configuration;
@@ -68,7 +67,8 @@ public class AppFixture : IAsyncLifetime
     {
         loggerFactory = LoggerFactory.Create(b => b
             .AddSimpleConsole(o => o.SingleLine = true)
-            .SetMinimumLevel(LogLevel.Information));
+            .SetMinimumLevel(LogLevel.Warning)
+            .AddFilter("Concertable", LogLevel.Information));
         logger = loggerFactory.CreateLogger<AppFixture>();
         Polling = new PollingService(loggerFactory.CreateLogger<PollingService>());
 
@@ -126,6 +126,8 @@ public class AppFixture : IAsyncLifetime
 
         var b2bConnectionString = await app.GetConnectionStringAsync(AppHostConstants.Databases.B2B);
         var blobConnectionString = await app.GetConnectionStringAsync("blobs");
+        var asbConnectionString = await app.GetConnectionStringAsync("asb")
+            ?? throw new InvalidOperationException("ASB connection string is missing.");
 
         var b2bSeedConfig = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -140,18 +142,20 @@ public class AppFixture : IAsyncLifetime
             .ConfigureServices((_, services) =>
             {
                 services.AddSingleton<IConfiguration>(b2bSeedConfig);
-                services.AddLogging(b => b.AddSimpleConsole(o => o.SingleLine = true).SetMinimumLevel(LogLevel.Warning));
+                services.AddLogging(b => b
+                    .AddSimpleConsole(o => o.SingleLine = true)
+                    .SetMinimumLevel(LogLevel.Warning)
+                    .AddFilter("Concertable.B2B.Web.DevDbInitializer", LogLevel.Information));
                 services.AddSingleton(TimeProvider.System);
                 services.AddCurrentUser();
                 services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
                 services.AddScoped<AuditInterceptor>();
-                services.AddScoped<DomainEventDispatchInterceptor>();
+                services.AddScoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>();
                 services.AddGeometry();
                 services.AddOutbox(opt => opt.UseSqlServer(b2bConnectionString), runDispatcher: false);
                 services.AddInbox(opt => opt.UseSqlServer(b2bConnectionString));
                 services.AddSeedingInfrastructure();
-                services.AddSingleton<SeedData>();
-                services.AddScoped<ILocationFaker, LocationFaker>();
+                services.AddScoped<SeedData>();
                 services.AddSingleton(new BlobServiceClient(blobConnectionString));
                 services.AddSharedBlob(b2bSeedConfig);
                 services.AddUserModule(b2bSeedConfig);
@@ -167,7 +171,10 @@ public class AppFixture : IAsyncLifetime
                 services.AddContractDevSeeder();
                 services.AddConcertDevSeeder();
                 services.AddConversationsDevSeeder();
-                services.AddScoped<IDbInitializer, B2BDevDbInitializer>();
+                services.AddSingleton<DbHealthWaiter>();
+                services.AddScoped<IHealthWaiter, B2BUserHealthWaiter>();
+                services.AddScoped<B2BDevDbInitializer>();
+                services.AddScoped<IDbInitializer, E2EDbInitializer>();
             })
             .Build();
 
@@ -215,6 +222,6 @@ public class AppFixture : IAsyncLifetime
         await using var scope = host.Services.CreateAsyncScope();
         var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
         await initializer.InitializeAsync();
-        SeedData = host.Services.GetRequiredService<SeedData>();
+        SeedData = scope.ServiceProvider.GetRequiredService<SeedData>();
     }
 }

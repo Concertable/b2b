@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.User.Api.Authorization;
 using Concertable.Contracts;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
@@ -33,7 +33,7 @@ internal class OpportunityController : ControllerBase
         return Ok(mapper.ToResponse(opportunity));
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] OpportunityRequest request)
     {
@@ -41,7 +41,7 @@ internal class OpportunityController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = opportunity.Id }, mapper.ToResponse(opportunity));
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpPost("bulk")]
     public async Task<IActionResult> CreateMultiple([FromBody] IEnumerable<OpportunityRequest> requests)
     {
@@ -56,7 +56,7 @@ internal class OpportunityController : ControllerBase
         return Ok(mapper.ToResponses(opportunities));
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpPut("/api/Venue/{venueId:int}/opportunities")]
     public async Task<IActionResult> Update(int venueId, [FromBody] IEnumerable<OpportunityRequest> desired)
     {

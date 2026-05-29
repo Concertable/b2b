@@ -1,5 +1,5 @@
 using Concertable.B2B.E2ETests.Ui.Support;
-using Concertable.Customer.Seeding;
+using Concertable.Seeding.Identity;
 
 namespace Concertable.B2B.E2ETests.Ui.Hooks;
 

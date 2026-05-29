@@ -1,8 +1,8 @@
 using Concertable.B2B.Venue.Api.Mappers;
 using Concertable.B2B.Venue.Api.Responses;
+using Concertable.B2B.User.Api.Authorization;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Application.Requests;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Venue.Api.Controllers;
@@ -24,7 +24,7 @@ internal class VenueController : ControllerBase
         return Ok((await venueService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpGet("user")]
     public async Task<ActionResult<VenueDetailsResponse>> GetDetailsForCurrentUser()
     {
@@ -32,7 +32,7 @@ internal class VenueController : ControllerBase
         return venue is null ? NoContent() : Ok(venue.ToDetailsResponse());
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateVenueRequest request)
     {
@@ -40,14 +40,14 @@ internal class VenueController : ControllerBase
         return CreatedAtAction(nameof(GetDetailsById), new { Id = venueDto.Id }, venueDto);
     }
 
-    [Authorize(Policy = "VenueManager")]
+    [AuthorizeVenueManager]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] UpdateVenueRequest request)
     {
         return Ok(await venueService.UpdateAsync(id, request));
     }
 
-    [Authorize(Policy = "Admin")]
+    [AuthorizeAdmin]
     [HttpPatch("{id}/approve")]
     public async Task<IActionResult> Approve(int id)
     {
