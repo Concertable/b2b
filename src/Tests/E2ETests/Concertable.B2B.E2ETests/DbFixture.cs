@@ -1,6 +1,8 @@
 using Aspire.Hosting;
 using Respawn;
 using Respawn.Graph;
+using UserSchema = Concertable.B2B.User.Infrastructure.Schema;
+using MessagingSchema = Concertable.Messaging.Infrastructure.Schema;
 
 namespace Concertable.B2B.E2ETests;
 
@@ -23,11 +25,11 @@ public sealed class DbFixture
             TablesToIgnore =
             [
                 "__EFMigrationsHistory",
-                new Table("Users", "user"),
-                new Table("ArtistManagerProfiles", "user"),
-                new Table("VenueManagerProfiles", "user"),
-                new Table("AdminProfiles", "user"),
-                new Table("Inbox", "messaging"),
+                new Table(UserSchema.Name, UserSchema.Users),
+                new Table(UserSchema.Name, UserSchema.ArtistManagerProfiles),
+                new Table(UserSchema.Name, UserSchema.VenueManagerProfiles),
+                new Table(UserSchema.Name, UserSchema.AdminProfiles),
+                new Table(MessagingSchema.Name, MessagingSchema.Inbox),
             ],
             DbAdapter = DbAdapter.SqlServer,
             WithReseed = true
