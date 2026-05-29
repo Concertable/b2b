@@ -24,7 +24,7 @@ internal class VenueController : ControllerBase
         return Ok((await venueService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
-    [AuthorizeVenueManager]
+    [VenueManager]
     [HttpGet("user")]
     public async Task<ActionResult<VenueDetailsResponse>> GetDetailsForCurrentUser()
     {
@@ -32,7 +32,7 @@ internal class VenueController : ControllerBase
         return venue is null ? NoContent() : Ok(venue.ToDetailsResponse());
     }
 
-    [AuthorizeVenueManager]
+    [VenueManager]
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateVenueRequest request)
     {
@@ -40,14 +40,14 @@ internal class VenueController : ControllerBase
         return CreatedAtAction(nameof(GetDetailsById), new { Id = venueDto.Id }, venueDto);
     }
 
-    [AuthorizeVenueManager]
+    [VenueManager]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] UpdateVenueRequest request)
     {
         return Ok(await venueService.UpdateAsync(id, request));
     }
 
-    [AuthorizeAdmin]
+    [Admin]
     [HttpPatch("{id}/approve")]
     public async Task<IActionResult> Approve(int id)
     {

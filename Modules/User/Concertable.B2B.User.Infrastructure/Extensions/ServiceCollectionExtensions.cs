@@ -45,6 +45,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistManagerSyncHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueManagerSyncHandler>();
 
+        services.AddHealthChecks().AddCheck<UserHealthCheck>("users");
+
         services.AddSingleton<UserConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<UserConfigurationProvider>());
 

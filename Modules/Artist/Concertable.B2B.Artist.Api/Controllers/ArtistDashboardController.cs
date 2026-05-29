@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Artist.Api.Controllers;
 
 [ApiController]
-[AuthorizeArtistManager]
+[ArtistManager]
 [Route("api/[controller]")]
 internal class ArtistDashboardController : ControllerBase
 {

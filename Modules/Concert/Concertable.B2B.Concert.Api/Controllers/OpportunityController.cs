@@ -33,7 +33,7 @@ internal class OpportunityController : ControllerBase
         return Ok(mapper.ToResponse(opportunity));
     }
 
-    [AuthorizeVenueManager]
+    [VenueManager]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] OpportunityRequest request)
     {
@@ -41,7 +41,7 @@ internal class OpportunityController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = opportunity.Id }, mapper.ToResponse(opportunity));
     }
 
-    [AuthorizeVenueManager]
+    [VenueManager]
     [HttpPost("bulk")]
     public async Task<IActionResult> CreateMultiple([FromBody] IEnumerable<OpportunityRequest> requests)
     {
@@ -56,7 +56,7 @@ internal class OpportunityController : ControllerBase
         return Ok(mapper.ToResponses(opportunities));
     }
 
-    [AuthorizeVenueManager]
+    [VenueManager]
     [HttpPut("/api/Venue/{venueId:int}/opportunities")]
     public async Task<IActionResult> Update(int venueId, [FromBody] IEnumerable<OpportunityRequest> desired)
     {

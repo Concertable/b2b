@@ -22,7 +22,7 @@ internal class ArtistController : ControllerBase
         return Ok((await artistService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
-    [AuthorizeArtistManager]
+    [ArtistManager]
     [HttpGet("user")]
     public async Task<ActionResult<ArtistDetailsResponse>> GetDetailsForCurrentUser()
     {
@@ -30,7 +30,7 @@ internal class ArtistController : ControllerBase
         return artist is null ? NoContent() : Ok(artist.ToDetailsResponse());
     }
 
-    [AuthorizeArtistManager]
+    [ArtistManager]
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateArtistRequest request)
     {
@@ -38,7 +38,7 @@ internal class ArtistController : ControllerBase
         return CreatedAtAction(nameof(GetDetailsById), new { Id = artistDto.Id }, artistDto);
     }
 
-    [AuthorizeArtistManager]
+    [ArtistManager]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] UpdateArtistRequest request)
     {
