@@ -19,7 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess;
-using Concertable.Seeding.Extensions;
+using Concertable.Seed.Extensions;
 
 namespace Concertable.B2B.Workers;
 

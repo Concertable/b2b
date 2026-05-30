@@ -1,5 +1,5 @@
-using Concertable.Seeding;
-using Concertable.Seeding.Extensions;
+using Concertable.Seed;
+using Concertable.Seed.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Concert.Application.Mappers;
