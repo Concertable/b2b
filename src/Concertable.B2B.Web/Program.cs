@@ -31,6 +31,7 @@ using Concertable.Seeding;
 using Concertable.Seeding.Events;
 using Concertable.Seeding.Extensions;
 using Concertable.B2B.Seeding;
+using Concertable.B2B.Seeding.Fixture;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Concertable.Payment.Seeding;
 using Concertable.B2B.Web.Extensions;
@@ -146,6 +147,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
 {
     services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
     services.AddScoped<IDbInitializer, DevDbInitializer>();
+    services.AddSingleton<B2BSeedFixture>();
     services.AddScoped<SeedData>();
     services.AddBlobDevSeeder();
     services.AddUserDevSeeder();

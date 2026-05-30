@@ -7,6 +7,7 @@ using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Contract.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.B2B.Seeding;
+using Concertable.B2B.Seeding.Fixture;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.DataAccess.Application;
@@ -147,6 +148,7 @@ public class AppFixture : IAsyncLifetime
                     .SetMinimumLevel(LogLevel.Warning)
                     .AddFilter("Concertable.B2B.Web.DevDbInitializer", LogLevel.Information));
                 services.AddSingleton(TimeProvider.System);
+                services.AddSingleton<B2BSeedFixture>();
                 services.AddCurrentUser();
                 services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
                 services.AddScoped<AuditInterceptor>();
