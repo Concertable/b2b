@@ -20,9 +20,9 @@ The simulator is the convention-compliant answer. It runs as a Worker, publishes
 
 ## Design principle: tight sync with B2B's own seed
 
-The simulator and B2B's own `Concertable.B2B.Seeding.SeedData` **both derive from the same source** — `Concertable.B2B.Seeding.Fixture`. Whatever `VenueChangedEvent` the simulator publishes for venue id 1 is byte-identical to what real B2B raises for venue id 1 when its own seeders run. Same for every artist and concert in the fixture.
+The simulator and B2B's own `Concertable.B2B.Seeding.SeedData` **both derive from the same source** — `Concertable.B2B.Seeding.Fixture`. The fixture exposes `VenueSeedSpec` / `ArtistSeedSpec` / `ConcertSeedSpec` records that convert in two directions: `ToChangedEvent()` (used by the simulator and by real B2B's outbox path) and `ToEntity()` extensions (used by B2B's `SeedData` to build the matching Domain entities). Same source, two derivations — Customer's projection of venue id 1 is byte-identical to whatever B2B writes for venue id 1 when its own seeders run.
 
-This is not just "the IDs match." Every field on the event — name, about, avatar, banner, county, town, latitude, longitude, email, user id, genres, etc. — comes from the fixture. Customer's projection ends up with the same rows in standalone mode and umbrella mode.
+This is not just "the IDs match." Every field on the event — name, about, avatar, banner, county, town, latitude, longitude, email, user id, genres, etc. — comes from the spec. Customer's projection ends up with the same rows in standalone mode and umbrella mode.
 
 Tight sync matters because Customer's behavior must not depend on which AppHost is running. A test that asserts on the seed concert's venue email passes either way. A developer manually browsing the Customer SPA sees the same data either way. No "works only under umbrella" surprises.
 
@@ -30,19 +30,25 @@ The other ~95 entities in B2B's SeedData (Applications, Bookings, Contracts, Opp
 
 ## The fixture: `Concertable.B2B.Seeding.Fixture`
 
-Path: `api/Concertable.B2B/Concertable.B2B.Seeding.Fixture/B2BSeedFixture.cs`.
+Path: `api/Concertable.B2B/Concertable.B2B.Seeding.Fixture/B2BSeedFixture.cs` (shell — ctor, `Now`) plus three partial files: `B2BSeedFixture.Venues.cs`, `B2BSeedFixture.Artists.cs`, `B2BSeedFixture.Concerts.cs`.
+
+The fixture is a DI singleton — `services.AddSingleton<B2BSeedFixture>();` plus `services.AddSingleton(TimeProvider.System);`. The ctor captures `now` once via the injected `TimeProvider`; every property access serves the same coherent snapshot.
 
 Holds:
 
-- `IReadOnlyList<VenueChangedEvent> Venues` — 35 explicit literals, one per seed venue.
-- `IReadOnlyList<ArtistChangedEvent> Artists` — 35 explicit literals, one per seed artist.
-- `IReadOnlyList<ConcertChangedEvent> Concerts(DateTime now)` — factory method returning 47 explicit literals (time-relative fields like `Period` and `DatePosted` depend on the caller's `now`).
+- `IReadOnlyList<VenueSeedSpec> Venues` — 35 explicit literals, one per seed venue.
+- `IReadOnlyList<ArtistSeedSpec> Artists` — 35 explicit literals, one per seed artist.
+- `IReadOnlyList<ConcertSeedSpec> Concerts` — lazy-cached list of 47 entries (time-relative `Period` / `DatePosted` derive from the captured `now`).
+- `DateTime Now` — the `now` snapshot captured at construction. Consumers needing a coherent time within the fixture's scope read from here.
+
+Each `XSeedSpec` carries the same fields as its matching `XChangedEvent` and converts via an instance method `ToChangedEvent()`. The matching B2B-side `ToEntity()` extension lives in `Concertable.B2B.Seeding/Fakers/` so Domain stays out of Contracts.
 
 Does **not** hold:
 
 - B2B Domain entities (`VenueEntity`, `ArtistEntity`, etc.) — those are B2B-internal. The fixture is a contract-level project that ships across service boundaries; importing Domain types would break the boundary.
 - B2B-internal entities that don't publish events Customer/Search consume — Applications, Bookings, Contracts, Opportunities, Transactions. Those stay in `Concertable.B2B.Seeding.SeedData` and exist only when real B2B runs.
-- Helper functions like `Locations[locIndex++ % ...]` or `opps[5].VenueId` index lookups. Every field on every fixture entry is written out as an **explicit literal**. The helpers' outputs are baked in; no index arithmetic, no array lookups across collections, no positional access. Each entry is a self-contained record.
+- Label-style constants. The fixture is 100% data. Tests that need "the upcoming concert" filter by `Name` (e.g. `fixture.Concerts.First(c => c.Name == "Upcoming FlatFee Show")`) — the label lives in the test, not the fixture.
+- Compression scaffolding — no shared `Locations[]` array with index-cycling, no `XRow`/`OppSpec` row schemas, no magic `HashSet<int>` index sets. Each spec literal carries its own county/town/lat/long/email values explicitly. For concerts, the only construction sugar is two helpers (`Concert(...)` / `ConcertHire(...)`) that take the spec's own fields verbatim — they don't introduce a row schema or hidden indexing.
 
 Project deps:
 
@@ -57,13 +63,13 @@ Nothing else. The fixture is a tiny, NuGet-shaped project — it can ship as a p
 
 To add another seed venue/artist/concert visible to Customer in both standalone and umbrella:
 
-1. Add the new `XChangedEvent` literal to the appropriate list in `B2BSeedFixture.cs`. Write every field explicitly — no helpers, no index lookups. Use `SeedUsers.X(n)` for the user-derived IDs/emails.
+1. Add the new `XSeedSpec` literal to the appropriate partial (`B2BSeedFixture.Venues.cs` / `Artists.cs` / `Concerts.cs`). Write every field explicitly. Use `SeedUsers.X(n)` for the user-derived IDs/emails. For concerts pick `Concert(...)` for venue-paid or `ConcertHire(...)` for artist-paid (VenueHire) — the helpers take the same args, only the resolved `PayeeUserId` differs.
 
-2. Confirm the corresponding list in `Concertable.B2B.Seeding/SeedData.cs` projects from the fixture via `.Select(VenueFaker.FromSeedFixture)` (or `ArtistFaker.FromSeedFixture` / `ConcertFactory.FromSeedFixture`). If the projection is already there, no edit needed — the new entry comes through automatically.
+2. Confirm `Concertable.B2B.Seeding/SeedData.cs` projects from the fixture via `.Select(s => s.ToEntity())` (concert projection passes `bookingId`). If the projection is already there, no edit needed — the new entry comes through automatically.
 
 3. Restart `Concertable.Customer.AppHost`. The simulator publishes the new event on startup; Customer's projection handler upserts; the SPA sees the new entity.
 
-If the new entry has fields the faker mapper hasn't seen before (e.g., a new optional field on `VenueChangedEvent`), the mapper may need a one-line update. The mapper lives at `api/Concertable.B2B/Concertable.B2B.Seeding/Fakers/VenueFaker.cs` etc.
+If the wire event gains a new field, update the matching `XSeedSpec` and `ToChangedEvent()` in `Concertable.B2B.<Module>.Contracts/Seed/XSeedSpec.cs`. The `ToEntity()` extension in `api/Concertable.B2B/Concertable.B2B.Seeding/Fakers/XSeedExtensions.cs` only needs an edit if the entity's own factory takes the new field.
 
 ## What NOT to do
 
@@ -73,7 +79,7 @@ The failure modes I've personally hit during the design of this system:
 
 - **Don't make the simulator depend on `Concertable.B2B.Seeding`.** That project owns B2B's Domain entities (`VenueEntity`, etc.) and transitively pulls B2B Domain into the simulator's reachable graph. The simulator must stay contract-only so it can ship as a container that consumers don't need B2B's source to build against.
 
-- **Don't make `Concertable.Customer.Seeding` know B2B-owned IDs.** Constants like `UpcomingConcertId = 13` previously lived in Customer.Seeding. They belong in `Concertable.B2B.Seeding.Fixture` — Customer doesn't own those identifiers, B2B does.
+- **Don't make `Concertable.Customer.Seeding` know B2B-owned IDs.** Constants like `UpcomingConcertId = 13` previously lived in Customer.Seeding. Customer doesn't own those identifiers, B2B does — and they should not live as labels in the fixture either. Anything that needs "the upcoming concert" filters by `Name` on the injected `B2BSeedFixture.Concerts` list. The fixture stays 100% data.
 
 - **Don't add the simulator to `Concertable.AppHost`.** Real B2B is already running in the umbrella; the simulator there would double-publish (consumers are idempotent so it wouldn't corrupt data, but it's wasted work and confusing in logs).
 
@@ -81,7 +87,7 @@ The failure modes I've personally hit during the design of this system:
 
 - **Don't seed projection tables from inside the E2E `AppFixture`.** The old `ProjectionSeeder.cs` published events from inside the test fixture's seed host. That worked but it was a test-only hack — dev wasn't covered, the fixture had to register an ASB transport just for seeding, and it lived in the wrong layer. The simulator replaces that hack at the AppHost level so dev gets the same flow.
 
-- **Don't put `XReadModel` factories or mapper logic on the fixture.** The fixture holds wire-level event records, full stop. Mapping `XChangedEvent` → Domain entity is the responsibility of `Concertable.B2B.Seeding`'s factories (`VenueFaker.FromSeedFixture` etc.); mapping `XChangedEvent` → read-model entity is the responsibility of Customer's `XProjectionHandler`s. Both consume the fixture's data but neither lives in the fixture.
+- **Don't put `XReadModel` factories or Domain mapper logic on the fixture.** The fixture holds the canonical `XSeedSpec` records plus their `ToChangedEvent()` instance method, full stop. Mapping spec → Domain entity is the responsibility of `Concertable.B2B.Seeding`'s extension methods (`VenueSeedExtensions.ToEntity` etc.) — these live in B2B-internal code because they reference `VenueEntity`/`ArtistEntity`/`ConcertEntity`, which Customer must not see. Mapping `XChangedEvent` → read-model entity is the responsibility of Customer's `XProjectionHandler`s.
 
 ## Cross-repo distribution
 
@@ -138,6 +144,6 @@ If you're not sure you've kept things on the right side of the line, these grep 
 
 - Root [`ARCHITECTURE.md`](../../../ARCHITECTURE.md) — microservice premise.
 - [`api/docs/SEEDING_CONVENTIONS.md`](../../docs/SEEDING_CONVENTIONS.md) — the no-direct-projection-seeding rule and the rest of the seeding conventions.
-- `api/Concertable.B2B/Concertable.B2B.Seeding/` — B2B's own SeedData (consumes the fixture for venues/artists/concerts).
-- `api/Concertable.B2B/Concertable.B2B.Seeding.Fixture/` — the canonical event records.
+- `api/Concertable.B2B/Concertable.B2B.Seeding/` — B2B's own SeedData (consumes the fixture for venues/artists/concerts) plus the `XSeedExtensions.ToEntity()` methods.
+- `api/Concertable.B2B/Concertable.B2B.Seeding.Fixture/` — the canonical `XSeedSpec` records and their `ToChangedEvent()` conversion.
 - `api/Concertable.Customer/Concertable.Customer.AppHost/Program.cs` — where the simulator is registered.

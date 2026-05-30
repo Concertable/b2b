@@ -3,7 +3,6 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Factories;
 using Concertable.B2B.Contract.Domain.Entities;
 using Concertable.B2B.Contract.Domain.Factories;
-using Concertable.B2B.Seeding.Fakers;
 using Concertable.B2B.Seeding.Fixture;
 using Concertable.B2B.User.Domain;
 using Concertable.Contracts;
@@ -106,9 +105,9 @@ public sealed class SeedData
     public ApplicationEntity UpcomingVenueHireApp { get; }
     public BookingEntity UpcomingVenueHireBooking { get; }
 
-    public SeedData()
+    public SeedData(B2BSeedFixture fixture)
     {
-        var now = DateTime.UtcNow;
+        var now = fixture.Now;
 
         ArtistManager1 = UserFactory.FromRegistration(
             SeedUsers.ArtistManagerId(1), SeedUsers.ArtistManagerEmail(1), Role.ArtistManager);
@@ -141,10 +140,10 @@ public sealed class SeedData
 
         Users = [Admin, .. ArtistManagers, .. VenueManagers];
 
-        Artists = [.. B2BSeedFixture.Artists.Select(ArtistFaker.FromSeedFixture)];
+        Artists = [.. fixture.Artists.Select(s => s.ToEntity())];
         Artist = Artists[0];
 
-        Venues = [.. B2BSeedFixture.Venues.Select(VenueFaker.FromSeedFixture)];
+        Venues = [.. fixture.Venues.Select(s => s.ToEntity())];
         Venue = Venues[0];
 
         ConfirmedAppContract = FlatFeeContractFactory.Create(6, 200m);
@@ -429,7 +428,7 @@ public sealed class SeedData
             ApplicationFactory.CreatePrepaid(8, 48),
         ];
 
-        Concerts = [.. B2BSeedFixture.Concerts(now)
-            .Select(e => ConcertFaker.FromSeedFixture(e, bookingId: Bookings[e.ConcertId - 1].Id))];
+        Concerts = [.. fixture.Concerts
+            .Select(s => s.ToEntity(bookingId: Bookings[s.ConcertId - 1].Id))];
     }
 }
