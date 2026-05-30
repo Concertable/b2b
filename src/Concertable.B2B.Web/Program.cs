@@ -27,13 +27,13 @@ using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Data;
-using Concertable.Seeding;
-using Concertable.Seeding.Events;
-using Concertable.Seeding.Extensions;
-using Concertable.B2B.Seeding;
-using Concertable.B2B.Seeding.Fixture;
+using Concertable.Seed;
+using Concertable.Seed.Events;
+using Concertable.Seed.Extensions;
+using Concertable.B2B.Seed.Infrastructure;
+using Concertable.B2B.Seed.Contracts;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Concertable.Payment.Seeding;
+using Concertable.Payment.Seed;
 using Concertable.B2B.Web.Extensions;
 using Concertable.Shared.Notification.Infrastructure.Hubs;
 using Concertable.Shared.Notification.Infrastructure.Extensions;
@@ -147,7 +147,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
 {
     services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
     services.AddScoped<IDbInitializer, DevDbInitializer>();
-    services.AddSingleton<B2BSeedFixture>();
+    services.AddSingleton<SeedCatalog>();
     services.AddScoped<SeedData>();
     services.AddBlobDevSeeder();
     services.AddUserDevSeeder();

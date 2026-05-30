@@ -1,4 +1,4 @@
-using Concertable.Seeding.Identity;
+using Concertable.Seed.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 

@@ -1,6 +1,6 @@
 using Concertable.DataAccess;
-using Concertable.Seeding;
-using Concertable.Seeding.Extensions;
+using Concertable.Seed;
+using Concertable.Seed.Extensions;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;

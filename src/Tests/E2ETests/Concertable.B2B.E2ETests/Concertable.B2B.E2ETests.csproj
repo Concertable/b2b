@@ -19,10 +19,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Tests\Concertable.E2ETests\Concertable.E2ETests.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.AppHost\Concertable.B2B.AppHost.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Seeding.Shared\Concertable.Seeding.Shared.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Seeding.Infrastructure\Concertable.Seeding.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.B2B\Concertable.B2B.Seeding\Concertable.B2B.Seeding.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.Payment\Concertable.Payment.Seeding\Concertable.Payment.Seeding.csproj" />
+    <ProjectReference Include="..\..\..\..\Shared\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
+    <ProjectReference Include="..\..\..\..\Shared\Concertable.Seed.Infrastructure\Concertable.Seed.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\Concertable.B2B\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\Concertable.Payment\Concertable.Payment.Seed\Concertable.Payment.Seed.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.Web\Concertable.B2B.Web.csproj" />
     <ProjectReference Include="..\..\..\Modules\User\Concertable.B2B.User.Infrastructure\Concertable.B2B.User.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Modules\Artist\Concertable.B2B.Artist.Infrastructure\Concertable.B2B.Artist.Infrastructure.csproj" />
@@ -41,7 +41,7 @@
     <Using Include="Xunit" />
     <Using Include="Concertable.Testing" />
     <Using Include="Concertable.E2ETests" />
-    <Using Include="Concertable.Payment.Seeding" />
+    <Using Include="Concertable.Payment.Seed" />
   </ItemGroup>
 
 </Project>

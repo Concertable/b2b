@@ -1,6 +1,6 @@
-using Concertable.Seeding;
-using Concertable.Seeding.Extensions;
-using Concertable.B2B.Seeding;
+using Concertable.Seed;
+using Concertable.Seed.Extensions;
+using Concertable.B2B.Seed.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Contract.Infrastructure.Data.Seeders;

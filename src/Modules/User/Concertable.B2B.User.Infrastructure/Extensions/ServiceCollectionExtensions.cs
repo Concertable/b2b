@@ -1,8 +1,8 @@
 using Concertable.Auth.Contracts.Events;
 using Concertable.DataAccess;
 using Concertable.B2B.User.Infrastructure.Mappers;
-using Concertable.Seeding;
-using Concertable.Seeding.Extensions;
+using Concertable.Seed;
+using Concertable.Seed.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.User.Application.Validators;
 using Concertable.B2B.User.Infrastructure.Authorization;
