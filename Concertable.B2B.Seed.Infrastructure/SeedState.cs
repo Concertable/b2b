@@ -13,7 +13,7 @@ using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Seed.Infrastructure;
 
-public sealed class SeedData
+public sealed class SeedState
 {
     public const string TestPassword = "Password11!";
 
@@ -103,7 +103,7 @@ public sealed class SeedData
     public ApplicationEntity UpcomingVenueHireApp { get; }
     public BookingEntity UpcomingVenueHireBooking { get; }
 
-    public SeedData(SeedCatalog catalog)
+    public SeedState(SeedCatalog catalog)
     {
         var now = catalog.Now;
 

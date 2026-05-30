@@ -32,10 +32,10 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
     public async Task ApplyCheckout_ShouldReturnAuthorizeFlatPaymentSession()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.ArtistManager1);
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/opportunity/{fixture.SeedData.VenueHireApp.OpportunityId}/checkout");
+        var response = await client.PostAsync($"/api/Application/opportunity/{fixture.SeedState.VenueHireApp.OpportunityId}/checkout");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
@@ -50,10 +50,10 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
     public async Task AcceptCheckout_ShouldReturn400_WhenContractDoesNotSupportAcceptTimeCheckout()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedData.VenueHireApp.Id}/checkout");
+        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/checkout");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -63,7 +63,7 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
     public async Task ApplyCheckoutThenApply_ShouldStorePaymentMethodOnPrepaidApplication()
     {
         // Arrange — venue manager creates a fresh VenueHire opportunity
-        var venueClient = fixture.CreateClient(fixture.SeedData.VenueManager1);
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var oppRequest = new OpportunityRequest
         {
             StartDate = DateTime.UtcNow.AddMonths(13),
@@ -75,7 +75,7 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist runs apply-checkout, then applies with the PM
-        var artistClient = fixture.CreateClient(fixture.SeedData.ArtistManager1);
+        var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var checkoutResponse = await artistClient.PostAsync($"/api/Application/opportunity/{opportunity!.Id}/checkout");
         await checkoutResponse.ShouldBe(HttpStatusCode.OK);
 
@@ -94,12 +94,12 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
     public async Task Accept_ShouldReturn400_WhenAlreadyAccepted()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedData.VenueHireApp.Id}/accept", (object?)null);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", (object?)null);
         await fixture.StripeClient.SendWebhookAsync();
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedData.VenueHireApp.Id}/accept", (object?)null);
+        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -109,41 +109,41 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
     public async Task Accept_ShouldConfirmBookingAndCreateDraftConcertAndNotifyArtistAndVenueAndHoldEscrow()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedData.VenueHireApp.Id}/accept", (object?)null);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", (object?)null);
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await client.GetAsync<ApplicationResponse>($"/api/Application/{fixture.SeedData.VenueHireApp.Id}");
+        var application = await client.GetAsync<ApplicationResponse>($"/api/Application/{fixture.SeedState.VenueHireApp.Id}");
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
-        var concert = await client.GetAsync<ConcertDetailsResponse>($"/api/Concert/application/{fixture.SeedData.VenueHireApp.Id}");
+        var concert = await client.GetAsync<ConcertDetailsResponse>($"/api/Concert/application/{fixture.SeedState.VenueHireApp.Id}");
         Assert.NotNull(concert);
         Assert.Null(concert.DatePosted);
         Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
         var notifiedUserIds = fixture.NotificationService.DraftCreated.Select(n => n.UserId).ToList();
-        Assert.Contains(fixture.SeedData.ArtistManager1.Id.ToString(), notifiedUserIds);
-        Assert.Contains(fixture.SeedData.VenueManager1.Id.ToString(), notifiedUserIds);
+        Assert.Contains(fixture.SeedState.ArtistManager1.Id.ToString(), notifiedUserIds);
+        Assert.Contains(fixture.SeedState.VenueManager1.Id.ToString(), notifiedUserIds);
         Assert.All(fixture.NotificationService.DraftCreated, n => Assert.NotNull(n.Payload));
 
-        var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.ApplicationId == fixture.SeedData.VenueHireApp.Id);
+        var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.ApplicationId == fixture.SeedState.VenueHireApp.Id);
         var escrow = await fixture.ReadDbContext.Escrows.FirstOrDefaultAsync(e => e.BookingId == booking.Id);
         Assert.NotNull(escrow);
         Assert.Equal(EscrowStatus.Held, escrow!.Status);
         Assert.NotEmpty(escrow.ChargeId);
-        Assert.Equal(fixture.SeedData.ArtistManager1.Id, escrow.FromUserId);
-        Assert.Equal(fixture.SeedData.VenueManager1.Id, escrow.ToUserId);
+        Assert.Equal(fixture.SeedState.ArtistManager1.Id, escrow.FromUserId);
+        Assert.Equal(fixture.SeedState.VenueManager1.Id, escrow.ToUserId);
     }
 
     [Fact]
     public async Task Accept_ShouldIgnoreDuplicateWebhookEvent()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedData.VenueHireApp.Id}/accept", (object?)null);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", (object?)null);
         await fixture.StripeClient.SendWebhookAsync();
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -155,15 +155,15 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
     public async Task Accept_ShouldNotConfirmBooking_WhenWebhookFails()
     {
         // Arrange
-        fixture.CreateClient(fixture.SeedData.VenueManager1, o => o.UseFailingStripe());
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
+        fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingStripe());
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedData.VenueHireApp.Id}/accept", (object?)null);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", (object?)null);
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await client.GetAsync<ApplicationResponse>($"/api/Application/{fixture.SeedData.VenueHireApp.Id}");
+        var application = await client.GetAsync<ApplicationResponse>($"/api/Application/{fixture.SeedState.VenueHireApp.Id}");
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }
@@ -172,13 +172,13 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
     public async Task Accept_ShouldNotCreateDraft_WhenPaymentFails()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager1, o => o.UseFailingPayment());
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingPayment());
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedData.VenueHireApp.Id}/accept", (object?)null);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", (object?)null);
 
         // Assert
-        var draft = await fixture.ReadDbContext.Concerts.FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedData.VenueHireApp.Id);
+        var draft = await fixture.ReadDbContext.Concerts.FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.VenueHireApp.Id);
         Assert.Null(draft);
     }
 
@@ -186,7 +186,7 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
     public async Task Apply_ShouldCreatePrepaidApplication_WithoutCheckout()
     {
         // Arrange — venue manager creates a fresh VenueHire opportunity
-        var venueClient = fixture.CreateClient(fixture.SeedData.VenueManager1);
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var oppRequest = new OpportunityRequest
         {
             StartDate = DateTime.UtcNow.AddMonths(13),
@@ -198,7 +198,7 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies directly with a payment method (no prior /checkout call)
-        var artistClient = fixture.CreateClient(fixture.SeedData.ArtistManager1);
+        var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { paymentMethodId = "pm_card_visa" });
 
         // Assert — 201 Created, PrepaidApplication row created with stored PM

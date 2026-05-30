@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -47,8 +47,8 @@
     <ProjectReference Include="..\Modules\Contract\Concertable.B2B.Contract.Api\Concertable.B2B.Contract.Api.csproj" />
     <ProjectReference Include="..\..\Shared\Concertable.Shared.Notification\Concertable.Shared.Notification.Infrastructure\Concertable.Shared.Notification.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Conversations\Concertable.B2B.Conversations.Api\Concertable.B2B.Conversations.Api.csproj" />
-<ProjectReference Include="..\..\Shared\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
-    <ProjectReference Include="..\..\Shared\Concertable.Seed.Infrastructure\Concertable.Seed.Infrastructure.csproj" />
+<ProjectReference Include="..\..\Shared\Seed\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
+    <ProjectReference Include="..\..\Shared\Seed\Concertable.Seed.Infrastructure\Concertable.Seed.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Concertable.B2B\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Concertable.Payment\Concertable.Payment.Seed\Concertable.Payment.Seed.csproj" />
     <ProjectReference Include="..\..\Concertable.ServiceDefaults\Concertable.ServiceDefaults.csproj" />

@@ -1,6 +1,6 @@
 using Concertable.DataAccess;
-using Concertable.Seed;
-using Concertable.Seed.Extensions;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Contract.Application.Interfaces;
 using Concertable.B2B.Contract.Application.Mappers;
 using Concertable.B2B.Contract.Application.Services;
