@@ -21,7 +21,7 @@ public class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 
         // Assert
         await fixture.Polling.UntilAsync(
-            () => fixture.DbFixture.Booking.GetStatusByApplicationIdAsync(fixture.SeedData.PastFlatFeeApp.Id),
+            () => fixture.DbFixture.Booking.GetStatusByApplicationIdAsync(fixture.SeedState.PastFlatFeeApp.Id),
             status => status == (int)BookingStatus.Complete,
             timeout: TimeSpan.FromSeconds(30));
     }
@@ -34,7 +34,7 @@ public class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 
         // Assert
         await fixture.Polling.UntilAsync(
-            () => fixture.DbFixture.Booking.GetStatusByApplicationIdAsync(fixture.SeedData.PastVenueHireApp.Id),
+            () => fixture.DbFixture.Booking.GetStatusByApplicationIdAsync(fixture.SeedState.PastVenueHireApp.Id),
             status => status == (int)BookingStatus.Complete,
             timeout: TimeSpan.FromSeconds(30));
     }
@@ -49,12 +49,12 @@ public class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 
         // Assert
         var paymentIntentId = await fixture.Polling.UntilAsync(
-            () => fixture.DbFixture.Payment.GetLatestSettlementPaymentIntentIdAsync(fixture.SeedData.PastDoorSplitBooking.Id),
+            () => fixture.DbFixture.Payment.GetLatestSettlementPaymentIntentIdAsync(fixture.SeedState.PastDoorSplitBooking.Id),
             id => id is not null,
             timeout: TimeSpan.FromSeconds(30));
 
         var intent = await fixture.StripePaymentIntents.GetAsync(paymentIntentId);
-        Assert.Equal(StripeE2EAccountResolver.AccountIds[fixture.SeedData.ArtistManager1.Id], intent.TransferData.DestinationId);
+        Assert.Equal(StripeE2EAccountResolver.AccountIds[fixture.SeedState.ArtistManager1.Id], intent.TransferData.DestinationId);
         Assert.Equal(1400L, intent.Amount);
     }
 
@@ -68,12 +68,12 @@ public class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 
         // Assert
         var paymentIntentId = await fixture.Polling.UntilAsync(
-            () => fixture.DbFixture.Payment.GetLatestSettlementPaymentIntentIdAsync(fixture.SeedData.PastVersusBooking.Id),
+            () => fixture.DbFixture.Payment.GetLatestSettlementPaymentIntentIdAsync(fixture.SeedState.PastVersusBooking.Id),
             id => id is not null,
             timeout: TimeSpan.FromSeconds(30));
 
         var intent = await fixture.StripePaymentIntents.GetAsync(paymentIntentId);
-        Assert.Equal(StripeE2EAccountResolver.AccountIds[fixture.SeedData.ArtistManager1.Id], intent.TransferData.DestinationId);
+        Assert.Equal(StripeE2EAccountResolver.AccountIds[fixture.SeedState.ArtistManager1.Id], intent.TransferData.DestinationId);
         Assert.Equal(11400L, intent.Amount);
     }
 

@@ -1,5 +1,5 @@
-using Concertable.Seed;
-using Concertable.Seed.Extensions;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,9 +10,9 @@ internal class ArtistTestSeeder : ITestSeeder
     public int Order => 1;
 
     private readonly ArtistDbContext context;
-    private readonly SeedData seed;
+    private readonly SeedState seed;
 
-    public ArtistTestSeeder(ArtistDbContext context, SeedData seed)
+    public ArtistTestSeeder(ArtistDbContext context, SeedState seed)
     {
         this.context = context;
         this.seed = seed;

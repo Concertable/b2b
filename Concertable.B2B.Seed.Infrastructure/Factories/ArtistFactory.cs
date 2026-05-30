@@ -2,7 +2,7 @@ using Concertable.B2B.Artist.Domain;
 using Concertable.Contracts;
 using Concertable.Kernel;
 using NetTopologySuite.Geometries;
-using static Concertable.Seed.Extensions.EntityReflectionExtensions;
+using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;
 

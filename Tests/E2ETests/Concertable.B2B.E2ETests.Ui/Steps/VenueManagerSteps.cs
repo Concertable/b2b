@@ -27,7 +27,7 @@ public class VenueManagerSteps
     [When(@"the venue manager posts a flat fee opportunity for £(\d+)")]
     public async Task PostsFlatFeeOpportunity(decimal fee)
     {
-        state.VenueId = fixture.App.SeedData.Venue.Id;
+        state.VenueId = fixture.App.SeedState.Venue.Id;
 
         myVenuePage = new MyVenuePage(browser.Page, fixture.App.VenueSpaUrl);
         await myVenuePage.GotoAsync();
@@ -66,7 +66,7 @@ public class VenueManagerSteps
     [When(@"the venue manager posts a venue hire opportunity for £(\d+)")]
     public async Task PostsVenueHireOpportunity(decimal fee)
     {
-        state.VenueId = fixture.App.SeedData.Venue.Id;
+        state.VenueId = fixture.App.SeedState.Venue.Id;
 
         myVenuePage = new MyVenuePage(browser.Page, fixture.App.VenueSpaUrl);
         await myVenuePage.GotoAsync();
@@ -79,7 +79,7 @@ public class VenueManagerSteps
     [When(@"the venue manager posts a door split opportunity for (\d+)% door")]
     public async Task PostsDoorSplitOpportunity(int doorPercent)
     {
-        state.VenueId = fixture.App.SeedData.Venue.Id;
+        state.VenueId = fixture.App.SeedState.Venue.Id;
 
         myVenuePage = new MyVenuePage(browser.Page, fixture.App.VenueSpaUrl);
         await myVenuePage.GotoAsync();
@@ -92,7 +92,7 @@ public class VenueManagerSteps
     [When(@"the venue manager posts a versus opportunity for £(\d+) guarantee and (\d+)% door")]
     public async Task PostsVersusOpportunity(int guarantee, int doorPercent)
     {
-        state.VenueId = fixture.App.SeedData.Venue.Id;
+        state.VenueId = fixture.App.SeedState.Venue.Id;
 
         myVenuePage = new MyVenuePage(browser.Page, fixture.App.VenueSpaUrl);
         await myVenuePage.GotoAsync();
@@ -118,21 +118,21 @@ public class VenueManagerSteps
     [Given(@"a flat fee opportunity has been applied to")]
     public async Task AFlatFeeOpportunityHasBeenAppliedTo()
     {
-        state.ApplicationId = fixture.App.SeedData.FlatFeeApp.Id;
+        state.ApplicationId = fixture.App.SeedState.FlatFeeApp.Id;
         await browser.Page.GotoAsync($"{fixture.App.VenueSpaUrl}/applications/{state.ApplicationId}/checkout");
     }
 
     [Given(@"a door split opportunity has been applied to")]
     public async Task ADoorSplitOpportunityHasBeenAppliedTo()
     {
-        state.ApplicationId = fixture.App.SeedData.DoorSplitApp.Id;
+        state.ApplicationId = fixture.App.SeedState.DoorSplitApp.Id;
         await browser.Page.GotoAsync($"{fixture.App.VenueSpaUrl}/applications/{state.ApplicationId}/checkout");
     }
 
     [Given(@"a versus opportunity has been applied to")]
     public async Task AVersusOpportunityHasBeenAppliedTo()
     {
-        state.ApplicationId = fixture.App.SeedData.VersusApp.Id;
+        state.ApplicationId = fixture.App.SeedState.VersusApp.Id;
         await browser.Page.GotoAsync($"{fixture.App.VenueSpaUrl}/applications/{state.ApplicationId}/checkout");
     }
 

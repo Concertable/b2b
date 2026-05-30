@@ -24,10 +24,10 @@ public class ApplicationApiTests : IAsyncLifetime
     public async Task Accept_ShouldReturn403_WhenNotVenueManager()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.ArtistManager1);
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedData.FlatFeeApp.Id}/accept", (object?)null);
+        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -37,10 +37,10 @@ public class ApplicationApiTests : IAsyncLifetime
     public async Task Accept_ShouldReturn400_WhenCalledByDifferentVenueManager()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager2);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedData.FlatFeeApp.Id}/accept", (object?)null);
+        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);

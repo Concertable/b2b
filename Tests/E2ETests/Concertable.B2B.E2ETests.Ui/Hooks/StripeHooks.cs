@@ -19,7 +19,7 @@ public class StripeHooks(UiFixture fixture)
 
     private static async Task DetachSeededCustomerCardsAsync(AppFixture app)
     {
-        var seedData = app.SeedData;
+        var seedData = app.SeedState;
         var resolver = new StripeE2EAccountResolver();
         var customerIds = new[]
         {

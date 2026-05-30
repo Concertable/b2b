@@ -1,5 +1,5 @@
-using Concertable.Seed;
-using Concertable.Seed.Extensions;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,9 +10,9 @@ internal class ContractDevSeeder : IDevSeeder
     public int Order => 3;
 
     private readonly ContractDbContext context;
-    private readonly SeedData seed;
+    private readonly SeedState seed;
 
-    public ContractDevSeeder(ContractDbContext context, SeedData seed)
+    public ContractDevSeeder(ContractDbContext context, SeedState seed)
     {
         this.context = context;
         this.seed = seed;

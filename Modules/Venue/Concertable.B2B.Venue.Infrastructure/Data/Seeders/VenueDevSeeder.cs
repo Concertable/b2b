@@ -1,5 +1,5 @@
-using Concertable.Seed;
-using Concertable.Seed.Extensions;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.B2B.Venue.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +11,9 @@ internal class VenueDevSeeder : IDevSeeder
     public int Order => 2;
 
     private readonly VenueDbContext context;
-    private readonly SeedData seed;
+    private readonly SeedState seed;
 
-    public VenueDevSeeder(VenueDbContext context, SeedData seed)
+    public VenueDevSeeder(VenueDbContext context, SeedState seed)
     {
         this.context = context;
         this.seed = seed;

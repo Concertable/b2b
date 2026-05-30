@@ -38,7 +38,7 @@ internal class OpportunityApiTests : IAsyncLifetime
     public async Task Create_ShouldReturnCreatedOpportunity(IContract contract)
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var request = BuildRequest(contract);
 
         // Act
@@ -57,7 +57,7 @@ internal class OpportunityApiTests : IAsyncLifetime
     public async Task Create_ShouldReturn403_WhenNotVenueManager()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.ArtistManager1);
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
         var response = await client.PostAsync("/api/Opportunity", BuildDefaultRequest());
@@ -91,11 +91,11 @@ internal class OpportunityApiTests : IAsyncLifetime
 
         // Act
         var result = await client.GetAsync<Pagination<OpportunityDto>>(
-            $"/api/Opportunity/active/venue/{fixture.SeedData.Venue.Id}");
+            $"/api/Opportunity/active/venue/{fixture.SeedState.Venue.Id}");
 
         // Assert
         Assert.NotNull(result);
-        Assert.Contains(result.Data, o => o.Id == fixture.SeedData.Opportunities[0].Id);
+        Assert.Contains(result.Data, o => o.Id == fixture.SeedState.Opportunities[0].Id);
     }
 
     #endregion

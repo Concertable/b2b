@@ -1,7 +1,7 @@
 using Concertable.B2B.Venue.Domain;
 using Concertable.Kernel;
 using NetTopologySuite.Geometries;
-using static Concertable.Seed.Extensions.EntityReflectionExtensions;
+using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;
 

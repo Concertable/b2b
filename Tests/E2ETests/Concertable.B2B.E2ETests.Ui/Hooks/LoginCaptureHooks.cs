@@ -14,11 +14,11 @@ public static class LoginCaptureHooks
         if (storageStateByRole.TryGetValue(role, out var state))
             return state;
 
-        var seed = fixture.App.SeedData;
+        var seed = fixture.App.SeedState;
         var (email, password, spaUrl) = role switch
         {
-            Role.VenueManager  => (seed.VenueManager1.Email,  SeedData.TestPassword, fixture.App.VenueSpaUrl),
-            Role.ArtistManager => (seed.ArtistManager1.Email, SeedData.TestPassword, fixture.App.ArtistSpaUrl),
+            Role.VenueManager  => (seed.VenueManager1.Email,  SeedState.TestPassword, fixture.App.VenueSpaUrl),
+            Role.ArtistManager => (seed.ArtistManager1.Email, SeedState.TestPassword, fixture.App.ArtistSpaUrl),
             _ => throw new ArgumentOutOfRangeException(nameof(role))
         };
 

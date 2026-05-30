@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.Seed;
-using Concertable.Seed.Extensions;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,9 +12,9 @@ internal class ConcertTestSeeder : ITestSeeder
     public int Order => 4;
 
     private readonly ConcertDbContext context;
-    private readonly SeedData seed;
+    private readonly SeedState seed;
 
-    public ConcertTestSeeder(ConcertDbContext context, SeedData seed)
+    public ConcertTestSeeder(ConcertDbContext context, SeedState seed)
     {
         this.context = context;
         this.seed = seed;

@@ -29,7 +29,7 @@ public class LoginSteps
 
     [When(@"they submit seeded venue manager credentials")]
     public Task SubmitVenueManagerCredentials() =>
-        loginPage.SignInAsync(fixture.App.SeedData.VenueManager1.Email, SeedData.TestPassword);
+        loginPage.SignInAsync(fixture.App.SeedState.VenueManager1.Email, SeedState.TestPassword);
 
     [Then(@"they are returned to the business home page")]
     public Task ReturnedToBusinessHomePage() =>
