@@ -1,9 +1,7 @@
-using Concertable.B2B.Artist.Contracts.Seed;
-using Concertable.B2B.Venue.Contracts.Seed;
 using Concertable.Contracts;
 using Concertable.Kernel;
 
-namespace Concertable.B2B.Concert.Contracts.Seed;
+namespace Concertable.B2B.Seeding.Fixture.Specs;
 
 public sealed record ConcertSeedSpec
 {
