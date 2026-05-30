@@ -38,7 +38,7 @@ public class UserApiTests : IAsyncLifetime
     public async Task UpdateLocation_ShouldReturn200_WhenAuthenticated()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
         var response = await client.PutAsync("/api/User/location", new UpdateLocationRequest(51.5, -0.1));
@@ -47,14 +47,14 @@ public class UserApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var user = await response.Content.ReadAsync<VenueManagerDto>();
         Assert.NotNull(user);
-        Assert.Equal(fixture.SeedData.VenueManager1.Id, user.Id);
+        Assert.Equal(fixture.SeedState.VenueManager1.Id, user.Id);
     }
 
     [Fact]
     public async Task UpdateLocation_ShouldPersistCoordinates()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         const double latitude = 53.4808;
         const double longitude = -2.2426;
 

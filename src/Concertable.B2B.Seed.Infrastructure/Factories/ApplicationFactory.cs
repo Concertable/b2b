@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Enums;
 using Concertable.B2B.Contract.Contracts;
-using static Concertable.Seed.Extensions.EntityReflectionExtensions;
+using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;
 

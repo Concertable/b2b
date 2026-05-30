@@ -1,4 +1,4 @@
-using Concertable.Seed;
+using Concertable.Seed.Shared;
 using Concertable.B2B.Seed.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,9 +9,9 @@ internal class UserDevSeeder : IDevSeeder
     public int Order => 0;
 
     private readonly UserDbContext context;
-    private readonly SeedData seedData;
+    private readonly SeedState seedData;
 
-    public UserDevSeeder(UserDbContext context, SeedData seedData)
+    public UserDevSeeder(UserDbContext context, SeedState seedData)
     {
         this.context = context;
         this.seedData = seedData;

@@ -24,7 +24,7 @@ public class PaymentSteps
     {
         var resolver = new StripeE2EAccountResolver();
         var hold = await fixture.App.Stripe.FindCapturedHoldAsync(
-            resolver.ResolveCustomer(fixture.App.SeedData.ArtistManager1.Id), amount);
+            resolver.ResolveCustomer(fixture.App.SeedState.ArtistManager1.Id), amount);
         Assert.NotNull(hold);
     }
 
@@ -32,7 +32,7 @@ public class PaymentSteps
     public async Task StripeTransferMade(decimal amount)
     {
         var transfer = await fixture.App.Stripe.FindTransferAsync(
-            StripeE2EAccountResolver.AccountIds[fixture.App.SeedData.VenueManager1.Id], amount);
+            StripeE2EAccountResolver.AccountIds[fixture.App.SeedState.VenueManager1.Id], amount);
 
         Assert.NotNull(transfer);
     }

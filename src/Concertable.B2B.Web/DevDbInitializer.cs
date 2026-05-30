@@ -1,7 +1,7 @@
 using Concertable.Messaging.Infrastructure.Inbox;
 using Concertable.Messaging.Infrastructure.Outbox;
-using Concertable.Seed;
-using Concertable.Seed.Identity;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

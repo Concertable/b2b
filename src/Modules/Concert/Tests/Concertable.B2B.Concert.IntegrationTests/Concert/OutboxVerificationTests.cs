@@ -24,8 +24,8 @@ public class OutboxVerificationTests : IAsyncLifetime
     public async Task PostConcert_WritesOutboxRow_AndDispatcherDrainsIt()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedData.VenueManager1);
-        var concertId = fixture.SeedData.ConfirmedBooking.Concert!.Id;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var concertId = fixture.SeedState.ConfirmedBooking.Concert!.Id;
         var expectedType = MessageTypeAttribute.Resolve(typeof(ConcertChangedEvent));
 
         // Act

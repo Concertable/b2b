@@ -1,7 +1,7 @@
 using Concertable.DataAccess;
 using Concertable.B2B.Conversations.Contracts;
-using Concertable.Seed;
-using Concertable.Seed.Extensions;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,10 +12,10 @@ internal class ConversationsTestSeeder : ITestSeeder
     public int Order => 6;
 
     private readonly ConversationsDbContext context;
-    private readonly SeedData seedData;
+    private readonly SeedState seedData;
     private readonly TimeProvider timeProvider;
 
-    public ConversationsTestSeeder(ConversationsDbContext context, SeedData seedData, TimeProvider timeProvider)
+    public ConversationsTestSeeder(ConversationsDbContext context, SeedState seedData, TimeProvider timeProvider)
     {
         this.context = context;
         this.seedData = seedData;

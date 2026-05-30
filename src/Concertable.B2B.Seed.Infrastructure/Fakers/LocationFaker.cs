@@ -1,4 +1,4 @@
-namespace Concertable.Seed.Fakers;
+namespace Concertable.B2B.Seed.Infrastructure.Fakers;
 
 public class Location
 {

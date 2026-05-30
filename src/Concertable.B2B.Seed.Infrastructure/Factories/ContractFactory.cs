@@ -1,6 +1,6 @@
 using Concertable.B2B.Contract.Contracts;
 using Concertable.B2B.Contract.Domain.Entities;
-using static Concertable.Seed.Extensions.EntityReflectionExtensions;
+using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;
 
