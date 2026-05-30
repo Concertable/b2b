@@ -1,8 +1,10 @@
-namespace Concertable.B2B.Venue.Contracts.Seed;
+using Concertable.Contracts;
 
-public sealed record VenueSeedSpec
+namespace Concertable.B2B.Seeding.Fixture.Specs;
+
+public sealed record ArtistSeedSpec
 {
-    public required int VenueId { get; init; }
+    public required int ArtistId { get; init; }
     public required Guid UserId { get; init; }
     public required string Name { get; init; }
     public required string About { get; init; }
@@ -13,4 +15,5 @@ public sealed record VenueSeedSpec
     public required double Latitude { get; init; }
     public required double Longitude { get; init; }
     public required string Email { get; init; }
+    public required IReadOnlyCollection<Genre> Genres { get; init; }
 }

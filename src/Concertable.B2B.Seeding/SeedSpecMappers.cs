@@ -1,8 +1,6 @@
-using Concertable.B2B.Artist.Contracts.Seed;
 using Concertable.B2B.Artist.Domain;
-using Concertable.B2B.Concert.Contracts.Seed;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Venue.Contracts.Seed;
+using Concertable.B2B.Seeding.Fixture.Specs;
 using Concertable.B2B.Venue.Domain;
 using Concertable.Kernel;
 using NetTopologySuite.Geometries;
