@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -36,8 +36,8 @@
     <ProjectReference Include="..\..\Concertable.Messaging\Concertable.Messaging.Infrastructure\Concertable.Messaging.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Concertable.Payment\Concertable.Payment.Client\Concertable.Payment.Client.csproj" />
     <ProjectReference Include="..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.csproj" />
-    <ProjectReference Include="..\..\Seeding\Concertable.Seeding.Shared\Concertable.Seeding.Shared.csproj" />
-    <ProjectReference Include="..\..\Seeding\Concertable.B2B.Seeding\Concertable.B2B.Seeding.csproj" />
+    <ProjectReference Include="..\..\Shared\Concertable.Seeding.Shared\Concertable.Seeding.Shared.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B\Concertable.B2B.Seeding\Concertable.B2B.Seeding.csproj" />
   </ItemGroup>
 
 </Project>
