@@ -1,4 +1,4 @@
-using Concertable.B2B.Artist.Contracts.Seed;
+using Concertable.B2B.Seeding.Fixture.Specs;
 using Concertable.Contracts;
 using Concertable.Seeding.Identity;
 

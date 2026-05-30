@@ -1,4 +1,4 @@
-using Concertable.B2B.Venue.Contracts.Seed;
+using Concertable.B2B.Seeding.Fixture.Specs;
 using Concertable.Seeding.Identity;
 
 namespace Concertable.B2B.Seeding.Fixture;

@@ -1,9 +1,7 @@
 using Concertable.B2B.Artist.Contracts.Events;
-using Concertable.B2B.Artist.Contracts.Seed;
 using Concertable.B2B.Concert.Contracts.Events;
-using Concertable.B2B.Concert.Contracts.Seed;
+using Concertable.B2B.Seeding.Fixture.Specs;
 using Concertable.B2B.Venue.Contracts.Events;
-using Concertable.B2B.Venue.Contracts.Seed;
 
 namespace Concertable.B2B.Seeding.Fixture;
 
