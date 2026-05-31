@@ -21,7 +21,7 @@
     <ProjectReference Include="..\..\..\..\Concertable.DataAccess\Concertable.DataAccess.Application\Concertable.DataAccess.Application.csproj" />
     <ProjectReference Include="..\..\..\..\Shared\Seed\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
     <ProjectReference Include="..\..\..\..\Shared\Seed\Concertable.Seed.Identity\Concertable.Seed.Identity.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.B2B\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\Concertable.B2B\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Shared.Email\Concertable.Shared.Email.Application\Concertable.Shared.Email.Application.csproj" />
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Shared.Geocoding\Concertable.Shared.Geocoding.Application\Concertable.Shared.Geocoding.Application.csproj" />
