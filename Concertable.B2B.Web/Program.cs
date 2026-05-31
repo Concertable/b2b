@@ -9,7 +9,7 @@ using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Contract.Api.Extensions;
 using Concertable.B2B.Contract.Infrastructure.Extensions;
 using Concertable.Payment.Client.Extensions;
-using Concertable.Payment.Domain.Events;
+using Concertable.Payment.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;

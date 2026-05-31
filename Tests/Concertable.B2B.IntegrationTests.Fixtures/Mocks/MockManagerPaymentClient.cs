@@ -1,5 +1,5 @@
 using Concertable.Payment.Client;
-using Concertable.Payment.Domain;
+using Concertable.Payment.Contracts;
 using FluentResults;
 using Stripe;
 

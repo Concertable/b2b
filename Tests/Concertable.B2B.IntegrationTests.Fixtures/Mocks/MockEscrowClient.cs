@@ -1,4 +1,5 @@
 using Concertable.Payment.Client;
+using Concertable.Payment.Contracts;
 using Concertable.Payment.Domain;
 using Concertable.Payment.Infrastructure.Data;
 using FluentResults;

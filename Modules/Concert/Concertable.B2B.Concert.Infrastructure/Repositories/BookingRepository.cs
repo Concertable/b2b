@@ -34,7 +34,7 @@ internal class BookingRepository : Repository<BookingEntity>, IBookingRepository
             .FirstOrDefaultAsync();
     }
 
-    public async Task<BookingEntity?> GetByConcertIdAsync(int concertId)
+    public async Task<BookingEntity?> GetForSettlementByConcertIdAsync(int concertId)
     {
         return await context.Bookings
             .Where(b => b.Concert!.Id == concertId)
@@ -43,7 +43,15 @@ internal class BookingRepository : Repository<BookingEntity>, IBookingRepository
             .Include(b => b.Application)
                 .ThenInclude(a => a.Opportunity)
                     .ThenInclude(o => o.Venue)
-            .Include(b => b.Concert)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<BookingEntity?> GetForCompletionByConcertIdAsync(int concertId)
+    {
+        return await context.Bookings
+            .Where(b => b.Concert!.Id == concertId)
+            .Include(b => b.Application)
+                .ThenInclude(a => a.Opportunity)
             .FirstOrDefaultAsync();
     }
 

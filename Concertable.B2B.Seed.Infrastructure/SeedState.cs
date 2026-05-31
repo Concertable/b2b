@@ -439,15 +439,6 @@ public sealed class SeedState
             ApplicationFactory.CreatePrepaid(8, 48),
         ];
 
-        Concerts = catalog.Concerts.Select(s => ConcertFactory.Create(
-            id: s.ConcertId,
-            bookingId: Bookings[s.ConcertId - 1].Id,
-            artistId: s.ArtistId, venueId: s.VenueId,
-            period: s.Period,
-            name: s.Name, about: s.About,
-            genres: s.Genres,
-            price: s.Price,
-            totalTickets: s.TotalTickets,
-            datePosted: s.DatePosted)).ToList();
+        Concerts = catalog.Concerts.Select(s => ConcertFactory.Create(s, Bookings[s.ConcertId - 1].Id)).ToList();
     }
 }

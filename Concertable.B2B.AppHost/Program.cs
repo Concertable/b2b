@@ -29,6 +29,6 @@ builder.AddVenueSpa(api, auth);
 builder.AddArtistSpa(api, auth);
 builder.AddBusinessSpa(api, auth);
 builder.AddMobileB2B(api, auth);
-builder.AddStripeCli(api);
+builder.AddStripeCli(paymentWeb);
 
 builder.Build().Run();

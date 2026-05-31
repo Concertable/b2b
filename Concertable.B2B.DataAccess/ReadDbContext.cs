@@ -29,12 +29,6 @@ internal class ReadDbContext : DbContextBase, IReadDbContext
     public IQueryable<ApplicationEntity> Applications => Set<ApplicationEntity>().AsNoTracking();
     public IQueryable<BookingEntity> Bookings => Set<BookingEntity>().AsNoTracking();
     public IQueryable<MessageEntity> Messages => Set<MessageEntity>().AsNoTracking();
-    public IQueryable<TransactionEntity> Transactions => Set<TransactionEntity>().AsNoTracking();
-    public IQueryable<TicketTransactionEntity> TicketTransactions => Set<TicketTransactionEntity>().AsNoTracking();
-    public IQueryable<SettlementTransactionEntity> SettlementTransactions => Set<SettlementTransactionEntity>().AsNoTracking();
-    public IQueryable<StripeEventEntity> StripeEvents => Set<StripeEventEntity>().AsNoTracking();
-    public IQueryable<PayoutAccountEntity> PayoutAccounts => Set<PayoutAccountEntity>().AsNoTracking();
-    public IQueryable<EscrowEntity> Escrows => Set<EscrowEntity>().AsNoTracking();
     public IQueryable<ContractEntity> Contracts => Set<ContractEntity>().AsNoTracking();
     public IQueryable<FlatFeeContractEntity> FlatFeeContracts => Set<FlatFeeContractEntity>().AsNoTracking();
     public IQueryable<DoorSplitContractEntity> DoorSplitContracts => Set<DoorSplitContractEntity>().AsNoTracking();

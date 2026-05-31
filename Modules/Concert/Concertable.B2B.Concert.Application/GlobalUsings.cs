@@ -8,4 +8,3 @@ global using Concertable.B2B.User.Contracts;
 global using Concertable.B2B.Artist.Contracts;
 global using Concertable.B2B.Venue.Contracts;
 global using Concertable.Payment.Client;
-global using Concertable.Payment.Domain;

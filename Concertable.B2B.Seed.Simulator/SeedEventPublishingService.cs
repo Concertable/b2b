@@ -26,15 +26,15 @@ internal sealed class SeedEventPublishingService : BackgroundService
     {
         foreach (var v in fixture.Venues)
             await transport.PublishAsync(v.ToChangedEvent(), Envelope(typeof(Concertable.B2B.Venue.Contracts.Events.VenueChangedEvent)), stoppingToken);
-        logger.LogInformation("Published {Count} venue events", fixture.Venues.Count);
+        logger.PublishedVenueEvents(fixture.Venues.Count);
 
         foreach (var a in fixture.Artists)
             await transport.PublishAsync(a.ToChangedEvent(), Envelope(typeof(Concertable.B2B.Artist.Contracts.Events.ArtistChangedEvent)), stoppingToken);
-        logger.LogInformation("Published {Count} artist events", fixture.Artists.Count);
+        logger.PublishedArtistEvents(fixture.Artists.Count);
 
         foreach (var c in fixture.Concerts)
             await transport.PublishAsync(c.ToChangedEvent(), Envelope(typeof(Concertable.B2B.Concert.Contracts.Events.ConcertChangedEvent)), stoppingToken);
-        logger.LogInformation("Published {Count} concert events", fixture.Concerts.Count);
+        logger.PublishedConcertEvents(fixture.Concerts.Count);
 
         lifetime.StopApplication();
     }

@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
-using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Contract.Contracts;
 using Concertable.Kernel.Enums;
@@ -11,7 +10,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal class DoorSplitFinishStep : IFinishStep
 {
     private readonly IBookingService bookingService;
-    private readonly IBookingRepository bookingRepository;
     private readonly IConcertRepository concertRepository;
     private readonly IContractAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
@@ -19,14 +17,12 @@ internal class DoorSplitFinishStep : IFinishStep
 
     public DoorSplitFinishStep(
         IBookingService bookingService,
-        IBookingRepository bookingRepository,
         IConcertRepository concertRepository,
         IContractAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient,
         ILogger<DoorSplitFinishStep> logger)
     {
         this.bookingService = bookingService;
-        this.bookingRepository = bookingRepository;
         this.concertRepository = concertRepository;
         this.contractAccessor = contractAccessor;
         this.managerPaymentClient = managerPaymentClient;
@@ -35,28 +31,23 @@ internal class DoorSplitFinishStep : IFinishStep
 
     public async Task ExecuteAsync(int concertId)
     {
-        var booking = await bookingRepository.GetByConcertIdAsync(concertId)
-            ?? throw new NotFoundException("Booking not found");
-
         var contract = (DoorSplitContract)contractAccessor.Contract;
         var totalRevenue = await concertRepository.GetTotalRevenueByConcertIdAsync(concertId);
         var artistShare = totalRevenue * (contract.ArtistDoorPercent / 100);
 
         logger.DoorSplitArtistShareCalculated(concertId, totalRevenue, contract.ArtistDoorPercent, artistShare);
 
-        var marked = await bookingService.MarkAwaitingPaymentByConcertIdAsync(concertId);
-        if (marked is not DeferredBooking deferred)
-            throw new BadRequestException("Concert finish requires a DeferredBooking");
+        var settlement = await bookingService.MarkAwaitingPaymentByConcertIdAsync(concertId);
 
-        logger.SettlingConcert(concertId, marked.Id, artistShare, booking.Application.Opportunity.Venue.UserId, booking.Application.Artist.UserId);
+        logger.SettlingConcert(concertId, settlement.BookingId, artistShare, settlement.VenueUserId, settlement.ArtistUserId);
 
         var payment = await managerPaymentClient.PayAsync(
-            booking.Application.Opportunity.Venue.UserId,
-            booking.Application.Artist.UserId,
+            settlement.VenueUserId,
+            settlement.ArtistUserId,
             artistShare,
-            deferred.PaymentMethodId,
+            settlement.PaymentMethodId,
             PaymentSession.OffSession,
-            marked.Id);
+            settlement.BookingId);
         if (payment.IsFailed)
             throw new BadRequestException(payment.Errors);
     }
