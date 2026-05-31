@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.Messaging.Contracts;
 using Concertable.Messaging.Domain;
 using Concertable.Messaging.Infrastructure.Outbox;
-using Concertable.Testing.Integration.B2B;
+using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using static Concertable.B2B.Concert.IntegrationTests.Concert.ConcertRequestBuilders;

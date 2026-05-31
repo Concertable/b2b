@@ -1,4 +1,4 @@
-using Concertable.Testing.Integration.B2B;
+using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Venue.Application.Requests;
 
 namespace Concertable.B2B.Venue.IntegrationTests;

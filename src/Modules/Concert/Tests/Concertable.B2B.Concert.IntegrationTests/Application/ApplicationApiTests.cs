@@ -1,5 +1,5 @@
 ﻿using System.Net;
-using Concertable.Testing.Integration.B2B;
+using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Application;

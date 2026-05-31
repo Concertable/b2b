@@ -91,6 +91,10 @@
   <Folder Name="/Modules/Venue/Tests/">
     <Project Path="Modules/Venue/Tests/Concertable.B2B.Venue.IntegrationTests/Concertable.B2B.Venue.IntegrationTests.csproj" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Concertable.B2B.IntegrationTests.Fixtures/Concertable.B2B.IntegrationTests.Fixtures.csproj" />
+    <Project Path="Tests/Concertable.B2B.Workers.UnitTests/Concertable.B2B.Workers.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/Tests/E2ETests/">
     <Project Path="Tests/E2ETests/Concertable.B2B.E2ETests/Concertable.B2B.E2ETests.csproj" />
     <Project Path="Tests/E2ETests/Concertable.B2B.E2ETests.Ui/Concertable.B2B.E2ETests.Ui.csproj" />
