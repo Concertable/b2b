@@ -166,7 +166,8 @@ services.AddArtistApi(builder.Configuration);
 services.AddVenueApi(builder.Configuration);
 services.AddConcertApi(builder.Configuration);
 services.AddContractApi(builder.Configuration);
-services.AddPaymentClient(builder.Configuration);
+if (!builder.Environment.IsEnvironment("Testing"))
+    services.AddPaymentClient(builder.Configuration);
 services.AddQueueHostedService();
 services.AddCurrentUser();
 services.AddUserApi(builder.Configuration);
