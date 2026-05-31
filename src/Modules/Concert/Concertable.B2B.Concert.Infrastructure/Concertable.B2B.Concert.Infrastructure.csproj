@@ -29,7 +29,7 @@
     <ProjectReference Include="..\..\Artist\Concertable.B2B.Artist.Domain\Concertable.B2B.Artist.Domain.csproj" />
     <ProjectReference Include="..\..\Venue\Concertable.B2B.Venue.Domain\Concertable.B2B.Venue.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.Payment\Concertable.Payment.Client\Concertable.Payment.Client.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.Payment\Concertable.Payment.Domain\Concertable.Payment.Domain.csproj" />
+    <ProjectReference Include="..\..\..\..\Concertable.Payment\Concertable.Payment.Contracts\Concertable.Payment.Contracts.csproj" />
     <ProjectReference Include="..\..\Conversations\Concertable.B2B.Conversations.Contracts\Concertable.B2B.Conversations.Contracts.csproj" />
 <ProjectReference Include="..\..\..\..\Shared\Seed\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.B2B\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
