@@ -33,9 +33,10 @@ public class ConcertDraftTests : IAsyncLifetime
     [Fact]
     public async Task ShouldCreateDraftAndPayArtist_WhenFlatFeeApplicationAccepted()
     {
-        await venueManagerClient.PostAsSuccessAsync(
+        var acceptResponse = await venueManagerClient.PostAsync(
             $"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept",
             new { PaymentMethodId = AppFixture.TestPaymentMethodId });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
         var bookingId = await fixture.DbFixture.Booking.GetIdByApplicationIdAsync(fixture.SeedState.FlatFeeApp.Id);
         var paymentIntentId = await fixture.Polling.UntilAsync(
@@ -47,8 +48,12 @@ public class ConcertDraftTests : IAsyncLifetime
         Assert.Equal(StripeE2EAccountResolver.AccountIds[fixture.SeedState.ArtistManager1.Id], intent.TransferData.DestinationId);
 
         await fixture.Polling.UntilAsync(
-            async () => await fixture.B2BClient.GetAsync<ApplicationResponse>(
-                $"/api/Application/{fixture.SeedState.FlatFeeApp.Id}"),
+            async () =>
+            {
+                var response = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}");
+                await response.ShouldBe(HttpStatusCode.OK);
+                return await response.Content.ReadAsync<ApplicationResponse>();
+            },
             app => app?.Status == ApplicationStatus.Accepted,
             timeout: TimeSpan.FromSeconds(15));
     }
@@ -71,8 +76,12 @@ public class ConcertDraftTests : IAsyncLifetime
         Assert.Equal(StripeE2EAccountResolver.AccountIds[fixture.SeedState.VenueManager1.Id], intent.TransferData.DestinationId);
 
         await fixture.Polling.UntilAsync(
-            async () => await fixture.B2BClient.GetAsync<ApplicationResponse>(
-                $"/api/Application/{fixture.SeedState.VenueHireApp.Id}"),
+            async () =>
+            {
+                var response = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}");
+                await response.ShouldBe(HttpStatusCode.OK);
+                return await response.Content.ReadAsync<ApplicationResponse>();
+            },
             app => app?.Status == ApplicationStatus.Accepted,
             timeout: TimeSpan.FromSeconds(15));
     }
@@ -80,26 +89,28 @@ public class ConcertDraftTests : IAsyncLifetime
     [Fact]
     public async Task ShouldCreateDraft_WhenDoorSplitApplicationAccepted()
     {
-        await venueManagerClient.PostAsSuccessAsync(
+        var acceptResponse = await venueManagerClient.PostAsync(
             $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept",
             new { PaymentMethodId = AppFixture.TestPaymentMethodId });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var application = await fixture.B2BClient.GetAsync<ApplicationResponse>(
-            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}");
-
+        var applicationResponse = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}");
+        await applicationResponse.ShouldBe(HttpStatusCode.OK);
+        var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
     }
 
     [Fact]
     public async Task ShouldCreateDraft_WhenVersusApplicationAccepted()
     {
-        await venueManagerClient.PostAsSuccessAsync(
+        var acceptResponse = await venueManagerClient.PostAsync(
             $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept",
             new { PaymentMethodId = AppFixture.TestPaymentMethodId });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var application = await fixture.B2BClient.GetAsync<ApplicationResponse>(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}");
-
+        var applicationResponse = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}");
+        await applicationResponse.ShouldBe(HttpStatusCode.OK);
+        var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
     }
 }

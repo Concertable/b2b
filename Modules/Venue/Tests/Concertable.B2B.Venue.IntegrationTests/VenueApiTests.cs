@@ -3,6 +3,7 @@ using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Api.Responses;
 using static Concertable.B2B.Venue.IntegrationTests.VenueRequestBuilders;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Xunit.Abstractions;
 
 namespace Concertable.B2B.Venue.IntegrationTests;
 
@@ -12,13 +13,14 @@ public class VenueApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 
-    public VenueApiTests(ApiFixture fixture)
+    public VenueApiTests(ApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
+        fixture.AttachOutput(output);
     }
 
     public Task InitializeAsync() => fixture.ResetAsync();
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     #region GetDetailsById
 
@@ -339,14 +341,17 @@ public class VenueApiTests : IAsyncLifetime
     public async Task Approve_ShouldReturn204_AndApproveVenue()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.Admin);
+        var adminClient = fixture.CreateClient(fixture.SeedState.Admin);
+        var client = fixture.CreateClient();
 
         // Act
-        var response = await client.PatchAsync($"/api/Venue/{fixture.SeedState.Venue.Id}/approve", null);
+        var response = await adminClient.PatchAsync($"/api/Venue/{fixture.SeedState.Venue.Id}/approve", null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var venue = await fixture.CreateClient().GetAsync<VenueDto>($"/api/Venue/{fixture.SeedState.Venue.Id}");
+        var venueResponse = await client.GetAsync($"/api/Venue/{fixture.SeedState.Venue.Id}");
+        await venueResponse.ShouldBe(HttpStatusCode.OK);
+        var venue = await venueResponse.Content.ReadAsync<VenueDto>();
         Assert.True(venue!.Approved);
     }
 
