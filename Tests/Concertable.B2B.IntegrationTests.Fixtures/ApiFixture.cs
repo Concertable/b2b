@@ -1,4 +1,5 @@
 using Concertable.Kernel.Notifications;
+using Concertable.Payment.Contracts;
 using Concertable.Payment.Domain;
 using Concertable.Payment.Client;
 using Concertable.Payment.Application.Interfaces;
@@ -50,6 +51,7 @@ public class ApiFixture : IAsyncLifetime
     private SqlFixture sqlFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
     private IServiceScope? scope;
+    private PaymentDbContext paymentDbContext = null!;
     private readonly XunitOutputAccessor outputAccessor = new();
 
     public void AttachOutput(ITestOutputHelper output) => outputAccessor.Output = output;
@@ -61,6 +63,7 @@ public class ApiFixture : IAsyncLifetime
     public IWebhookSimulator StripeClient { get; private set; } = null!;
     public SeedState SeedState { get; private set; } = null!;
     public IReadDbContext ReadDbContext { get; private set; } = null!;
+    public IQueryable<EscrowEntity> Escrows => paymentDbContext.Escrows.AsNoTracking();
 
 public async Task InitializeAsync()
     {
@@ -174,6 +177,7 @@ public async Task InitializeAsync()
         await initializer.InitializeAsync();
         SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
         ReadDbContext = scope.ServiceProvider.GetRequiredService<IReadDbContext>();
+        paymentDbContext = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
     }
 
     public IServiceProvider Services => factory.Services;

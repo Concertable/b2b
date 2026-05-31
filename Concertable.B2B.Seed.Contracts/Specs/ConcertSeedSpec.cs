@@ -23,6 +23,7 @@ public sealed record ConcertSeedSpec
     public required double Longitude { get; init; }
     public required IReadOnlyCollection<Genre> Genres { get; init; }
     public required Guid PayeeUserId { get; init; }
+    public int TicketsSold { get; init; }
 
     public static ConcertSeedSpec Create(
         int id,
@@ -34,7 +35,8 @@ public sealed record ConcertSeedSpec
         int daysOffset,
         int datePostedDaysOffset,
         DateTime now,
-        IReadOnlyCollection<Genre>? genres = null) => new()
+        IReadOnlyCollection<Genre>? genres = null,
+        int ticketsSold = 0) => new()
     {
         ConcertId = id,
         Name = name,
@@ -54,6 +56,7 @@ public sealed record ConcertSeedSpec
         Longitude = venue.Longitude,
         Genres = genres ?? [],
         PayeeUserId = venue.UserId,
+        TicketsSold = ticketsSold,
     };
 
     public static ConcertSeedSpec CreateHire(

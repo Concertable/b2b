@@ -1,5 +1,5 @@
 using Concertable.Messaging.Contracts;
-using Concertable.Payment.Domain.Events;
+using Concertable.Payment.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 using Concertable.Testing.Integration;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,32 +1,21 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.Contracts;
-using Concertable.Kernel;
+using Concertable.B2B.Seed.Contracts.Specs;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;
 
 public static class ConcertFactory
 {
-    public static ConcertEntity Create(
-        int id,
-        int bookingId,
-        int artistId,
-        int venueId,
-        DateRange period,
-        string name,
-        string about,
-        IEnumerable<Genre> genres,
-        decimal price,
-        int totalTickets,
-        DateTime? datePosted)
+    public static ConcertEntity Create(ConcertSeedSpec spec, int bookingId)
     {
         var concert = ConcertEntity
-            .CreateDraft(bookingId, artistId, venueId, period, name, about, genres)
-            .With(nameof(ConcertEntity.Id), id)
-            .With(nameof(ConcertEntity.Price), price)
-            .With(nameof(ConcertEntity.TotalTickets), totalTickets);
-        if (datePosted is not null)
-            concert.Post(concert.Name, concert.About, concert.Price, concert.TotalTickets, datePosted.Value);
+            .CreateDraft(bookingId, spec.ArtistId, spec.VenueId, spec.Period, spec.Name, spec.About, spec.Genres)
+            .With(nameof(ConcertEntity.Id), spec.ConcertId)
+            .With(nameof(ConcertEntity.Price), spec.Price)
+            .With(nameof(ConcertEntity.TotalTickets), spec.TotalTickets)
+            .With(nameof(ConcertEntity.TicketsSold), spec.TicketsSold);
+        if (spec.DatePosted is not null)
+            concert.Post(concert.Name, concert.About, concert.Price, concert.TotalTickets, spec.DatePosted.Value);
         return concert;
     }
 }

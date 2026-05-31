@@ -1,13 +1,13 @@
-using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Application.DTOs;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IBookingService
 {
-    Task<StandardBooking> CreateStandardAsync(int applicationId);
-    Task<DeferredBooking> CreateDeferredAsync(int applicationId, string paymentMethodId);
-    Task<BookingEntity> MarkAwaitingPaymentByConcertIdAsync(int concertId);
-    Task<BookingEntity> CompleteByConcertIdAsync(int concertId);
+    Task<StandardBookingDto> CreateStandardAsync(int applicationId);
+    Task<DeferredBookingDto> CreateDeferredAsync(int applicationId, string paymentMethodId);
+    Task<BookingSettlement> MarkAwaitingPaymentByConcertIdAsync(int concertId);
+    Task<IBooking> CompleteByConcertIdAsync(int concertId);
     Task CompleteAsync(int bookingId);
     Task FailPaymentAsync(int bookingId, CancellationToken ct = default);
 }

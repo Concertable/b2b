@@ -135,7 +135,7 @@ public class ApplicationVenueHireApiTests : IAsyncLifetime
         Assert.All(fixture.NotificationService.DraftCreated, n => Assert.NotNull(n.Payload));
 
         var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.ApplicationId == fixture.SeedState.VenueHireApp.Id);
-        var escrow = await fixture.ReadDbContext.Escrows.FirstOrDefaultAsync(e => e.BookingId == booking.Id);
+        var escrow = await fixture.Escrows.FirstOrDefaultAsync(e => e.BookingId == booking.Id);
         Assert.NotNull(escrow);
         Assert.Equal(EscrowStatus.Held, escrow!.Status);
         Assert.NotEmpty(escrow.ChargeId);

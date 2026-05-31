@@ -12,39 +12,41 @@ internal class BookingService : IBookingService
         this.bookingRepository = bookingRepository;
     }
 
-    public async Task<StandardBooking> CreateStandardAsync(int applicationId)
+    public async Task<StandardBookingDto> CreateStandardAsync(int applicationId)
     {
         var booking = StandardBooking.Create(applicationId);
         booking.AwaitPayment();
         await bookingRepository.AddAsync(booking);
         await bookingRepository.SaveChangesAsync();
-        return booking;
+        return booking.ToDto();
     }
 
-    public async Task<DeferredBooking> CreateDeferredAsync(int applicationId, string paymentMethodId)
+    public async Task<DeferredBookingDto> CreateDeferredAsync(int applicationId, string paymentMethodId)
     {
         var booking = DeferredBooking.Create(applicationId, paymentMethodId);
         await bookingRepository.AddAsync(booking);
         await bookingRepository.SaveChangesAsync();
-        return booking;
+        return booking.ToDto();
     }
 
-    public async Task<BookingEntity> MarkAwaitingPaymentByConcertIdAsync(int concertId)
+    public async Task<BookingSettlement> MarkAwaitingPaymentByConcertIdAsync(int concertId)
     {
-        var booking = await bookingRepository.GetByConcertIdAsync(concertId)
+        var booking = await bookingRepository.GetForSettlementByConcertIdAsync(concertId)
             ?? throw new NotFoundException("Booking not found");
-        booking.AwaitPayment();
+        if (booking is not DeferredBooking deferred)
+            throw new BadRequestException("Concert finish requires a DeferredBooking");
+        deferred.AwaitPayment();
         await bookingRepository.SaveChangesAsync();
-        return booking;
+        return deferred.ToSettlement();
     }
 
-    public async Task<BookingEntity> CompleteByConcertIdAsync(int concertId)
+    public async Task<IBooking> CompleteByConcertIdAsync(int concertId)
     {
-        var booking = await bookingRepository.GetByConcertIdAsync(concertId)
+        var booking = await bookingRepository.GetForCompletionByConcertIdAsync(concertId)
             ?? throw new NotFoundException("Booking not found");
         booking.Complete();
         await bookingRepository.SaveChangesAsync();
-        return booking;
+        return booking.ToDto();
     }
 
     public async Task CompleteAsync(int bookingId)
