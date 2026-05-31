@@ -101,9 +101,7 @@ internal class VenueService : IVenueService
     public async Task<int> GetIdForCurrentUserAsync()
     {
         int? id = await venueRepository.GetIdByUserIdAsync(currentUser.GetId());
-
-        if (id is null)
-            throw new ForbiddenException("You do not own a Venue");
+        ForbiddenException.ThrowIfNull(id, "You do not own a Venue");
 
         return id.Value;
     }

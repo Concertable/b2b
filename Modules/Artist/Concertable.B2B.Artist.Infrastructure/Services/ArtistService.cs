@@ -100,9 +100,7 @@ internal class ArtistService : IArtistService
     public async Task<int> GetIdForCurrentUserAsync()
     {
         int? id = await artistRepository.GetIdByUserIdAsync(currentUser.GetId());
-
-        if (id is null)
-            throw new ForbiddenException("You do not own an Artist");
+        ForbiddenException.ThrowIfNull(id, "You do not own an Artist");
 
         return id.Value;
     }
