@@ -25,7 +25,7 @@ public class StripeHooks(UiFixture fixture)
         {
             resolver.ResolveCustomer(seedData.VenueManager1.Id),
             resolver.ResolveCustomer(seedData.ArtistManager1.Id),
-            resolver.ResolveCustomer(SeedCustomers.Customer1.Id),
+            resolver.ResolveCustomer(SeedCustomers.CustomerId(1)),
         };
 
         foreach (var id in customerIds)
