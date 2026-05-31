@@ -3,6 +3,7 @@ using Concertable.B2B.Artist.Application.DTOs;
 using Concertable.B2B.Artist.Api.Responses;
 using static Concertable.B2B.Artist.IntegrationTests.ArtistRequestBuilders;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Xunit.Abstractions;
 
 namespace Concertable.B2B.Artist.IntegrationTests;
 
@@ -12,13 +13,14 @@ public class ArtistApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 
-    public ArtistApiTests(ApiFixture fixture)
+    public ArtistApiTests(ApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
+        fixture.AttachOutput(output);
     }
 
     public Task InitializeAsync() => fixture.ResetAsync();
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     #region GetDetailsById
 

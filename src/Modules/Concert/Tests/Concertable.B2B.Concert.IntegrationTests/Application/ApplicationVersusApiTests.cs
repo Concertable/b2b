@@ -5,6 +5,7 @@ using Concertable.B2B.Concert.Api.Responses;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
@@ -14,13 +15,14 @@ public class ApplicationVersusApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 
-    public ApplicationVersusApiTests(ApiFixture fixture)
+    public ApplicationVersusApiTests(ApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
+        fixture.AttachOutput(output);
     }
 
     public Task InitializeAsync() => fixture.ResetAsync();
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
     public async Task AcceptCheckout_ShouldReturnDeferredGuaranteedDoorPaymentSession()
@@ -83,7 +85,9 @@ public class ApplicationVersusApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var concert = await client.GetAssertAsync<ConcertDetailsResponse>($"/api/Concert/application/{fixture.SeedState.VersusApp.Id}");
+        var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.VersusApp.Id}");
+        await concertResponse.ShouldBe(HttpStatusCode.OK);
+        var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
         Assert.NotNull(concert);
         Assert.Null(concert.DatePosted);
         Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);

@@ -9,6 +9,7 @@ using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.B2B.User.Domain;
 using Concertable.Testing.Integration;
+using Concertable.Testing.Integration.Logging;
 using Concertable.Testing.Integration.Mocks;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
@@ -29,7 +30,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
@@ -46,6 +49,10 @@ public class ApiFixture : IAsyncLifetime
     private SqlFixture sqlFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
     private IServiceScope? scope;
+    private readonly XunitOutputAccessor outputAccessor = new();
+
+    public void AttachOutput(ITestOutputHelper output) => outputAccessor.Output = output;
+    public void DetachOutput() => outputAccessor.Output = null;
 
     public IMockNotificationClient NotificationService { get; } = new MockNotificationClient();
     public MockStripeApiClient StripeApiClient { get; } = new MockStripeApiClient();
@@ -77,6 +84,13 @@ public async Task InitializeAsync()
 
             builder.ConfigureTestServices(services =>
             {
+                services.AddLogging(b =>
+                {
+                    b.ClearProviders();
+                    b.AddProvider(new XunitLoggerProvider(outputAccessor));
+                    b.SetMinimumLevel(LogLevel.Information);
+                });
+
                 var asbDescriptors = services
                     .Where(d => d.ServiceType == typeof(IHostedService) &&
                                 d.ImplementationType?.Name == "AzureServiceBusReceiver")

@@ -7,6 +7,7 @@ using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityReq
 using Concertable.B2B.Contract.Contracts;
 using Concertable.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
 
@@ -15,13 +16,14 @@ internal class OpportunityApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 
-    public OpportunityApiTests(ApiFixture fixture)
+    public OpportunityApiTests(ApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
+        fixture.AttachOutput(output);
     }
 
     public Task InitializeAsync() => fixture.ResetAsync();
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     public static TheoryData<IContract> AllContractTypes =>
     [
@@ -90,10 +92,12 @@ internal class OpportunityApiTests : IAsyncLifetime
         var client = fixture.CreateClient();
 
         // Act
-        var result = await client.GetAsync<Pagination<OpportunityDto>>(
+        var response = await client.GetAsync(
             $"/api/Opportunity/active/venue/{fixture.SeedState.Venue.Id}");
 
         // Assert
+        await response.ShouldBe(HttpStatusCode.OK);
+        var result = await response.Content.ReadAsync<Pagination<OpportunityDto>>();
         Assert.NotNull(result);
         Assert.Contains(result.Data, o => o.Id == fixture.SeedState.Opportunities[0].Id);
     }

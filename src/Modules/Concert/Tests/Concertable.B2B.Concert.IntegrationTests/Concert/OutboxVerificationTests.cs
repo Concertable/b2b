@@ -6,6 +6,7 @@ using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Xunit.Abstractions;
 using static Concertable.B2B.Concert.IntegrationTests.Concert.ConcertRequestBuilders;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
@@ -15,10 +16,14 @@ public class OutboxVerificationTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 
-    public OutboxVerificationTests(ApiFixture fixture) => this.fixture = fixture;
+    public OutboxVerificationTests(ApiFixture fixture, ITestOutputHelper output)
+    {
+        this.fixture = fixture;
+        fixture.AttachOutput(output);
+    }
 
     public Task InitializeAsync() => fixture.ResetAsync();
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
     public async Task PostConcert_WritesOutboxRow_AndDispatcherDrainsIt()

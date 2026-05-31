@@ -2,6 +2,7 @@ using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.User.Application.Requests;
 using Concertable.B2B.User.Contracts;
+using Xunit.Abstractions;
 
 namespace Concertable.B2B.User.IntegrationTests;
 
@@ -11,13 +12,14 @@ public class UserApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 
-    public UserApiTests(ApiFixture fixture)
+    public UserApiTests(ApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
+        fixture.AttachOutput(output);
     }
 
     public Task InitializeAsync() => fixture.ResetAsync();
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     #region UpdateLocation
 

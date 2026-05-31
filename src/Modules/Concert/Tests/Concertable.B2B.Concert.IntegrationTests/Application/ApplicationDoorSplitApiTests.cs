@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.Concert.Domain.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
@@ -15,13 +16,14 @@ public class ApplicationDoorSplitApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 
-    public ApplicationDoorSplitApiTests(ApiFixture fixture)
+    public ApplicationDoorSplitApiTests(ApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
+        fixture.AttachOutput(output);
     }
 
     public Task InitializeAsync() => fixture.ResetAsync();
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
     public async Task AcceptCheckout_ShouldReturnDeferredDoorSharePaymentSession()
@@ -93,14 +95,14 @@ public class ApplicationDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await client.GetAsync<ApplicationResponse>(
-            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}");
-
+        var applicationResponse = await client.GetAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}");
+        await applicationResponse.ShouldBe(HttpStatusCode.OK);
+        var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
 
-        var concert = await client.GetAssertAsync<ConcertDetailsResponse>(
-            $"/api/Concert/application/{fixture.SeedState.DoorSplitApp.Id}");
-
+        var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.DoorSplitApp.Id}");
+        await concertResponse.ShouldBe(HttpStatusCode.OK);
+        var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
         Assert.NotNull(concert);
         Assert.Null(concert.DatePosted);
 

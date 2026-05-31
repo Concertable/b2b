@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
@@ -10,13 +11,14 @@ public class ApplicationApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 
-    public ApplicationApiTests(ApiFixture fixture)
+    public ApplicationApiTests(ApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
+        fixture.AttachOutput(output);
     }
 
     public Task InitializeAsync() => fixture.ResetAsync();
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     #region Accept
 
