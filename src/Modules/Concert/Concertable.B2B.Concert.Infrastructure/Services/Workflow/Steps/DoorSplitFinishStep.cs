@@ -13,7 +13,7 @@ internal class DoorSplitFinishStep : IFinishStep
     private readonly IBookingService bookingService;
     private readonly IBookingRepository bookingRepository;
     private readonly IConcertRepository concertRepository;
-    private readonly IContractLoader contractLoader;
+    private readonly IContractAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
     private readonly ILogger<DoorSplitFinishStep> logger;
 
@@ -21,14 +21,14 @@ internal class DoorSplitFinishStep : IFinishStep
         IBookingService bookingService,
         IBookingRepository bookingRepository,
         IConcertRepository concertRepository,
-        IContractLoader contractLoader,
+        IContractAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient,
         ILogger<DoorSplitFinishStep> logger)
     {
         this.bookingService = bookingService;
         this.bookingRepository = bookingRepository;
         this.concertRepository = concertRepository;
-        this.contractLoader = contractLoader;
+        this.contractAccessor = contractAccessor;
         this.managerPaymentClient = managerPaymentClient;
         this.logger = logger;
     }
@@ -38,7 +38,7 @@ internal class DoorSplitFinishStep : IFinishStep
         var booking = await bookingRepository.GetByConcertIdAsync(concertId)
             ?? throw new NotFoundException("Booking not found");
 
-        var contract = (DoorSplitContract)await contractLoader.LoadByConcertIdAsync(concertId);
+        var contract = (DoorSplitContract)contractAccessor.Contract;
         var totalRevenue = await concertRepository.GetTotalRevenueByConcertIdAsync(concertId);
         var artistShare = totalRevenue * (contract.ArtistDoorPercent / 100);
 

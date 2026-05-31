@@ -14,18 +14,18 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal class VenueHireApplyCheckoutStep : IApplyCheckoutStep
 {
     private readonly IPayerLookup payerLookup;
-    private readonly IContractLoader contractLoader;
+    private readonly IContractAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
     private readonly ICurrentUser currentUser;
 
     public VenueHireApplyCheckoutStep(
         IPayerLookup payerLookup,
-        IContractLoader contractLoader,
+        IContractAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient,
         ICurrentUser currentUser)
     {
         this.payerLookup = payerLookup;
-        this.contractLoader = contractLoader;
+        this.contractAccessor = contractAccessor;
         this.managerPaymentClient = managerPaymentClient;
         this.currentUser = currentUser;
     }
@@ -34,7 +34,7 @@ internal class VenueHireApplyCheckoutStep : IApplyCheckoutStep
     {
         var venue = await payerLookup.GetVenueByOpportunityIdAsync(opportunityId)
             ?? throw new NotFoundException("Opportunity not found");
-        var contract = (VenueHireContract)await contractLoader.LoadByOpportunityIdAsync(opportunityId);
+        var contract = (VenueHireContract)contractAccessor.Contract;
 
         var metadata = new Dictionary<string, string>
         {

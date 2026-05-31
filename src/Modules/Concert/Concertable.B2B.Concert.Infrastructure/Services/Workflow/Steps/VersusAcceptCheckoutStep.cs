@@ -8,16 +8,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal class VersusAcceptCheckoutStep : IAcceptCheckoutStep
 {
     private readonly IPayerLookup payerLookup;
-    private readonly IContractLoader contractLoader;
+    private readonly IContractAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
 
     public VersusAcceptCheckoutStep(
         IPayerLookup payerLookup,
-        IContractLoader contractLoader,
+        IContractAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient)
     {
         this.payerLookup = payerLookup;
-        this.contractLoader = contractLoader;
+        this.contractAccessor = contractAccessor;
         this.managerPaymentClient = managerPaymentClient;
     }
 
@@ -27,7 +27,7 @@ internal class VersusAcceptCheckoutStep : IAcceptCheckoutStep
             ?? throw new NotFoundException("Application not found");
         var venueManagerId = await payerLookup.GetVenueManagerIdAsync(applicationId)
             ?? throw new NotFoundException("Application not found");
-        var contract = (VersusContract)await contractLoader.LoadByApplicationIdAsync(applicationId);
+        var contract = (VersusContract)contractAccessor.Contract;
 
         var metadata = new Dictionary<string, string>
         {

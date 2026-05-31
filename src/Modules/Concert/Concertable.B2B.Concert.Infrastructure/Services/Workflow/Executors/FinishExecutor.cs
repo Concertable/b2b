@@ -12,15 +12,18 @@ internal class FinishExecutor : IFinishExecutor
 {
     private readonly IWorkflowStateMachine<ConcertEntity> stateMachine;
     private readonly IConcertWorkflowFactory workflows;
+    private readonly IContractResolver contractResolver;
     private readonly ILogger<FinishExecutor> logger;
 
     public FinishExecutor(
         IWorkflowStateMachine<ConcertEntity> stateMachine,
         IConcertWorkflowFactory workflows,
+        IContractResolver contractResolver,
         ILogger<FinishExecutor> logger)
     {
         this.stateMachine = stateMachine;
         this.workflows = workflows;
+        this.contractResolver = contractResolver;
         this.logger = logger;
     }
 
@@ -30,6 +33,7 @@ internal class FinishExecutor : IFinishExecutor
         {
             await stateMachine.TransitionAsync(concertId, ConcertStage.Finished, async concert =>
             {
+                await contractResolver.ResolveByConcertIdAsync(concert.Id);
                 var workflow = workflows.Create(concert.ContractType);
                 await workflow.Finish.ExecuteAsync(concert.Id);
             });
