@@ -11,16 +11,22 @@ internal class AcceptExecutor : IAcceptExecutor
 {
     private readonly IWorkflowStateMachine<ApplicationEntity> stateMachine;
     private readonly IConcertWorkflowFactory workflows;
+    private readonly IContractResolver contractResolver;
 
-    public AcceptExecutor(IWorkflowStateMachine<ApplicationEntity> stateMachine, IConcertWorkflowFactory workflows)
+    public AcceptExecutor(
+        IWorkflowStateMachine<ApplicationEntity> stateMachine,
+        IConcertWorkflowFactory workflows,
+        IContractResolver contractResolver)
     {
         this.stateMachine = stateMachine;
         this.workflows = workflows;
+        this.contractResolver = contractResolver;
     }
 
     public Task ExecuteAsync(int applicationId, string? paymentMethodId)
         => stateMachine.TransitionAsync(applicationId, ConcertStage.Accepted, async app =>
         {
+            await contractResolver.ResolveByApplicationIdAsync(app.Id);
             var workflow = workflows.Create(app.ContractType);
             await (workflow switch
             {

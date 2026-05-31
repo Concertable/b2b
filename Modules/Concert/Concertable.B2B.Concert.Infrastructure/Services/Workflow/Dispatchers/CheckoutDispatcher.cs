@@ -8,17 +8,17 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
 internal class CheckoutDispatcher : ICheckoutDispatcher
 {
     private readonly IConcertWorkflowFactory workflows;
-    private readonly IContractLoader contractLoader;
+    private readonly IContractResolver contractResolver;
 
-    public CheckoutDispatcher(IConcertWorkflowFactory workflows, IContractLoader contractLoader)
+    public CheckoutDispatcher(IConcertWorkflowFactory workflows, IContractResolver contractResolver)
     {
         this.workflows = workflows;
-        this.contractLoader = contractLoader;
+        this.contractResolver = contractResolver;
     }
 
     public async Task<Checkout> ApplyCheckoutAsync(int opportunityId)
     {
-        var contract = await contractLoader.LoadByOpportunityIdAsync(opportunityId);
+        var contract = await contractResolver.ResolveByOpportunityIdAsync(opportunityId);
         var workflow = workflows.Create(contract.ContractType);
 
         return workflow is IAppliesCheckout w
@@ -28,7 +28,7 @@ internal class CheckoutDispatcher : ICheckoutDispatcher
 
     public async Task<Checkout> AcceptCheckoutAsync(int applicationId)
     {
-        var contract = await contractLoader.LoadByApplicationIdAsync(applicationId);
+        var contract = await contractResolver.ResolveByApplicationIdAsync(applicationId);
         var workflow = workflows.Create(contract.ContractType);
 
         return workflow is IAcceptsCheckout w

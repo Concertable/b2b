@@ -62,7 +62,9 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<IContractModule>()));
         services.AddScoped<IApplicationService, ApplicationService>();
 
-        services.AddScoped<IContractLoader, ContractLoader>();
+        services.AddScoped<ContractAccessor>();
+        services.AddScoped<IContractAccessor>(sp => sp.GetRequiredService<ContractAccessor>());
+        services.AddScoped<IContractResolver>(sp => sp.GetRequiredService<ContractAccessor>());
         services.AddScoped<IPayerLookup, PayerLookup>();
 
         // Business-rule validators (interfaces in Concert.Application, impls in Concert.Infrastructure.Validators)

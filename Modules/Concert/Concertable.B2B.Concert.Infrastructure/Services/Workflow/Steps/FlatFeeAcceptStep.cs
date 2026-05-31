@@ -12,7 +12,7 @@ internal class FlatFeeAcceptStep : ISimpleAcceptStep
     private readonly IBookingService bookingService;
     private readonly IEscrowClient escrowClient;
     private readonly IPayerLookup payerLookup;
-    private readonly IContractLoader contractLoader;
+    private readonly IContractAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
     private readonly ILogger<FlatFeeAcceptStep> logger;
 
@@ -21,7 +21,7 @@ internal class FlatFeeAcceptStep : ISimpleAcceptStep
         IBookingService bookingService,
         IEscrowClient escrowClient,
         IPayerLookup payerLookup,
-        IContractLoader contractLoader,
+        IContractAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient,
         ILogger<FlatFeeAcceptStep> logger)
     {
@@ -29,7 +29,7 @@ internal class FlatFeeAcceptStep : ISimpleAcceptStep
         this.bookingService = bookingService;
         this.escrowClient = escrowClient;
         this.payerLookup = payerLookup;
-        this.contractLoader = contractLoader;
+        this.contractAccessor = contractAccessor;
         this.managerPaymentClient = managerPaymentClient;
         this.logger = logger;
     }
@@ -42,7 +42,7 @@ internal class FlatFeeAcceptStep : ISimpleAcceptStep
 
         var (venueManagerId, artistManagerId) = await payerLookup.GetManagerIdsAsync(applicationId)
             ?? throw new NotFoundException("Application not found");
-        var contract = (FlatFeeContract)await contractLoader.LoadByApplicationIdAsync(applicationId);
+        var contract = (FlatFeeContract)contractAccessor.Contract;
         var booking = await bookingService.CreateStandardAsync(applicationId);
 
         var paymentIntentId = await managerPaymentClient.FindHeldIntentAsync(venueManagerId, applicationId);

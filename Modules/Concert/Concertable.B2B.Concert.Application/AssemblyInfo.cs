@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Concertable.B2B.E2ETests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 // TEMPORARY: legacy Concertable.Infrastructure still hosts Payment + Ticket services that inject Concert.Application
-// internals (IConcertRepository, IOpportunityRepository, IContractLoader, ITicketPaymentStrategy). Retires when
+// internals (IConcertRepository, IOpportunityRepository, ITicketPaymentStrategy). Retires when
 // Payment Stage 1 extracts those services into Concertable.Payment.Infrastructure.
 [assembly: InternalsVisibleTo("Concertable.Infrastructure")]
 // TEMPORARY: Concertable.B2B.Workers (ConcertFinishedFunction) injects IConcertRepository + ICompletionDispatcher.

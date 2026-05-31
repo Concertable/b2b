@@ -13,16 +13,16 @@ internal class ApplyExecutor : IApplyExecutor
 {
     private readonly IWorkflowStateMachine<ApplicationEntity> stateMachine;
     private readonly IConcertWorkflowFactory workflows;
-    private readonly IContractLoader contractLoader;
+    private readonly IContractResolver contractResolver;
 
     public ApplyExecutor(
         IWorkflowStateMachine<ApplicationEntity> stateMachine,
         IConcertWorkflowFactory workflows,
-        IContractLoader contractLoader)
+        IContractResolver contractResolver)
     {
         this.stateMachine = stateMachine;
         this.workflows = workflows;
-        this.contractLoader = contractLoader;
+        this.contractResolver = contractResolver;
     }
 
     public async Task<ApplicationEntity> ExecuteAsync(int opportunityId, int artistId, string? paymentMethodId)
@@ -31,7 +31,7 @@ internal class ApplyExecutor : IApplyExecutor
         {
             return await stateMachine.TransitionAsync(ConcertStage.Applied, async () =>
             {
-                var contract = await contractLoader.LoadByOpportunityIdAsync(opportunityId);
+                var contract = await contractResolver.ResolveByOpportunityIdAsync(opportunityId);
                 var workflow = workflows.Create(contract.ContractType);
                 return workflow switch
                 {

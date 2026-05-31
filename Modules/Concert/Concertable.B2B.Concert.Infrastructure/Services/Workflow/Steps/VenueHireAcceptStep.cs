@@ -14,7 +14,7 @@ internal class VenueHireAcceptStep : ISimpleAcceptStep
     private readonly IBookingService bookingService;
     private readonly IEscrowClient escrowClient;
     private readonly IPayerLookup payerLookup;
-    private readonly IContractLoader contractLoader;
+    private readonly IContractAccessor contractAccessor;
     private readonly IApplicationRepository applicationRepository;
     private readonly ILogger<VenueHireAcceptStep> logger;
 
@@ -23,7 +23,7 @@ internal class VenueHireAcceptStep : ISimpleAcceptStep
         IBookingService bookingService,
         IEscrowClient escrowClient,
         IPayerLookup payerLookup,
-        IContractLoader contractLoader,
+        IContractAccessor contractAccessor,
         IApplicationRepository applicationRepository,
         ILogger<VenueHireAcceptStep> logger)
     {
@@ -31,7 +31,7 @@ internal class VenueHireAcceptStep : ISimpleAcceptStep
         this.bookingService = bookingService;
         this.escrowClient = escrowClient;
         this.payerLookup = payerLookup;
-        this.contractLoader = contractLoader;
+        this.contractAccessor = contractAccessor;
         this.applicationRepository = applicationRepository;
         this.logger = logger;
     }
@@ -50,7 +50,7 @@ internal class VenueHireAcceptStep : ISimpleAcceptStep
         if (application is not PrepaidApplication prepaid)
             throw new BadRequestException("VenueHire requires a PrepaidApplication");
 
-        var contract = (VenueHireContract)await contractLoader.LoadByApplicationIdAsync(applicationId);
+        var contract = (VenueHireContract)contractAccessor.Contract;
         var booking = await bookingService.CreateStandardAsync(applicationId);
 
         logger.AcceptingVenueHireApplication(applicationId, booking.Id, contract.HireFee, artistManagerId, venueManagerId);
