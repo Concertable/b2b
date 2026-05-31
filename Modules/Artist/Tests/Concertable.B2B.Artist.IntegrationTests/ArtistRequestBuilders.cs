@@ -1,5 +1,5 @@
 using Concertable.B2B.Artist.Application.Requests;
-using Concertable.Testing.Integration.B2B;
+using Concertable.B2B.IntegrationTests.Fixtures;
 
 namespace Concertable.B2B.Artist.IntegrationTests;
 

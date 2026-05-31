@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.Concert.Domain.Enums;
 using Concertable.Payment.Domain;
-using Concertable.Testing.Integration.B2B;
+using Concertable.B2B.IntegrationTests.Fixtures;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Application;
 

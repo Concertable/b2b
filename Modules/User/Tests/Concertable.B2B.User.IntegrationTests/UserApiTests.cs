@@ -1,5 +1,5 @@
 using System.Net;
-using Concertable.Testing.Integration.B2B;
+using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.User.Application.Requests;
 using Concertable.B2B.User.Contracts;
 
