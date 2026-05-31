@@ -18,6 +18,7 @@ using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
+using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure.Fakers;
@@ -125,6 +126,7 @@ public async Task InitializeAsync()
                 services.AddScoped<IImageService, MockImageService>();
                 services.AddScoped<IDbInitializer, TestDbInitializer>();
                 services.AddSeedingInfrastructure();
+                services.AddSingleton<SeedCatalog>();
                 services.AddScoped<SeedState>();
                 services.AddScoped<ILocationFaker, LocationFaker>();
                 services.AddUserTestSeeder();
