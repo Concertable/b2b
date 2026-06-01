@@ -8,7 +8,7 @@ namespace Concertable.B2B.Artist.Api.Controllers;
 [ApiController]
 [ArtistManager]
 [Route("api/[controller]")]
-internal class ArtistDashboardController : ControllerBase
+internal sealed class ArtistDashboardController : ControllerBase
 {
     private readonly IArtistDashboardService dashboardService;
 

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
-internal class VenueHireAcceptStep : ISimpleAcceptStep
+internal sealed class VenueHireAcceptStep : ISimpleAcceptStep
 {
     private readonly IApplicationValidator applicationValidator;
     private readonly IBookingService bookingService;

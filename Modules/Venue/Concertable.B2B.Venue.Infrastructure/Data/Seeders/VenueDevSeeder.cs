@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Data.Seeders;
 
-internal class VenueDevSeeder : IDevSeeder
+internal sealed class VenueDevSeeder : IDevSeeder
 {
     public int Order => 2;
 

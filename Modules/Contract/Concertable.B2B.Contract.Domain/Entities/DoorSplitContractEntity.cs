@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Contract.Domain.Entities;
 
-public class DoorSplitContractEntity : ContractEntity
+public sealed class DoorSplitContractEntity : ContractEntity
 {
     private DoorSplitContractEntity() { }
 

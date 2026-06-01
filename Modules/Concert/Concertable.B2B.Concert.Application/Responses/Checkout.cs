@@ -2,9 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace Concertable.B2B.Concert.Application.Responses;
 
-internal record Checkout(IPaymentAmount Amount, PayeeSummary Payee, CheckoutSession Session, CheckoutLabels Labels);
+internal sealed record Checkout(IPaymentAmount Amount, PayeeSummary Payee, CheckoutSession Session, CheckoutLabels Labels);
 
-internal record CheckoutLabels(string SummaryTitle, string SubmitLabel, string? PaymentHint)
+internal sealed record CheckoutLabels(string SummaryTitle, string SubmitLabel, string? PaymentHint)
 {
     internal static readonly CheckoutLabels Charge = new("Summary", "Confirm & Pay", null);
 
@@ -14,13 +14,13 @@ internal record CheckoutLabels(string SummaryTitle, string SubmitLabel, string? 
         "Saved card required for settlement after the concert.");
 }
 
-internal record PayeeSummary(string Name, string? Email);
+internal sealed record PayeeSummary(string Name, string? Email);
 
 [JsonDerivedType(typeof(FlatPayment), "flat")]
 [JsonDerivedType(typeof(DoorSharePayment), "doorShare")]
 [JsonDerivedType(typeof(GuaranteedDoorPayment), "guaranteedDoor")]
 internal interface IPaymentAmount { }
 
-internal record FlatPayment(decimal Amount) : IPaymentAmount;
-internal record DoorSharePayment(decimal ArtistPercent) : IPaymentAmount;
-internal record GuaranteedDoorPayment(decimal Guarantee, decimal ArtistPercent) : IPaymentAmount;
+internal sealed record FlatPayment(decimal Amount) : IPaymentAmount;
+internal sealed record DoorSharePayment(decimal ArtistPercent) : IPaymentAmount;
+internal sealed record GuaranteedDoorPayment(decimal Guarantee, decimal ArtistPercent) : IPaymentAmount;

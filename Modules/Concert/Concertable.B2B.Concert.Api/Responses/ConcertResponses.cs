@@ -2,7 +2,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Concert.Api.Responses;
 
-internal record ConcertDetailsResponse
+internal sealed record ConcertDetailsResponse
 {
     public int Id { get; set; }
     public required string Name { get; set; }
@@ -21,7 +21,7 @@ internal record ConcertDetailsResponse
     public IReadOnlyList<Genre> Genres { get; set; } = [];
 }
 
-internal record ConcertArtistResponse
+internal sealed record ConcertArtistResponse
 {
     public int Id { get; set; }
     public required string Name { get; set; }
@@ -32,7 +32,7 @@ internal record ConcertArtistResponse
     public IReadOnlyList<Genre> Genres { get; set; } = [];
 }
 
-internal record ConcertVenueResponse
+internal sealed record ConcertVenueResponse
 {
     public int Id { get; set; }
     public required string Name { get; set; }
@@ -42,7 +42,7 @@ internal record ConcertVenueResponse
     public double Longitude { get; set; }
 }
 
-internal record ConcertSummaryResponse
+internal sealed record ConcertSummaryResponse
 {
     public int Id { get; set; }
     public required string Name { get; set; }
@@ -57,14 +57,14 @@ internal record ConcertSummaryResponse
     public required ConcertArtistSummaryResponse Artist { get; set; }
 }
 
-internal record ConcertVenueSummaryResponse
+internal sealed record ConcertVenueSummaryResponse
 {
     public int Id { get; set; }
     public required string Name { get; set; }
     public double Rating { get; set; }
 }
 
-internal record ConcertArtistSummaryResponse
+internal sealed record ConcertArtistSummaryResponse
 {
     public int Id { get; set; }
     public required string Name { get; set; }

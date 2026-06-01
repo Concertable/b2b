@@ -9,7 +9,7 @@ namespace Concertable.B2B.Artist.IntegrationTests;
 
 [Collection("Integration")]
 
-public class ArtistApiTests : IAsyncLifetime
+public sealed class ArtistApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 

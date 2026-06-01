@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Contract.Infrastructure.Data;
 
-internal class ContractDbContext(
+internal sealed class ContractDbContext(
     DbContextOptions<ContractDbContext> options,
     ContractConfigurationProvider provider)
     : DbContextBase(options)

@@ -2,4 +2,4 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Events;
 
-public record ApplicationAcceptedDomainEvent(int ApplicationId, int OpportunityId) : IDomainEvent;
+public sealed record ApplicationAcceptedDomainEvent(int ApplicationId, int OpportunityId) : IDomainEvent;

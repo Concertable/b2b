@@ -1,6 +1,6 @@
 namespace Concertable.B2B.E2ETests.Ui.PageObjects;
 
-public class CreateVenuePage
+public sealed class CreateVenuePage
 {
     private readonly IPage page;
     private readonly string url;

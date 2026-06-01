@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
 
 [Collection("Integration")]
-internal class OpportunityApiTests : IAsyncLifetime
+internal sealed class OpportunityApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 

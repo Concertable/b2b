@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Concertable.B2B.Concert.Application.Validators;
 
-internal class OpportunityDtoValidator : AbstractValidator<OpportunityDto>
+internal sealed class OpportunityDtoValidator : AbstractValidator<OpportunityDto>
 {
     public OpportunityDtoValidator()
     {

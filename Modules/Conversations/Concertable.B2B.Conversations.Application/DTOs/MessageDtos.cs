@@ -2,7 +2,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Conversations.Application.DTOs;
 
-internal record MessageDto
+internal sealed record MessageDto
 {
     public int Id { get; set; }
     public required MessageUserDto FromUser { get; set; }
@@ -10,9 +10,9 @@ internal record MessageDto
     public required string Content { get; set; }
 }
 
-internal record MessageSummaryDto(Pagination<MessageDto> Messages, int UnreadCount);
+internal sealed record MessageSummaryDto(Pagination<MessageDto> Messages, int UnreadCount);
 
-internal record MessageUserDto
+internal sealed record MessageUserDto
 {
     public Guid Id { get; set; }
     public required string Email { get; set; }

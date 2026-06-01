@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal class ApplicationRepository : Repository<ApplicationEntity>, IApplicationRepository
+internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IApplicationRepository
 {
     private readonly TimeProvider timeProvider;
 

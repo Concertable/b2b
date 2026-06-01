@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Completion;
 
-internal class ConcertCompletionRunner(
+internal sealed class ConcertCompletionRunner(
     IConcertRepository concertRepository,
     ICompletionDispatcher completionDispatcher,
     ILogger<ConcertCompletionRunner> logger) : IConcertCompletionRunner

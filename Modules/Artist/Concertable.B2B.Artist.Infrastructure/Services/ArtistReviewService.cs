@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Services;
 
-internal class ArtistReviewService(ArtistDbContext context) : IArtistReviewService
+internal sealed class ArtistReviewService(ArtistDbContext context) : IArtistReviewService
 {
     public async Task<ReviewSummaryDto> GetSummaryAsync(int artistId)
     {

@@ -11,7 +11,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 /// <em>setup session</em> (via <see cref="IManagerPaymentClient.CreateSetupSessionAsync"/>) to save the
 /// artist's card for the off-session hold that follows acceptance, rather than charging immediately.
 /// </summary>
-internal class VenueHireApplyCheckoutStep : IApplyCheckoutStep
+internal sealed class VenueHireApplyCheckoutStep : IApplyCheckoutStep
 {
     private readonly IPayerLookup payerLookup;
     private readonly IContractAccessor contractAccessor;

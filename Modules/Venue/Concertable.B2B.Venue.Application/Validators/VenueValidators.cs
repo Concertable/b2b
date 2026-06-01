@@ -4,7 +4,7 @@ using FluentValidation;
 
 namespace Concertable.B2B.Venue.Application.Validators;
 
-internal class CreateVenueRequestValidator : AbstractValidator<CreateVenueRequest>
+internal sealed class CreateVenueRequestValidator : AbstractValidator<CreateVenueRequest>
 {
     public CreateVenueRequestValidator()
     {
@@ -27,7 +27,7 @@ internal class CreateVenueRequestValidator : AbstractValidator<CreateVenueReques
     }
 }
 
-internal class UpdateVenueRequestValidator : AbstractValidator<UpdateVenueRequest>
+internal sealed class UpdateVenueRequestValidator : AbstractValidator<UpdateVenueRequest>
 {
     public UpdateVenueRequestValidator()
     {

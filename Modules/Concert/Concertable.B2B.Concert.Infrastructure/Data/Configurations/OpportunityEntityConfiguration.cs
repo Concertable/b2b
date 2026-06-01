@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Configurations;
 
-internal class OpportunityEntityConfiguration : IEntityTypeConfiguration<OpportunityEntity>
+internal sealed class OpportunityEntityConfiguration : IEntityTypeConfiguration<OpportunityEntity>
 {
     public void Configure(EntityTypeBuilder<OpportunityEntity> builder)
     {
@@ -25,7 +25,7 @@ internal class OpportunityEntityConfiguration : IEntityTypeConfiguration<Opportu
     }
 }
 
-internal class ApplicationEntityConfiguration : IEntityTypeConfiguration<ApplicationEntity>
+internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<ApplicationEntity>
 {
     public void Configure(EntityTypeBuilder<ApplicationEntity> builder)
     {

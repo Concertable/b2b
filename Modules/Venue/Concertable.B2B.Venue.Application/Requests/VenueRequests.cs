@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Venue.Application.Requests;
 
-internal record CreateVenueRequest
+internal sealed record CreateVenueRequest
 {
     public required string Name { get; init; }
     public required string About { get; init; }
@@ -13,7 +13,7 @@ internal record CreateVenueRequest
     public required IFormFile Avatar { get; init; }
 }
 
-internal record UpdateVenueRequest
+internal sealed record UpdateVenueRequest
 {
     public required string Name { get; init; }
     public required string About { get; init; }

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
-internal class VenueRepository(VenueDbContext context)
+internal sealed class VenueRepository(VenueDbContext context)
     : Repository<VenueEntity>(context), IVenueRepository
 {
     public async Task<VenueEntity?> GetFullByIdAsync(int id) =>

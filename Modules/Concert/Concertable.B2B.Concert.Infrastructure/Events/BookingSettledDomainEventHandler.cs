@@ -4,7 +4,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Events;
 
-internal class BookingSettledDomainEventHandler : IDomainEventHandler<BookingSettledDomainEvent>
+internal sealed class BookingSettledDomainEventHandler : IDomainEventHandler<BookingSettledDomainEvent>
 {
     private readonly IConcertDraftService concertDraftService;
 

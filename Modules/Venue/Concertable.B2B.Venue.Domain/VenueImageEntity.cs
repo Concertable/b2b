@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Concertable.B2B.Venue.Domain;
 
 [Table("VenueImages")]
-public class VenueImageEntity : IIdEntity
+public sealed class VenueImageEntity : IIdEntity
 {
     private VenueImageEntity() { }
 

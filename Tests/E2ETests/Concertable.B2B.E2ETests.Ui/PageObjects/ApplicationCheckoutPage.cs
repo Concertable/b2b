@@ -1,6 +1,6 @@
 namespace Concertable.B2B.E2ETests.Ui.PageObjects;
 
-public class ApplicationCheckoutPage
+public sealed class ApplicationCheckoutPage
 {
     private readonly IPage page;
     private readonly IStripePayment payment;

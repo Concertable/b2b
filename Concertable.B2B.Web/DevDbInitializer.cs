@@ -12,7 +12,7 @@ using Concertable.Kernel.Services.Geometry;
 
 namespace Concertable.B2B.Web;
 
-public class DevDbInitializer : IDbInitializer
+public sealed class DevDbInitializer : IDbInitializer
 {
     private readonly IEnumerable<IDevSeeder> seeders;
     private readonly OutboxDbContext outbox;

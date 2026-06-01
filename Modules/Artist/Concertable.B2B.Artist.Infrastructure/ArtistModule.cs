@@ -2,7 +2,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Artist.Infrastructure;
 
-internal class ArtistModule(IArtistRepository repo) : IArtistModule
+internal sealed class ArtistModule(IArtistRepository repo) : IArtistModule
 {
     public Task<int?> GetIdByUserIdAsync(Guid userId) =>
         repo.GetIdByUserIdAsync(userId);

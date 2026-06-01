@@ -8,7 +8,7 @@ using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Concert.Infrastructure.Handlers;
 
-internal class VenueReadModelProjectionHandler : IIntegrationEventHandler<VenueChangedEvent>
+internal sealed class VenueReadModelProjectionHandler : IIntegrationEventHandler<VenueChangedEvent>
 {
     private static readonly GeometryFactory GeometryFactory =
         NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);

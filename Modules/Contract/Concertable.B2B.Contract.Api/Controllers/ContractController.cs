@@ -6,7 +6,7 @@ namespace Concertable.B2B.Contract.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-internal class ContractController : ControllerBase
+internal sealed class ContractController : ControllerBase
 {
     private readonly IContractService contractService;
 

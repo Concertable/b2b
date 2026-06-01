@@ -5,7 +5,7 @@ using Concertable.DataAccess.Infrastructure;
 
 namespace Concertable.B2B.DataAccess;
 
-internal class ReadDbContext : DbContextBase, IReadDbContext
+internal sealed class ReadDbContext : DbContextBase, IReadDbContext
 {
     private readonly IEnumerable<IEntityTypeConfigurationProvider> providers;
 

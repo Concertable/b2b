@@ -3,7 +3,7 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Artist.Application.DTOs;
 
-public record ArtistDto : IAddress
+public sealed record ArtistDto : IAddress
 {
     public int Id { get; set; }
     public required string Name { get; set; }

@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Seed.Infrastructure.Fakers;
 
-public class Location
+public sealed class Location
 {
     public required string County { get; set; }
     public required string Town { get; set; }
@@ -8,7 +8,7 @@ public class Location
     public double Longitude { get; set; }
 }
 
-public class LocationFaker : ILocationFaker
+public sealed class LocationFaker : ILocationFaker
 {
     private int _index = 0;
 

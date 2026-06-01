@@ -1,6 +1,6 @@
 namespace Concertable.B2B.User.Infrastructure.Data;
 
-internal class AdminProfileEntity
+internal sealed class AdminProfileEntity
 {
     private AdminProfileEntity() { }
 

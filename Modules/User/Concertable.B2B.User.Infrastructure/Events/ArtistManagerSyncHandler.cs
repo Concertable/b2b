@@ -7,7 +7,7 @@ using Concertable.Messaging.Contracts;
 
 namespace Concertable.B2B.User.Infrastructure.Events;
 
-internal class ArtistManagerSyncHandler : IIntegrationEventHandler<ArtistChangedEvent>
+internal sealed class ArtistManagerSyncHandler : IIntegrationEventHandler<ArtistChangedEvent>
 {
     private static readonly GeometryFactory GeometryFactory =
         NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);

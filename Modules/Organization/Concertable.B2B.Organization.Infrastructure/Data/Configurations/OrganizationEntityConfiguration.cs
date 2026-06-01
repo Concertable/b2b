@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.Organization.Infrastructure.Data.Configurations;
 
-internal class OrganizationEntityConfiguration : IEntityTypeConfiguration<OrganizationEntity>
+internal sealed class OrganizationEntityConfiguration : IEntityTypeConfiguration<OrganizationEntity>
 {
     public void Configure(EntityTypeBuilder<OrganizationEntity> builder)
     {

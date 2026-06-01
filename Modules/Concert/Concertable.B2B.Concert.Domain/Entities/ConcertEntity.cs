@@ -12,7 +12,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// Holds denormalized <see cref="ArtistReadModel"/> and <see cref="VenueReadModel"/> references
 /// so the Concert module can satisfy queries in a single DB context without crossing module boundaries.
 /// </summary>
-public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, ILifecycleEntity, IEventRaiser
+public sealed class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, ILifecycleEntity, IEventRaiser
 {
     public int Id { get; private set; }
     public int BookingId { get; private set; }
@@ -50,15 +50,15 @@ public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, I
         string name,
         string about,
         IEnumerable<Genre> genres) => new()
-    {
-        BookingId = bookingId,
-        ArtistId = artistId,
-        VenueId = venueId,
-        Period = period,
-        Name = name,
-        About = about,
-        Genres = genres.ToList()
-    };
+        {
+            BookingId = bookingId,
+            ArtistId = artistId,
+            VenueId = venueId,
+            Period = period,
+            Name = name,
+            About = about,
+            Genres = genres.ToList()
+        };
 
     public static ConcertEntity CreateDraft(
         int bookingId,
@@ -69,16 +69,16 @@ public class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, I
         string about,
         ContractType contractType,
         IEnumerable<Genre> genres) => new()
-    {
-        BookingId = bookingId,
-        ArtistId = artistId,
-        VenueId = venueId,
-        Period = period,
-        Name = name,
-        About = about,
-        ContractType = contractType,
-        Genres = genres.ToList()
-    };
+        {
+            BookingId = bookingId,
+            ArtistId = artistId,
+            VenueId = venueId,
+            Period = period,
+            Name = name,
+            About = about,
+            ContractType = contractType,
+            Genres = genres.ToList()
+        };
 
     public void IncrementTicketsSold(int quantity) => TicketsSold += quantity;
 

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Organization.Infrastructure.Repositories;
 
-internal class OrganizationRepository : IOrganizationRepository
+internal sealed class OrganizationRepository : IOrganizationRepository
 {
     private readonly OrganizationDbContext dbContext;
 

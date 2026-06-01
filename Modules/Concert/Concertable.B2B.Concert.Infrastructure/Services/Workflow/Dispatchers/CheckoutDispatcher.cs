@@ -5,7 +5,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
 
-internal class CheckoutDispatcher : ICheckoutDispatcher
+internal sealed class CheckoutDispatcher : ICheckoutDispatcher
 {
     private readonly IConcertWorkflowFactory workflows;
     private readonly IContractResolver contractResolver;

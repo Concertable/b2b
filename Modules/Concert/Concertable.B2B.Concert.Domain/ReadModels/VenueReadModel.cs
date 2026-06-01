@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.Domain.ReadModels;
 /// Kept in sync via <c>VenueChangedEvent</c> projections so the Concert module
 /// can join venue data without crossing into the Venue module's DB context.
 /// </summary>
-public class VenueReadModel : IIdEntity
+public sealed class VenueReadModel : IIdEntity
 {
     public int Id { get; set; }
     public Guid UserId { get; set; }

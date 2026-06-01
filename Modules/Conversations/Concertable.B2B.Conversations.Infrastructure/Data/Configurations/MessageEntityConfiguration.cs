@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Data.Configurations;
 
-internal class MessageEntityConfiguration : IEntityTypeConfiguration<MessageEntity>
+internal sealed class MessageEntityConfiguration : IEntityTypeConfiguration<MessageEntity>
 {
     public void Configure(EntityTypeBuilder<MessageEntity> builder)
     {

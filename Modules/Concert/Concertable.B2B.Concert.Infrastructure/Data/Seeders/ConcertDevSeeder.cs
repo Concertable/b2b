@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Seeders;
 
-internal class ConcertDevSeeder : IDevSeeder
+internal sealed class ConcertDevSeeder : IDevSeeder
 {
     public int Order => 4;
 

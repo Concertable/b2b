@@ -5,7 +5,7 @@ using Stripe;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal class MockManagerPaymentClient : IManagerPaymentClient
+internal sealed class MockManagerPaymentClient : IManagerPaymentClient
 {
     private readonly MockStripeApiClient stripeApiClient;
 

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
 
-internal class ConcertDbContext(
+internal sealed class ConcertDbContext(
     DbContextOptions<ConcertDbContext> options,
     ConcertConfigurationProvider provider)
     : DbContextBase(options)

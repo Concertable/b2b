@@ -17,7 +17,7 @@ namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
 [Collection("Integration")]
 
-public class ApplicationVenueHireApiTests : IAsyncLifetime
+public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 

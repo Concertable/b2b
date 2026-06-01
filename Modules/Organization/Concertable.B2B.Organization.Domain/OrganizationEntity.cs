@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Organization.Domain;
 
-public class OrganizationEntity
+public sealed class OrganizationEntity
 {
     private OrganizationEntity() { }
 

@@ -2,7 +2,7 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
-public class ConcertImageEntity : IIdEntity
+public sealed class ConcertImageEntity : IIdEntity
 {
     private ConcertImageEntity() { }
 

@@ -5,7 +5,7 @@ using Concertable.Messaging.Contracts;
 
 namespace Concertable.B2B.Artist.Infrastructure.Events;
 
-internal class ArtistChangedDomainEventHandler(IBus bus)
+internal sealed class ArtistChangedDomainEventHandler(IBus bus)
     : IPreCommitDomainEventHandler<ArtistChangedDomainEvent>
 {
     public Task HandleAsync(ArtistChangedDomainEvent e, CancellationToken ct = default)

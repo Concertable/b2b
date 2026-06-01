@@ -1,6 +1,6 @@
 namespace Concertable.B2B.User.Infrastructure.Data;
 
-internal class VenueManagerProfileEntity
+internal sealed class VenueManagerProfileEntity
 {
     private VenueManagerProfileEntity() { }
 

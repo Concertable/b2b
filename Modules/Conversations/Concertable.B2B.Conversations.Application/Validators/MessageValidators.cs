@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Concertable.B2B.Conversations.Application.Validators;
 
-internal class MarkMessagesReadRequestValidator : AbstractValidator<MarkMessagesReadRequest>
+internal sealed class MarkMessagesReadRequestValidator : AbstractValidator<MarkMessagesReadRequest>
 {
     public MarkMessagesReadRequestValidator()
     {

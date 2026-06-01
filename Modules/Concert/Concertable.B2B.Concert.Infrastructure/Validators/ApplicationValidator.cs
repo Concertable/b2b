@@ -5,7 +5,7 @@ using FluentResults;
 
 namespace Concertable.B2B.Concert.Infrastructure.Validators;
 
-internal class ApplicationValidator : IApplicationValidator
+internal sealed class ApplicationValidator : IApplicationValidator
 {
     private readonly IConcertRepository concertRepository;
     private readonly IOpportunityRepository opportunityRepository;

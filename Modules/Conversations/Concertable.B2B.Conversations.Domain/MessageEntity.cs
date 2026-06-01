@@ -3,7 +3,7 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Conversations.Domain;
 
-public class MessageEntity : IIdEntity
+public sealed class MessageEntity : IIdEntity
 {
     private MessageEntity() { }
 

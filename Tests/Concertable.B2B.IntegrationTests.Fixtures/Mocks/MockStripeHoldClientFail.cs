@@ -3,7 +3,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal class MockStripeHoldClientFail : IStripeHoldClient
+internal sealed class MockStripeHoldClientFail : IStripeHoldClient
 {
     public Task<string> FindHeldIntentAsync(string stripeCustomerId, int applicationId, CancellationToken ct = default) =>
         throw new NotFoundException("No held payment intent found");

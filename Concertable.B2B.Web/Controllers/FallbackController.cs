@@ -2,7 +2,7 @@
 
 namespace Concertable.B2B.Web.Controllers;
 
-public class FallbackController : Controller
+public sealed class FallbackController : Controller
 {
     public IActionResult Index()
     {

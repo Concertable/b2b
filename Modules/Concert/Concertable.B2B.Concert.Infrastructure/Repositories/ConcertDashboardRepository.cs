@@ -8,7 +8,7 @@ using Concertable.DataAccess.Application.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal class ConcertDashboardRepository : IConcertDashboardRepository
+internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
 {
     private readonly ConcertDbContext context;
     private readonly IUpcomingSpecification<OpportunityEntity> opportunityUpcoming;

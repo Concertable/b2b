@@ -2,7 +2,7 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Events;
 
-public record ConcertChangedDomainEvent(
+public sealed record ConcertChangedDomainEvent(
     int ConcertId,
     int TotalTickets,
     decimal Price,

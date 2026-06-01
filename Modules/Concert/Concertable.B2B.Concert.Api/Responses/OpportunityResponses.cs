@@ -3,7 +3,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Concert.Api.Responses;
 
-internal record OpportunityResponse(
+internal sealed record OpportunityResponse(
     int Id,
     int VenueId,
     IContract Contract,
@@ -12,4 +12,4 @@ internal record OpportunityResponse(
     IEnumerable<Genre> Genres,
     OpportunityActions Actions);
 
-internal record OpportunityActions(ActionLink? Checkout);
+internal sealed record OpportunityActions(ActionLink? Checkout);

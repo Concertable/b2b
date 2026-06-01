@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 [Collection("Integration")]
 
-public class ConcertApiTests : IAsyncLifetime
+public sealed class ConcertApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 

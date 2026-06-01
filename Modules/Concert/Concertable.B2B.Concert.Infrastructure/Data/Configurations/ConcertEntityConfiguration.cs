@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Configurations;
 
-internal class ConcertEntityConfiguration : IEntityTypeConfiguration<ConcertEntity>
+internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<ConcertEntity>
 {
     public void Configure(EntityTypeBuilder<ConcertEntity> builder)
     {

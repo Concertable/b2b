@@ -6,7 +6,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal class OpportunityService : IOpportunityService
+internal sealed class OpportunityService : IOpportunityService
 {
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IVenueModule venueModule;

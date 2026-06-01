@@ -7,7 +7,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Application.Mappers;
 
-internal class OpportunityMapper : IOpportunityMapper
+internal sealed class OpportunityMapper : IOpportunityMapper
 {
     private readonly IContractModule contractModule;
 

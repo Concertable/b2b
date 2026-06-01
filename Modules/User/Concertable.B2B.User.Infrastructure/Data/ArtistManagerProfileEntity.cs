@@ -1,6 +1,6 @@
 namespace Concertable.B2B.User.Infrastructure.Data;
 
-internal class ArtistManagerProfileEntity
+internal sealed class ArtistManagerProfileEntity
 {
     private ArtistManagerProfileEntity() { }
 

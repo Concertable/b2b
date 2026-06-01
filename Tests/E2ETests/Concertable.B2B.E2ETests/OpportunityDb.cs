@@ -3,7 +3,7 @@ using Dapper;
 
 namespace Concertable.B2B.E2ETests;
 
-public class OpportunityDb
+public sealed class OpportunityDb
 {
     private readonly IDbConnection connection;
 

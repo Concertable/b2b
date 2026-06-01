@@ -2,7 +2,7 @@ using Concertable.B2B.Concert.Application.Workflow.Steps;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
-internal class DeferredSettleStep : ISettleStep
+internal sealed class DeferredSettleStep : ISettleStep
 {
     private readonly IBookingService bookingService;
 

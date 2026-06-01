@@ -5,7 +5,7 @@ using Concertable.Messaging.Contracts;
 
 namespace Concertable.B2B.Concert.Infrastructure.Events;
 
-internal class ConcertPostedDomainEventHandler : IPreCommitDomainEventHandler<ConcertPostedDomainEvent>
+internal sealed class ConcertPostedDomainEventHandler : IPreCommitDomainEventHandler<ConcertPostedDomainEvent>
 {
     private readonly IConcertRepository concertRepository;
     private readonly IBus bus;

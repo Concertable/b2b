@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Configurations;
 
-internal class ArtistReadModelConfiguration : IEntityTypeConfiguration<ArtistReadModel>
+internal sealed class ArtistReadModelConfiguration : IEntityTypeConfiguration<ArtistReadModel>
 {
     public void Configure(EntityTypeBuilder<ArtistReadModel> builder)
     {
@@ -19,7 +19,7 @@ internal class ArtistReadModelConfiguration : IEntityTypeConfiguration<ArtistRea
     }
 }
 
-internal class ArtistReadModelGenreConfiguration : IEntityTypeConfiguration<ArtistReadModelGenre>
+internal sealed class ArtistReadModelGenreConfiguration : IEntityTypeConfiguration<ArtistReadModelGenre>
 {
     public void Configure(EntityTypeBuilder<ArtistReadModelGenre> builder)
     {

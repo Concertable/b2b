@@ -1,6 +1,6 @@
 namespace Concertable.B2B.E2ETests.Ui.PageObjects;
 
-public class RegisterPage
+public sealed class RegisterPage
 {
     private readonly IPage page;
     private readonly string authBaseUrl;

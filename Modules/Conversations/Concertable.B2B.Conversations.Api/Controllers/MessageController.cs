@@ -8,7 +8,7 @@ namespace Concertable.B2B.Conversations.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-internal class MessageController : ControllerBase
+internal sealed class MessageController : ControllerBase
 {
     private readonly IMessageService messageService;
 

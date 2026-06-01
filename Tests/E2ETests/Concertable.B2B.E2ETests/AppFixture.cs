@@ -34,7 +34,7 @@ using B2BDevDbInitializer = Concertable.B2B.Web.DevDbInitializer;
 
 namespace Concertable.B2B.E2ETests;
 
-public class AppFixture : IAsyncLifetime
+public sealed class AppFixture : IAsyncLifetime
 {
     private DistributedApplication app = null!;
     private AspireResourceLogger resourceLogger = null!;
@@ -81,12 +81,12 @@ public class AppFixture : IAsyncLifetime
         var endpoints = configuration.GetSection("Endpoints").Get<E2EEndpoints>()
             ?? throw new InvalidOperationException("Endpoints section is missing from appsettings.E2E.json.");
 
-        B2BWebUrl      = endpoints.B2BWeb;
-        SearchWebUrl   = endpoints.SearchWeb;
-        PaymentWebUrl  = endpoints.PaymentWeb;
-        authUrl        = endpoints.Auth;
-        VenueSpaUrl    = endpoints.VenueSpa;
-        ArtistSpaUrl   = endpoints.ArtistSpa;
+        B2BWebUrl = endpoints.B2BWeb;
+        SearchWebUrl = endpoints.SearchWeb;
+        PaymentWebUrl = endpoints.PaymentWeb;
+        authUrl = endpoints.Auth;
+        VenueSpaUrl = endpoints.VenueSpa;
+        ArtistSpaUrl = endpoints.ArtistSpa;
         BusinessSpaUrl = endpoints.BusinessSpa;
 
         tokenMinter = new TestTokenMinter(configuration);
@@ -110,8 +110,8 @@ public class AppFixture : IAsyncLifetime
         resourceLogger = new AspireResourceLogger(app.ResourceNotifications, logger);
         await app.StartAsync();
 
-        B2BClient     = new HttpClient { BaseAddress = new Uri(B2BWebUrl) };
-        SearchClient  = new HttpClient { BaseAddress = new Uri(SearchWebUrl) };
+        B2BClient = new HttpClient { BaseAddress = new Uri(B2BWebUrl) };
+        SearchClient = new HttpClient { BaseAddress = new Uri(SearchWebUrl) };
         PaymentClient = new HttpClient { BaseAddress = new Uri(PaymentWebUrl) };
 
         await healthWaiter.WaitForAllHealthyAsync(

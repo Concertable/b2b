@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Handlers;
 
-internal class ArtistReadModelProjectionHandler : IIntegrationEventHandler<ArtistChangedEvent>
+internal sealed class ArtistReadModelProjectionHandler : IIntegrationEventHandler<ArtistChangedEvent>
 {
     private readonly ConcertDbContext context;
 

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Data.Seeders;
 
-internal class ArtistDevSeeder : IDevSeeder
+internal sealed class ArtistDevSeeder : IDevSeeder
 {
     public int Order => 1;
 

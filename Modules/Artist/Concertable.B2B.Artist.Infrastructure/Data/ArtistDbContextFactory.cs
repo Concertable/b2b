@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace Concertable.B2B.Artist.Infrastructure.Data;
 
-internal class ArtistDbContextFactory : IDesignTimeDbContextFactory<ArtistDbContext>
+internal sealed class ArtistDbContextFactory : IDesignTimeDbContextFactory<ArtistDbContext>
 {
     public ArtistDbContext CreateDbContext(string[] args)
     {

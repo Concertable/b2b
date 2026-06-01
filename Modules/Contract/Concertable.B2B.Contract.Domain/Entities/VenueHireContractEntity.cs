@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Contract.Domain.Entities;
 
-public class VenueHireContractEntity : ContractEntity
+public sealed class VenueHireContractEntity : ContractEntity
 {
     private VenueHireContractEntity() { }
 

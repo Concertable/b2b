@@ -7,7 +7,7 @@ using Stripe;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal class MockEscrowClient : IEscrowClient
+internal sealed class MockEscrowClient : IEscrowClient
 {
     private readonly MockStripeApiClient stripeApiClient;
     private readonly PaymentDbContext dbContext;

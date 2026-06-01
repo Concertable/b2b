@@ -3,7 +3,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Concert.Application.DTOs;
 
-internal record OpportunityDto
+internal sealed record OpportunityDto
 {
     public int Id { get; set; }
     public int VenueId { get; set; }

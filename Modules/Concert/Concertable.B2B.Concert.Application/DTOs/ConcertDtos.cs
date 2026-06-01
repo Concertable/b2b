@@ -2,7 +2,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Concert.Application.DTOs;
 
-internal record ConcertDto
+internal sealed record ConcertDto
 {
     public int Id { get; set; }
     public required string Name { get; set; }
@@ -21,7 +21,7 @@ internal record ConcertDto
     public IEnumerable<Genre> Genres { get; set; } = [];
 }
 
-internal record ConcertVenueDto
+internal sealed record ConcertVenueDto
 {
     public int Id { get; set; }
     public required string Name { get; set; }
@@ -32,7 +32,7 @@ internal record ConcertVenueDto
     public double Longitude { get; set; }
 }
 
-internal record ConcertArtistDto
+internal sealed record ConcertArtistDto
 {
     public int Id { get; set; }
     public required string Name { get; set; }
@@ -43,7 +43,7 @@ internal record ConcertArtistDto
     public IEnumerable<Genre> Genres { get; set; } = [];
 }
 
-internal record ConcertSummaryDto
+internal sealed record ConcertSummaryDto
 {
     public int Id { get; set; }
     public required string Name { get; set; }
@@ -58,14 +58,14 @@ internal record ConcertSummaryDto
     public required ConcertArtistSummaryDto Artist { get; set; }
 }
 
-internal record ConcertVenueSummaryDto
+internal sealed record ConcertVenueSummaryDto
 {
     public int Id { get; set; }
     public required string Name { get; set; }
     public double Rating { get; set; }
 }
 
-internal record ConcertArtistSummaryDto
+internal sealed record ConcertArtistSummaryDto
 {
     public int Id { get; set; }
     public required string Name { get; set; }
@@ -73,7 +73,7 @@ internal record ConcertArtistSummaryDto
     public IEnumerable<Genre> Genres { get; set; } = [];
 }
 
-internal record ConcertSnapshot
+internal sealed record ConcertSnapshot
 {
     public int Id { get; set; }
     public required string Name { get; set; }

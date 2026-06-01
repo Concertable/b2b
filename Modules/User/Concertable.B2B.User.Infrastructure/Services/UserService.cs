@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.User.Infrastructure.Services;
 
-internal class UserService : IUserService
+internal sealed class UserService : IUserService
 {
     private readonly IUserRepository userRepsitory;
     private readonly ICurrentUser currentUser;

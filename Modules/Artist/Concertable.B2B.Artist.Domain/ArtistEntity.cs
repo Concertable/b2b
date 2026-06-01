@@ -5,7 +5,7 @@ using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Artist.Domain;
 
-public class ArtistEntity : IIdEntity, IHasName, IEventRaiser
+public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser
 {
     private readonly EventRaiser _events = new();
 

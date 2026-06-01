@@ -5,7 +5,7 @@ namespace Concertable.B2B.Artist.Api.Controllers;
 
 [ApiController]
 [Route("api/artists/{artistId}/reviews")]
-internal class ArtistReviewsController : ControllerBase
+internal sealed class ArtistReviewsController : ControllerBase
 {
     private readonly IArtistReviewService reviewService;
 

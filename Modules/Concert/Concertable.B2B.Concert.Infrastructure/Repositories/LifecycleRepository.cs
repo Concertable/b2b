@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Infrastructure.Data;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal class LifecycleRepository<TEntity> : Repository<TEntity>, ILifecycleRepository<TEntity>
+internal sealed class LifecycleRepository<TEntity> : Repository<TEntity>, ILifecycleRepository<TEntity>
     where TEntity : class, ILifecycleEntity
 {
     public LifecycleRepository(ConcertDbContext context) : base(context) { }

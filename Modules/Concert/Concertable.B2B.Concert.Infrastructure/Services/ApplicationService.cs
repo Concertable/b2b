@@ -8,7 +8,7 @@ using Concertable.B2B.User.Contracts;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal class ApplicationService : IApplicationService
+internal sealed class ApplicationService : IApplicationService
 {
     private readonly IApplicationRepository applicationRepository;
     private readonly ICurrentUser currentUser;

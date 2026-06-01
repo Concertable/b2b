@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.Venue.Infrastructure.Data.Configurations;
 
-internal class VenueEntityConfiguration : IEntityTypeConfiguration<VenueEntity>
+internal sealed class VenueEntityConfiguration : IEntityTypeConfiguration<VenueEntity>
 {
     public void Configure(EntityTypeBuilder<VenueEntity> builder)
     {
@@ -18,7 +18,7 @@ internal class VenueEntityConfiguration : IEntityTypeConfiguration<VenueEntity>
     }
 }
 
-internal class VenueReviewConfiguration : IEntityTypeConfiguration<VenueReview>
+internal sealed class VenueReviewConfiguration : IEntityTypeConfiguration<VenueReview>
 {
     public void Configure(EntityTypeBuilder<VenueReview> builder)
     {
@@ -28,7 +28,7 @@ internal class VenueReviewConfiguration : IEntityTypeConfiguration<VenueReview>
     }
 }
 
-public class VenueRatingProjectionConfiguration : IEntityTypeConfiguration<VenueRatingProjection>
+public sealed class VenueRatingProjectionConfiguration : IEntityTypeConfiguration<VenueRatingProjection>
 {
     public void Configure(EntityTypeBuilder<VenueRatingProjection> builder)
     {

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Data;
 
-internal class ArtistDbContext(
+internal sealed class ArtistDbContext(
     DbContextOptions<ArtistDbContext> options,
     ArtistConfigurationProvider provider)
     : DbContextBase(options)

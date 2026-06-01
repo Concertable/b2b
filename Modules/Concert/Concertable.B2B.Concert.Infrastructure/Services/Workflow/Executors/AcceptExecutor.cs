@@ -7,7 +7,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
-internal class AcceptExecutor : IAcceptExecutor
+internal sealed class AcceptExecutor : IAcceptExecutor
 {
     private readonly IWorkflowStateMachine<ApplicationEntity> stateMachine;
     private readonly IConcertWorkflowFactory workflows;

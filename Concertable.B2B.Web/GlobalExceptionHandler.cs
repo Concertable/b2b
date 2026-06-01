@@ -9,7 +9,7 @@ using System.Net;
 
 namespace Concertable.B2B.Web;
 
-public class GlobalExceptionHandler : IExceptionHandler
+public sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> logger;
     private readonly IHostEnvironment env;

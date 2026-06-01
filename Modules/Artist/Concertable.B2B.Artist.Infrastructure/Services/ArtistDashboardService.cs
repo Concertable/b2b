@@ -4,7 +4,7 @@ using Concertable.B2B.Concert.Contracts;
 
 namespace Concertable.B2B.Artist.Infrastructure.Services;
 
-internal class ArtistDashboardService : IArtistDashboardService
+internal sealed class ArtistDashboardService : IArtistDashboardService
 {
     private readonly IArtistService artistService;
     private readonly IConcertModule concertModule;
