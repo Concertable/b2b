@@ -8,7 +8,7 @@ internal class ConcertRatingProjectionConfiguration : IEntityTypeConfiguration<C
 {
     public void Configure(EntityTypeBuilder<ConcertRatingProjection> builder)
     {
-        builder.ToTable("ConcertRatingProjections", Schema.Name);
+        builder.ToTable(Schema.Tables.ConcertRatingProjections, Schema.Name);
         builder.HasKey(p => p.ConcertId);
         builder.Property(p => p.ConcertId).ValueGeneratedNever();
     }

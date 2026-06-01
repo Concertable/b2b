@@ -8,7 +8,7 @@ internal class ConcertEntityConfiguration : IEntityTypeConfiguration<ConcertEnti
 {
     public void Configure(EntityTypeBuilder<ConcertEntity> builder)
     {
-        builder.ToTable("Concerts", Schema.Name);
+        builder.ToTable(Schema.Tables.Concerts, Schema.Name);
         builder.OwnsOne(e => e.Period, p =>
         {
             p.Property(x => x.Start).HasColumnName("StartDate");

@@ -8,7 +8,7 @@ internal class VenueEntityConfiguration : IEntityTypeConfiguration<VenueEntity>
 {
     public void Configure(EntityTypeBuilder<VenueEntity> builder)
     {
-        builder.ToTable("Venues", Schema.Name);
+        builder.ToTable(Schema.Tables.Venues, Schema.Name);
         builder.Property(v => v.Location).HasColumnType("geography");
         builder.OwnsOne(v => v.Address, a =>
         {
@@ -22,7 +22,7 @@ internal class VenueReviewConfiguration : IEntityTypeConfiguration<VenueReview>
 {
     public void Configure(EntityTypeBuilder<VenueReview> builder)
     {
-        builder.ToTable("VenueReviews", Schema.Name);
+        builder.ToTable(Schema.Tables.VenueReviews, Schema.Name);
         builder.HasIndex(r => r.VenueId);
         builder.Property(r => r.Email).HasMaxLength(256).IsRequired();
     }
@@ -32,7 +32,7 @@ public class VenueRatingProjectionConfiguration : IEntityTypeConfiguration<Venue
 {
     public void Configure(EntityTypeBuilder<VenueRatingProjection> builder)
     {
-        builder.ToTable("VenueRatingProjections", Schema.Name);
+        builder.ToTable(Schema.Tables.VenueRatingProjections, Schema.Name);
         builder.HasKey(p => p.VenueId);
         builder.Property(p => p.VenueId).ValueGeneratedNever();
     }
