@@ -1,6 +1,6 @@
 namespace Concertable.B2B.E2ETests.Ui.Support;
 
-public class UiFixture
+public sealed class UiFixture
 {
     private IPlaywright playwright = null!;
 

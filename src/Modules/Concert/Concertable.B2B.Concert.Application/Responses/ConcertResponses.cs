@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Concert.Application.Responses;
 
-internal record ConcertUpdateResponse
+internal sealed record ConcertUpdateResponse
 {
     public int Id { get; set; }
     public required string Name { get; set; }

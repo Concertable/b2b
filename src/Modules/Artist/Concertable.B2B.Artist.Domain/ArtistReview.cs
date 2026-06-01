@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Artist.Domain;
 
-public class ArtistReview
+public sealed class ArtistReview
 {
     public int Id { get; set; }
     public int ArtistId { get; set; }

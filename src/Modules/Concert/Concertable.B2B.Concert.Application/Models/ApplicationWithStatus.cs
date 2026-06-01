@@ -2,7 +2,7 @@
 
 namespace Concertable.B2B.Concert.Application.Models;
 
-internal class ApplicationWithStatus
+internal sealed class ApplicationWithStatus
 {
     public required ApplicationEntity Application { get; set; }
     public bool HasConcert { get; set; }

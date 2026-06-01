@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.E2ETests.Ui.Support;
 
-public class Browser : IAsyncDisposable, IDisposable, IPageAccessor
+public sealed class Browser : IAsyncDisposable, IDisposable, IPageAccessor
 {
     private readonly ILogger<Browser> logger;
     private IBrowser playwrightBrowser = null!;

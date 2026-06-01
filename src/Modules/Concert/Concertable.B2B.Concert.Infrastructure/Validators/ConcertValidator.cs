@@ -4,7 +4,7 @@ using FluentResults;
 
 namespace Concertable.B2B.Concert.Infrastructure.Validators;
 
-internal class ConcertValidator : IConcertValidator
+internal sealed class ConcertValidator : IConcertValidator
 {
     public Result CanUpdate(ConcertEntity concert, int newTotalTickets)
     {

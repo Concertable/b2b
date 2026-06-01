@@ -3,7 +3,7 @@ using Concertable.B2B.E2ETests.Ui.Support;
 namespace Concertable.B2B.E2ETests.Ui.Hooks;
 
 [Binding]
-public class PlaywrightHooks
+public sealed class PlaywrightHooks
 {
     public static UiFixture Fixture { get; private set; } = null!;
 

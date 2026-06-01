@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
-internal class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
+internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
     private readonly IConcertWorkflowModule concertWorkflowModule;
     private readonly ConcertDbContext context;

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Services;
 
-internal class VenueReviewService(VenueDbContext context) : IVenueReviewService
+internal sealed class VenueReviewService(VenueDbContext context) : IVenueReviewService
 {
     public async Task<ReviewSummaryDto> GetSummaryAsync(int venueId)
     {

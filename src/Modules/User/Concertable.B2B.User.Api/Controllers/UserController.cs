@@ -7,7 +7,7 @@ namespace Concertable.B2B.User.Api.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-internal class UserController : ControllerBase
+internal sealed class UserController : ControllerBase
 {
     private readonly IUserService userService;
     private readonly ICurrentUser currentUser;

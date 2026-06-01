@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Domain.Enums;
 
 namespace Concertable.B2B.Concert.Application.DTOs;
 
-internal record ApplicationDto(
+internal sealed record ApplicationDto(
     int Id,
     ArtistSummaryDto Artist,
     OpportunityDto Opportunity,

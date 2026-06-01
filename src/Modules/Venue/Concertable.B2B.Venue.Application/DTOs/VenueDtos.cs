@@ -2,7 +2,7 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Venue.Application.DTOs;
 
-public record VenueDto : IAddress
+public sealed record VenueDto : IAddress
 {
     public int Id { get; set; }
     public required string Name { get; set; }

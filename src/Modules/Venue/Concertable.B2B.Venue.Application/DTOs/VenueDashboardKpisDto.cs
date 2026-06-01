@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Venue.Application.DTOs;
 
-public record VenueDashboardKpisDto(
+public sealed record VenueDashboardKpisDto(
     int ApplicationsToReview,
     int? ApplicationsToReviewDelta,
     int OpenOpportunities,

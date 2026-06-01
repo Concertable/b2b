@@ -5,7 +5,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal class MockStripeAccountClientFail : IStripeAccountClient
+internal sealed class MockStripeAccountClientFail : IStripeAccountClient
 {
     public Task ProvisionCustomerAsync(Guid userId, string email, CancellationToken ct = default) =>
         Task.CompletedTask;

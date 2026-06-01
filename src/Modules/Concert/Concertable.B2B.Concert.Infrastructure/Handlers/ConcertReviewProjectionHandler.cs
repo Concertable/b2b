@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Handlers;
 
-internal class ConcertReviewProjectionHandler : IIntegrationEventHandler<CustomerReviewSubmittedEvent>
+internal sealed class ConcertReviewProjectionHandler : IIntegrationEventHandler<CustomerReviewSubmittedEvent>
 {
     private readonly ConcertDbContext context;
     private readonly IBus bus;

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
-public class WebApplicationHttpClientFactory : IHttpClientFactory
+public sealed class WebApplicationHttpClientFactory : IHttpClientFactory
 {
     private readonly WebApplicationFactory<Program> factory;
 

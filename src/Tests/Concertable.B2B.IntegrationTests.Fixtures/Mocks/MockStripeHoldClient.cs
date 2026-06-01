@@ -2,7 +2,7 @@ using Concertable.Payment.Application.Interfaces;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal class MockStripeHoldClient : IStripeHoldClient
+internal sealed class MockStripeHoldClient : IStripeHoldClient
 {
     private readonly MockStripeApiClient stripeApiClient;
 

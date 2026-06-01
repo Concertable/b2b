@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace Concertable.B2B.Organization.Infrastructure.Data;
 
-internal class OrganizationDbContextFactory : IDesignTimeDbContextFactory<OrganizationDbContext>
+internal sealed class OrganizationDbContextFactory : IDesignTimeDbContextFactory<OrganizationDbContext>
 {
     public OrganizationDbContext CreateDbContext(string[] args)
     {

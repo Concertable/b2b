@@ -4,7 +4,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Services;
 
-internal class MessageService : IMessageService
+internal sealed class MessageService : IMessageService
 {
     private readonly IMessageRepository messageRepository;
     private readonly IConversationsNotifier notifier;

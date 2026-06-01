@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
-internal class VersusFinishStep : IFinishStep
+internal sealed class VersusFinishStep : IFinishStep
 {
     private readonly IBookingService bookingService;
     private readonly IConcertRepository concertRepository;

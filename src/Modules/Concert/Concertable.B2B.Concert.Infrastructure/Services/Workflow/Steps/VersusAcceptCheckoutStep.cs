@@ -5,7 +5,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
-internal class VersusAcceptCheckoutStep : IAcceptCheckoutStep
+internal sealed class VersusAcceptCheckoutStep : IAcceptCheckoutStep
 {
     private readonly IPayerLookup payerLookup;
     private readonly IContractAccessor contractAccessor;

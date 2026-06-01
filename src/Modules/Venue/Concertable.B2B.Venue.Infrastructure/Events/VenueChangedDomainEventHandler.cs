@@ -5,7 +5,7 @@ using Concertable.B2B.Venue.Domain.Events;
 
 namespace Concertable.B2B.Venue.Infrastructure.Events;
 
-internal class VenueChangedDomainEventHandler(IBus bus)
+internal sealed class VenueChangedDomainEventHandler(IBus bus)
     : IPreCommitDomainEventHandler<VenueChangedDomainEvent>
 {
     public Task HandleAsync(VenueChangedDomainEvent e, CancellationToken ct = default)

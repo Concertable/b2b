@@ -4,7 +4,7 @@ using Concertable.Messaging.Contracts;
 namespace Concertable.B2B.Artist.Contracts.Events;
 
 [MessageType("concertable.b2b.artist-changed.v1")]
-public record ArtistChangedEvent(
+public sealed record ArtistChangedEvent(
     int ArtistId,
     Guid UserId,
     string Name,

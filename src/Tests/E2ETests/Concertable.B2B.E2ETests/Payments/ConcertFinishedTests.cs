@@ -7,7 +7,7 @@ using Xunit;
 namespace Concertable.B2B.E2ETests.Payments;
 
 [Collection("E2E")]
-public class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
+public sealed class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 {
     public async Task InitializeAsync() => await fixture.ResetAsync();
 

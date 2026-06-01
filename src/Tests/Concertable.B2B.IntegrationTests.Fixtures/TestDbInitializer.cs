@@ -12,7 +12,7 @@ using Concertable.Kernel.Services.Geometry;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
-public class TestDbInitializer : IDbInitializer
+public sealed class TestDbInitializer : IDbInitializer
 {
     private readonly IEnumerable<ITestSeeder> seeders;
     private readonly InboxDbContext inboxDbContext;

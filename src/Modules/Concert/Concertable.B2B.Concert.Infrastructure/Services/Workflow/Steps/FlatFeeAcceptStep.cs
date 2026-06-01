@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
-internal class FlatFeeAcceptStep : ISimpleAcceptStep
+internal sealed class FlatFeeAcceptStep : ISimpleAcceptStep
 {
     private readonly IApplicationValidator applicationValidator;
     private readonly IBookingService bookingService;

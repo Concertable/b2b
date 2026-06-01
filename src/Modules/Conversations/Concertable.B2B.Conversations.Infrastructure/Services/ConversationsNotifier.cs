@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Conversations.Infrastructure.Services;
 
-internal class ConversationsNotifier : IConversationsNotifier
+internal sealed class ConversationsNotifier : IConversationsNotifier
 {
     private readonly INotificationClient notificationClient;
 

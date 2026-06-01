@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Data;
 
-internal class VenueDbContext(
+internal sealed class VenueDbContext(
     DbContextOptions<VenueDbContext> options,
     VenueConfigurationProvider provider)
     : DbContextBase(options)

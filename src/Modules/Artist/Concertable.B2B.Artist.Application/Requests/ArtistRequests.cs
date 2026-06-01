@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Artist.Application.Requests;
 
-internal record CreateArtistRequest
+internal sealed record CreateArtistRequest
 {
     public required string Name { get; init; }
     public required string About { get; init; }
@@ -14,7 +14,7 @@ internal record CreateArtistRequest
     public required IFormFile Avatar { get; init; }
 }
 
-internal record UpdateArtistRequest
+internal sealed record UpdateArtistRequest
 {
     public required string Name { get; init; }
     public required string About { get; init; }

@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Venue.Domain;
 
-public class VenueReview
+public sealed class VenueReview
 {
     public int Id { get; set; }
     public int VenueId { get; set; }

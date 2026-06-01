@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Contract.Domain.Entities;
 
-public class FlatFeeContractEntity : ContractEntity
+public sealed class FlatFeeContractEntity : ContractEntity
 {
     private FlatFeeContractEntity() { }
 

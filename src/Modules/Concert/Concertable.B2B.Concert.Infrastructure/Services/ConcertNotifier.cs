@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal class ConcertNotifier : IConcertNotifier
+internal sealed class ConcertNotifier : IConcertNotifier
 {
     private readonly INotificationClient notificationClient;
 

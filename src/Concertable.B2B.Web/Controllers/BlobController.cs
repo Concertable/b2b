@@ -7,7 +7,7 @@ namespace Concertable.B2B.Web.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BlobController : ControllerBase
+public sealed class BlobController : ControllerBase
 {
     private readonly IBlobStorageService blobStorageService;
     private readonly IImageService imageService;

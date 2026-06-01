@@ -9,7 +9,7 @@ namespace Concertable.B2B.Venue.IntegrationTests;
 
 [Collection("Integration")]
 
-public class VenueApiTests : IAsyncLifetime
+public sealed class VenueApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 

@@ -4,7 +4,7 @@ using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Venue.Domain;
 
-public class VenueEntity : IIdEntity, IHasName, IEventRaiser
+public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser
 {
     private readonly EventRaiser _events = new();
 

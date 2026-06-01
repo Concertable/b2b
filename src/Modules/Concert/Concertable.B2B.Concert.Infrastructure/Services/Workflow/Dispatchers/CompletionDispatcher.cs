@@ -3,7 +3,7 @@ using FluentResults;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
 
-internal class CompletionDispatcher : ICompletionDispatcher
+internal sealed class CompletionDispatcher : ICompletionDispatcher
 {
     private readonly IFinishExecutor executor;
 

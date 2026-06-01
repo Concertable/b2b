@@ -3,7 +3,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal class BookingService : IBookingService
+internal sealed class BookingService : IBookingService
 {
     private readonly IBookingRepository bookingRepository;
 

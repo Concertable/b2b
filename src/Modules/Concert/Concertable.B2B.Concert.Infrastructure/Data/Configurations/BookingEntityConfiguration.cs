@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Configurations;
 
-internal class BookingEntityConfiguration : IEntityTypeConfiguration<BookingEntity>
+internal sealed class BookingEntityConfiguration : IEntityTypeConfiguration<BookingEntity>
 {
     public void Configure(EntityTypeBuilder<BookingEntity> builder)
     {

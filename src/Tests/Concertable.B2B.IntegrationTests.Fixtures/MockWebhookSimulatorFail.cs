@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
-internal class MockWebhookSimulatorFail : IWebhookSimulator
+internal sealed class MockWebhookSimulatorFail : IWebhookSimulator
 {
     private readonly MockStripeApiClient stripeApiClient;
     private readonly IServiceScopeFactory scopeFactory;

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
-internal class PayerLookup : IPayerLookup
+internal sealed class PayerLookup : IPayerLookup
 {
     private readonly ConcertDbContext context;
     private readonly IUserModule userModule;

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Contract.Infrastructure.Data.Seeders;
 
-internal class ContractTestSeeder : ITestSeeder
+internal sealed class ContractTestSeeder : ITestSeeder
 {
     public int Order => 3;
 

@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Concert.Application.Requests;
 
-internal record UpdateConcertRequest
+internal sealed record UpdateConcertRequest
 {
     public required string Name { get; init; }
     public required string About { get; init; }

@@ -5,7 +5,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
-internal class DoorSplitAcceptCheckoutStep : IAcceptCheckoutStep
+internal sealed class DoorSplitAcceptCheckoutStep : IAcceptCheckoutStep
 {
     private readonly IPayerLookup payerLookup;
     private readonly IContractAccessor contractAccessor;

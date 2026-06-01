@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Contract.Contracts;
 
-public record FlatFeeContract : IContract
+public sealed record FlatFeeContract : IContract
 {
     public int Id { get; set; }
 

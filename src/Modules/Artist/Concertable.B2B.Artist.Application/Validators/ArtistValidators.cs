@@ -4,7 +4,7 @@ using FluentValidation;
 
 namespace Concertable.B2B.Artist.Application.Validators;
 
-internal class CreateArtistRequestValidator : AbstractValidator<CreateArtistRequest>
+internal sealed class CreateArtistRequestValidator : AbstractValidator<CreateArtistRequest>
 {
     public CreateArtistRequestValidator()
     {
@@ -21,7 +21,7 @@ internal class CreateArtistRequestValidator : AbstractValidator<CreateArtistRequ
     }
 }
 
-internal class UpdateArtistRequestValidator : AbstractValidator<UpdateArtistRequest>
+internal sealed class UpdateArtistRequestValidator : AbstractValidator<UpdateArtistRequest>
 {
     public UpdateArtistRequestValidator()
     {

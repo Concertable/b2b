@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Data;
 
-internal class ConversationsDbContextFactory : IDesignTimeDbContextFactory<ConversationsDbContext>
+internal sealed class ConversationsDbContextFactory : IDesignTimeDbContextFactory<ConversationsDbContext>
 {
     public ConversationsDbContext CreateDbContext(string[] args)
     {

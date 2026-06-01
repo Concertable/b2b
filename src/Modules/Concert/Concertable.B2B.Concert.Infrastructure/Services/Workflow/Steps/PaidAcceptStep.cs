@@ -3,7 +3,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
-internal class PaidAcceptStep : IPaidAcceptStep
+internal sealed class PaidAcceptStep : IPaidAcceptStep
 {
     private readonly IApplicationValidator applicationValidator;
     private readonly IBookingService bookingService;

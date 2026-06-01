@@ -10,7 +10,7 @@ using Concertable.Shared.Imaging.Application;
 
 namespace Concertable.B2B.Venue.Infrastructure.Services;
 
-internal class VenueService : IVenueService
+internal sealed class VenueService : IVenueService
 {
     private readonly IVenueRepository venueRepository;
     private readonly IImageService imageService;

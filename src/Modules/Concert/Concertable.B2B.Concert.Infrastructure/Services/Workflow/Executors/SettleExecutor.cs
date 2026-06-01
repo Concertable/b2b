@@ -5,7 +5,7 @@ using Concertable.B2B.Concert.Domain.Enums;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
-internal class SettleExecutor : ISettleExecutor
+internal sealed class SettleExecutor : ISettleExecutor
 {
     private readonly IWorkflowStateMachine<BookingEntity> stateMachine;
     private readonly IConcertWorkflowFactory workflows;

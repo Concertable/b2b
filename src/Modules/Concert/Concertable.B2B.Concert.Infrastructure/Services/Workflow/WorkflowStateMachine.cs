@@ -4,7 +4,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
-internal class WorkflowStateMachine<TEntity> : IWorkflowStateMachine<TEntity> where TEntity : class, ILifecycleEntity
+internal sealed class WorkflowStateMachine<TEntity> : IWorkflowStateMachine<TEntity> where TEntity : class, ILifecycleEntity
 {
     private readonly ILifecycleRepository<TEntity> repository;
     private readonly IConcertTransitionValidatorFactory validators;

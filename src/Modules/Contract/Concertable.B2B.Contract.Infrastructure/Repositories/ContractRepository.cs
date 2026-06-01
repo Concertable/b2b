@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Contract.Infrastructure.Repositories;
 
-internal class ContractRepository(ContractDbContext context)
+internal sealed class ContractRepository(ContractDbContext context)
     : Repository<ContractEntity>(context), IContractRepository
 {
     public async Task<IEnumerable<ContractEntity>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken ct = default) =>

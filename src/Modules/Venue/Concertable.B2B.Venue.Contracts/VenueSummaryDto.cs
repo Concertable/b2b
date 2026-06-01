@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Venue.Contracts;
 
-public record VenueSummaryDto
+public sealed record VenueSummaryDto
 {
     public int Id { get; set; }
     public required string Name { get; set; }

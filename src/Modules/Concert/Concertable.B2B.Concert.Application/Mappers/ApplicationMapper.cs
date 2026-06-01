@@ -4,7 +4,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 
 namespace Concertable.B2B.Concert.Application.Mappers;
 
-internal class ApplicationMapper : IApplicationMapper
+internal sealed class ApplicationMapper : IApplicationMapper
 {
     private readonly IOpportunityMapper opportunityMapper;
 

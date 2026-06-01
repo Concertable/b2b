@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
 
-internal class ApplyDispatcher : IApplyDispatcher
+internal sealed class ApplyDispatcher : IApplyDispatcher
 {
     private readonly IApplyExecutor executor;
 

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
-internal class FinishExecutor : IFinishExecutor
+internal sealed class FinishExecutor : IFinishExecutor
 {
     private readonly IWorkflowStateMachine<ConcertEntity> stateMachine;
     private readonly IConcertWorkflowFactory workflows;

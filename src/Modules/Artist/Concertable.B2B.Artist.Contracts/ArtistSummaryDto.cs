@@ -2,7 +2,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Artist.Contracts;
 
-public record ArtistSummaryDto
+public sealed record ArtistSummaryDto
 {
     public int Id { get; set; }
     public required string Name { get; set; }

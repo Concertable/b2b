@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.Artist.Infrastructure.Data.Configurations;
 
-internal class ArtistEntityConfiguration : IEntityTypeConfiguration<ArtistEntity>
+internal sealed class ArtistEntityConfiguration : IEntityTypeConfiguration<ArtistEntity>
 {
     public void Configure(EntityTypeBuilder<ArtistEntity> builder)
     {
@@ -19,7 +19,7 @@ internal class ArtistEntityConfiguration : IEntityTypeConfiguration<ArtistEntity
     }
 }
 
-internal class ArtistReviewConfiguration : IEntityTypeConfiguration<ArtistReview>
+internal sealed class ArtistReviewConfiguration : IEntityTypeConfiguration<ArtistReview>
 {
     public void Configure(EntityTypeBuilder<ArtistReview> builder)
     {
@@ -29,7 +29,7 @@ internal class ArtistReviewConfiguration : IEntityTypeConfiguration<ArtistReview
     }
 }
 
-public class ArtistRatingProjectionConfiguration : IEntityTypeConfiguration<ArtistRatingProjection>
+public sealed class ArtistRatingProjectionConfiguration : IEntityTypeConfiguration<ArtistRatingProjection>
 {
     public void Configure(EntityTypeBuilder<ArtistRatingProjection> builder)
     {

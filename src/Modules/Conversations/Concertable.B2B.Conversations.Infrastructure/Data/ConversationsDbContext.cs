@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Data;
 
-internal class ConversationsDbContext(
+internal sealed class ConversationsDbContext(
     DbContextOptions<ConversationsDbContext> options,
     ConversationsConfigurationProvider provider)
     : DbContextBase(options)

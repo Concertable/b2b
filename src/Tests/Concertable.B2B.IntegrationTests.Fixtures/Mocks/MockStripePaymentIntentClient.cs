@@ -7,7 +7,7 @@ using Stripe;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal class MockStripePaymentIntentClient : IStripePaymentIntentClient
+internal sealed class MockStripePaymentIntentClient : IStripePaymentIntentClient
 {
     private readonly IStripeApiClient stripeApiClient;
 

@@ -2,7 +2,7 @@ using Concertable.B2B.Concert.Application.Workflow.Executors;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
 
-internal class VerifyDispatcher : IVerifyDispatcher
+internal sealed class VerifyDispatcher : IVerifyDispatcher
 {
     private readonly IVerifyExecutor executor;
 

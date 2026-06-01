@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Concertable.B2B.Workers.UnitTests.Functions;
 
-public class ConcertCompletionRunnerTests
+public sealed class ConcertCompletionRunnerTests
 {
     private readonly Mock<IConcertRepository> concertRepository;
     private readonly Mock<ICompletionDispatcher> completionDispatcher;
@@ -69,7 +69,7 @@ public class ConcertCompletionRunnerTests
     }
 }
 
-public class ConcertFinishedFunctionTests
+public sealed class ConcertFinishedFunctionTests
 {
     [Fact]
     public async Task Run_ShouldDelegateToRunner()

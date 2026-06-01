@@ -2,7 +2,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Artist.Api.Responses;
 
-public record ArtistDetailsResponse
+public sealed record ArtistDetailsResponse
 {
     public int Id { get; set; }
     public required string Name { get; set; }

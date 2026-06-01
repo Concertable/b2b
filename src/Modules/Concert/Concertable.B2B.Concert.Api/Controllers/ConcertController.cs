@@ -7,7 +7,7 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-internal class ConcertController : ControllerBase
+internal sealed class ConcertController : ControllerBase
 {
     private readonly IConcertService concertService;
 

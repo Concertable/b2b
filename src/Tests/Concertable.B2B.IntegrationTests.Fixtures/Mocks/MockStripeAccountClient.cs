@@ -5,7 +5,7 @@ using Stripe;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal class MockStripeAccountClient : IStripeAccountClient
+internal sealed class MockStripeAccountClient : IStripeAccountClient
 {
     private readonly MockStripeApiClient stripeApiClient;
 

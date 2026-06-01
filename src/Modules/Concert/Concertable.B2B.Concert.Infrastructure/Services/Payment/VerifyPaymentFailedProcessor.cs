@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
-internal class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
+internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
     private readonly IConcertNotifier concertNotifier;
     private readonly ConcertDbContext context;

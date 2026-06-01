@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
-internal class ConcertWorkflowBuilder
+internal sealed class ConcertWorkflowBuilder
 {
     private readonly ContractType contractType;
     private readonly IServiceCollection services;

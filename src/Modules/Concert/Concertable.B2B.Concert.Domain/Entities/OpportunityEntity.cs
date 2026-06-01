@@ -4,7 +4,7 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
-public class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<OpportunityEntity>
+public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<OpportunityEntity>
 {
     private OpportunityEntity() { }
 

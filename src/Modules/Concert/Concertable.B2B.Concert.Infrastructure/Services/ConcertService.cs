@@ -6,7 +6,7 @@ using FluentResults;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal class ConcertService : IConcertService
+internal sealed class ConcertService : IConcertService
 {
     private readonly IConcertRepository concertRepository;
     private readonly IConcertValidator concertValidator;

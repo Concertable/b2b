@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Data.Seeders;
 
-internal class ConversationsTestSeeder : ITestSeeder
+internal sealed class ConversationsTestSeeder : ITestSeeder
 {
     public int Order => 6;
 

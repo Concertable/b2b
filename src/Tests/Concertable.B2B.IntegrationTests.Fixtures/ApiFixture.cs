@@ -47,7 +47,7 @@ using Concertable.B2B.DataAccess;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
-public class ApiFixture : IAsyncLifetime
+public sealed class ApiFixture : IAsyncLifetime
 {
     private SqlFixture sqlFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
@@ -66,7 +66,7 @@ public class ApiFixture : IAsyncLifetime
     public IReadDbContext ReadDbContext { get; private set; } = null!;
     public IQueryable<EscrowEntity> Escrows => paymentDbContext.Escrows.AsNoTracking();
 
-public async Task InitializeAsync()
+    public async Task InitializeAsync()
     {
         sqlFixture = new SqlFixture();
         await sqlFixture.InitializeAsync();

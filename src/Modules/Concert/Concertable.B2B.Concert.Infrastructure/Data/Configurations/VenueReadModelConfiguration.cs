@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Configurations;
 
-internal class VenueReadModelConfiguration : IEntityTypeConfiguration<VenueReadModel>
+internal sealed class VenueReadModelConfiguration : IEntityTypeConfiguration<VenueReadModel>
 {
     public void Configure(EntityTypeBuilder<VenueReadModel> builder)
     {

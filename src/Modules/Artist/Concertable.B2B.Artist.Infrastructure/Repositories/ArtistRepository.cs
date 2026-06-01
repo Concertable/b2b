@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
-internal class ArtistRepository(ArtistDbContext context)
+internal sealed class ArtistRepository(ArtistDbContext context)
     : Repository<ArtistEntity>(context), IArtistRepository
 {
     public async Task<ArtistEntity?> GetByUserIdAsync(Guid id) =>

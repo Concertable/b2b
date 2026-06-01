@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal class OpportunityRepository : Repository<OpportunityEntity>, IOpportunityRepository
+internal sealed class OpportunityRepository : Repository<OpportunityEntity>, IOpportunityRepository
 {
     private readonly TimeProvider timeProvider;
 

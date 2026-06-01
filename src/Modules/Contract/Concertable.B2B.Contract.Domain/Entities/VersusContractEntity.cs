@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Contract.Domain.Entities;
 
-public class VersusContractEntity : ContractEntity
+public sealed class VersusContractEntity : ContractEntity
 {
     private VersusContractEntity() { }
 

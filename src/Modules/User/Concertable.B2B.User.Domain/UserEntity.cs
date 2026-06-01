@@ -4,7 +4,7 @@ using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.User.Domain;
 
-public class UserEntity : IGuidEntity
+public sealed class UserEntity : IGuidEntity
 {
     protected UserEntity() { }
 

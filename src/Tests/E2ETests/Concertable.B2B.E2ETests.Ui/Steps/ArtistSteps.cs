@@ -5,7 +5,7 @@ using Concertable.E2ETests.Support;
 namespace Concertable.B2B.E2ETests.Ui.Steps;
 
 [Binding]
-public class ArtistSteps
+public sealed class ArtistSteps
 {
     private readonly UiFixture fixture;
     private readonly Browser browser;

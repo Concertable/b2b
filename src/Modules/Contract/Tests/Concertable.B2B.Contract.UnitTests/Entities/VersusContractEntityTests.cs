@@ -1,7 +1,8 @@
 ﻿using Concertable.B2B.Contract.Domain.Entities;
 
 namespace Concertable.B2B.Contract.UnitTests.Entities;
-public class VersusContractEntityTests
+
+public sealed class VersusContractEntityTests
 {
     [Theory]
     [InlineData(200, 1000, 50, 700)]

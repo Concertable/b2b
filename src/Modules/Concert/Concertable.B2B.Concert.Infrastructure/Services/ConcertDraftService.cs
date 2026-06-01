@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal class ConcertDraftService : IConcertDraftService
+internal sealed class ConcertDraftService : IConcertDraftService
 {
     private readonly IBookingRepository bookingRepository;
     private readonly IConcertNotifier notifier;

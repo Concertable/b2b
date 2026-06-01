@@ -12,7 +12,7 @@ namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
 [Collection("Integration")]
 
-public class ApplicationDoorSplitApiTests : IAsyncLifetime
+public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Repositories;
 
-internal class MessageRepository : IMessageRepository
+internal sealed class MessageRepository : IMessageRepository
 {
     private readonly ConversationsDbContext context;
 

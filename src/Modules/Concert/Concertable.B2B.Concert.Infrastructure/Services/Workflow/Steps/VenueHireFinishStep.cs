@@ -3,7 +3,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
-internal class VenueHireFinishStep : IFinishStep
+internal sealed class VenueHireFinishStep : IFinishStep
 {
     private readonly IBookingService bookingService;
     private readonly IEscrowClient escrowClient;

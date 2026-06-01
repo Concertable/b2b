@@ -19,20 +19,20 @@ public abstract record UserBase : IUser
     public bool IsEmailVerified { get; set; }
 }
 
-public record AdminDto : UserBase
+public sealed record AdminDto : UserBase
 {
     public override Role Role { get; } = Role.Admin;
     public override string BaseUrl { get; set; } = "/admin";
 }
 
-public record VenueManagerDto : UserBase
+public sealed record VenueManagerDto : UserBase
 {
     public override Role Role { get; } = Role.VenueManager;
     public int? VenueId { get; set; }
     public override string BaseUrl { get; set; } = "/venue";
 }
 
-public record ArtistManagerDto : UserBase
+public sealed record ArtistManagerDto : UserBase
 {
     public override Role Role { get; } = Role.ArtistManager;
     public int? ArtistId { get; set; }

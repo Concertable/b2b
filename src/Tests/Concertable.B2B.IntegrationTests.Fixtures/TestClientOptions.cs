@@ -10,7 +10,7 @@ using Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
-public class TestClientOptions
+public sealed class TestClientOptions
 {
     public Action<IConfigurationBuilder>? Configure { get; set; }
     public Action<IServiceCollection>? Services { get; set; }

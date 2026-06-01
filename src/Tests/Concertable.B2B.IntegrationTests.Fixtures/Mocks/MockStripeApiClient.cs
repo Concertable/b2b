@@ -4,7 +4,7 @@ using Stripe;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-public class MockStripeApiClient : IStripeApiClient, IResettable
+public sealed class MockStripeApiClient : IStripeApiClient, IResettable
 {
     public string LastPaymentIntentId { get; private set; } = string.Empty;
     public string LastEventId { get; private set; } = string.Empty;

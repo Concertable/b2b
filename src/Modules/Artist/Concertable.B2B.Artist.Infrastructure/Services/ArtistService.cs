@@ -10,7 +10,7 @@ using Concertable.Shared.Imaging.Application;
 
 namespace Concertable.B2B.Artist.Infrastructure.Services;
 
-internal class ArtistService : IArtistService
+internal sealed class ArtistService : IArtistService
 {
     private readonly IArtistRepository artistRepository;
     private readonly IImageService imageService;

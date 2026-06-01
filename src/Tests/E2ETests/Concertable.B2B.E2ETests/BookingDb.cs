@@ -3,7 +3,7 @@ using Dapper;
 
 namespace Concertable.B2B.E2ETests;
 
-public class BookingDb
+public sealed class BookingDb
 {
     private readonly IDbConnection connection;
 

@@ -4,7 +4,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Concert.Application.Requests;
 
-internal record OpportunityRequest : ISyncRequest
+internal sealed record OpportunityRequest : ISyncRequest
 {
     public int? Id { get; init; }
     public DateTime StartDate { get; init; }

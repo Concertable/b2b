@@ -4,7 +4,7 @@ using Concertable.Seed.Identity;
 namespace Concertable.B2B.E2ETests.Ui.Hooks;
 
 [Binding]
-public class StripeHooks(UiFixture fixture)
+public sealed class StripeHooks(UiFixture fixture)
 {
     [BeforeTestRun(Order = 2)]
     public static async Task DetachAllCardsBeforeTestRun()

@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Concertable.B2B.Concert.Application.Validators;
 
-internal class UpdateConcertRequestValidator : AbstractValidator<UpdateConcertRequest>
+internal sealed class UpdateConcertRequestValidator : AbstractValidator<UpdateConcertRequest>
 {
     public UpdateConcertRequestValidator()
     {
@@ -14,7 +14,7 @@ internal class UpdateConcertRequestValidator : AbstractValidator<UpdateConcertRe
     }
 }
 
-internal class BookingParamsValidator : AbstractValidator<BookingParams>
+internal sealed class BookingParamsValidator : AbstractValidator<BookingParams>
 {
     public BookingParamsValidator()
     {

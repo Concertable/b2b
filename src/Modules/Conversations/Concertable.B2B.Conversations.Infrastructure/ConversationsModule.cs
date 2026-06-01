@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Conversations.Infrastructure;
 
-internal class ConversationsModule : IConversationsModule
+internal sealed class ConversationsModule : IConversationsModule
 {
     private readonly IMessageService messageService;
 

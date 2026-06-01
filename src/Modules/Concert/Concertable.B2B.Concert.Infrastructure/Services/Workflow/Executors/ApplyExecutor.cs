@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
-internal class ApplyExecutor : IApplyExecutor
+internal sealed class ApplyExecutor : IApplyExecutor
 {
     private readonly IWorkflowStateMachine<ApplicationEntity> stateMachine;
     private readonly IConcertWorkflowFactory workflows;

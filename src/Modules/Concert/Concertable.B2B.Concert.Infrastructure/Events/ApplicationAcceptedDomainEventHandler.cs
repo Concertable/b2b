@@ -5,7 +5,7 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Events;
 
-internal class ApplicationAcceptedDomainEventHandler : IDomainEventHandler<ApplicationAcceptedDomainEvent>
+internal sealed class ApplicationAcceptedDomainEventHandler : IDomainEventHandler<ApplicationAcceptedDomainEvent>
 {
     private readonly IApplicationRepository applicationRepository;
     private readonly IBookingRepository bookingRepository;

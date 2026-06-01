@@ -6,7 +6,7 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-internal class DevController : ControllerBase
+internal sealed class DevController : ControllerBase
 {
     [Authorize]
     [HttpPost("accept")]

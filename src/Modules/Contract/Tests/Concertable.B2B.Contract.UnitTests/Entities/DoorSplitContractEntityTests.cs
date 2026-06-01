@@ -1,7 +1,8 @@
 ﻿using Concertable.B2B.Contract.Domain.Entities;
 
 namespace Concertable.B2B.Contract.UnitTests.Entities;
-public class DoorSplitContractEntityTests
+
+public sealed class DoorSplitContractEntityTests
 {
     [Theory]
     [InlineData(1000, 50, 500)]

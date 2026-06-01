@@ -12,7 +12,7 @@ using static Concertable.B2B.Concert.IntegrationTests.Concert.ConcertRequestBuil
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 [Collection("Integration")]
-public class OutboxVerificationTests : IAsyncLifetime
+public sealed class OutboxVerificationTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 

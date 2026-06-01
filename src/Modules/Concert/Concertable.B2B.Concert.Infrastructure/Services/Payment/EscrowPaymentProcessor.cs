@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
-internal class EscrowPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
+internal sealed class EscrowPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
     private readonly IConcertWorkflowModule concertWorkflowModule;
     private readonly ConcertDbContext context;

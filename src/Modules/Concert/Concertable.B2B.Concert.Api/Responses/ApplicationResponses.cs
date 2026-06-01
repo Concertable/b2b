@@ -4,13 +4,13 @@ using Concertable.B2B.Contract.Contracts;
 
 namespace Concertable.B2B.Concert.Api.Responses;
 
-internal record ApplicationResponse(
+internal sealed record ApplicationResponse(
     int Id,
     ArtistSummaryDto Artist,
     OpportunitySummaryResponse Opportunity,
     ApplicationStatus Status,
     ApplicationActions Actions);
 
-internal record OpportunitySummaryResponse(int Id, DateTime StartDate, DateTime EndDate, IContract Contract);
+internal sealed record OpportunitySummaryResponse(int Id, DateTime StartDate, DateTime EndDate, IContract Contract);
 
-internal record ApplicationActions(ActionLink Accept, ActionLink? Checkout);
+internal sealed record ApplicationActions(ActionLink Accept, ActionLink? Checkout);

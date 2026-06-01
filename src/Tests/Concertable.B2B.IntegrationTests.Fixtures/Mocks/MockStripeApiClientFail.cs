@@ -3,7 +3,7 @@ using Stripe;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal class MockStripeApiClientFail : IStripeApiClient
+internal sealed class MockStripeApiClientFail : IStripeApiClient
 {
     public Task<PaymentIntent> CreatePaymentIntentAsync(PaymentIntentCreateOptions options) =>
         Task.FromResult(new PaymentIntent

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
-internal class TicketSaleProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
+internal sealed class TicketSaleProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
     private readonly ConcertDbContext context;
     private readonly ILogger<TicketSaleProcessor> logger;

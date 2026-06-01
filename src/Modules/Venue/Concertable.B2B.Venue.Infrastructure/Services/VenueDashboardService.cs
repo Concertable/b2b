@@ -4,7 +4,7 @@ using Concertable.B2B.Venue.Application.Interfaces;
 
 namespace Concertable.B2B.Venue.Infrastructure.Services;
 
-internal class VenueDashboardService : IVenueDashboardService
+internal sealed class VenueDashboardService : IVenueDashboardService
 {
     private readonly IVenueService venueService;
     private readonly IConcertModule concertModule;

@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-internal class OpportunityController : ControllerBase
+internal sealed class OpportunityController : ControllerBase
 {
     private readonly IOpportunityService opportunityService;
     private readonly IOpportunityResponseMapper mapper;

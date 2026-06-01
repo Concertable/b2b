@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Organization.Infrastructure.Services;
 
-internal class OrganizationService : IOrganizationService
+internal sealed class OrganizationService : IOrganizationService
 {
     private readonly IOrganizationRepository repository;
 

@@ -2,7 +2,7 @@ using Concertable.B2B.Organization.Domain;
 
 namespace Concertable.B2B.Organization.UnitTests;
 
-public class OrganizationEntityTests
+public sealed class OrganizationEntityTests
 {
     [Fact]
     public void Create_ReturnsEntity_WithExpectedValues()

@@ -1,6 +1,6 @@
 namespace Concertable.B2B.E2ETests.Ui.PageObjects;
 
-public class ApplicationsPage
+public sealed class ApplicationsPage
 {
     private readonly IPage page;
     private readonly string url;

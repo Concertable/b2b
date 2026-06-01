@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.User.Infrastructure;
 
-internal class UserModule : IUserModule
+internal sealed class UserModule : IUserModule
 {
     private readonly UserDbContext context;
     private readonly IUserRepository userRepository;

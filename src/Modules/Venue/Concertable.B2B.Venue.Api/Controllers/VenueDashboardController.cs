@@ -8,7 +8,7 @@ namespace Concertable.B2B.Venue.Api.Controllers;
 [ApiController]
 [VenueManager]
 [Route("api/[controller]")]
-internal class VenueDashboardController : ControllerBase
+internal sealed class VenueDashboardController : ControllerBase
 {
     private readonly IVenueDashboardService dashboardService;
 

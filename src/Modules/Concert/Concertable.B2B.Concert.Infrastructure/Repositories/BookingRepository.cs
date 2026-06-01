@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal class BookingRepository : Repository<BookingEntity>, IBookingRepository
+internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRepository
 {
     public BookingRepository(ConcertDbContext context) : base(context) { }
 

@@ -4,7 +4,7 @@ using Concertable.B2B.E2ETests.Ui.Support;
 namespace Concertable.B2B.E2ETests.Ui.Steps;
 
 [Binding]
-public class VenueManagerSteps
+public sealed class VenueManagerSteps
 {
     private readonly UiFixture fixture;
     private readonly Browser browser;
