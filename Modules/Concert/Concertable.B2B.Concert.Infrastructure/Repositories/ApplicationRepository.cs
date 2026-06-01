@@ -50,7 +50,7 @@ internal class ApplicationRepository : Repository<ApplicationEntity>, IApplicati
         return (query.Artist, query.Opportunity.Venue);
     }
 
-    public async new Task<ApplicationEntity?> GetByIdAsync(int id)
+    public override async Task<ApplicationEntity?> GetByIdAsync(int id)
     {
         return await context.Applications
             .Where(ca => ca.Id == id)
