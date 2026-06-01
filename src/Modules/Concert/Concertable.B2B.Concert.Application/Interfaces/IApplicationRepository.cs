@@ -4,7 +4,7 @@ using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
-internal interface IApplicationRepository : IIdRepository<ApplicationEntity>
+internal interface IApplicationRepository : IRepository<ApplicationEntity>
 {
     Task<IEnumerable<ApplicationEntity>> GetByOpportunityIdAsync(int opportunityId);
     Task<IEnumerable<ApplicationEntity>> GetPendingByArtistIdAsync(int id);

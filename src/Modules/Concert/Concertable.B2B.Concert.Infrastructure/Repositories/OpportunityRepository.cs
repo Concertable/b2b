@@ -50,7 +50,7 @@ internal class OpportunityRepository : Repository<OpportunityEntity>, IOpportuni
             .FirstOrDefaultAsync();
     }
 
-    public async new Task<OpportunityEntity?> GetByIdAsync(int id)
+    public override async Task<OpportunityEntity?> GetByIdAsync(int id)
     {
         return await context.Opportunities
             .Where(o => o.Id == id)

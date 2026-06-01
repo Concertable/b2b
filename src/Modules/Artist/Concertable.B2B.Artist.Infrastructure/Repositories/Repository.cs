@@ -7,10 +7,10 @@ internal abstract class BaseRepository<TEntity>(ArtistDbContext context)
     : BaseRepository<TEntity, ArtistDbContext>(context)
     where TEntity : class;
 
-internal abstract class Repository<TEntity>(ArtistDbContext context)
-    : Repository<TEntity, ArtistDbContext>(context)
+internal abstract class ReadRepository<TEntity>(ArtistDbContext context)
+    : ReadRepository<TEntity, ArtistDbContext, int>(context)
     where TEntity : class, IIdEntity;
 
-internal abstract class GuidRepository<TEntity>(ArtistDbContext context)
-    : GuidRepository<TEntity, ArtistDbContext>(context)
-    where TEntity : class, IGuidEntity;
+internal abstract class Repository<TEntity>(ArtistDbContext context)
+    : Repository<TEntity, ArtistDbContext, int>(context)
+    where TEntity : class, IIdEntity;
