@@ -14,29 +14,17 @@ namespace Concertable.B2B.IntegrationTests.Fixtures;
 
 public class TestDbInitializer : IDbInitializer
 {
-    private readonly IGeometryProvider geometryProvider;
-    private readonly SeedState seed;
-    private readonly ILocationFaker locationFaker;
-    private readonly TimeProvider timeProvider;
     private readonly IEnumerable<ITestSeeder> seeders;
     private readonly InboxDbContext inboxDbContext;
     private readonly OutboxDbContext outboxDbContext;
     private readonly SeedingScope seedingScope;
 
     public TestDbInitializer(
-        [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider,
-        SeedState seed,
-        ILocationFaker locationFaker,
-        TimeProvider timeProvider,
         IEnumerable<ITestSeeder> seeders,
         InboxDbContext inboxDbContext,
         OutboxDbContext outboxDbContext,
         SeedingScope seedingScope)
     {
-        this.geometryProvider = geometryProvider;
-        this.seed = seed;
-        this.locationFaker = locationFaker;
-        this.timeProvider = timeProvider;
         this.seeders = seeders;
         this.inboxDbContext = inboxDbContext;
         this.outboxDbContext = outboxDbContext;
