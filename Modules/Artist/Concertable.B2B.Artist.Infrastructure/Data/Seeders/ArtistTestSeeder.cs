@@ -23,7 +23,7 @@ internal class ArtistTestSeeder : ITestSeeder
     public async Task SeedAsync(CancellationToken ct = default) =>
         await context.Artists.SeedIfEmptyAsync(async () =>
         {
-            context.Artists.Add(seed.Artist);
+            context.Artists.AddRange(seed.Artists);
             await context.SaveChangesAsync(ct);
         });
 }

@@ -21,6 +21,7 @@ public sealed class SeedState
     public UserEntity ArtistManagerNoArtist { get; }
     public UserEntity VenueManager1 { get; }
     public UserEntity VenueManager2 { get; }
+    public UserEntity VenueManagerNoVenue { get; }
     public UserEntity Admin { get; }
 
     public IReadOnlyList<UserEntity> ArtistManagers { get; }
@@ -117,6 +118,10 @@ public sealed class SeedState
             SeedUsers.VenueManagerId(1), SeedUsers.VenueManagerEmail(1), Role.VenueManager);
         VenueManager2 = UserFactory.FromRegistration(
             SeedUsers.VenueManagerId(2), SeedUsers.VenueManagerEmail(2), Role.VenueManager);
+        VenueManagerNoVenue = UserFactory.FromRegistration(
+            SeedUsers.VenueManagerId(SeedUsers.ManagerCount),
+            SeedUsers.VenueManagerEmail(SeedUsers.ManagerCount),
+            Role.VenueManager);
 
         var artistManagers = new List<UserEntity> { ArtistManager1 };
         for (int i = 2; i < SeedUsers.ManagerCount; i++)
@@ -126,9 +131,10 @@ public sealed class SeedState
         ArtistManagers = artistManagers;
 
         var venueManagers = new List<UserEntity> { VenueManager1, VenueManager2 };
-        for (int i = 3; i <= SeedUsers.ManagerCount; i++)
+        for (int i = 3; i < SeedUsers.ManagerCount; i++)
             venueManagers.Add(UserFactory.FromRegistration(
                 SeedUsers.VenueManagerId(i), SeedUsers.VenueManagerEmail(i), Role.VenueManager));
+        venueManagers.Add(VenueManagerNoVenue);
         VenueManagers = venueManagers;
 
         Admin = UserFactory.FromRegistration(SeedUsers.Admin, SeedUsers.AdminEmail, Role.Admin,
@@ -274,7 +280,7 @@ public sealed class SeedState
         Opportunities = opps;
         FreshVenueHireOpportunity = opps[62];
 
-        ConfirmedBooking = BookingFactory.Complete(1);
+        ConfirmedBooking = BookingFactory.Confirmed(1);
         PostedDoorSplitBooking = BookingFactory.ConfirmedDeferred(2);
         PostedVersusBooking = BookingFactory.ConfirmedDeferred(3);
         PostedFlatFeeBooking = BookingFactory.Complete(4);

@@ -24,7 +24,7 @@ internal class VenueTestSeeder : ITestSeeder
     public async Task SeedAsync(CancellationToken ct = default) =>
         await context.Venues.SeedIfEmptyAsync(async () =>
         {
-            context.Venues.Add(seed.Venue);
+            context.Venues.AddRange(seed.Venues);
             await context.SaveChangesAsync(ct);
         });
 }
