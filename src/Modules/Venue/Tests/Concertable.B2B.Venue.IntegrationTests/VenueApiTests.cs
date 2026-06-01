@@ -38,7 +38,7 @@ public class VenueApiTests : IAsyncLifetime
         var venue = await response.Content.ReadAsync<VenueDetailsResponse>();
         Assert.NotNull(venue);
         Assert.Equal(fixture.SeedState.Venue.Id, venue.Id);
-        Assert.Equal("Test Venue", venue.Name);
+        Assert.Equal("The Grand Venue", venue.Name);
     }
 
     [Fact]
@@ -97,14 +97,14 @@ public class VenueApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var venue = await response.Content.ReadAsync<VenueDetailsResponse>();
         Assert.NotNull(venue);
-        Assert.Equal("Test Venue", venue.Name);
+        Assert.Equal("The Grand Venue", venue.Name);
     }
 
     [Fact]
     public async Task GetDetailsForCurrentUser_ShouldReturn204_WhenNoVenueExists()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
 
         // Act
         var response = await client.GetAsync("/api/Venue/user");
@@ -149,7 +149,7 @@ public class VenueApiTests : IAsyncLifetime
     public async Task Create_ShouldReturn201_WithVenueDto_WhenValidRequest()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
         var request = BuildCreateRequest();
 
         // Act
@@ -166,7 +166,7 @@ public class VenueApiTests : IAsyncLifetime
         Assert.Equal(request.Longitude, venue.Longitude);
         Assert.Equal("Test County", venue.County);
         Assert.Equal("Test Town", venue.Town);
-        Assert.Equal("venuemanager2@test.com", venue.Email);
+        Assert.Equal("venuemanager35@test.com", venue.Email);
         Assert.False(venue.Approved);
         Assert.EndsWith(".jpg", venue.BannerUrl);
         Assert.True(Guid.TryParse(Path.GetFileNameWithoutExtension(venue.BannerUrl), out _));
@@ -176,7 +176,7 @@ public class VenueApiTests : IAsyncLifetime
     public async Task Create_ShouldReturn400_WhenGeocodingFails()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager2, o => o.UseFailingGeocoding());
+        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue, o => o.UseFailingGeocoding());
         var request = BuildCreateRequest();
 
         // Act
@@ -190,7 +190,7 @@ public class VenueApiTests : IAsyncLifetime
     public async Task Create_ShouldReturn400_WhenNameIsEmpty()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
         var request = BuildCreateRequest(name: "");
 
         // Act

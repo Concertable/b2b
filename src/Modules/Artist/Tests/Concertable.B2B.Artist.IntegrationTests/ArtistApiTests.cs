@@ -35,7 +35,7 @@ public class ArtistApiTests : IAsyncLifetime
         var artist = await response.Content.ReadAsync<ArtistDetailsResponse>();
         Assert.NotNull(artist);
         Assert.Equal(fixture.SeedState.Artist.Id, artist.Id);
-        Assert.Equal("Test Artist", artist.Name);
+        Assert.Equal("The Rockers", artist.Name);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class ArtistApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var artist = await response.Content.ReadAsync<ArtistDetailsResponse>();
         Assert.NotNull(artist);
-        Assert.Equal("Test Artist", artist.Name);
+        Assert.Equal("The Rockers", artist.Name);
     }
 
     [Fact]

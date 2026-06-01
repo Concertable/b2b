@@ -26,33 +26,33 @@ internal class ConcertTestSeeder : ITestSeeder
     {
         await context.VenueReadModels.SeedIfEmptyAsync(async () =>
         {
-            context.VenueReadModels.Add(new VenueReadModel
+            context.VenueReadModels.AddRange(seed.Venues.Select(v => new VenueReadModel
             {
-                Id = seed.Venue.Id,
-                UserId = seed.Venue.UserId,
-                Name = seed.Venue.Name,
-                About = seed.Venue.About,
-                County = seed.Venue.Address.County,
-                Town = seed.Venue.Address.Town,
-                Location = seed.Venue.Location
-            });
+                Id = v.Id,
+                UserId = v.UserId,
+                Name = v.Name,
+                About = v.About,
+                County = v.Address.County,
+                Town = v.Address.Town,
+                Location = v.Location
+            }));
             await context.SaveChangesAsync(ct);
         });
 
         await context.ArtistReadModels.SeedIfEmptyAsync(async () =>
         {
-            context.ArtistReadModels.Add(new ArtistReadModel
+            context.ArtistReadModels.AddRange(seed.Artists.Select(a => new ArtistReadModel
             {
-                Id = seed.Artist.Id,
-                UserId = seed.Artist.UserId,
-                Name = seed.Artist.Name,
-                Avatar = seed.Artist.Avatar,
-                BannerUrl = seed.Artist.BannerUrl,
-                County = seed.Artist.Address.County,
-                Town = seed.Artist.Address.Town,
-                Email = seed.Artist.Email,
-                Genres = seed.Artist.Genres.Select(g => new ArtistReadModelGenre { ArtistReadModelId = seed.Artist.Id, Genre = g }).ToList()
-            });
+                Id = a.Id,
+                UserId = a.UserId,
+                Name = a.Name,
+                Avatar = a.Avatar,
+                BannerUrl = a.BannerUrl,
+                County = a.Address.County,
+                Town = a.Address.Town,
+                Email = a.Email,
+                Genres = a.Genres.Select(g => new ArtistReadModelGenre { ArtistReadModelId = a.Id, Genre = g }).ToList()
+            }));
             await context.SaveChangesAsync(ct);
         });
 

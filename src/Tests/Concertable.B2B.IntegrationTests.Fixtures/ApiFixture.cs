@@ -21,6 +21,7 @@ using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure;
+using Concertable.Seed.Infrastructure;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure.Fakers;
 using Microsoft.AspNetCore.Authentication;
@@ -129,6 +130,7 @@ public async Task InitializeAsync()
                 services.AddScoped<IImageService, MockImageService>();
                 services.AddScoped<IDbInitializer, TestDbInitializer>();
                 services.AddSeedingInfrastructure();
+                services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
                 services.AddSingleton<SeedCatalog>();
                 services.AddScoped<SeedState>();
                 services.AddScoped<ILocationFaker, LocationFaker>();

@@ -11,7 +11,7 @@ public sealed partial class SeedCatalog
 
     private IReadOnlyList<ConcertSeedSpec> BuildConcerts() =>
     [
-        ConcertSeedSpec.Create(1, "Ultimate Dance Party", 27m, 160, Artists[0], Venues[5], -35, 2, Now),
+        ConcertSeedSpec.Create(1, "Ultimate Dance Party", 27m, 160, Artists[0], Venues[5], -35, 2, Now) with { DatePosted = null },
         ConcertSeedSpec.Create(2, "Boogie Wonderland", 25m, 120, Artists[0], Venues[0], 150, 0, Now, [Genre.Rock, Genre.Indie]),
         ConcertSeedSpec.Create(3, "Funk it up", 20m, 150, Artists[1], Venues[0], 180, 0, Now, [Genre.Rock, Genre.Indie]),
         ConcertSeedSpec.Create(4, "Boogie it up!", 20m, 150, Artists[1], Venues[0], -85, -85, Now),

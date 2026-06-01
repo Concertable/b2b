@@ -483,19 +483,5 @@ public sealed partial class SeedCatalog
             Longitude = -2.9707,
             Email     = "dundeefatsams@test.com",
         },
-        new VenueSeedSpec
-        {
-            VenueId   = 35,
-            UserId    = SeedUsers.VenueManagerId(35),
-            Name      = "Coventry Empire",
-            About     = "Coventry Empire is a venue in Coventry.",
-            Avatar    = "avatar.jpg",
-            BannerUrl = "coventryempire.jpg",
-            County    = "West Midlands",
-            Town      = "Coventry",
-            Latitude  = 52.4068,
-            Longitude = -1.5197,
-            Email     = "coventryempire@test.com",
-        },
     ];
 }

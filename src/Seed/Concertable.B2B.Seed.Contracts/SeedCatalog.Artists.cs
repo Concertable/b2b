@@ -518,20 +518,5 @@ public sealed partial class SeedCatalog
             Email     = "echocollapse@test.com",
             Genres    = [Genre.Pop],
         },
-        new ArtistSeedSpec
-        {
-            ArtistId  = 35,
-            UserId    = SeedUsers.ArtistManagerId(35),
-            Name      = "Violet Sundown",
-            About     = "Violet Sundown is an artist based in Leeds.",
-            Avatar    = "avatar.jpg",
-            BannerUrl = "violetsundown.jpg",
-            County    = "West Yorkshire",
-            Town      = "Leeds",
-            Latitude  = 53.8008,
-            Longitude = -1.5491,
-            Email     = "violetsundown@test.com",
-            Genres    = [Genre.House],
-        },
     ];
 }
