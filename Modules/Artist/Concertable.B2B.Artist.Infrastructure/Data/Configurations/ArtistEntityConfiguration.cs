@@ -8,7 +8,7 @@ internal class ArtistEntityConfiguration : IEntityTypeConfiguration<ArtistEntity
 {
     public void Configure(EntityTypeBuilder<ArtistEntity> builder)
     {
-        builder.ToTable("Artists", Schema.Name);
+        builder.ToTable(Schema.Tables.Artists, Schema.Name);
         builder.Property(a => a.Location).HasColumnType("geography");
         builder.OwnsOne(a => a.Address, a =>
         {
@@ -23,7 +23,7 @@ internal class ArtistReviewConfiguration : IEntityTypeConfiguration<ArtistReview
 {
     public void Configure(EntityTypeBuilder<ArtistReview> builder)
     {
-        builder.ToTable("ArtistReviews", Schema.Name);
+        builder.ToTable(Schema.Tables.ArtistReviews, Schema.Name);
         builder.HasIndex(r => r.ArtistId);
         builder.Property(r => r.Email).HasMaxLength(256).IsRequired();
     }
@@ -33,7 +33,7 @@ public class ArtistRatingProjectionConfiguration : IEntityTypeConfiguration<Arti
 {
     public void Configure(EntityTypeBuilder<ArtistRatingProjection> builder)
     {
-        builder.ToTable("ArtistRatingProjections", Schema.Name);
+        builder.ToTable(Schema.Tables.ArtistRatingProjections, Schema.Name);
         builder.HasKey(p => p.ArtistId);
         builder.Property(p => p.ArtistId).ValueGeneratedNever();
     }

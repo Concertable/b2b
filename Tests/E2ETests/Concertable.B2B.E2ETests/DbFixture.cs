@@ -25,11 +25,11 @@ public sealed class DbFixture
             TablesToIgnore =
             [
                 "__EFMigrationsHistory",
-                new Table(UserSchema.Name, UserSchema.Users),
-                new Table(UserSchema.Name, UserSchema.ArtistManagerProfiles),
-                new Table(UserSchema.Name, UserSchema.VenueManagerProfiles),
-                new Table(UserSchema.Name, UserSchema.AdminProfiles),
-                new Table(MessagingSchema.Name, MessagingSchema.Inbox),
+                new Table(UserSchema.Name, UserSchema.Tables.Users),
+                new Table(UserSchema.Name, UserSchema.Tables.ArtistManagerProfiles),
+                new Table(UserSchema.Name, UserSchema.Tables.VenueManagerProfiles),
+                new Table(UserSchema.Name, UserSchema.Tables.AdminProfiles),
+                new Table(MessagingSchema.Name, MessagingSchema.Tables.Inbox),
             ],
             DbAdapter = DbAdapter.SqlServer,
             WithReseed = true

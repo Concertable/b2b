@@ -7,7 +7,7 @@ internal sealed class AdminProfileEntityConfiguration : IEntityTypeConfiguration
 {
     public void Configure(EntityTypeBuilder<AdminProfileEntity> builder)
     {
-        builder.ToTable("AdminProfiles", "user");
+        builder.ToTable(Schema.Tables.AdminProfiles, Schema.Name);
         builder.HasKey(x => x.Sub);
         builder.Property(x => x.Sub).ValueGeneratedNever();
     }

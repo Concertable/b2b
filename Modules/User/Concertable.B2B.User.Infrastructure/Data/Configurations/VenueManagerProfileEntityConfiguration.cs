@@ -7,7 +7,7 @@ internal sealed class VenueManagerProfileEntityConfiguration : IEntityTypeConfig
 {
     public void Configure(EntityTypeBuilder<VenueManagerProfileEntity> builder)
     {
-        builder.ToTable("VenueManagerProfiles", "user");
+        builder.ToTable(Schema.Tables.VenueManagerProfiles, Schema.Name);
         builder.HasKey(x => x.Sub);
         builder.Property(x => x.Sub).ValueGeneratedNever();
         builder.Property(x => x.VenueId);

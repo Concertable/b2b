@@ -8,7 +8,7 @@ internal class BookingEntityConfiguration : IEntityTypeConfiguration<BookingEnti
 {
     public void Configure(EntityTypeBuilder<BookingEntity> builder)
     {
-        builder.ToTable("Bookings", Schema.Name);
+        builder.ToTable(Schema.Tables.Bookings, Schema.Name);
         builder.HasOne(b => b.Application)
             .WithOne(a => a.Booking)
             .HasForeignKey<BookingEntity>(b => b.ApplicationId)

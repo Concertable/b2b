@@ -8,7 +8,7 @@ internal class ConcertImageEntityConfiguration : IEntityTypeConfiguration<Concer
 {
     public void Configure(EntityTypeBuilder<ConcertImageEntity> builder)
     {
-        builder.ToTable("ConcertImages", Schema.Name);
+        builder.ToTable(Schema.Tables.ConcertImages, Schema.Name);
         builder.HasOne(ci => ci.Concert)
             .WithMany(c => c.Images)
             .HasForeignKey(ci => ci.ConcertId)

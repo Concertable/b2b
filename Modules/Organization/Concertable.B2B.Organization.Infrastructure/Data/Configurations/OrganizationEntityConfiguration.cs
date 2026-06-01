@@ -7,7 +7,7 @@ internal class OrganizationEntityConfiguration : IEntityTypeConfiguration<Organi
 {
     public void Configure(EntityTypeBuilder<OrganizationEntity> builder)
     {
-        builder.ToTable("Organizations");
+        builder.ToTable(Schema.Tables.Organizations, Schema.Name);
         builder.HasKey(o => o.Id);
         builder.Property(o => o.LegalName).IsRequired().HasMaxLength(200);
         builder.Property(o => o.CreatedAt).IsRequired();

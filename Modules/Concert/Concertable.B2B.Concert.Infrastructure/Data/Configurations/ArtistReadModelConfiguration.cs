@@ -8,7 +8,7 @@ internal class ArtistReadModelConfiguration : IEntityTypeConfiguration<ArtistRea
 {
     public void Configure(EntityTypeBuilder<ArtistReadModel> builder)
     {
-        builder.ToTable("ArtistReadModels", Schema.Name);
+        builder.ToTable(Schema.Tables.ArtistReadModels, Schema.Name);
         builder.Property(a => a.Id).ValueGeneratedNever();
         builder.HasIndex(a => a.UserId).IsUnique();
         builder.HasMany(a => a.Genres)
@@ -23,7 +23,7 @@ internal class ArtistReadModelGenreConfiguration : IEntityTypeConfiguration<Arti
 {
     public void Configure(EntityTypeBuilder<ArtistReadModelGenre> builder)
     {
-        builder.ToTable("ArtistReadModelGenres", Schema.Name);
+        builder.ToTable(Schema.Tables.ArtistReadModelGenres, Schema.Name);
         builder.HasKey(g => new { g.ArtistReadModelId, g.Genre });
     }
 }
