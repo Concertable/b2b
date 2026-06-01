@@ -8,7 +8,7 @@ internal class OpportunityEntityConfiguration : IEntityTypeConfiguration<Opportu
 {
     public void Configure(EntityTypeBuilder<OpportunityEntity> builder)
     {
-        builder.ToTable("Opportunities", Schema.Name);
+        builder.ToTable(Schema.Tables.Opportunities, Schema.Name);
         builder.OwnsOne(o => o.Period, p =>
         {
             p.Property(x => x.Start).HasColumnName("StartDate");
@@ -29,7 +29,7 @@ internal class ApplicationEntityConfiguration : IEntityTypeConfiguration<Applica
 {
     public void Configure(EntityTypeBuilder<ApplicationEntity> builder)
     {
-        builder.ToTable("Applications", Schema.Name);
+        builder.ToTable(Schema.Tables.Applications, Schema.Name);
         builder.HasIndex(ca => new { ca.OpportunityId, ca.ArtistId }).IsUnique();
         builder.HasOne(ca => ca.Opportunity)
             .WithMany(o => o.Applications)

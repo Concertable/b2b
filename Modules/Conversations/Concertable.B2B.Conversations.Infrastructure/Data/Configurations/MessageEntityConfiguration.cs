@@ -7,7 +7,7 @@ internal class MessageEntityConfiguration : IEntityTypeConfiguration<MessageEnti
 {
     public void Configure(EntityTypeBuilder<MessageEntity> builder)
     {
-        builder.ToTable("Messages", Schema.Name);
+        builder.ToTable(Schema.Tables.Messages, Schema.Name);
         builder.HasIndex(m => m.ToUserId);
         builder.HasIndex(m => m.FromUserId);
     }
