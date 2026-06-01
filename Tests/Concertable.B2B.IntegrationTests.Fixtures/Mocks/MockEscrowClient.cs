@@ -4,6 +4,7 @@ using Concertable.Payment.Domain;
 using Concertable.Payment.Infrastructure.Data;
 using FluentResults;
 using Stripe;
+using ClientEscrowStatus = Concertable.Payment.Client.EscrowStatus;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
@@ -36,7 +37,7 @@ internal sealed class MockEscrowClient : IEscrowClient
         dbContext.Escrows.Add(escrow);
         await dbContext.SaveChangesAsync(ct);
 
-        return Result.Ok(new EscrowResponse(escrow.Id, escrow.ChargeId, escrow.Status));
+        return Result.Ok(new EscrowResponse(escrow.Id, escrow.ChargeId, (ClientEscrowStatus)escrow.Status));
     }
 
     public async Task<Result<EscrowResponse>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
@@ -52,7 +53,7 @@ internal sealed class MockEscrowClient : IEscrowClient
         dbContext.Escrows.Add(escrow);
         await dbContext.SaveChangesAsync(ct);
 
-        return Result.Ok(new EscrowResponse(escrow.Id, escrow.ChargeId, escrow.Status));
+        return Result.Ok(new EscrowResponse(escrow.Id, escrow.ChargeId, (ClientEscrowStatus)escrow.Status));
     }
 
     public Task<Result<TransferResponse?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>

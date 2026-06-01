@@ -1,6 +1,5 @@
 global using Concertable.Kernel.Identity;
 global using Concertable.B2B.User.Contracts;
-global using Concertable.Payment.Domain;
 global using Concertable.B2B.User.Application.Interfaces;
 global using Concertable.B2B.User.Domain;
 global using Concertable.B2B.Concert.Domain;
