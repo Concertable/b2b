@@ -4,7 +4,7 @@ using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
-internal interface IConcertRepository : IIdRepository<ConcertEntity>
+internal interface IConcertRepository : IRepository<ConcertEntity>
 {
     Task<ConcertEntity?> GetFullByIdAsync(int id);
     Task<ConcertDto?> GetDtoByIdAsync(int id);

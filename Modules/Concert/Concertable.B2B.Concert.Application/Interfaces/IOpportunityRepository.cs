@@ -4,9 +4,8 @@ using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
-internal interface IOpportunityRepository : IIdRepository<OpportunityEntity>
+internal interface IOpportunityRepository : IRepository<OpportunityEntity>
 {
-    new Task<OpportunityEntity?> GetByIdAsync(int id);
     Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int id, IPageParams pageParams);
     Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId);
     Task<OpportunityEntity?> GetWithVenueByIdAsync(int id);

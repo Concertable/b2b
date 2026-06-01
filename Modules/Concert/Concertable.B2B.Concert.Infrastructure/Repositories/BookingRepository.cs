@@ -8,7 +8,7 @@ internal class BookingRepository : Repository<BookingEntity>, IBookingRepository
 {
     public BookingRepository(ConcertDbContext context) : base(context) { }
 
-    public async new Task<BookingEntity?> GetByIdAsync(int id)
+    public override async Task<BookingEntity?> GetByIdAsync(int id)
     {
         return await context.Bookings
             .Where(b => b.Id == id)

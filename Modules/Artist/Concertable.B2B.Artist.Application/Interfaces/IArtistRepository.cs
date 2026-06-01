@@ -4,7 +4,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Artist.Application.Interfaces;
 
-internal interface IArtistRepository : IIdRepository<ArtistEntity>
+internal interface IArtistRepository : IRepository<ArtistEntity>
 {
     Task<int?> GetIdByUserIdAsync(Guid id);
     Task<ArtistEntity?> GetByUserIdAsync(Guid id);
