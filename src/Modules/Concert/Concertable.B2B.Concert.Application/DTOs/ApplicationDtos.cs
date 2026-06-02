@@ -5,6 +5,6 @@ namespace Concertable.B2B.Concert.Application.DTOs;
 
 internal sealed record ApplicationDto(
     int Id,
-    ArtistSummaryDto Artist,
+    ArtistSummary Artist,
     OpportunityDto Opportunity,
     ApplicationStatus Status);

@@ -8,12 +8,12 @@ namespace Concertable.B2B.Artist.Infrastructure.Services;
 
 internal sealed class ArtistReviewService(ArtistDbContext context) : IArtistReviewService
 {
-    public async Task<ReviewSummaryDto> GetSummaryAsync(int artistId)
+    public async Task<ReviewSummary> GetSummaryAsync(int artistId)
     {
         var projection = await context.ArtistRatingProjections
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.ArtistId == artistId);
-        return projection.ToReviewSummaryDto();
+        return projection.ToReviewSummary();
     }
 
     public Task<IPagination<ReviewDto>> GetPagedAsync(int artistId, IPageParams pageParams) =>

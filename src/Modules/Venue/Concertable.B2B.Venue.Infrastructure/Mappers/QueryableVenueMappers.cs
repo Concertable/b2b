@@ -1,31 +1,30 @@
 using Concertable.B2B.Venue.Application.DTOs;
+using Concertable.B2B.Venue.Contracts;
 using Concertable.B2B.Venue.Domain;
 
 namespace Concertable.B2B.Venue.Infrastructure.Mappers;
 
 internal static class QueryableVenueMappers
 {
-    public static IQueryable<VenueSummaryDto> ToSummaryDto(
+    public static IQueryable<VenueSummary> ToSummary(
         this IQueryable<VenueEntity> query,
         IQueryable<VenueRatingProjection> ratings) =>
         from v in query.Where(v => v.Location != null && v.Address != null)
         join r in ratings on v.Id equals r.VenueId into rg
         from rating in rg.DefaultIfEmpty()
-        select new VenueSummaryDto
-        {
-            Id = v.Id,
-            Name = v.Name,
-            Avatar = v.Avatar,
-            Rating = rating == null ? 0.0 : rating.AverageRating
-        };
+        select new VenueSummary(
+            v.Id,
+            v.Name,
+            v.Avatar,
+            rating == null ? 0.0 : rating.AverageRating);
 
-    public static IQueryable<VenueDto> ToDto(
+    public static IQueryable<VenueDetails> ToDetails(
         this IQueryable<VenueEntity> query,
         IQueryable<VenueRatingProjection> ratings) =>
         from v in query.Where(v => v.Location != null && v.Address != null)
         join r in ratings on v.Id equals r.VenueId into rg
         from rating in rg.DefaultIfEmpty()
-        select new VenueDto
+        select new VenueDetails
         {
             Id = v.Id,
             Name = v.Name,

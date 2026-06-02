@@ -6,16 +6,18 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IConcertRepository : IRepository<ConcertEntity>
 {
-    Task<ConcertEntity?> GetFullByIdAsync(int id);
-    Task<ConcertDto?> GetDtoByIdAsync(int id);
-    Task<ConcertSummaryDto?> GetSummaryAsync(int id);
-    Task<ConcertDto?> GetDtoByApplicationIdAsync(int applicationId);
-    Task<IEnumerable<ConcertSummaryDto>> GetUpcomingByVenueIdAsync(int id);
-    Task<IEnumerable<ConcertSummaryDto>> GetUpcomingByArtistIdAsync(int id);
-    Task<IEnumerable<ConcertSummaryDto>> GetHistoryByVenueIdAsync(int id);
-    Task<IEnumerable<ConcertSummaryDto>> GetHistoryByArtistIdAsync(int id);
-    Task<IEnumerable<ConcertSummaryDto>> GetUnpostedByArtistIdAsync(int id);
-    Task<IEnumerable<ConcertSummaryDto>> GetUnpostedByVenueIdAsync(int id);
+    Task<ConcertEntity?> GetByIdWithArtistAndVenueAsync(int id);
+    Task<ConcertEntity?> GetByIdWithVenueAsync(int id);
+    Task<ConcertEntity?> GetByIdWithBookingAsync(int id);
+    Task<ConcertDetails?> GetDetailsByIdAsync(int id);
+    Task<ConcertSummary?> GetSummaryAsync(int id);
+    Task<ConcertDetails?> GetDetailsByApplicationIdAsync(int applicationId);
+    Task<IEnumerable<ConcertSummary>> GetUpcomingByVenueIdAsync(int id);
+    Task<IEnumerable<ConcertSummary>> GetUpcomingByArtistIdAsync(int id);
+    Task<IEnumerable<ConcertSummary>> GetHistoryByVenueIdAsync(int id);
+    Task<IEnumerable<ConcertSummary>> GetHistoryByArtistIdAsync(int id);
+    Task<IEnumerable<ConcertSummary>> GetUnpostedByArtistIdAsync(int id);
+    Task<IEnumerable<ConcertSummary>> GetUnpostedByVenueIdAsync(int id);
     Task<bool> ArtistHasConcertOnDateAsync(int artistId, DateTime date);
     Task<bool> OpportunityHasConcertAsync(int opportunityId);
     Task<bool> VenueHasConcertOnDateAsync(int venueId, DateTime date);

@@ -7,11 +7,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Mappers;
 
 internal static class QueryableArtistDashboardMappers
 {
-    public static IQueryable<ArtistDashboardCountsDto> ToArtistCounts(
+    public static IQueryable<ArtistDashboardCounts> ToArtistCounts(
         this IQueryable<ArtistReadModel> query,
         IQueryable<ApplicationEntity> applications,
         IQueryable<ConcertEntity> upcomingConcerts)
-        => query.Select(a => new ArtistDashboardCountsDto(
+        => query.Select(a => new ArtistDashboardCounts(
             applications.Count(),
             upcomingConcerts.Count()));
 }

@@ -15,7 +15,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         this.concertModule = concertModule;
     }
 
-    public async Task<ArtistDashboardKpisDto?> GetKpisAsync(CancellationToken ct = default)
+    public async Task<ArtistDashboardKpis?> GetKpisAsync(CancellationToken ct = default)
     {
         var artistId = await artistService.GetIdForCurrentUserAsync();
 
@@ -26,7 +26,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         var counts = countsTask.Result;
         if (counts is null) return null;
 
-        return new ArtistDashboardKpisDto(
+        return new ArtistDashboardKpis(
             PendingApplications: counts.PendingApplications,
             AcceptedAwaitingCheckout: 0, // TODO B.11: IConcertWorkflowCapabilityRegistry / IAcceptsCheckout
             UpcomingConcerts: counts.UpcomingConcerts,

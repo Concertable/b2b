@@ -4,5 +4,5 @@ namespace Concertable.B2B.Artist.Application.Interfaces;
 
 internal interface IArtistDashboardService
 {
-    Task<ArtistDashboardKpisDto?> GetKpisAsync(CancellationToken ct = default);
+    Task<ArtistDashboardKpis?> GetKpisAsync(CancellationToken ct = default);
 }

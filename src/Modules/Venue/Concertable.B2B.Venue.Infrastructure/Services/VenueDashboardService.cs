@@ -15,7 +15,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         this.concertModule = concertModule;
     }
 
-    public async Task<VenueDashboardKpisDto?> GetKpisAsync(CancellationToken ct = default)
+    public async Task<VenueDashboardKpis?> GetKpisAsync(CancellationToken ct = default)
     {
         var venueId = await venueService.GetIdForCurrentUserAsync();
 
@@ -26,7 +26,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         var counts = countsTask.Result;
         if (counts is null) return null;
 
-        return new VenueDashboardKpisDto(
+        return new VenueDashboardKpis(
             ApplicationsToReview: counts.ApplicationsToReview,
             ApplicationsToReviewDelta: null,
             OpenOpportunities: counts.OpenOpportunities,

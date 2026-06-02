@@ -7,7 +7,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Mappers;
 
 internal static class QueryableConcertMappers
 {
-    public static IQueryable<ConcertDto> ToDto(
+    public static IQueryable<ConcertDetails> ToDetails(
         this IQueryable<ConcertEntity> query,
         IQueryable<ConcertRatingProjection> concertRatings,
         IQueryable<ArtistRatingProjection> artistRatings,
@@ -19,7 +19,7 @@ internal static class QueryableConcertMappers
         from artistRating in arg.DefaultIfEmpty()
         join vr in venueRatings on c.Booking.Application.Opportunity.VenueId equals vr.VenueId into vrg
         from venueRating in vrg.DefaultIfEmpty()
-        select new ConcertDto
+        select new ConcertDetails
         {
             Id = c.Id,
             Name = c.Name,
@@ -34,7 +34,7 @@ internal static class QueryableConcertMappers
             StartDate = c.Booking.Application.Opportunity.Period.Start,
             EndDate = c.Booking.Application.Opportunity.Period.End,
             Genres = c.Genres,
-            Venue = new ConcertVenueDto
+            Venue = new ConcertVenue
             {
                 Id = c.Booking.Application.Opportunity.Venue.Id,
                 Name = c.Booking.Application.Opportunity.Venue.Name,
@@ -44,7 +44,7 @@ internal static class QueryableConcertMappers
                 Latitude = c.Booking.Application.Opportunity.Venue.Location!.Y,
                 Longitude = c.Booking.Application.Opportunity.Venue.Location!.X
             },
-            Artist = new ConcertArtistDto
+            Artist = new ConcertArtist
             {
                 Id = c.Booking.Application.Artist.Id,
                 Name = c.Booking.Application.Artist.Name,
@@ -56,7 +56,7 @@ internal static class QueryableConcertMappers
             }
         };
 
-    public static IQueryable<ConcertSummaryDto> ToSummaryDto(
+    public static IQueryable<ConcertSummary> ToSummary(
         this IQueryable<ConcertEntity> query,
         IQueryable<ArtistRatingProjection> artistRatings,
         IQueryable<VenueRatingProjection> venueRatings) =>
@@ -65,7 +65,7 @@ internal static class QueryableConcertMappers
         from artistRating in arg.DefaultIfEmpty()
         join vr in venueRatings on c.Booking.Application.Opportunity.VenueId equals vr.VenueId into vrg
         from venueRating in vrg.DefaultIfEmpty()
-        select new ConcertSummaryDto
+        select new ConcertSummary
         {
             Id = c.Id,
             Name = c.Name,
@@ -76,13 +76,11 @@ internal static class QueryableConcertMappers
             DatePosted = c.DatePosted,
             StartDate = c.Booking.Application.Opportunity.Period.Start,
             EndDate = c.Booking.Application.Opportunity.Period.End,
-            Venue = new ConcertVenueSummaryDto
-            {
-                Id = c.Booking.Application.Opportunity.Venue.Id,
-                Name = c.Booking.Application.Opportunity.Venue.Name,
-                Rating = (double?)venueRating.AverageRating ?? 0.0
-            },
-            Artist = new ConcertArtistSummaryDto
+            Venue = new ConcertVenueSummary(
+                c.Booking.Application.Opportunity.Venue.Id,
+                c.Booking.Application.Opportunity.Venue.Name,
+                (double?)venueRating.AverageRating ?? 0.0),
+            Artist = new ConcertArtistSummary
             {
                 Id = c.Booking.Application.Artist.Id,
                 Name = c.Booking.Application.Artist.Name,

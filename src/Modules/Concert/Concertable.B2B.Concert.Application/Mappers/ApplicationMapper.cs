@@ -28,7 +28,7 @@ internal sealed class ApplicationMapper : IApplicationMapper
             new ApplicationDto(a.Id, BuildArtistSummary(a), opp, a.Status));
     }
 
-    private static ArtistSummaryDto BuildArtistSummary(ApplicationEntity application) => new()
+    private static ArtistSummary BuildArtistSummary(ApplicationEntity application) => new()
     {
         Id = application.Artist.Id,
         Name = application.Artist.Name,

@@ -4,7 +4,7 @@ namespace Concertable.B2B.Conversations.Application.Mappers;
 
 internal static class MessageMappers
 {
-    public static MessageDto ToDto(this MessageEntity message, MessageUserDto fromUser) => new()
+    public static MessageDto ToDto(this MessageEntity message, MessageUser fromUser) => new()
     {
         Id = message.Id,
         Content = message.Content,
@@ -12,7 +12,7 @@ internal static class MessageMappers
         Action = message.Action
     };
 
-    public static MessageUserDto ToMessageUserDto(this IUser user) => new()
+    public static MessageUser ToMessageUser(this IUser user) => new()
     {
         Id = user.Id,
         Email = user.Email,

@@ -130,7 +130,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
         var response = await client.PostAsync("/api/Artist", await request.ToFormContent());
 
         await response.ShouldBe(HttpStatusCode.Created);
-        var artist = await response.Content.ReadAsync<ArtistDto>();
+        var artist = await response.Content.ReadAsync<ArtistDetails>();
         Assert.NotNull(artist);
         Assert.True(artist.Id > 0);
         Assert.Equal(request.Name, artist.Name);
@@ -220,7 +220,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
         var response = await client.PutAsync($"/api/Artist/{fixture.SeedState.Artist.Id}", await request.ToFormContent());
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var artist = await response.Content.ReadAsync<ArtistDto>();
+        var artist = await response.Content.ReadAsync<ArtistDetails>();
         Assert.NotNull(artist);
         Assert.Equal("Updated Artist", artist.Name);
         Assert.Equal("Updated about", artist.About);

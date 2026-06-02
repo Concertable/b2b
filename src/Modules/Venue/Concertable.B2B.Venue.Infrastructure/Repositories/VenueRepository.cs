@@ -7,15 +7,10 @@ namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 internal sealed class VenueRepository(VenueDbContext context)
     : Repository<VenueEntity>(context), IVenueRepository
 {
-    public async Task<VenueEntity?> GetFullByIdAsync(int id) =>
-        await context.Venues
-            .Where(v => v.Id == id)
-            .FirstOrDefaultAsync();
-
-    public async Task<VenueSummaryDto?> GetSummaryAsync(int id) =>
+    public async Task<VenueSummary?> GetSummaryAsync(int id) =>
         await context.Venues.AsNoTracking()
             .Where(v => v.Id == id)
-            .ToSummaryDto(context.VenueRatingProjections.AsNoTracking())
+            .ToSummary(context.VenueRatingProjections.AsNoTracking())
             .FirstOrDefaultAsync();
 
     public async Task<VenueEntity?> GetByUserIdAsync(Guid id) =>
@@ -29,15 +24,15 @@ internal sealed class VenueRepository(VenueDbContext context)
             .Select(v => (int?)v.Id)
             .FirstOrDefaultAsync();
 
-    public async Task<VenueDto?> GetDtoByIdAsync(int id) =>
+    public async Task<VenueDetails?> GetDetailsByIdAsync(int id) =>
         await context.Venues.AsNoTracking()
             .Where(v => v.Id == id)
-            .ToDto(context.VenueRatingProjections.AsNoTracking())
+            .ToDetails(context.VenueRatingProjections.AsNoTracking())
             .FirstOrDefaultAsync();
 
-    public async Task<VenueDto?> GetDtoByUserIdAsync(Guid userId) =>
+    public async Task<VenueDetails?> GetDetailsByUserIdAsync(Guid userId) =>
         await context.Venues.AsNoTracking()
             .Where(v => v.UserId == userId)
-            .ToDto(context.VenueRatingProjections.AsNoTracking())
+            .ToDetails(context.VenueRatingProjections.AsNoTracking())
             .FirstOrDefaultAsync();
 }

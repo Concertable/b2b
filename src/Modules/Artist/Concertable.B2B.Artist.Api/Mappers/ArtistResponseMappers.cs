@@ -4,7 +4,7 @@ namespace Concertable.B2B.Artist.Api.Mappers;
 
 public static class ArtistResponseMappers
 {
-    public static ArtistDetailsResponse ToDetailsResponse(this ArtistDto dto) => new()
+    public static ArtistDetailsResponse ToDetailsResponse(this ArtistDetails dto) => new()
     {
         Id = dto.Id,
         Name = dto.Name,

@@ -12,12 +12,12 @@ internal sealed class ConcertChangedDomainEventHandler(
 {
     public async Task HandleAsync(ConcertChangedDomainEvent e, CancellationToken ct = default)
     {
-        var concert = await concertRepository.GetFullByIdAsync(e.ConcertId)
+        var concert = await concertRepository.GetByIdWithArtistAndVenueAsync(e.ConcertId)
             ?? throw new InvalidOperationException(
                 $"Concert {e.ConcertId} not found when publishing ConcertChangedEvent");
 
-        var artist = concert.Booking.Application.Artist;
-        var venue = concert.Booking.Application.Opportunity.Venue;
+        var artist = concert.Artist;
+        var venue = concert.Venue;
         var payeeUserId = concert.ContractType == ContractType.VenueHire
             ? artist.UserId
             : venue.UserId;

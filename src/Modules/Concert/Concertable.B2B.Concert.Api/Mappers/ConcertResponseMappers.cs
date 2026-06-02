@@ -4,7 +4,7 @@ namespace Concertable.B2B.Concert.Api.Mappers;
 
 internal static class ConcertResponseMappers
 {
-    public static ConcertSummaryResponse ToSummaryResponse(this ConcertSummaryDto dto) => new()
+    public static ConcertSummaryResponse ToSummaryResponse(this ConcertSummary dto) => new()
     {
         Id = dto.Id,
         Name = dto.Name,
@@ -30,10 +30,10 @@ internal static class ConcertResponseMappers
         }
     };
 
-    public static IEnumerable<ConcertSummaryResponse> ToSummaryResponses(this IEnumerable<ConcertSummaryDto> dtos) =>
+    public static IEnumerable<ConcertSummaryResponse> ToSummaryResponses(this IEnumerable<ConcertSummary> dtos) =>
         dtos.Select(d => d.ToSummaryResponse());
 
-    public static ConcertDetailsResponse ToDetailsResponse(this ConcertDto dto) => new()
+    public static ConcertDetailsResponse ToDetailsResponse(this ConcertDetails dto) => new()
     {
         Id = dto.Id,
         Name = dto.Name,
