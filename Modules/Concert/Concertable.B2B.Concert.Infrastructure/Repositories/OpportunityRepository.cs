@@ -50,13 +50,6 @@ internal sealed class OpportunityRepository : Repository<OpportunityEntity>, IOp
             .FirstOrDefaultAsync();
     }
 
-    public override async Task<OpportunityEntity?> GetByIdAsync(int id)
-    {
-        return await context.Opportunities
-            .Where(o => o.Id == id)
-            .FirstOrDefaultAsync();
-    }
-
     public async Task<OpportunityEntity?> GetWithVenueByIdAsync(int id)
     {
         return await context.Opportunities

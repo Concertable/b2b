@@ -6,7 +6,7 @@ namespace Concertable.B2B.Concert.Api.Responses;
 
 internal sealed record ApplicationResponse(
     int Id,
-    ArtistSummaryDto Artist,
+    ArtistSummary Artist,
     OpportunitySummaryResponse Opportunity,
     ApplicationStatus Status,
     ApplicationActions Actions);

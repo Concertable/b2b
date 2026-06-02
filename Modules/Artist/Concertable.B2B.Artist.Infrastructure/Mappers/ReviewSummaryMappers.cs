@@ -5,8 +5,8 @@ namespace Concertable.B2B.Artist.Infrastructure.Mappers;
 
 internal static class ReviewSummaryMappers
 {
-    public static ReviewSummaryDto ToReviewSummaryDto(this ArtistRatingProjection? projection) =>
+    public static ReviewSummary ToReviewSummary(this ArtistRatingProjection? projection) =>
         projection is null
-            ? new ReviewSummaryDto(0, null)
-            : new ReviewSummaryDto(projection.ReviewCount, projection.AverageRating);
+            ? new ReviewSummary(0, null)
+            : new ReviewSummary(projection.ReviewCount, projection.AverageRating);
 }

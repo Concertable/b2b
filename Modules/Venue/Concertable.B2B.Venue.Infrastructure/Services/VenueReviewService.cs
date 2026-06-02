@@ -8,12 +8,12 @@ namespace Concertable.B2B.Venue.Infrastructure.Services;
 
 internal sealed class VenueReviewService(VenueDbContext context) : IVenueReviewService
 {
-    public async Task<ReviewSummaryDto> GetSummaryAsync(int venueId)
+    public async Task<ReviewSummary> GetSummaryAsync(int venueId)
     {
         var projection = await context.VenueRatingProjections
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.VenueId == venueId);
-        return projection.ToReviewSummaryDto();
+        return projection.ToReviewSummary();
     }
 
     public Task<IPagination<ReviewDto>> GetPagedAsync(int venueId, IPageParams pageParams) =>

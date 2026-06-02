@@ -24,7 +24,7 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         this.concertUpcoming = concertUpcoming;
     }
 
-    public Task<VenueDashboardCountsDto?> GetVenueCountsAsync(int venueId, CancellationToken ct = default)
+    public Task<VenueDashboardCounts?> GetVenueCountsAsync(int venueId, CancellationToken ct = default)
     {
         var applications = opportunityUpcoming.ApplyVia(
             context.Applications
@@ -45,7 +45,7 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
             .FirstOrDefaultAsync(ct);
     }
 
-    public Task<ArtistDashboardCountsDto?> GetArtistCountsAsync(int artistId, CancellationToken ct = default)
+    public Task<ArtistDashboardCounts?> GetArtistCountsAsync(int artistId, CancellationToken ct = default)
     {
         var applications = opportunityUpcoming.ApplyVia(
             context.Applications

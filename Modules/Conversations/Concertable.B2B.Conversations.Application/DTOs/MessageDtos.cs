@@ -4,20 +4,20 @@ namespace Concertable.B2B.Conversations.Application.DTOs;
 
 internal sealed record MessageDto
 {
-    public int Id { get; set; }
-    public required MessageUserDto FromUser { get; set; }
-    public MessageAction? Action { get; set; }
-    public required string Content { get; set; }
+    public int Id { get; init; }
+    public required MessageUser FromUser { get; init; }
+    public MessageAction? Action { get; init; }
+    public required string Content { get; init; }
 }
 
-internal sealed record MessageSummaryDto(Pagination<MessageDto> Messages, int UnreadCount);
+internal sealed record MessageSummary(Pagination<MessageDto> Messages, int UnreadCount);
 
-internal sealed record MessageUserDto
+internal sealed record MessageUser
 {
-    public Guid Id { get; set; }
-    public required string Email { get; set; }
-    public double? Latitude { get; set; }
-    public double? Longitude { get; set; }
-    public string? County { get; set; }
-    public string? Town { get; set; }
+    public Guid Id { get; init; }
+    public required string Email { get; init; }
+    public double? Latitude { get; init; }
+    public double? Longitude { get; init; }
+    public string? County { get; init; }
+    public string? Town { get; init; }
 }

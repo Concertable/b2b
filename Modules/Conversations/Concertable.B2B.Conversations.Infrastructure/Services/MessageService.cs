@@ -57,7 +57,7 @@ internal sealed class MessageService : IMessageService
             messages.PageSize);
     }
 
-    public async Task<MessageSummaryDto> GetSummaryForUser()
+    public async Task<MessageSummary> GetSummaryForUser()
     {
         var pageParams = new PageParams { PageNumber = 1, PageSize = 5 };
 
@@ -72,7 +72,7 @@ internal sealed class MessageService : IMessageService
             messages.PageNumber,
             messages.PageSize);
 
-        return new MessageSummaryDto(pagination, unreadCount);
+        return new MessageSummary(pagination, unreadCount);
     }
 
     public Task<int> GetUnreadCountForUserAsync() =>
@@ -81,16 +81,16 @@ internal sealed class MessageService : IMessageService
     public Task MarkAsReadAsync(List<int> ids) =>
         messageRepository.MarkAsReadAsync(ids);
 
-    private async Task<MessageUserDto> GetSenderDtoAsync(Guid fromUserId)
+    private async Task<MessageUser> GetSenderDtoAsync(Guid fromUserId)
     {
         var sender = await userModule.GetByIdAsync(fromUserId)
             ?? throw new NotFoundException("Message sender not found");
-        return sender.ToMessageUserDto();
+        return sender.ToMessageUser();
     }
 
-    private async Task<Dictionary<Guid, MessageUserDto>> GetSenderDtosAsync(IEnumerable<MessageEntity> messages)
+    private async Task<Dictionary<Guid, MessageUser>> GetSenderDtosAsync(IEnumerable<MessageEntity> messages)
     {
-        var dict = new Dictionary<Guid, MessageUserDto>();
+        var dict = new Dictionary<Guid, MessageUser>();
         foreach (var fromUserId in messages.Select(m => m.FromUserId).Distinct())
             dict[fromUserId] = await GetSenderDtoAsync(fromUserId);
         return dict;

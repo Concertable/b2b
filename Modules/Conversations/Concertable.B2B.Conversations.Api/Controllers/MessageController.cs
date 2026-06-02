@@ -18,7 +18,7 @@ internal sealed class MessageController : ControllerBase
     }
 
     [HttpGet("user/summary")]
-    public async Task<ActionResult<MessageSummaryDto>> GetSummaryForUser() =>
+    public async Task<ActionResult<MessageSummary>> GetSummaryForUser() =>
         Ok(await messageService.GetSummaryForUser());
 
     [HttpGet("user")]

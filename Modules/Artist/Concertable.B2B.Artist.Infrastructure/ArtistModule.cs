@@ -7,7 +7,7 @@ internal sealed class ArtistModule(IArtistRepository repo) : IArtistModule
     public Task<int?> GetIdByUserIdAsync(Guid userId) =>
         repo.GetIdByUserIdAsync(userId);
 
-    public Task<ArtistSummaryDto?> GetSummaryAsync(int artistId) =>
+    public Task<ArtistSummary?> GetSummaryAsync(int artistId) =>
         repo.GetSummaryAsync(artistId);
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int artistId) =>

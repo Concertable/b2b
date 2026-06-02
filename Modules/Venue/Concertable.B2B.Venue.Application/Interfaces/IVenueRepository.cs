@@ -7,8 +7,7 @@ internal interface IVenueRepository : IRepository<VenueEntity>
 {
     Task<VenueEntity?> GetByUserIdAsync(Guid id);
     Task<int?> GetIdByUserIdAsync(Guid userId);
-    Task<VenueEntity?> GetFullByIdAsync(int id);
-    Task<VenueSummaryDto?> GetSummaryAsync(int id);
-    Task<VenueDto?> GetDtoByIdAsync(int id);
-    Task<VenueDto?> GetDtoByUserIdAsync(Guid userId);
+    Task<VenueSummary?> GetSummaryAsync(int id);
+    Task<VenueDetails?> GetDetailsByIdAsync(int id);
+    Task<VenueDetails?> GetDetailsByUserIdAsync(Guid userId);
 }

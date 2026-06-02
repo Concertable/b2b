@@ -1,5 +1,6 @@
 using System.Net;
 using Concertable.B2B.Venue.Application.DTOs;
+using Concertable.B2B.Venue.Contracts;
 using Concertable.B2B.Venue.Api.Responses;
 using static Concertable.B2B.Venue.IntegrationTests.VenueRequestBuilders;
 using Concertable.B2B.IntegrationTests.Fixtures;
@@ -157,7 +158,7 @@ public sealed class VenueApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Created);
-        var venue = await response.Content.ReadAsync<VenueDto>();
+        var venue = await response.Content.ReadAsync<VenueDetails>();
         Assert.NotNull(venue);
         Assert.True(venue.Id > 0);
         Assert.Equal(request.Name, venue.Name);
@@ -272,7 +273,7 @@ public sealed class VenueApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var venue = await response.Content.ReadAsync<VenueDto>();
+        var venue = await response.Content.ReadAsync<VenueDetails>();
         Assert.NotNull(venue);
         Assert.Equal("Updated Venue", venue.Name);
         Assert.Equal("Updated about", venue.About);
@@ -351,7 +352,7 @@ public sealed class VenueApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.NoContent);
         var venueResponse = await client.GetAsync($"/api/Venue/{fixture.SeedState.Venue.Id}");
         await venueResponse.ShouldBe(HttpStatusCode.OK);
-        var venue = await venueResponse.Content.ReadAsync<VenueDto>();
+        var venue = await venueResponse.Content.ReadAsync<VenueDetails>();
         Assert.True(venue!.Approved);
     }
 

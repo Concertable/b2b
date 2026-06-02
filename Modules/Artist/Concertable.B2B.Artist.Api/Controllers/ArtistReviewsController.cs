@@ -19,6 +19,6 @@ internal sealed class ArtistReviewsController : ControllerBase
         Ok(await reviewService.GetPagedAsync(artistId, pageParams));
 
     [HttpGet("summary")]
-    public async Task<ActionResult<ReviewSummaryDto>> GetSummary(int artistId) =>
+    public async Task<ActionResult<ReviewSummary>> GetSummary(int artistId) =>
         Ok(await reviewService.GetSummaryAsync(artistId));
 }

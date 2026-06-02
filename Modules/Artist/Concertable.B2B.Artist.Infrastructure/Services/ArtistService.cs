@@ -1,4 +1,3 @@
-using Concertable.B2B.Artist.Application.Mappers;
 using Concertable.B2B.Artist.Application.Requests;
 using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,14 +34,14 @@ internal sealed class ArtistService : IArtistService
         this.geometryProvider = geometryProvider;
     }
 
-    public Task<ArtistDto?> GetDetailsForCurrentUserAsync() =>
-        artistRepository.GetDtoByUserIdAsync(currentUser.GetId());
+    public Task<ArtistDetails?> GetDetailsForCurrentUserAsync() =>
+        artistRepository.GetDetailsByUserIdAsync(currentUser.GetId());
 
-    public async Task<ArtistDto> GetDetailsByIdAsync(int id) =>
-        await artistRepository.GetDtoByIdAsync(id)
+    public async Task<ArtistDetails> GetDetailsByIdAsync(int id) =>
+        await artistRepository.GetDetailsByIdAsync(id)
             ?? throw new NotFoundException("Artist not found");
 
-    public async Task<ArtistDto> CreateAsync(CreateArtistRequest request)
+    public async Task<ArtistDetails> CreateAsync(CreateArtistRequest request)
     {
         var user = await userModule.GetManagerByIdAsync(currentUser.GetId())
             ?? throw new ForbiddenException("Manager not found");
@@ -67,12 +66,13 @@ internal sealed class ArtistService : IArtistService
         var createdArtist = await artistRepository.AddAsync(artist);
         await artistRepository.SaveChangesAsync();
 
-        return createdArtist.ToDto();
+        return await artistRepository.GetDetailsByIdAsync(createdArtist.Id)
+            ?? throw new InternalServerException($"Artist {createdArtist.Id} not found after creation.");
     }
 
-    public async Task<ArtistDto> UpdateAsync(int id, UpdateArtistRequest request)
+    public async Task<ArtistDetails> UpdateAsync(int id, UpdateArtistRequest request)
     {
-        var artist = await artistRepository.GetFullByIdAsync(id)
+        var artist = await artistRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Artist not found");
 
         if (artist.UserId != currentUser.GetId())
@@ -94,7 +94,8 @@ internal sealed class ArtistService : IArtistService
 
         await artistRepository.SaveChangesAsync();
 
-        return artist.ToDto();
+        return await artistRepository.GetDetailsByIdAsync(id)
+            ?? throw new InternalServerException($"Artist {id} not found after update.");
     }
 
     public async Task<int> GetIdForCurrentUserAsync()

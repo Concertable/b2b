@@ -5,6 +5,6 @@ namespace Concertable.B2B.Artist.Contracts;
 public interface IArtistModule
 {
     Task<int?> GetIdByUserIdAsync(Guid userId);
-    Task<ArtistSummaryDto?> GetSummaryAsync(int artistId);
+    Task<ArtistSummary?> GetSummaryAsync(int artistId);
     Task<IReadOnlySet<Genre>> GetGenresAsync(int artistId);
 }

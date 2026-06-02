@@ -1,5 +1,4 @@
 using Concertable.Kernel.Exceptions;
-using Concertable.B2B.Venue.Application.Mappers;
 using Concertable.B2B.Venue.Application.Requests;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel.Geometry;
@@ -35,13 +34,13 @@ internal sealed class VenueService : IVenueService
         this.geometryProvider = geometryProvider;
     }
 
-    public async Task<VenueDto> GetDetailsByIdAsync(int id)
+    public async Task<VenueDetails> GetDetailsByIdAsync(int id)
     {
-        return await venueRepository.GetDtoByIdAsync(id)
+        return await venueRepository.GetDetailsByIdAsync(id)
             ?? throw new NotFoundException("Venue not found");
     }
 
-    public async Task<VenueDto> CreateAsync(CreateVenueRequest request)
+    public async Task<VenueDetails> CreateAsync(CreateVenueRequest request)
     {
         var user = await userModule.GetManagerByIdAsync(currentUser.GetId())
             ?? throw new ForbiddenException("Manager not found");
@@ -65,12 +64,13 @@ internal sealed class VenueService : IVenueService
         var createdVenue = await venueRepository.AddAsync(venue);
         await venueRepository.SaveChangesAsync();
 
-        return createdVenue.ToDto();
+        return await venueRepository.GetDetailsByIdAsync(createdVenue.Id)
+            ?? throw new InternalServerException($"Venue {createdVenue.Id} not found after creation.");
     }
 
-    public async Task<VenueDto> UpdateAsync(int id, UpdateVenueRequest request)
+    public async Task<VenueDetails> UpdateAsync(int id, UpdateVenueRequest request)
     {
-        var venue = await venueRepository.GetFullByIdAsync(id)
+        var venue = await venueRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Venue not found");
 
         if (venue.UserId != currentUser.GetId())
@@ -92,11 +92,12 @@ internal sealed class VenueService : IVenueService
 
         await venueRepository.SaveChangesAsync();
 
-        return venue.ToDto();
+        return await venueRepository.GetDetailsByIdAsync(id)
+            ?? throw new InternalServerException($"Venue {id} not found after update.");
     }
 
-    public Task<VenueDto?> GetDetailsForCurrentUserAsync() =>
-        venueRepository.GetDtoByUserIdAsync(currentUser.GetId());
+    public Task<VenueDetails?> GetDetailsForCurrentUserAsync() =>
+        venueRepository.GetDetailsByUserIdAsync(currentUser.GetId());
 
     public async Task<int> GetIdForCurrentUserAsync()
     {

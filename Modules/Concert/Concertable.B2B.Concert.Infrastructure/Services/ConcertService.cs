@@ -34,30 +34,30 @@ internal sealed class ConcertService : IConcertService
         this.timeProvider = timeProvider;
     }
 
-    public Task<IEnumerable<ConcertSummaryDto>> GetUpcomingByVenueIdAsync(int id) =>
+    public Task<IEnumerable<ConcertSummary>> GetUpcomingByVenueIdAsync(int id) =>
         concertRepository.GetUpcomingByVenueIdAsync(id);
 
-    public Task<IEnumerable<ConcertSummaryDto>> GetUpcomingByArtistIdAsync(int id) =>
+    public Task<IEnumerable<ConcertSummary>> GetUpcomingByArtistIdAsync(int id) =>
         concertRepository.GetUpcomingByArtistIdAsync(id);
 
-    public Task<IEnumerable<ConcertSummaryDto>> GetHistoryByArtistIdAsync(int id) =>
+    public Task<IEnumerable<ConcertSummary>> GetHistoryByArtistIdAsync(int id) =>
         concertRepository.GetHistoryByArtistIdAsync(id);
 
-    public Task<IEnumerable<ConcertSummaryDto>> GetHistoryByVenueIdAsync(int id) =>
+    public Task<IEnumerable<ConcertSummary>> GetHistoryByVenueIdAsync(int id) =>
         concertRepository.GetHistoryByVenueIdAsync(id);
 
-    public async Task<ConcertDto> GetDetailsByIdAsync(int id)
+    public async Task<ConcertDetails> GetDetailsByIdAsync(int id)
     {
-        return await concertRepository.GetDtoByIdAsync(id)
+        return await concertRepository.GetDetailsByIdAsync(id)
             ?? throw new NotFoundException("Concert not found");
     }
 
     public Task<Result<ConcertEntity>> CreateDraftAsync(int applicationId) =>
         concertDraftService.CreateAsync(applicationId);
 
-    public async Task<ConcertDto> GetDetailsByApplicationIdAsync(int applicationId)
+    public async Task<ConcertDetails> GetDetailsByApplicationIdAsync(int applicationId)
     {
-        return await concertRepository.GetDtoByApplicationIdAsync(applicationId)
+        return await concertRepository.GetDetailsByApplicationIdAsync(applicationId)
             ?? throw new NotFoundException($"No concert found for Application ID {applicationId}");
     }
 
@@ -87,7 +87,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task PostAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await concertRepository.GetFullByIdAsync(id)
+        var concertEntity = await concertRepository.GetByIdWithBookingAsync(id)
             ?? throw new NotFoundException("Concert not found");
 
         var result = concertValidator.CanPost(concertEntity);
@@ -99,9 +99,9 @@ internal sealed class ConcertService : IConcertService
         await concertRepository.SaveChangesAsync();
     }
 
-    public Task<IEnumerable<ConcertSummaryDto>> GetUnpostedByArtistIdAsync(int id) =>
+    public Task<IEnumerable<ConcertSummary>> GetUnpostedByArtistIdAsync(int id) =>
         concertRepository.GetUnpostedByArtistIdAsync(id);
 
-    public Task<IEnumerable<ConcertSummaryDto>> GetUnpostedByVenueIdAsync(int id) =>
+    public Task<IEnumerable<ConcertSummary>> GetUnpostedByVenueIdAsync(int id) =>
         concertRepository.GetUnpostedByVenueIdAsync(id);
 }
