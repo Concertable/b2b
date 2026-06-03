@@ -62,7 +62,7 @@ public sealed class ArtistSteps
         state.VenueId = opp.VenueId;
         state.OpportunityId = opp.Id;
 
-        await browser.Page.GotoAsync($"{fixture.App.ArtistSpaUrl}/opportunity/checkout/{state.OpportunityId}");
+        await browser.Page.GotoSpaAsync($"{fixture.App.ArtistSpaUrl}/opportunity/checkout/{state.OpportunityId}");
     }
 
     [When(@"the artist pays the venue hire fee with a new card")]
