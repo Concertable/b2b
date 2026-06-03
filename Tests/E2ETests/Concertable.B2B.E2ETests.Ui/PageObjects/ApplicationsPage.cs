@@ -14,7 +14,7 @@ public sealed class ApplicationsPage
     private ILocator Application(int id) => page.GetByTestId($"application-{id}");
     private ILocator AcceptButton(int id) => Application(id).GetByTestId("accept");
 
-    public Task GotoAsync(int opportunityId) => page.GotoAsync($"{url}/my/opportunities/{opportunityId}/applications");
+    public Task GotoAsync(int opportunityId) => page.GotoSpaAsync($"{url}/my/opportunities/{opportunityId}/applications");
 
     public Task ClickAcceptAsync(int applicationId) => AcceptButton(applicationId).ClickAsync();
 }

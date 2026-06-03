@@ -14,7 +14,7 @@ public sealed class VenueDetailsPage
     private ILocator Opportunity(int id) => page.GetByTestId($"opportunity-{id}");
     private ILocator ApplyButton(int id) => Opportunity(id).GetByTestId("apply");
 
-    public Task GotoAsync(int venueId) => page.GotoAsync($"{url}/{venueId}");
+    public Task GotoAsync(int venueId) => page.GotoSpaAsync($"{url}/{venueId}");
 
     public Task ApplyAsync(int opportunityId) => ApplyButton(opportunityId).ClickAsync();
 

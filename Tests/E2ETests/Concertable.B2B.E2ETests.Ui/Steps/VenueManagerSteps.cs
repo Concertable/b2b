@@ -119,21 +119,21 @@ public sealed class VenueManagerSteps
     public async Task AFlatFeeOpportunityHasBeenAppliedTo()
     {
         state.ApplicationId = fixture.App.SeedState.FlatFeeApp.Id;
-        await browser.Page.GotoAsync($"{fixture.App.VenueSpaUrl}/applications/{state.ApplicationId}/checkout");
+        await browser.Page.GotoSpaAsync($"{fixture.App.VenueSpaUrl}/applications/{state.ApplicationId}/checkout");
     }
 
     [Given(@"a door split opportunity has been applied to")]
     public async Task ADoorSplitOpportunityHasBeenAppliedTo()
     {
         state.ApplicationId = fixture.App.SeedState.DoorSplitApp.Id;
-        await browser.Page.GotoAsync($"{fixture.App.VenueSpaUrl}/applications/{state.ApplicationId}/checkout");
+        await browser.Page.GotoSpaAsync($"{fixture.App.VenueSpaUrl}/applications/{state.ApplicationId}/checkout");
     }
 
     [Given(@"a versus opportunity has been applied to")]
     public async Task AVersusOpportunityHasBeenAppliedTo()
     {
         state.ApplicationId = fixture.App.SeedState.VersusApp.Id;
-        await browser.Page.GotoAsync($"{fixture.App.VenueSpaUrl}/applications/{state.ApplicationId}/checkout");
+        await browser.Page.GotoSpaAsync($"{fixture.App.VenueSpaUrl}/applications/{state.ApplicationId}/checkout");
     }
 
     [When(@"the venue manager pays the flat fee with a new card")]
