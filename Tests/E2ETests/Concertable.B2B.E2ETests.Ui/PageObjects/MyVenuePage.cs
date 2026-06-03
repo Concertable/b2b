@@ -22,7 +22,7 @@ public sealed class MyVenuePage
     private ILocator VersusGuaranteeInput => LastCardEdit.GetByTestId("contract-versus-guarantee");
     private ILocator VersusPercentInput => LastCardEdit.GetByTestId("contract-versus-percent");
 
-    public Task GotoAsync() => page.GotoAsync(url);
+    public Task GotoAsync() => page.GotoSpaAsync(url);
 
     public async Task PostFlatFeeOpportunityAsync(decimal fee)
     {
