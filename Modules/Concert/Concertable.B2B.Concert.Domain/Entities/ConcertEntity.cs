@@ -36,9 +36,9 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateR
     public List<Genre> Genres { get; private set; } = [];
     public ICollection<ConcertImageEntity> Images { get; private set; } = [];
 
-    private readonly EventRaiser _events = new();
-    public IReadOnlyList<IDomainEvent> DomainEvents => _events.DomainEvents;
-    public void ClearDomainEvents() => _events.Clear();
+    private readonly EventRaiser events = new();
+    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
+    public void ClearDomainEvents() => events.Clear();
 
     private ConcertEntity() { }
 
@@ -95,7 +95,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateR
         About = about;
         Price = price;
         TotalTickets = totalTickets;
-        _events.Raise(new ConcertChangedDomainEvent(Id, totalTickets, price, Period, DatePosted));
+        events.Raise(new ConcertChangedDomainEvent(Id, totalTickets, price, Period, DatePosted));
     }
 
     public void Post(string name, string about, decimal price, int totalTickets, DateTime now)
@@ -105,7 +105,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateR
         Price = price;
         TotalTickets = totalTickets;
         DatePosted = now;
-        _events.Raise(new ConcertChangedDomainEvent(Id, totalTickets, price, Period, now));
-        _events.Raise(new ConcertPostedDomainEvent(Id));
+        events.Raise(new ConcertChangedDomainEvent(Id, totalTickets, price, Period, now));
+        events.Raise(new ConcertPostedDomainEvent(Id));
     }
 }

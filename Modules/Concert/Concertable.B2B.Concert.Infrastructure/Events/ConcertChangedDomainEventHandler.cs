@@ -5,11 +5,17 @@ using Concertable.Messaging.Contracts;
 
 namespace Concertable.B2B.Concert.Infrastructure.Events;
 
-internal sealed class ConcertChangedDomainEventHandler(
-    IConcertRepository concertRepository,
-    IBus bus)
-    : IPreCommitDomainEventHandler<ConcertChangedDomainEvent>
+internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHandler<ConcertChangedDomainEvent>
 {
+    private readonly IConcertRepository concertRepository;
+    private readonly IBus bus;
+
+    public ConcertChangedDomainEventHandler(IConcertRepository concertRepository, IBus bus)
+    {
+        this.concertRepository = concertRepository;
+        this.bus = bus;
+    }
+
     public async Task HandleAsync(ConcertChangedDomainEvent e, CancellationToken ct = default)
     {
         var concert = await concertRepository.GetByIdWithArtistAndVenueAsync(e.ConcertId)
