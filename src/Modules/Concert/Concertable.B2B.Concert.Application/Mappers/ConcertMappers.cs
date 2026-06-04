@@ -5,7 +5,7 @@ namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal static class ConcertMappers
 {
-    public static ConcertSnapshot ToSnapshotDto(this ConcertEntity concert) => new()
+    public static ConcertDto ToDto(this ConcertEntity concert) => new()
     {
         Id = concert.Id,
         Name = concert.Name,

@@ -68,7 +68,7 @@ internal sealed record ConcertArtistSummary
     public IEnumerable<Genre> Genres { get; init; } = [];
 }
 
-internal sealed record ConcertSnapshot
+internal sealed record ConcertDto
 {
     public int Id { get; init; }
     public required string Name { get; init; }
