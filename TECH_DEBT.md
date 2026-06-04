@@ -101,7 +101,11 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ## LOW
 
-### Intra-B2B events round-trip ASB
+### Queryable mappers mask non-nullable domain fields with `?? string.Empty`
+
+`QueryableArtistMappers.ToDetails` does `Email = a.Email ?? string.Empty` and guards `where a.Address != null` / `a.Address!.County` — but `ArtistEntity.Email` and `.Address` are declared **non-nullable** and enforced by the domain (`UpdateEmail`/`UpdateLocation`/`Validate` all throw on missing). Same pattern in `QueryableVenueMappers` (`v.Email ?? string.Empty`), `QueryableConcertMappers` + `ConcertMappers` (venue/artist `County`/`Town`), and Search's `QueryableConcertHeaderMappers`. Either the masks are dead defensive code, or they paper over EF configs / DB columns left nullable despite the domain invariant — in which case bad rows render as `""` instead of failing loudly. An artist/venue email should never be null; a value that "can't happen" shouldn't have a silent fallback.
+
+**Resolves when:** each masked field's EF config matches the domain invariant (`IsRequired()` where the entity declares non-nullable; migration re-scaffold), the `?? string.Empty` / null-guards are stripped from the mappers, and any field that is *genuinely* optional at some lifecycle stage becomes honestly nullable on the DTO instead of defaulting to `""`.
 
 Concert's read-model sync from `ArtistChangedEvent`/`VenueChangedEvent` and User's manager sync handlers consume events via the bus inbox rather than in-process domain events. Plan §8.5 says intra-service flows should stay in-process via `IEventRaiser`.
 

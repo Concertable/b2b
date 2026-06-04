@@ -2,6 +2,6 @@
 
 internal sealed class BookingParams
 {
-    public required string PaymentMethodId { get; set; }
-    public int ApplicationId { get; set; }
+    public required string PaymentMethodId { get; init; }
+    public int ApplicationId { get; init; }
 }
