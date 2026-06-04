@@ -15,6 +15,7 @@ internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<Cre
         [ClientIds.VenueMobile] = Role.VenueManager,
         [ClientIds.ArtistWeb] = Role.ArtistManager,
         [ClientIds.ArtistMobile] = Role.ArtistManager,
+        [ClientIds.Admin] = Role.Admin,
     };
 
     private readonly UserDbContext context;
@@ -57,6 +58,8 @@ internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<Cre
             context.VenueManagerProfiles.Add(new VenueManagerProfileEntity(user.Id));
         else if (role == Role.ArtistManager)
             context.ArtistManagerProfiles.Add(new ArtistManagerProfileEntity(user.Id));
+        else if (role == Role.Admin)
+            context.AdminProfiles.Add(new AdminProfileEntity(user.Id));
 
         await context.SaveChangesAsync(ct);
         logger.WroteUserFromCredentialRegistered(e.UserId, role);

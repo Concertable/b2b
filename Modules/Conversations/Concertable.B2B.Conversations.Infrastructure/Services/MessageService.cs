@@ -90,9 +90,8 @@ internal sealed class MessageService : IMessageService
 
     private async Task<Dictionary<Guid, MessageUser>> GetSenderDtosAsync(IEnumerable<MessageEntity> messages)
     {
-        var dict = new Dictionary<Guid, MessageUser>();
-        foreach (var fromUserId in messages.Select(m => m.FromUserId).Distinct())
-            dict[fromUserId] = await GetSenderDtoAsync(fromUserId);
-        return dict;
+        var senderIds = messages.Select(m => m.FromUserId).Distinct().ToList();
+        var senders = await userModule.GetByIdsAsync(senderIds);
+        return senders.ToDictionary(s => s.Id, s => s.ToMessageUser());
     }
 }

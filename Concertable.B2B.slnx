@@ -55,10 +55,6 @@
     <Project Path="Modules/Conversations/Concertable.B2B.Conversations.Domain/Concertable.B2B.Conversations.Domain.csproj" />
     <Project Path="Modules/Conversations/Concertable.B2B.Conversations.Infrastructure/Concertable.B2B.Conversations.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/Modules/Notification/">
-    <Project Path="Modules/Notification/Concertable.B2B.Notification.Contracts/Concertable.B2B.Notification.Contracts.csproj" />
-    <Project Path="Modules/Notification/Concertable.B2B.Notification.Infrastructure/Concertable.B2B.Notification.Infrastructure.csproj" />
-  </Folder>
   <Folder Name="/Shared/Notification/">
     <Project Path="../Shared/Concertable.Shared.Notification/Concertable.Shared.Notification.Infrastructure/Concertable.Shared.Notification.Infrastructure.csproj" />
   </Folder>

@@ -44,7 +44,6 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<ArtistConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ArtistConfigurationProvider>());
-        services.AddSingleton<IRatingProjectionConfigurationProvider, ArtistRatingProjectionConfigurationProvider>();
 
         services.AddValidatorsFromAssemblyContaining<CreateArtistRequestValidator>();
 
