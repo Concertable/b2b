@@ -24,7 +24,7 @@ internal sealed class MockWebhookSimulatorFail : IWebhookSimulator
 
         await using var scope = scopeFactory.CreateAsyncScope();
         var handlers = scope.ServiceProvider.GetServices<IIntegrationEventHandler<PaymentFailedEvent>>();
-        var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
+        var envelope = MessageEnvelope.Create<PaymentFailedEvent>(DateTimeOffset.UtcNow);
         var evt = new PaymentFailedEvent(stripeApiClient.LastPaymentIntentId, "card_declined", "Your card was declined.", stripeApiClient.LastMetadata);
 
         foreach (var handler in handlers)
