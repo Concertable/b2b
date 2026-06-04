@@ -161,7 +161,6 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<ConcertConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConcertConfigurationProvider>());
-        services.AddSingleton<IRatingProjectionConfigurationProvider, ConcertRatingProjectionConfigurationProvider>();
 
         services.AddValidatorsFromAssemblyContaining<OpportunityDtoValidator>();
 

@@ -43,7 +43,6 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<VenueConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<VenueConfigurationProvider>());
-        services.AddSingleton<IRatingProjectionConfigurationProvider, VenueRatingProjectionConfigurationProvider>();
 
         services.AddValidatorsFromAssemblyContaining<CreateVenueRequestValidator>();
 
