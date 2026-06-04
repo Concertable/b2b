@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
 
 [Collection("Integration")]
-internal sealed class OpportunityApiTests : IAsyncLifetime
+public sealed class OpportunityApiTests : IAsyncLifetime
 {
     private readonly ApiFixture fixture;
 
@@ -99,7 +99,7 @@ internal sealed class OpportunityApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var result = await response.Content.ReadAsync<Pagination<OpportunityDto>>();
         Assert.NotNull(result);
-        Assert.Contains(result.Data, o => o.Id == fixture.SeedState.Opportunities[0].Id);
+        Assert.Contains(result.Data, o => o.Id == fixture.SeedState.FreshVenueHireOpportunity.Id);
     }
 
     #endregion

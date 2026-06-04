@@ -21,8 +21,6 @@
     <ProjectReference Include="..\..\Concertable.Auth\Concertable.Auth.csproj" />
     <ProjectReference Include="..\..\Concertable.Payment\Concertable.Payment.Web\Concertable.Payment.Web.csproj" />
     <ProjectReference Include="..\..\Concertable.Payment\Concertable.Payment.Workers\Concertable.Payment.Workers.csproj" />
-    <ProjectReference Include="..\..\Concertable.Search\Concertable.Search.Web\Concertable.Search.Web.csproj" />
-    <ProjectReference Include="..\..\Concertable.Search\Concertable.Search.Workers\Concertable.Search.Workers.csproj" />
   </ItemGroup>
 
 </Project>

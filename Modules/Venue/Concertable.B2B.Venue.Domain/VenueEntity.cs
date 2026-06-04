@@ -68,14 +68,14 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser
 
     public void UpdateAvatar(string avatar)
     {
-        if (string.IsNullOrWhiteSpace(avatar)) throw new DomainException("Avatar is required.");
+        DomainException.ThrowIfNullOrWhiteSpace(avatar, "Avatar");
         Avatar = avatar;
         _events.Raise(new VenueChangedDomainEvent(this));
     }
 
     public void UpdateLocation(Point location, Address address)
     {
-        if (location is null) throw new DomainException("Location is required.");
+        DomainException.ThrowIfNull(location, "Location");
         if (address is null || string.IsNullOrWhiteSpace(address.County) || string.IsNullOrWhiteSpace(address.Town))
             throw new DomainException("County and Town are required.");
         Location = location;
@@ -85,20 +85,20 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser
 
     public void UpdateEmail(string email)
     {
-        if (string.IsNullOrWhiteSpace(email)) throw new DomainException("Email is required.");
+        DomainException.ThrowIfNullOrWhiteSpace(email, "Email");
         Email = email;
         _events.Raise(new VenueChangedDomainEvent(this));
     }
 
     private static void Validate(string name, string about, string bannerUrl, string avatar, Point location, Address address, string email)
     {
-        if (string.IsNullOrWhiteSpace(name)) throw new DomainException("Name is required.");
-        if (string.IsNullOrWhiteSpace(about)) throw new DomainException("About is required.");
-        if (string.IsNullOrWhiteSpace(bannerUrl)) throw new DomainException("Banner URL is required.");
-        if (string.IsNullOrWhiteSpace(avatar)) throw new DomainException("Avatar is required.");
-        if (location is null) throw new DomainException("Location is required.");
+        DomainException.ThrowIfNullOrWhiteSpace(name, "Name");
+        DomainException.ThrowIfNullOrWhiteSpace(about, "About");
+        DomainException.ThrowIfNullOrWhiteSpace(bannerUrl, "Banner URL");
+        DomainException.ThrowIfNullOrWhiteSpace(avatar, "Avatar");
+        DomainException.ThrowIfNull(location, "Location");
         if (address is null || string.IsNullOrWhiteSpace(address.County) || string.IsNullOrWhiteSpace(address.Town))
             throw new DomainException("County and Town are required.");
-        if (string.IsNullOrWhiteSpace(email)) throw new DomainException("Email is required.");
+        DomainException.ThrowIfNullOrWhiteSpace(email, "Email");
     }
 }
