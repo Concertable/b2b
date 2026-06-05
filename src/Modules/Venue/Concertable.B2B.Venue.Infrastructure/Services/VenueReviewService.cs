@@ -6,8 +6,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Services;
 
-internal sealed class VenueReviewService(VenueDbContext context) : IVenueReviewService
+internal sealed class VenueReviewService : IVenueReviewService
 {
+    private readonly VenueDbContext context;
+
+    public VenueReviewService(VenueDbContext context)
+    {
+        this.context = context;
+    }
+
     public async Task<ReviewSummary> GetSummaryAsync(int venueId)
     {
         var projection = await context.VenueRatingProjections

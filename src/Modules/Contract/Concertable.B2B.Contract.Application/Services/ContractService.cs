@@ -3,11 +3,22 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Contract.Application.Services;
 
-internal sealed class ContractService(
-    IContractRepository contractRepository,
-    IContractMapper mapper,
-    IContractUpdater updater) : IContractService
+internal sealed class ContractService : IContractService
 {
+    private readonly IContractRepository contractRepository;
+    private readonly IContractMapper mapper;
+    private readonly IContractUpdater updater;
+
+    public ContractService(
+        IContractRepository contractRepository,
+        IContractMapper mapper,
+        IContractUpdater updater)
+    {
+        this.contractRepository = contractRepository;
+        this.mapper = mapper;
+        this.updater = updater;
+    }
+
     public async Task<IContract?> GetByIdAsync(int contractId, CancellationToken ct = default)
     {
         var entity = await contractRepository.GetByIdAsync(contractId);

@@ -6,8 +6,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Services;
 
-internal sealed class ArtistReviewService(ArtistDbContext context) : IArtistReviewService
+internal sealed class ArtistReviewService : IArtistReviewService
 {
+    private readonly ArtistDbContext context;
+
+    public ArtistReviewService(ArtistDbContext context)
+    {
+        this.context = context;
+    }
+
     public async Task<ReviewSummary> GetSummaryAsync(int artistId)
     {
         var projection = await context.ArtistRatingProjections

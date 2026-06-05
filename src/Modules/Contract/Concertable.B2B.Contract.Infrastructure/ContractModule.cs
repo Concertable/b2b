@@ -2,8 +2,15 @@ using Concertable.B2B.Contract.Application.Interfaces;
 
 namespace Concertable.B2B.Contract.Infrastructure;
 
-internal sealed class ContractModule(IContractService contractService) : IContractModule
+internal sealed class ContractModule : IContractModule
 {
+    private readonly IContractService contractService;
+
+    public ContractModule(IContractService contractService)
+    {
+        this.contractService = contractService;
+    }
+
     public Task<IContract?> GetByIdAsync(int contractId, CancellationToken ct = default)
         => contractService.GetByIdAsync(contractId, ct);
 

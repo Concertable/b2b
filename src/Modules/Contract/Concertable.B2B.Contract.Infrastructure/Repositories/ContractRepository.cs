@@ -5,9 +5,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Contract.Infrastructure.Repositories;
 
-internal sealed class ContractRepository(ContractDbContext context)
-    : Repository<ContractEntity>(context), IContractRepository
+internal sealed class ContractRepository
+    : Repository<ContractEntity>, IContractRepository
 {
+    private readonly ContractDbContext context;
+
+    public ContractRepository(ContractDbContext context)
+        : base(context)
+    {
+        this.context = context;
+    }
+
     public async Task<IEnumerable<ContractEntity>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken ct = default) =>
         await context.Contracts.Where(c => ids.Contains(c.Id)).ToListAsync(ct);
 }

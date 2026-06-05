@@ -3,8 +3,15 @@ using Concertable.B2B.Concert.Contracts;
 
 namespace Concertable.B2B.Concert.Infrastructure;
 
-internal sealed class ConcertModule(IConcertDashboardRepository dashboardRepository) : IConcertModule
+internal sealed class ConcertModule : IConcertModule
 {
+    private readonly IConcertDashboardRepository dashboardRepository;
+
+    public ConcertModule(IConcertDashboardRepository dashboardRepository)
+    {
+        this.dashboardRepository = dashboardRepository;
+    }
+
     public Task<VenueDashboardCounts?> GetVenueDashboardCountsAsync(int venueId, CancellationToken ct = default) =>
         dashboardRepository.GetVenueCountsAsync(venueId, ct);
 
