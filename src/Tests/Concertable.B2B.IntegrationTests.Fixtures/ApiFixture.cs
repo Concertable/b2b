@@ -23,7 +23,6 @@ using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Seed.Infrastructure;
 using Concertable.Seed.Shared.Extensions;
-using Concertable.B2B.Seed.Infrastructure.Fakers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -133,7 +132,6 @@ public sealed class ApiFixture : IAsyncLifetime
                 services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
                 services.AddSingleton<SeedCatalog>();
                 services.AddScoped<SeedState>();
-                services.AddScoped<ILocationFaker, LocationFaker>();
                 services.AddUserTestSeeder();
                 services.AddArtistTestSeeder();
                 services.AddVenueTestSeeder();

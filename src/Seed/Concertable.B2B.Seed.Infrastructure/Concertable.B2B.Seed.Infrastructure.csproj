@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Bogus" Version="35.6.3" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\Modules\User\Concertable.B2B.User.Domain\Concertable.B2B.User.Domain.csproj" />
     <ProjectReference Include="..\..\Modules\User\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\Artist\Concertable.B2B.Artist.Domain\Concertable.B2B.Artist.Domain.csproj" />
