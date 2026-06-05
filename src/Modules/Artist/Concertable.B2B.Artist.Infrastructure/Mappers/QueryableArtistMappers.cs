@@ -23,7 +23,6 @@ internal static class QueryableArtistMappers
         this IQueryable<ArtistEntity> query,
         IQueryable<ArtistRatingProjection> ratings) =>
         from a in query
-        where a.Address != null
         join r in ratings on a.Id equals r.ArtistId into rg
         from rating in rg.DefaultIfEmpty()
         select new ArtistDetails
@@ -33,9 +32,9 @@ internal static class QueryableArtistMappers
             About = a.About,
             BannerUrl = a.BannerUrl,
             Avatar = a.Avatar,
-            County = a.Address!.County,
-            Town = a.Address!.Town,
-            Email = a.Email ?? string.Empty,
+            County = a.Address.County,
+            Town = a.Address.Town,
+            Email = a.Email,
             Rating = rating == null ? 0.0 : rating.AverageRating,
             Genres = a.Genres
         };

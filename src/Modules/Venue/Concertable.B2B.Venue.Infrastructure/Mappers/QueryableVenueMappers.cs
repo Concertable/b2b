@@ -9,7 +9,7 @@ internal static class QueryableVenueMappers
     public static IQueryable<VenueSummary> ToSummary(
         this IQueryable<VenueEntity> query,
         IQueryable<VenueRatingProjection> ratings) =>
-        from v in query.Where(v => v.Location != null && v.Address != null)
+        from v in query
         join r in ratings on v.Id equals r.VenueId into rg
         from rating in rg.DefaultIfEmpty()
         select new VenueSummary(
@@ -21,7 +21,7 @@ internal static class QueryableVenueMappers
     public static IQueryable<VenueDetails> ToDetails(
         this IQueryable<VenueEntity> query,
         IQueryable<VenueRatingProjection> ratings) =>
-        from v in query.Where(v => v.Location != null && v.Address != null)
+        from v in query
         join r in ratings on v.Id equals r.VenueId into rg
         from rating in rg.DefaultIfEmpty()
         select new VenueDetails
@@ -32,11 +32,11 @@ internal static class QueryableVenueMappers
             BannerUrl = v.BannerUrl,
             Avatar = v.Avatar,
             Approved = v.Approved,
-            County = v.Address!.County,
-            Town = v.Address!.Town,
-            Email = v.Email ?? string.Empty,
-            Latitude = v.Location!.Y,
-            Longitude = v.Location!.X,
+            County = v.Address.County,
+            Town = v.Address.Town,
+            Email = v.Email,
+            Latitude = v.Location.Y,
+            Longitude = v.Location.X,
             Rating = rating == null ? 0.0 : rating.AverageRating
         };
 }

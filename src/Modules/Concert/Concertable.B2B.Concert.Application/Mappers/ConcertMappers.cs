@@ -12,8 +12,8 @@ internal static class ConcertMappers
         ImageUrl = concert.Booking.Application.Artist.Avatar,
         StartDate = concert.Booking.Application.Opportunity.Period.Start,
         EndDate = concert.Booking.Application.Opportunity.Period.End,
-        County = concert.Booking.Application.Opportunity.Venue.County ?? string.Empty,
-        Town = concert.Booking.Application.Opportunity.Venue.Town ?? string.Empty,
+        County = concert.Booking.Application.Opportunity.Venue.County,
+        Town = concert.Booking.Application.Opportunity.Venue.Town,
         DatePosted = concert.DatePosted
     };
 }

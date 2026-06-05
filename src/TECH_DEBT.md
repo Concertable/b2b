@@ -74,14 +74,6 @@ Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `Art
 
 ---
 
-### `ConcertPostedEvent` lat/long nullable — nullability laundered through Concert's `VenueReadModel`
-
-Concert module's `VenueReadModel.Location` is `Point?`, but its only writer (`VenueReadModelProjectionHandler`) always writes a non-null point from `VenueChangedEvent`'s non-nullable `double Latitude/Longitude` (`VenueEntity.Location` is domain-validated non-null at the source — a venue cannot exist without a location). The phantom nullability then forks downstream inconsistently: `ConcertChangedDomainEventHandler` dereferences `venue.Location.Y` directly (would NRE if the impossible happened) while `ConcertPostedDomainEventHandler` null-propagates `venue.Location?.Y` into `ConcertPostedEvent(double? Latitude, double? Longitude)` — baking a never-null value into a nullable cross-service contract. Customer's `ConcertPostedNotificationHandler` then silently skips notifications when lat/long is null (see `api/Concertable.Customer/TECH_DEBT.md`).
-
-**Resolves when:** `VenueReadModel.Location` is non-nullable `Point` with an `IsRequired()` EF config (migration re-scaffold), `ConcertPostedEvent` carries non-nullable `double Latitude/Longitude`, both domain event handlers read `venue.Location.Y`/`.X` uniformly, and Customer's null-skip guard is deleted.
-
----
-
 ### B2B integration fixture boots Payment in-process on a shared DB
 
 `Concertable.B2B.IntegrationTests.Fixtures/ApiFixture.cs` registers `AddPaymentInfrastructure`, a `PaymentDbContext` bound to the same connection string as `B2BDb`, and `AddPaymentTestSeeder`. `MockEscrowClient` writes `EscrowEntity` rows straight into `PaymentDbContext`, and `MockWebhookSimulator` resolves and fires Payment's own `IIntegrationEventHandler<PaymentSucceededEvent>` (`PaymentTransactionHandler`) in-process. The B2B integration suite therefore runs B2B + Payment as a mini-monolith over one database — a microservice-isolation violation confined to the test harness. (Production B2B no longer touches Payment internals: after the Payment-agnostic refactor, `ReadDbContext` exposes no Payment entities and escrow reads go through the fixture's `PaymentDbContext`, not B2B's read context.)
@@ -109,19 +101,7 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ## LOW
 
-### `ConcertEntity.Location` is a dead column; `ConcertView` is a dead type
-
-`ConcertEntity.Location` (`Point?`) is written only by `ConcertDevSeeder`/`ConcertTestSeeder` (copying `v.Location`) and read by nothing — production `CreateDraft` never sets it, and every location-dependent query navigates `Booking.Application.Opportunity.Venue.Location` instead (`QueryableConcertMappers`). Seeded concerts carry a value while production-created concerts hold NULL — divergent data in a column nobody reads. `ConcertView` + `ConcertViewGenre` (`Concert.Contracts/Views/`) are referenced nowhere at all. Both are the last B2B implementers of `IHasLocation`, blocking the Kernel interface from going non-nullable (see `api/Concertable.Search/TECH_DEBT.md`).
-
-**Resolves when:** `ConcertEntity.Location` and its `IHasLocation` implementation are deleted (migration re-scaffold), the seeder assignments removed, and `ConcertView`/`ConcertViewGenre` deleted.
-
----
-
-### Queryable mappers mask non-nullable domain fields with `?? string.Empty`
-
-`QueryableArtistMappers.ToDetails` does `Email = a.Email ?? string.Empty` and guards `where a.Address != null` / `a.Address!.County` — but `ArtistEntity.Email` and `.Address` are declared **non-nullable** and enforced by the domain (`UpdateEmail`/`UpdateLocation`/`Validate` all throw on missing). Same pattern in `QueryableVenueMappers` (`v.Email ?? string.Empty`, plus `v.Location != null` guards + `v.Location!.Y` despite `VenueEntity.Location` being non-nullable and `nullable: false` in the migration), `QueryableConcertMappers` + `ConcertMappers` (venue/artist `County`/`Town`), and Search's `QueryableConcertHeaderMappers`. Either the masks are dead defensive code, or they paper over EF configs / DB columns left nullable despite the domain invariant — in which case bad rows render as `""` instead of failing loudly. An artist/venue email should never be null; a value that "can't happen" shouldn't have a silent fallback.
-
-**Resolves when:** each masked field's EF config matches the domain invariant (`IsRequired()` where the entity declares non-nullable; migration re-scaffold), the `?? string.Empty` / null-guards are stripped from the mappers, and any field that is *genuinely* optional at some lifecycle stage becomes honestly nullable on the DTO instead of defaulting to `""`.
+### Intra-service read-model sync rides the bus instead of in-process dispatch
 
 Concert's read-model sync from `ArtistChangedEvent`/`VenueChangedEvent` and User's manager sync handlers consume events via the bus inbox rather than in-process domain events. Plan §8.5 says intra-service flows should stay in-process via `IEventRaiser`.
 

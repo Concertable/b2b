@@ -11,6 +11,6 @@ internal sealed class VenueReadModelConfiguration : IEntityTypeConfiguration<Ven
         builder.ToTable(Schema.Tables.VenueReadModels, Schema.Name);
         builder.Property(v => v.Id).ValueGeneratedNever();
         builder.HasIndex(v => v.UserId).IsUnique();
-        builder.Property(v => v.Location).HasColumnType("geography");
+        builder.Property(v => v.Location).HasColumnType("geography").IsRequired();
     }
 }

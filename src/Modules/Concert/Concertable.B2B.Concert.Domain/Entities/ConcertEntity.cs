@@ -3,7 +3,6 @@ using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.Contracts;
 using Concertable.Kernel;
-using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
@@ -12,7 +11,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// Holds denormalized <see cref="ArtistReadModel"/> and <see cref="VenueReadModel"/> references
 /// so the Concert module can satisfy queries in a single DB context without crossing module boundaries.
 /// </summary>
-public sealed class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateRange, ILifecycleEntity, IEventRaiser
+public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, ILifecycleEntity, IEventRaiser
 {
     public int Id { get; private set; }
     public int BookingId { get; private set; }
@@ -27,7 +26,6 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasLocation, IHasDateR
     public int TicketsSold { get; private set; }
     public DateRange Period { get; private set; } = null!;
     public DateTime? DatePosted { get; private set; }
-    public Point? Location { get; set; }
     public ContractType ContractType { get; private set; }
     public ConcertStage CurrentStage { get; private set; } = ConcertStage.Settled;
     public BookingEntity Booking { get; set; } = null!;
