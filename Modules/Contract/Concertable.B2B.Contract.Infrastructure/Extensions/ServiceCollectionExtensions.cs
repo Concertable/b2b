@@ -27,9 +27,14 @@ public static class ServiceCollectionExtensions
                 .UseSeedingSupport(sp));
 
         services.AddScoped<IContractRepository, ContractRepository>();
-        services.AddScoped<IContractMapper, ContractMapper>();
         services.AddScoped<IContractService, ContractService>();
         services.AddScoped<IContractModule, ContractModule>();
+
+        services.AddSingleton<IContractMapper, ContractMapper>();
+        services.AddSingleton<FlatFeeContractMapper>();
+        services.AddSingleton<DoorSplitContractMapper>();
+        services.AddSingleton<VersusContractMapper>();
+        services.AddSingleton<VenueHireContractMapper>();
 
         services.AddSingleton<IContractUpdater, ContractUpdater>();
         services.AddSingleton<FlatFeeContractUpdater>();

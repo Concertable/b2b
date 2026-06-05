@@ -28,7 +28,7 @@ internal sealed class ContractService : IContractService
     public async Task<IEnumerable<IContract>> GetByIdsAsync(IEnumerable<int> contractIds, CancellationToken ct = default)
     {
         var entities = await contractRepository.GetByIdsAsync(contractIds, ct);
-        return entities.Select(mapper.ToContract);
+        return mapper.ToContracts(entities);
     }
 
     public async Task<int> CreateAsync(IContract contract, CancellationToken ct = default)
