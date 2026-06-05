@@ -4,51 +4,51 @@ using NetTopologySuite.Geometries;
 
 #nullable disable
 
-namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
+namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public sealed partial class InitialCreate : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
-                name: "venue");
+                name: "artist");
 
             migrationBuilder.CreateTable(
-                name: "VenueRatingProjections",
-                schema: "venue",
+                name: "ArtistRatingProjections",
+                schema: "artist",
                 columns: table => new
                 {
-                    VenueId = table.Column<int>(type: "int", nullable: false),
+                    ArtistId = table.Column<int>(type: "int", nullable: false),
                     AverageRating = table.Column<double>(type: "float", nullable: false),
                     ReviewCount = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_VenueRatingProjections", x => x.VenueId);
+                    table.PrimaryKey("PK_ArtistRatingProjections", x => x.ArtistId);
                 });
 
             migrationBuilder.CreateTable(
-                name: "VenueReviews",
-                schema: "venue",
+                name: "ArtistReviews",
+                schema: "artist",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    VenueId = table.Column<int>(type: "int", nullable: false),
+                    ArtistId = table.Column<int>(type: "int", nullable: false),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
                     Stars = table.Column<double>(type: "float", nullable: false),
                     Details = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_VenueReviews", x => x.Id);
+                    table.PrimaryKey("PK_ArtistReviews", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Venues",
-                schema: "venue",
+                name: "Artists",
+                schema: "artist",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -57,71 +57,39 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     About = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BannerUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Approved = table.Column<bool>(type: "bit", nullable: false),
                     Location = table.Column<Point>(type: "geography", nullable: false),
                     County = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Town = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Avatar = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Genres = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Venues", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "VenueImages",
-                schema: "venue",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    VenueId = table.Column<int>(type: "int", nullable: false),
-                    Url = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_VenueImages", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_VenueImages_Venues_VenueId",
-                        column: x => x.VenueId,
-                        principalSchema: "venue",
-                        principalTable: "Venues",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                    table.PrimaryKey("PK_Artists", x => x.Id);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_VenueImages_VenueId",
-                schema: "venue",
-                table: "VenueImages",
-                column: "VenueId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_VenueReviews_VenueId",
-                schema: "venue",
-                table: "VenueReviews",
-                column: "VenueId");
+                name: "IX_ArtistReviews_ArtistId",
+                schema: "artist",
+                table: "ArtistReviews",
+                column: "ArtistId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "VenueImages",
-                schema: "venue");
+                name: "ArtistRatingProjections",
+                schema: "artist");
 
             migrationBuilder.DropTable(
-                name: "VenueRatingProjections",
-                schema: "venue");
+                name: "ArtistReviews",
+                schema: "artist");
 
             migrationBuilder.DropTable(
-                name: "VenueReviews",
-                schema: "venue");
-
-            migrationBuilder.DropTable(
-                name: "Venues",
-                schema: "venue");
+                name: "Artists",
+                schema: "artist");
         }
     }
 }

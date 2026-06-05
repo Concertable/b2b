@@ -31,8 +31,8 @@ internal sealed class ConcertPostedDomainEventHandler : IPreCommitDomainEventHan
             concert.Price,
             concert.Period,
             concert.DatePosted!.Value,
-            venue.Location?.Y,
-            venue.Location?.X,
+            venue.Location.Y,
+            venue.Location.X,
             concert.Genres.ToArray()), ct);
     }
 }

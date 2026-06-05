@@ -12,7 +12,7 @@ internal static class QueryableConcertMappers
         IQueryable<ConcertRatingProjection> concertRatings,
         IQueryable<ArtistRatingProjection> artistRatings,
         IQueryable<VenueRatingProjection> venueRatings) =>
-        from c in query.Where(c => c.Booking.Application.Opportunity.Venue.Location != null)
+        from c in query
         join cr in concertRatings on c.Id equals cr.ConcertId into crg
         from concertRating in crg.DefaultIfEmpty()
         join ar in artistRatings on c.Booking.Application.ArtistId equals ar.ArtistId into arg
@@ -39,18 +39,18 @@ internal static class QueryableConcertMappers
                 Id = c.Booking.Application.Opportunity.Venue.Id,
                 Name = c.Booking.Application.Opportunity.Venue.Name,
                 Rating = (double?)venueRating.AverageRating ?? 0.0,
-                County = c.Booking.Application.Opportunity.Venue.County ?? string.Empty,
-                Town = c.Booking.Application.Opportunity.Venue.Town ?? string.Empty,
-                Latitude = c.Booking.Application.Opportunity.Venue.Location!.Y,
-                Longitude = c.Booking.Application.Opportunity.Venue.Location!.X
+                County = c.Booking.Application.Opportunity.Venue.County,
+                Town = c.Booking.Application.Opportunity.Venue.Town,
+                Latitude = c.Booking.Application.Opportunity.Venue.Location.Y,
+                Longitude = c.Booking.Application.Opportunity.Venue.Location.X
             },
             Artist = new ConcertArtist
             {
                 Id = c.Booking.Application.Artist.Id,
                 Name = c.Booking.Application.Artist.Name,
                 Avatar = c.Booking.Application.Artist.Avatar,
-                County = c.Booking.Application.Artist.County ?? string.Empty,
-                Town = c.Booking.Application.Artist.Town ?? string.Empty,
+                County = c.Booking.Application.Artist.County,
+                Town = c.Booking.Application.Artist.Town,
                 Rating = (double?)artistRating.AverageRating ?? 0.0,
                 Genres = c.Booking.Application.Artist.Genres.Select(g => g.Genre)
             }
@@ -60,7 +60,7 @@ internal static class QueryableConcertMappers
         this IQueryable<ConcertEntity> query,
         IQueryable<ArtistRatingProjection> artistRatings,
         IQueryable<VenueRatingProjection> venueRatings) =>
-        from c in query.Where(c => c.Booking.Application.Opportunity.Venue.Location != null)
+        from c in query
         join ar in artistRatings on c.Booking.Application.ArtistId equals ar.ArtistId into arg
         from artistRating in arg.DefaultIfEmpty()
         join vr in venueRatings on c.Booking.Application.Opportunity.VenueId equals vr.VenueId into vrg

@@ -12,6 +12,6 @@ public sealed record ConcertPostedEvent(
     decimal Price,
     DateRange Period,
     DateTime DatePosted,
-    double? Latitude,
-    double? Longitude,
+    double Latitude,
+    double Longitude,
     IReadOnlyCollection<Genre> Genres) : IIntegrationEvent;

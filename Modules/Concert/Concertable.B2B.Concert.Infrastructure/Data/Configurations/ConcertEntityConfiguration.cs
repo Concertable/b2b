@@ -29,7 +29,6 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
             .HasForeignKey(e => e.VenueId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        builder.Property(e => e.Location).HasColumnType("geography");
         builder.PrimitiveCollection(e => e.Genres);
     }
 }
