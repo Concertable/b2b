@@ -32,8 +32,6 @@ public abstract class ApplicationEntity : IIdEntity, ILifecycleEntity, IEventRai
 
     public void AdvanceStage(ConcertStage next)
     {
-        if (next is not (ConcertStage.Applied or ConcertStage.Verified or ConcertStage.Accepted))
-            throw new DomainException($"ApplicationEntity cannot advance to {next}.");
         CurrentStage = next;
         if (next == ConcertStage.Accepted)
             events.Raise(new ApplicationAcceptedDomainEvent(Id, OpportunityId));

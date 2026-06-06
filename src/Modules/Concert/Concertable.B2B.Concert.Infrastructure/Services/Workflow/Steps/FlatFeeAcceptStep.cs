@@ -43,7 +43,7 @@ internal sealed class FlatFeeAcceptStep : ISimpleAcceptStep
         var (venueManagerId, artistManagerId) = await payerLookup.GetManagerIdsAsync(applicationId)
             ?? throw new NotFoundException("Application not found");
         var contract = (FlatFeeContract)contractAccessor.Contract;
-        var booking = await bookingService.CreateStandardAsync(applicationId);
+        var booking = await bookingService.CreateStandardAsync(applicationId, contract.ContractType);
 
         var paymentIntentId = await managerPaymentClient.FindHeldIntentAsync(venueManagerId, applicationId);
 

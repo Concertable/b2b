@@ -1,4 +1,6 @@
 using System.Net;
+using System.Text.Json;
+using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.Messaging.Contracts;
 using Concertable.Messaging.Domain;
@@ -61,5 +63,31 @@ public sealed class OutboxVerificationTests : IAsyncLifetime
                 .AsNoTracking()
                 .SingleAsync(m => m.Id == row.Id);
         }
+    }
+
+    [Fact]
+    public async Task PostVenueHireConcert_PublishesArtistAsTicketRevenuePayee()
+    {
+        // Arrange — run the full VenueHire accept flow so production code creates the draft
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", (object?)null);
+        await fixture.StripeClient.SendWebhookAsync();
+        var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.VenueHireApp.Id}");
+        await concertResponse.ShouldBe(HttpStatusCode.OK);
+        var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
+        var expectedType = MessageTypeAttribute.Resolve(typeof(ConcertChangedEvent));
+
+        // Act
+        var response = await client.PutAsync($"/api/Concert/post/{concert!.Id}", BuildPostRequest());
+
+        // Assert — the artist hired the venue upfront, so ticket revenue is paid to the artist
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        using var scope = fixture.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OutboxDbContext>();
+        var row = await db.Set<OutboxMessageEntity>()
+            .AsNoTracking()
+            .SingleAsync(m => m.MessageType == expectedType);
+        using var payload = JsonDocument.Parse(row.Payload);
+        Assert.Equal(fixture.SeedState.ArtistManager1.Id, payload.RootElement.GetProperty("payeeUserId").GetGuid());
     }
 }

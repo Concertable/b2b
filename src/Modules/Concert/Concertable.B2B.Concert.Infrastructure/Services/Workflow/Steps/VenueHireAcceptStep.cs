@@ -51,7 +51,7 @@ internal sealed class VenueHireAcceptStep : ISimpleAcceptStep
             throw new BadRequestException("VenueHire requires a PrepaidApplication");
 
         var contract = (VenueHireContract)contractAccessor.Contract;
-        var booking = await bookingService.CreateStandardAsync(applicationId);
+        var booking = await bookingService.CreateStandardAsync(applicationId, contract.ContractType);
 
         logger.AcceptingVenueHireApplication(applicationId, booking.Id, contract.HireFee, artistManagerId, venueManagerId);
 

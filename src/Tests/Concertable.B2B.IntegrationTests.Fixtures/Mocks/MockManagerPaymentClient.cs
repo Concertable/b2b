@@ -5,17 +5,33 @@ using Stripe;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal sealed class MockManagerPaymentClient : IManagerPaymentClient
+internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
 {
     private readonly MockStripeApiClient stripeApiClient;
+
+    public List<(Guid PayerId, Guid PayeeId, decimal Amount, string PaymentMethodId, int BookingId)> Payments { get; } = [];
 
     public MockManagerPaymentClient(MockStripeApiClient stripeApiClient)
     {
         this.stripeApiClient = stripeApiClient;
     }
 
-    public Task<Result<PaymentResponse>> PayAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Ok(new PaymentResponse { RequiresAction = false, TransactionId = "pi_mock_pay" }));
+    public void Reset() => Payments.Clear();
+
+    public async Task<Result<PaymentResponse>> PayAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
+    {
+        var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
+        {
+            Amount = (long)(amount * 100),
+            Metadata = new Dictionary<string, string>
+            {
+                ["type"] = TransactionTypes.Settlement,
+                ["bookingId"] = bookingId.ToString()
+            }
+        });
+        Payments.Add((payerId, payeeId, amount, paymentMethodId, bookingId));
+        return Result.Ok(new PaymentResponse { RequiresAction = false, TransactionId = intent.Id });
+    }
 
     public async Task<CheckoutSession> CreateSetupSessionAsync(Guid payerId, IDictionary<string, string> metadata, CancellationToken ct = default)
     {

@@ -47,24 +47,6 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, ILifecyc
         DateRange period,
         string name,
         string about,
-        IEnumerable<Genre> genres) => new()
-        {
-            BookingId = bookingId,
-            ArtistId = artistId,
-            VenueId = venueId,
-            Period = period,
-            Name = name,
-            About = about,
-            Genres = genres.ToList()
-        };
-
-    public static ConcertEntity CreateDraft(
-        int bookingId,
-        int artistId,
-        int venueId,
-        DateRange period,
-        string name,
-        string about,
         ContractType contractType,
         IEnumerable<Genre> genres) => new()
         {
@@ -80,12 +62,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, ILifecyc
 
     public void IncrementTicketsSold(int quantity) => TicketsSold += quantity;
 
-    public void AdvanceStage(ConcertStage next)
-    {
-        if (next is not (ConcertStage.Settled or ConcertStage.Finished))
-            throw new DomainException($"ConcertEntity cannot advance to {next}.");
-        CurrentStage = next;
-    }
+    public void AdvanceStage(ConcertStage next) => CurrentStage = next;
 
     public void Update(string name, string about, decimal price, int totalTickets)
     {

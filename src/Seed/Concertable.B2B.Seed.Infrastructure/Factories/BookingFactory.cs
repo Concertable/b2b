@@ -9,12 +9,14 @@ public static class BookingFactory
     public static StandardBooking Confirmed(int id)
         => New<StandardBooking>()
             .With("Id", id)
-            .With(nameof(BookingEntity.Status), BookingStatus.Confirmed);
+            .With(nameof(BookingEntity.Status), BookingStatus.Confirmed)
+            .With(nameof(BookingEntity.CurrentStage), ConcertStage.Settled);
 
     public static DeferredBooking ConfirmedDeferred(int id, string paymentMethodId = "pm_card_visa")
         => New<DeferredBooking>()
             .With("Id", id)
             .With(nameof(BookingEntity.Status), BookingStatus.Confirmed)
+            .With(nameof(BookingEntity.CurrentStage), ConcertStage.Verified)
             .With(nameof(DeferredBooking.PaymentMethodId), paymentMethodId);
 
     public static StandardBooking AwaitingPayment(int id)
@@ -25,11 +27,13 @@ public static class BookingFactory
     public static StandardBooking Complete(int id)
         => New<StandardBooking>()
             .With("Id", id)
-            .With(nameof(BookingEntity.Status), BookingStatus.Complete);
+            .With(nameof(BookingEntity.Status), BookingStatus.Complete)
+            .With(nameof(BookingEntity.CurrentStage), ConcertStage.Settled);
 
     public static DeferredBooking CompleteDeferred(int id, string paymentMethodId = "pm_card_visa")
         => New<DeferredBooking>()
             .With("Id", id)
             .With(nameof(BookingEntity.Status), BookingStatus.Complete)
+            .With(nameof(BookingEntity.CurrentStage), ConcertStage.Settled)
             .With(nameof(DeferredBooking.PaymentMethodId), paymentMethodId);
 }
