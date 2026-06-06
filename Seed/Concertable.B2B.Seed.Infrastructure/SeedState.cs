@@ -9,6 +9,7 @@ using Concertable.B2B.Venue.Domain;
 using Concertable.Kernel;
 using Concertable.Kernel.Identity;
 using Concertable.Seed.Identity;
+using Concertable.Seed.Identity.Extensions;
 using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Seed.Infrastructure;
@@ -445,6 +446,13 @@ public sealed class SeedState
             ApplicationFactory.CreatePrepaid(8, 48),
         ];
 
-        Concerts = catalog.Concerts.Select(s => ConcertFactory.Create(s, Bookings[s.ConcertId - 1].Id)).ToList();
+        foreach (var application in Applications)
+        {
+            var contractType = Contracts[Opportunities[application.OpportunityId - 1].ContractId - 1].ContractType;
+            application.With(nameof(ApplicationEntity.ContractType), contractType);
+            application.Booking?.With(nameof(BookingEntity.ContractType), contractType);
+        }
+
+        Concerts = catalog.Concerts.Select(s => ConcertFactory.Create(s, Bookings[s.ConcertId - 1])).ToList();
     }
 }

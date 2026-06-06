@@ -60,6 +60,12 @@ public sealed class ApiFixture : IAsyncLifetime
     public IMockNotificationClient NotificationService { get; } = new MockNotificationClient();
     public MockStripeApiClient StripeApiClient { get; } = new MockStripeApiClient();
     public IMockEmailSender EmailSender { get; } = new MockEmailSender();
+    public IMockManagerPaymentClient ManagerPaymentClient { get; }
+
+    public ApiFixture()
+    {
+        ManagerPaymentClient = new MockManagerPaymentClient(StripeApiClient);
+    }
     public IWebhookSimulator StripeClient { get; private set; } = null!;
     public SeedState SeedState { get; private set; } = null!;
     public IReadDbContext ReadDbContext { get; private set; } = null!;
@@ -109,7 +115,7 @@ public sealed class ApiFixture : IAsyncLifetime
                 services.AddSingleton<IStripeApiClient>(StripeApiClient);
                 services.AddKeyedScoped<IStripePaymentIntentClient, MockStripePaymentIntentClient>(PaymentSession.OnSession);
                 services.AddKeyedScoped<IStripePaymentIntentClient, MockStripePaymentIntentClient>(PaymentSession.OffSession);
-                services.AddResettables(NotificationService, StripeApiClient, EmailSender);
+                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient);
                 services.AddSingleton<IEmailSender>(EmailSender);
 
                 services.AddSingleton<PaymentConfigurationProvider>();
@@ -120,7 +126,7 @@ public sealed class ApiFixture : IAsyncLifetime
                             sp.GetRequiredService<AuditInterceptor>(),
                             sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                         .UseSeedingSupport(sp));
-                services.AddScoped<IManagerPaymentClient, MockManagerPaymentClient>();
+                services.AddSingleton<IManagerPaymentClient>(ManagerPaymentClient);
                 services.AddScoped<IEscrowClient, MockEscrowClient>();
 
                 services.AddSingleton<IWebhookSimulator, MockWebhookSimulator>();

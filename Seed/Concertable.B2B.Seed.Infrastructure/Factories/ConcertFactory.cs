@@ -6,10 +6,10 @@ namespace Concertable.B2B.Seed.Infrastructure.Factories;
 
 public static class ConcertFactory
 {
-    public static ConcertEntity Create(ConcertSeedSpec spec, int bookingId)
+    public static ConcertEntity Create(ConcertSeedSpec spec, BookingEntity booking)
     {
         var concert = ConcertEntity
-            .CreateDraft(bookingId, spec.ArtistId, spec.VenueId, spec.Period, spec.Name, spec.About, spec.Genres)
+            .CreateDraft(booking.Id, spec.ArtistId, spec.VenueId, spec.Period, spec.Name, spec.About, booking.ContractType, spec.Genres)
             .With(nameof(ConcertEntity.Id), spec.ConcertId)
             .With(nameof(ConcertEntity.Price), spec.Price)
             .With(nameof(ConcertEntity.TotalTickets), spec.TotalTickets)

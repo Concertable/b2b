@@ -104,8 +104,8 @@ public static class ServiceCollectionExtensions
         workflowTypes[ContractType.DoorSplit] = services.AddConcertWorkflow(ContractType.DoorSplit, p => p
             .WithApply<SimpleApplyStep>()
             .WithCheckout<DoorSplitAcceptCheckoutStep>()
-            .WithVerify<DeferredVerifyStep>()
             .WithAccept<PaidAcceptStep>()
+            .WithVerify<DeferredVerifyStep>()
             .WithSettle<DeferredSettleStep>()
             .WithFinish<DoorSplitFinishStep>()
             .WithWorkflow<DoorSplitWorkflow>());
@@ -113,8 +113,8 @@ public static class ServiceCollectionExtensions
         workflowTypes[ContractType.Versus] = services.AddConcertWorkflow(ContractType.Versus, p => p
             .WithApply<SimpleApplyStep>()
             .WithCheckout<VersusAcceptCheckoutStep>()
-            .WithVerify<DeferredVerifyStep>()
             .WithAccept<PaidAcceptStep>()
+            .WithVerify<DeferredVerifyStep>()
             .WithSettle<DeferredSettleStep>()
             .WithFinish<VersusFinishStep>()
             .WithWorkflow<VersusWorkflow>());

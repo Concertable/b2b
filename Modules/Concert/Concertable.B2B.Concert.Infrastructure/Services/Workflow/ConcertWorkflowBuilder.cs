@@ -19,11 +19,16 @@ internal sealed class ConcertWorkflowBuilder
     }
 
     public ConcertWorkflowBuilder WithApply<TStep>() where TStep : class, IConcertStep => RegisterStep<TStep>();
-    public ConcertWorkflowBuilder WithCheckout<TStep>() where TStep : class, IConcertStep => RegisterStep<TStep>();
     public ConcertWorkflowBuilder WithAccept<TStep>() where TStep : class, IConcertStep => RegisterStep<TStep>();
     public ConcertWorkflowBuilder WithVerify<TStep>() where TStep : class, IVerifyStep => RegisterStep<TStep>();
     public ConcertWorkflowBuilder WithSettle<TStep>() where TStep : class, ISettleStep => RegisterStep<TStep>();
     public ConcertWorkflowBuilder WithFinish<TStep>() where TStep : class, IFinishStep => RegisterStep<TStep>();
+
+    public ConcertWorkflowBuilder WithCheckout<TStep>() where TStep : class, IConcertStep
+    {
+        services.AddScoped<TStep>();
+        return this;
+    }
 
     public ConcertWorkflowBuilder WithWorkflow<TWorkflow>() where TWorkflow : class, IConcertWorkflow
     {
@@ -43,9 +48,7 @@ internal sealed class ConcertWorkflowBuilder
 
     private ConcertWorkflowBuilder RegisterStep<TStep>() where TStep : class, IConcertStep
     {
-        var stage = TStep.Stage;
-        if (!stages.Contains(stage))
-            stages.Add(stage);
+        stages.Add(TStep.Stage);
         services.AddScoped<TStep>();
         return this;
     }

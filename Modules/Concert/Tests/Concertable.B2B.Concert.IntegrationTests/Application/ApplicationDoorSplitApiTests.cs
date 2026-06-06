@@ -112,4 +112,44 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         Assert.Contains(fixture.SeedState.VenueManager1.Id.ToString(), notifiedUserIds);
         Assert.All(fixture.NotificationService.DraftCreated, n => Assert.NotNull(n.Payload));
     }
+
+    [Fact]
+    public async Task Accept_ShouldIgnoreDuplicateWebhookEvent()
+    {
+        // Arrange
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
+
+        // Act
+        var acceptResponse = await client.PostAsync(
+            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.StripeClient.SendWebhookAsync();
+
+        // Assert
+        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+    }
+
+    [Fact]
+    public async Task Accept_ShouldNotCreateDraft_WhenVerifyPaymentFails()
+    {
+        // Arrange
+        fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingStripe());
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
+
+        // Act
+        var acceptResponse = await client.PostAsync(
+            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.StripeClient.SendWebhookAsync();
+
+        // Assert
+        var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
+        Assert.Equal(BookingStatus.Pending, booking.Status);
+        Assert.Empty(fixture.NotificationService.DraftCreated);
+        var notification = Assert.Single(fixture.NotificationService.Other, n => n.EventName == "VerifyPaymentFailed");
+        Assert.Equal(fixture.SeedState.VenueManager1.Id.ToString(), notification.UserId);
+    }
 }

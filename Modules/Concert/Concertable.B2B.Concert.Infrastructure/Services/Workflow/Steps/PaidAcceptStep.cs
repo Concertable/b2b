@@ -7,11 +7,16 @@ internal sealed class PaidAcceptStep : IPaidAcceptStep
 {
     private readonly IApplicationValidator applicationValidator;
     private readonly IBookingService bookingService;
+    private readonly IContractAccessor contractAccessor;
 
-    public PaidAcceptStep(IApplicationValidator applicationValidator, IBookingService bookingService)
+    public PaidAcceptStep(
+        IApplicationValidator applicationValidator,
+        IBookingService bookingService,
+        IContractAccessor contractAccessor)
     {
         this.applicationValidator = applicationValidator;
         this.bookingService = bookingService;
+        this.contractAccessor = contractAccessor;
     }
 
     public async Task ExecuteAsync(int applicationId, string paymentMethodId)
@@ -20,6 +25,6 @@ internal sealed class PaidAcceptStep : IPaidAcceptStep
         if (result.IsFailed)
             throw new BadRequestException(result.Errors);
 
-        await bookingService.CreateDeferredAsync(applicationId, paymentMethodId);
+        await bookingService.CreateDeferredAsync(applicationId, contractAccessor.Contract.ContractType, paymentMethodId);
     }
 }

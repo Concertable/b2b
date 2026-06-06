@@ -29,8 +29,6 @@ public abstract class BookingEntity : IIdEntity, ILifecycleEntity, IEventRaiser
 
     public void AdvanceStage(ConcertStage next)
     {
-        if (next is not (ConcertStage.Accepted or ConcertStage.Settled))
-            throw new DomainException($"BookingEntity cannot advance to {next}.");
         CurrentStage = next;
         if (next == ConcertStage.Settled)
             events.Raise(new BookingSettledDomainEvent(Id, ContractType));
@@ -75,9 +73,6 @@ public sealed class StandardBooking : BookingEntity
     private StandardBooking(int applicationId, ContractType contractType)
         : base(applicationId, contractType) { }
 
-    public static StandardBooking Create(int applicationId) =>
-        new(applicationId, default);
-
     public static StandardBooking Create(int applicationId, ContractType contractType) =>
         new(applicationId, contractType);
 }
@@ -93,9 +88,6 @@ public sealed class DeferredBooking : BookingEntity
     {
         PaymentMethodId = paymentMethodId;
     }
-
-    public static DeferredBooking Create(int applicationId, string paymentMethodId) =>
-        new(applicationId, default, paymentMethodId);
 
     public static DeferredBooking Create(int applicationId, ContractType contractType, string paymentMethodId) =>
         new(applicationId, contractType, paymentMethodId);

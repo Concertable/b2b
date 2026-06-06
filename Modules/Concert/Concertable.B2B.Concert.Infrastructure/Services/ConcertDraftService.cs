@@ -53,6 +53,7 @@ internal sealed class ConcertDraftService : IConcertDraftService
             opportunity.Period,
             $"{artist.Name} performing at {venue.Name}",
             venue.About,
+            bookingConcert.ContractType,
             matchingGenres);
 
         bookingConcert.Confirm(concert);

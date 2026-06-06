@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Api.Responses;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Concertable.B2B.Concert.Domain.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
 
@@ -95,5 +96,61 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         Assert.Contains(fixture.SeedState.ArtistManager1.Id.ToString(), notifiedUserIds);
         Assert.Contains(fixture.SeedState.VenueManager1.Id.ToString(), notifiedUserIds);
         Assert.All(fixture.NotificationService.DraftCreated, n => Assert.NotNull(n.Payload));
+    }
+
+    [Fact]
+    public async Task Accept_ShouldReturn400_WhenAlreadyAccepted()
+    {
+        // Arrange
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync(
+            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+
+        // Act
+        var response = await client.PostAsync(
+            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+
+        // Assert
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Accept_ShouldIgnoreDuplicateWebhookEvent()
+    {
+        // Arrange
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/checkout");
+
+        // Act
+        var acceptResponse = await client.PostAsync(
+            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.StripeClient.SendWebhookAsync();
+
+        // Assert
+        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+    }
+
+    [Fact]
+    public async Task Accept_ShouldNotCreateDraft_WhenVerifyPaymentFails()
+    {
+        // Arrange
+        fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingStripe());
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/checkout");
+
+        // Act
+        var acceptResponse = await client.PostAsync(
+            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.StripeClient.SendWebhookAsync();
+
+        // Assert
+        var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.ApplicationId == fixture.SeedState.VersusApp.Id);
+        Assert.Equal(BookingStatus.Pending, booking.Status);
+        Assert.Empty(fixture.NotificationService.DraftCreated);
+        var notification = Assert.Single(fixture.NotificationService.Other, n => n.EventName == "VerifyPaymentFailed");
+        Assert.Equal(fixture.SeedState.VenueManager1.Id.ToString(), notification.UserId);
     }
 }
