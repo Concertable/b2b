@@ -21,5 +21,5 @@ public static class ArtistFactory
         IEnumerable<Genre> genres)
         => ArtistEntity
             .Create(userId, name, about, bannerUrl, avatar, location, address, email, genres)
-            .With(nameof(ArtistEntity.Id), id);
+            .WithId(id);
 }

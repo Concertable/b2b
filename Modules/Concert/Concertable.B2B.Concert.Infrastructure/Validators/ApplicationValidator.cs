@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Enums;
 using Concertable.Kernel.Identity;
 using FluentResults;
 
@@ -56,9 +55,6 @@ internal sealed class ApplicationValidator : IApplicationValidator
     public async Task<Result> CanAcceptAsync(OpportunityEntity opportunity, ApplicationEntity application)
     {
         var errors = new List<string>();
-
-        if (application.Status == ApplicationStatus.Accepted)
-            return Result.Fail("This application has already been accepted");
 
         if (opportunity.Venue.UserId != currentUser.GetId())
             errors.Add("You do not own this concert opportunity");

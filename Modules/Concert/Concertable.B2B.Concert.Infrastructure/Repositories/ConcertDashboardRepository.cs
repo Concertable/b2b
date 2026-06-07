@@ -1,9 +1,10 @@
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.DataAccess.Application.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
@@ -28,13 +29,13 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
     {
         var applications = opportunityUpcoming.ApplyVia(
             context.Applications
-                .Where(a => a.Status == ApplicationStatus.Pending && a.Opportunity.VenueId == venueId),
+                .Where(a => a.State == LifecycleState.Applied && a.Opportunity.VenueId == venueId),
             a => a.Opportunity);
 
         var openOpportunities = opportunityUpcoming.Apply(
             context.Opportunities
                 .Where(o => o.VenueId == venueId)
-                .Where(o => !o.Applications.Any(app => app.Status == ApplicationStatus.Accepted)));
+                .WhereOpen());
 
         var upcomingConcerts = concertUpcoming.Apply(
             context.Concerts.Where(c => c.VenueId == venueId));
@@ -49,7 +50,7 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
     {
         var applications = opportunityUpcoming.ApplyVia(
             context.Applications
-                .Where(a => a.Status == ApplicationStatus.Pending && a.ArtistId == artistId),
+                .Where(a => a.State == LifecycleState.Applied && a.ArtistId == artistId),
             a => a.Opportunity);
 
         var upcomingConcerts = concertUpcoming.Apply(

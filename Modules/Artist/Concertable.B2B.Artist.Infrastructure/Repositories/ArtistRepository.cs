@@ -7,12 +7,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
 internal sealed class ArtistRepository : Repository<ArtistEntity>, IArtistRepository
 {
-    private readonly ArtistDbContext context;
-
-    public ArtistRepository(ArtistDbContext context) : base(context)
-    {
-        this.context = context;
-    }
+    public ArtistRepository(ArtistDbContext context) : base(context) { }
 
     public async Task<ArtistEntity?> GetByUserIdAsync(Guid id) =>
         await context.Artists

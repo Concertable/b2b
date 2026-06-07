@@ -7,6 +7,8 @@ internal interface IBookingRepository : IRepository<BookingEntity>
 {
     Task<BookingEntity?> GetByApplicationIdAsync(int applicationId);
     Task<BookingEntity?> GetForSettlementByConcertIdAsync(int concertId);
-    Task<BookingEntity?> GetForCompletionByConcertIdAsync(int concertId);
+    Task<int?> GetIdByConcertIdAsync(int concertId);
+    Task<int?> GetApplicationIdByIdAsync(int bookingId);
+    Task<int?> GetApplicationIdByConcertIdAsync(int concertId);
     Task<int?> GetContractIdByIdAsync(int bookingId);
 }

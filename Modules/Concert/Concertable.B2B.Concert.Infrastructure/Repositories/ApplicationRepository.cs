@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -63,8 +63,8 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task RejectAllExceptAsync(int opportunityId, int applicationId)
     {
         await context.Applications
-            .Where(a => a.OpportunityId == opportunityId && a.Id != applicationId && a.Status == ApplicationStatus.Pending)
-            .ExecuteUpdateAsync(s => s.SetProperty(a => a.Status, ApplicationStatus.Rejected));
+            .Where(a => a.OpportunityId == opportunityId && a.Id != applicationId && a.State == LifecycleState.Applied)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.State, LifecycleState.Rejected));
     }
 
     public Task<int?> GetContractIdByIdAsync(int applicationId)

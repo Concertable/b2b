@@ -6,7 +6,6 @@ using Concertable.B2B.Concert.Api.Responses;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Enums;
 using Concertable.B2B.Contract.Contracts;
 using Concertable.Contracts;
 using Concertable.Payment.Domain;

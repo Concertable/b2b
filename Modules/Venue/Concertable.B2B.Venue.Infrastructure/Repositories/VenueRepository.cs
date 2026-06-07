@@ -6,12 +6,7 @@ namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
 internal sealed class VenueRepository : Repository<VenueEntity>, IVenueRepository
 {
-    private readonly VenueDbContext context;
-
-    public VenueRepository(VenueDbContext context) : base(context)
-    {
-        this.context = context;
-    }
+    public VenueRepository(VenueDbContext context) : base(context) { }
 
     public async Task<VenueSummary?> GetSummaryAsync(int id) =>
         await context.Venues.AsNoTracking()

@@ -13,6 +13,7 @@ public sealed class DbFixture
     private readonly PaymentDbFixture payment = new();
 
     public OpportunityDb Opportunity { get; private set; } = null!;
+    public ApplicationDb Application { get; private set; } = null!;
     public BookingDb Booking { get; private set; } = null!;
     public PaymentDb Payment => payment.Payment;
 
@@ -36,6 +37,7 @@ public sealed class DbFixture
         });
         await payment.InitializeAsync(app);
         Opportunity = new OpportunityDb(b2b.Connection);
+        Application = new ApplicationDb(b2b.Connection);
         Booking = new BookingDb(b2b.Connection);
     }
 

@@ -11,5 +11,8 @@ internal sealed class VerifyDispatcher : IVerifyDispatcher
         this.executor = executor;
     }
 
-    public Task VerifyAsync(int applicationId) => executor.ExecuteAsync(applicationId);
+    public Task VerifySucceededAsync(int applicationId) => executor.ExecuteAsync(applicationId);
+
+    public Task VerifyFailedAsync(int applicationId, string venueManagerId, string? failureMessage)
+        => executor.ExecuteFailedAsync(applicationId, venueManagerId, failureMessage);
 }

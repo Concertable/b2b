@@ -1,39 +1,39 @@
 using Concertable.B2B.Concert.Application.Workflow;
-using Concertable.B2B.Concert.Application.Workflow.Capabilities;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
 internal sealed class VerifyExecutor : IVerifyExecutor
 {
-    private readonly IWorkflowStateMachine<BookingEntity> stateMachine;
+    private readonly ILifecycleTransitioner transitioner;
     private readonly IConcertWorkflowFactory workflows;
     private readonly IBookingRepository bookingRepository;
+    private readonly IConcertNotifier concertNotifier;
 
     public VerifyExecutor(
-        IWorkflowStateMachine<BookingEntity> stateMachine,
+        ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
-        IBookingRepository bookingRepository)
+        IBookingRepository bookingRepository,
+        IConcertNotifier concertNotifier)
     {
-        this.stateMachine = stateMachine;
+        this.transitioner = transitioner;
         this.workflows = workflows;
         this.bookingRepository = bookingRepository;
+        this.concertNotifier = concertNotifier;
     }
 
-    public async Task ExecuteAsync(int applicationId)
-    {
-        var booking = await bookingRepository.GetByApplicationIdAsync(applicationId)
-            ?? throw new NotFoundException("Booking not found for application");
-
-        await stateMachine.TransitionAsync(booking.Id, ConcertStage.Verified, async b =>
+    public Task ExecuteAsync(int applicationId)
+        => transitioner.TransitionAsync(applicationId, Trigger.VerifyPaymentSucceeded, async app =>
         {
-            var workflow = workflows.Create(b.ContractType);
-            if (workflow is not IVerifies v)
-                throw new BadRequestException($"Contract {workflow.Type} does not support Verify");
-            await v.Verify.ExecuteAsync(applicationId);
+            var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
+                ?? throw new NotFoundException("Booking not found for application");
+            var workflow = workflows.Create(app.ContractType);
+            await workflow.Book.ExecuteAsync(booking.Id);
         });
-    }
+
+    public Task ExecuteFailedAsync(int applicationId, string venueManagerId, string? failureMessage)
+        => transitioner.TransitionAsync(applicationId, Trigger.VerifyPaymentFailed, app =>
+            concertNotifier.VerifyPaymentFailedAsync(venueManagerId, new { applicationId = app.Id, FailureMessage = failureMessage }));
 }

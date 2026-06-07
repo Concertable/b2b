@@ -38,7 +38,7 @@ internal sealed class EscrowPaymentProcessor : IIntegrationEventHandler<PaymentS
 
         try
         {
-            await concertWorkflowModule.SettleAsync(bookingId, ct);
+            await concertWorkflowModule.EscrowSucceededAsync(bookingId, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

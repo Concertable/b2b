@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -40,10 +40,8 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
         Assert.Equal(deferred.Id, payment.BookingId);
 
-        var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.Id == deferred.Id);
-        Assert.Equal(BookingStatus.AwaitingPayment, booking.Status);
-        var finished = await fixture.ReadDbContext.Concerts.FirstAsync(c => c.Id == concert.Id);
-        Assert.Equal(ConcertStage.Finished, finished.CurrentStage);
+        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
+        Assert.Equal(LifecycleState.AwaitingSettlement, application.State);
     }
 
     [Fact]
@@ -56,8 +54,8 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.Id == fixture.SeedState.PastDoorSplitBooking.Id);
-        Assert.Equal(BookingStatus.Complete, booking.Status);
+        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
+        Assert.Equal(LifecycleState.Complete, application.State);
     }
 
     [Fact]
@@ -71,7 +69,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.Id == fixture.SeedState.PastDoorSplitBooking.Id);
-        Assert.Equal(BookingStatus.Complete, booking.Status);
+        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
+        Assert.Equal(LifecycleState.Complete, application.State);
     }
 }

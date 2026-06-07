@@ -1,8 +1,8 @@
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure;
+using Concertable.Kernel.Exceptions;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 
@@ -10,20 +10,26 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
 internal sealed class FinishExecutor : IFinishExecutor
 {
-    private readonly IWorkflowStateMachine<ConcertEntity> stateMachine;
+    private readonly ILifecycleTransitioner transitioner;
     private readonly IConcertWorkflowFactory workflows;
     private readonly IContractResolver contractResolver;
+    private readonly IConcertRepository concertRepository;
+    private readonly TimeProvider timeProvider;
     private readonly ILogger<FinishExecutor> logger;
 
     public FinishExecutor(
-        IWorkflowStateMachine<ConcertEntity> stateMachine,
+        ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
         IContractResolver contractResolver,
+        IConcertRepository concertRepository,
+        TimeProvider timeProvider,
         ILogger<FinishExecutor> logger)
     {
-        this.stateMachine = stateMachine;
+        this.transitioner = transitioner;
         this.workflows = workflows;
         this.contractResolver = contractResolver;
+        this.concertRepository = concertRepository;
+        this.timeProvider = timeProvider;
         this.logger = logger;
     }
 
@@ -31,11 +37,16 @@ internal sealed class FinishExecutor : IFinishExecutor
     {
         try
         {
-            await stateMachine.TransitionAsync(concertId, ConcertStage.Finished, async concert =>
+            var concert = await concertRepository.GetByIdWithBookingAsync(concertId)
+                ?? throw new NotFoundException("Concert not found");
+            if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
+                throw new BadRequestException("Concert cannot be finished before it has ended");
+
+            await transitioner.TransitionAsync(concert.Booking.ApplicationId, Trigger.Finish, async app =>
             {
-                await contractResolver.ResolveByConcertIdAsync(concert.Id);
-                var workflow = workflows.Create(concert.ContractType);
-                await workflow.Finish.ExecuteAsync(concert.Id);
+                await contractResolver.ResolveByConcertIdAsync(concertId);
+                var workflow = workflows.Create(app.ContractType);
+                await workflow.Finish.ExecuteAsync(concertId);
             });
             return Result.Ok();
         }

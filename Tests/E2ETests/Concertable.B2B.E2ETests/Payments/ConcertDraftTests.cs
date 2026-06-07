@@ -4,7 +4,6 @@ using Concertable.B2B.Concert.Api.Responses;
 using Concertable.Testing;
 using Xunit;
 using Xunit.Abstractions;
-using Concertable.B2B.Concert.Domain.Enums;
 
 namespace Concertable.B2B.E2ETests.Payments;
 

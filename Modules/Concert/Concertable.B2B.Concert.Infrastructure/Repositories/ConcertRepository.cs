@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +37,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         return await context.Concerts
             .Where(e => e.Id == id)
             .Include(e => e.Booking)
+                .ThenInclude(b => b.Application)
             .FirstOrDefaultAsync();
     }
 
@@ -161,8 +162,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await context.Concerts
-            .Where(c => c.Booking.Application.Status == ApplicationStatus.Accepted
-                     && c.Booking.Status == BookingStatus.Confirmed
+            .Where(c => c.Booking.Application.State == LifecycleState.Booked
                      && c.Period.Start < now)
             .Select(c => c.Id)
             .ToListAsync();

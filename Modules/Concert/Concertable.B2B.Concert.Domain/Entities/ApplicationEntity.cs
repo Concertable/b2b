@@ -1,25 +1,19 @@
-using Concertable.B2B.Concert.Domain.Enums;
-using Concertable.B2B.Concert.Domain.Events;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
-public abstract class ApplicationEntity : IIdEntity, ILifecycleEntity, IEventRaiser
+public abstract class ApplicationEntity : IIdEntity
 {
     public int Id { get; private set; }
-    public ApplicationStatus Status { get; private set; } = ApplicationStatus.Pending;
+    internal LifecycleState State { get; private set; } = LifecycleState.Applied;
     public int OpportunityId { get; private set; }
     public int ArtistId { get; private set; }
     public ContractType ContractType { get; private set; }
-    public ConcertStage CurrentStage { get; private set; } = ConcertStage.None;
     public OpportunityEntity Opportunity { get; set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
     public BookingEntity? Booking { get; set; }
-
-    private readonly EventRaiser events = new();
-    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
-    public void ClearDomainEvents() => events.Clear();
 
     protected ApplicationEntity() { }
 
@@ -30,34 +24,9 @@ public abstract class ApplicationEntity : IIdEntity, ILifecycleEntity, IEventRai
         ContractType = contractType;
     }
 
-    public void AdvanceStage(ConcertStage next)
-    {
-        CurrentStage = next;
-        if (next == ConcertStage.Accepted)
-            events.Raise(new ApplicationAcceptedDomainEvent(Id, OpportunityId));
-    }
+    public void Accept(BookingEntity booking) => Booking = booking;
 
-    public void Accept(BookingEntity bookingConcert)
-    {
-        if (Status != ApplicationStatus.Pending)
-            throw new DomainException("Only pending applications can be accepted.");
-        Status = ApplicationStatus.Accepted;
-        Booking = bookingConcert;
-    }
-
-    public void Reject()
-    {
-        if (Status != ApplicationStatus.Pending)
-            throw new DomainException("Only pending applications can be rejected.");
-        Status = ApplicationStatus.Rejected;
-    }
-
-    public void Withdraw()
-    {
-        if (Status != ApplicationStatus.Pending)
-            throw new DomainException("Only pending applications can be withdrawn.");
-        Status = ApplicationStatus.Withdrawn;
-    }
+    internal void Transition(Trigger trigger, ContractStateMachine machine) => State = machine.Next(State, trigger);
 }
 
 public sealed class StandardApplication : ApplicationEntity

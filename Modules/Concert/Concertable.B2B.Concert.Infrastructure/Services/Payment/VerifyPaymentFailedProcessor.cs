@@ -9,16 +9,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
-    private readonly IConcertNotifier concertNotifier;
+    private readonly IVerifyDispatcher verifyDispatcher;
     private readonly ConcertDbContext context;
     private readonly ILogger<VerifyPaymentFailedProcessor> logger;
 
     public VerifyPaymentFailedProcessor(
-        IConcertNotifier concertNotifier,
+        IVerifyDispatcher verifyDispatcher,
         ConcertDbContext context,
         ILogger<VerifyPaymentFailedProcessor> logger)
     {
-        this.concertNotifier = concertNotifier;
+        this.verifyDispatcher = verifyDispatcher;
         this.context = context;
         this.logger = logger;
     }
@@ -35,12 +35,11 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
         var venueManagerId = @event.Metadata["venueManagerId"];
         logger.VerifyPaymentFailed(applicationId, @event.FailureCode, @event.FailureMessage);
 
-        await concertNotifier.VerifyPaymentFailedAsync(venueManagerId, new { applicationId, @event.FailureMessage });
-
         context.AddInboxMessage(envelope, nameof(VerifyPaymentFailedProcessor));
+
         try
         {
-            await context.SaveChangesAsync(ct);
+            await verifyDispatcher.VerifyFailedAsync(applicationId, venueManagerId, @event.FailureMessage);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

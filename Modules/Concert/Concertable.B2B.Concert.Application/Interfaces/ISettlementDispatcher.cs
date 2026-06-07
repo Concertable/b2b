@@ -2,5 +2,6 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface ISettlementDispatcher
 {
-    Task SettleAsync(int bookingId);
+    Task SucceededAsync(int bookingId);
+    Task FailedAsync(int bookingId);
 }

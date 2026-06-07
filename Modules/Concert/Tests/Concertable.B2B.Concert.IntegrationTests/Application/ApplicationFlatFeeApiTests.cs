@@ -2,12 +2,14 @@ using System.Net;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Contract.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
-using Concertable.B2B.Concert.Domain.Enums;
 using Concertable.Payment.Domain;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
+using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
@@ -56,6 +58,27 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Apply_ShouldCreateStandardApplication_WithoutPaymentMethod()
+    {
+        // Arrange — venue manager creates a fresh FlatFee opportunity
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var oppResponse = await venueClient.PostAsync("/api/Opportunity",
+            BuildRequest(new FlatFeeContract { PaymentMethod = PaymentMethod.Cash, Fee = 500 }));
+        var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
+
+        // Act — artist applies directly with no payment method
+        var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}");
+
+        // Assert — 201 Created, a StandardApplication row was created
+        await applyResponse.ShouldBe(HttpStatusCode.Created);
+        var standard = await fixture.ReadDbContext.Applications
+            .OfType<StandardApplication>()
+            .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
+        Assert.NotNull(standard);
     }
 
     [Fact]
