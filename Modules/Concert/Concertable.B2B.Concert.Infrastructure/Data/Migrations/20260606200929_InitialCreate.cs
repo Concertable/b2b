@@ -117,11 +117,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Status = table.Column<int>(type: "int", nullable: false),
+                    State = table.Column<int>(type: "int", nullable: false),
                     OpportunityId = table.Column<int>(type: "int", nullable: false),
                     ArtistId = table.Column<int>(type: "int", nullable: false),
                     ContractType = table.Column<int>(type: "int", nullable: false),
-                    CurrentStage = table.Column<int>(type: "int", nullable: false),
                     Discriminator = table.Column<string>(type: "nvarchar(21)", maxLength: 21, nullable: false),
                     PaymentMethodId = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -150,9 +149,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ApplicationId = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
                     ContractType = table.Column<int>(type: "int", nullable: false),
-                    CurrentStage = table.Column<int>(type: "int", nullable: false),
                     Discriminator = table.Column<string>(type: "nvarchar(21)", maxLength: 21, nullable: false),
                     PaymentMethodId = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -188,7 +185,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DatePosted = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ContractType = table.Column<int>(type: "int", nullable: false),
-                    CurrentStage = table.Column<int>(type: "int", nullable: false),
                     Genres = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>

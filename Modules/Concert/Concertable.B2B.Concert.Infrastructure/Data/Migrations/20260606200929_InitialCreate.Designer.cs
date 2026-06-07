@@ -13,7 +13,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260605155826_InitialCreate")]
+    [Migration("20260606200929_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -60,9 +60,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("ContractType")
                         .HasColumnType("int");
 
-                    b.Property<int>("CurrentStage")
-                        .HasColumnType("int");
-
                     b.Property<string>("Discriminator")
                         .IsRequired()
                         .HasMaxLength(21)
@@ -71,7 +68,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Status")
+                    b.Property<int>("State")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -102,16 +99,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("ContractType")
                         .HasColumnType("int");
 
-                    b.Property<int>("CurrentStage")
-                        .HasColumnType("int");
-
                     b.Property<string>("Discriminator")
                         .IsRequired()
                         .HasMaxLength(21)
                         .HasColumnType("nvarchar(21)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -150,9 +141,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("ContractType")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CurrentStage")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DatePosted")
