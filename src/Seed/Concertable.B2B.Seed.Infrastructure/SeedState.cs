@@ -1,4 +1,4 @@
-using Concertable.B2B.Artist.Domain;
+﻿using Concertable.B2B.Artist.Domain;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Contract.Domain.Entities;
 using Concertable.B2B.Seed.Contracts;
@@ -281,20 +281,20 @@ public sealed class SeedState
         Opportunities = opps;
         FreshVenueHireOpportunity = opps[62];
 
-        ConfirmedBooking = BookingFactory.Confirmed(1);
-        PostedDoorSplitBooking = BookingFactory.ConfirmedDeferred(2);
-        PostedVersusBooking = BookingFactory.ConfirmedDeferred(3);
-        PostedFlatFeeBooking = BookingFactory.Complete(4);
-        PostedVenueHireBooking = BookingFactory.Complete(5);
-        AwaitingPaymentBooking = BookingFactory.AwaitingPayment(6);
-        FinishedDoorSplitBooking = BookingFactory.CompleteDeferred(7);
-        FinishedVersusBooking = BookingFactory.CompleteDeferred(8);
-        PastVersusBooking = BookingFactory.ConfirmedDeferred(9);
-        PastFlatFeeBooking = BookingFactory.Confirmed(10);
-        PastVenueHireBooking = BookingFactory.Confirmed(11);
-        PastDoorSplitBooking = BookingFactory.ConfirmedDeferred(12);
-        UpcomingFlatFeeBooking = BookingFactory.Confirmed(13);
-        UpcomingVenueHireBooking = BookingFactory.Confirmed(14);
+        ConfirmedBooking = BookingFactory.Standard(1);
+        PostedDoorSplitBooking = BookingFactory.Deferred(2);
+        PostedVersusBooking = BookingFactory.Deferred(3);
+        PostedFlatFeeBooking = BookingFactory.Standard(4);
+        PostedVenueHireBooking = BookingFactory.Standard(5);
+        AwaitingPaymentBooking = BookingFactory.Standard(6);
+        FinishedDoorSplitBooking = BookingFactory.Deferred(7);
+        FinishedVersusBooking = BookingFactory.Deferred(8);
+        PastVersusBooking = BookingFactory.Deferred(9);
+        PastFlatFeeBooking = BookingFactory.Standard(10);
+        PastVenueHireBooking = BookingFactory.Standard(11);
+        PastDoorSplitBooking = BookingFactory.Deferred(12);
+        UpcomingFlatFeeBooking = BookingFactory.Standard(13);
+        UpcomingVenueHireBooking = BookingFactory.Standard(14);
 
         Bookings =
         [
@@ -312,31 +312,31 @@ public sealed class SeedState
             PastDoorSplitBooking,
             UpcomingFlatFeeBooking,
             UpcomingVenueHireBooking,
-            BookingFactory.Complete(15), BookingFactory.Complete(16), BookingFactory.Complete(17), BookingFactory.Complete(18),
-            BookingFactory.Complete(19), BookingFactory.Complete(20), BookingFactory.Complete(21), BookingFactory.Complete(22),
-            BookingFactory.Complete(23), BookingFactory.Complete(24), BookingFactory.Complete(25), BookingFactory.Complete(26),
-            BookingFactory.Complete(27), BookingFactory.Complete(28), BookingFactory.Complete(29), BookingFactory.Complete(30),
-            BookingFactory.Complete(31), BookingFactory.Complete(32), BookingFactory.Complete(33), BookingFactory.Complete(34),
-            BookingFactory.Complete(35), BookingFactory.Complete(36), BookingFactory.Complete(37), BookingFactory.Complete(38),
-            BookingFactory.Complete(39), BookingFactory.Confirmed(40), BookingFactory.Confirmed(41), BookingFactory.Confirmed(42),
-            BookingFactory.Confirmed(43), BookingFactory.Confirmed(44), BookingFactory.Confirmed(45), BookingFactory.Confirmed(46),
-            BookingFactory.Confirmed(47),
+            BookingFactory.Standard(15), BookingFactory.Standard(16), BookingFactory.Standard(17), BookingFactory.Standard(18),
+            BookingFactory.Standard(19), BookingFactory.Standard(20), BookingFactory.Standard(21), BookingFactory.Standard(22),
+            BookingFactory.Standard(23), BookingFactory.Standard(24), BookingFactory.Standard(25), BookingFactory.Standard(26),
+            BookingFactory.Standard(27), BookingFactory.Standard(28), BookingFactory.Standard(29), BookingFactory.Standard(30),
+            BookingFactory.Standard(31), BookingFactory.Standard(32), BookingFactory.Standard(33), BookingFactory.Standard(34),
+            BookingFactory.Standard(35), BookingFactory.Standard(36), BookingFactory.Standard(37), BookingFactory.Standard(38),
+            BookingFactory.Standard(39), BookingFactory.Standard(40), BookingFactory.Standard(41), BookingFactory.Standard(42),
+            BookingFactory.Standard(43), BookingFactory.Standard(44), BookingFactory.Standard(45), BookingFactory.Standard(46),
+            BookingFactory.Standard(47),
         ];
 
-        ConfirmedApp = ApplicationFactory.Accepted(1, 6, Bookings[0]);
-        PostedDoorSplitApp = ApplicationFactory.Accepted(1, 53, Bookings[1]);
-        PostedVersusApp = ApplicationFactory.Accepted(2, 54, Bookings[2]);
-        PostedFlatFeeApp = ApplicationFactory.Accepted(2, 31, Bookings[3]);
-        PostedVenueHireApp = ApplicationFactory.AcceptedPrepaid(1, 21, Bookings[4]);
+        ConfirmedApp = ApplicationFactory.Booked(1, 6, Bookings[0]);
+        PostedDoorSplitApp = ApplicationFactory.Booked(1, 53, Bookings[1]);
+        PostedVersusApp = ApplicationFactory.Booked(2, 54, Bookings[2]);
+        PostedFlatFeeApp = ApplicationFactory.Complete(2, 31, Bookings[3]);
+        PostedVenueHireApp = ApplicationFactory.CompletePrepaid(1, 21, Bookings[4]);
         AwaitingPaymentApp = ApplicationFactory.Accepted(1, 33, Bookings[5]);
-        FinishedDoorSplitApp = ApplicationFactory.Accepted(1, 50, Bookings[6]);
-        FinishedVersusApp = ApplicationFactory.Accepted(1, 51, Bookings[7]);
-        PastVersusApp = ApplicationFactory.Accepted(1, Opportunities[63].Id, Bookings[8]);
-        PastFlatFeeApp = ApplicationFactory.Accepted(1, Opportunities[64].Id, Bookings[9]);
-        PastVenueHireApp = ApplicationFactory.AcceptedPrepaid(1, Opportunities[65].Id, Bookings[10]);
-        PastDoorSplitApp = ApplicationFactory.Accepted(1, Opportunities[66].Id, Bookings[11]);
-        UpcomingFlatFeeApp = ApplicationFactory.Accepted(2, 58, Bookings[12]);
-        UpcomingVenueHireApp = ApplicationFactory.AcceptedPrepaid(1, 59, Bookings[13]);
+        FinishedDoorSplitApp = ApplicationFactory.Complete(1, 50, Bookings[6]);
+        FinishedVersusApp = ApplicationFactory.Complete(1, 51, Bookings[7]);
+        PastVersusApp = ApplicationFactory.Booked(1, Opportunities[63].Id, Bookings[8]);
+        PastFlatFeeApp = ApplicationFactory.Booked(1, Opportunities[64].Id, Bookings[9]);
+        PastVenueHireApp = ApplicationFactory.BookedPrepaid(1, Opportunities[65].Id, Bookings[10]);
+        PastDoorSplitApp = ApplicationFactory.Booked(1, Opportunities[66].Id, Bookings[11]);
+        UpcomingFlatFeeApp = ApplicationFactory.Booked(2, 58, Bookings[12]);
+        UpcomingVenueHireApp = ApplicationFactory.BookedPrepaid(1, 59, Bookings[13]);
 
         DoorSplitApp = ApplicationFactory.Create(1, Opportunities[55].Id, Contracts[55].ContractType);
         VersusApp = ApplicationFactory.Create(1, Opportunities[56].Id, Contracts[56].ContractType);
@@ -345,32 +345,32 @@ public sealed class SeedState
 
         Applications =
         [
-            ApplicationFactory.Accepted(1, 1, Bookings[14]),
-            ApplicationFactory.Accepted(2, 1, Bookings[15]),
-            ApplicationFactory.Accepted(3, 1, Bookings[16]),
-            ApplicationFactory.Accepted(4, 1, Bookings[17]),
-            ApplicationFactory.Accepted(1, 2, Bookings[18]),
-            ApplicationFactory.Accepted(2, 2, Bookings[19]),
-            ApplicationFactory.Accepted(5, 2, Bookings[20]),
-            ApplicationFactory.Accepted(6, 2, Bookings[21]),
-            ApplicationFactory.Accepted(1, 3, Bookings[22]),
-            ApplicationFactory.Accepted(2, 3, Bookings[23]),
-            ApplicationFactory.Accepted(7, 3, Bookings[24]),
-            ApplicationFactory.Accepted(8, 3, Bookings[25]),
-            ApplicationFactory.Accepted(1, 4, Bookings[26]),
-            ApplicationFactory.Accepted(2, 4, Bookings[27]),
-            ApplicationFactory.Accepted(9, 4, Bookings[28]),
-            ApplicationFactory.Accepted(10, 4, Bookings[29]),
-            ApplicationFactory.Accepted(1, 5, Bookings[30]),
-            ApplicationFactory.Accepted(2, 5, Bookings[31]),
-            ApplicationFactory.Accepted(11, 5, Bookings[32]),
-            ApplicationFactory.Accepted(12, 5, Bookings[33]),
+            ApplicationFactory.Complete(1, 1, Bookings[14]),
+            ApplicationFactory.Complete(2, 1, Bookings[15]),
+            ApplicationFactory.Complete(3, 1, Bookings[16]),
+            ApplicationFactory.Complete(4, 1, Bookings[17]),
+            ApplicationFactory.Complete(1, 2, Bookings[18]),
+            ApplicationFactory.Complete(2, 2, Bookings[19]),
+            ApplicationFactory.Complete(5, 2, Bookings[20]),
+            ApplicationFactory.Complete(6, 2, Bookings[21]),
+            ApplicationFactory.Complete(1, 3, Bookings[22]),
+            ApplicationFactory.Complete(2, 3, Bookings[23]),
+            ApplicationFactory.Complete(7, 3, Bookings[24]),
+            ApplicationFactory.Complete(8, 3, Bookings[25]),
+            ApplicationFactory.Complete(1, 4, Bookings[26]),
+            ApplicationFactory.Complete(2, 4, Bookings[27]),
+            ApplicationFactory.Complete(9, 4, Bookings[28]),
+            ApplicationFactory.Complete(10, 4, Bookings[29]),
+            ApplicationFactory.Complete(1, 5, Bookings[30]),
+            ApplicationFactory.Complete(2, 5, Bookings[31]),
+            ApplicationFactory.Complete(11, 5, Bookings[32]),
+            ApplicationFactory.Complete(12, 5, Bookings[33]),
             ConfirmedApp,
-            ApplicationFactory.Accepted(2, 6, Bookings[34]),
-            ApplicationFactory.Accepted(13, 6, Bookings[35]),
-            ApplicationFactory.Accepted(14, 6, Bookings[36]),
-            ApplicationFactory.Accepted(1, 7, Bookings[37]),
-            ApplicationFactory.Accepted(2, 7, Bookings[38]),
+            ApplicationFactory.Complete(2, 6, Bookings[34]),
+            ApplicationFactory.Complete(13, 6, Bookings[35]),
+            ApplicationFactory.Complete(14, 6, Bookings[36]),
+            ApplicationFactory.Complete(1, 7, Bookings[37]),
+            ApplicationFactory.Complete(2, 7, Bookings[38]),
             ApplicationFactory.Create(15, 7),
             ApplicationFactory.Create(16, 7),
             ApplicationFactory.Create(1, 8),
@@ -379,17 +379,17 @@ public sealed class SeedState
             ApplicationFactory.Create(18, 8),
             ApplicationFactory.Create(17, 40),
             ApplicationFactory.Create(18, 41),
-            ApplicationFactory.Accepted(1, 14, Bookings[39]),
+            ApplicationFactory.Booked(1, 14, Bookings[39]),
             ApplicationFactory.Create(2, 14),
             ApplicationFactory.Create(3, 14),
             ApplicationFactory.Create(4, 14),
             PostedDoorSplitApp,
             DoorSplitApp,
             ApplicationFactory.Create(7, 15),
-            ApplicationFactory.Accepted(8, 15, Bookings[40]),
+            ApplicationFactory.Booked(8, 15, Bookings[40]),
             ApplicationFactory.CreatePrepaid(9, 16),
             ApplicationFactory.CreatePrepaid(10, 16),
-            ApplicationFactory.AcceptedPrepaid(11, 16, Bookings[41]),
+            ApplicationFactory.BookedPrepaid(11, 16, Bookings[41]),
             ApplicationFactory.CreatePrepaid(12, 16),
             VersusApp,
             ApplicationFactory.Create(14, 17),
@@ -428,20 +428,20 @@ public sealed class SeedState
             PastDoorSplitApp,
             UpcomingFlatFeeApp,
             UpcomingVenueHireApp,
-            ApplicationFactory.Accepted(3, 34, Bookings[42]),
+            ApplicationFactory.Booked(3, 34, Bookings[42]),
             ApplicationFactory.Create(4, 34),
             ApplicationFactory.Create(5, 34),
-            ApplicationFactory.Accepted(1, 35, Bookings[43]),
+            ApplicationFactory.Booked(1, 35, Bookings[43]),
             ApplicationFactory.Create(2, 35),
             ApplicationFactory.Create(4, 35),
             ApplicationFactory.Create(5, 35),
-            ApplicationFactory.Accepted(4, 46, Bookings[44]),
+            ApplicationFactory.Booked(4, 46, Bookings[44]),
             ApplicationFactory.Create(5, 46),
             ApplicationFactory.Create(6, 46),
-            ApplicationFactory.Accepted(5, 47, Bookings[45]),
+            ApplicationFactory.Booked(5, 47, Bookings[45]),
             ApplicationFactory.Create(6, 47),
             ApplicationFactory.Create(7, 47),
-            ApplicationFactory.AcceptedPrepaid(6, 48, Bookings[46]),
+            ApplicationFactory.BookedPrepaid(6, 48, Bookings[46]),
             ApplicationFactory.CreatePrepaid(7, 48),
             ApplicationFactory.CreatePrepaid(8, 48),
         ];

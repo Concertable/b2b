@@ -30,6 +30,7 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<ApplicationEntity> builder)
     {
         builder.ToTable(Schema.Tables.Applications, Schema.Name);
+        builder.Property(ca => ca.State);
         builder.HasIndex(ca => new { ca.OpportunityId, ca.ArtistId }).IsUnique();
         builder.HasOne(ca => ca.Opportunity)
             .WithMany(o => o.Applications)

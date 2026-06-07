@@ -15,7 +15,6 @@ internal sealed class BookingService : IBookingService
     public async Task<StandardBookingDto> CreateStandardAsync(int applicationId, ContractType contractType)
     {
         var booking = StandardBooking.Create(applicationId, contractType);
-        booking.AwaitPayment();
         await bookingRepository.AddAsync(booking);
         await bookingRepository.SaveChangesAsync();
         return booking.ToDto();
@@ -29,39 +28,12 @@ internal sealed class BookingService : IBookingService
         return booking.ToDto();
     }
 
-    public async Task<BookingSettlement> MarkAwaitingPaymentByConcertIdAsync(int concertId)
+    public async Task<BookingSettlement> GetSettlementByConcertIdAsync(int concertId)
     {
         var booking = await bookingRepository.GetForSettlementByConcertIdAsync(concertId)
             ?? throw new NotFoundException("Booking not found");
         if (booking is not DeferredBooking deferred)
             throw new BadRequestException("Concert finish requires a DeferredBooking");
-        deferred.AwaitPayment();
-        await bookingRepository.SaveChangesAsync();
         return deferred.ToSettlement();
-    }
-
-    public async Task<IBooking> CompleteByConcertIdAsync(int concertId)
-    {
-        var booking = await bookingRepository.GetForCompletionByConcertIdAsync(concertId)
-            ?? throw new NotFoundException("Booking not found");
-        booking.Complete();
-        await bookingRepository.SaveChangesAsync();
-        return booking.ToDto();
-    }
-
-    public async Task CompleteAsync(int bookingId)
-    {
-        var booking = await bookingRepository.GetByIdAsync(bookingId)
-            ?? throw new NotFoundException("Booking not found");
-        booking.Complete();
-        await bookingRepository.SaveChangesAsync();
-    }
-
-    public async Task FailPaymentAsync(int bookingId, CancellationToken ct = default)
-    {
-        var booking = await bookingRepository.GetByIdAsync(bookingId)
-            ?? throw new NotFoundException("Booking not found");
-        booking.FailPayment();
-        await bookingRepository.SaveChangesAsync();
     }
 }

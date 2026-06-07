@@ -2,11 +2,14 @@
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Contract.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
-using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
+using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
@@ -51,7 +54,28 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldReturn400_WhenAlreadyAccepted()
+    public async Task Apply_ShouldCreateStandardApplication_WithoutPaymentMethod()
+    {
+        // Arrange — venue manager creates a fresh DoorSplit opportunity
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var oppResponse = await venueClient.PostAsync("/api/Opportunity",
+            BuildRequest(new DoorSplitContract { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 }));
+        var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
+
+        // Act — artist applies directly with no payment method
+        var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}");
+
+        // Assert — 201 Created, a StandardApplication row was created
+        await applyResponse.ShouldBe(HttpStatusCode.Created);
+        var standard = await fixture.ReadDbContext.Applications
+            .OfType<StandardApplication>()
+            .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
+        Assert.NotNull(standard);
+    }
+
+    [Fact]
+    public async Task Accept_ShouldReturn409_WhenAlreadyAccepted()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
@@ -61,7 +85,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         var response = await client.PostAsync(
             $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
 
-        await response.ShouldBe(HttpStatusCode.BadRequest);
+        await response.ShouldBe(HttpStatusCode.Conflict);
     }
 
     [Fact]
@@ -146,8 +170,8 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
-        Assert.Equal(BookingStatus.Pending, booking.Status);
+        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.DoorSplitApp.Id);
+        Assert.Equal(LifecycleState.PaymentFailed, application.State);
         Assert.Empty(fixture.NotificationService.DraftCreated);
         var notification = Assert.Single(fixture.NotificationService.Other, n => n.EventName == "VerifyPaymentFailed");
         Assert.Equal(fixture.SeedState.VenueManager1.Id.ToString(), notification.UserId);

@@ -4,12 +4,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
 
 internal sealed class SettlementDispatcher : ISettlementDispatcher
 {
-    private readonly ISettleExecutor executor;
+    private readonly ISettlementExecutor executor;
 
-    public SettlementDispatcher(ISettleExecutor executor)
+    public SettlementDispatcher(ISettlementExecutor executor)
     {
         this.executor = executor;
     }
 
-    public Task SettleAsync(int bookingId) => executor.ExecuteAsync(bookingId);
+    public Task SucceededAsync(int bookingId) => executor.ExecuteAsync(bookingId);
+
+    public Task FailedAsync(int bookingId) => executor.ExecuteFailedAsync(bookingId);
 }

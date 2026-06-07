@@ -12,11 +12,6 @@ public sealed class BookingDb
         this.connection = connection;
     }
 
-    public Task<int> GetStatusByApplicationIdAsync(int applicationId) =>
-        connection.QuerySingleAsync<int>(
-            "SELECT Status FROM concert.Bookings WHERE ApplicationId = @applicationId",
-            new { applicationId });
-
     public Task<int> GetIdByApplicationIdAsync(int applicationId) =>
         connection.QuerySingleAsync<int>(
             "SELECT Id FROM concert.Bookings WHERE ApplicationId = @applicationId",

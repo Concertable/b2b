@@ -38,11 +38,8 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "Accepting application {ApplicationId} (booking {BookingId}): charging {Amount} GBP from {PayerId} on behalf of {PayeeId}")]
     internal static partial void AcceptingVenueHireApplication(this ILogger logger, int applicationId, int bookingId, decimal amount, Guid payerId, Guid payeeId);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Calculated door-split artist share for concert {ConcertId}: {Revenue} revenue at {Percent}% = {Share}")]
-    internal static partial void DoorSplitArtistShareCalculated(this ILogger logger, int concertId, decimal revenue, decimal percent, decimal share);
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Calculated versus artist share for concert {ConcertId}: {Guarantee} guarantee + ({Revenue} revenue at {Percent}%) = {Share}")]
-    internal static partial void VersusArtistShareCalculated(this ILogger logger, int concertId, decimal guarantee, decimal revenue, decimal percent, decimal share);
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Calculated artist share for concert {ConcertId}: {Revenue} revenue = {Share}")]
+    internal static partial void ArtistShareCalculated(this ILogger logger, int concertId, decimal revenue, decimal share);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Settling concert {ConcertId} (booking {BookingId}): paying {Amount} GBP from {PayerId} to {PayeeId}")]
     internal static partial void SettlingConcert(this ILogger logger, int concertId, int bookingId, decimal amount, Guid payerId, Guid payeeId);

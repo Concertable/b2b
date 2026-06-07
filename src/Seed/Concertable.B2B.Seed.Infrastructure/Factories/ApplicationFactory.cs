@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Contract.Contracts;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
@@ -11,40 +11,43 @@ public static class ApplicationFactory
         => StandardApplication.Create(artistId, opportunityId);
 
     public static StandardApplication Create(int artistId, int opportunityId, ContractType contractType)
-    {
-        var app = StandardApplication.Create(artistId, opportunityId, contractType);
-        app.AdvanceStage(ConcertStage.Applied);
-        return app;
-    }
+        => StandardApplication.Create(artistId, opportunityId, contractType);
 
     public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
         => PrepaidApplication.Create(artistId, opportunityId, paymentMethodId);
 
     public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, ContractType contractType, string paymentMethodId = "pm_card_visa")
-    {
-        var app = PrepaidApplication.Create(artistId, opportunityId, contractType, paymentMethodId);
-        app.AdvanceStage(ConcertStage.Applied);
-        return app;
-    }
+        => PrepaidApplication.Create(artistId, opportunityId, contractType, paymentMethodId);
 
     public static StandardApplication Accepted(int artistId, int opportunityId, BookingEntity booking)
-    {
-        var app = New<StandardApplication>()
-            .With(nameof(ApplicationEntity.ArtistId), artistId)
-            .With(nameof(ApplicationEntity.OpportunityId), opportunityId)
-            .With(nameof(ApplicationEntity.Status), ApplicationStatus.Accepted);
-        app.Booking = booking;
-        return app;
-    }
+        => InState<StandardApplication>(artistId, opportunityId, booking, LifecycleState.Accepted);
 
     public static PrepaidApplication AcceptedPrepaid(int artistId, int opportunityId, BookingEntity booking, string paymentMethodId = "pm_card_visa")
+        => InState<PrepaidApplication>(artistId, opportunityId, booking, LifecycleState.Accepted)
+            .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
+
+    public static StandardApplication Booked(int artistId, int opportunityId, BookingEntity booking)
+        => InState<StandardApplication>(artistId, opportunityId, booking, LifecycleState.Booked);
+
+    public static PrepaidApplication BookedPrepaid(int artistId, int opportunityId, BookingEntity booking, string paymentMethodId = "pm_card_visa")
+        => InState<PrepaidApplication>(artistId, opportunityId, booking, LifecycleState.Booked)
+            .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
+
+    public static StandardApplication Complete(int artistId, int opportunityId, BookingEntity booking)
+        => InState<StandardApplication>(artistId, opportunityId, booking, LifecycleState.Complete);
+
+    public static PrepaidApplication CompletePrepaid(int artistId, int opportunityId, BookingEntity booking, string paymentMethodId = "pm_card_visa")
+        => InState<PrepaidApplication>(artistId, opportunityId, booking, LifecycleState.Complete)
+            .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
+
+    private static TApplication InState<TApplication>(int artistId, int opportunityId, BookingEntity booking, LifecycleState state)
+        where TApplication : ApplicationEntity
     {
-        var app = New<PrepaidApplication>()
+        var app = New<TApplication>()
             .With(nameof(ApplicationEntity.ArtistId), artistId)
             .With(nameof(ApplicationEntity.OpportunityId), opportunityId)
-            .With(nameof(ApplicationEntity.Status), ApplicationStatus.Accepted)
-            .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
-        app.Booking = booking;
+            .With(nameof(ApplicationEntity.State), state);
+        app.Accept(booking);
         return app;
     }
 }

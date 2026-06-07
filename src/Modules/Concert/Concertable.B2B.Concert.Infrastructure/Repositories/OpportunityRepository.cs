@@ -1,6 +1,6 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Enums;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.Contracts;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,8 +18,8 @@ internal sealed class OpportunityRepository : Repository<OpportunityEntity>, IOp
     public async Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int id, IPageParams pageParams)
     {
         var query = context.Opportunities
-            .Where(o => o.VenueId == id && o.Period.Start >= timeProvider.GetUtcNow())
-            .Where(o => !o.Applications.Any(a => a.Status == ApplicationStatus.Accepted))
+            .Where(o => o.VenueId == id)
+            .WhereActive(timeProvider.GetUtcNow())
             .OrderBy(o => o.Period.Start);
 
         return await query.ToPaginationAsync(pageParams);
@@ -28,8 +28,8 @@ internal sealed class OpportunityRepository : Repository<OpportunityEntity>, IOp
     public async Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId)
     {
         return await context.Opportunities
-            .Where(o => o.VenueId == venueId && o.Period.Start >= timeProvider.GetUtcNow())
-            .Where(o => !o.Applications.Any(a => a.Status == ApplicationStatus.Accepted))
+            .Where(o => o.VenueId == venueId)
+            .WhereActive(timeProvider.GetUtcNow())
             .OrderBy(o => o.Period.Start)
             .ToListAsync();
     }

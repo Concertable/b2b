@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using FluentResults;
 
 namespace Concertable.B2B.Concert.Infrastructure.Validators;
@@ -17,7 +17,7 @@ internal sealed class ConcertValidator : IConcertValidator
     {
         var errors = new List<string>();
 
-        if (concert.Booking.Status != BookingStatus.Confirmed)
+        if (concert.Booking.Application.State != LifecycleState.Booked)
             errors.Add("Concert cannot be posted until the booking is confirmed");
 
         if (concert.DatePosted is not null)

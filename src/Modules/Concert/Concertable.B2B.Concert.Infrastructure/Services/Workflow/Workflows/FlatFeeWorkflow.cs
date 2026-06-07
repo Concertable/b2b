@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Application.Workflow;
+using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Capabilities;
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
@@ -10,20 +10,20 @@ internal sealed class FlatFeeWorkflow : IConcertWorkflow, IAppliesSimple, IAccep
     private readonly ISimpleApplyStep apply;
     private readonly IAcceptCheckoutStep acceptCheckout;
     private readonly ISimpleAcceptStep accept;
-    private readonly ISettleStep settle;
+    private readonly IBookStep book;
     private readonly IFinishStep finish;
 
     public FlatFeeWorkflow(
         SimpleApplyStep apply,
-        FlatFeeAcceptCheckoutStep acceptCheckout,
-        FlatFeeAcceptStep accept,
-        NoOpSettleStep settle,
-        FlatFeeFinishStep finish)
+        HoldCheckoutStep acceptCheckout,
+        CaptureEscrowAcceptStep accept,
+        CreateConcertDraftStep book,
+        ReleaseEscrowFinishStep finish)
     {
         this.apply = apply;
         this.acceptCheckout = acceptCheckout;
         this.accept = accept;
-        this.settle = settle;
+        this.book = book;
         this.finish = finish;
     }
 
@@ -31,6 +31,6 @@ internal sealed class FlatFeeWorkflow : IConcertWorkflow, IAppliesSimple, IAccep
     public ISimpleApplyStep Apply => apply;
     public IAcceptCheckoutStep AcceptCheckout => acceptCheckout;
     public ISimpleAcceptStep Accept => accept;
-    public ISettleStep Settle => settle;
+    public IBookStep Book => book;
     public IFinishStep Finish => finish;
 }

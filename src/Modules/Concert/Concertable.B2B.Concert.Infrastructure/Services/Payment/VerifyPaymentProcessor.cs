@@ -38,7 +38,7 @@ internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentS
 
         try
         {
-            await concertWorkflowModule.VerifyAsync(applicationId, ct);
+            await concertWorkflowModule.VerifySucceededAsync(applicationId, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

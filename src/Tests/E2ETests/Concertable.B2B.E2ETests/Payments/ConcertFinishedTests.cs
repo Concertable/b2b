@@ -1,6 +1,6 @@
 using System.Net;
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.Concert.Domain.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Testing;
 using Xunit;
 
@@ -21,8 +21,8 @@ public sealed class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 
         // Assert
         await fixture.Polling.UntilAsync(
-            () => fixture.DbFixture.Booking.GetStatusByApplicationIdAsync(fixture.SeedState.PastFlatFeeApp.Id),
-            status => status == (int)BookingStatus.Complete,
+            () => fixture.DbFixture.Application.GetStateByIdAsync(fixture.SeedState.PastFlatFeeApp.Id),
+            state => state == (int)LifecycleState.Complete,
             timeout: TimeSpan.FromSeconds(30));
     }
 
@@ -34,8 +34,8 @@ public sealed class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 
         // Assert
         await fixture.Polling.UntilAsync(
-            () => fixture.DbFixture.Booking.GetStatusByApplicationIdAsync(fixture.SeedState.PastVenueHireApp.Id),
-            status => status == (int)BookingStatus.Complete,
+            () => fixture.DbFixture.Application.GetStateByIdAsync(fixture.SeedState.PastVenueHireApp.Id),
+            state => state == (int)LifecycleState.Complete,
             timeout: TimeSpan.FromSeconds(30));
     }
 

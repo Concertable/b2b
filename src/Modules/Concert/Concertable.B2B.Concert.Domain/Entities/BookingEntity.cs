@@ -1,22 +1,14 @@
-using Concertable.B2B.Concert.Domain.Enums;
-using Concertable.B2B.Concert.Domain.Events;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
-public abstract class BookingEntity : IIdEntity, ILifecycleEntity, IEventRaiser
+public abstract class BookingEntity : IIdEntity
 {
     public int Id { get; private set; }
     public int ApplicationId { get; private set; }
-    public BookingStatus Status { get; private set; }
     public ContractType ContractType { get; private set; }
-    public ConcertStage CurrentStage { get; private set; } = ConcertStage.Accepted;
     public ApplicationEntity Application { get; set; } = null!;
     public ConcertEntity? Concert { get; private set; }
-
-    private readonly EventRaiser events = new();
-    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
-    public void ClearDomainEvents() => events.Clear();
 
     protected BookingEntity() { }
 
@@ -24,46 +16,9 @@ public abstract class BookingEntity : IIdEntity, ILifecycleEntity, IEventRaiser
     {
         ApplicationId = applicationId;
         ContractType = contractType;
-        Status = BookingStatus.Pending;
     }
 
-    public void AdvanceStage(ConcertStage next)
-    {
-        CurrentStage = next;
-        if (next == ConcertStage.Settled)
-            events.Raise(new BookingSettledDomainEvent(Id, ContractType));
-    }
-
-    public void AwaitPayment()
-    {
-        if (Status != BookingStatus.Pending && Status != BookingStatus.Confirmed)
-            throw new DomainException("Only pending or confirmed bookings can await payment.");
-        Status = BookingStatus.AwaitingPayment;
-    }
-
-    public void Confirm(ConcertEntity concert)
-    {
-        if (Status != BookingStatus.Pending && Status != BookingStatus.AwaitingPayment)
-            throw new DomainException("Only pending or awaiting payment bookings can be confirmed.");
-        Concert = concert;
-        Status = BookingStatus.Confirmed;
-    }
-
-    public void Complete()
-    {
-        if (Status != BookingStatus.AwaitingPayment && Status != BookingStatus.Confirmed)
-            throw new DomainException("Only awaiting payment or confirmed bookings can be completed.");
-        if (DateTime.UtcNow < Application.Opportunity.Period.End)
-            throw new DomainException("Booking cannot be completed before the concert has ended.");
-        Status = BookingStatus.Complete;
-    }
-
-    public void FailPayment()
-    {
-        if (Status != BookingStatus.AwaitingPayment)
-            throw new DomainException("Only bookings awaiting payment can fail.");
-        Status = BookingStatus.PaymentFailed;
-    }
+    public void Confirm(ConcertEntity concert) => Concert = concert;
 }
 
 public sealed class StandardBooking : BookingEntity

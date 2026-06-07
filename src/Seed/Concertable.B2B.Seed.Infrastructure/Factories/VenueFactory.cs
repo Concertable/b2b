@@ -20,7 +20,7 @@ public static class VenueFactory
     {
         var venue = VenueEntity
             .Create(userId, name, about, bannerUrl, avatar, location, address, email)
-            .With(nameof(VenueEntity.Id), id);
+            .WithId(id);
         venue.Approve();
         return venue;
     }

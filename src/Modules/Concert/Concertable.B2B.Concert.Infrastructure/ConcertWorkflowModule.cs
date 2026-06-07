@@ -6,22 +6,31 @@ namespace Concertable.B2B.Concert.Infrastructure;
 
 internal sealed class ConcertWorkflowModule : IConcertWorkflowModule
 {
+    private readonly IEscrowDispatcher escrowDispatcher;
     private readonly ISettlementDispatcher settlementDispatcher;
     private readonly ICompletionDispatcher completionDispatcher;
     private readonly IVerifyDispatcher verifyDispatcher;
 
     public ConcertWorkflowModule(
+        IEscrowDispatcher escrowDispatcher,
         ISettlementDispatcher settlementDispatcher,
         ICompletionDispatcher completionDispatcher,
         IVerifyDispatcher verifyDispatcher)
     {
+        this.escrowDispatcher = escrowDispatcher;
         this.settlementDispatcher = settlementDispatcher;
         this.completionDispatcher = completionDispatcher;
         this.verifyDispatcher = verifyDispatcher;
     }
 
-    public Task SettleAsync(int bookingId, CancellationToken ct = default)
-        => settlementDispatcher.SettleAsync(bookingId);
+    public Task VerifySucceededAsync(int applicationId, CancellationToken ct = default)
+        => verifyDispatcher.VerifySucceededAsync(applicationId);
+
+    public Task EscrowSucceededAsync(int bookingId, CancellationToken ct = default)
+        => escrowDispatcher.SucceededAsync(bookingId);
+
+    public Task SettlementSucceededAsync(int bookingId, CancellationToken ct = default)
+        => settlementDispatcher.SucceededAsync(bookingId);
 
     public async Task FinishAsync(int concertId, CancellationToken ct = default)
     {
@@ -29,7 +38,4 @@ internal sealed class ConcertWorkflowModule : IConcertWorkflowModule
         if (result.IsFailed)
             throw new BadRequestException(result.Errors);
     }
-
-    public Task VerifyAsync(int applicationId, CancellationToken ct = default)
-        => verifyDispatcher.VerifyAsync(applicationId);
 }

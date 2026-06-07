@@ -5,6 +5,6 @@ namespace Concertable.B2B.Concert.Application.Workflow;
 internal interface IConcertWorkflow
 {
     ContractType Type { get; }
-    ISettleStep Settle { get; }
+    IBookStep Book { get; }
     IFinishStep Finish { get; }
 }

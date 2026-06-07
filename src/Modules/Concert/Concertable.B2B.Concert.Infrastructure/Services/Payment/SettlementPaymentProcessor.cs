@@ -38,7 +38,7 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
 
         try
         {
-            await concertWorkflowModule.SettleAsync(bookingId, ct);
+            await concertWorkflowModule.SettlementSucceededAsync(bookingId, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

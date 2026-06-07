@@ -1,4 +1,3 @@
-using Concertable.B2B.Concert.Domain.Enums;
 using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.Contracts;
@@ -11,7 +10,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// Holds denormalized <see cref="ArtistReadModel"/> and <see cref="VenueReadModel"/> references
 /// so the Concert module can satisfy queries in a single DB context without crossing module boundaries.
 /// </summary>
-public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, ILifecycleEntity, IEventRaiser
+public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRaiser
 {
     public int Id { get; private set; }
     public int BookingId { get; private set; }
@@ -27,7 +26,6 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, ILifecyc
     public DateRange Period { get; private set; } = null!;
     public DateTime? DatePosted { get; private set; }
     public ContractType ContractType { get; private set; }
-    public ConcertStage CurrentStage { get; private set; } = ConcertStage.Settled;
     public BookingEntity Booking { get; set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
     public VenueReadModel Venue { get; set; } = null!;
@@ -61,8 +59,6 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, ILifecyc
         };
 
     public void IncrementTicketsSold(int quantity) => TicketsSold += quantity;
-
-    public void AdvanceStage(ConcertStage next) => CurrentStage = next;
 
     public void Update(string name, string about, decimal price, int totalTickets)
     {
