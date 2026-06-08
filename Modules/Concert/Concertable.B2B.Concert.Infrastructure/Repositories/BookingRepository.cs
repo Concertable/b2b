@@ -62,14 +62,6 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
             .FirstOrDefaultAsync();
     }
 
-    public Task<int?> GetApplicationIdByConcertIdAsync(int concertId)
-    {
-        return context.Bookings
-            .Where(b => b.Concert!.Id == concertId)
-            .Select(b => (int?)b.ApplicationId)
-            .FirstOrDefaultAsync();
-    }
-
     public Task<int?> GetContractIdByIdAsync(int bookingId)
     {
         return context.Bookings

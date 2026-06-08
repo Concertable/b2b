@@ -163,7 +163,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await context.Concerts
             .Where(c => c.Booking.Application.State == LifecycleState.Booked
-                     && c.Period.Start < now)
+                     && c.Period.End < now)
             .Select(c => c.Id)
             .ToListAsync();
     }
