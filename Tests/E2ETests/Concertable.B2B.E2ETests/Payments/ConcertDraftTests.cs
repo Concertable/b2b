@@ -1,6 +1,7 @@
 using System.Net;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.Payment.Client;
 using Concertable.Testing;
 using Xunit;
 using Xunit.Abstractions;
@@ -32,19 +33,19 @@ public sealed class ConcertDraftTests : IAsyncLifetime
     [Fact]
     public async Task ShouldCreateDraftAndPayArtist_WhenFlatFeeApplicationAccepted()
     {
+        var clientSecret = await PlaceAcceptHoldAsync(fixture.SeedState.FlatFeeApp.Id);
+        await fixture.Stripe.ConfirmHoldAsync(clientSecret);
+
         var acceptResponse = await venueManagerClient.PostAsync(
-            $"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept",
-            new { PaymentMethodId = AppFixture.TestPaymentMethodId });
+            $"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept");
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
         var bookingId = await fixture.DbFixture.Booking.GetIdByApplicationIdAsync(fixture.SeedState.FlatFeeApp.Id);
-        var paymentIntentId = await fixture.Polling.UntilAsync(
-            () => fixture.DbFixture.Payment.GetLatestSettlementPaymentIntentIdAsync(bookingId),
+        var escrowPayeeId = await fixture.Polling.UntilAsync(
+            () => fixture.DbFixture.Payment.GetEscrowPayeeIdAsync(bookingId),
             id => id is not null,
             timeout: TimeSpan.FromSeconds(15));
-
-        var intent = await fixture.StripePaymentIntents.GetAsync(paymentIntentId);
-        Assert.Equal(StripeE2EAccountResolver.AccountIds[fixture.SeedState.ArtistManager1.Id], intent.TransferData.DestinationId);
+        Assert.Equal(fixture.SeedState.ArtistManager1.Id, escrowPayeeId);
 
         await fixture.Polling.UntilAsync(
             async () =>
@@ -61,18 +62,15 @@ public sealed class ConcertDraftTests : IAsyncLifetime
     public async Task ShouldCreateDraftAndPayVenue_WhenVenueHireApplicationAccepted()
     {
         var response = await venueManagerClient.PostAsync(
-            $"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept",
-            (HttpContent?)null);
-        await response.ShouldBe(HttpStatusCode.OK);
+            $"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept");
+        await response.ShouldBe(HttpStatusCode.NoContent);
 
         var bookingId = await fixture.DbFixture.Booking.GetIdByApplicationIdAsync(fixture.SeedState.VenueHireApp.Id);
-        var paymentIntentId = await fixture.Polling.UntilAsync(
-            () => fixture.DbFixture.Payment.GetLatestSettlementPaymentIntentIdAsync(bookingId),
+        var escrowPayeeId = await fixture.Polling.UntilAsync(
+            () => fixture.DbFixture.Payment.GetEscrowPayeeIdAsync(bookingId),
             id => id is not null,
             timeout: TimeSpan.FromSeconds(15));
-
-        var intent = await fixture.StripePaymentIntents.GetAsync(paymentIntentId);
-        Assert.Equal(StripeE2EAccountResolver.AccountIds[fixture.SeedState.VenueManager1.Id], intent.TransferData.DestinationId);
+        Assert.Equal(fixture.SeedState.VenueManager1.Id, escrowPayeeId);
 
         await fixture.Polling.UntilAsync(
             async () =>
@@ -112,4 +110,14 @@ public sealed class ConcertDraftTests : IAsyncLifetime
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
     }
+
+    private async Task<string> PlaceAcceptHoldAsync(int applicationId)
+    {
+        var response = await venueManagerClient.PostAsync($"/api/Application/{applicationId}/checkout");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var checkout = await response.Content.ReadAsync<CheckoutResult>();
+        return checkout!.Session.ClientSecret;
+    }
+
+    private sealed record CheckoutResult(CheckoutSession Session);
 }

@@ -29,7 +29,9 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Concertable.DataAccess.Application;
+using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Concertable.Kernel;
@@ -73,6 +75,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IConcertValidator, ConcertValidator>();
         services.AddScoped<IApplicationValidator, ApplicationValidator>();
 
+        services.TryAddSingleton(typeof(IScoped<>), typeof(Scoped<>));
         services.AddScoped<IConcertCompletionRunner, ConcertCompletionRunner>();
 
         services.AddScoped<ILifecycleTransitioner, LifecycleTransitioner>();
