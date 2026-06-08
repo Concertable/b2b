@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
+using Concertable.DataAccess.Application;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -11,6 +12,7 @@ public sealed class ConcertCompletionRunnerTests
 {
     private readonly Mock<IConcertRepository> concertRepository;
     private readonly Mock<ICompletionDispatcher> completionDispatcher;
+    private readonly Mock<IScoped<ICompletionDispatcher>> completion;
     private readonly Mock<ILogger<ConcertCompletionRunner>> logger;
     private readonly ConcertCompletionRunner sut;
 
@@ -18,10 +20,14 @@ public sealed class ConcertCompletionRunnerTests
     {
         concertRepository = new Mock<IConcertRepository>();
         completionDispatcher = new Mock<ICompletionDispatcher>();
+        completion = new Mock<IScoped<ICompletionDispatcher>>();
         logger = new Mock<ILogger<ConcertCompletionRunner>>();
-        sut = new ConcertCompletionRunner(concertRepository.Object, completionDispatcher.Object, logger.Object);
+        sut = new ConcertCompletionRunner(concertRepository.Object, completion.Object, logger.Object);
 
         completionDispatcher.Setup(p => p.FinishAsync(It.IsAny<int>())).ReturnsAsync(Result.Ok());
+        completion
+            .Setup(s => s.RunAsync(It.IsAny<Func<ICompletionDispatcher, Task<Result>>>()))
+            .Returns<Func<ICompletionDispatcher, Task<Result>>>(action => action(completionDispatcher.Object));
     }
 
     [Fact]
