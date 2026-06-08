@@ -1,0 +1,19 @@
+using Concertable.Contracts;
+using Concertable.Messaging.Contracts;
+
+namespace Concertable.B2B.Artist.Contracts.Events;
+
+[MessageType("concertable.b2b.artist-changed.v1")]
+public sealed record ArtistChangedEvent(
+    int ArtistId,
+    Guid UserId,
+    string Name,
+    string About,
+    string Avatar,
+    string BannerUrl,
+    string County,
+    string Town,
+    double Latitude,
+    double Longitude,
+    string Email,
+    IReadOnlyCollection<Genre> Genres) : IIntegrationEvent;

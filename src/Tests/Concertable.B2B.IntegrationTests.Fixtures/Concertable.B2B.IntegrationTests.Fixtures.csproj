@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsTestProject>false</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.4" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Tests\Concertable.Testing.Integration\Concertable.Testing.Integration.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Web\Concertable.B2B.Web.csproj" />
+    <ProjectReference Include="..\..\..\Concertable.Payment\Concertable.Payment.Infrastructure\Concertable.Payment.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Seed\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Seed\Concertable.Seed.Infrastructure\Concertable.Seed.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+global using Concertable.Kernel.Identity;
+global using Concertable.B2B.User.Contracts;
+global using Concertable.B2B.User.Application.Interfaces;
+global using Concertable.B2B.User.Domain;
+global using Concertable.B2B.Concert.Domain;
+global using Concertable.B2B.Contract.Contracts;
+global using Concertable.B2B.Concert.Application.Interfaces;
+global using Concertable.B2B.Concert.Application.DTOs;
+global using Concertable.B2B.Concert.Application.Requests;
+global using Concertable.B2B.Concert.Application.Responses;
+global using Concertable.B2B.Concert.Application.Validators;
+global using Concertable.B2B.Concert.Application.Mappers;

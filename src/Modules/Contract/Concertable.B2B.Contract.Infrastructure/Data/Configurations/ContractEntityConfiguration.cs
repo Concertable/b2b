@@ -1,0 +1,38 @@
+using Concertable.B2B.Contract.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace Concertable.B2B.Contract.Infrastructure.Data.Configurations;
+
+internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<ContractEntity>
+{
+    public void Configure(EntityTypeBuilder<ContractEntity> builder)
+    {
+        builder.ToTable(Schema.Tables.Contracts, Schema.Name);
+        builder.UseTptMappingStrategy();
+    }
+}
+
+internal sealed class FlatFeeContractEntityConfiguration : IEntityTypeConfiguration<FlatFeeContractEntity>
+{
+    public void Configure(EntityTypeBuilder<FlatFeeContractEntity> builder)
+        => builder.ToTable(Schema.Tables.FlatFeeContracts, Schema.Name);
+}
+
+internal sealed class DoorSplitContractEntityConfiguration : IEntityTypeConfiguration<DoorSplitContractEntity>
+{
+    public void Configure(EntityTypeBuilder<DoorSplitContractEntity> builder)
+        => builder.ToTable(Schema.Tables.DoorSplitContracts, Schema.Name);
+}
+
+internal sealed class VersusContractEntityConfiguration : IEntityTypeConfiguration<VersusContractEntity>
+{
+    public void Configure(EntityTypeBuilder<VersusContractEntity> builder)
+        => builder.ToTable(Schema.Tables.VersusContracts, Schema.Name);
+}
+
+internal sealed class VenueHireContractEntityConfiguration : IEntityTypeConfiguration<VenueHireContractEntity>
+{
+    public void Configure(EntityTypeBuilder<VenueHireContractEntity> builder)
+        => builder.ToTable(Schema.Tables.VenueHireContracts, Schema.Name);
+}

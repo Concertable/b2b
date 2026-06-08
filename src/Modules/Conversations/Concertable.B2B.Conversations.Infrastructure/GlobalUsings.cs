@@ -1,0 +1,12 @@
+global using Concertable.DataAccess.Infrastructure;
+global using Concertable.B2B.Conversations.Application.DTOs;
+global using Concertable.B2B.Conversations.Application.Interfaces;
+global using Concertable.B2B.Conversations.Application.Mappers;
+global using Concertable.B2B.Conversations.Application.Requests;
+global using Concertable.B2B.Conversations.Contracts;
+global using Concertable.B2B.Conversations.Domain;
+global using Concertable.Kernel.Identity;
+global using Concertable.B2B.User.Contracts;
+global using Concertable.Kernel.Notifications;
+global using Concertable.Kernel;
+global using Concertable.Contracts;

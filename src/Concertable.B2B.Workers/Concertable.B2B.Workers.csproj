@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.23.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.51.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.50.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Infrastructure\Concertable.B2B.Artist.Infrastructure.csproj" />
+<ProjectReference Include="..\Modules\Organization\Concertable.B2B.Organization.Infrastructure\Concertable.B2B.Organization.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\User\Concertable.B2B.User.Infrastructure\Concertable.B2B.User.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Contract\Concertable.B2B.Contract.Infrastructure\Concertable.B2B.Contract.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Infrastructure\Concertable.B2B.Venue.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\Concertable.Shared.Notification\Concertable.Shared.Notification.Infrastructure\Concertable.Shared.Notification.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Conversations\Concertable.B2B.Conversations.Infrastructure\Concertable.B2B.Conversations.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared\Concertable.Shared.Blob\Concertable.Shared.Blob.Infrastructure\Concertable.Shared.Blob.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\Concertable.Shared.Email\Concertable.Shared.Email.Infrastructure\Concertable.Shared.Email.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\Concertable.Shared.Geocoding\Concertable.Shared.Geocoding.Infrastructure\Concertable.Shared.Geocoding.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\Concertable.Shared.Imaging\Concertable.Shared.Imaging.Infrastructure\Concertable.Shared.Imaging.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\Concertable.Shared.Pdf\Concertable.Shared.Pdf.Infrastructure\Concertable.Shared.Pdf.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Concertable.Messaging\Concertable.Messaging.Infrastructure\Concertable.Messaging.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Concertable.Payment\Concertable.Payment.Client\Concertable.Payment.Client.csproj" />
+    <ProjectReference Include="..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.csproj" />
+    <ProjectReference Include="..\..\Shared\Seed\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

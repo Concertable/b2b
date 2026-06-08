@@ -1,0 +1,20 @@
+using Concertable.B2B.Artist.Api.Responses;
+
+namespace Concertable.B2B.Artist.Api.Mappers;
+
+public static class ArtistResponseMappers
+{
+    public static ArtistDetailsResponse ToDetailsResponse(this ArtistDetails dto) => new()
+    {
+        Id = dto.Id,
+        Name = dto.Name,
+        About = dto.About,
+        BannerUrl = dto.BannerUrl,
+        Avatar = dto.Avatar,
+        Rating = dto.Rating,
+        Genres = dto.Genres.ToList(),
+        County = dto.County,
+        Town = dto.Town,
+        Email = dto.Email
+    };
+}

@@ -1,0 +1,93 @@
+using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Domain.ReadModels;
+using Concertable.B2B.Concert.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace Concertable.B2B.Concert.Infrastructure.Repositories;
+
+internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IApplicationRepository
+{
+    private readonly TimeProvider timeProvider;
+
+    public ApplicationRepository(ConcertDbContext context, TimeProvider timeProvider) : base(context)
+    {
+        this.timeProvider = timeProvider;
+    }
+
+    public async Task<IEnumerable<ApplicationEntity>> GetByOpportunityIdAsync(int id)
+    {
+        return await context.Applications
+            .Where(ca => ca.OpportunityId == id)
+            .Include(ca => ca.Artist)
+                .ThenInclude(a => a.Genres)
+            .Include(ca => ca.Opportunity)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<ApplicationEntity>> GetPendingByArtistIdAsync(int artistId)
+    {
+        return await context.Applications
+            .Include(a => a.Opportunity)
+                .ThenInclude(o => o.Venue)
+            .Where(a =>
+                a.ArtistId == artistId &&
+                !context.Bookings.Any(b => b.ApplicationId == a.Id) &&
+                a.Opportunity.Period.Start > timeProvider.GetUtcNow())
+            .ToListAsync();
+    }
+
+    public async Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id)
+    {
+        var query = await context.Applications
+            .Where(ca => ca.Id == id)
+            .Include(ca => ca.Artist)
+            .Include(ca => ca.Opportunity)
+                .ThenInclude(o => o.Venue)
+            .FirstOrDefaultAsync();
+
+        if (query is null) return null;
+        return (query.Artist, query.Opportunity.Venue);
+    }
+
+    public override async Task<ApplicationEntity?> GetByIdAsync(int id)
+    {
+        return await context.Applications
+            .Where(ca => ca.Id == id)
+            .Include(ca => ca.Artist)
+                .ThenInclude(a => a.Genres)
+            .Include(ca => ca.Opportunity)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task RejectAllExceptAsync(int opportunityId, int applicationId)
+    {
+        await context.Applications
+            .Where(a => a.OpportunityId == opportunityId && a.Id != applicationId && a.State == LifecycleState.Applied)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.State, LifecycleState.Rejected));
+    }
+
+    public Task<int?> GetContractIdByIdAsync(int applicationId)
+    {
+        return context.Applications
+            .Where(a => a.Id == applicationId)
+            .Select(a => (int?)a.Opportunity.ContractId)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistIdAsync(int artistId)
+    {
+        return await context.Applications
+            .Include(a => a.Opportunity)
+                .ThenInclude(o => o.Venue)
+            .Where(a =>
+                a.ArtistId == artistId &&
+                context.Bookings.Any(b =>
+                    b.Application.OpportunityId == a.OpportunityId &&
+                    b.ApplicationId != a.Id))
+            .OrderByDescending(a => a.Opportunity.Period.End)
+            .Take(5)
+            .ToListAsync();
+    }
+
+}
