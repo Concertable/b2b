@@ -1,0 +1,1 @@
+export { ArtistDashboardPage } from "./ArtistDashboardPage";
