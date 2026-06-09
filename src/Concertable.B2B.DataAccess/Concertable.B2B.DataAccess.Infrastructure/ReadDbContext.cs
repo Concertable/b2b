@@ -3,7 +3,7 @@ using Concertable.B2B.Conversations.Domain;
 using Microsoft.EntityFrameworkCore;
 using Concertable.DataAccess.Infrastructure;
 
-namespace Concertable.B2B.DataAccess;
+namespace Concertable.B2B.DataAccess.Infrastructure;
 
 internal sealed class ReadDbContext : DbContextBase, IReadDbContext
 {

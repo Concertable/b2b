@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Concertable.B2B.DataAccess;
+namespace Concertable.B2B.DataAccess.Infrastructure;
 
 public static class ServiceCollectionExtensions
 {

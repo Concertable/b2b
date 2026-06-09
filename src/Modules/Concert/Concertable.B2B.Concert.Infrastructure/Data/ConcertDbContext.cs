@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Artist.Domain;
+using Concertable.B2B.Artist.Domain;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.DataAccess.Infrastructure;

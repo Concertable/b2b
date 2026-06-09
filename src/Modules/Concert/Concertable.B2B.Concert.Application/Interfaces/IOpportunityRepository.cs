@@ -1,10 +1,10 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Contracts;
-using Concertable.DataAccess.Application;
+using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
-internal interface IOpportunityRepository : IRepository<OpportunityEntity>
+internal interface IOpportunityRepository : ITenantScopedRepository<OpportunityEntity>
 {
     Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int id, IPageParams pageParams);
     Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId);
