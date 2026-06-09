@@ -253,10 +253,13 @@ users (`PayoutFinishStep.PayAsync(venueUserId, artistUserId, …)`, `EscrowEntit
 The legal posture (`LEGAL_REQUIREMENTS.md` item 0 — Concertable is an **agent**) requires money to move
 via the **parties' own connected accounts**, and the payee is the **legal entity** = the tenant:
 
-- **Provision per tenant, not per user.** `TenantService.CreateAsync` publishes `TenantCreatedEvent`; a
-  Payment handler provisions the Connect account on that, keyed by `TenantId`.
-  `ManagerRegisteredHandler` stops provisioning Stripe. One Connect account per tenant (operator *and*
-  artist tenants each get one — both send/receive).
+- **Provision per tenant, not per user.** `TenantProvisioningHandler` (Tenant module) publishes a
+  `TenantCreatedEvent` when it creates a tenant; a Payment handler (`TenantCreatedHandler`) provisions the
+  Stripe customer + Connect account on that, keyed by the tenant id (Payment's opaque `OwnerId` — see §6).
+  `ManagerRegisteredHandler` is **deleted**. One Connect account per tenant (operator *and* artist tenants
+  each get one — both send/receive), so the handler now provisions **artist** tenants too (artist tenancy
+  partially pulled into Phase 3 — the `TenantEntity` row + `TenantCreatedEvent`, not yet the
+  `ArtistEntity.TenantId` linkage, which stays Phase 4).
 - **Escrow path** (FlatFee, VenueHire) — `ReleaseEscrowFinishStep → escrowClient.ReleaseByBookingIdAsync`
   transfers held funds to the payee tenant's connected account.
 - **Off-session path** (DoorSplit, Versus) — `PayoutFinishStep` reads the booking's frozen party snapshot
@@ -268,19 +271,39 @@ via the **parties' own connected accounts**, and the payee is the **legal entity
 ## 6. Payment service stays agnostic
 
 Payment is a shared adapter (B2B + Customer). It does **not** import `ITenantContext`, named filters, or
-any B2B tenancy code. It only swaps its **owner key**:
+any B2B tenancy code — and it must **never learn the word "tenant".** It only renames its **owner key** to
+a deliberately neutral `Guid OwnerId`:
 
 | Payment entity | Today | After |
 |---|---|---|
-| `PayoutAccountEntity` | `Guid UserId` (single owner) | `Guid TenantId` — the legal entity's Stripe account |
-| `TransactionEntity` (Settlement/Ticket/Verify TPH) | `FromUserId`/`ToUserId` | `From`/`To` carry tenant ids |
-| `EscrowEntity` | `FromUserId`/`ToUserId` + `BookingId` | `From`/`To` carry tenant ids |
+| `PayoutAccountEntity` | `Guid UserId` (single owner) | `Guid OwnerId` — opaque owner of the Stripe identities |
+| `TransactionEntity` (Settlement/Ticket/Verify TPH) | `FromUserId`/`ToUserId` | values become owner ids; field **rename deferred** (see note) |
+| `EscrowEntity` | `FromUserId`/`ToUserId` + `BookingId` | values become owner ids; field **rename deferred** (see note) |
 | `StripeEventEntity` | — | webhook log; infra; not scoped |
 
-To Payment, `TenantId` is an opaque `Guid` owner key — exactly how it treats `UserId` today. B2B resolves
-`venue → operatorTenantId` and `artist → artistTenantId` (from the booking snapshot) and passes them
-across gRPC. No row-level query filter is added in Payment; it is called with explicit ids, not serving
-tenant-scoped browse.
+**`OwnerId` is opaque and the *consumer* assigns its meaning** — B2B passes the **tenant** id, Customer
+passes the **user** id. Payment has no idea which; it just keys Stripe rows by an owner `Guid`, exactly how
+it treated `UserId` today. B2B resolves `venue → operatorTenantId` / `artist → artistTenantId` and passes
+them across gRPC; Customer passes the buyer's user id (payer) and the venue's owner id (payee, carried on
+`ConcertChangedEvent`). No row-level query filter is added in Payment; it is called with explicit ids, not
+serving tenant-scoped browse.
+
+> **Why one `OwnerId`, not two tables (or `TenantId`).** `PayoutAccountEntity` actually welds two Stripe
+> identities together: `StripeCustomerId` (the **payer/card** — naturally per-*user*) and `StripeAccountId`
+> (the **payout/Connect** account — the **legal entity** = tenant). The clean model splits them along that
+> seam (two *composed* entities, **not** a TPH hierarchy — a discriminator would leak EF persistence into the
+> adapter's domain). We **defer the split to the multi-user phase**: today it's one-user-per-tenant, so
+> `user == tenant` 1:1 for B2B and the split is functionally identical to a single opaque `OwnerId`. It is
+> **not a one-way door** — because Payment stays agnostic and a tenant's founding user is recoverable
+> (`TenantEntity.CreatedByUserId`), splitting the payer side back out by user later is a Payment-internal
+> migration; B2B/Customer keep passing owner ids throughout. Naming the key `OwnerId` (not `TenantId`) is what
+> keeps that true: a customer's row is owned by a *user*, and the word "tenant" never enters Payment.
+>
+> **Deferred (Phase 3):** `EscrowEntity`/`TransactionEntity` keep their `FromUserId`/`ToUserId` field *names*
+> for now — their *values* become owner ids (the settlement edges pass owner ids), but a clean rename to
+> `From`/`ToOwnerId` ripples through the gRPC-client `EscrowDto` (consumed by B2B/Customer) and E2E SQL, so
+> it's a separate low-risk tidy-up (free on the next re-scaffold), not smuggled into this already-wide phase.
+> They're opaque participant ids regardless — a ticket payer genuinely *is* a user.
 
 ---
 
@@ -333,13 +356,34 @@ Each phase ends green (build + tests). Migrations **re-scaffold** via `./initial
   Migrations re-scaffolded for Venue/Concert/Contract (the only changed models — one `TenantId` column each,
   Contract's on the TPH root). Build green; integration tests green — Venue 25/25 (incl. write-stamps-the-tenant
   + `GetAllByTenantId`) and Concert 59/59.
-- **Phase 3 — Re-key payouts + provision on tenant creation.** Payment `PayoutAccountEntity` `UserId` →
-  `TenantId`; `TenantCreatedEvent` provisions Stripe; `ManagerRegisteredHandler` stops. Update mocks +
-  Payment tests; re-scaffold Payment migration.
+- **Phase 3 — Re-key payouts to an opaque owner + provision on tenant creation.** Bigger than first
+  scoped: re-keying Payment's *storage* to the tenant forces re-keying its *lookups* too (the key is how
+  you find the row), so the "settlement re-key" the plan had pencilled for Phase 4 lands here — Phase 3
+  spans **four services** (Auth, B2B, Customer, Payment). Work:
+  - **Payment** — `PayoutAccountEntity.UserId → OwnerId` (opaque `Guid`, §6); repo `GetByUserIdAsync →
+    GetByOwnerIdAsync`; `IStripeAccountClient.ProvisionX(ownerId, …)`; index + migration re-scaffold.
+    Delete `ManagerRegisteredHandler`; add `TenantCreatedHandler : IIntegrationEventHandler<TenantCreatedEvent>`
+    (provisions customer + Connect). Keep `CustomerRegisteredHandler` (customer → owner = user id). The gRPC
+    proto fields (`payer_id`/`payee_id`) are unchanged in *shape* — they now carry owner ids.
+  - **B2B** — new `TenantCreatedEvent` contract (`Concertable.B2B.Tenant.Contracts/Events`, `[MessageType]`);
+    `TenantProvisioningHandler` publishes it via the outbox (`IBus.PublishAsync`) **and now creates artist
+    tenants too**. Settlement steps (`PayoutFinishStep`, `DepositEscrowAcceptStep`) resolve venue/artist →
+    owner (tenant) id before the gRPC call (resolved *live* now; switch to the booking snapshot in Phase 4).
+    Subscribe Payment to `event-tenantcreatedevent` (`PaymentTopology`).
+  - **Customer** — `ConcertChangedEvent` carries the venue's owner id (operator tenant); Customer's
+    `ConcertEntity` projection stores it; `TicketService` passes it as the payee owner.
+  - **Auth/identity** — operator/artist token carries an opaque `owner` claim (B2B claims provider sets it to
+    the tenant id; Customer's to the user id, else Payment falls back to `sub`); `ICurrentUser`/Payment's
+    `StripeAccountController` read it so the **direct-HTTP** self-service endpoints (onboarding-link,
+    account-status, payment-method, setup-intent) resolve the owner without a B2B proxy.
+  - E2E: `StripeE2EAccountResolver` keys move from seed user ids → seed tenant ids (`TenantSeedIds.For`);
+    artist tenants must seed deterministically so the 4 pre-seeded Connect accounts still link and the
+    `WaitForPayoutAccountsAsync` 4-account health check stays green. Update mocks + Payment/B2B tests.
 - **Phase 4 — Bucket B scoping + snapshot at Accept.** `OperatorTenantId`/`ArtistTenantId` on
   `Application`/`Booking`/`Concert`/`ConcertImage`; populate at apply/accept (`AcceptExecutor`); explicit
-  OR-filter in their configs. Settlement steps read the snapshot. Assert snapshot-at-Accept +
-  settlement-reads-snapshot + cross-tenant invisibility of bookings.
+  OR-filter in their configs. **Settlement switches from live owner resolution (Phase 3) to reading the
+  frozen booking snapshot**, and `ArtistEntity` gets its own `TenantId` (Bucket C). Assert snapshot-at-Accept
+  + settlement-reads-snapshot + cross-tenant invisibility of bookings.
 - **Phase 5 — Compliance value object on `TenantEntity`** (= `LEGAL_REQUIREMENTS.md` item 3): VAT /
   seller identifier / registered address / bank ref as owned value objects. Full round-trip test (nested
   owned types are the main EF risk). Tenant-setup UI hitting `/organizations`.
@@ -410,8 +454,26 @@ payloads. Each is independently shippable.
   config later, like `IContractAccessor`.
 - **2026-06-09** — Three-bucket entity classification (operator-private / two-party / cross-tenant),
   grounded in the actual entities; system/worker principals resolve `IsHost`.
-- **2026-06-09** — Payment stays agnostic: owner key `UserId` → `TenantId` (opaque `Guid`), no B2B
-  tenancy code imported.
+- **2026-06-09** — Payment stays agnostic: owner key `UserId` → **`OwnerId`** (opaque `Guid`), no B2B
+  tenancy code imported. *(Superseded below — keyed `TenantId` originally; corrected to a neutral `OwnerId`.)*
+- **2026-06-09 (Phase 3 design)** — Payment's owner key is a neutral **`OwnerId`**, not `TenantId`. The same
+  `PayoutAccountEntity` serves ticket-buying **customers** (owned by their *user* id, hold only a
+  `StripeCustomerId`) and operators/artists (owned by their *tenant* id). A literal `TenantId` rename would
+  store user ids in a column named `TenantId`; a second nullable `TenantId` column would be dead weight on
+  every customer row; TPH would leak an EF persistence strategy into the agnostic adapter. So: one opaque
+  `OwnerId`, meaning assigned by the **consumer** (B2B → tenant, Customer → user). Payment never learns the
+  word "tenant".
+- **2026-06-09 (Phase 3 design)** — The clean payer/payout **split** (per-user `StripeCustomerId` vs
+  legal-entity `StripeAccountId`) is **deferred to the multi-user phase**. Today `user == tenant` 1:1, so the
+  split is functionally identical to one `OwnerId`; it's reversible later (founding user recoverable from
+  `TenantEntity.CreatedByUserId`) as a Payment-internal migration, so single `OwnerId` is not a one-way door.
+- **2026-06-09 (Phase 3 design)** — Re-keying Payment's storage to the tenant **forces re-keying its lookups
+  now** (the key *is* how the row is found). So the settlement re-key (gRPC owner ids; B2B/Customer resolve at
+  their edge; `ConcertChangedEvent` carries the venue owner id) moves from Phase 4 into Phase 3; Phase 4
+  keeps only the *switch to the frozen snapshot* + Bucket B filter. Operator self-service stays direct-HTTP to
+  Payment, resolved via an opaque **`owner` claim** (no B2B proxy, no per-tenant DB switch). Artist tenants
+  are created in Phase 3 (row + `TenantCreatedEvent`) so artist Connect provisioning doesn't regress;
+  `ArtistEntity.TenantId` linkage stays Phase 4.
 - **2026-06-09** — **Scope boundary:** in scope = the isolation mechanism, tenant data model, settlement
   re-key, and **one-tenant-per-user resolution** (so the filters actually work and the app stays
   tenant-isolated — functional, not stubbed). Out of scope = the **multi-user model**: new user types,

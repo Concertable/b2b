@@ -1,5 +1,6 @@
 using Concertable.Contracts;
 using Concertable.Kernel;
+using Concertable.Seed.Identity;
 
 namespace Concertable.B2B.Seed.Contracts.Specs;
 
@@ -23,6 +24,7 @@ public sealed record ConcertSeedSpec
     public required double Longitude { get; init; }
     public required IReadOnlyCollection<Genre> Genres { get; init; }
     public required Guid PayeeUserId { get; init; }
+    public required Guid PayeeOwnerId { get; init; }
     public int TicketsSold { get; init; }
 
     public static ConcertSeedSpec Create(
@@ -56,6 +58,7 @@ public sealed record ConcertSeedSpec
         Longitude = venue.Longitude,
         Genres = genres ?? [],
         PayeeUserId = venue.UserId,
+        PayeeOwnerId = TenantSeedIds.For(venue.UserId),
         TicketsSold = ticketsSold,
     };
 
@@ -71,5 +74,5 @@ public sealed record ConcertSeedSpec
         DateTime now,
         IReadOnlyCollection<Genre>? genres = null) =>
         Create(id, name, price, total, artist, venue, daysOffset, datePostedDaysOffset, now, genres)
-            with { PayeeUserId = artist.UserId };
+            with { PayeeUserId = artist.UserId, PayeeOwnerId = TenantSeedIds.For(artist.UserId) };
 }

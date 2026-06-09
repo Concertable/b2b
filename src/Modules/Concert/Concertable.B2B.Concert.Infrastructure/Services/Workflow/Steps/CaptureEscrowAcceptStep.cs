@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.Logging;
 
@@ -13,6 +14,7 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
     private readonly IPayerLookup payerLookup;
     private readonly IContractAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
+    private readonly ITenantModule tenantModule;
     private readonly ILogger<CaptureEscrowAcceptStep> logger;
 
     public CaptureEscrowAcceptStep(
@@ -21,6 +23,7 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
         IPayerLookup payerLookup,
         IContractAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient,
+        ITenantModule tenantModule,
         ILogger<CaptureEscrowAcceptStep> logger)
     {
         this.bookingService = bookingService;
@@ -28,6 +31,7 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
         this.payerLookup = payerLookup;
         this.contractAccessor = contractAccessor;
         this.managerPaymentClient = managerPaymentClient;
+        this.tenantModule = tenantModule;
         this.logger = logger;
     }
 
@@ -38,11 +42,16 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
         var contract = (FlatFeeContract)contractAccessor.Contract;
         var booking = await bookingService.CreateStandardAsync(applicationId, contract.ContractType);
 
-        var paymentIntentId = await managerPaymentClient.FindHeldIntentAsync(venueManagerId, applicationId);
+        var payerOwnerId = await tenantModule.GetTenantIdByUserIdAsync(venueManagerId)
+            ?? throw new NotFoundException($"No tenant for user {venueManagerId}");
+        var payeeOwnerId = await tenantModule.GetTenantIdByUserIdAsync(artistManagerId)
+            ?? throw new NotFoundException($"No tenant for user {artistManagerId}");
+
+        var paymentIntentId = await managerPaymentClient.FindHeldIntentAsync(payerOwnerId, applicationId);
 
         logger.AcceptingFlatFeeApplication(applicationId, booking.Id, paymentIntentId, contract.Fee, "GBP", venueManagerId, artistManagerId);
 
-        var bind = await escrowClient.CaptureAsync(venueManagerId, artistManagerId, contract.Fee, paymentIntentId, booking.Id);
+        var bind = await escrowClient.CaptureAsync(payerOwnerId, payeeOwnerId, contract.Fee, paymentIntentId, booking.Id);
         if (bind.IsFailed)
             throw new BadRequestException(bind.Errors);
     }

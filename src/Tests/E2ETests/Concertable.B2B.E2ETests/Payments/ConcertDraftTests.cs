@@ -45,7 +45,8 @@ public sealed class ConcertDraftTests : IAsyncLifetime
             () => fixture.DbFixture.Payment.GetEscrowPayeeIdAsync(bookingId),
             id => id is not null,
             timeout: TimeSpan.FromSeconds(15));
-        Assert.Equal(fixture.SeedState.ArtistManager1.Id, escrowPayeeId);
+        var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
+        Assert.Equal(artistTenantId, escrowPayeeId);
 
         await fixture.Polling.UntilAsync(
             async () =>
@@ -70,7 +71,8 @@ public sealed class ConcertDraftTests : IAsyncLifetime
             () => fixture.DbFixture.Payment.GetEscrowPayeeIdAsync(bookingId),
             id => id is not null,
             timeout: TimeSpan.FromSeconds(15));
-        Assert.Equal(fixture.SeedState.VenueManager1.Id, escrowPayeeId);
+        var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
+        Assert.Equal(venueTenantId, escrowPayeeId);
 
         await fixture.Polling.UntilAsync(
             async () =>

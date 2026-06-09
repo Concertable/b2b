@@ -1,6 +1,7 @@
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
+using Concertable.B2B.Tenant.Domain.Events;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Data.Seeders;
 using Concertable.B2B.Tenant.Infrastructure.Events;
@@ -38,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITenantResolver>(sp => sp.GetRequiredService<TenantContext>());
 
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, TenantProvisioningHandler>();
+        services.AddScoped<IDomainEventHandler<TenantCreatedDomainEvent>, TenantCreatedDomainEventHandler>();
 
         return services;
     }

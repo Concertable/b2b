@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Payment.Client;
 using Moq;
@@ -18,6 +19,7 @@ public sealed class HoldCheckoutStepTests
     private readonly Mock<IPayerLookup> payerLookup;
     private readonly Mock<IContractAccessor> contractAccessor;
     private readonly Mock<IManagerPaymentClient> managerPaymentClient;
+    private readonly Mock<ITenantModule> tenantModule;
     private readonly HoldCheckoutStep step;
 
     private IDictionary<string, string>? capturedMetadata;
@@ -27,16 +29,20 @@ public sealed class HoldCheckoutStepTests
         this.payerLookup = new Mock<IPayerLookup>();
         this.contractAccessor = new Mock<IContractAccessor>();
         this.managerPaymentClient = new Mock<IManagerPaymentClient>();
+        this.tenantModule = new Mock<ITenantModule>();
 
         payerLookup.Setup(p => p.GetArtistAsync(ApplicationId)).ReturnsAsync(artist);
         payerLookup.Setup(p => p.GetVenueManagerIdAsync(ApplicationId)).ReturnsAsync(venueManagerId);
         contractAccessor.SetupGet(c => c.Contract).Returns(contract);
+        tenantModule
+            .Setup(m => m.GetTenantIdByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid u, CancellationToken _) => u);
         managerPaymentClient
             .Setup(c => c.CreateHoldSessionAsync(It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
             .Callback<Guid, decimal, IDictionary<string, string>, CancellationToken>((_, _, m, _) => capturedMetadata = m)
             .ReturnsAsync(session);
 
-        this.step = new HoldCheckoutStep(payerLookup.Object, contractAccessor.Object, managerPaymentClient.Object);
+        this.step = new HoldCheckoutStep(payerLookup.Object, contractAccessor.Object, managerPaymentClient.Object, tenantModule.Object);
     }
 
     [Fact]
