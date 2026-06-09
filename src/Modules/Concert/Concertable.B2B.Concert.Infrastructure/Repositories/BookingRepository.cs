@@ -8,7 +8,7 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
 {
     public BookingRepository(ConcertDbContext context) : base(context) { }
 
-    public override async Task<BookingEntity?> GetByIdAsync(int id)
+    public override async Task<BookingEntity?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         return await context.Bookings
             .Where(b => b.Id == id)
@@ -21,7 +21,7 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
             .Include(b => b.Application)
                 .ThenInclude(a => a.Opportunity)
             .Include(b => b.Concert)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<BookingEntity?> GetByApplicationIdAsync(int applicationId)
