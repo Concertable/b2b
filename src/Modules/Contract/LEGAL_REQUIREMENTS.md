@@ -112,7 +112,7 @@ via `IContractModule` to build the snapshot.
 
 ## 3. VAT registration status + VAT number — ABSENT
 **Legal basis:** VAT Act 1994.
-No `VatNumber`/`VatRegistered` on `ArtistEntity`, `VenueEntity`, or `OrganizationEntity`.
+No `VatNumber`/`VatRegistered` on `ArtistEntity`, `VenueEntity`, or `TenantEntity`.
 **Build:** capture VAT-registered (bool) + VAT number on the **tenant / legal entity** (see
 tenancy design), resolved from a venue's/artist's owning organisation — not duplicated per
 profile. Validate format. Feeds the per-type calculator in item 1.

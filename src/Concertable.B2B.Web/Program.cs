@@ -17,7 +17,7 @@ using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
-using Concertable.B2B.Organization.Api.Extensions;
+using Concertable.B2B.Tenant.Api.Extensions;
 using Concertable.B2B.User.Api.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -160,7 +160,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
 services.AddServices(builder.Configuration);
 services.AddRepositories();
 services.AddNotificationClient();
-services.AddOrganizationApi(builder.Configuration);
+services.AddTenantApi(builder.Configuration);
 services.AddConversationsApi(builder.Configuration);
 services.AddArtistApi(builder.Configuration);
 services.AddVenueApi(builder.Configuration);
