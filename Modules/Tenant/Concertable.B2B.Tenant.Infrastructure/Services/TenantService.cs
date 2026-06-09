@@ -9,9 +9,9 @@ internal sealed class TenantService : ITenantService
         this.repository = repository;
     }
 
-    public async Task<TenantDto?> GetByIdAsync(Guid id)
+    public async Task<TenantDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var tenant = await repository.GetByIdAsync(id);
+        var tenant = await repository.GetByIdAsync(id, ct);
         return tenant?.ToDto();
     }
 }

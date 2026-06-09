@@ -10,5 +10,5 @@ internal sealed class TenantModule : ITenantModule
     }
 
     public Task<TenantDto?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        service.GetByIdAsync(id);
+        service.GetByIdAsync(id, ct);
 }

@@ -50,14 +50,14 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
         return (query.Artist, query.Opportunity.Venue);
     }
 
-    public override async Task<ApplicationEntity?> GetByIdAsync(int id)
+    public override async Task<ApplicationEntity?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         return await context.Applications
             .Where(ca => ca.Id == id)
             .Include(ca => ca.Artist)
                 .ThenInclude(a => a.Genres)
             .Include(ca => ca.Opportunity)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task RejectAllExceptAsync(int opportunityId, int applicationId)
