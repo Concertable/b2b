@@ -151,7 +151,7 @@ projections, or messaging.
 
 Interface in `Concertable.Kernel.Identity` next to `ICurrentUser`. For the one-tenant-per-user world, the
 B2B implementation resolves the current user's single tenant from `ICurrentUser.Id` via a request-scoped
-memoized lookup (the `IContractLoader` pattern) — no Auth change needed. (A `tenant` *claim* carrying an
+memoized lookup (the `IContractAccessor` pattern) — no Auth change needed. (A `tenant` *claim* carrying an
 *active* tenant is only needed once a user can belong to several tenants and switch — that's the deferred
 multi-user work.)
 
@@ -280,16 +280,20 @@ tenant-scoped browse.
 Each phase ends green (build + tests). Migrations **re-scaffold** via `./initial-migrations.ps1` from
 `api/` (per `api/CLAUDE.md` — no additive migrations). No production data, so the nuke is free.
 
-- **Phase 0 — Rename `Organization` → `Tenant`.** Mechanical: `Concertable.B2B.Organization.*` →
+- **Phase 0 — Rename `Organization` → `Tenant`. ✅ Done.** Mechanical: `Concertable.B2B.Organization.*` →
   `Concertable.B2B.Tenant.*`, folder, namespaces, `OrganizationEntity` → `TenantEntity` (PK `int` →
   `Guid`), `OrganizationDbContext` → `TenantDbContext`, `IOrganizationModule` → `ITenantModule`, schema
   `organization` → `tenant`, `AddOrganizationApi/Module` → `AddTenantApi/Module`, `.slnx`, IVT, the
   `initial-migrations.ps1` entry (keeps its 4th slot). Build Web + Workers + tests green.
-- **Phase 1 — `ITenantContext` + markers + interceptor.** Define `ITenantContext`, `ITenantScoped` (in
-  Kernel), the `ApplyTenantScoping` helper, and the `TenantInterceptor`. Implement `ITenantContext` by
-  resolving the current user's single tenant (`ICurrentUser.Id` → tenant, request-scoped memoized) and
-  `IsHost` for service/system callers — a real implementation, not a stub. No entities scoped yet — just
-  plumbing, unit-tested (tenant / host / anonymous).
+- **Phase 1 — `ITenantContext` + markers + interceptor. ✅ Done.** `ITenantScoped` (Kernel) +
+  `ITenantContext` (Kernel.Identity) + `ApplyTenantScoping` (B2B.DataAccess, EF Core 10 named filter
+  `"Tenant"`) + `TenantInterceptor` (DataAccess.Infrastructure, modeled on `AuditInterceptor`).
+  `ITenantContext` impl (`TenantContext`, in the Tenant module; scoped, memoized via `ResolveAsync`)
+  resolves the user's single tenant from `ICurrentUser.Id` → `TenantEntity.CreatedByUserId`. `IsHost` =
+  **no `HttpContext`** (worker/outbox/handler ⇒ bypass); an anonymous HTTP request keeps `IsHost` false,
+  so it fails closed. Plumbing only — **not wired into any context yet**; the resolution trigger
+  (request middleware calling `ResolveAsync`) + `ApplyTenantScoping`/interceptor wiring land in Phase 2.
+  Build + unit tests (tenant / host / anonymous / authenticated-no-tenant) green.
 - **Phase 2 — Bucket A scoping.** `TenantId` on `VenueEntity`/`VenueImageEntity`/`OpportunityEntity`/
   `ContractEntity`, implement `ITenantScoped`, wire `ApplyTenantScoping` into the Venue/Concert/Contract
   contexts. `VenueService`/`OpportunityService` create against `ctx.TenantId`. Integration tests:
@@ -368,7 +372,7 @@ payloads. Each is independently shippable.
 - **2026-06-09** — Ambient accessor is `ITenantContext` (`Guid? TenantId`, derived `HasTenant`,
   claim-derived `IsHost` as the filter bypass). `IsHost` is explicit, not `!HasTenant`, so a dropped
   tenant claim fails safe (sees nothing, not everything). Grows into a memoized gateway to per-tenant
-  config later, like `IContractLoader`.
+  config later, like `IContractAccessor`.
 - **2026-06-09** — Three-bucket entity classification (operator-private / two-party / cross-tenant),
   grounded in the actual entities; system/worker principals resolve `IsHost`.
 - **2026-06-09** — Payment stays agnostic: owner key `UserId` → `TenantId` (opaque `Guid`), no B2B
