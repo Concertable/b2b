@@ -58,16 +58,16 @@
   <Folder Name="/Shared/Notification/">
     <Project Path="../Shared/Concertable.Shared.Notification/Concertable.Shared.Notification.Infrastructure/Concertable.Shared.Notification.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/Modules/Organization/">
-    <Project Path="Modules/Organization/Concertable.B2B.Organization.Api/Concertable.B2B.Organization.Api.csproj" />
-    <Project Path="Modules/Organization/Concertable.B2B.Organization.Application/Concertable.B2B.Organization.Application.csproj" />
-    <Project Path="Modules/Organization/Concertable.B2B.Organization.Contracts/Concertable.B2B.Organization.Contracts.csproj" />
-    <Project Path="Modules/Organization/Concertable.B2B.Organization.Domain/Concertable.B2B.Organization.Domain.csproj" />
-    <Project Path="Modules/Organization/Concertable.B2B.Organization.Infrastructure/Concertable.B2B.Organization.Infrastructure.csproj" />
+  <Folder Name="/Modules/Tenant/">
+    <Project Path="Modules/Tenant/Concertable.B2B.Tenant.Api/Concertable.B2B.Tenant.Api.csproj" />
+    <Project Path="Modules/Tenant/Concertable.B2B.Tenant.Application/Concertable.B2B.Tenant.Application.csproj" />
+    <Project Path="Modules/Tenant/Concertable.B2B.Tenant.Contracts/Concertable.B2B.Tenant.Contracts.csproj" />
+    <Project Path="Modules/Tenant/Concertable.B2B.Tenant.Domain/Concertable.B2B.Tenant.Domain.csproj" />
+    <Project Path="Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Concertable.B2B.Tenant.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/Modules/Organization/Tests/">
-    <Project Path="Modules/Organization/Tests/Concertable.B2B.Organization.IntegrationTests/Concertable.B2B.Organization.IntegrationTests.csproj" />
-    <Project Path="Modules/Organization/Tests/Concertable.B2B.Organization.UnitTests/Concertable.B2B.Organization.UnitTests.csproj" />
+  <Folder Name="/Modules/Tenant/Tests/">
+    <Project Path="Modules/Tenant/Tests/Concertable.B2B.Tenant.IntegrationTests/Concertable.B2B.Tenant.IntegrationTests.csproj" />
+    <Project Path="Modules/Tenant/Tests/Concertable.B2B.Tenant.UnitTests/Concertable.B2B.Tenant.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Modules/User/">
     <Project Path="Modules/User/Concertable.B2B.User.Api/Concertable.B2B.User.Api.csproj" />

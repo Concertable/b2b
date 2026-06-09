@@ -36,7 +36,7 @@ All modules live under `Modules/`. Each follows the `Concertable.B2B.<Module>.*`
 | **Contract** | `ContractEntity` (TPH: `FlatFeeContractEntity`, `DoorSplitContractEntity`, `VersusContractEntity`, `VenueHireContractEntity`), `EscrowEntity` | Api, Application, Contracts, Domain, Infrastructure, UnitTests |
 | **Conversations** | `MessageEntity` | Api, Application, Contracts, Domain, Infrastructure |
 | **Notification** | SignalR hub (`NotificationHub` at `/hub/notifications`) | Contracts, Infrastructure — slim, no Domain/Application. Pending deletion after Phase 8 Step 24 (see TECH_DEBT). |
-| **Organization** | Membership / tenancy entities | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
+| **Tenant** | `TenantEntity` (org legal/VAT/Stripe identity; owns venues; settlement payee — the renamed `OrganizationEntity`) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
 | **User** | `UserEntity` + manager/admin profile subtypes (`VenueManagerEntity`, `ArtistManagerEntity`, `AdminEntity`). TPH unwind pending — see TECH_DEBT. | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
 | **Venue** | `VenueEntity`, `VenueImageEntity`, `PayoutAccountEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
 
