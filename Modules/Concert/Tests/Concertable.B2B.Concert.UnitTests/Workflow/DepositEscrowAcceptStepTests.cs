@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
@@ -18,6 +19,7 @@ public sealed class DepositEscrowAcceptStepTests
     private readonly Mock<IPayerLookup> payerLookup;
     private readonly Mock<IContractAccessor> contractAccessor;
     private readonly Mock<IApplicationRepository> applicationRepository;
+    private readonly Mock<ITenantModule> tenantModule;
     private readonly DepositEscrowAcceptStep step;
 
     public DepositEscrowAcceptStepTests()
@@ -27,8 +29,12 @@ public sealed class DepositEscrowAcceptStepTests
         this.payerLookup = new Mock<IPayerLookup>();
         this.contractAccessor = new Mock<IContractAccessor>();
         this.applicationRepository = new Mock<IApplicationRepository>();
+        this.tenantModule = new Mock<ITenantModule>();
 
         payerLookup.Setup(p => p.GetManagerIdsAsync(ApplicationId)).ReturnsAsync((Guid.NewGuid(), Guid.NewGuid()));
+        tenantModule
+            .Setup(m => m.GetTenantIdByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid u, CancellationToken _) => u);
 
         this.step = new DepositEscrowAcceptStep(
             bookingService.Object,
@@ -36,6 +42,7 @@ public sealed class DepositEscrowAcceptStepTests
             payerLookup.Object,
             contractAccessor.Object,
             applicationRepository.Object,
+            tenantModule.Object,
             new Mock<ILogger<DepositEscrowAcceptStep>>().Object);
     }
 

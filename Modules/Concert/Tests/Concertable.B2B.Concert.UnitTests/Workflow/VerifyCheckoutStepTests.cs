@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Mappers;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
@@ -22,6 +23,7 @@ public sealed class VerifyCheckoutStepTests
     private readonly Mock<IContractAccessor> contractAccessor;
     private readonly Mock<IManagerPaymentClient> managerPaymentClient;
     private readonly Mock<IPaymentAmountMapper> paymentAmountMapper;
+    private readonly Mock<ITenantModule> tenantModule;
     private readonly VerifyCheckoutStep step;
 
     private IDictionary<string, string>? capturedMetadata;
@@ -32,17 +34,21 @@ public sealed class VerifyCheckoutStepTests
         this.contractAccessor = new Mock<IContractAccessor>();
         this.managerPaymentClient = new Mock<IManagerPaymentClient>();
         this.paymentAmountMapper = new Mock<IPaymentAmountMapper>();
+        this.tenantModule = new Mock<ITenantModule>();
 
         payerLookup.Setup(p => p.GetArtistAsync(ApplicationId)).ReturnsAsync(artist);
         payerLookup.Setup(p => p.GetVenueManagerIdAsync(ApplicationId)).ReturnsAsync(venueManagerId);
         contractAccessor.SetupGet(c => c.Contract).Returns(contract);
         paymentAmountMapper.Setup(m => m.ToPaymentAmount(contract)).Returns(amount);
+        tenantModule
+            .Setup(m => m.GetTenantIdByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid u, CancellationToken _) => u);
         managerPaymentClient
             .Setup(c => c.CreateVerifySessionAsync(It.IsAny<Guid>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
             .Callback<Guid, IDictionary<string, string>, CancellationToken>((_, m, _) => capturedMetadata = m)
             .ReturnsAsync(session);
 
-        this.step = new VerifyCheckoutStep(payerLookup.Object, contractAccessor.Object, managerPaymentClient.Object, paymentAmountMapper.Object);
+        this.step = new VerifyCheckoutStep(payerLookup.Object, contractAccessor.Object, managerPaymentClient.Object, paymentAmountMapper.Object, tenantModule.Object);
     }
 
     [Fact]

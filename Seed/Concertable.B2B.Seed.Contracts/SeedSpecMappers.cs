@@ -19,5 +19,5 @@ public static class SeedSpecMappers
         spec.ConcertId, spec.Name, spec.About, spec.Avatar, spec.BannerUrl,
         spec.TotalTickets, spec.AvailableTickets, spec.Price, spec.Period, spec.DatePosted,
         spec.ArtistId, spec.ArtistName, spec.VenueId, spec.VenueName,
-        spec.Latitude, spec.Longitude, spec.Genres, spec.PayeeUserId);
+        spec.Latitude, spec.Longitude, spec.Genres, spec.PayeeUserId, spec.PayeeOwnerId);
 }

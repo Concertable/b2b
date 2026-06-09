@@ -23,4 +23,5 @@ public sealed record ConcertChangedEvent(
     double Latitude,
     double Longitude,
     IReadOnlyCollection<Genre> Genres,
-    Guid PayeeUserId) : IIntegrationEvent;
+    Guid PayeeUserId,
+    Guid PayeeOwnerId) : IIntegrationEvent;

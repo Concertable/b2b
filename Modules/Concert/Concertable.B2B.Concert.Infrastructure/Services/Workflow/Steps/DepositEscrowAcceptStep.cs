@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Enums;
 using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,7 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
     private readonly IPayerLookup payerLookup;
     private readonly IContractAccessor contractAccessor;
     private readonly IApplicationRepository applicationRepository;
+    private readonly ITenantModule tenantModule;
     private readonly ILogger<DepositEscrowAcceptStep> logger;
 
     public DepositEscrowAcceptStep(
@@ -23,6 +25,7 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
         IPayerLookup payerLookup,
         IContractAccessor contractAccessor,
         IApplicationRepository applicationRepository,
+        ITenantModule tenantModule,
         ILogger<DepositEscrowAcceptStep> logger)
     {
         this.bookingService = bookingService;
@@ -30,6 +33,7 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
         this.payerLookup = payerLookup;
         this.contractAccessor = contractAccessor;
         this.applicationRepository = applicationRepository;
+        this.tenantModule = tenantModule;
         this.logger = logger;
     }
 
@@ -48,7 +52,12 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
 
         logger.AcceptingVenueHireApplication(applicationId, booking.Id, contract.HireFee, artistManagerId, venueManagerId);
 
-        var hold = await escrowClient.DepositAsync(artistManagerId, venueManagerId, contract.HireFee, prepaid.PaymentMethodId, PaymentSession.OffSession, booking.Id);
+        var payerOwnerId = await tenantModule.GetTenantIdByUserIdAsync(artistManagerId)
+            ?? throw new NotFoundException($"No tenant for user {artistManagerId}");
+        var payeeOwnerId = await tenantModule.GetTenantIdByUserIdAsync(venueManagerId)
+            ?? throw new NotFoundException($"No tenant for user {venueManagerId}");
+
+        var hold = await escrowClient.DepositAsync(payerOwnerId, payeeOwnerId, contract.HireFee, prepaid.PaymentMethodId, PaymentSession.OffSession, booking.Id);
         if (hold.IsFailed)
             throw new BadRequestException(hold.Errors);
     }

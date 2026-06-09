@@ -286,9 +286,10 @@ public sealed class SeedState
         Opportunities = opps;
         FreshVenueHireOpportunity = opps[62];
 
-        // One tenant per venue manager; stamp the deterministic owner tenant onto each Bucket-A row so the
-        // tenant query filter and management reads resolve them to their operator (no production rows yet).
-        Tenants = VenueManagers.Select(vm => TenantFactory.Create(vm.Id, vm.Email, now)).ToList();
+        // Artists get a tenant too (they own no Bucket-A rows) so Payment provisions their Connect account off TenantCreatedEvent.
+        Tenants = VenueManagers.Concat(ArtistManagers)
+            .Select(m => TenantFactory.Create(m.Id, m.Email, now))
+            .ToList();
         var tenantByVenueId = Venues.ToDictionary(v => v.Id, v => TenantSeedIds.For(v.UserId));
         foreach (var venue in Venues)
             venue.TenantId = tenantByVenueId[venue.Id];

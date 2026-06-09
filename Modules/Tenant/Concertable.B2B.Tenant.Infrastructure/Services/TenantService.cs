@@ -14,4 +14,10 @@ internal sealed class TenantService : ITenantService
         var tenant = await repository.GetByIdAsync(id, ct);
         return tenant?.ToDto();
     }
+
+    public async Task<Guid?> GetTenantIdByUserIdAsync(Guid userId, CancellationToken ct = default)
+    {
+        var tenant = await repository.GetByCreatedByUserIdAsync(userId, ct);
+        return tenant?.Id;
+    }
 }
