@@ -15,6 +15,7 @@ using Concertable.Testing.Integration.Mocks;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Contract.Infrastructure.Extensions;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
@@ -42,7 +43,7 @@ using Concertable.Shared.Email.Application;
 using Concertable.Shared.Geocoding.Application;
 using Concertable.Shared.Imaging.Application;
 using Concertable.B2B.IntegrationTests.Fixtures.Mocks;
-using Concertable.B2B.DataAccess;
+using Concertable.B2B.DataAccess.Infrastructure;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
@@ -139,6 +140,7 @@ public sealed class ApiFixture : IAsyncLifetime
                 services.AddSingleton<SeedCatalog>();
                 services.AddScoped<SeedState>();
                 services.AddUserTestSeeder();
+                services.AddTenantTestSeeder();
                 services.AddArtistTestSeeder();
                 services.AddVenueTestSeeder();
                 services.AddContractTestSeeder();

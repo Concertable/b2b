@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
-internal sealed class TenantContext : ITenantContext
+internal sealed class TenantContext : ITenantContext, ITenantResolver
 {
     private readonly ICurrentUser currentUser;
     private readonly IHttpContextAccessor httpContextAccessor;

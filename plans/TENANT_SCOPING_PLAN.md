@@ -101,6 +101,15 @@ Three buckets. The dividing question is **whose private management surface does 
 *not* "is it ever visible." Public marketplace browse is served by Customer/Search projections, **not**
 B2B's tenant-scoped contexts, so scoping B2B's *management* reads does not hide marketplace data.
 
+> **Correction (Phase 2):** the single-owner *read* filter in this bucket was **not** applied — see the Phase 2
+> note below. B2B reads these rows from too many cross-party angles (anonymous venue/opportunity pages, an
+> artist resolving an opportunity to apply, `Application`/`Booking` joining through `Opportunity`), so a
+> single-owner read filter hides rows from people who must see them — the EF "required navigation + filtered
+> relative" INNER-JOIN drop — while adding no isolation: in the one-user-per-tenant world these reads are
+> already public or `UserId`-keyed. **Bucket-A enforcement in Phase 2 is the write-side interceptor** (stamp +
+> block cross-tenant writes). The read filter is deferred to where it earns its keep — multi-user orgs and the
+> two-party Bucket B (Phase 4).
+
 ### Bucket A — operator-private, single-owner → `ITenantScoped` + `Guid TenantId`, equality filter
 
 `HasQueryFilter("Tenant", e => ctx.IsHost || e.TenantId == ctx.TenantId)`
@@ -286,18 +295,44 @@ Each phase ends green (build + tests). Migrations **re-scaffold** via `./initial
   `organization` → `tenant`, `AddOrganizationApi/Module` → `AddTenantApi/Module`, `.slnx`, IVT, the
   `initial-migrations.ps1` entry (keeps its 4th slot). Build Web + Workers + tests green.
 - **Phase 1 — `ITenantContext` + markers + interceptor. ✅ Done.** `ITenantScoped` (Kernel) +
-  `ITenantContext` (Kernel.Identity) + `ApplyTenantScoping` (B2B.DataAccess, EF Core 10 named filter
-  `"Tenant"`) + `TenantInterceptor` (DataAccess.Infrastructure, modeled on `AuditInterceptor`).
+  `ITenantContext` (Kernel.Identity) + an `ApplyTenantScoping` named-filter helper (EF Core 10 `"Tenant"` filter)
+  + `TenantInterceptor` (DataAccess.Infrastructure, modeled on `AuditInterceptor`). *(The read-filter helper was
+  dropped in Phase 2 — Bucket-A reads aren't filtered; see the Phase 2 note. The interceptor carries through.)*
   `ITenantContext` impl (`TenantContext`, in the Tenant module; scoped, memoized via `ResolveAsync`)
   resolves the user's single tenant from `ICurrentUser.Id` → `TenantEntity.CreatedByUserId`. `IsHost` =
   **no `HttpContext`** (worker/outbox/handler ⇒ bypass); an anonymous HTTP request keeps `IsHost` false,
   so it fails closed. Plumbing only — **not wired into any context yet**; the resolution trigger
-  (request middleware calling `ResolveAsync`) + `ApplyTenantScoping`/interceptor wiring land in Phase 2.
+  (request middleware calling `ResolveAsync`) + interceptor wiring land in Phase 2.
   Build + unit tests (tenant / host / anonymous / authenticated-no-tenant) green.
-- **Phase 2 — Bucket A scoping.** `TenantId` on `VenueEntity`/`VenueImageEntity`/`OpportunityEntity`/
-  `ContractEntity`, implement `ITenantScoped`, wire `ApplyTenantScoping` into the Venue/Concert/Contract
-  contexts. `VenueService`/`OpportunityService` create against `ctx.TenantId`. Integration tests:
-  cross-tenant read returns nothing; host bypass works.
+- **Phase 2 — Bucket A: tenant ownership (write-side). ✅ Done.** `TenantId` + `ITenantScoped` on
+  `VenueEntity`/`VenueImageEntity`/`OpportunityEntity`/`ContractEntity` (TPH base). Ownership is enforced on the
+  **write side** by `TenantInterceptor` (DataAccess.Infrastructure), attached to the Venue/Concert/Contract
+  contexts in both hosts: it stamps `TenantId` on insert and throws on a cross-tenant edit at `SaveChanges`;
+  domain code never sets it. `ITenantContext` + request middleware (`ITenantResolver`) resolve the current
+  tenant per request (the interceptor reads it). Decisions made during the work:
+  - **No read query filter.** The §0/§2 single-owner read filter was *not* applied. Bucket-A reads are public
+    (anonymous venue/opportunity pages), reference (contracts shown inside opportunities), or `UserId`-keyed
+    (operator management), and `Application`/`Booking` join through `Opportunity` — a global single-owner read
+    filter dropped those joins (EF required-navigation INNER JOIN) and isolated nothing in the
+    one-user-per-tenant world. So reads stay plain; isolation is the write-side interceptor. Read-scoping is
+    deferred to where it pays off (multi-user orgs / two-party Bucket B in Phase 4).
+  - **`TenantScopedRepository<T>` — the seam, wired but mostly unused.** All three tenant-owned repos extend it
+    (`ITenantScopedRepository<T>` in `B2B.DataAccess.Application`, base in `.Infrastructure`). It inherits plain
+    CRUD (unscoped) and exposes the opt-in `CurrentTenant` scoped query root + `GetAllByTenantIdAsync(tenantId)`
+    (admin/reporting) — the single place scoped-by-default reads get added for multi-user / Phase 4, in now so
+    it's a localized change later, not a rewrite. (Named to match `ITenantScoped`; distinct from the Tenant
+    module's `TenantRepository`, which is the repo for `TenantEntity` itself.)
+  - **`B2B.DataAccess` split into `.Application` + `.Infrastructure`** (mirrors shared `DataAccess`), grouped
+    under a `/B2B/DataAccess/` solution folder. `.Application` holds the EF-free `ITenantScopedRepository`;
+    `.Infrastructure` holds `TenantScopedRepository` + `ReadDbContext`. Tenancy stays a B2B concern.
+  - **Tenants are created for real.** `TenantProvisioningHandler` (Tenant module) provisions a tenant per venue
+    manager on `CredentialRegisteredEvent` (idempotent; artist tenants deferred to Phase 4). Seeders create the
+    same tenants with a deterministic id derived from the founding user (`TenantSeedIds`), so seeded
+    venues/opportunities/contracts carry their owner tenant and the handler no-ops over them; production tenants
+    get a random id.
+  Migrations re-scaffolded for Venue/Concert/Contract (the only changed models — one `TenantId` column each,
+  Contract's on the TPH root). Build green; integration tests green — Venue 25/25 (incl. write-stamps-the-tenant
+  + `GetAllByTenantId`) and Concert 59/59.
 - **Phase 3 — Re-key payouts + provision on tenant creation.** Payment `PayoutAccountEntity` `UserId` →
   `TenantId`; `TenantCreatedEvent` provisions Stripe; `ManagerRegisteredHandler` stops. Update mocks +
   Payment tests; re-scaffold Payment migration.

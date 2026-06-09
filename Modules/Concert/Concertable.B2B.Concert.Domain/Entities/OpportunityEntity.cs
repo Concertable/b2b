@@ -4,11 +4,12 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
-public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<OpportunityEntity>
+public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<OpportunityEntity>, ITenantScoped
 {
     private OpportunityEntity() { }
 
     public int Id { get; private set; }
+    public Guid TenantId { get; set; }
     public int VenueId { get; set; }
     public DateRange Period { get; private set; } = null!;
     public VenueReadModel Venue { get; set; } = null!;

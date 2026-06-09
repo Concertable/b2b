@@ -4,11 +4,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Concertable.B2B.Venue.Domain;
 
 [Table("VenueImages")]
-public sealed class VenueImageEntity : IIdEntity
+public sealed class VenueImageEntity : IIdEntity, ITenantScoped
 {
     private VenueImageEntity() { }
 
     public int Id { get; private set; }
+    public Guid TenantId { get; set; }
     public int VenueId { get; private set; }
     public string Url { get; private set; } = null!;
     public VenueEntity Venue { get; set; } = null!;
