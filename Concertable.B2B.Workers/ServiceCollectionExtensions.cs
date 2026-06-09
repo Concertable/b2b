@@ -1,5 +1,5 @@
 using Concertable.B2B.Artist.Infrastructure.Extensions;
-using Concertable.B2B.Organization.Infrastructure.Extensions;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Contract.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
@@ -47,7 +47,7 @@ internal static class ServiceCollectionExtensions
         services.AddGeometry();
 
         services.AddCurrentUser();
-        services.AddOrganizationModule(configuration);
+        services.AddTenantModule(configuration);
         services.AddUserModule(configuration);
         services.AddArtistModule(configuration);
         services.AddVenueModule(configuration);

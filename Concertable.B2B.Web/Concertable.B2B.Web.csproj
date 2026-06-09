@@ -37,7 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Modules\Organization\Concertable.B2B.Organization.Api\Concertable.B2B.Organization.Api.csproj" />
+    <ProjectReference Include="..\Modules\Tenant\Concertable.B2B.Tenant.Api\Concertable.B2B.Tenant.Api.csproj" />
     <ProjectReference Include="..\Modules\User\Concertable.B2B.User.Api\Concertable.B2B.User.Api.csproj" />
     <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Api\Concertable.B2B.Artist.Api.csproj" />
     <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Api\Concertable.B2B.Venue.Api.csproj" />
