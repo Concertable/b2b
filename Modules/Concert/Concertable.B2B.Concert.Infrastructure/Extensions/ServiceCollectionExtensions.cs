@@ -49,6 +49,7 @@ public static class ServiceCollectionExtensions
                     sql => sql.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 

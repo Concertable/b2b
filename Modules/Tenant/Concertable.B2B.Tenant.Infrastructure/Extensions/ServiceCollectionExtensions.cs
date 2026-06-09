@@ -1,8 +1,13 @@
+using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Infrastructure.Data;
+using Concertable.B2B.Tenant.Infrastructure.Data.Seeders;
+using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.B2B.Tenant.Infrastructure.Repositories;
 using Concertable.B2B.Tenant.Infrastructure.Services;
+using Concertable.Messaging.Contracts;
+using Concertable.Seed.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +35,22 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<TenantContext>();
         services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
+        services.AddScoped<ITenantResolver>(sp => sp.GetRequiredService<TenantContext>());
 
+        services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, TenantProvisioningHandler>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddTenantDevSeeder(this IServiceCollection services)
+    {
+        services.AddScoped<IDevSeeder, TenantDevSeeder>();
+        return services;
+    }
+
+    public static IServiceCollection AddTenantTestSeeder(this IServiceCollection services)
+    {
+        services.AddScoped<ITestSeeder, TenantTestSeeder>();
         return services;
     }
 }

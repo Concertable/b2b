@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Shared.Imaging\Concertable.Shared.Imaging.Application\Concertable.Shared.Imaging.Application.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.DataAccess\Concertable.DataAccess.Application\Concertable.DataAccess.Application.csproj" />
+    <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Application\Concertable.B2B.DataAccess.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

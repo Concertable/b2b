@@ -13,7 +13,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260606200929_InitialCreate")]
+    [Migration("20260609141206_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -217,6 +217,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.PrimitiveCollection<string>("Genres")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("VenueId")
                         .HasColumnType("int");

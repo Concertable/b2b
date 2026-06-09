@@ -18,7 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel.Extensions;
-using Concertable.B2B.DataAccess;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Seed.Shared.Extensions;
 
 namespace Concertable.B2B.Workers;
@@ -40,6 +40,7 @@ internal static class ServiceCollectionExtensions
             opt => opt.UseSqlServer(configuration.GetConnectionString("B2BDb")),
             runDispatcher: false);
         services.AddScoped<AuditInterceptor>();
+        services.AddScoped<TenantInterceptor>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddReadDbContext(configuration);

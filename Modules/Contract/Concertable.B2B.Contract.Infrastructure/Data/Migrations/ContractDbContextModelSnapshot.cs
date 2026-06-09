@@ -34,6 +34,9 @@ namespace Concertable.B2B.Contract.Infrastructure.Data.Migrations
                     b.Property<int>("PaymentMethod")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.ToTable("Contracts", "contract");

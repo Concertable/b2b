@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Contract.Domain.Entities;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure.Factories;
+using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.User.Domain;
 using Concertable.Contracts;
 using Concertable.B2B.Venue.Domain;
@@ -31,6 +32,10 @@ public sealed class SeedState
 
     public ArtistEntity Artist { get; }
     public VenueEntity Venue { get; }
+
+    /// <summary>One tenant per venue manager (the operator's legal entity). Venues/opportunities/contracts
+    /// carry the matching <c>TenantId</c>; artist tenancy is deferred to a later phase.</summary>
+    public IReadOnlyList<TenantEntity> Tenants { get; }
 
     public IReadOnlyList<ArtistEntity> Artists { get; }
     public IReadOnlyList<VenueEntity> Venues { get; }
@@ -280,6 +285,21 @@ public sealed class SeedState
         }
         Opportunities = opps;
         FreshVenueHireOpportunity = opps[62];
+
+        // One tenant per venue manager; stamp the deterministic owner tenant onto each Bucket-A row so the
+        // tenant query filter and management reads resolve them to their operator (no production rows yet).
+        Tenants = VenueManagers.Select(vm => TenantFactory.Create(vm.Id, vm.Email, now)).ToList();
+        var tenantByVenueId = Venues.ToDictionary(v => v.Id, v => TenantSeedIds.For(v.UserId));
+        foreach (var venue in Venues)
+            venue.TenantId = tenantByVenueId[venue.Id];
+        foreach (var opportunity in Opportunities)
+            opportunity.TenantId = tenantByVenueId[opportunity.VenueId];
+        var tenantByContractId = Opportunities
+            .GroupBy(o => o.ContractId)
+            .ToDictionary(g => g.Key, g => g.First().TenantId);
+        foreach (var contract in Contracts)
+            if (tenantByContractId.TryGetValue(contract.Id, out var tenantId))
+                contract.TenantId = tenantId;
 
         ConfirmedBooking = BookingFactory.Standard(1);
         PostedDoorSplitBooking = BookingFactory.Deferred(2);
