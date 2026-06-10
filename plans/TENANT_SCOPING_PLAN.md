@@ -396,6 +396,42 @@ Each phase ends green (build + tests). Migrations **re-scaffold** via `./initial
   OR-filter in their configs. **Settlement switches from live owner resolution (Phase 3) to reading the
   frozen booking snapshot**, and `ArtistEntity` gets its own `TenantId` (Bucket C). Assert snapshot-at-Accept
   + settlement-reads-snapshot + cross-tenant invisibility of bookings.
+
+  **Execution checklist (scoped against the code 2026-06-10; ordered so the build/tests stay green at each
+  step). NB: there is no `ApplyTenantScoping` helper — it was dropped in Phase 2; write `HasQueryFilter`
+  by hand. `ConcertDbContext` does not inject `ITenantContext` yet; configs are `new`'d without DI.**
+  1. **`ArtistEntity.TenantId`** (Bucket C, *unfiltered* — do NOT implement `ITenantScoped`). Additive
+     column on `Artist.Domain/ArtistEntity.cs`; populate in the artist registration/projection path and in
+     `SeedState` (`TenantSeedIds.For(artist.UserId)`). Add `TenantId` to `ArtistReadModel` (Concert module)
+     so apply reads the artist tenant without a cross-module `ITenantModule` call.
+  2. **Two-party keys.** Add `Guid OperatorTenantId` + `Guid ArtistTenantId` to the TPH bases
+     `ApplicationEntity` and `BookingEntity`, plus `ConcertEntity` and `ConcertImageEntity`
+     (all in `Concert.Domain/Entities/`), with an internal `StampTenants(operator, artist)` setter.
+  3. **Populate the snapshot at write time.** `ApplyExecutor` (operator = opportunity's `TenantId`,
+     artist = `ArtistReadModel.TenantId`); `BookingService.Create*Async` inherits both from the Application
+     at accept; `ConcertDraftService.CreateAsync` carries both from the booking; ConcertImage from its
+     Concert; `SeedState` stamps Applications/Bookings/Concerts from the existing opportunity + artist tenant
+     maps (via `.With(...)`). Settlement is still live here, so existing payee assertions stay green.
+  4. **Explicit OR-filter** on the four configs: `HasQueryFilter("Tenant", e => ctx.IsHost ||
+     e.OperatorTenantId == ctx.TenantId || e.ArtistTenantId == ctx.TenantId)`. Thread `ITenantContext` into
+     `ConcertDbContext` and `ApplyConfiguration(new XConfiguration(tenantContext))` for the four in
+     `OnModelCreating` (leave the shared `IEntityTypeConfigurationProvider` signature untouched). Opportunity
+     stays Bucket A (unfiltered). `ApplicationEntityConfiguration` currently lives inside
+     `OpportunityEntityConfiguration.cs`.
+  5. **Switch settlement off live resolution → the snapshot.** `PayoutFinishStep` (carry
+     `OperatorTenantId`/`ArtistTenantId` on `BookingSettlement` via `BookingMappers.ToSettlement`),
+     `DepositEscrowAcceptStep`, `CaptureEscrowAcceptStep`, `HoldCheckoutStep`, `VerifyCheckoutStep` — read the
+     booking/application snapshot, drop their `ITenantModule` dep, update the step unit tests (remove the
+     `ITenantModule` mock). **`SetupCheckoutStep` stays live** (apply-checkout, no booking snapshot exists
+     yet) — resolve the acting user's tenant via `ITenantContext.TenantId`.
+  6. **Re-scaffold migrations** (`./initial-migrations.ps1` — Artist + Concert contexts only changed).
+  7. **Tests.** Extend the `Accept_…` integration tests to assert `Booking`/`Concert` carry the snapshot;
+     unit-assert settlement reads the snapshot and never calls `ITenantModule`; add a cross-tenant
+     invisibility test (model on Venue `TenantScopingTests`) — a third-party manager can't see the
+     booking/concert, the operator AND the artist both can.
+  **Risk:** the OR-filter is *safer* than the dropped Bucket-A read filter (all three rows share one
+  snapshot; settlement/draft reads run host-side so `IsHost` bypasses) — but a half-populated snapshot hides
+  a row from its rightful tenant, so stamp all four at one site (snapshot-completeness, §9).
 - **Phase 5 — Compliance value object on `TenantEntity`** (= `LEGAL_REQUIREMENTS.md` item 3): VAT /
   seller identifier / registered address / bank ref as owned value objects. Full round-trip test (nested
   owned types are the main EF risk). Tenant-setup UI hitting `/organizations`.
