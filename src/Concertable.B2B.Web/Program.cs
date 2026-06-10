@@ -14,6 +14,7 @@ using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Venue.Contracts.Events;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
@@ -134,6 +135,7 @@ services.AddAzureServiceBusTransport(
         reg.Publishes<ConcertChangedEvent>();
         reg.Publishes<ConcertPostedEvent>();
         reg.Publishes<ConcertRatingUpdatedEvent>();
+        reg.Publishes<TenantCreatedEvent>();
 
         reg.SubscribeTo<CredentialRegisteredEvent>();
         reg.SubscribeTo<CustomerReviewSubmittedEvent>();

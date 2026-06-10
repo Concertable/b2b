@@ -138,8 +138,10 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         Assert.NotNull(escrow);
         Assert.Equal(EscrowStatus.Held, escrow!.Status);
         Assert.NotEmpty(escrow.ChargeId);
-        Assert.Equal(fixture.SeedState.ArtistManager1.Id, escrow.FromUserId);
-        Assert.Equal(fixture.SeedState.VenueManager1.Id, escrow.ToUserId);
+        var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
+        var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
+        Assert.Equal(artistTenantId, escrow.FromUserId);
+        Assert.Equal(venueTenantId, escrow.ToUserId);
     }
 
     [Fact]
