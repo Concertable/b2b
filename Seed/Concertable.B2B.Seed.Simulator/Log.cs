@@ -4,6 +4,9 @@ namespace Concertable.B2B.Seed.Simulator;
 
 internal static partial class Log
 {
+    [LoggerMessage(Level = LogLevel.Information, Message = "Published {Count} tenant events")]
+    internal static partial void PublishedTenantEvents(this ILogger logger, int count);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Published {Count} venue events")]
     internal static partial void PublishedVenueEvents(this ILogger logger, int count);
 

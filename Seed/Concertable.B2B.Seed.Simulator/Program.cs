@@ -2,6 +2,7 @@ using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Simulator;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.Messaging.Application.Extensions;
 using Concertable.Messaging.AzureServiceBus.Extensions;
@@ -22,6 +23,7 @@ builder.Services.AddAzureServiceBusTransport(
         opts.ServiceName = "concertable-b2b-seeding-simulator";
     },
     reg => reg
+        .Publishes<TenantCreatedEvent>()
         .Publishes<VenueChangedEvent>()
         .Publishes<ArtistChangedEvent>()
         .Publishes<ConcertChangedEvent>());

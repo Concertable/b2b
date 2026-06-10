@@ -287,7 +287,7 @@ public sealed class SeedState
         FreshVenueHireOpportunity = opps[62];
 
         // Artists get a tenant too (they own no Bucket-A rows) so Payment provisions their Connect account off TenantCreatedEvent.
-        Tenants = VenueManagers.Concat(ArtistManagers)
+        Tenants = SeedUsers.Managers
             .Select(m => TenantFactory.Create(m.Id, m.Email, now))
             .ToList();
         var tenantByVenueId = Venues.ToDictionary(v => v.Id, v => TenantSeedIds.For(v.UserId));
