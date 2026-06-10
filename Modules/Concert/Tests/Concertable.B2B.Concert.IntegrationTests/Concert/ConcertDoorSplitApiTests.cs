@@ -34,8 +34,10 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         // Assert — booking awaits the off-session settlement payment; completion happens on the webhook
         var payment = Assert.Single(fixture.ManagerPaymentClient.Payments);
-        Assert.Equal(fixture.SeedState.VenueManager1.Id, payment.PayerId);
-        Assert.Equal(fixture.SeedState.ArtistManager1.Id, payment.PayeeId);
+        var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
+        var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
+        Assert.Equal(venueTenantId, payment.PayerId);
+        Assert.Equal(artistTenantId, payment.PayeeId);
         Assert.Equal(contract.CalculateArtistShare(concert.TicketsSold * concert.Price), payment.Amount);
         Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
         Assert.Equal(deferred.Id, payment.BookingId);

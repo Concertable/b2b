@@ -356,7 +356,7 @@ Each phase ends green (build + tests). Migrations **re-scaffold** via `./initial
   Migrations re-scaffolded for Venue/Concert/Contract (the only changed models — one `TenantId` column each,
   Contract's on the TPH root). Build green; integration tests green — Venue 25/25 (incl. write-stamps-the-tenant
   + `GetAllByTenantId`) and Concert 59/59.
-- **Phase 3 — Re-key payouts to an opaque owner + provision on tenant creation.** Bigger than first
+- **Phase 3 — Re-key payouts to an opaque owner + provision on tenant creation. ✅ Done.** Bigger than first
   scoped: re-keying Payment's *storage* to the tenant forces re-keying its *lookups* too (the key is how
   you find the row), so the "settlement re-key" the plan had pencilled for Phase 4 lands here — Phase 3
   spans **four services** (Auth, B2B, Customer, Payment). Work:
@@ -379,6 +379,18 @@ Each phase ends green (build + tests). Migrations **re-scaffold** via `./initial
   - E2E: `StripeE2EAccountResolver` keys move from seed user ids → seed tenant ids (`TenantSeedIds.For`);
     artist tenants must seed deterministically so the 4 pre-seeded Connect accounts still link and the
     `WaitForPayoutAccountsAsync` 4-account health check stays green. Update mocks + Payment/B2B tests.
+  - **Surfaced only by running E2E** (the commit was green-*build* but un-E2E'd): the new `TenantCreatedEvent`
+    needs transport registration on both ends — `Publishes<TenantCreatedEvent>` (B2B Web) + `SubscribeTo<>`
+    (Payment Workers) — or the outbox row dead-letters / no consumer attaches. The seeder pre-creates tenants,
+    so `TenantProvisioningHandler` now **re-announces** an existing tenant (`TenantEntity.Announce`) instead of
+    no-op'ing: B2B Web swaps in the *seeding* interceptor during seed (which drops the seed-staged outbox row),
+    so the reliable publisher is the live registration handler running on `CredentialRegisteredEvent`. The B2B
+    E2E fixture also needed the Tenant module + `TenantInterceptor` registered (a Phase-2 gap the payout timeout
+    had masked). For the Customer standalone host (no real B2B), `B2B.Seed.Simulator` now publishes
+    `TenantCreatedEvent` too. Seed operators are single-sourced via `SeedUsers.Managers` (a `SeedManager` record
+    binding each manager's id/email/kind to its `TenantId`), consumed by Auth's credential seed, `SeedState`,
+    and the simulator alike. **Green:** B2B E2E 8/8, Customer E2E 1/1; Concert integration 59/59 (settlement
+    payee assertions → owner ids), Venue 25/25, Customer Ticket 15/15; Payment unit 25/25.
 - **Phase 4 — Bucket B scoping + snapshot at Accept.** `OperatorTenantId`/`ArtistTenantId` on
   `Application`/`Booking`/`Concert`/`ConcertImage`; populate at apply/accept (`AcceptExecutor`); explicit
   OR-filter in their configs. **Settlement switches from live owner resolution (Phase 3) to reading the

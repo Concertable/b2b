@@ -6,6 +6,7 @@ using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Contract.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.User.Infrastructure.Extensions;
@@ -156,6 +157,7 @@ public sealed class AppFixture : IAsyncLifetime
                 services.AddCurrentUser();
                 services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
                 services.AddScoped<AuditInterceptor>();
+                services.AddScoped<TenantInterceptor>();
                 services.AddScoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>();
                 services.AddGeometry();
                 services.AddOutbox(opt => opt.UseSqlServer(b2bConnectionString), runDispatcher: false);
@@ -165,6 +167,7 @@ public sealed class AppFixture : IAsyncLifetime
                 services.AddSingleton(new BlobServiceClient(blobConnectionString));
                 services.AddSharedBlob(b2bSeedConfig);
                 services.AddUserModule(b2bSeedConfig);
+                services.AddTenantModule(b2bSeedConfig);
                 services.AddArtistModule(b2bSeedConfig);
                 services.AddVenueModule(b2bSeedConfig);
                 services.AddContractModule(b2bSeedConfig);
@@ -172,6 +175,7 @@ public sealed class AppFixture : IAsyncLifetime
                 services.AddConversationsModule(b2bSeedConfig);
                 services.AddBlobDevSeeder();
                 services.AddUserDevSeeder();
+                services.AddTenantDevSeeder();
                 services.AddArtistDevSeeder();
                 services.AddVenueDevSeeder();
                 services.AddContractDevSeeder();

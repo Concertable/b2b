@@ -8,10 +8,9 @@ namespace Concertable.B2B.Tenant.Infrastructure.Events;
 
 /// <summary>
 /// Provisions a tenant when a venue or artist manager registers — the one-tenant-per-operator rule (see
-/// <c>TENANT_SCOPING_PLAN</c>). Idempotent: skips if this event was already consumed or a tenant already
-/// exists for the user, so it is a no-op when the dev/test seeder has already created the tenant.
-/// <see cref="TenantEntity.Create"/> raises the event that drives Payment provisioning, so both this path and
-/// the seeder announce the tenant the same way.
+/// <c>TENANT_SCOPING_PLAN</c>). Idempotent per <see cref="CredentialRegisteredEvent"/> via the inbox. Creates the
+/// tenant if absent; if the dev/E2E seeder already inserted it, re-announces it instead of skipping, so Payment
+/// provisions off the resulting <c>TenantCreatedEvent</c> either way (Payment's own inbox dedups).
 /// </summary>
 internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<CredentialRegisteredEvent>
 {
@@ -35,11 +34,14 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(TenantProvisioningHandler), ct))
             return;
 
-        if (await context.Tenants.AnyAsync(t => t.CreatedByUserId == e.UserId, ct))
-            return;
-
         context.AddInboxMessage(envelope, nameof(TenantProvisioningHandler));
-        context.Tenants.Add(TenantEntity.Create(e.Email, e.UserId, timeProvider.GetUtcNow().UtcDateTime));
+
+        var tenant = await context.Tenants.FirstOrDefaultAsync(t => t.CreatedByUserId == e.UserId, ct);
+        if (tenant is null)
+            context.Tenants.Add(TenantEntity.Create(e.Email, e.UserId, timeProvider.GetUtcNow().UtcDateTime));
+        else
+            tenant.Announce();
+
         await context.SaveChangesAsync(ct);
     }
 }

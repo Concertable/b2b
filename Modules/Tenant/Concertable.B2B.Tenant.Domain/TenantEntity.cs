@@ -33,4 +33,11 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
         tenant.events.Raise(new TenantCreatedDomainEvent(tenant.Id, createdByUserId, legalName));
         return tenant;
     }
+
+    /// <summary>
+    /// Re-raises <see cref="TenantCreatedDomainEvent"/> for an already-persisted tenant. The dev/E2E seed
+    /// inserts tenants directly (deterministic ids, so seeded rows link), so registration finds them present;
+    /// announcing drives Payment provisioning through the same outbox path a fresh <see cref="Create"/> would.
+    /// </summary>
+    public void Announce() => events.Raise(new TenantCreatedDomainEvent(Id, CreatedByUserId, LegalName));
 }
