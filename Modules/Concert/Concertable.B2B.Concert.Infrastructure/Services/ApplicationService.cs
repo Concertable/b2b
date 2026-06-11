@@ -10,7 +10,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class ApplicationService : IApplicationService
 {
-    private readonly IApplicationRepository applicationRepository;
+    private readonly IApplicationRepository repository;
     private readonly ICurrentUser currentUser;
     private readonly IApplicationValidator applicationValidator;
     private readonly IConversationsModule conversationsModule;
@@ -25,7 +25,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IApplicationMapper mapper;
 
     public ApplicationService(
-        IApplicationRepository applicationRepository,
+        IApplicationRepository repository,
         ICurrentUser currentUser,
         IApplicationValidator applicationValidator,
         IConversationsModule conversationsModule,
@@ -39,7 +39,7 @@ internal sealed class ApplicationService : IApplicationService
         ICheckoutDispatcher checkoutDispatcher,
         IApplicationMapper mapper)
     {
-        this.applicationRepository = applicationRepository;
+        this.repository = repository;
         this.currentUser = currentUser;
         this.applicationValidator = applicationValidator;
         this.conversationsModule = conversationsModule;
@@ -61,7 +61,7 @@ internal sealed class ApplicationService : IApplicationService
         if (!response)
             throw new ForbiddenException("You do not own this Concert Opportunity");
 
-        var applications = await applicationRepository.GetByOpportunityIdAsync(id);
+        var applications = await repository.GetByOpportunityIdAsync(id);
 
         return await mapper.ToDtosAsync(applications);
     }
@@ -70,7 +70,7 @@ internal sealed class ApplicationService : IApplicationService
     {
         var artistId = await artistModule.GetIdByUserIdAsync(currentUser.GetId())
             ?? throw new ForbiddenException("You must have an Artist account");
-        var applications = await applicationRepository.GetPendingByArtistIdAsync(artistId);
+        var applications = await repository.GetPendingByArtistIdAsync(artistId);
         return await mapper.ToDtosAsync(applications);
     }
 
@@ -78,7 +78,7 @@ internal sealed class ApplicationService : IApplicationService
     {
         var artistId = await artistModule.GetIdByUserIdAsync(currentUser.GetId())
             ?? throw new ForbiddenException("You must have an Artist account");
-        var applications = await applicationRepository.GetRecentDeniedByArtistIdAsync(artistId);
+        var applications = await repository.GetRecentDeniedByArtistIdAsync(artistId);
         return await mapper.ToDtosAsync(applications);
     }
 
@@ -167,7 +167,7 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task NotifyAcceptedAsync(int applicationId)
     {
-        var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(applicationId)
+        var (artist, venue) = await repository.GetArtistAndVenueByIdAsync(applicationId)
             ?? throw new NotFoundException("Concert application not found");
 
         await conversationsModule.SendAndNotifyAsync(
@@ -180,11 +180,11 @@ internal sealed class ApplicationService : IApplicationService
     }
 
     public async Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id) =>
-        await applicationRepository.GetArtistAndVenueByIdAsync(id);
+        await repository.GetArtistAndVenueByIdAsync(id);
 
     public async Task<ApplicationDto> GetByIdAsync(int id)
     {
-        var application = await applicationRepository.GetByIdAsync(id)
+        var application = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Application not found");
         return await mapper.ToDtoAsync(application);
     }

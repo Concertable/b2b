@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -11,7 +12,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<ReadDbContext>(opt =>
             opt.UseSqlServer(
-                configuration.GetConnectionString("B2BDb"),
+                configuration.GetConnectionString(B2BDb.Name),
                 sqlOpt => sqlOpt.UseNetTopologySuite()));
         services.AddScoped<IReadDbContext, ReadDbContext>();
         services.AddDataAccessSpecifications();

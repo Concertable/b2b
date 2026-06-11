@@ -5,13 +5,19 @@ using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Artist.Domain;
 
-public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser
+public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantScoped
 {
     private readonly EventRaiser _events = new();
 
     private ArtistEntity() { }
 
     public int Id { get; private set; }
+
+    /// <summary>
+    /// The artist's own legal entity (VAT/payout). Tenant-owned but never read-filtered —
+    /// supply must stay cross-tenant discoverable.
+    /// </summary>
+    public Guid TenantId { get; set; }
     public Guid UserId { get; private set; }
     public string Name { get; private set; } = null!;
     public string About { get; private set; } = null!;

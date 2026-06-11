@@ -1,8 +1,10 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Concert.Application.Mappers;
+using Concertable.B2B.Concert.Application.Resolvers;
 using Concertable.B2B.Concert.Application.Validators;
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
@@ -45,13 +47,20 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<ConcertDbContext>((sp, opts) =>
             opts.UseSqlServer(
-                    configuration.GetConnectionString("B2BDb"),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sql => sql.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
+
+        /* The module's public stance — same anemic configuration, no tenancy, read-only. */
+        services.AddDbContext<PublicConcertDbContext>((sp, opts) =>
+            opts.UseSqlServer(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    sql => sql.UseNetTopologySuite())
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
         services.AddScoped<IUnitOfWork<ConcertDbContext>, UnitOfWork<ConcertDbContext>>();
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
@@ -70,11 +79,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ContractAccessor>();
         services.AddScoped<IContractAccessor>(sp => sp.GetRequiredService<ContractAccessor>());
         services.AddScoped<IContractResolver>(sp => sp.GetRequiredService<ContractAccessor>());
-        services.AddScoped<IPayerLookup, PayerLookup>();
 
         // Business-rule validators (interfaces in Concert.Application, impls in Concert.Infrastructure.Validators)
         services.AddSingleton<IConcertValidator, ConcertValidator>();
         services.AddScoped<IApplicationValidator, ApplicationValidator>();
+        services.AddScoped<IConcertAvailability, ConcertAvailability>();
 
         services.TryAddSingleton(typeof(IScoped<>), typeof(Scoped<>));
         services.AddScoped<IConcertCompletionRunner, ConcertCompletionRunner>();
@@ -101,7 +110,9 @@ public static class ServiceCollectionExtensions
 
         // Repositories
         services.AddScoped<IConcertRepository, ConcertRepository>();
+        services.AddScoped<IPublicConcertRepository, PublicConcertRepository>();
         services.AddScoped<IOpportunityRepository, OpportunityRepository>();
+        services.AddScoped<IPublicOpportunityRepository, PublicOpportunityRepository>();
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
@@ -115,6 +126,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<DoorSplitPaymentAmountMapper>();
         services.AddSingleton<VersusPaymentAmountMapper>();
         services.AddSingleton<VenueHirePaymentAmountMapper>();
+
+        services.AddSingleton<IPayeeResolver, PayeeResolver>();
+        services.AddSingleton<VenuePayeeResolver>();
+        services.AddSingleton<ArtistPayeeResolver>();
 
         services.AddSingleton<IArtistShareCalculator, ArtistShareCalculator>();
         services.AddSingleton<DoorSplitCalculator>();

@@ -1,6 +1,5 @@
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.Events;
-using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 
@@ -10,13 +9,13 @@ internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHa
 {
     private readonly IConcertRepository concertRepository;
     private readonly IBus bus;
-    private readonly ITenantModule tenantModule;
+    private readonly IPayeeResolver payeeResolver;
 
-    public ConcertChangedDomainEventHandler(IConcertRepository concertRepository, IBus bus, ITenantModule tenantModule)
+    public ConcertChangedDomainEventHandler(IConcertRepository concertRepository, IBus bus, IPayeeResolver payeeResolver)
     {
         this.concertRepository = concertRepository;
         this.bus = bus;
-        this.tenantModule = tenantModule;
+        this.payeeResolver = payeeResolver;
     }
 
     public async Task HandleAsync(ConcertChangedDomainEvent e, CancellationToken ct = default)
@@ -27,12 +26,6 @@ internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHa
 
         var artist = concert.Artist;
         var venue = concert.Venue;
-        var payeeUserId = concert.ContractType == ContractType.VenueHire
-            ? artist.UserId
-            : venue.UserId;
-        var payeeOwnerId = await tenantModule.GetTenantIdByUserIdAsync(payeeUserId, ct)
-            ?? throw new InvalidOperationException(
-                $"No tenant for payee user {payeeUserId} when publishing ConcertChangedEvent");
 
         await bus.PublishAsync(new ConcertChangedEvent(
             concert.Id,
@@ -52,7 +45,7 @@ internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHa
             venue.Location.Y,
             venue.Location.X,
             concert.Genres.ToArray(),
-            payeeUserId,
-            payeeOwnerId), ct);
+            payeeResolver.ResolveUserId(concert),
+            payeeResolver.ResolveTenantId(concert)), ct);
     }
 }

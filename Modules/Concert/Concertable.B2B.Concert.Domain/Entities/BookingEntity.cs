@@ -1,10 +1,13 @@
+using Concertable.B2B.DataAccess.Application;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
-public abstract class BookingEntity : IIdEntity
+public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped
 {
     public int Id { get; private set; }
+    public Guid VenueTenantId { get; set; }
+    public Guid ArtistTenantId { get; set; }
     public int ApplicationId { get; private set; }
     public ContractType ContractType { get; private set; }
     public ApplicationEntity Application { get; set; } = null!;

@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Artist.Application.Validators;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Artist.Domain.Events;
@@ -27,10 +28,11 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<ArtistDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    configuration.GetConnectionString("B2BDb"),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
