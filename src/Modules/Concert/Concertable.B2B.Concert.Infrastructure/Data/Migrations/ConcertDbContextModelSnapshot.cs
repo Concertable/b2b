@@ -54,6 +54,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("ArtistTenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("ContractType")
                         .HasColumnType("int");
 
@@ -67,6 +70,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Property<int>("State")
                         .HasColumnType("int");
+
+                    b.Property<Guid>("VenueTenantId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -93,6 +99,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("ApplicationId")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("ArtistTenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("ContractType")
                         .HasColumnType("int");
 
@@ -100,6 +109,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(21)
                         .HasColumnType("nvarchar(21)");
+
+                    b.Property<Guid>("VenueTenantId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -127,6 +139,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
+
+                    b.Property<Guid>("ArtistTenantId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Avatar")
                         .HasColumnType("nvarchar(max)");
@@ -162,6 +177,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Property<int>("VenueId")
                         .HasColumnType("int");
+
+                    b.Property<Guid>("VenueTenantId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -255,6 +273,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Town")
                         .IsRequired()

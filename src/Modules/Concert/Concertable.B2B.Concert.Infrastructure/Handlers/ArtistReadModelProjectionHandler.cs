@@ -32,6 +32,7 @@ internal sealed class ArtistReadModelProjectionHandler : IIntegrationEventHandle
             {
                 Id = e.ArtistId,
                 UserId = e.UserId,
+                TenantId = e.TenantId,
                 Name = e.Name,
                 Avatar = e.Avatar,
                 BannerUrl = e.BannerUrl,
@@ -47,6 +48,7 @@ internal sealed class ArtistReadModelProjectionHandler : IIntegrationEventHandle
         else
         {
             artist.UserId = e.UserId;
+            artist.TenantId = e.TenantId;
             artist.Name = e.Name;
             artist.Avatar = e.Avatar;
             artist.BannerUrl = e.BannerUrl;

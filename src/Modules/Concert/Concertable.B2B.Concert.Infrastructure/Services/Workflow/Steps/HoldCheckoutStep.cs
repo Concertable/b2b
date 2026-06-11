@@ -1,35 +1,31 @@
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Contract.Contracts;
-using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
 internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
 {
-    private readonly IPayerLookup payerLookup;
+    private readonly IApplicationRepository applicationRepository;
     private readonly IContractAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
-    private readonly ITenantModule tenantModule;
 
     public HoldCheckoutStep(
-        IPayerLookup payerLookup,
+        IApplicationRepository applicationRepository,
         IContractAccessor contractAccessor,
-        IManagerPaymentClient managerPaymentClient,
-        ITenantModule tenantModule)
+        IManagerPaymentClient managerPaymentClient)
     {
-        this.payerLookup = payerLookup;
+        this.applicationRepository = applicationRepository;
         this.contractAccessor = contractAccessor;
         this.managerPaymentClient = managerPaymentClient;
-        this.tenantModule = tenantModule;
     }
 
     public async Task<Checkout> ExecuteAsync(int applicationId)
     {
-        var artist = await payerLookup.GetArtistAsync(applicationId)
+        var artist = await applicationRepository.GetArtistPayeeAsync(applicationId)
             ?? throw new NotFoundException("Application not found");
-        var venueManagerId = await payerLookup.GetVenueManagerIdAsync(applicationId)
+        var venueTenantId = await applicationRepository.GetVenueTenantIdAsync(applicationId)
             ?? throw new NotFoundException("Application not found");
         var contract = (FlatFeeContract)contractAccessor.Contract;
 
@@ -39,10 +35,7 @@ internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
             ["applicationId"] = applicationId.ToString()
         };
 
-        var venueOwnerId = await tenantModule.GetTenantIdByUserIdAsync(venueManagerId)
-            ?? throw new NotFoundException($"No tenant for user {venueManagerId}");
-
-        var session = await managerPaymentClient.CreateHoldSessionAsync(venueOwnerId, contract.Fee, metadata);
+        var session = await managerPaymentClient.CreateHoldSessionAsync(venueTenantId, contract.Fee, metadata);
         return new Checkout(new FlatPayment(contract.Fee), artist, session, CheckoutLabels.Charge);
     }
 }

@@ -1,7 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.Concert.Infrastructure.Extensions;
-using Concertable.Contracts;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,30 +7,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class OpportunityRepository : TenantScopedRepository<OpportunityEntity>, IOpportunityRepository
 {
-    private readonly TimeProvider timeProvider;
-
-    public OpportunityRepository(ConcertDbContext context, TimeProvider timeProvider, ITenantContext tenant)
+    public OpportunityRepository(ConcertDbContext context, ITenantContext tenant)
         : base(context, tenant)
     {
-        this.timeProvider = timeProvider;
     }
-
-    public async Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int id, IPageParams pageParams)
-    {
-        var query = context.Opportunities
-            .Where(o => o.VenueId == id)
-            .WhereActive(timeProvider.GetUtcNow())
-            .OrderBy(o => o.Period.Start);
-
-        return await query.ToPaginationAsync(pageParams);
-    }
-
-    public async Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId) =>
-        await context.Opportunities
-            .Where(o => o.VenueId == venueId)
-            .WhereActive(timeProvider.GetUtcNow())
-            .OrderBy(o => o.Period.Start)
-            .ToListAsync();
 
     public async Task<Guid?> GetOwnerByIdAsync(int opportunityId) =>
         await context.Opportunities
@@ -57,4 +35,13 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
             .Include(o => o.Venue)
             .Where(o => o.Applications.Any(a => a.Id == id))
             .FirstOrDefaultAsync();
+
+    public async Task<(string Name, Guid UserId)?> GetVenueSummaryByIdAsync(int opportunityId)
+    {
+        var venue = await context.Opportunities
+            .Where(o => o.Id == opportunityId)
+            .Select(o => new { o.Venue.Name, o.Venue.UserId })
+            .FirstOrDefaultAsync();
+        return venue is null ? null : (venue.Name, venue.UserId);
+    }
 }

@@ -19,7 +19,7 @@ public sealed class ApplicationValidatorTests
     private readonly Guid venueOwnerId = Guid.NewGuid();
 
     private readonly FakeTimeProvider timeProvider;
-    private readonly Mock<IConcertRepository> concertRepository;
+    private readonly Mock<IConcertAvailability> availability;
     private readonly Mock<IOpportunityRepository> opportunityRepository;
     private readonly Mock<IApplicationRepository> applicationRepository;
     private readonly Mock<ICurrentUser> currentUser;
@@ -31,7 +31,7 @@ public sealed class ApplicationValidatorTests
     public ApplicationValidatorTests()
     {
         this.timeProvider = new FakeTimeProvider();
-        this.concertRepository = new Mock<IConcertRepository>();
+        this.availability = new Mock<IConcertAvailability>();
         this.opportunityRepository = new Mock<IOpportunityRepository>();
         this.applicationRepository = new Mock<IApplicationRepository>();
         this.currentUser = new Mock<ICurrentUser>();
@@ -41,7 +41,7 @@ public sealed class ApplicationValidatorTests
         applicationRepository.Setup(r => r.GetByIdAsync(ApplicationId)).ReturnsAsync(StandardApplication.Create(ArtistId, OpportunityId));
 
         this.validator = new ApplicationValidator(
-            concertRepository.Object,
+            availability.Object,
             opportunityRepository.Object,
             applicationRepository.Object,
             currentUser.Object,
@@ -95,7 +95,7 @@ public sealed class ApplicationValidatorTests
     public async Task CanAcceptAsync_ShouldFail_WhenOpportunityAlreadyHasConcert()
     {
         // Arrange
-        concertRepository.Setup(r => r.OpportunityHasConcertAsync(It.IsAny<int>())).ReturnsAsync(true);
+        availability.Setup(r => r.OpportunityHasConcertAsync(It.IsAny<int>())).ReturnsAsync(true);
 
         // Act
         var result = await validator.CanAcceptAsync(ApplicationId);
@@ -108,7 +108,7 @@ public sealed class ApplicationValidatorTests
     public async Task CanAcceptAsync_ShouldFail_WhenArtistAlreadyHasConcertOnDate()
     {
         // Arrange
-        concertRepository.Setup(r => r.ArtistHasConcertOnDateAsync(ArtistId, FuturePeriod.Start)).ReturnsAsync(true);
+        availability.Setup(r => r.ArtistHasConcertOnDateAsync(ArtistId, FuturePeriod.Start)).ReturnsAsync(true);
 
         // Act
         var result = await validator.CanAcceptAsync(ApplicationId);
@@ -121,7 +121,7 @@ public sealed class ApplicationValidatorTests
     public async Task CanAcceptAsync_ShouldFail_WhenVenueAlreadyHasConcertOnDate()
     {
         // Arrange
-        concertRepository.Setup(r => r.VenueHasConcertOnDateAsync(VenueId, FuturePeriod.Start)).ReturnsAsync(true);
+        availability.Setup(r => r.VenueHasConcertOnDateAsync(VenueId, FuturePeriod.Start)).ReturnsAsync(true);
 
         // Act
         var result = await validator.CanAcceptAsync(ApplicationId);

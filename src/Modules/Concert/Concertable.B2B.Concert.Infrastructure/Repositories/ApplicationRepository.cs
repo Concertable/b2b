@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ReadModels;
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IApplicationRepository
+internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<ApplicationEntity>, IApplicationRepository
 {
     private readonly TimeProvider timeProvider;
 
@@ -72,6 +73,22 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
         return context.Applications
             .Where(a => a.Id == applicationId)
             .Select(a => (int?)a.Opportunity.ContractId)
+            .FirstOrDefaultAsync();
+    }
+
+    public Task<PayeeSummary?> GetArtistPayeeAsync(int applicationId)
+    {
+        return context.Applications
+            .Where(a => a.Id == applicationId)
+            .Select(a => new PayeeSummary(a.Artist.Name, a.Artist.Email))
+            .FirstOrDefaultAsync()!;
+    }
+
+    public Task<Guid?> GetVenueManagerIdAsync(int applicationId)
+    {
+        return context.Applications
+            .Where(a => a.Id == applicationId)
+            .Select(a => (Guid?)a.Opportunity.Venue.UserId)
             .FirstOrDefaultAsync();
     }
 

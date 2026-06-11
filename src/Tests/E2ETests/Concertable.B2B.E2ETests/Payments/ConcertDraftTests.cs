@@ -51,7 +51,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
         await fixture.Polling.UntilAsync(
             async () =>
             {
-                var response = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}");
+                var response = await venueManagerClient.GetAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}");
                 await response.ShouldBe(HttpStatusCode.OK);
                 return await response.Content.ReadAsync<ApplicationResponse>();
             },
@@ -77,7 +77,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
         await fixture.Polling.UntilAsync(
             async () =>
             {
-                var response = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}");
+                var response = await venueManagerClient.GetAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}");
                 await response.ShouldBe(HttpStatusCode.OK);
                 return await response.Content.ReadAsync<ApplicationResponse>();
             },
@@ -93,7 +93,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
             new { PaymentMethodId = AppFixture.TestPaymentMethodId });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var applicationResponse = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}");
+        var applicationResponse = await venueManagerClient.GetAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}");
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
@@ -107,7 +107,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
             new { PaymentMethodId = AppFixture.TestPaymentMethodId });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var applicationResponse = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}");
+        var applicationResponse = await venueManagerClient.GetAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}");
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);

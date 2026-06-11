@@ -22,6 +22,12 @@ public abstract class TenantScopedRepository<TEntity, TContext, TKey>
     protected IQueryable<TEntity> CurrentTenant =>
         context.Set<TEntity>().Where(e => (Guid?)e.TenantId == tenant.TenantId);
 
+    public async Task<Guid?> GetTenantIdByIdAsync(TKey id, CancellationToken ct = default) =>
+        await context.Set<TEntity>()
+            .Where(e => e.Id!.Equals(id))
+            .Select(e => (Guid?)e.TenantId)
+            .FirstOrDefaultAsync(ct);
+
     public async Task<IReadOnlyList<TEntity>> GetAllByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         await context.Set<TEntity>().Where(e => e.TenantId == tenantId).ToListAsync(ct);
 }

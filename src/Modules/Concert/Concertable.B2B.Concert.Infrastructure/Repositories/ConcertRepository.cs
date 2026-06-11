@@ -41,47 +41,6 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .FirstOrDefaultAsync();
     }
 
-    public async Task<ConcertSummary?> GetSummaryAsync(int id)
-    {
-        return await context.Concerts
-            .Where(e => e.Id == id)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task<ConcertDetails?> GetDetailsByIdAsync(int id)
-    {
-        return await context.Concerts
-            .Where(e => e.Id == id)
-            .ToDetails(
-                context.ConcertRatingProjections,
-                context.ArtistRatingProjections,
-                context.VenueRatingProjections)
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task<IEnumerable<ConcertSummary>> GetUpcomingByVenueIdAsync(int id)
-    {
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-        return await context.Concerts
-            .Where(e => e.Booking.Application.Opportunity.VenueId == id
-                        && e.Booking.Application.Opportunity.Period.Start >= now
-                        && e.DatePosted != null)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<ConcertSummary>> GetUpcomingByArtistIdAsync(int id)
-    {
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-        return await context.Concerts
-            .Where(e => e.Booking.Application.ArtistId == id
-                        && e.Booking.Application.Opportunity.Period.Start >= now
-                        && e.DatePosted != null)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .ToListAsync();
-    }
-
     public async Task<ConcertDetails?> GetDetailsByApplicationIdAsync(int applicationId)
     {
         return await context.Concerts
@@ -91,28 +50,6 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
                 context.ArtistRatingProjections,
                 context.VenueRatingProjections)
             .FirstOrDefaultAsync();
-    }
-
-    public async Task<IEnumerable<ConcertSummary>> GetHistoryByArtistIdAsync(int id)
-    {
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-        return await context.Concerts
-            .Where(e => e.Booking.Application.ArtistId == id
-                        && e.Booking.Application.Opportunity.Period.Start < now
-                        && e.DatePosted != null)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<ConcertSummary>> GetHistoryByVenueIdAsync(int id)
-    {
-        var now = timeProvider.GetUtcNow();
-        return await context.Concerts
-            .Where(e => e.Booking.Application.Opportunity.VenueId == id
-                        && e.Booking.Application.Opportunity.Period.Start < now
-                        && e.DatePosted != null)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .ToListAsync();
     }
 
     public async Task<IEnumerable<ConcertSummary>> GetUnpostedByArtistIdAsync(int id)
@@ -129,25 +66,6 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .Where(e => e.Booking.Application.Opportunity.VenueId == id && e.DatePosted == null)
             .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
             .ToListAsync();
-    }
-
-    public async Task<bool> ArtistHasConcertOnDateAsync(int artistId, DateTime date)
-    {
-        return await context.Concerts
-            .Where(e => e.Booking.Application.ArtistId == artistId)
-            .AnyAsync(e => e.Booking.Application.Opportunity.Period.Start.Date == date.Date);
-    }
-
-    public Task<bool> OpportunityHasConcertAsync(int opportunityId)
-    {
-        return context.Concerts.AnyAsync(e => e.Booking.Application.OpportunityId == opportunityId);
-    }
-
-    public async Task<bool> VenueHasConcertOnDateAsync(int venueId, DateTime date)
-    {
-        return await context.Concerts
-            .Where(e => e.Booking.Application.Opportunity.VenueId == venueId)
-            .AnyAsync(e => e.Booking.Application.Opportunity.Period.Start.Date == date.Date);
     }
 
     public Task<int?> GetContractIdByIdAsync(int concertId)

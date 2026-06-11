@@ -13,6 +13,9 @@ namespace Concertable.B2B.DataAccess.Application;
 public interface ITenantScopedRepository<TEntity, TKey> : IRepository<TEntity, TKey>
     where TEntity : class, IEntity<TKey>, ITenantScoped
 {
+    /// <summary>The owning tenant of a single row — scalar read, no row load.</summary>
+    Task<Guid?> GetTenantIdByIdAsync(TKey id, CancellationToken ct = default);
+
     /// <summary>Every row owned by a specific tenant — for admin / cross-tenant reporting.</summary>
     Task<IReadOnlyList<TEntity>> GetAllByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

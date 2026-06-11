@@ -22,6 +22,6 @@ internal static class BookingMappers
         new(
             booking.Id,
             booking.PaymentMethodId,
-            booking.Application.Opportunity.Venue.UserId,
-            booking.Application.Artist.UserId);
+            booking.VenueTenantId,
+            booking.ArtistTenantId);
 }

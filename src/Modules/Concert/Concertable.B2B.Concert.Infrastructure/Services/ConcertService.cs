@@ -8,7 +8,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class ConcertService : IConcertService
 {
-    private readonly IConcertRepository concertRepository;
+    private readonly IConcertRepository repository;
+    private readonly IPublicConcertRepository publicRepository;
     private readonly IConcertValidator concertValidator;
     private readonly ICurrentUser currentUser;
     private readonly IApplicationValidator applicationValidator;
@@ -17,7 +18,8 @@ internal sealed class ConcertService : IConcertService
     private readonly TimeProvider timeProvider;
 
     public ConcertService(
-        IConcertRepository concertRepository,
+        IConcertRepository repository,
+        IPublicConcertRepository publicRepository,
         IConcertValidator concertValidator,
         ICurrentUser currentUser,
         IApplicationValidator applicationValidator,
@@ -25,7 +27,8 @@ internal sealed class ConcertService : IConcertService
         IConcertDraftService concertDraftService,
         TimeProvider timeProvider)
     {
-        this.concertRepository = concertRepository;
+        this.repository = repository;
+        this.publicRepository = publicRepository;
         this.concertValidator = concertValidator;
         this.currentUser = currentUser;
         this.applicationValidator = applicationValidator;
@@ -35,20 +38,20 @@ internal sealed class ConcertService : IConcertService
     }
 
     public Task<IEnumerable<ConcertSummary>> GetUpcomingByVenueIdAsync(int id) =>
-        concertRepository.GetUpcomingByVenueIdAsync(id);
+        publicRepository.GetUpcomingByVenueIdAsync(id);
 
     public Task<IEnumerable<ConcertSummary>> GetUpcomingByArtistIdAsync(int id) =>
-        concertRepository.GetUpcomingByArtistIdAsync(id);
+        publicRepository.GetUpcomingByArtistIdAsync(id);
 
     public Task<IEnumerable<ConcertSummary>> GetHistoryByArtistIdAsync(int id) =>
-        concertRepository.GetHistoryByArtistIdAsync(id);
+        publicRepository.GetHistoryByArtistIdAsync(id);
 
     public Task<IEnumerable<ConcertSummary>> GetHistoryByVenueIdAsync(int id) =>
-        concertRepository.GetHistoryByVenueIdAsync(id);
+        publicRepository.GetHistoryByVenueIdAsync(id);
 
     public async Task<ConcertDetails> GetDetailsByIdAsync(int id)
     {
-        return await concertRepository.GetDetailsByIdAsync(id)
+        return await publicRepository.GetDetailsByIdAsync(id)
             ?? throw new NotFoundException("Concert not found");
     }
 
@@ -57,13 +60,13 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<ConcertDetails> GetDetailsByApplicationIdAsync(int applicationId)
     {
-        return await concertRepository.GetDetailsByApplicationIdAsync(applicationId)
+        return await repository.GetDetailsByApplicationIdAsync(applicationId)
             ?? throw new NotFoundException($"No concert found for Application ID {applicationId}");
     }
 
     public async Task<ConcertUpdateResponse> UpdateAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await concertRepository.GetByIdAsync(id)
+        var concertEntity = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Concert not found");
 
         var result = concertValidator.CanUpdate(concertEntity, request.TotalTickets);
@@ -72,7 +75,7 @@ internal sealed class ConcertService : IConcertService
 
         concertEntity.Update(request.Name, request.About, request.Price, request.TotalTickets);
 
-        await concertRepository.SaveChangesAsync();
+        await repository.SaveChangesAsync();
 
         return new ConcertUpdateResponse
         {
@@ -87,7 +90,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task PostAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await concertRepository.GetByIdWithBookingAsync(id)
+        var concertEntity = await repository.GetByIdWithBookingAsync(id)
             ?? throw new NotFoundException("Concert not found");
 
         var result = concertValidator.CanPost(concertEntity);
@@ -96,12 +99,12 @@ internal sealed class ConcertService : IConcertService
 
         concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime);
 
-        await concertRepository.SaveChangesAsync();
+        await repository.SaveChangesAsync();
     }
 
     public Task<IEnumerable<ConcertSummary>> GetUnpostedByArtistIdAsync(int id) =>
-        concertRepository.GetUnpostedByArtistIdAsync(id);
+        repository.GetUnpostedByArtistIdAsync(id);
 
     public Task<IEnumerable<ConcertSummary>> GetUnpostedByVenueIdAsync(int id) =>
-        concertRepository.GetUnpostedByVenueIdAsync(id);
+        repository.GetUnpostedByVenueIdAsync(id);
 }
