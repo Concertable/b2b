@@ -59,6 +59,7 @@ public sealed class AppFixture : IAsyncLifetime
     public HttpClient B2BClient { get; private set; } = null!;
     public HttpClient SearchClient { get; private set; } = null!;
     public HttpClient PaymentClient { get; private set; } = null!;
+    public WorkersFixture Workers { get; private set; } = null!;
     public IPollingService Polling { get; private set; } = null!;
     public PaymentIntentService StripePaymentIntents { get; private set; } = null!;
     public StripeFixture Stripe { get; private set; } = null!;
@@ -114,6 +115,7 @@ public sealed class AppFixture : IAsyncLifetime
         B2BClient = new HttpClient { BaseAddress = new Uri(B2BWebUrl) };
         SearchClient = new HttpClient { BaseAddress = new Uri(SearchWebUrl) };
         PaymentClient = new HttpClient { BaseAddress = new Uri(PaymentWebUrl) };
+        Workers = new WorkersFixture(app, Polling);
 
         await healthWaiter.WaitForAllHealthyAsync(
             [B2BWebUrl, SearchWebUrl, PaymentWebUrl],
@@ -212,6 +214,7 @@ public sealed class AppFixture : IAsyncLifetime
         B2BClient.Dispose();
         SearchClient.Dispose();
         PaymentClient.Dispose();
+        Workers.Dispose();
         tokenMinter.Dispose();
         healthWaiter.Dispose();
         await DbFixture.DisposeAsync();

@@ -37,7 +37,7 @@ internal static class ServiceCollectionExtensions
         services.AddInMemoryTransport();
         services.AddDirectBusKeyed("webhook");
         services.AddOutbox(
-            opt => opt.UseSqlServer(configuration.GetConnectionString("B2BDb")),
+            opt => opt.UseSqlServer(configuration.GetConnectionString(B2BDb.Name)),
             runDispatcher: false);
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
@@ -56,7 +56,7 @@ internal static class ServiceCollectionExtensions
         services.AddContractModule(configuration);
         services.AddClientCredentials(opts =>
         {
-            opts.Authority = configuration["Auth:Authority"] ?? configuration["services__auth__https__0"] ?? "";
+            opts.Authority = configuration["Auth:Authority"] ?? configuration["services:auth:https:0"] ?? "";
             opts.ClientId = configuration["ServiceAuth:ClientId"] ?? "";
             opts.ClientSecret = configuration["ServiceAuth:ClientSecret"] ?? "";
         });
