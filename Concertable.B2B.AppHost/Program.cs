@@ -20,7 +20,7 @@ var api = builder.AddApi<Projects.Concertable_B2B_Web>(b2bDb, auth, storage, blo
 auth.WithEnvironment("Services__B2BApiUrl", api.GetEndpoint("https"));
 auth.WithEnvironment("ServiceAuth__AuthClientId", "concertable-auth");
 
-builder.AddWorkers<Projects.Concertable_B2B_Workers>(b2bDb, paymentWeb);
+builder.AddWorkers<Projects.Concertable_B2B_Workers>(b2bDb, paymentWeb, auth);
 builder.AddPaymentWorkers<Projects.Concertable_Payment_Workers>(paymentDb, asb);
 builder.AddVenueSpa(api, auth);
 builder.AddArtistSpa(api, auth);

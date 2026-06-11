@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Kernel.Serializers;
 using Concertable.B2B.Web;
 using Concertable.B2B.Artist.Api.Extensions;
@@ -143,8 +144,8 @@ services.AddAzureServiceBusTransport(
         reg.SubscribeTo<PaymentFailedEvent>();
     });
 services.AddDirectBusKeyed("webhook");
-services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("B2BDb")));
-services.AddInbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("B2BDb")));
+services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
+services.AddInbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
 services.AddInProcessEventDispatch();
 services.AddSeedingInfrastructure();
 if (!builder.Environment.IsEnvironment("Testing"))
@@ -198,9 +199,6 @@ app.UseMiddleware<TenantResolutionMiddleware>();
 app.MapDefaultEndpoints();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hub/notifications");
-
-if (app.Environment.IsEnvironment("E2E"))
-    app.MapE2EEndpoints();
 
 app.MapFallback(async context =>
 {
