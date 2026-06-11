@@ -1,5 +1,5 @@
-using System.Net;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Workers.Functions;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Testing;
 using Xunit;
@@ -77,9 +77,6 @@ public sealed class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
         Assert.Equal(11400L, intent.Amount);
     }
 
-    private async Task TriggerConcertFinishedFunctionAsync()
-    {
-        var response = await fixture.B2BClient.PostAsync("/e2e/run-completion", content: null);
-        await response.ShouldBe(HttpStatusCode.OK);
-    }
+    private Task TriggerConcertFinishedFunctionAsync() =>
+        fixture.Workers.TriggerAsync(nameof(ConcertFinishedFunction));
 }
