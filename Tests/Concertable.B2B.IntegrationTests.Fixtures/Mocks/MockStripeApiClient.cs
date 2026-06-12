@@ -6,14 +6,14 @@ namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
 public sealed class MockStripeApiClient : IStripeApiClient, IResettable
 {
-    public string LastPaymentIntentId { get; private set; } = string.Empty;
-    public string LastEventId { get; private set; } = string.Empty;
+    public string LastPaymentIntentId { get; private set; } = null!;
+    public string LastEventId { get; private set; } = null!;
     public Dictionary<string, string> LastMetadata { get; private set; } = [];
 
     public void Reset()
     {
-        LastPaymentIntentId = string.Empty;
-        LastEventId = string.Empty;
+        LastPaymentIntentId = null!;
+        LastEventId = null!;
         LastMetadata = [];
     }
 
