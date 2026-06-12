@@ -132,7 +132,7 @@ public sealed class ApiFixture : IAsyncLifetime
 
                 services.AddSingleton<IWebhookSimulator, MockWebhookSimulator>();
                 services.Replace(ServiceDescriptor.Singleton<IHttpClientFactory>(_ => new WebApplicationHttpClientFactory(factory)));
-                services.AddScoped<IGeocodingService, MockGeocodingService>();
+                services.AddScoped<IGeocodingClient, MockGeocodingClient>();
                 services.AddScoped<IImageService, MockImageService>();
                 services.AddScoped<IDbInitializer, TestDbInitializer>();
                 services.AddSeedingInfrastructure();
