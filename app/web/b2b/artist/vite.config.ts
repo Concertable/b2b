@@ -13,9 +13,10 @@ export default defineConfig({
   envDir: '../../',
   define: {
     'import.meta.env.VITE_OIDC_CLIENT_ID': JSON.stringify('artist-web'),
-    'import.meta.env.VITE_OIDC_SCOPE': JSON.stringify('openid profile roles concertable.b2b.api offline_access'),
+    'import.meta.env.VITE_OIDC_SCOPE': JSON.stringify('openid profile roles concertable.b2b.api payment:write offline_access'),
     'import.meta.env.VITE_API_URL': JSON.stringify('https://localhost:7086/api'),
     'import.meta.env.VITE_BASE_URL': JSON.stringify('https://localhost:7086'),
+    'import.meta.env.VITE_PAYMENT_API_URL': JSON.stringify('https://localhost:7088/api'),
   },
   resolve: {
     alias: [
