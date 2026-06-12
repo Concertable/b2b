@@ -2,6 +2,8 @@ using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
+using Concertable.B2B.Tenant.Application.Validators;
+using FluentValidation;
 using Concertable.B2B.Tenant.Domain.Events;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Data.Seeders;
@@ -41,6 +43,8 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, TenantProvisioningHandler>();
         services.AddScoped<IDomainEventHandler<TenantCreatedDomainEvent>, TenantCreatedDomainEventHandler>();
+
+        services.AddValidatorsFromAssemblyContaining<UpdateTenantRequestValidator>();
 
         return services;
     }

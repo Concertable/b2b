@@ -24,6 +24,7 @@ import { Route as ArtistSettingsIndexRouteImport } from './routes/_artist/settin
 import { Route as ArtistMyIndexRouteImport } from './routes/_artist/my/index'
 import { Route as ArtistFindIndexRouteImport } from './routes/_artist/find/index'
 import { Route as ArtistSettingsPaymentRouteImport } from './routes/_artist/settings/payment'
+import { Route as ArtistSettingsOrganizationRouteImport } from './routes/_artist/settings/organization'
 import { Route as ArtistOpportunityCheckoutOpportunityIdRouteImport } from './routes/_artist/opportunity/checkout.$opportunityId'
 import { Route as ArtistFindVenueIdRouteImport } from './routes/_artist/find/venue.$id'
 import { Route as ArtistFindConcertIdRouteImport } from './routes/_artist/find/concert.$id'
@@ -104,6 +105,12 @@ const ArtistSettingsPaymentRoute = ArtistSettingsPaymentRouteImport.update({
   path: '/payment',
   getParentRoute: () => ArtistSettingsRouteRoute,
 } as any)
+const ArtistSettingsOrganizationRoute =
+  ArtistSettingsOrganizationRouteImport.update({
+    id: '/organization',
+    path: '/organization',
+    getParentRoute: () => ArtistSettingsRouteRoute,
+  } as any)
 const ArtistOpportunityCheckoutOpportunityIdRoute =
   ArtistOpportunityCheckoutOpportunityIdRouteImport.update({
     id: '/opportunity/checkout/$opportunityId',
@@ -143,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof ArtistSettingsRouteRouteWithChildren
   '/create': typeof ArtistCreateRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/settings/payment': typeof ArtistSettingsPaymentRoute
   '/find/': typeof ArtistFindIndexRoute
   '/my/': typeof ArtistMyIndexRoute
@@ -163,6 +171,7 @@ export interface FileRoutesByTo {
   '/create': typeof ArtistCreateRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof ArtistIndexRoute
+  '/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/settings/payment': typeof ArtistSettingsPaymentRoute
   '/find': typeof ArtistFindIndexRoute
   '/my': typeof ArtistMyIndexRoute
@@ -186,6 +195,7 @@ export interface FileRoutesById {
   '/_artist/create': typeof ArtistCreateRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_artist/': typeof ArtistIndexRoute
+  '/_artist/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/_artist/settings/payment': typeof ArtistSettingsPaymentRoute
   '/_artist/find/': typeof ArtistFindIndexRoute
   '/_artist/my/': typeof ArtistMyIndexRoute
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/create'
     | '/auth/callback'
+    | '/settings/organization'
     | '/settings/payment'
     | '/find/'
     | '/my/'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/auth/callback'
     | '/'
+    | '/settings/organization'
     | '/settings/payment'
     | '/find'
     | '/my'
@@ -251,6 +263,7 @@ export interface FileRouteTypes {
     | '/_artist/create'
     | '/auth/callback'
     | '/_artist/'
+    | '/_artist/settings/organization'
     | '/_artist/settings/payment'
     | '/_artist/find/'
     | '/_artist/my/'
@@ -380,6 +393,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtistSettingsPaymentRouteImport
       parentRoute: typeof ArtistSettingsRouteRoute
     }
+    '/_artist/settings/organization': {
+      id: '/_artist/settings/organization'
+      path: '/organization'
+      fullPath: '/settings/organization'
+      preLoaderRoute: typeof ArtistSettingsOrganizationRouteImport
+      parentRoute: typeof ArtistSettingsRouteRoute
+    }
     '/_artist/opportunity/checkout/$opportunityId': {
       id: '/_artist/opportunity/checkout/$opportunityId'
       path: '/opportunity/checkout/$opportunityId'
@@ -419,11 +439,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface ArtistSettingsRouteRouteChildren {
+  ArtistSettingsOrganizationRoute: typeof ArtistSettingsOrganizationRoute
   ArtistSettingsPaymentRoute: typeof ArtistSettingsPaymentRoute
   ArtistSettingsIndexRoute: typeof ArtistSettingsIndexRoute
 }
 
 const ArtistSettingsRouteRouteChildren: ArtistSettingsRouteRouteChildren = {
+  ArtistSettingsOrganizationRoute: ArtistSettingsOrganizationRoute,
   ArtistSettingsPaymentRoute: ArtistSettingsPaymentRoute,
   ArtistSettingsIndexRoute: ArtistSettingsIndexRoute,
 }

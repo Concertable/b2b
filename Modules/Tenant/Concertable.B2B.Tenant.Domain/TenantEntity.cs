@@ -12,6 +12,12 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     public Guid CreatedByUserId { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
+    /// <summary>
+    /// The legal/tax identity backing settlement and DAC7 reporting (<c>LEGAL_REQUIREMENTS.md</c> item 3).
+    /// Null until the operator completes organization setup — provisioning creates the tenant bare.
+    /// </summary>
+    public Compliance? Compliance { get; private set; }
+
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
     public void ClearDomainEvents() => events.Clear();
@@ -40,4 +46,16 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     /// announcing drives Payment provisioning through the same outbox path a fresh <see cref="Create"/> would.
     /// </summary>
     public void Announce() => events.Raise(new TenantCreatedDomainEvent(Id, CreatedByUserId, LegalName));
+
+    /// <summary>
+    /// Organization setup: replaces the provisioning placeholder legal name (the registration email)
+    /// and the compliance details in one transition — the <c>/organizations</c> form submits them together.
+    /// </summary>
+    public void UpdateLegalDetails(string legalName, Compliance compliance)
+    {
+        DomainException.ThrowIfNullOrWhiteSpace(legalName, "Legal name");
+        DomainException.ThrowIfNull(compliance, "Compliance");
+        LegalName = legalName;
+        Compliance = compliance;
+    }
 }
