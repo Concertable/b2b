@@ -1,5 +1,6 @@
 using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.Tenant.Domain.Events;
+using Concertable.Kernel;
 
 namespace Concertable.B2B.Tenant.UnitTests;
 
@@ -43,6 +44,45 @@ public sealed class TenantEntityTests
         var raised = Assert.IsType<TenantCreatedDomainEvent>(Assert.Single(tenant.DomainEvents));
         Assert.Equal(tenant.Id, raised.TenantId);
         Assert.Equal(userId, raised.CreatedByUserId);
+    }
+
+    [Fact]
+    public void Create_LeavesComplianceNull()
+    {
+        var tenant = TenantEntity.Create("Acme Ltd", Guid.NewGuid(), DateTime.UtcNow);
+
+        Assert.Null(tenant.Compliance);
+    }
+
+    [Fact]
+    public void UpdateLegalDetails_SetsLegalNameAndCompliance()
+    {
+        var tenant = TenantEntity.Create("manager@acme.com", Guid.NewGuid(), DateTime.UtcNow);
+        var compliance = new Compliance(
+            true,
+            "GB123456789",
+            "12345678",
+            new RegisteredAddress("1 High Street", null, "Manchester", "M1 1AA", "United Kingdom"),
+            "GB00BANK1234");
+
+        tenant.UpdateLegalDetails("Acme Ltd", compliance);
+
+        Assert.Equal("Acme Ltd", tenant.LegalName);
+        Assert.Equal(compliance, tenant.Compliance);
+    }
+
+    [Fact]
+    public void UpdateLegalDetails_BlankLegalName_Throws()
+    {
+        var tenant = TenantEntity.Create("manager@acme.com", Guid.NewGuid(), DateTime.UtcNow);
+        var compliance = new Compliance(
+            false,
+            null,
+            "12345678",
+            new RegisteredAddress("1 High Street", null, "Manchester", "M1 1AA", "United Kingdom"),
+            "GB00BANK1234");
+
+        Assert.Throws<DomainException>(() => tenant.UpdateLegalDetails(" ", compliance));
     }
 }
 

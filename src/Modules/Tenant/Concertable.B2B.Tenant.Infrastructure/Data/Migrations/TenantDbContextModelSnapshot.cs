@@ -113,6 +113,81 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                             t.ExcludeFromMigrations();
                         });
                 });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.TenantEntity", b =>
+                {
+                    b.OwnsOne("Concertable.B2B.Tenant.Domain.Compliance", "Compliance", b1 =>
+                        {
+                            b1.Property<Guid>("TenantEntityId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("BankReference")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("nvarchar(50)");
+
+                            b1.Property<string>("SellerIdentifier")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("nvarchar(50)");
+
+                            b1.Property<string>("VatNumber")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<bool>("VatRegistered")
+                                .HasColumnType("bit");
+
+                            b1.HasKey("TenantEntityId");
+
+                            b1.ToTable("Tenants", "tenant");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TenantEntityId");
+
+                            b1.OwnsOne("Concertable.B2B.Tenant.Domain.RegisteredAddress", "RegisteredAddress", b2 =>
+                                {
+                                    b2.Property<Guid>("ComplianceTenantEntityId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<string>("City")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("nvarchar(100)");
+
+                                    b2.Property<string>("Country")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("nvarchar(100)");
+
+                                    b2.Property<string>("Line1")
+                                        .IsRequired()
+                                        .HasMaxLength(200)
+                                        .HasColumnType("nvarchar(200)");
+
+                                    b2.Property<string>("Line2")
+                                        .HasMaxLength(200)
+                                        .HasColumnType("nvarchar(200)");
+
+                                    b2.Property<string>("Postcode")
+                                        .IsRequired()
+                                        .HasMaxLength(20)
+                                        .HasColumnType("nvarchar(20)");
+
+                                    b2.HasKey("ComplianceTenantEntityId");
+
+                                    b2.ToTable("Tenants", "tenant");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ComplianceTenantEntityId");
+                                });
+
+                            b1.Navigation("RegisteredAddress")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("Compliance");
+                });
 #pragma warning restore 612, 618
         }
     }

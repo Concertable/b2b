@@ -479,6 +479,18 @@ Each phase ends green (build + tests). Migrations **re-scaffold** via `./initial
 - **Phase 5 â€” Compliance value object on `TenantEntity`** (= `LEGAL_REQUIREMENTS.md` item 3): VAT /
   seller identifier / registered address / bank ref as owned value objects. Full round-trip test (nested
   owned types are the main EF risk). Tenant-setup UI hitting `/organizations`.
+  **Code landed; one gate outstanding.** `Compliance` owns a nested `RegisteredAddress` (both ctor-validated
+  records in Tenant.Domain; EF needs the private parameterless ctor because a nested owned navigation can't
+  be constructor-bound). Set together with the legal name via `TenantEntity.UpdateLegalDetails` â€" provisioning
+  still creates tenants bare (`LegalName` = registration email) and the new surface fills them in.
+  `TenantController` serves `GET`/`PUT api/organizations` resolved from `ITenantContext` (no tenant â‡' 204/403,
+  fail-closed). Both manager SPAs gain `/settings/organization` (shared `organizations` feature in
+  `b2b/shared`; per-app copy â€" venue "Organization", artist "Business & tax details").
+  **Green:** build; Tenant unit 24/24 (VO invariants); compliance round-trip integration 6/6 (fresh-context
+  read-back, replace-in-place, VAT-without-number 400, no-tenant 204/403); migrations re-scaffolded; all four
+  web builds. **Outstanding:** UI regress â€" three runs failed at stack *startup* on the local environment
+  (search-web readiness), zero scenarios executed. When a regress run passes, this plan is complete: delete it
+  in that commit.
 _(Membership, roles, the authorization sweep, multi-user orgs, and the `MessageEntity` group-inbox
 decision are **out of scope** â€” a later user-model plan owns them. See the scope note at the top.)_
 
