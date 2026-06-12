@@ -1,8 +1,6 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Concertable.B2B.Workers.UnitTests")]
-// E2E suite uses nameof(ConcertFinishedFunction) etc. to trigger functions via the Functions host
-// admin API, keeping the triggered name compile-bound to the [Function(nameof(...))] registration.
 [assembly: InternalsVisibleTo("Concertable.B2B.E2ETests")]
 // TEMPORARY: Castle Core dynamic proxy IVT (strong-named form for ILogger<TInternal>). Needed by
 // Concertable.B2B.Workers.UnitTests to mock loggers typed against internal Worker function classes
