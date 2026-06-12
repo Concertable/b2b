@@ -15,7 +15,7 @@ internal sealed class ArtistService : IArtistService
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
-    private readonly IGeocodingService geocodingService;
+    private readonly IGeocodingClient geocodingClient;
     private readonly IGeometryProvider geometryProvider;
 
     public ArtistService(
@@ -23,14 +23,14 @@ internal sealed class ArtistService : IArtistService
         IImageService imageService,
         ICurrentUser currentUser,
         IUserModule userModule,
-        IGeocodingService geocodingService,
+        IGeocodingClient geocodingClient,
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.repository = repository;
         this.imageService = imageService;
         this.currentUser = currentUser;
         this.userModule = userModule;
-        this.geocodingService = geocodingService;
+        this.geocodingClient = geocodingClient;
         this.geometryProvider = geometryProvider;
     }
 
@@ -48,7 +48,7 @@ internal sealed class ArtistService : IArtistService
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
-        var locationDto = await geocodingService.GetLocationAsync(request.Latitude, request.Longitude);
+        var locationDto = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
         var location = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
         var address = new Address(locationDto.County, locationDto.Town);
 
@@ -84,7 +84,7 @@ internal sealed class ArtistService : IArtistService
 
         artist.Update(request.Name, request.About, bannerUrl, request.Genres);
 
-        var locationDto = await geocodingService.GetLocationAsync(request.Latitude, request.Longitude);
+        var locationDto = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
         artist.UpdateLocation(
             geometryProvider.CreatePoint(request.Latitude, request.Longitude),
             new Address(locationDto.County, locationDto.Town));

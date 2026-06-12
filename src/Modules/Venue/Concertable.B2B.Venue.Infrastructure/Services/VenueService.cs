@@ -15,7 +15,7 @@ internal sealed class VenueService : IVenueService
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
-    private readonly IGeocodingService geocodingService;
+    private readonly IGeocodingClient geocodingClient;
     private readonly IGeometryProvider geometryProvider;
 
     public VenueService(
@@ -23,14 +23,14 @@ internal sealed class VenueService : IVenueService
         IImageService imageService,
         ICurrentUser currentUser,
         IUserModule userModule,
-        IGeocodingService geocodingService,
+        IGeocodingClient geocodingClient,
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.repository = repository;
         this.imageService = imageService;
         this.currentUser = currentUser;
         this.userModule = userModule;
-        this.geocodingService = geocodingService;
+        this.geocodingClient = geocodingClient;
         this.geometryProvider = geometryProvider;
     }
 
@@ -47,7 +47,7 @@ internal sealed class VenueService : IVenueService
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
-        var locationDto = await geocodingService.GetLocationAsync(request.Latitude, request.Longitude);
+        var locationDto = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
         var location = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
         var address = new Address(locationDto.County, locationDto.Town);
 
@@ -82,7 +82,7 @@ internal sealed class VenueService : IVenueService
 
         venue.Update(request.Name, request.About, bannerUrl);
 
-        var locationDto = await geocodingService.GetLocationAsync(request.Latitude, request.Longitude);
+        var locationDto = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
         venue.UpdateLocation(
             geometryProvider.CreatePoint(request.Latitude, request.Longitude),
             new Address(locationDto.County, locationDto.Town));
