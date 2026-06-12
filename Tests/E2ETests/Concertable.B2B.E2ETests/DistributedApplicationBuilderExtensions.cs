@@ -16,6 +16,7 @@ internal static class DistributedApplicationBuilderExtensions
         string paymentBaseUrl)
     {
         builder.PinAuthService(authBaseUrl);
+        builder.PinAuthB2BApi(apiBaseUrl);
         builder.PinB2BWeb(apiBaseUrl, authBaseUrl, paymentBaseUrl);
         builder.PinWorkers(authBaseUrl, paymentBaseUrl);
         builder.AddSearchService(searchApiBaseUrl, authBaseUrl);
@@ -26,12 +27,20 @@ internal static class DistributedApplicationBuilderExtensions
         return builder;
     }
 
-    /// <summary>
-    /// The pinned Auth and Payment processes bind their fixed URLs via <c>ASPNETCORE_URLS</c>, so the
-    /// endpoints the Aspire model hands out for them point at nothing. Every resource that calls them
-    /// must have its view re-pinned — <c>PinB2BWeb</c> does it for the API; this does it for the
-    /// Workers host (settlement sweep: token call to Auth, gRPC to Payment).
-    /// </summary>
+    private static void PinAuthB2BApi(
+        this IDistributedApplicationTestingBuilder builder,
+        string apiBaseUrl)
+    {
+        var auth = builder.Resources
+            .OfType<ProjectResource>()
+            .Single(r => r.Name == AppHostConstants.ResourceNames.Auth);
+
+        auth.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
+        {
+            context.EnvironmentVariables["Services__B2BApiUrl"] = apiBaseUrl;
+        }));
+    }
+
     private static void PinWorkers(
         this IDistributedApplicationTestingBuilder builder,
         string authBaseUrl,
