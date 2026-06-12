@@ -391,6 +391,16 @@ Each phase ends green (build + tests). Migrations **re-scaffold** via `./initial
     binding each manager's id/email/kind to its `TenantId`), consumed by Auth's credential seed, `SeedState`,
     and the simulator alike. **Green:** B2B E2E 8/8, Customer E2E 1/1; Concert integration 59/59 (settlement
     payee assertions â†’ owner ids), Venue 25/25, Customer Ticket 15/15; Payment unit 25/25.
+  - **Surfaced only by the UI E2E suite (post-Phase 4):** the direct browser-to-Payment self-service
+    surface this phase designed (`account-status`/`setup-intent`/`payment-method`/`onboarding-link`
+    resolving the payout account from the token's `owner` claim) had never worked from a browser. Five
+    stacked gaps: Auth could not mint its own service tokens (`Auth__Authority` never set; dead
+    `services__auth__https__0` config key), the E2E harness never re-pinned Auth's view of itself or of
+    B2B/Customer, `concertable.payment.api` requested no `UserClaims` so `owner` never entered any access
+    token (Payment fell back to `sub` â€” wrong once payout accounts were tenant-keyed), no web client was
+    allowed/requested `payment:write`, and the manager SPAs had no `VITE_PAYMENT_API_URL` (customer's
+    pointed at a dead port). All six UI booking scenarios were blocked on the "verify your Stripe
+    account" gate. Fixed across Auth/AppHost/SPA configs + suite pins; UI regress 30/30.
 - **Phase 4 â€” Bucket B scoping + snapshot at Accept. âœ… Done.** `VenueTenantId`/`ArtistTenantId` on
   `Application`/`Booking`/`Concert`/`ConcertImage`; populate at apply/accept (`AcceptExecutor`); explicit
   OR-filter in their configs. **Settlement switches from live owner resolution (Phase 3) to reading the
