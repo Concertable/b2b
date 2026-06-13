@@ -134,8 +134,8 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         Assert.NotEmpty(escrow.ChargeId);
         var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
-        Assert.Equal(venueTenantId, escrow.FromUserId);
-        Assert.Equal(artistTenantId, escrow.ToUserId);
+        Assert.Equal(venueTenantId, escrow.FromOwnerId);
+        Assert.Equal(artistTenantId, escrow.ToOwnerId);
     }
 
     [Fact]
