@@ -100,7 +100,9 @@ internal sealed class OpportunityService : IOpportunityService
         if (ownedVenueId != venueId)
             throw new ForbiddenException("You do not own this venue");
 
-        var current = await publicRepository.GetActiveByVenueIdAsync(venueId);
+        /* Read tracked through the writing context: the syncer mutates these entities, and the
+           read-only public projection's no-tracking context would silently drop those updates. */
+        var current = await repository.GetActiveByVenueIdAsync(venueId);
 
         await uowBehavior.ExecuteAsync(() => syncer.SyncAsync(venueId, current, desired));
 

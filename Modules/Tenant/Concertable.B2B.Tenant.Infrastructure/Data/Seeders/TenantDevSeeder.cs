@@ -21,8 +21,9 @@ internal sealed class TenantDevSeeder : IDevSeeder
 
     public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
 
-    // Seeds tenants with deterministic ids up front (before event processing), so seeded venues link to their
-    // operator tenant without a lookup and the registration handler finds them already present and no-ops.
+    /* Seeds tenants with deterministic ids up front (before event processing), so seeded venues link to their
+       operator tenant without a lookup and the registration handler finds them already present and no-ops. The
+       direct insert still routes through TenantEntity.Create, so the same TenantCreatedEvent fires once here. */
     public async Task SeedAsync(CancellationToken ct = default) =>
         await context.Tenants.SeedIfEmptyAsync(async () =>
         {

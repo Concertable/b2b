@@ -23,29 +23,24 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     public void ClearDomainEvents() => events.Clear();
 
     /// <summary>
-    /// Creates a tenant and raises <see cref="TenantCreatedDomainEvent"/> so downstream services (Payment)
+    /// Creates a tenant from the operator's registration <paramref name="email"/> — the bare provisioning
+    /// state before organization setup. The email seeds the placeholder <see cref="LegalName"/> and is carried
+    /// on <see cref="TenantCreatedDomainEvent"/> as the Stripe account email, so downstream services (Payment)
     /// provision off the resulting <c>TenantCreatedEvent</c>. <paramref name="id"/> lets seeders supply a
     /// deterministic id (so the event carries it, not a throwaway one); production omits it for a random id.
     /// </summary>
-    public static TenantEntity Create(string legalName, Guid createdByUserId, DateTime createdAt, Guid? id = null)
+    public static TenantEntity Create(string email, Guid createdByUserId, DateTime createdAt, Guid? id = null)
     {
         var tenant = new TenantEntity
         {
             Id = id ?? Guid.NewGuid(),
-            LegalName = legalName,
+            LegalName = email,
             CreatedByUserId = createdByUserId,
             CreatedAt = createdAt,
         };
-        tenant.events.Raise(new TenantCreatedDomainEvent(tenant.Id, createdByUserId, legalName));
+        tenant.events.Raise(new TenantCreatedDomainEvent(tenant.Id, createdByUserId, email));
         return tenant;
     }
-
-    /// <summary>
-    /// Re-raises <see cref="TenantCreatedDomainEvent"/> for an already-persisted tenant. The dev/E2E seed
-    /// inserts tenants directly (deterministic ids, so seeded rows link), so registration finds them present;
-    /// announcing drives Payment provisioning through the same outbox path a fresh <see cref="Create"/> would.
-    /// </summary>
-    public void Announce() => events.Raise(new TenantCreatedDomainEvent(Id, CreatedByUserId, LegalName));
 
     /// <summary>
     /// Organization setup: replaces the provisioning placeholder legal name (the registration email)
