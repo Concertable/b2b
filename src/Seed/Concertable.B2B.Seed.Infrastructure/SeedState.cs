@@ -33,8 +33,8 @@ public sealed class SeedState
     public ArtistEntity Artist { get; }
     public VenueEntity Venue { get; }
 
-    /// <summary>One tenant per venue manager (the operator's legal entity). Venues/opportunities/contracts
-    /// carry the matching <c>TenantId</c>; artist tenancy is deferred to a later phase.</summary>
+    /// <summary>One tenant per operator (the manager's legal entity) — every manager, venue and artist alike.
+    /// Venues/opportunities/contracts and artists all carry the matching <c>TenantId</c>.</summary>
     public IReadOnlyList<TenantEntity> Tenants { get; }
 
     public IReadOnlyList<ArtistEntity> Artists { get; }

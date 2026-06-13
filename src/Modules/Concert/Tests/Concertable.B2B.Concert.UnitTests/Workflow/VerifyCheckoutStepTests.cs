@@ -55,8 +55,8 @@ public sealed class VerifyCheckoutStepTests
         // Act
         var checkout = await step.ExecuteAsync(ApplicationId);
 
-        // Assert — the session targets the venue TENANT; the manager USER id rides the metadata
-        // so the failure webhook can notify them
+        /* Assert — the session targets the venue TENANT; the manager USER id rides the metadata
+           so the failure webhook can notify them. */
         Assert.Equal(CheckoutLabels.Settlement, checkout.Labels);
         Assert.Same(amount, checkout.Amount);
         Assert.Equal(artist, checkout.Payee);

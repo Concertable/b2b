@@ -21,29 +21,16 @@ public sealed class TenantEntityTests
     }
 
     [Fact]
-    public void Create_RaisesTenantCreatedDomainEvent()
+    public void Create_RaisesTenantCreatedDomainEvent_CarryingTheEmail()
     {
         var userId = Guid.NewGuid();
 
-        var tenant = TenantEntity.Create("Acme Ltd", userId, DateTime.UtcNow);
+        var tenant = TenantEntity.Create("manager@acme.com", userId, DateTime.UtcNow);
 
         var raised = Assert.IsType<TenantCreatedDomainEvent>(Assert.Single(tenant.DomainEvents));
         Assert.Equal(tenant.Id, raised.TenantId);
         Assert.Equal(userId, raised.CreatedByUserId);
-    }
-
-    [Fact]
-    public void Announce_RaisesTenantCreatedDomainEvent_ForExistingTenant()
-    {
-        var userId = Guid.NewGuid();
-        var tenant = TenantEntity.Create("Acme Ltd", userId, DateTime.UtcNow);
-        tenant.ClearDomainEvents();
-
-        tenant.Announce();
-
-        var raised = Assert.IsType<TenantCreatedDomainEvent>(Assert.Single(tenant.DomainEvents));
-        Assert.Equal(tenant.Id, raised.TenantId);
-        Assert.Equal(userId, raised.CreatedByUserId);
+        Assert.Equal("manager@acme.com", raised.Email);
     }
 
     [Fact]
