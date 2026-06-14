@@ -13,9 +13,9 @@ namespace Concertable.B2B.Concert.IntegrationTests;
 [Collection("Integration")]
 public sealed class TenantScopingTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public TenantScopingTests(ApiFixture fixture, ITestOutputHelper output)
+    public TenantScopingTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -46,7 +46,7 @@ public sealed class TenantScopingTests : IAsyncLifetime
         await applyResponse.ShouldBe(HttpStatusCode.Created);
 
         // Assert — the row carries the frozen pair
-        var application = await fixture.Applications
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>()
             .FirstAsync(a => a.OpportunityId == opportunity.Id);
         Assert.Equal(TenantOf(fixture.SeedState.VenueManager1.Id), application.VenueTenantId);
         Assert.Equal(TenantOf(fixture.SeedState.ArtistManager1.Id), application.ArtistTenantId);
@@ -67,11 +67,11 @@ public sealed class TenantScopingTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert — application, booking and concert all carry the same pair
-        var application = await fixture.Applications
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>()
             .FirstAsync(a => a.Id == fixture.SeedState.FlatFeeApp.Id);
-        var booking = await fixture.Bookings
+        var booking = await fixture.ConcertReads.Set<BookingEntity>()
             .FirstAsync(b => b.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
-        var concert = await fixture.Concerts
+        var concert = await fixture.ConcertReads.Set<ConcertEntity>()
             .FirstAsync(c => c.BookingId == booking.Id);
 
         Assert.Equal(TenantOf(fixture.SeedState.VenueManager1.Id), application.VenueTenantId);

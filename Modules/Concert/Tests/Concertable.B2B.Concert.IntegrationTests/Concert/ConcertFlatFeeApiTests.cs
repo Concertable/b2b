@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Kernel.Exceptions;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +12,9 @@ namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public ConcertFlatFeeApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public ConcertFlatFeeApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -32,7 +33,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         // Assert
-        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastFlatFeeApp.Id);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastFlatFeeApp.Id);
         Assert.Equal(LifecycleState.Complete, application.State);
         Assert.Empty(fixture.ManagerPaymentClient.Payments);
     }
@@ -45,7 +46,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
 
         // Act & Assert
         await Assert.ThrowsAsync<BadRequestException>(() => fixture.FinishConcertAsync(concertId));
-        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.UpcomingFlatFeeApp.Id);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.UpcomingFlatFeeApp.Id);
         Assert.Equal(LifecycleState.Booked, application.State);
     }
 

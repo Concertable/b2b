@@ -17,9 +17,9 @@ namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
 public sealed class ApplicationVersusApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public ApplicationVersusApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public ApplicationVersusApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -74,7 +74,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
-        var standard = await fixture.Applications
+        var standard = await fixture.ConcertReads.Set<ApplicationEntity>()
             .OfType<StandardApplication>()
             .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
         Assert.NotNull(standard);
@@ -92,7 +92,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
 
         // Assert — booking created but draft not created until verify webhook fires
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var concert = await fixture.Concerts
+        var concert = await fixture.ConcertReads.Set<ConcertEntity>()
             .FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.VersusApp.Id);
         Assert.Null(concert);
     }
@@ -171,7 +171,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.VersusApp.Id);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.VersusApp.Id);
         Assert.Equal(LifecycleState.PaymentFailed, application.State);
         Assert.Empty(fixture.NotificationService.DraftCreated);
         var notification = Assert.Single(fixture.NotificationService.Other, n => n.EventName == "VerifyPaymentFailed");
