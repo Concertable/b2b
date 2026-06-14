@@ -17,6 +17,7 @@ using Concertable.Payment.Client.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Seed.Shared.Extensions;
@@ -43,7 +44,7 @@ internal static class ServiceCollectionExtensions
         services.AddScoped<TenantInterceptor>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
-        services.AddReadDbContext(configuration);
+        services.AddDataAccessSpecifications();
 
         services.AddGeometry();
 

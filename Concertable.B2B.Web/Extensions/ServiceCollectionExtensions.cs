@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Data;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
 
@@ -32,7 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TenantInterceptor>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
-        services.AddReadDbContext(configuration);
+        services.AddDataAccessSpecifications();
 
         services.AddScoped<IDbConnection>(_ =>
             new SqlConnection(configuration.GetConnectionString(B2BDb.Name)));
