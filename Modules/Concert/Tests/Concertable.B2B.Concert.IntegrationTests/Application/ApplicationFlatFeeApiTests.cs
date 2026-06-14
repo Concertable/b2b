@@ -75,7 +75,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
-        var standard = await fixture.ReadDbContext.Applications
+        var standard = await fixture.Applications
             .OfType<StandardApplication>()
             .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
         Assert.NotNull(standard);
@@ -127,7 +127,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         Assert.Contains(fixture.SeedState.VenueManager1.Id.ToString(), notifiedUserIds);
         Assert.All(fixture.NotificationService.DraftCreated, n => Assert.NotNull(n.Payload));
 
-        var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
+        var booking = await fixture.Bookings.FirstAsync(b => b.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
         var escrow = await fixture.Escrows.FirstOrDefaultAsync(e => e.BookingId == booking.Id);
         Assert.NotNull(escrow);
         Assert.Equal(EscrowStatus.Held, escrow!.Status);
@@ -186,7 +186,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept");
 
         // Assert
-        var draft = await fixture.ReadDbContext.Concerts.FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
+        var draft = await fixture.Concerts.FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
         Assert.Null(draft);
     }
 }

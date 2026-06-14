@@ -7,7 +7,5 @@ internal interface IVenueRepository : ITenantScopedRepository<VenueEntity>
 {
     Task<VenueEntity?> GetByUserIdAsync(Guid id);
     Task<int?> GetIdByUserIdAsync(Guid userId);
-    Task<VenueSummary?> GetSummaryAsync(int id);
-    Task<VenueDetails?> GetDetailsByIdAsync(int id);
     Task<VenueDetails?> GetDetailsByUserIdAsync(Guid userId);
 }

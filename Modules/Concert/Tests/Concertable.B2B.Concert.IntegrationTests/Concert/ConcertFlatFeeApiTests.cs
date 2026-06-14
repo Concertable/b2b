@@ -32,7 +32,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         // Assert
-        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastFlatFeeApp.Id);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastFlatFeeApp.Id);
         Assert.Equal(LifecycleState.Complete, application.State);
         Assert.Empty(fixture.ManagerPaymentClient.Payments);
     }
@@ -45,7 +45,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
 
         // Act & Assert
         await Assert.ThrowsAsync<BadRequestException>(() => fixture.FinishConcertAsync(concertId));
-        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.UpcomingFlatFeeApp.Id);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.UpcomingFlatFeeApp.Id);
         Assert.Equal(LifecycleState.Booked, application.State);
     }
 

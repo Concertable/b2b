@@ -1,3 +1,4 @@
+using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -12,6 +13,13 @@ internal sealed class ArtistDbContextFactory : IDesignTimeDbContextFactory<Artis
         var options = new DbContextOptionsBuilder<ArtistDbContext>()
             .UseSqlServer(connectionString, o => o.UseNetTopologySuite())
             .Options;
-        return new ArtistDbContext(options, new ArtistConfigurationProvider());
+        return new ArtistDbContext(options, new ArtistConfigurationProvider(), new DesignTimeTenantContext());
+    }
+
+    /* Design-time only builds the model; no query ever evaluates the filter. */
+    private sealed class DesignTimeTenantContext : ITenantContext
+    {
+        public Guid? TenantId => null;
+        public bool IsHost => true;
     }
 }

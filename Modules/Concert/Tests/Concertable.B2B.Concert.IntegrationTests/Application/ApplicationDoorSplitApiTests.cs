@@ -68,7 +68,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
-        var standard = await fixture.ReadDbContext.Applications
+        var standard = await fixture.Applications
             .OfType<StandardApplication>()
             .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
         Assert.NotNull(standard);
@@ -100,7 +100,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         // Assert — booking created but draft not created until verify webhook fires
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var concert = await fixture.ReadDbContext.Concerts
+        var concert = await fixture.Concerts
             .FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
         Assert.Null(concert);
     }
@@ -170,7 +170,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.DoorSplitApp.Id);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.DoorSplitApp.Id);
         Assert.Equal(LifecycleState.PaymentFailed, application.State);
         Assert.Empty(fixture.NotificationService.DraftCreated);
         var notification = Assert.Single(fixture.NotificationService.Other, n => n.EventName == "VerifyPaymentFailed");

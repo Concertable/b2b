@@ -46,7 +46,7 @@ public sealed class TenantScopingTests : IAsyncLifetime
         await applyResponse.ShouldBe(HttpStatusCode.Created);
 
         // Assert — the row carries the frozen pair
-        var application = await fixture.ReadDbContext.Applications
+        var application = await fixture.Applications
             .FirstAsync(a => a.OpportunityId == opportunity.Id);
         Assert.Equal(TenantOf(fixture.SeedState.VenueManager1.Id), application.VenueTenantId);
         Assert.Equal(TenantOf(fixture.SeedState.ArtistManager1.Id), application.ArtistTenantId);
@@ -67,11 +67,11 @@ public sealed class TenantScopingTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert — application, booking and concert all carry the same pair
-        var application = await fixture.ReadDbContext.Applications
+        var application = await fixture.Applications
             .FirstAsync(a => a.Id == fixture.SeedState.FlatFeeApp.Id);
-        var booking = await fixture.ReadDbContext.Bookings
+        var booking = await fixture.Bookings
             .FirstAsync(b => b.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
-        var concert = await fixture.ReadDbContext.Concerts
+        var concert = await fixture.Concerts
             .FirstAsync(c => c.BookingId == booking.Id);
 
         Assert.Equal(TenantOf(fixture.SeedState.VenueManager1.Id), application.VenueTenantId);

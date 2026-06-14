@@ -2,6 +2,8 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Concertable.B2B.Concert.Api")]
 [assembly: InternalsVisibleTo("Concertable.B2B.Concert.IntegrationTests")]
+// Shared integration fixture resolves the read-only PublicConcertDbContext for cross-tenant read-back assertions.
+[assembly: InternalsVisibleTo("Concertable.B2B.IntegrationTests.Fixtures")]
 [assembly: InternalsVisibleTo("Concertable.B2B.Concert.UnitTests")]
 [assembly: InternalsVisibleTo("Concertable.B2B.Workers.UnitTests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
