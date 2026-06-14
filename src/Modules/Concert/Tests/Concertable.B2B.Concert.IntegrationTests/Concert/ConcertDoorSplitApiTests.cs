@@ -42,7 +42,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
         Assert.Equal(deferred.Id, payment.BookingId);
 
-        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(LifecycleState.AwaitingSettlement, application.State);
     }
 
@@ -56,7 +56,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(LifecycleState.Complete, application.State);
     }
 
@@ -71,7 +71,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(LifecycleState.Complete, application.State);
     }
 }

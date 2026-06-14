@@ -12,6 +12,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Services;
 internal sealed class ArtistService : IArtistService
 {
     private readonly IArtistRepository repository;
+    private readonly IPublicArtistRepository publicRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
@@ -20,6 +21,7 @@ internal sealed class ArtistService : IArtistService
 
     public ArtistService(
         IArtistRepository repository,
+        IPublicArtistRepository publicRepository,
         IImageService imageService,
         ICurrentUser currentUser,
         IUserModule userModule,
@@ -27,6 +29,7 @@ internal sealed class ArtistService : IArtistService
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.repository = repository;
+        this.publicRepository = publicRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
         this.userModule = userModule;
@@ -38,7 +41,7 @@ internal sealed class ArtistService : IArtistService
         repository.GetDetailsByUserIdAsync(currentUser.GetId());
 
     public async Task<ArtistDetails> GetDetailsByIdAsync(int id) =>
-        await repository.GetDetailsByIdAsync(id)
+        await publicRepository.GetDetailsByIdAsync(id)
             ?? throw new NotFoundException("Artist not found");
 
     public async Task<ArtistDetails> CreateAsync(CreateArtistRequest request)
@@ -66,7 +69,7 @@ internal sealed class ArtistService : IArtistService
         var createdArtist = await repository.AddAsync(artist);
         await repository.SaveChangesAsync();
 
-        return await repository.GetDetailsByIdAsync(createdArtist.Id)
+        return await publicRepository.GetDetailsByIdAsync(createdArtist.Id)
             ?? throw new InternalServerException($"Artist {createdArtist.Id} not found after creation.");
     }
 
@@ -94,7 +97,7 @@ internal sealed class ArtistService : IArtistService
 
         await repository.SaveChangesAsync();
 
-        return await repository.GetDetailsByIdAsync(id)
+        return await publicRepository.GetDetailsByIdAsync(id)
             ?? throw new InternalServerException($"Artist {id} not found after update.");
     }
 

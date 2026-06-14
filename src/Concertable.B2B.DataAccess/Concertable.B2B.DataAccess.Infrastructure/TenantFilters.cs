@@ -1,4 +1,5 @@
 using Concertable.B2B.DataAccess.Application;
+using Concertable.Kernel;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
@@ -25,4 +26,15 @@ public static class TenantFilters
             context.TenantContext.IsHost
             || e.VenueTenantId == context.TenantContext.TenantId
             || e.ArtistTenantId == context.TenantContext.TenantId);
+
+    /// <summary>
+    /// The single-owner filter: a row is visible to its owning tenant and the host. Same context-instance
+    /// indirection as <see cref="ApplyVenueArtist{TEntity}"/> (the model is cached once, the tenant re-bound
+    /// per query, so a captured scoped <c>ITenantContext</c> would freeze the first request's tenant forever).
+    /// </summary>
+    public static void ApplySingleOwner<TEntity>(this ModelBuilder modelBuilder, IHasTenantContext context)
+        where TEntity : class, ITenantScoped =>
+        modelBuilder.Entity<TEntity>().HasQueryFilter(Key, e =>
+            context.TenantContext.IsHost
+            || e.TenantId == context.TenantContext.TenantId);
 }

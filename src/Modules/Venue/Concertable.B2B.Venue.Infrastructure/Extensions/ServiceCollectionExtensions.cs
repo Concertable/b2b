@@ -35,10 +35,29 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
+        /* The module's public stance — same anemic configuration, no tenancy, read-only. */
+        services.AddDbContext<PublicVenueDbContext>((sp, opt) =>
+            opt.UseSqlServer(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+
+        /* The module's platform-admin stance — same configuration, no tenancy, writable (cross-tenant approval). */
+        services.AddDbContext<AdminVenueDbContext>((sp, opt) =>
+            opt.UseSqlServer(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
         services.AddScoped<IVenueService, VenueService>();
         services.AddScoped<IVenueDashboardService, VenueDashboardService>();
         services.AddScoped<IVenueReviewService, VenueReviewService>();
         services.AddScoped<IVenueRepository, VenueRepository>();
+        services.AddScoped<IPublicVenueRepository, PublicVenueRepository>();
+        services.AddScoped<IAdminVenueRepository, AdminVenueRepository>();
         services.AddScoped<IVenueModule, VenueModule>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, VenueReviewProjectionHandler>();
         services.AddScoped<IDomainEventHandler<VenueChangedDomainEvent>, VenueChangedDomainEventHandler>();

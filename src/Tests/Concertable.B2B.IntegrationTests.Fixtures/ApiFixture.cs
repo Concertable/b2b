@@ -13,6 +13,8 @@ using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Logging;
 using Concertable.Testing.Integration.Mocks;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
+using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Contract.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
@@ -53,6 +55,7 @@ public sealed class ApiFixture : IAsyncLifetime
     private WebApplicationFactory<Program> factory = null!;
     private IServiceScope? scope;
     private PaymentDbContext paymentDbContext = null!;
+    private PublicConcertDbContext concertReads = null!;
     private readonly XunitOutputAccessor outputAccessor = new();
 
     public void AttachOutput(ITestOutputHelper output) => outputAccessor.Output = output;
@@ -69,8 +72,13 @@ public sealed class ApiFixture : IAsyncLifetime
     }
     public IWebhookSimulator StripeClient { get; private set; } = null!;
     public SeedState SeedState { get; private set; } = null!;
-    public IReadDbContext ReadDbContext { get; private set; } = null!;
     public IQueryable<EscrowEntity> Escrows => paymentDbContext.Escrows.AsNoTracking();
+
+    // Unfiltered, read-only read-back of Concert-module rows for assertions (no tenant filter — the
+    // public stance), replacing the retired cross-module ReadDbContext.
+    public IQueryable<ApplicationEntity> Applications => concertReads.Set<ApplicationEntity>().AsNoTracking();
+    public IQueryable<BookingEntity> Bookings => concertReads.Set<BookingEntity>().AsNoTracking();
+    public IQueryable<ConcertEntity> Concerts => concertReads.Concerts.AsNoTracking();
 
     public async Task InitializeAsync()
     {
@@ -184,7 +192,7 @@ public sealed class ApiFixture : IAsyncLifetime
         var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
         await initializer.InitializeAsync();
         SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
-        ReadDbContext = scope.ServiceProvider.GetRequiredService<IReadDbContext>();
+        concertReads = scope.ServiceProvider.GetRequiredService<PublicConcertDbContext>();
         paymentDbContext = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
     }
 

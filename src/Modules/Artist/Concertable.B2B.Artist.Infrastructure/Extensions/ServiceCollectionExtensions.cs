@@ -36,10 +36,18 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
+        /* The module's public stance — same anemic configuration, no tenancy, read-only. */
+        services.AddDbContext<PublicArtistDbContext>((sp, opt) =>
+            opt.UseSqlServer(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+
         services.AddScoped<IArtistService, ArtistService>();
         services.AddScoped<IArtistDashboardService, ArtistDashboardService>();
         services.AddScoped<IArtistReviewService, ArtistReviewService>();
         services.AddScoped<IArtistRepository, ArtistRepository>();
+        services.AddScoped<IPublicArtistRepository, PublicArtistRepository>();
         services.AddScoped<IArtistModule, ArtistModule>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ArtistReviewProjectionHandler>();
         services.AddScoped<IDomainEventHandler<ArtistChangedDomainEvent>, ArtistChangedDomainEventHandler>();

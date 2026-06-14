@@ -9,18 +9,6 @@ internal sealed class VenueRepository : TenantScopedRepository<VenueEntity>, IVe
 {
     public VenueRepository(VenueDbContext context, ITenantContext tenant) : base(context, tenant) { }
 
-    public async Task<VenueSummary?> GetSummaryAsync(int id) =>
-        await context.Venues.AsNoTracking()
-            .Where(v => v.Id == id)
-            .ToSummary(context.VenueRatingProjections.AsNoTracking())
-            .FirstOrDefaultAsync();
-
-    public async Task<VenueDetails?> GetDetailsByIdAsync(int id) =>
-        await context.Venues.AsNoTracking()
-            .Where(v => v.Id == id)
-            .ToDetails(context.VenueRatingProjections.AsNoTracking())
-            .FirstOrDefaultAsync();
-
     public async Task<VenueEntity?> GetByUserIdAsync(Guid id) =>
         await context.Venues
             .Where(v => v.UserId == id)

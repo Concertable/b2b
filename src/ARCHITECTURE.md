@@ -18,10 +18,10 @@ B2B owns the venue/artist side of Concertable: opportunities, applications, book
 |---|---|---|
 | `Concertable.B2B.Web` | ASP.NET Core HTTP host | All controllers + ASB event consumers (in-process). Composition root. |
 | `Concertable.B2B.Workers` | Azure Functions isolated | Background jobs. Currently: `ConcertFinishedFunction` (hourly timer). Uses **in-memory transport** — see TECH_DEBT. |
-| `Concertable.B2B.DataAccess` | Shared csproj | Read-only `ReadDbContext` aggregating all module read models. |
+| `Concertable.B2B.DataAccess` | Shared csproj | Shared data-access primitives: tenant query filters, the per-stance DbContext base classes, and repositories. |
 | `Concertable.B2B.AppHost` | Aspire AppHost | Local-dev orchestrator only. |
 
-**Database:** `B2BDb` (SQL Server). Per-module DbContexts for writes; `ReadDbContext` for cross-module reads.
+**Database:** `B2BDb` (SQL Server). Per-module DbContexts for writes; each module's read-only `Public<Module>DbContext` (e.g. `PublicConcertDbContext`) for unfiltered / cross-tenant reads.
 
 ---
 
@@ -41,18 +41,6 @@ All modules live under `Modules/`. Each follows the `Concertable.B2B.<Module>.*`
 | **Venue** | `VenueEntity`, `VenueImageEntity`, `PayoutAccountEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
 
 Cross-module calls go through `IXModule` facades in `Concertable.B2B.<Module>.Contracts` only. No direct entity reach-in between modules.
-
----
-
-## ReadDbContext
-
-`Concertable.B2B.DataAccess / ReadDbContext` — read-only, `.AsNoTracking()`, `SaveChanges*` throws `NotSupportedException`. Aggregates configs from every module via `IEntityTypeConfigurationProvider`.
-
-Exposed as `IQueryable<T>`:
-
-`Users` · `Artists` · `Venues` · `VenueImages` · `Concerts` · `ConcertImages` · `Opportunities` · `Applications` · `Bookings` · `Messages` · `Transactions` · `TicketTransactions` · `SettlementTransactions` · `StripeEvents` · `PayoutAccounts` · `Escrows` · `Contracts` · `FlatFeeContracts` · `DoorSplitContracts` · `VersusContracts` · `VenueHireContracts` · `ArtistRatingProjections` · `VenueRatingProjections` · `ConcertRatingProjections`
-
-There is **no `ConcertSalesProjection`** (sold-count / gross-revenue from Customer). See TECH_DEBT.
 
 ---
 
