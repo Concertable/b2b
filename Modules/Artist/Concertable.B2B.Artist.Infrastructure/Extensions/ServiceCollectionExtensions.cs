@@ -36,7 +36,6 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        /* The module's public stance — same anemic configuration, no tenancy, read-only. */
         services.AddDbContext<PublicArtistDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),

@@ -2,18 +2,18 @@ namespace Concertable.B2B.Venue.Infrastructure;
 
 internal sealed class VenueModule : IVenueModule
 {
-    private readonly IVenueRepository repo;
-    private readonly IPublicVenueRepository publicRepo;
+    private readonly IVenueService venueService;
+    private readonly IVenueRepository repository;
 
-    public VenueModule(IVenueRepository repo, IPublicVenueRepository publicRepo)
+    public VenueModule(IVenueService venueService, IVenueRepository repository)
     {
-        this.repo = repo;
-        this.publicRepo = publicRepo;
+        this.venueService = venueService;
+        this.repository = repository;
     }
 
-    public Task<VenueSummary?> GetSummaryAsync(int venueId, CancellationToken ct = default) =>
-        publicRepo.GetSummaryAsync(venueId);
+    public Task<VenueSummary> GetSummaryAsync(int venueId, CancellationToken ct = default) =>
+        venueService.GetSummaryAsync(venueId);
 
     public Task<int?> GetVenueIdByUserIdAsync(Guid userId, CancellationToken ct = default) =>
-        repo.GetIdByUserIdAsync(userId);
+        repository.GetIdByUserIdAsync(userId);
 }

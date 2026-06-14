@@ -55,7 +55,6 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        /* The module's public stance — same anemic configuration, no tenancy, read-only. */
         services.AddDbContext<PublicConcertDbContext>((sp, opts) =>
             opts.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
@@ -75,6 +74,7 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<IOpportunityRepository>(),
             sp.GetRequiredService<IContractModule>()));
         services.AddScoped<IApplicationService, ApplicationService>();
+        services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
         services.AddScoped<ContractAccessor>();
         services.AddScoped<IContractAccessor>(sp => sp.GetRequiredService<ContractAccessor>());

@@ -15,8 +15,6 @@ internal sealed class VenueDbContext(
     public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
     public DbSet<VenueReview> VenueReviews => Set<VenueReview>();
 
-    /* Venue and its images are owned by one tenant; the rating projection and reviews are public
-       aggregates, deliberately unfiltered. Public browse of any venue is served by PublicVenueDbContext. */
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplySingleOwner<VenueEntity>(this);

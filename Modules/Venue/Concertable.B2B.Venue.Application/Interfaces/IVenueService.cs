@@ -12,4 +12,6 @@ internal interface IVenueService
     Task<int> GetIdForCurrentUserAsync();
     Task<bool> OwnsVenueAsync(int venueId);
     Task ApproveAsync(int id);
+
+    Task<VenueSummary> GetSummaryAsync(int id);
 }

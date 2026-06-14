@@ -1,3 +1,4 @@
+using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Kernel.Identity;
 using FluentResults;
@@ -9,6 +10,7 @@ internal sealed class ApplicationValidator : IApplicationValidator
     private readonly IConcertAvailability availability;
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IApplicationRepository applicationRepository;
+    private readonly IArtistModule artistModule;
     private readonly ICurrentUser currentUser;
     private readonly TimeProvider timeProvider;
 
@@ -16,12 +18,14 @@ internal sealed class ApplicationValidator : IApplicationValidator
         IConcertAvailability availability,
         IOpportunityRepository opportunityRepository,
         IApplicationRepository applicationRepository,
+        IArtistModule artistModule,
         ICurrentUser currentUser,
         TimeProvider timeProvider)
     {
         this.availability = availability;
         this.opportunityRepository = opportunityRepository;
         this.applicationRepository = applicationRepository;
+        this.artistModule = artistModule;
         this.currentUser = currentUser;
         this.timeProvider = timeProvider;
     }
@@ -42,14 +46,17 @@ internal sealed class ApplicationValidator : IApplicationValidator
         return errors.Count > 0 ? Result.Fail(errors) : Result.Ok();
     }
 
-    public async Task<Result> CanApplyAsync(int opportunityId, int artistId)
+    public async Task<Result> CanApplyAsync(int opportunityId)
     {
-        var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
+        var artistId = await artistModule.GetIdByUserIdAsync(currentUser.GetId());
+        if (artistId is null)
+            return Result.Fail("You must have an artist account to apply for a concert opportunity");
 
+        var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
         if (opportunity is null)
             return Result.Fail("Concert opportunity does not exist");
 
-        return await CanApplyAsync(opportunity, artistId);
+        return await CanApplyAsync(opportunity, artistId.Value);
     }
 
     public async Task<Result> CanAcceptAsync(OpportunityEntity opportunity, ApplicationEntity application)
