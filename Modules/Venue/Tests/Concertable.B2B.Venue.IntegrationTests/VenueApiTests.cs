@@ -234,7 +234,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Update_ShouldReturn403_WhenNotOwner()
+    public async Task Update_ShouldReturn404_WhenNotOwner()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
@@ -244,7 +244,7 @@ public sealed class VenueApiTests : IAsyncLifetime
         var response = await client.PutAsync($"/api/Venue/{fixture.SeedState.Venue.Id}", await request.ToFormContent());
 
         // Assert
-        await response.ShouldBe(HttpStatusCode.Forbidden);
+        await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
