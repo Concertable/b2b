@@ -22,11 +22,15 @@ internal sealed class TenantDevSeeder : IDevSeeder
     public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
 
     /* Seeds tenants with deterministic ids up front (before event processing), so seeded venues link to their
-       operator tenant without a lookup and the registration handler finds them already present and no-ops. The
-       direct insert still routes through TenantEntity.Create, so the same TenantCreatedEvent fires once here. */
+       operator tenant without a lookup. The create event is cleared before insert: publishing it here would race
+       the Payment ASB subscription at startup and be dropped (most of it). Registration's Announce() is instead
+       the single reliable TenantCreatedEvent trigger (it fires after subscriptions exist), so Payment provisions
+       exactly one Stripe account per operator. */
     public async Task SeedAsync(CancellationToken ct = default) =>
         await context.Tenants.SeedIfEmptyAsync(async () =>
         {
+            foreach (var tenant in seed.Tenants)
+                tenant.ClearDomainEvents();
             context.Tenants.AddRange(seed.Tenants);
             await context.SaveChangesAsync(ct);
         });
