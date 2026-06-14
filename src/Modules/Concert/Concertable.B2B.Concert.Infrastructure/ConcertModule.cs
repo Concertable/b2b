@@ -5,16 +5,16 @@ namespace Concertable.B2B.Concert.Infrastructure;
 
 internal sealed class ConcertModule : IConcertModule
 {
-    private readonly IConcertDashboardRepository dashboardRepository;
+    private readonly IConcertDashboardService dashboardService;
 
-    public ConcertModule(IConcertDashboardRepository dashboardRepository)
+    public ConcertModule(IConcertDashboardService dashboardService)
     {
-        this.dashboardRepository = dashboardRepository;
+        this.dashboardService = dashboardService;
     }
 
     public Task<VenueDashboardCounts?> GetVenueDashboardCountsAsync(int venueId, CancellationToken ct = default) =>
-        dashboardRepository.GetVenueCountsAsync(venueId, ct);
+        dashboardService.GetVenueCountsAsync(venueId, ct);
 
     public Task<ArtistDashboardCounts?> GetArtistDashboardCountsAsync(int artistId, CancellationToken ct = default) =>
-        dashboardRepository.GetArtistCountsAsync(artistId, ct);
+        dashboardService.GetArtistCountsAsync(artistId, ct);
 }

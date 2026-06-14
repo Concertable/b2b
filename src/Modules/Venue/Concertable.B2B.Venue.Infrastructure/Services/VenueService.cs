@@ -127,4 +127,8 @@ internal sealed class VenueService : IVenueService
         venue.Approve();
         await adminRepository.SaveChangesAsync();
     }
+
+    public async Task<VenueSummary> GetSummaryAsync(int id) =>
+        await publicRepository.GetSummaryAsync(id)
+            ?? throw new NotFoundException("Venue not found");
 }

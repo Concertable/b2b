@@ -143,8 +143,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<Checkout> ApplyCheckoutAsync(int opportunityId)
     {
-        var artistId = await ResolveArtistIdAsync();
-        var result = await applicationValidator.CanApplyAsync(opportunityId, artistId);
+        var result = await applicationValidator.CanApplyAsync(opportunityId);
         if (result.IsFailed)
             throw new BadRequestException(result.Errors);
 

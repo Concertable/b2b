@@ -11,4 +11,7 @@ internal interface IArtistService
     Task<ArtistDetails> UpdateAsync(int id, UpdateArtistRequest request);
     Task<int> GetIdForCurrentUserAsync();
     Task<bool> OwnsArtistAsync(int artistId);
+
+    Task<ArtistSummary> GetSummaryAsync(int id);
+    Task<IReadOnlySet<Genre>> GetGenresAsync(int id);
 }

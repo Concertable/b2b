@@ -1,3 +1,4 @@
+using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Validators;
@@ -22,6 +23,7 @@ public sealed class ApplicationValidatorTests
     private readonly Mock<IConcertAvailability> availability;
     private readonly Mock<IOpportunityRepository> opportunityRepository;
     private readonly Mock<IApplicationRepository> applicationRepository;
+    private readonly Mock<IArtistModule> artistModule;
     private readonly Mock<ICurrentUser> currentUser;
     private readonly ApplicationValidator validator;
 
@@ -34,6 +36,7 @@ public sealed class ApplicationValidatorTests
         this.availability = new Mock<IConcertAvailability>();
         this.opportunityRepository = new Mock<IOpportunityRepository>();
         this.applicationRepository = new Mock<IApplicationRepository>();
+        this.artistModule = new Mock<IArtistModule>();
         this.currentUser = new Mock<ICurrentUser>();
 
         currentUser.SetupGet(u => u.Id).Returns(venueOwnerId);
@@ -44,6 +47,7 @@ public sealed class ApplicationValidatorTests
             availability.Object,
             opportunityRepository.Object,
             applicationRepository.Object,
+            artistModule.Object,
             currentUser.Object,
             timeProvider);
     }
@@ -154,5 +158,46 @@ public sealed class ApplicationValidatorTests
 
         // Assert
         Assert.Equal("Concert application does not exist", result.Errors.Single().Message);
+    }
+
+    [Fact]
+    public async Task CanApplyAsync_ShouldFail_WhenUserHasNoArtistAccount()
+    {
+        // Arrange
+        artistModule.Setup(m => m.GetIdByUserIdAsync(venueOwnerId)).ReturnsAsync((int?)null);
+
+        // Act
+        var result = await validator.CanApplyAsync(OpportunityId);
+
+        // Assert
+        Assert.Equal("You must have an artist account to apply for a concert opportunity", result.Errors.Single().Message);
+    }
+
+    [Fact]
+    public async Task CanApplyAsync_ShouldFail_WhenOpportunityDoesNotExist()
+    {
+        // Arrange
+        artistModule.Setup(m => m.GetIdByUserIdAsync(venueOwnerId)).ReturnsAsync(ArtistId);
+        opportunityRepository.Setup(r => r.GetByIdAsync(OpportunityId)).ReturnsAsync((OpportunityEntity?)null);
+
+        // Act
+        var result = await validator.CanApplyAsync(OpportunityId);
+
+        // Assert
+        Assert.Equal("Concert opportunity does not exist", result.Errors.Single().Message);
+    }
+
+    [Fact]
+    public async Task CanApplyAsync_ShouldSucceed_WhenUserHasArtistAndAllRulesPass()
+    {
+        // Arrange
+        artistModule.Setup(m => m.GetIdByUserIdAsync(venueOwnerId)).ReturnsAsync(ArtistId);
+        opportunityRepository.Setup(r => r.GetByIdAsync(OpportunityId)).ReturnsAsync(Opportunity(FuturePeriod));
+
+        // Act
+        var result = await validator.CanApplyAsync(OpportunityId);
+
+        // Assert
+        Assert.True(result.IsSuccess);
     }
 }

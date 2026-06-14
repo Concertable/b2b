@@ -114,4 +114,11 @@ internal sealed class ArtistService : IArtistService
         var id = await repository.GetIdByUserIdAsync(currentUser.GetId());
         return id == artistId;
     }
+
+    public async Task<ArtistSummary> GetSummaryAsync(int id) =>
+        await publicRepository.GetSummaryAsync(id)
+            ?? throw new NotFoundException("Artist not found");
+
+    public Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
+        publicRepository.GetGenresAsync(id);
 }

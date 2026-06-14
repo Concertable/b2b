@@ -1,11 +1,9 @@
-using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Requests;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.User.Api.Authorization;
 using Concertable.B2B.User.Contracts;
 using Microsoft.AspNetCore.Mvc;
-using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
 
@@ -15,21 +13,15 @@ internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
     private readonly IApplicationValidator applicationValidator;
-    private readonly IArtistModule artistModule;
-    private readonly ICurrentUser currentUser;
     private readonly IApplicationResponseMapper mapper;
 
     public ApplicationController(
         IApplicationService applicationService,
         IApplicationValidator applicationValidator,
-        IArtistModule artistModule,
-        ICurrentUser currentUser,
         IApplicationResponseMapper mapper)
     {
         this.applicationService = applicationService;
         this.applicationValidator = applicationValidator;
-        this.artistModule = artistModule;
-        this.currentUser = currentUser;
         this.mapper = mapper;
     }
 
@@ -78,10 +70,7 @@ internal sealed class ApplicationController : ControllerBase
     [HttpGet("opportunity/{opportunityId}/eligibility")]
     public async Task<ActionResult<bool>> CanApply(int opportunityId)
     {
-        var artistId = await artistModule.GetIdByUserIdAsync(currentUser.GetId());
-        if (artistId is null) return Ok(false);
-
-        var result = await applicationValidator.CanApplyAsync(opportunityId, artistId.Value);
+        var result = await applicationValidator.CanApplyAsync(opportunityId);
         return Ok(result.IsSuccess);
     }
 

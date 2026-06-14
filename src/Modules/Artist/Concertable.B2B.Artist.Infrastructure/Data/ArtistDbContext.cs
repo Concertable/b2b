@@ -14,8 +14,6 @@ internal sealed class ArtistDbContext(
     public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();
     public DbSet<ArtistReview> ArtistReviews => Set<ArtistReview>();
 
-    /* The artist row is tenant-owned; its rating projection and reviews are public aggregates,
-       deliberately unfiltered. Public browse of any artist is served by PublicArtistDbContext. */
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplySingleOwner<ArtistEntity>(this);
