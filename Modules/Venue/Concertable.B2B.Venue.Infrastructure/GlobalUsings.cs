@@ -7,7 +7,6 @@ global using Concertable.B2B.Venue.Application.DTOs;
 global using Concertable.B2B.Venue.Application.Interfaces;
 global using Concertable.B2B.Venue.Application.Mappers;
 global using Concertable.DataAccess.Infrastructure;
-global using Concertable.DataAccess.Infrastructure;
 global using Concertable.DataAccess;
 global using Concertable.Kernel.Identity;
 global using Concertable.B2B.User.Contracts;
