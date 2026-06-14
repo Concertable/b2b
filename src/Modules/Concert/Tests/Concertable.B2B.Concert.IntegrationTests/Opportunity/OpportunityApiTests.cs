@@ -14,9 +14,9 @@ namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
 [Collection("Integration")]
 public sealed class OpportunityApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public OpportunityApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public OpportunityApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);

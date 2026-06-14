@@ -17,9 +17,9 @@ namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
 public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public ApplicationFlatFeeApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public ApplicationFlatFeeApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -75,7 +75,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
-        var standard = await fixture.Applications
+        var standard = await fixture.ConcertReads.Set<ApplicationEntity>()
             .OfType<StandardApplication>()
             .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
         Assert.NotNull(standard);
@@ -127,7 +127,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         Assert.Contains(fixture.SeedState.VenueManager1.Id.ToString(), notifiedUserIds);
         Assert.All(fixture.NotificationService.DraftCreated, n => Assert.NotNull(n.Payload));
 
-        var booking = await fixture.Bookings.FirstAsync(b => b.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
+        var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
         var escrow = await fixture.Escrows.FirstOrDefaultAsync(e => e.BookingId == booking.Id);
         Assert.NotNull(escrow);
         Assert.Equal(EscrowStatus.Held, escrow!.Status);
@@ -186,7 +186,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept");
 
         // Assert
-        var draft = await fixture.Concerts.FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
+        var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
         Assert.Null(draft);
     }
 }

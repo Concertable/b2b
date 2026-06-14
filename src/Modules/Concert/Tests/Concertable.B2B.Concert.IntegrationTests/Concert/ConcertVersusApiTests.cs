@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -10,9 +11,9 @@ namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 public sealed class ConcertVersusApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public ConcertVersusApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public ConcertVersusApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -42,7 +43,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
         Assert.Equal(deferred.Id, payment.BookingId);
 
-        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastVersusApp.Id);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastVersusApp.Id);
         Assert.Equal(LifecycleState.AwaitingSettlement, application.State);
     }
 
@@ -56,7 +57,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastVersusApp.Id);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastVersusApp.Id);
         Assert.Equal(LifecycleState.Complete, application.State);
     }
 }

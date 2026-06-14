@@ -16,9 +16,9 @@ namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 [Collection("Integration")]
 public sealed class OutboxVerificationTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public OutboxVerificationTests(ApiFixture fixture, ITestOutputHelper output)
+    public OutboxVerificationTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
