@@ -43,6 +43,15 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     }
 
     /// <summary>
+    /// Re-raises <see cref="TenantCreatedDomainEvent"/> for an already-persisted tenant. The dev/E2E seeder
+    /// inserts tenants directly (deterministic ids) with their create event cleared, so registration is the
+    /// single provisioning trigger: <c>Announce</c> fires once the ASB subscriptions exist, where the seeder's
+    /// own startup-time publish would race subscription creation and be dropped. <see cref="LegalName"/> still
+    /// holds the registration email here (organization setup hasn't run yet), so the event carries the email.
+    /// </summary>
+    public void Announce() => events.Raise(new TenantCreatedDomainEvent(Id, CreatedByUserId, LegalName));
+
+    /// <summary>
     /// Organization setup: replaces the provisioning placeholder legal name (the registration email)
     /// and the compliance details in one transition — the <c>/organizations</c> form submits them together.
     /// </summary>

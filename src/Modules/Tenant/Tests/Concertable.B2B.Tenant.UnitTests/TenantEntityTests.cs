@@ -34,6 +34,21 @@ public sealed class TenantEntityTests
     }
 
     [Fact]
+    public void Announce_ReRaisesTenantCreatedDomainEvent_AfterEventsCleared()
+    {
+        var userId = Guid.NewGuid();
+        var tenant = TenantEntity.Create("manager@acme.com", userId, DateTime.UtcNow);
+        tenant.ClearDomainEvents();
+
+        tenant.Announce();
+
+        var raised = Assert.IsType<TenantCreatedDomainEvent>(Assert.Single(tenant.DomainEvents));
+        Assert.Equal(tenant.Id, raised.TenantId);
+        Assert.Equal(userId, raised.CreatedByUserId);
+        Assert.Equal("manager@acme.com", raised.Email);
+    }
+
+    [Fact]
     public void Create_LeavesComplianceNull()
     {
         var tenant = TenantEntity.Create("Acme Ltd", Guid.NewGuid(), DateTime.UtcNow);
