@@ -69,4 +69,8 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             .Select(b => (int?)b.Application.Opportunity.ContractId)
             .FirstOrDefaultAsync();
     }
+
+    // Diagnostic: existence regardless of tenant scope, to tell a filtered-out row from an absent one.
+    public Task<bool> ExistsIgnoringTenantAsync(int bookingId)
+        => context.Bookings.IgnoreQueryFilters().AnyAsync(b => b.Id == bookingId);
 }
