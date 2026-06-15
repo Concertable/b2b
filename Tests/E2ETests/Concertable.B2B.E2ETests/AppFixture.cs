@@ -119,9 +119,11 @@ public sealed class AppFixture : IAsyncLifetime
         PaymentClient = new HttpClient { BaseAddress = new Uri(PaymentWebUrl) };
         Workers = new WorkersFixture(app, Polling);
 
+        // 12 min, not 6: the 71 demo users are created via the async credential-registration
+        // event chain (Auth -> ASB -> handler), and the ASB emulator is markedly slower in CI.
         await healthWaiter.WaitForAllHealthyAsync(
             [B2BWebUrl, SearchWebUrl, PaymentWebUrl],
-            TimeSpan.FromMinutes(6));
+            TimeSpan.FromMinutes(12));
 
         var paymentConnectionString = await app.GetConnectionStringAsync(AppHostConstants.Databases.Payment);
         await healthWaiter.WaitForPayoutAccountsAsync(paymentConnectionString, 4, TimeSpan.FromMinutes(3));
