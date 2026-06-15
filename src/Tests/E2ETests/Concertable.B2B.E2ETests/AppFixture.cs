@@ -70,6 +70,7 @@ public sealed class AppFixture : IAsyncLifetime
     {
         loggerFactory = LoggerFactory.Create(b => b
             .AddSimpleConsole(o => o.SingleLine = true)
+            .AddProvider(new FileLoggerProvider(Path.Combine(AppContext.BaseDirectory, "e2e-diagnostics.log")))
             .SetMinimumLevel(LogLevel.Warning)
             .AddFilter("Concertable", LogLevel.Information));
         logger = loggerFactory.CreateLogger<AppFixture>();
@@ -109,7 +110,8 @@ public sealed class AppFixture : IAsyncLifetime
         Stripe = new StripeFixture(stripeClient);
 
         app = await builder.BuildAsync();
-        resourceLogger = new AspireResourceLogger(app.ResourceNotifications, logger);
+        resourceLogger = new AspireResourceLogger(
+            app.ResourceNotifications, app.Services.GetRequiredService<ResourceLoggerService>(), logger);
         await app.StartAsync();
 
         B2BClient = new HttpClient { BaseAddress = new Uri(B2BWebUrl) };
