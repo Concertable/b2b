@@ -38,6 +38,11 @@ internal sealed class EscrowExecutor : IEscrowExecutor
     }
 
     private async Task<int> LoadApplicationIdAsync(int bookingId)
-        => await bookingRepository.GetApplicationIdByIdAsync(bookingId)
-            ?? throw new NotFoundException("Booking not found");
+    {
+        if (await bookingRepository.GetApplicationIdByIdAsync(bookingId) is { } applicationId)
+            return applicationId;
+        // Distinguishes a tenant-filter-hidden row from a genuinely-absent one (commit race).
+        var existsIgnoringTenant = await bookingRepository.ExistsIgnoringTenantAsync(bookingId);
+        throw new NotFoundException($"Booking {bookingId} not found (exists ignoring tenant filter: {existsIgnoringTenant}).");
+    }
 }
