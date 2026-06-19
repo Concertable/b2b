@@ -39,13 +39,14 @@ internal sealed class PayoutFinishStep : IFinishStep
 
         logger.ArtistShareCalculated(concertId, totalRevenue, artistShare);
 
+        /* DoorSplit/Versus: the venue tenant pays the artist tenant, per the booking's frozen snapshot. */
         var settlement = await bookingService.GetSettlementByConcertIdAsync(concertId);
 
-        logger.SettlingConcert(concertId, settlement.BookingId, artistShare, settlement.VenueUserId, settlement.ArtistUserId);
+        logger.SettlingConcert(concertId, settlement.BookingId, artistShare, settlement.VenueTenantId, settlement.ArtistTenantId);
 
         var payment = await managerPaymentClient.PayAsync(
-            settlement.VenueUserId,
-            settlement.ArtistUserId,
+            settlement.VenueTenantId,
+            settlement.ArtistTenantId,
             artistShare,
             settlement.PaymentMethodId,
             PaymentSession.OffSession,

@@ -15,7 +15,6 @@ public sealed class DepositEscrowAcceptStepTests
 
     private readonly Mock<IBookingService> bookingService;
     private readonly Mock<IEscrowClient> escrowClient;
-    private readonly Mock<IPayerLookup> payerLookup;
     private readonly Mock<IContractAccessor> contractAccessor;
     private readonly Mock<IApplicationRepository> applicationRepository;
     private readonly DepositEscrowAcceptStep step;
@@ -24,16 +23,12 @@ public sealed class DepositEscrowAcceptStepTests
     {
         this.bookingService = new Mock<IBookingService>();
         this.escrowClient = new Mock<IEscrowClient>();
-        this.payerLookup = new Mock<IPayerLookup>();
         this.contractAccessor = new Mock<IContractAccessor>();
         this.applicationRepository = new Mock<IApplicationRepository>();
-
-        payerLookup.Setup(p => p.GetManagerIdsAsync(ApplicationId)).ReturnsAsync((Guid.NewGuid(), Guid.NewGuid()));
 
         this.step = new DepositEscrowAcceptStep(
             bookingService.Object,
             escrowClient.Object,
-            payerLookup.Object,
             contractAccessor.Object,
             applicationRepository.Object,
             new Mock<ILogger<DepositEscrowAcceptStep>>().Object);
@@ -43,7 +38,7 @@ public sealed class DepositEscrowAcceptStepTests
     public async Task ExecuteAsync_ShouldThrowBadRequest_WhenApplicationIsNotPrepaid()
     {
         // Arrange — a VenueHire accept requires a PrepaidApplication; a standard one must be rejected
-        applicationRepository.Setup(r => r.GetByIdAsync(ApplicationId)).ReturnsAsync(StandardApplication.Create(1, 1));
+        applicationRepository.Setup(r => r.GetByIdAsync(ApplicationId, It.IsAny<CancellationToken>())).ReturnsAsync(StandardApplication.Create(1, 1));
 
         // Act & Assert
         await Assert.ThrowsAsync<BadRequestException>(() => step.ExecuteAsync(ApplicationId));

@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Kernel.Serializers;
 using Concertable.B2B.Web;
 using Concertable.B2B.Artist.Api.Extensions;
@@ -14,10 +15,12 @@ using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Venue.Contracts.Events;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
-using Concertable.B2B.Organization.Api.Extensions;
+using Concertable.B2B.Tenant.Api.Extensions;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.User.Api.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -35,6 +38,7 @@ using Concertable.B2B.Seed.Contracts;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Concertable.Payment.Seed;
 using Concertable.B2B.Web.Extensions;
+using Concertable.B2B.Web.Middleware;
 using Concertable.Shared.Notification.Infrastructure.Hubs;
 using Concertable.Shared.Notification.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -132,6 +136,7 @@ services.AddAzureServiceBusTransport(
         reg.Publishes<ConcertChangedEvent>();
         reg.Publishes<ConcertPostedEvent>();
         reg.Publishes<ConcertRatingUpdatedEvent>();
+        reg.Publishes<TenantCreatedEvent>();
 
         reg.SubscribeTo<CredentialRegisteredEvent>();
         reg.SubscribeTo<CustomerReviewSubmittedEvent>();
@@ -139,8 +144,8 @@ services.AddAzureServiceBusTransport(
         reg.SubscribeTo<PaymentFailedEvent>();
     });
 services.AddDirectBusKeyed("webhook");
-services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("B2BDb")));
-services.AddInbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("B2BDb")));
+services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
+services.AddInbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
 services.AddInProcessEventDispatch();
 services.AddSeedingInfrastructure();
 if (!builder.Environment.IsEnvironment("Testing"))
@@ -151,6 +156,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
     services.AddScoped<SeedState>();
     services.AddBlobDevSeeder();
     services.AddUserDevSeeder();
+    services.AddTenantDevSeeder();
     services.AddArtistDevSeeder();
     services.AddVenueDevSeeder();
     services.AddContractDevSeeder();
@@ -160,7 +166,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
 services.AddServices(builder.Configuration);
 services.AddRepositories();
 services.AddNotificationClient();
-services.AddOrganizationApi(builder.Configuration);
+services.AddTenantApi(builder.Configuration);
 services.AddConversationsApi(builder.Configuration);
 services.AddArtistApi(builder.Configuration);
 services.AddVenueApi(builder.Configuration);
@@ -188,13 +194,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.MapDefaultEndpoints();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hub/notifications");
-
-if (app.Environment.IsEnvironment("E2E"))
-    app.MapE2EEndpoints();
 
 app.MapFallback(async context =>
 {

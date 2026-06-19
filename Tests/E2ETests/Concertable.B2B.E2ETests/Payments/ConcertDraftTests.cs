@@ -45,12 +45,13 @@ public sealed class ConcertDraftTests : IAsyncLifetime
             () => fixture.DbFixture.Payment.GetEscrowPayeeIdAsync(bookingId),
             id => id is not null,
             timeout: TimeSpan.FromSeconds(15));
-        Assert.Equal(fixture.SeedState.ArtistManager1.Id, escrowPayeeId);
+        var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
+        Assert.Equal(artistTenantId, escrowPayeeId);
 
         await fixture.Polling.UntilAsync(
             async () =>
             {
-                var response = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}");
+                var response = await venueManagerClient.GetAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}");
                 await response.ShouldBe(HttpStatusCode.OK);
                 return await response.Content.ReadAsync<ApplicationResponse>();
             },
@@ -70,12 +71,13 @@ public sealed class ConcertDraftTests : IAsyncLifetime
             () => fixture.DbFixture.Payment.GetEscrowPayeeIdAsync(bookingId),
             id => id is not null,
             timeout: TimeSpan.FromSeconds(15));
-        Assert.Equal(fixture.SeedState.VenueManager1.Id, escrowPayeeId);
+        var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
+        Assert.Equal(venueTenantId, escrowPayeeId);
 
         await fixture.Polling.UntilAsync(
             async () =>
             {
-                var response = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}");
+                var response = await venueManagerClient.GetAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}");
                 await response.ShouldBe(HttpStatusCode.OK);
                 return await response.Content.ReadAsync<ApplicationResponse>();
             },
@@ -91,7 +93,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
             new { PaymentMethodId = AppFixture.TestPaymentMethodId });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var applicationResponse = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}");
+        var applicationResponse = await venueManagerClient.GetAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}");
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
@@ -105,7 +107,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
             new { PaymentMethodId = AppFixture.TestPaymentMethodId });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var applicationResponse = await fixture.B2BClient.GetAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}");
+        var applicationResponse = await venueManagerClient.GetAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}");
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);

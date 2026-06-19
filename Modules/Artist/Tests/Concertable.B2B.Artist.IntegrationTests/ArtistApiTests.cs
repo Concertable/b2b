@@ -190,14 +190,14 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Update_ShouldReturn403_WhenNotOwner()
+    public async Task Update_ShouldReturn404_WhenNotOwner()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
         var request = BuildUpdateRequest();
 
         var response = await client.PutAsync($"/api/Artist/{fixture.SeedState.Artist.Id}", await request.ToFormContent());
 
-        await response.ShouldBe(HttpStatusCode.Forbidden);
+        await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]

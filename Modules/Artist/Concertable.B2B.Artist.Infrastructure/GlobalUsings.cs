@@ -6,7 +6,6 @@ global using Concertable.B2B.Artist.Contracts;
 global using Concertable.B2B.Artist.Application.DTOs;
 global using Concertable.B2B.Artist.Application.Interfaces;
 global using Concertable.DataAccess.Infrastructure;
-global using Concertable.DataAccess.Infrastructure;
 global using Concertable.DataAccess;
 global using Concertable.Kernel.Identity;
 global using Concertable.B2B.User.Contracts;

@@ -56,6 +56,9 @@ internal sealed class ConcertDraftService : IConcertDraftService
             bookingConcert.ContractType,
             matchingGenres);
 
+        concert.VenueTenantId = bookingConcert.VenueTenantId;
+        concert.ArtistTenantId = bookingConcert.ArtistTenantId;
+
         bookingConcert.Confirm(concert);
         await bookingRepository.SaveChangesAsync();
 

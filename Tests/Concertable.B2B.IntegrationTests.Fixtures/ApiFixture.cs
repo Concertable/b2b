@@ -1,6 +1,5 @@
 using Concertable.Kernel.Notifications;
 using Concertable.Payment.Contracts;
-using Concertable.Payment.Domain;
 using Concertable.Payment.Client;
 using Concertable.Payment.Application.Interfaces;
 using Concertable.Payment.Application.Interfaces.Webhook;
@@ -15,6 +14,7 @@ using Concertable.Testing.Integration.Mocks;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Contract.Infrastructure.Extensions;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
@@ -42,16 +42,15 @@ using Concertable.Shared.Email.Application;
 using Concertable.Shared.Geocoding.Application;
 using Concertable.Shared.Imaging.Application;
 using Concertable.B2B.IntegrationTests.Fixtures.Mocks;
-using Concertable.B2B.DataAccess;
+using Concertable.B2B.DataAccess.Infrastructure;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
-public sealed class ApiFixture : IAsyncLifetime
+public class ApiFixture : IAsyncLifetime
 {
     private SqlFixture sqlFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
     private IServiceScope? scope;
-    private PaymentDbContext paymentDbContext = null!;
     private readonly XunitOutputAccessor outputAccessor = new();
 
     public void AttachOutput(ITestOutputHelper output) => outputAccessor.Output = output;
@@ -68,8 +67,6 @@ public sealed class ApiFixture : IAsyncLifetime
     }
     public IWebhookSimulator StripeClient { get; private set; } = null!;
     public SeedState SeedState { get; private set; } = null!;
-    public IReadDbContext ReadDbContext { get; private set; } = null!;
-    public IQueryable<EscrowEntity> Escrows => paymentDbContext.Escrows.AsNoTracking();
 
     public async Task InitializeAsync()
     {
@@ -131,7 +128,7 @@ public sealed class ApiFixture : IAsyncLifetime
 
                 services.AddSingleton<IWebhookSimulator, MockWebhookSimulator>();
                 services.Replace(ServiceDescriptor.Singleton<IHttpClientFactory>(_ => new WebApplicationHttpClientFactory(factory)));
-                services.AddScoped<IGeocodingService, MockGeocodingService>();
+                services.AddScoped<IGeocodingClient, MockGeocodingClient>();
                 services.AddScoped<IImageService, MockImageService>();
                 services.AddScoped<IDbInitializer, TestDbInitializer>();
                 services.AddSeedingInfrastructure();
@@ -139,6 +136,7 @@ public sealed class ApiFixture : IAsyncLifetime
                 services.AddSingleton<SeedCatalog>();
                 services.AddScoped<SeedState>();
                 services.AddUserTestSeeder();
+                services.AddTenantTestSeeder();
                 services.AddArtistTestSeeder();
                 services.AddVenueTestSeeder();
                 services.AddContractTestSeeder();
@@ -182,9 +180,11 @@ public sealed class ApiFixture : IAsyncLifetime
         var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
         await initializer.InitializeAsync();
         SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
-        ReadDbContext = scope.ServiceProvider.GetRequiredService<IReadDbContext>();
-        paymentDbContext = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
+        OnReset(scope);
     }
+
+    /// <summary>Resolve module-specific read-back from the freshly-created reset <paramref name="scope"/>.</summary>
+    protected virtual void OnReset(IServiceScope scope) { }
 
     public IServiceProvider Services => factory.Services;
 

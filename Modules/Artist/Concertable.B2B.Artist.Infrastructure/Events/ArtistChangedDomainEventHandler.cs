@@ -30,6 +30,7 @@ internal sealed class ArtistChangedDomainEventHandler
             artist.Location.Y,
             artist.Location.X,
             artist.Email,
-            artist.Genres.ToArray()), ct);
+            artist.Genres.ToArray(),
+            artist.TenantId), ct);
     }
 }

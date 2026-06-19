@@ -21,6 +21,7 @@
     <ProjectReference Include="..\..\..\..\Concertable.Payment\Tests\E2ETests\Concertable.Payment.E2ETests.Helpers\Concertable.Payment.E2ETests.Helpers.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.Search\Tests\E2ETests\Concertable.Search.E2ETests.Helpers\Concertable.Search.E2ETests.Helpers.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.AppHost\Concertable.B2B.AppHost.csproj" />
+    <ProjectReference Include="..\..\..\Concertable.B2B.Workers\Concertable.B2B.Workers.csproj" />
     <ProjectReference Include="..\..\..\..\Shared\Seed\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
     <ProjectReference Include="..\..\..\..\Shared\Seed\Concertable.Seed.Infrastructure\Concertable.Seed.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\..\Concertable.B2B\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
@@ -36,7 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\..\Concertable.B2B.Web\appsettings.E2E.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\..\Concertable.B2B.Web\appsettings.E2E.json')" />
+    <Content Include="..\..\..\Concertable.B2B.Web\appsettings.E2E.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

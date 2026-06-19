@@ -4,13 +4,14 @@ using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Venue.Domain;
 
-public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser
+public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScoped
 {
     private readonly EventRaiser _events = new();
 
     private VenueEntity() { }
 
     public int Id { get; private set; }
+    public Guid TenantId { get; set; }
     public Guid UserId { get; private set; }
     public string Name { get; private set; } = null!;
     public string About { get; private set; } = null!;

@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRepository
+internal sealed class BookingRepository : VenueArtistTenantScopedRepository<BookingEntity>, IBookingRepository
 {
     public BookingRepository(ConcertDbContext context) : base(context) { }
 
-    public override async Task<BookingEntity?> GetByIdAsync(int id)
+    public override async Task<BookingEntity?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         return await context.Bookings
             .Where(b => b.Id == id)
@@ -21,7 +21,7 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
             .Include(b => b.Application)
                 .ThenInclude(a => a.Opportunity)
             .Include(b => b.Concert)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<BookingEntity?> GetByApplicationIdAsync(int applicationId)
@@ -69,4 +69,8 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
             .Select(b => (int?)b.Application.Opportunity.ContractId)
             .FirstOrDefaultAsync();
     }
+
+    // Diagnostic: existence regardless of tenant scope, to tell a filtered-out row from an absent one.
+    public Task<bool> ExistsIgnoringTenantAsync(int bookingId)
+        => context.Bookings.IgnoreQueryFilters().AnyAsync(b => b.Id == bookingId);
 }

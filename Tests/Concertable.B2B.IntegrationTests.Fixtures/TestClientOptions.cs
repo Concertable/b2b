@@ -39,7 +39,7 @@ public sealed class TestClientOptions
 
     public TestClientOptions UseFailingGeocoding()
     {
-        Services += services => services.Replace(ServiceDescriptor.Scoped<IGeocodingService, MockGeocodingServiceFail>());
+        Services += services => services.Replace(ServiceDescriptor.Scoped<IGeocodingClient, MockGeocodingClientFail>());
         return this;
     }
 }

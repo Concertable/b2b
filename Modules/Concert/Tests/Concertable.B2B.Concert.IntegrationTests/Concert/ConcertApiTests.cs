@@ -10,9 +10,9 @@ namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 public sealed class ConcertApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public ConcertApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public ConcertApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -20,6 +20,12 @@ public sealed class ConcertApiTests : IAsyncLifetime
 
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
+
+    /* Posting goes through the booking, which the two-party Tenant filter scopes to its parties —
+       so the caller must be the venue manager who actually owns the concert's venue. */
+    private System.Net.Http.HttpClient CreateOwningVenueClient(int venueId) =>
+        fixture.CreateClient(fixture.SeedState.VenueManagers.Single(m =>
+            m.Id == fixture.SeedState.Venues.Single(v => v.Id == venueId).UserId));
 
     #region Post
 
@@ -65,7 +71,7 @@ public sealed class ConcertApiTests : IAsyncLifetime
     [Fact]
     public async Task Post_ShouldReturn204_WhenPostedSuccessfully()
     {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var client = CreateOwningVenueClient(fixture.SeedState.ConfirmedBooking.Concert!.VenueId);
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
@@ -78,7 +84,7 @@ public sealed class ConcertApiTests : IAsyncLifetime
     [Fact]
     public async Task Post_ShouldReturn400_WhenAlreadyPosted()
     {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var client = CreateOwningVenueClient(fixture.SeedState.ConfirmedBooking.Concert!.VenueId);
         var request = BuildPostRequest();
 
         await client.PutAsync(

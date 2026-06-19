@@ -11,20 +11,20 @@ internal sealed class UserService : IUserService
 {
     private readonly IUserRepository userRepsitory;
     private readonly ICurrentUser currentUser;
-    private readonly IGeocodingService geocodingService;
+    private readonly IGeocodingClient geocodingClient;
     private readonly IGeometryProvider geometryProvider;
     private readonly IUserModule userModule;
 
     public UserService(
         IUserRepository userRepsitory,
         ICurrentUser currentUser,
-        IGeocodingService geocodingService,
+        IGeocodingClient geocodingClient,
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider,
         IUserModule userModule)
     {
         this.userRepsitory = userRepsitory;
         this.currentUser = currentUser;
-        this.geocodingService = geocodingService;
+        this.geocodingClient = geocodingClient;
         this.geometryProvider = geometryProvider;
         this.userModule = userModule;
     }
@@ -34,7 +34,7 @@ internal sealed class UserService : IUserService
         var user = await userRepsitory.GetByIdAsync(currentUser.GetId())
             ?? throw new UnauthorizedAccessException("User not found.");
 
-        var locationDto = await geocodingService.GetLocationAsync(latitude, longitude);
+        var locationDto = await geocodingClient.GetLocationAsync(latitude, longitude);
         user.UpdateLocation(
             geometryProvider.CreatePoint(latitude, longitude),
             new Address(locationDto.County, locationDto.Town));
