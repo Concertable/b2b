@@ -53,9 +53,8 @@ internal sealed class VenueService : IVenueService
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
-        var locationDto = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
-        var location = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
-        var address = new Address(locationDto.County, locationDto.Town);
+        var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
+        var coordinates = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
 
         var venue = VenueEntity.Create(
             user.Id,
@@ -63,7 +62,7 @@ internal sealed class VenueService : IVenueService
             request.About,
             bannerUrl,
             avatarUrl,
-            location,
+            coordinates,
             address,
             user.Email);
 
@@ -88,10 +87,10 @@ internal sealed class VenueService : IVenueService
 
         venue.Update(request.Name, request.About, bannerUrl);
 
-        var locationDto = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
+        var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
         venue.UpdateLocation(
             geometryProvider.CreatePoint(request.Latitude, request.Longitude),
-            new Address(locationDto.County, locationDto.Town));
+            address);
 
         if (request.Avatar is not null)
             venue.UpdateAvatar(await imageService.ReplaceAsync(request.Avatar, venue.Avatar));
