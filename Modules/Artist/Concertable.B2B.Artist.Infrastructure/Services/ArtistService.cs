@@ -51,9 +51,8 @@ internal sealed class ArtistService : IArtistService
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
-        var locationDto = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
-        var location = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
-        var address = new Address(locationDto.County, locationDto.Town);
+        var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
+        var coordinates = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
 
         var artist = ArtistEntity.Create(
             user.Id,
@@ -61,7 +60,7 @@ internal sealed class ArtistService : IArtistService
             request.About,
             bannerUrl,
             avatarUrl,
-            location,
+            coordinates,
             address,
             user.Email,
             request.Genres);
@@ -87,10 +86,10 @@ internal sealed class ArtistService : IArtistService
 
         artist.Update(request.Name, request.About, bannerUrl, request.Genres);
 
-        var locationDto = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
+        var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
         artist.UpdateLocation(
             geometryProvider.CreatePoint(request.Latitude, request.Longitude),
-            new Address(locationDto.County, locationDto.Town));
+            address);
 
         if (request.Avatar is not null)
             artist.UpdateAvatar(await imageService.ReplaceAsync(request.Avatar, artist.Avatar));

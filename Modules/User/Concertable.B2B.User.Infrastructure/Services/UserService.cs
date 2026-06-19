@@ -34,10 +34,10 @@ internal sealed class UserService : IUserService
         var user = await userRepsitory.GetByIdAsync(currentUser.GetId())
             ?? throw new UnauthorizedAccessException("User not found.");
 
-        var locationDto = await geocodingClient.GetLocationAsync(latitude, longitude);
+        var address = await geocodingClient.GetLocationAsync(latitude, longitude);
         user.UpdateLocation(
             geometryProvider.CreatePoint(latitude, longitude),
-            new Address(locationDto.County, locationDto.Town));
+            address);
 
         userRepsitory.Update(user);
         await userRepsitory.SaveChangesAsync();
