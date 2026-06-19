@@ -16,4 +16,5 @@ public sealed record ArtistChangedEvent(
     double Latitude,
     double Longitude,
     string Email,
-    IReadOnlyCollection<Genre> Genres) : IIntegrationEvent;
+    IReadOnlyCollection<Genre> Genres,
+    Guid TenantId) : IIntegrationEvent;

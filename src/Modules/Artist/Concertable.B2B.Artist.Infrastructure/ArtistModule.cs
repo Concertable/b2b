@@ -1,22 +1,25 @@
+using Concertable.B2B.Artist.Application.Interfaces;
 using Concertable.Contracts;
 
 namespace Concertable.B2B.Artist.Infrastructure;
 
 internal sealed class ArtistModule : IArtistModule
 {
-    private readonly IArtistRepository repo;
+    private readonly IArtistService artistService;
+    private readonly IArtistRepository repository;
 
-    public ArtistModule(IArtistRepository repo)
+    public ArtistModule(IArtistService artistService, IArtistRepository repository)
     {
-        this.repo = repo;
+        this.artistService = artistService;
+        this.repository = repository;
     }
 
     public Task<int?> GetIdByUserIdAsync(Guid userId) =>
-        repo.GetIdByUserIdAsync(userId);
+        repository.GetIdByUserIdAsync(userId);
 
-    public Task<ArtistSummary?> GetSummaryAsync(int artistId) =>
-        repo.GetSummaryAsync(artistId);
+    public Task<ArtistSummary> GetSummaryAsync(int artistId) =>
+        artistService.GetSummaryAsync(artistId);
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int artistId) =>
-        repo.GetGenresAsync(artistId);
+        artistService.GetGenresAsync(artistId);
 }

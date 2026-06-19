@@ -6,7 +6,7 @@ namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 internal static class ConcertWorkflowExtensions
 {
-    public static async Task FinishConcertAsync(this ApiFixture fixture, int concertId)
+    public static async Task FinishConcertAsync(this ConcertApiFixture fixture, int concertId)
     {
         using var scope = fixture.Services.CreateScope();
         var concertWorkflowModule = scope.ServiceProvider.GetRequiredService<IConcertWorkflowModule>();

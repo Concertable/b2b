@@ -9,11 +9,13 @@ internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHa
 {
     private readonly IConcertRepository concertRepository;
     private readonly IBus bus;
+    private readonly IPayeeResolver payeeResolver;
 
-    public ConcertChangedDomainEventHandler(IConcertRepository concertRepository, IBus bus)
+    public ConcertChangedDomainEventHandler(IConcertRepository concertRepository, IBus bus, IPayeeResolver payeeResolver)
     {
         this.concertRepository = concertRepository;
         this.bus = bus;
+        this.payeeResolver = payeeResolver;
     }
 
     public async Task HandleAsync(ConcertChangedDomainEvent e, CancellationToken ct = default)
@@ -24,9 +26,6 @@ internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHa
 
         var artist = concert.Artist;
         var venue = concert.Venue;
-        var payeeUserId = concert.ContractType == ContractType.VenueHire
-            ? artist.UserId
-            : venue.UserId;
 
         await bus.PublishAsync(new ConcertChangedEvent(
             concert.Id,
@@ -46,6 +45,7 @@ internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHa
             venue.Location.Y,
             venue.Location.X,
             concert.Genres.ToArray(),
-            payeeUserId), ct);
+            payeeResolver.ResolveUserId(concert),
+            payeeResolver.ResolveTenantId(concert)), ct);
     }
 }

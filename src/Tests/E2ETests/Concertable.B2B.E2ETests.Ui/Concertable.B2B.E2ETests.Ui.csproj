@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.8" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Microsoft.Playwright" Version="1.59.0" />
     <PackageReference Include="Reqnroll.xUnit" Version="3.3.4" />
@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\..\Concertable.B2B.Web\appsettings.E2E.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\..\Concertable.B2B.Web\appsettings.E2E.json')" />
+    <Content Include="..\..\..\Concertable.B2B.Web\appsettings.E2E.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="reqnroll.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\*.png" CopyToOutputDirectory="PreserveNewest" />

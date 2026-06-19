@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Shared.Api\Concertable.Shared.Api.csproj" />
     <ProjectReference Include="..\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
+    <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.User.Application\Concertable.B2B.User.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.User.Infrastructure\Concertable.B2B.User.Infrastructure.csproj" />
   </ItemGroup>

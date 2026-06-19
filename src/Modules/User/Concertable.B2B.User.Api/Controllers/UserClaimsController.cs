@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -10,11 +11,13 @@ namespace Concertable.B2B.User.Api.Controllers;
 internal sealed class UserClaimsController : ControllerBase
 {
     private readonly IUserModule userModule;
+    private readonly ITenantModule tenantModule;
     private readonly ILogger<UserClaimsController> logger;
 
-    public UserClaimsController(IUserModule userModule, ILogger<UserClaimsController> logger)
+    public UserClaimsController(IUserModule userModule, ITenantModule tenantModule, ILogger<UserClaimsController> logger)
     {
         this.userModule = userModule;
+        this.tenantModule = tenantModule;
         this.logger = logger;
     }
 
@@ -28,8 +31,12 @@ internal sealed class UserClaimsController : ControllerBase
             return Ok(Array.Empty<ClaimDto>());
         }
 
+        var claims = new List<ClaimDto> { new("role", user.Role.ToString()) };
+        if (await tenantModule.GetTenantIdByUserIdAsync(sub) is { } tenantId)
+            claims.Add(new ClaimDto("owner", tenantId.ToString()));
+
         logger.UserClaimsReturned(sub, user.Role);
-        return Ok(new[] { new ClaimDto("role", user.Role.ToString()) });
+        return Ok(claims.ToArray());
     }
 
     public sealed record ClaimDto(string Type, string Value);

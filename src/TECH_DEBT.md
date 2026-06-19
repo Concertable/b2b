@@ -6,6 +6,16 @@ When an item is fixed, update both this file and [`ARCHITECTURE.md`](./ARCHITECT
 
 ## HIGH
 
+### Accept flow is not atomic — booking + escrow charge can persist without the application transition
+
+The accept path (`AcceptExecutor.ExecuteAsync` → `LifecycleTransitioner.TransitionAsync`) is **not wrapped in a transaction**. Inside the transition effect, `BookingService.CreateStandardAsync` commits the booking with its own `SaveChangesAsync`, then `CaptureEscrowAcceptStep` / `DepositEscrowAcceptStep` initiate the Stripe escrow charge (`IEscrowClient.Capture/Deposit`). Only afterwards does `TransitionAsync` save the application state transition in a *separate* `SaveChangesAsync`. A failure after the charge (the final transition save, `app.Accept`, or `RejectAllExcept`) leaves a **committed booking and a charged/held card while the application is never transitioned to Accepted** — an inconsistent state needing manual reconciliation, and a retry risks double-charging.
+
+Note — this is an **application** issue, not a pipeline one. Because the booking is committed *before* the charge today, the escrow `PaymentSucceededEvent` webhook always finds it in production, so there is **no escrow race in prod**. The "Booking not found" errors in the E2E logs are a *test-isolation artifact* (per-test DB reset via Respawn + a single shared async Stripe `listen` webhook stream → an earlier test's webhook arrives after its rows were wiped). Don't conflate the two.
+
+**Resolves when:** the accept flow runs in a single `UnitOfWorkBehavior` transaction (booking + application transition commit atomically) **and** the escrow Capture/Deposit is deferred to the transactional outbox — staged in the same transaction, dispatched only after commit — so making accept atomic does not reintroduce the webhook race (the booking is durable before Stripe is told to charge). Concretely: enqueue a `CaptureEscrow` / `DepositEscrow` `IIntegrationCommand` in the accept transaction, with a post-commit `IIntegrationCommandHandler` performing the gRPC charge (mirrors Payment's `ProcessStripeWebhookCommand`).
+
+---
+
 ### Workers uses `AddInMemoryTransport`, not ASB
 
 `Concertable.B2B.Workers/ServiceCollectionExtensions.cs` line 35 wires `services.AddInMemoryTransport()`. The Workers host cannot consume any cross-service events from the bus. Settlement triggers and payout reconciliation that belong in Workers run inside `Concertable.B2B.Web` today.
@@ -16,11 +26,11 @@ When an item is fixed, update both this file and [`ARCHITECTURE.md`](./ARCHITECT
 
 ### No `ConcertSalesProjection`
 
-`ReadDbContext` has no sold-count / gross-revenue projection. B2B dashboards and settlement math can't read authoritative ticket sales data from Customer.
+There is no sold-count / gross-revenue projection. B2B dashboards and settlement math can't read authoritative ticket sales data from Customer.
 
 **Depends on:** Customer publishing `TicketPurchasedEvent` (see `api/Concertable.Customer/TECH_DEBT.md`).
 
-**Resolves when:** `TicketPurchasedEvent` exists in Customer; B2B.Workers subscribes and writes a `ConcertSalesProjection` entity (concertId, soldCount, grossRevenue) into B2B DB; `ReadDbContext` exposes `ConcertSalesProjections`.
+**Resolves when:** `TicketPurchasedEvent` exists in Customer; B2B.Workers subscribes and writes a `ConcertSalesProjection` entity (concertId, soldCount, grossRevenue) into B2B DB, owned and read by the Concert module via its own context.
 
 ---
 
@@ -100,6 +110,22 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 ---
 
 ## LOW
+
+### `ConcertDetailsResponse` coerces optional images to `string.Empty`
+
+`ConcertResponseMappers.ToDetailsResponse` maps `BannerUrl = dto.BannerUrl ?? string.Empty` and `Avatar = dto.Avatar ?? dto.Artist.Avatar ?? string.Empty` because `ConcertDetailsResponse` declares both as `required string` while the underlying data is legitimately optional. The mapper flattens "absent" into "present but blank", and the SPA has to re-interpret `""` as missing. Inconsistent with `ConcertArtistResponse.Avatar` in the same response family, which is honestly `string?`.
+
+**Resolves when:** `ConcertDetailsResponse.BannerUrl`/`.Avatar` become `string?` (the avatar keeping its `dto.Avatar ?? dto.Artist.Avatar` preference chain, ending in null), the `?? string.Empty` coercions are deleted, and the SPA consumes null rather than empty string.
+
+---
+
+### `UserEntity.Avatar` models "no avatar" as empty string
+
+`Modules/User/Concertable.B2B.User.Domain/UserEntity.cs` declares `public string Avatar { get; private set; } = string.Empty;` — an empty-string placeholder pretending to be a value (the pattern `docs/CODE_CONVENTIONS.md` bans for populated-later defaults). "No avatar" is modelled as `string?` elsewhere (e.g. `ConcertArtistResponse.Avatar`).
+
+**Resolves when:** `Avatar` becomes `string?` with no default, consumers null-check instead of empty-check, and the column is re-scaffolded nullable via `./initial-migrations.ps1`.
+
+---
 
 ### Intra-service read-model sync rides the bus instead of in-process dispatch
 

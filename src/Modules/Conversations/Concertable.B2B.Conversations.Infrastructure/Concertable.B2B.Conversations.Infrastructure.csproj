@@ -26,4 +26,7 @@
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Infrastructure\Concertable.B2B.DataAccess.Infrastructure.csproj" />
+  </ItemGroup>
 </Project>

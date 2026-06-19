@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Concertable.B2B.Workers.UnitTests")]
+[assembly: InternalsVisibleTo("Concertable.B2B.E2ETests")]
 // TEMPORARY: Castle Core dynamic proxy IVT (strong-named form for ILogger<TInternal>). Needed by
 // Concertable.B2B.Workers.UnitTests to mock loggers typed against internal Worker function classes
 // (ConcertFinishedFunction, etc.). Retires when those tests migrate into per-module test projects.

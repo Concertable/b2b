@@ -18,9 +18,9 @@ namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
 public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public ApplicationVenueHireApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public ApplicationVenueHireApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -84,7 +84,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         await applyResponse.ShouldBe(HttpStatusCode.Created);
 
         // Assert — a PrepaidApplication was created with the supplied PM
-        var prepaid = await fixture.ReadDbContext.Applications
+        var prepaid = await fixture.ConcertReads.Set<ApplicationEntity>()
             .OfType<PrepaidApplication>()
             .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
         Assert.NotNull(prepaid);
@@ -133,13 +133,15 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         Assert.Contains(fixture.SeedState.VenueManager1.Id.ToString(), notifiedUserIds);
         Assert.All(fixture.NotificationService.DraftCreated, n => Assert.NotNull(n.Payload));
 
-        var booking = await fixture.ReadDbContext.Bookings.FirstAsync(b => b.ApplicationId == fixture.SeedState.VenueHireApp.Id);
+        var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == fixture.SeedState.VenueHireApp.Id);
         var escrow = await fixture.Escrows.FirstOrDefaultAsync(e => e.BookingId == booking.Id);
         Assert.NotNull(escrow);
         Assert.Equal(EscrowStatus.Held, escrow!.Status);
         Assert.NotEmpty(escrow.ChargeId);
-        Assert.Equal(fixture.SeedState.ArtistManager1.Id, escrow.FromUserId);
-        Assert.Equal(fixture.SeedState.VenueManager1.Id, escrow.ToUserId);
+        var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
+        var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
+        Assert.Equal(artistTenantId, escrow.FromOwnerId);
+        Assert.Equal(venueTenantId, escrow.ToOwnerId);
     }
 
     [Fact]
@@ -186,7 +188,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", (object?)null);
 
         // Assert
-        var draft = await fixture.ReadDbContext.Concerts.FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.VenueHireApp.Id);
+        var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.VenueHireApp.Id);
         Assert.Null(draft);
     }
 
@@ -211,7 +213,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
 
         // Assert — 201 Created, PrepaidApplication row created with stored PM
         await applyResponse.ShouldBe(HttpStatusCode.Created);
-        var prepaid = await fixture.ReadDbContext.Applications
+        var prepaid = await fixture.ConcertReads.Set<ApplicationEntity>()
             .OfType<PrepaidApplication>()
             .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
         Assert.NotNull(prepaid);

@@ -16,13 +16,45 @@ internal static class DistributedApplicationBuilderExtensions
         string paymentBaseUrl)
     {
         builder.PinAuthService(authBaseUrl);
+        builder.PinAuthB2BApi(apiBaseUrl);
         builder.PinB2BWeb(apiBaseUrl, authBaseUrl, paymentBaseUrl);
+        builder.PinWorkers(authBaseUrl, paymentBaseUrl);
         builder.AddSearchService(searchApiBaseUrl, authBaseUrl);
         builder.PinPaymentWeb(paymentBaseUrl, authBaseUrl);
         builder.PinPaymentWorkers();
         builder.AddEphemeralSql();
         builder.PinStripeCli(paymentBaseUrl);
         return builder;
+    }
+
+    private static void PinAuthB2BApi(
+        this IDistributedApplicationTestingBuilder builder,
+        string apiBaseUrl)
+    {
+        var auth = builder.Resources
+            .OfType<ProjectResource>()
+            .Single(r => r.Name == AppHostConstants.ResourceNames.Auth);
+
+        auth.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
+        {
+            context.EnvironmentVariables["Services__B2BApiUrl"] = apiBaseUrl;
+        }));
+    }
+
+    private static void PinWorkers(
+        this IDistributedApplicationTestingBuilder builder,
+        string authBaseUrl,
+        string paymentBaseUrl)
+    {
+        var workers = builder.Resources
+            .OfType<ProjectResource>()
+            .Single(r => r.Name == AppHostConstants.ResourceNames.Workers);
+
+        workers.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
+        {
+            context.EnvironmentVariables["Auth__Authority"] = authBaseUrl;
+            context.EnvironmentVariables["services__payment-web__https__0"] = paymentBaseUrl;
+        }));
     }
 
     private static void PinB2BWeb(

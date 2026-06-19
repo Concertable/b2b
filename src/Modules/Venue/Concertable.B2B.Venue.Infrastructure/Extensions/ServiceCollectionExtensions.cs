@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.DataAccess.Infrastructure.Data;
@@ -26,17 +27,35 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<VenueDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    configuration.GetConnectionString("B2BDb"),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
+
+        services.AddDbContext<PublicVenueDbContext>((sp, opt) =>
+            opt.UseSqlServer(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+
+        services.AddDbContext<AdminVenueDbContext>((sp, opt) =>
+            opt.UseSqlServer(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddScoped<IVenueService, VenueService>();
         services.AddScoped<IVenueDashboardService, VenueDashboardService>();
         services.AddScoped<IVenueReviewService, VenueReviewService>();
         services.AddScoped<IVenueRepository, VenueRepository>();
+        services.AddScoped<IPublicVenueRepository, PublicVenueRepository>();
+        services.AddScoped<IAdminVenueRepository, AdminVenueRepository>();
         services.AddScoped<IVenueModule, VenueModule>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, VenueReviewProjectionHandler>();
         services.AddScoped<IDomainEventHandler<VenueChangedDomainEvent>, VenueChangedDomainEventHandler>();

@@ -37,7 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Modules\Organization\Concertable.B2B.Organization.Api\Concertable.B2B.Organization.Api.csproj" />
+    <ProjectReference Include="..\Modules\Tenant\Concertable.B2B.Tenant.Api\Concertable.B2B.Tenant.Api.csproj" />
     <ProjectReference Include="..\Modules\User\Concertable.B2B.User.Api\Concertable.B2B.User.Api.csproj" />
     <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Api\Concertable.B2B.Artist.Api.csproj" />
     <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Api\Concertable.B2B.Venue.Api.csproj" />
@@ -62,7 +62,6 @@
     <ProjectReference Include="..\..\Concertable.Messaging\Concertable.Messaging.AzureServiceBus\Concertable.Messaging.AzureServiceBus.csproj" />
     <ProjectReference Include="..\..\Concertable.Messaging\Concertable.Messaging.Infrastructure\Concertable.Messaging.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Concertable.Payment\Concertable.Payment.Client\Concertable.Payment.Client.csproj" />
-    <ProjectReference Include="..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.csproj" />
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1development_1json__JsonSchema="https://www.unpkg.com/wrangler/config-schema.json" /></VisualStudio></ProjectExtensions>

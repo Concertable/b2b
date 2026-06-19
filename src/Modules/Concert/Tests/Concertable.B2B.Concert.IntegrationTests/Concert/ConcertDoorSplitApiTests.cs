@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -10,9 +11,9 @@ namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public ConcertDoorSplitApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public ConcertDoorSplitApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -34,13 +35,15 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         // Assert — booking awaits the off-session settlement payment; completion happens on the webhook
         var payment = Assert.Single(fixture.ManagerPaymentClient.Payments);
-        Assert.Equal(fixture.SeedState.VenueManager1.Id, payment.PayerId);
-        Assert.Equal(fixture.SeedState.ArtistManager1.Id, payment.PayeeId);
+        var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
+        var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
+        Assert.Equal(venueTenantId, payment.PayerId);
+        Assert.Equal(artistTenantId, payment.PayeeId);
         Assert.Equal(contract.CalculateArtistShare(concert.TicketsSold * concert.Price), payment.Amount);
         Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
         Assert.Equal(deferred.Id, payment.BookingId);
 
-        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(LifecycleState.AwaitingSettlement, application.State);
     }
 
@@ -54,7 +57,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(LifecycleState.Complete, application.State);
     }
 
@@ -69,7 +72,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.ReadDbContext.Applications.FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(LifecycleState.Complete, application.State);
     }
 }

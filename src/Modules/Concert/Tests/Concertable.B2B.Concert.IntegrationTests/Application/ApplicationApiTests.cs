@@ -9,9 +9,9 @@ namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
 public sealed class ApplicationApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ConcertApiFixture fixture;
 
-    public ApplicationApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public ApplicationApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);

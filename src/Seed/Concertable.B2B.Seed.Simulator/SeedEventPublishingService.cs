@@ -1,5 +1,7 @@
 using Concertable.B2B.Seed.Contracts;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.Messaging.Contracts;
+using Concertable.Seed.Identity;
 
 namespace Concertable.B2B.Seed.Simulator;
 
@@ -24,6 +26,14 @@ internal sealed class SeedEventPublishingService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Stand in for B2B's TenantProvisioningHandler (absent when real B2B isn't running) so Payment
+        // provisions each operator's Connect account off the same TenantCreatedEvent the prod path emits.
+        foreach (var m in SeedUsers.Managers)
+            await transport.PublishAsync(
+                new TenantCreatedEvent(m.TenantId, m.Id, m.Email),
+                Envelope(typeof(TenantCreatedEvent)), stoppingToken);
+        logger.PublishedTenantEvents(SeedUsers.Managers.Count());
+
         foreach (var v in fixture.Venues)
             await transport.PublishAsync(v.ToChangedEvent(), Envelope(typeof(Concertable.B2B.Venue.Contracts.Events.VenueChangedEvent)), stoppingToken);
         logger.PublishedVenueEvents(fixture.Venues.Count);

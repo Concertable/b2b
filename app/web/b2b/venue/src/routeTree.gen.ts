@@ -24,6 +24,7 @@ import { Route as VenueSettingsIndexRouteImport } from './routes/_venue/settings
 import { Route as VenueMyIndexRouteImport } from './routes/_venue/my/index'
 import { Route as VenueFindIndexRouteImport } from './routes/_venue/find/index'
 import { Route as VenueSettingsPaymentRouteImport } from './routes/_venue/settings/payment'
+import { Route as VenueSettingsOrganizationRouteImport } from './routes/_venue/settings/organization'
 import { Route as VenueFindVenueIdRouteImport } from './routes/_venue/find/venue.$id'
 import { Route as VenueFindConcertIdRouteImport } from './routes/_venue/find/concert.$id'
 import { Route as VenueFindArtistIdRouteImport } from './routes/_venue/find/artist.$id'
@@ -106,6 +107,12 @@ const VenueSettingsPaymentRoute = VenueSettingsPaymentRouteImport.update({
   path: '/payment',
   getParentRoute: () => VenueSettingsRouteRoute,
 } as any)
+const VenueSettingsOrganizationRoute =
+  VenueSettingsOrganizationRouteImport.update({
+    id: '/organization',
+    path: '/organization',
+    getParentRoute: () => VenueSettingsRouteRoute,
+  } as any)
 const VenueFindVenueIdRoute = VenueFindVenueIdRouteImport.update({
   id: '/find/venue/$id',
   path: '/find/venue/$id',
@@ -157,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof VenueSettingsRouteRouteWithChildren
   '/create': typeof VenueCreateRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/settings/organization': typeof VenueSettingsOrganizationRoute
   '/settings/payment': typeof VenueSettingsPaymentRoute
   '/find/': typeof VenueFindIndexRoute
   '/my/': typeof VenueMyIndexRoute
@@ -179,6 +187,7 @@ export interface FileRoutesByTo {
   '/create': typeof VenueCreateRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof VenueIndexRoute
+  '/settings/organization': typeof VenueSettingsOrganizationRoute
   '/settings/payment': typeof VenueSettingsPaymentRoute
   '/find': typeof VenueFindIndexRoute
   '/my': typeof VenueMyIndexRoute
@@ -204,6 +213,7 @@ export interface FileRoutesById {
   '/_venue/create': typeof VenueCreateRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_venue/': typeof VenueIndexRoute
+  '/_venue/settings/organization': typeof VenueSettingsOrganizationRoute
   '/_venue/settings/payment': typeof VenueSettingsPaymentRoute
   '/_venue/find/': typeof VenueFindIndexRoute
   '/_venue/my/': typeof VenueMyIndexRoute
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/create'
     | '/auth/callback'
+    | '/settings/organization'
     | '/settings/payment'
     | '/find/'
     | '/my/'
@@ -251,6 +262,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/auth/callback'
     | '/'
+    | '/settings/organization'
     | '/settings/payment'
     | '/find'
     | '/my'
@@ -275,6 +287,7 @@ export interface FileRouteTypes {
     | '/_venue/create'
     | '/auth/callback'
     | '/_venue/'
+    | '/_venue/settings/organization'
     | '/_venue/settings/payment'
     | '/_venue/find/'
     | '/_venue/my/'
@@ -406,6 +419,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VenueSettingsPaymentRouteImport
       parentRoute: typeof VenueSettingsRouteRoute
     }
+    '/_venue/settings/organization': {
+      id: '/_venue/settings/organization'
+      path: '/organization'
+      fullPath: '/settings/organization'
+      preLoaderRoute: typeof VenueSettingsOrganizationRouteImport
+      parentRoute: typeof VenueSettingsRouteRoute
+    }
     '/_venue/find/venue/$id': {
       id: '/_venue/find/venue/$id'
       path: '/find/venue/$id'
@@ -459,11 +479,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface VenueSettingsRouteRouteChildren {
+  VenueSettingsOrganizationRoute: typeof VenueSettingsOrganizationRoute
   VenueSettingsPaymentRoute: typeof VenueSettingsPaymentRoute
   VenueSettingsIndexRoute: typeof VenueSettingsIndexRoute
 }
 
 const VenueSettingsRouteRouteChildren: VenueSettingsRouteRouteChildren = {
+  VenueSettingsOrganizationRoute: VenueSettingsOrganizationRoute,
   VenueSettingsPaymentRoute: VenueSettingsPaymentRoute,
   VenueSettingsIndexRoute: VenueSettingsIndexRoute,
 }

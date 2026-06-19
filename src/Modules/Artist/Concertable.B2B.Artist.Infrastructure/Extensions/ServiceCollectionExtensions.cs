@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Artist.Application.Validators;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Artist.Domain.Events;
@@ -27,17 +28,25 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<ArtistDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    configuration.GetConnectionString("B2BDb"),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
+
+        services.AddDbContext<PublicArtistDbContext>((sp, opt) =>
+            opt.UseSqlServer(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
         services.AddScoped<IArtistService, ArtistService>();
         services.AddScoped<IArtistDashboardService, ArtistDashboardService>();
         services.AddScoped<IArtistReviewService, ArtistReviewService>();
         services.AddScoped<IArtistRepository, ArtistRepository>();
+        services.AddScoped<IPublicArtistRepository, PublicArtistRepository>();
         services.AddScoped<IArtistModule, ArtistModule>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ArtistReviewProjectionHandler>();
         services.AddScoped<IDomainEventHandler<ArtistChangedDomainEvent>, ArtistChangedDomainEventHandler>();

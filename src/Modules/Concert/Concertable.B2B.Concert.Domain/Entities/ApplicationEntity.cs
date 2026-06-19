@@ -1,12 +1,15 @@
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ReadModels;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
-public abstract class ApplicationEntity : IIdEntity
+public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
 {
     public int Id { get; private set; }
+    public Guid VenueTenantId { get; set; }
+    public Guid ArtistTenantId { get; set; }
     internal LifecycleState State { get; private set; } = LifecycleState.Applied;
     public int OpportunityId { get; private set; }
     public int ArtistId { get; private set; }

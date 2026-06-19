@@ -8,7 +8,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class OpportunityService : IOpportunityService
 {
-    private readonly IOpportunityRepository opportunityRepository;
+    private readonly IOpportunityRepository repository;
+    private readonly IPublicOpportunityRepository publicRepository;
     private readonly IVenueModule venueModule;
     private readonly IContractModule contractModule;
     private readonly IOpportunitySyncer syncer;
@@ -17,7 +18,8 @@ internal sealed class OpportunityService : IOpportunityService
     private readonly IUnitOfWorkBehavior uowBehavior;
 
     public OpportunityService(
-        IOpportunityRepository opportunityRepository,
+        IOpportunityRepository repository,
+        IPublicOpportunityRepository publicRepository,
         IVenueModule venueModule,
         IContractModule contractModule,
         IOpportunitySyncer syncer,
@@ -25,7 +27,8 @@ internal sealed class OpportunityService : IOpportunityService
         ICurrentUser currentUser,
         IUnitOfWorkBehavior uowBehavior)
     {
-        this.opportunityRepository = opportunityRepository;
+        this.repository = repository;
+        this.publicRepository = publicRepository;
         this.venueModule = venueModule;
         this.contractModule = contractModule;
         this.syncer = syncer;
@@ -47,11 +50,11 @@ internal sealed class OpportunityService : IOpportunityService
                 new DateRange(request.StartDate, request.EndDate),
                 contractId,
                 request.Genres);
-            await opportunityRepository.AddAsync(entity);
+            await repository.AddAsync(entity);
             return entity;
         });
 
-        var saved = await opportunityRepository.GetByIdAsync(opportunity.Id)
+        var saved = await repository.GetByIdAsync(opportunity.Id)
             ?? throw new NotFoundException("Opportunity not found after save");
         return await mapper.ToDtoAsync(saved);
     }
@@ -72,20 +75,20 @@ internal sealed class OpportunityService : IOpportunityService
                     new DateRange(request.StartDate, request.EndDate),
                     contractId,
                     request.Genres);
-                await opportunityRepository.AddAsync(opportunity);
+                await repository.AddAsync(opportunity);
             }
         });
     }
 
     public async Task<IPagination<OpportunityDto>> GetActiveByVenueIdAsync(int id, IPageParams pageParams)
     {
-        var opportunities = await opportunityRepository.GetActiveByVenueIdAsync(id, pageParams);
+        var opportunities = await publicRepository.GetActiveByVenueIdAsync(id, pageParams);
         return await mapper.ToDtosAsync(opportunities);
     }
 
     public async Task<IEnumerable<OpportunityDto>> GetActiveByVenueIdAsync(int venueId)
     {
-        var opportunities = await opportunityRepository.GetActiveByVenueIdAsync(venueId);
+        var opportunities = await publicRepository.GetActiveByVenueIdAsync(venueId);
         return await mapper.ToDtosAsync(opportunities);
     }
 
@@ -97,35 +100,37 @@ internal sealed class OpportunityService : IOpportunityService
         if (ownedVenueId != venueId)
             throw new ForbiddenException("You do not own this venue");
 
-        var current = await opportunityRepository.GetActiveByVenueIdAsync(venueId);
+        /* Read tracked through the writing context: the syncer mutates these entities, and the
+           read-only public projection's no-tracking context would silently drop those updates. */
+        var current = await repository.GetActiveByVenueIdAsync(venueId);
 
         await uowBehavior.ExecuteAsync(() => syncer.SyncAsync(venueId, current, desired));
 
-        var updated = await opportunityRepository.GetActiveByVenueIdAsync(venueId);
+        var updated = await publicRepository.GetActiveByVenueIdAsync(venueId);
         return await mapper.ToDtosAsync(updated);
     }
 
     public async Task<OpportunityDto> GetByIdAsync(int id)
     {
-        var opportunity = await opportunityRepository.GetByIdAsync(id)
+        var opportunity = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Concert Opportunity not found");
         return await mapper.ToDtoAsync(opportunity);
     }
 
     public async Task<Guid?> GetOwnerByIdAsync(int id)
     {
-        return await opportunityRepository.GetOwnerByIdAsync(id);
+        return await repository.GetOwnerByIdAsync(id);
     }
 
     public async Task<bool> OwnsOpportunityAsync(int opportunityId)
     {
-        var opportunity = await opportunityRepository.GetWithVenueByIdAsync(opportunityId);
+        var opportunity = await repository.GetWithVenueByIdAsync(opportunityId);
         return opportunity?.Venue?.UserId == currentUser.GetId();
     }
 
     public async Task<bool> OwnsOpportunityByApplicationIdAsync(int applicationId)
     {
-        var opportunity = await opportunityRepository.GetByApplicationIdAsync(applicationId);
+        var opportunity = await repository.GetByApplicationIdAsync(applicationId);
         return opportunity?.Venue?.UserId == currentUser.GetId();
     }
 }

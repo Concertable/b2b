@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
@@ -20,9 +21,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddContractModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<ContractDbContext>((sp, opt) =>
-            opt.UseSqlServer(configuration.GetConnectionString("B2BDb"))
+            opt.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 

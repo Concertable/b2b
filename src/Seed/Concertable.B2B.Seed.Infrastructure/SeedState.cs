@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Contract.Domain.Entities;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure.Factories;
+using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.User.Domain;
 using Concertable.Contracts;
 using Concertable.B2B.Venue.Domain;
@@ -31,6 +32,10 @@ public sealed class SeedState
 
     public ArtistEntity Artist { get; }
     public VenueEntity Venue { get; }
+
+    /// <summary>One tenant per operator (the manager's legal entity) — every manager, venue and artist alike.
+    /// Venues/opportunities/contracts and artists all carry the matching <c>TenantId</c>.</summary>
+    public IReadOnlyList<TenantEntity> Tenants { get; }
 
     public IReadOnlyList<ArtistEntity> Artists { get; }
     public IReadOnlyList<VenueEntity> Venues { get; }
@@ -162,6 +167,8 @@ public sealed class SeedState
             address: new Address(s.County, s.Town),
             email: s.Email,
             genres: s.Genres)).ToList();
+        foreach (var artist in Artists)
+            artist.TenantId = TenantSeedIds.For(artist.UserId);
         Artist = Artists[0];
 
         ConfirmedAppContract = FlatFeeContractFactory.Create(6, 200m);
@@ -280,6 +287,22 @@ public sealed class SeedState
         }
         Opportunities = opps;
         FreshVenueHireOpportunity = opps[62];
+
+        // Artists get a tenant too (they own no Bucket-A rows) so Payment provisions their Connect account off TenantCreatedEvent.
+        Tenants = SeedUsers.Managers
+            .Select(m => TenantFactory.Create(m.Id, m.Email, now))
+            .ToList();
+        var tenantByVenueId = Venues.ToDictionary(v => v.Id, v => TenantSeedIds.For(v.UserId));
+        foreach (var venue in Venues)
+            venue.TenantId = tenantByVenueId[venue.Id];
+        foreach (var opportunity in Opportunities)
+            opportunity.TenantId = tenantByVenueId[opportunity.VenueId];
+        var tenantByContractId = Opportunities
+            .GroupBy(o => o.ContractId)
+            .ToDictionary(g => g.Key, g => g.First().TenantId);
+        foreach (var contract in Contracts)
+            if (tenantByContractId.TryGetValue(contract.Id, out var tenantId))
+                contract.TenantId = tenantId;
 
         ConfirmedBooking = BookingFactory.Standard(1);
         PostedDoorSplitBooking = BookingFactory.Deferred(2);
@@ -446,13 +469,27 @@ public sealed class SeedState
             ApplicationFactory.CreatePrepaid(8, 48),
         ];
 
+        var artistTenantById = Artists.ToDictionary(a => a.Id, a => a.TenantId);
         foreach (var application in Applications)
         {
             var contractType = Contracts[Opportunities[application.OpportunityId - 1].ContractId - 1].ContractType;
             application.With(nameof(ApplicationEntity.ContractType), contractType);
             application.Booking?.With(nameof(BookingEntity.ContractType), contractType);
+
+            application.VenueTenantId = Opportunities[application.OpportunityId - 1].TenantId;
+            application.ArtistTenantId = artistTenantById[application.ArtistId];
+            if (application.Booking is { } booking)
+            {
+                booking.VenueTenantId = application.VenueTenantId;
+                booking.ArtistTenantId = application.ArtistTenantId;
+            }
         }
 
         Concerts = catalog.Concerts.Select(s => ConcertFactory.Create(s, Bookings[s.ConcertId - 1])).ToList();
+        foreach (var concert in Concerts)
+        {
+            concert.VenueTenantId = tenantByVenueId[concert.VenueId];
+            concert.ArtistTenantId = artistTenantById[concert.ArtistId];
+        }
     }
 }

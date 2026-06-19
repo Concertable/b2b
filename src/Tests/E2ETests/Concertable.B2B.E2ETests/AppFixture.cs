@@ -6,6 +6,7 @@ using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Contract.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.User.Infrastructure.Extensions;
@@ -58,6 +59,7 @@ public sealed class AppFixture : IAsyncLifetime
     public HttpClient B2BClient { get; private set; } = null!;
     public HttpClient SearchClient { get; private set; } = null!;
     public HttpClient PaymentClient { get; private set; } = null!;
+    public WorkersFixture Workers { get; private set; } = null!;
     public IPollingService Polling { get; private set; } = null!;
     public PaymentIntentService StripePaymentIntents { get; private set; } = null!;
     public StripeFixture Stripe { get; private set; } = null!;
@@ -68,6 +70,7 @@ public sealed class AppFixture : IAsyncLifetime
     {
         loggerFactory = LoggerFactory.Create(b => b
             .AddSimpleConsole(o => o.SingleLine = true)
+            .AddProvider(new FileLoggerProvider(Path.Combine(AppContext.BaseDirectory, "e2e-diagnostics.log")))
             .SetMinimumLevel(LogLevel.Warning)
             .AddFilter("Concertable", LogLevel.Information));
         logger = loggerFactory.CreateLogger<AppFixture>();
@@ -107,20 +110,20 @@ public sealed class AppFixture : IAsyncLifetime
         Stripe = new StripeFixture(stripeClient);
 
         app = await builder.BuildAsync();
-        resourceLogger = new AspireResourceLogger(app.ResourceNotifications, logger);
+        resourceLogger = new AspireResourceLogger(
+            app.ResourceNotifications, app.Services.GetRequiredService<ResourceLoggerService>(), logger);
         await app.StartAsync();
 
         B2BClient = new HttpClient { BaseAddress = new Uri(B2BWebUrl) };
         SearchClient = new HttpClient { BaseAddress = new Uri(SearchWebUrl) };
         PaymentClient = new HttpClient { BaseAddress = new Uri(PaymentWebUrl) };
+        Workers = new WorkersFixture(app, Polling);
 
+        // WORKAROUND (TECH_DEBT.md): 12 not 6 — the 71 demo users seed via the async
+        // credential-registration chain, slow on CI's ASB emulator. Revert to 6 once seed is faster.
         await healthWaiter.WaitForAllHealthyAsync(
             [B2BWebUrl, SearchWebUrl, PaymentWebUrl],
-            TimeSpan.FromMinutes(6));
-
-        await healthWaiter.WaitForAllServingAsync(
-            [VenueSpaUrl, ArtistSpaUrl, BusinessSpaUrl],
-            TimeSpan.FromMinutes(3));
+            TimeSpan.FromMinutes(12));
 
         var paymentConnectionString = await app.GetConnectionStringAsync(AppHostConstants.Databases.Payment);
         await healthWaiter.WaitForPayoutAccountsAsync(paymentConnectionString, 4, TimeSpan.FromMinutes(3));
@@ -156,6 +159,7 @@ public sealed class AppFixture : IAsyncLifetime
                 services.AddCurrentUser();
                 services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
                 services.AddScoped<AuditInterceptor>();
+                services.AddScoped<TenantInterceptor>();
                 services.AddScoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>();
                 services.AddGeometry();
                 services.AddOutbox(opt => opt.UseSqlServer(b2bConnectionString), runDispatcher: false);
@@ -165,6 +169,7 @@ public sealed class AppFixture : IAsyncLifetime
                 services.AddSingleton(new BlobServiceClient(blobConnectionString));
                 services.AddSharedBlob(b2bSeedConfig);
                 services.AddUserModule(b2bSeedConfig);
+                services.AddTenantModule(b2bSeedConfig);
                 services.AddArtistModule(b2bSeedConfig);
                 services.AddVenueModule(b2bSeedConfig);
                 services.AddContractModule(b2bSeedConfig);
@@ -172,6 +177,7 @@ public sealed class AppFixture : IAsyncLifetime
                 services.AddConversationsModule(b2bSeedConfig);
                 services.AddBlobDevSeeder();
                 services.AddUserDevSeeder();
+                services.AddTenantDevSeeder();
                 services.AddArtistDevSeeder();
                 services.AddVenueDevSeeder();
                 services.AddContractDevSeeder();
@@ -208,6 +214,7 @@ public sealed class AppFixture : IAsyncLifetime
         B2BClient.Dispose();
         SearchClient.Dispose();
         PaymentClient.Dispose();
+        Workers.Dispose();
         tokenMinter.Dispose();
         healthWaiter.Dispose();
         await DbFixture.DisposeAsync();

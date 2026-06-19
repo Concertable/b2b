@@ -45,6 +45,7 @@ internal sealed class ConcertDevSeeder : IDevSeeder
             {
                 Id = a.Id,
                 UserId = a.UserId,
+                TenantId = a.TenantId,
                 Name = a.Name,
                 Avatar = a.Avatar,
                 BannerUrl = a.BannerUrl,
