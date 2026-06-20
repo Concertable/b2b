@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.User.Api.Authorization;
+using Concertable.B2B.Tenant.Api.Authorization;
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
@@ -64,14 +65,14 @@ internal sealed class ConcertController : ControllerBase
         return Ok((await concertService.GetUnpostedByArtistIdAsync(id)).ToSummaryResponses());
     }
 
-    [VenueManager]
+    [HasPermission(Permissions.ConcertsManage, TenantType.Venue)]
     [HttpPut("{id}")]
     public async Task<ActionResult<ConcertUpdateResponse>> Update(int id, [FromBody] UpdateConcertRequest request)
     {
         return Ok(await concertService.UpdateAsync(id, request));
     }
 
-    [VenueManager]
+    [HasPermission(Permissions.ConcertsManage, TenantType.Venue)]
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
     {

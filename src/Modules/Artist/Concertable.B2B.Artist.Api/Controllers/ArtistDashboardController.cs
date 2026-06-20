@@ -1,12 +1,13 @@
 using Concertable.B2B.Artist.Application.DTOs;
 using Concertable.B2B.Artist.Application.Interfaces;
-using Concertable.B2B.User.Api.Authorization;
+using Concertable.B2B.Tenant.Api.Authorization;
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Artist.Api.Controllers;
 
 [ApiController]
-[ArtistManager]
+[HasPermission(Permissions.OperationsView, TenantType.Artist)]
 [Route("api/[controller]")]
 internal sealed class ArtistDashboardController : ControllerBase
 {

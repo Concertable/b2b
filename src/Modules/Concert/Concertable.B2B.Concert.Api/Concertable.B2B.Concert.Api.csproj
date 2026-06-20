@@ -15,7 +15,7 @@
     <ProjectReference Include="..\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Concert.Application\Concertable.B2B.Concert.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\User\Concertable.B2B.User.Api\Concertable.B2B.User.Api.csproj" />
+    <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Api\Concertable.B2B.Tenant.Api.csproj" />
   </ItemGroup>
 
 </Project>

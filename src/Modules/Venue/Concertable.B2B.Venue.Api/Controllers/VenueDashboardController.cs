@@ -1,4 +1,5 @@
-using Concertable.B2B.User.Api.Authorization;
+using Concertable.B2B.Tenant.Api.Authorization;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Venue.Api.Controllers;
 
 [ApiController]
-[VenueManager]
+[HasPermission(Permissions.OperationsView, TenantType.Venue)]
 [Route("api/[controller]")]
 internal sealed class VenueDashboardController : ControllerBase
 {

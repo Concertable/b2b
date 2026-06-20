@@ -2,10 +2,9 @@ using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
-using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Domain;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
@@ -18,9 +17,9 @@ namespace Concertable.B2B.Tenant.IntegrationTests;
 [Collection("Integration")]
 public sealed class ComplianceRoundTripTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly TenantApiFixture fixture;
 
-    public ComplianceRoundTripTests(ApiFixture fixture, ITestOutputHelper output)
+    public ComplianceRoundTripTests(TenantApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -81,9 +80,7 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
         Assert.Equal(request.LegalName, read!.LegalName);
         Assert.Equal(request.Compliance, read.Compliance);
 
-        using var scope = fixture.Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<ITenantRepository>();
-        var tenant = await repository.GetByIdAsync(tenantId);
+        var tenant = await fixture.Tenants.SingleOrDefaultAsync(t => t.Id == tenantId);
 
         var expected = new Compliance(
             vatRegistered: true,
