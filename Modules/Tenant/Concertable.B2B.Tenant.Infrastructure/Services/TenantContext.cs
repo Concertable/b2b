@@ -40,7 +40,7 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver
         if (currentUser.Id is not { } userId)
             return;
 
-        var tenant = await repository.GetByCreatedByUserIdAsync(userId, ct);
-        tenantId = tenant?.Id;
+        var membership = await repository.GetMembershipByUserIdAsync(userId, ct);
+        tenantId = membership?.TenantId;
     }
 }

@@ -9,5 +9,6 @@ internal sealed class TenantConfigurationProvider : IEntityTypeConfigurationProv
     public void Configure(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new TenantEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new TenantMembershipEntityConfiguration());
     }
 }

@@ -25,6 +25,7 @@ internal sealed class TenantTestSeeder : ITestSeeder
         await context.Tenants.SeedIfEmptyAsync(async () =>
         {
             context.Tenants.AddRange(seed.Tenants);
+            context.Memberships.AddRange(seed.Memberships);
             await context.SaveChangesAsync(ct);
         });
 }

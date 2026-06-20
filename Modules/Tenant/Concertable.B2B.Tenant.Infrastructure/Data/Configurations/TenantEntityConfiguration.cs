@@ -10,6 +10,7 @@ internal sealed class TenantEntityConfiguration : IEntityTypeConfiguration<Tenan
         builder.ToTable(Schema.Tables.Tenants, Schema.Name);
         builder.HasKey(o => o.Id);
         builder.Property(o => o.LegalName).IsRequired().HasMaxLength(200);
+        builder.Property(o => o.Type).IsRequired();
         builder.Property(o => o.CreatedAt).IsRequired();
 
         builder.OwnsOne(o => o.Compliance, c =>
