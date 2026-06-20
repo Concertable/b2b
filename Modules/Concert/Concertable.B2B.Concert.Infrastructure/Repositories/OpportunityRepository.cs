@@ -22,15 +22,8 @@ internal sealed class OpportunityRepository : OpportunityRepository<ConcertDbCon
             .Select(o => (int?)o.ContractId)
             .FirstOrDefaultAsync();
 
-    public async Task<OpportunityEntity?> GetWithVenueByIdAsync(int id) =>
-        await context.Opportunities
-            .Where(o => o.Id == id)
-            .Include(o => o.Venue)
-            .FirstOrDefaultAsync();
-
     public async Task<OpportunityEntity?> GetByApplicationIdAsync(int id) =>
         await context.Opportunities
-            .Include(o => o.Venue)
             .Where(o => o.Applications.Any(a => a.Id == id))
             .FirstOrDefaultAsync();
 

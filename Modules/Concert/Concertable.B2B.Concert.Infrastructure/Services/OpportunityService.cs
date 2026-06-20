@@ -14,7 +14,7 @@ internal sealed class OpportunityService : IOpportunityService
     private readonly IContractModule contractModule;
     private readonly IOpportunitySyncer syncer;
     private readonly IOpportunityMapper mapper;
-    private readonly ICurrentUser currentUser;
+    private readonly ITenantContext tenantContext;
     private readonly IUnitOfWorkBehavior uowBehavior;
 
     public OpportunityService(
@@ -24,7 +24,7 @@ internal sealed class OpportunityService : IOpportunityService
         IContractModule contractModule,
         IOpportunitySyncer syncer,
         IOpportunityMapper mapper,
-        ICurrentUser currentUser,
+        ITenantContext tenantContext,
         IUnitOfWorkBehavior uowBehavior)
     {
         this.repository = repository;
@@ -33,13 +33,13 @@ internal sealed class OpportunityService : IOpportunityService
         this.contractModule = contractModule;
         this.syncer = syncer;
         this.mapper = mapper;
-        this.currentUser = currentUser;
+        this.tenantContext = tenantContext;
         this.uowBehavior = uowBehavior;
     }
 
     public async Task<OpportunityDto> CreateAsync(OpportunityRequest request)
     {
-        var venueId = await venueModule.GetVenueIdByUserIdAsync(currentUser.GetId())
+        var venueId = await venueModule.GetVenueIdForCurrentTenantAsync()
             ?? throw new NotFoundException("Venue not found for current user");
 
         var opportunity = await uowBehavior.ExecuteAsync(async () =>
@@ -62,7 +62,7 @@ internal sealed class OpportunityService : IOpportunityService
     public async Task CreateMultipleAsync(IEnumerable<OpportunityRequest> requests)
     {
         var requestList = requests.ToList();
-        var venueId = await venueModule.GetVenueIdByUserIdAsync(currentUser.GetId())
+        var venueId = await venueModule.GetVenueIdForCurrentTenantAsync()
             ?? throw new NotFoundException("Venue not found for current user");
 
         await uowBehavior.ExecuteAsync(async () =>
@@ -94,7 +94,7 @@ internal sealed class OpportunityService : IOpportunityService
 
     public async Task<IEnumerable<OpportunityDto>> UpdateAsync(int venueId, IEnumerable<OpportunityRequest> desired)
     {
-        var ownedVenueId = await venueModule.GetVenueIdByUserIdAsync(currentUser.GetId())
+        var ownedVenueId = await venueModule.GetVenueIdForCurrentTenantAsync()
             ?? throw new NotFoundException("Venue not found for current user");
 
         if (ownedVenueId != venueId)
@@ -124,13 +124,19 @@ internal sealed class OpportunityService : IOpportunityService
 
     public async Task<bool> OwnsOpportunityAsync(int opportunityId)
     {
-        var opportunity = await repository.GetWithVenueByIdAsync(opportunityId);
-        return opportunity?.Venue?.UserId == currentUser.GetId();
+        if (tenantContext.TenantId is not { } tenant)
+            return false;
+
+        var ownerTenantId = await repository.GetTenantIdByIdAsync(opportunityId);
+        return ownerTenantId == tenant;
     }
 
     public async Task<bool> OwnsOpportunityByApplicationIdAsync(int applicationId)
     {
+        if (tenantContext.TenantId is not { } tenant)
+            return false;
+
         var opportunity = await repository.GetByApplicationIdAsync(applicationId);
-        return opportunity?.Venue?.UserId == currentUser.GetId();
+        return opportunity?.TenantId == tenant;
     }
 }

@@ -193,6 +193,7 @@ public class ApiFixture : IAsyncLifetime
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
         client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, user.Role.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
         return client;
     }
 
@@ -214,6 +215,7 @@ public class ApiFixture : IAsyncLifetime
         var client = customFactory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
         client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, user.Role.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
         return client;
     }
 

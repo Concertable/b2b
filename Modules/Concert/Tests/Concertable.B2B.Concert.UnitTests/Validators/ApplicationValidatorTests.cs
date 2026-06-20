@@ -1,6 +1,5 @@
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Validators;
 using Concertable.Kernel;
 using Concertable.Kernel.Identity;
@@ -17,14 +16,14 @@ public sealed class ApplicationValidatorTests
     private const int ArtistId = 1;
     private const int ContractId = 1;
 
-    private readonly Guid venueOwnerId = Guid.NewGuid();
+    private readonly Guid venueTenantId = Guid.NewGuid();
 
     private readonly FakeTimeProvider timeProvider;
     private readonly Mock<IConcertAvailability> availability;
     private readonly Mock<IOpportunityRepository> opportunityRepository;
     private readonly Mock<IApplicationRepository> applicationRepository;
     private readonly Mock<IArtistModule> artistModule;
-    private readonly Mock<ICurrentUser> currentUser;
+    private readonly Mock<ITenantContext> tenantContext;
     private readonly ApplicationValidator validator;
 
     private DateRange FuturePeriod => new(timeProvider.GetUtcNow().AddDays(28).UtcDateTime, timeProvider.GetUtcNow().AddDays(28).AddHours(3).UtcDateTime);
@@ -37,9 +36,9 @@ public sealed class ApplicationValidatorTests
         this.opportunityRepository = new Mock<IOpportunityRepository>();
         this.applicationRepository = new Mock<IApplicationRepository>();
         this.artistModule = new Mock<IArtistModule>();
-        this.currentUser = new Mock<ICurrentUser>();
+        this.tenantContext = new Mock<ITenantContext>();
 
-        currentUser.SetupGet(u => u.Id).Returns(venueOwnerId);
+        tenantContext.SetupGet(t => t.TenantId).Returns(venueTenantId);
         opportunityRepository.Setup(r => r.GetByApplicationIdAsync(ApplicationId)).ReturnsAsync(Opportunity(FuturePeriod));
         applicationRepository.Setup(r => r.GetByIdAsync(ApplicationId)).ReturnsAsync(StandardApplication.Create(ArtistId, OpportunityId));
 
@@ -48,14 +47,14 @@ public sealed class ApplicationValidatorTests
             opportunityRepository.Object,
             applicationRepository.Object,
             artistModule.Object,
-            currentUser.Object,
+            tenantContext.Object,
             timeProvider);
     }
 
     private OpportunityEntity Opportunity(DateRange period)
     {
         var opportunity = OpportunityEntity.Create(VenueId, period, ContractId);
-        opportunity.Venue = new VenueReadModel { Id = VenueId, UserId = venueOwnerId };
+        opportunity.TenantId = venueTenantId;
         return opportunity;
     }
 
@@ -73,7 +72,7 @@ public sealed class ApplicationValidatorTests
     public async Task CanAcceptAsync_ShouldFail_WhenCallerDoesNotOwnOpportunity()
     {
         // Arrange
-        currentUser.SetupGet(u => u.Id).Returns(Guid.NewGuid());
+        tenantContext.SetupGet(t => t.TenantId).Returns(Guid.NewGuid());
 
         // Act
         var result = await validator.CanAcceptAsync(ApplicationId);
@@ -164,7 +163,7 @@ public sealed class ApplicationValidatorTests
     public async Task CanApplyAsync_ShouldFail_WhenUserHasNoArtistAccount()
     {
         // Arrange
-        artistModule.Setup(m => m.GetIdByUserIdAsync(venueOwnerId)).ReturnsAsync((int?)null);
+        artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync((int?)null);
 
         // Act
         var result = await validator.CanApplyAsync(OpportunityId);
@@ -177,7 +176,7 @@ public sealed class ApplicationValidatorTests
     public async Task CanApplyAsync_ShouldFail_WhenOpportunityDoesNotExist()
     {
         // Arrange
-        artistModule.Setup(m => m.GetIdByUserIdAsync(venueOwnerId)).ReturnsAsync(ArtistId);
+        artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync(ArtistId);
         opportunityRepository.Setup(r => r.GetByIdAsync(OpportunityId)).ReturnsAsync((OpportunityEntity?)null);
 
         // Act
@@ -191,7 +190,7 @@ public sealed class ApplicationValidatorTests
     public async Task CanApplyAsync_ShouldSucceed_WhenUserHasArtistAndAllRulesPass()
     {
         // Arrange
-        artistModule.Setup(m => m.GetIdByUserIdAsync(venueOwnerId)).ReturnsAsync(ArtistId);
+        artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync(ArtistId);
         opportunityRepository.Setup(r => r.GetByIdAsync(OpportunityId)).ReturnsAsync(Opportunity(FuturePeriod));
 
         // Act
