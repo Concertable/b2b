@@ -1,5 +1,7 @@
 using Concertable.B2B.Venue.Api.Mappers;
 using Concertable.B2B.Venue.Api.Responses;
+using Concertable.B2B.Tenant.Api.Authorization;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Api.Authorization;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Application.Requests;
@@ -24,7 +26,7 @@ internal sealed class VenueController : ControllerBase
         return Ok((await venueService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
-    [VenueManager]
+    [HasPermission(Permissions.OperationsView, TenantType.Venue)]
     [HttpGet("user")]
     public async Task<ActionResult<VenueDetailsResponse>> GetDetailsForCurrentUser()
     {
@@ -32,7 +34,7 @@ internal sealed class VenueController : ControllerBase
         return venue is null ? NoContent() : Ok(venue.ToDetailsResponse());
     }
 
-    [VenueManager]
+    [HasPermission(Permissions.ProfileEdit, TenantType.Venue)]
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateVenueRequest request)
     {
@@ -40,7 +42,7 @@ internal sealed class VenueController : ControllerBase
         return CreatedAtAction(nameof(GetDetailsById), new { Id = venueDto.Id }, venueDto);
     }
 
-    [VenueManager]
+    [HasPermission(Permissions.ProfileEdit, TenantType.Venue)]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] UpdateVenueRequest request)
     {

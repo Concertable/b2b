@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.User.Api.Authorization;
+using Concertable.B2B.Tenant.Api.Authorization;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
@@ -33,7 +34,7 @@ internal sealed class OpportunityController : ControllerBase
         return Ok(mapper.ToResponse(opportunity));
     }
 
-    [VenueManager]
+    [HasPermission(Permissions.OpportunitiesManage, TenantType.Venue)]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] OpportunityRequest request)
     {
@@ -41,7 +42,7 @@ internal sealed class OpportunityController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = opportunity.Id }, mapper.ToResponse(opportunity));
     }
 
-    [VenueManager]
+    [HasPermission(Permissions.OpportunitiesManage, TenantType.Venue)]
     [HttpPost("bulk")]
     public async Task<IActionResult> CreateMultiple([FromBody] IEnumerable<OpportunityRequest> requests)
     {
@@ -56,7 +57,7 @@ internal sealed class OpportunityController : ControllerBase
         return Ok(mapper.ToResponses(opportunities));
     }
 
-    [VenueManager]
+    [HasPermission(Permissions.OpportunitiesManage, TenantType.Venue)]
     [HttpPut("/api/Venue/{venueId:int}/opportunities")]
     public async Task<IActionResult> Update(int venueId, [FromBody] IEnumerable<OpportunityRequest> desired)
     {

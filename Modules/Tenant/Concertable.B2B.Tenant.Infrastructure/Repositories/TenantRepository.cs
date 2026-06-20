@@ -7,6 +7,13 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
 {
     public TenantRepository(TenantDbContext context) : base(context) { }
 
-    public Task<TenantMembershipEntity?> GetMembershipByUserIdAsync(Guid userId, CancellationToken ct = default) =>
-        context.Memberships.FirstOrDefaultAsync(m => m.UserId == userId, ct);
+    public Task<ActiveMembership?> GetActiveMembershipAsync(Guid userId, CancellationToken ct = default) =>
+        context.Memberships
+            .Where(m => m.UserId == userId)
+            .Join(
+                context.Tenants,
+                m => m.TenantId,
+                t => t.Id,
+                (m, t) => new ActiveMembership(m.TenantId, m.Role, t.Type))
+            .FirstOrDefaultAsync(ct);
 }

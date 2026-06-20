@@ -1,9 +1,7 @@
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
-using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -21,9 +19,9 @@ namespace Concertable.B2B.Tenant.IntegrationTests;
 [Collection("Integration")]
 public sealed class TenantProvisioningTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly TenantApiFixture fixture;
 
-    public TenantProvisioningTests(ApiFixture fixture, ITestOutputHelper output)
+    public TenantProvisioningTests(TenantApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -50,15 +48,12 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         var userId = Guid.NewGuid();
         await ProvisionAsync(new CredentialRegisteredEvent(userId, $"{Guid.NewGuid():N}@test.com", clientId));
 
-        using var scope = fixture.Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<ITenantRepository>();
-
-        var membership = await repository.GetMembershipByUserIdAsync(userId);
+        var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == userId);
         Assert.NotNull(membership);
         Assert.Equal(TenantRole.Owner, membership!.Role);
         Assert.Null(membership.InvitedByUserId);
 
-        var tenant = await repository.GetByIdAsync(membership.TenantId);
+        var tenant = await fixture.Tenants.SingleOrDefaultAsync(t => t.Id == membership.TenantId);
         Assert.NotNull(tenant);
         Assert.Equal(expected, tenant!.Type);
         Assert.Equal(userId, tenant.CreatedByUserId);
@@ -70,9 +65,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         var userId = Guid.NewGuid();
         await ProvisionAsync(new CredentialRegisteredEvent(userId, "customer@test.com", ClientIds.CustomerWeb));
 
-        using var scope = fixture.Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<ITenantRepository>();
-        Assert.Null(await repository.GetMembershipByUserIdAsync(userId));
+        Assert.False(await fixture.Memberships.AnyAsync(m => m.UserId == userId));
     }
 
     [Fact]
@@ -85,10 +78,8 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         // UserId) index would throw on a duplicate insert, so a clean run is itself the dedup assertion.
         await ProvisionAsync(new CredentialRegisteredEvent(manager.Id, manager.Email, ClientIds.VenueWeb));
 
-        using var scope = fixture.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<TenantDbContext>();
-        var ownerCount = await context.Memberships.CountAsync(m => m.UserId == manager.Id && m.Role == TenantRole.Owner);
-        var tenantCount = await context.Tenants.CountAsync(t => t.CreatedByUserId == manager.Id);
+        var ownerCount = await fixture.Memberships.CountAsync(m => m.UserId == manager.Id && m.Role == TenantRole.Owner);
+        var tenantCount = await fixture.Tenants.CountAsync(t => t.CreatedByUserId == manager.Id);
 
         Assert.Equal(1, ownerCount);
         Assert.Equal(1, tenantCount);

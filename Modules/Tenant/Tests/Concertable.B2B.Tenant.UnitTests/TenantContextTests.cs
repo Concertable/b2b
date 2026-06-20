@@ -1,6 +1,5 @@
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.Tenant.Infrastructure.Services;
 using Concertable.Kernel.Identity;
 using Microsoft.AspNetCore.Http;
@@ -23,16 +22,29 @@ public sealed class TenantContextTests
     private void WithoutHttpRequest() =>
         httpContextAccessor.SetupGet(h => h.HttpContext).Returns((HttpContext?)null);
 
+    /// <summary>Resolve a context backed by a single membership of the given role + persona.</summary>
+    private async Task<IMembershipContext> ResolvedMembership(TenantRole role, TenantType type)
+    {
+        var userId = Guid.NewGuid();
+        WithHttpRequest();
+        currentUser.SetupGet(u => u.Id).Returns(userId);
+        repository.Setup(r => r.GetActiveMembershipAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ActiveMembership(Guid.NewGuid(), role, type));
+
+        var context = CreateContext();
+        await context.ResolveAsync();
+        return context;
+    }
+
     [Fact]
-    public async Task ResolveAsync_AuthenticatedUserWithMembership_ResolvesThatTenant()
+    public async Task ResolveAsync_AuthenticatedUserWithMembership_ResolvesTenantAndRole()
     {
         var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
-        var membership = TenantMembershipEntity.Create(tenantId, userId, TenantRole.Owner, invitedBy: null, DateTime.UtcNow);
         WithHttpRequest();
         currentUser.SetupGet(u => u.Id).Returns(userId);
-        repository.Setup(r => r.GetMembershipByUserIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(membership);
+        repository.Setup(r => r.GetActiveMembershipAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ActiveMembership(tenantId, TenantRole.Owner, TenantType.Venue));
 
         var context = CreateContext();
         await context.ResolveAsync();
@@ -41,6 +53,7 @@ public sealed class TenantContextTests
         Assert.Equal(tenantId, ctx.TenantId);
         Assert.True(ctx.HasTenant);
         Assert.False(ctx.IsHost);
+        Assert.Equal(TenantRole.Owner, ((IMembershipContext)context).Role);
     }
 
     [Fact]
@@ -57,7 +70,7 @@ public sealed class TenantContextTests
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
         repository.Verify(
-            r => r.GetMembershipByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r => r.GetActiveMembershipAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -75,18 +88,18 @@ public sealed class TenantContextTests
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
         repository.Verify(
-            r => r.GetMembershipByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r => r.GetActiveMembershipAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
     [Fact]
-    public async Task ResolveAsync_AuthenticatedUserWithoutMembership_NotHostAndFailsClosed()
+    public async Task ResolveAsync_AuthenticatedUserWithoutMembership_FailsClosedAndRoleIsNull()
     {
         var userId = Guid.NewGuid();
         WithHttpRequest();
         currentUser.SetupGet(u => u.Id).Returns(userId);
-        repository.Setup(r => r.GetMembershipByUserIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((TenantMembershipEntity?)null);
+        repository.Setup(r => r.GetActiveMembershipAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ActiveMembership?)null);
 
         var context = CreateContext();
         await context.ResolveAsync();
@@ -95,5 +108,51 @@ public sealed class TenantContextTests
         Assert.False(ctx.IsHost);
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
+
+        var membership = (IMembershipContext)context;
+        Assert.Null(membership.Role);
+        Assert.False(membership.HasPermission(Permissions.OperationsView));
+    }
+
+    [Fact]
+    public async Task HasPermission_OwnerOfVenue_GrantsVenueScopedPermission()
+    {
+        var membership = await ResolvedMembership(TenantRole.Owner, TenantType.Venue);
+
+        Assert.True(membership.HasPermission(Permissions.ProfileEdit, TenantType.Venue));
+        Assert.True(membership.HasPermission(Permissions.OpportunitiesManage, TenantType.Venue));
+    }
+
+    [Fact]
+    public async Task HasPermission_WrongPersona_Denies_RightPersona_Grants()
+    {
+        var membership = await ResolvedMembership(TenantRole.Owner, TenantType.Artist);
+
+        // Owner holds the permission in its bundle, but the active tenant's persona must match the call-site.
+        Assert.False(membership.HasPermission(Permissions.ProfileEdit, TenantType.Venue));
+        Assert.True(membership.HasPermission(Permissions.ProfileEdit, TenantType.Artist));
+        Assert.True(membership.HasPermission(Permissions.ApplicationsSubmit, TenantType.Artist));
+        Assert.False(membership.HasPermission(Permissions.ApplicationsDecide, TenantType.Venue));
+    }
+
+    [Fact]
+    public async Task HasPermission_Finance_GrantsPayouts_DeniesProfileEdit()
+    {
+        var membership = await ResolvedMembership(TenantRole.Finance, TenantType.Venue);
+
+        Assert.True(membership.HasPermission(Permissions.PayoutsManage));
+        Assert.True(membership.HasPermission(Permissions.SettlementTrigger));
+        Assert.False(membership.HasPermission(Permissions.ProfileEdit));
+        Assert.False(membership.HasPermission(Permissions.OpportunitiesManage, TenantType.Venue));
+    }
+
+    [Fact]
+    public async Task HasPermission_Manager_RunsBusiness_ButNotPayouts()
+    {
+        var membership = await ResolvedMembership(TenantRole.Manager, TenantType.Venue);
+
+        Assert.True(membership.HasPermission(Permissions.OpportunitiesManage, TenantType.Venue));
+        Assert.True(membership.HasPermission(Permissions.ConcertsManage, TenantType.Venue));
+        Assert.False(membership.HasPermission(Permissions.PayoutsManage));
     }
 }

@@ -24,7 +24,7 @@ internal sealed class TenantService : ITenantService
 
     public async Task<Guid?> GetTenantIdByUserIdAsync(Guid userId, CancellationToken ct = default)
     {
-        var membership = await repository.GetMembershipByUserIdAsync(userId, ct);
+        var membership = await repository.GetActiveMembershipAsync(userId, ct);
         return membership?.TenantId;
     }
 
