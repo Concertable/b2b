@@ -56,12 +56,35 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
         if (currentUser.Id is not { } userId)
             return;
 
-        var membership = await repository.GetActiveMembershipAsync(userId, ct);
+        var membership = await ResolveMembershipAsync(userId, ct);
         if (membership is null)
             return;
 
         tenantId = membership.TenantId;
         role = membership.Role;
         tenantType = membership.Type;
+    }
+
+    /// <summary>
+    /// An <c>X-Tenant-Id</c> header names the acting tenant and is validated against the caller's memberships —
+    /// a header for a tenant they don't belong to resolves nothing, so the request fails closed. With no header,
+    /// a sole membership is the default (keeps every current single-tenant client green); a user with several
+    /// must name one, so the request fails closed rather than guess. The switcher sends the header once
+    /// multi-membership exists (Phase 6).
+    /// </summary>
+    private async Task<UserMembership?> ResolveMembershipAsync(Guid userId, CancellationToken ct)
+    {
+        if (TryGetHeaderTenantId(out var headerTenantId))
+            return await repository.GetMembershipAsync(userId, headerTenantId, ct);
+
+        var memberships = await repository.GetMembershipsAsync(userId, ct);
+        return memberships is [var sole] ? sole : null;
+    }
+
+    private bool TryGetHeaderTenantId(out Guid tenantId)
+    {
+        tenantId = default;
+        return httpContextAccessor.HttpContext?.Request.Headers.TryGetValue(TenantHeaders.TenantId, out var values) is true
+            && Guid.TryParse(values.ToString(), out tenantId);
     }
 }

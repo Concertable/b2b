@@ -12,24 +12,32 @@ public sealed class TenantContextTests
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<IHttpContextAccessor> httpContextAccessor = new();
     private readonly Mock<ITenantRepository> repository = new();
+    private readonly DefaultHttpContext httpContext = new();
 
     private TenantContext CreateContext() =>
         new(currentUser.Object, httpContextAccessor.Object, repository.Object);
 
     private void WithHttpRequest() =>
-        httpContextAccessor.SetupGet(h => h.HttpContext).Returns(new Mock<HttpContext>().Object);
+        httpContextAccessor.SetupGet(h => h.HttpContext).Returns(httpContext);
 
     private void WithoutHttpRequest() =>
         httpContextAccessor.SetupGet(h => h.HttpContext).Returns((HttpContext?)null);
 
-    /// <summary>Resolve a context backed by a single membership of the given role + persona.</summary>
+    private void WithTenantHeader(string value) =>
+        httpContext.Request.Headers[TenantHeaders.TenantId] = value;
+
+    private static UserMembership Membership(
+        Guid tenantId, TenantRole role = TenantRole.Owner, TenantType type = TenantType.Venue, Guid? invitedBy = null) =>
+        new(tenantId, "Acme Ltd", type, role, invitedBy);
+
+    /// <summary>Resolve a context backed by a single membership of the given role + persona (no header → default).</summary>
     private async Task<IMembershipContext> ResolvedMembership(TenantRole role, TenantType type)
     {
         var userId = Guid.NewGuid();
         WithHttpRequest();
         currentUser.SetupGet(u => u.Id).Returns(userId);
-        repository.Setup(r => r.GetActiveMembershipAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ActiveMembership(Guid.NewGuid(), role, type));
+        repository.Setup(r => r.GetMembershipsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Membership(Guid.NewGuid(), role, type)]);
 
         var context = CreateContext();
         await context.ResolveAsync();
@@ -37,14 +45,14 @@ public sealed class TenantContextTests
     }
 
     [Fact]
-    public async Task ResolveAsync_AuthenticatedUserWithMembership_ResolvesTenantAndRole()
+    public async Task ResolveAsync_SingleMembershipNoHeader_DefaultsToIt()
     {
         var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
         WithHttpRequest();
         currentUser.SetupGet(u => u.Id).Returns(userId);
-        repository.Setup(r => r.GetActiveMembershipAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ActiveMembership(tenantId, TenantRole.Owner, TenantType.Venue));
+        repository.Setup(r => r.GetMembershipsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Membership(tenantId, TenantRole.Owner, TenantType.Venue)]);
 
         var context = CreateContext();
         await context.ResolveAsync();
@@ -54,6 +62,84 @@ public sealed class TenantContextTests
         Assert.True(ctx.HasTenant);
         Assert.False(ctx.IsHost);
         Assert.Equal(TenantRole.Owner, ((IMembershipContext)context).Role);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_MultipleMembershipsNoHeader_FailsClosed()
+    {
+        var userId = Guid.NewGuid();
+        WithHttpRequest();
+        currentUser.SetupGet(u => u.Id).Returns(userId);
+        repository.Setup(r => r.GetMembershipsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Membership(Guid.NewGuid()), Membership(Guid.NewGuid())]);
+
+        var context = CreateContext();
+        await context.ResolveAsync();
+
+        // No header + several memberships: the caller must name one, so the request fails closed (sees nothing).
+        ITenantContext ctx = context;
+        Assert.Null(ctx.TenantId);
+        Assert.False(ctx.HasTenant);
+        Assert.Null(((IMembershipContext)context).Role);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ValidHeader_ResolvesThatTenant_WithoutListingMemberships()
+    {
+        var userId = Guid.NewGuid();
+        var headerTenant = Guid.NewGuid();
+        WithHttpRequest();
+        WithTenantHeader(headerTenant.ToString());
+        currentUser.SetupGet(u => u.Id).Returns(userId);
+        repository.Setup(r => r.GetMembershipAsync(userId, headerTenant, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Membership(headerTenant, TenantRole.Manager, TenantType.Artist));
+
+        var context = CreateContext();
+        await context.ResolveAsync();
+
+        ITenantContext ctx = context;
+        Assert.Equal(headerTenant, ctx.TenantId);
+        Assert.Equal(TenantRole.Manager, ((IMembershipContext)context).Role);
+        Assert.True(((IMembershipContext)context).HasPermission(Permissions.ApplicationsSubmit, TenantType.Artist));
+        repository.Verify(
+            r => r.GetMembershipsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_HeaderForUnownedTenant_FailsClosed()
+    {
+        var userId = Guid.NewGuid();
+        var headerTenant = Guid.NewGuid();
+        WithHttpRequest();
+        WithTenantHeader(headerTenant.ToString());
+        currentUser.SetupGet(u => u.Id).Returns(userId);
+        repository.Setup(r => r.GetMembershipAsync(userId, headerTenant, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserMembership?)null);
+
+        var context = CreateContext();
+        await context.ResolveAsync();
+
+        ITenantContext ctx = context;
+        Assert.Null(ctx.TenantId);
+        Assert.False(ctx.HasTenant);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_MalformedHeader_TreatedAsAbsent_DefaultsToSoleMembership()
+    {
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+        WithHttpRequest();
+        WithTenantHeader("not-a-guid");
+        currentUser.SetupGet(u => u.Id).Returns(userId);
+        repository.Setup(r => r.GetMembershipsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Membership(tenantId)]);
+
+        var context = CreateContext();
+        await context.ResolveAsync();
+
+        Assert.Equal(tenantId, ((ITenantContext)context).TenantId);
     }
 
     [Fact]
@@ -70,7 +156,7 @@ public sealed class TenantContextTests
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
         repository.Verify(
-            r => r.GetActiveMembershipAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r => r.GetMembershipsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -88,7 +174,7 @@ public sealed class TenantContextTests
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
         repository.Verify(
-            r => r.GetActiveMembershipAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r => r.GetMembershipsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -98,8 +184,8 @@ public sealed class TenantContextTests
         var userId = Guid.NewGuid();
         WithHttpRequest();
         currentUser.SetupGet(u => u.Id).Returns(userId);
-        repository.Setup(r => r.GetActiveMembershipAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ActiveMembership?)null);
+        repository.Setup(r => r.GetMembershipsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         var context = CreateContext();
         await context.ResolveAsync();
