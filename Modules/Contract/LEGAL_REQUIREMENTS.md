@@ -41,8 +41,8 @@ connected accounts, never become Concertable's own revenue (only the platform fe
 The ticket-sale posture is a *Customer-service* question and is decided in that doc — not
 here, because standalone B2B has no fan ticket sales.
 
-This posture anchors the tenancy model — see [`../../TENANCY_DESIGN.md`](../../TENANCY_DESIGN.md).
-The legal/VAT entity *is* the tenant.
+This posture anchors the tenancy model: the legal/VAT entity *is* the tenant (realized in the
+Tenant module — `TenantEntity` + the `Compliance` value object).
 
 ---
 
@@ -139,9 +139,8 @@ venue.
 gated on a "venue is self-licensed for PRS" flag, rate from config (default to current
 tariff, not a literal), recorded as a separate line item deducted from gross door before the
 split. Low priority — many venues handle PRS entirely off-platform. The self-licensed flag +
-rate live on the **tenant configuration surface**, not as constants — see
-[`../../TENANCY_DESIGN.md`](../../TENANCY_DESIGN.md) §5 (PRS is the motivating example there,
-but it's one of several per-tenant settings).
+rate live on the **tenant configuration surface**, not as constants (PRS is the motivating
+example, but it's one of several per-tenant settings).
 
 ## 6. Cancellation + escrow refund (venue↔artist) — ABSENT
 **Legal basis:** contract.
@@ -185,7 +184,7 @@ two together are the full evidential record.
 ## Suggested sequencing
 
 1. **Item 0** (posture) — done; accountant sign-off before launch.
-2. **Tenancy / legal-entity model** ([`../../TENANCY_DESIGN.md`](../../TENANCY_DESIGN.md)) +
+2. **Tenancy / legal-entity model** (shipped — Tenant module) +
    **item 3** (VAT status) — unblocks the rest.
 3. **Item 2** (booking agreement + e-signature) — backbone for items 4/6/7/9; ship the
    click-wrap tier early (it also gives you item 9's terms record for free).
