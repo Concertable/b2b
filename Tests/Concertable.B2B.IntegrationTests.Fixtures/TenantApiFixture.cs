@@ -19,10 +19,15 @@ public sealed class TenantApiFixture : ApiFixture
 
     /// <summary>Grants <paramref name="userId"/> an Owner membership in <paramref name="tenantId"/> — lets a test
     /// arrange the multi-membership case the seed graph never holds (every seeded operator owns one tenant).</summary>
-    public async Task AddOwnerMembershipAsync(Guid tenantId, Guid userId)
+    public Task AddOwnerMembershipAsync(Guid tenantId, Guid userId) =>
+        AddMembershipAsync(tenantId, userId, TenantRole.Owner);
+
+    /// <summary>Grants <paramref name="userId"/> a membership of <paramref name="role"/> in <paramref name="tenantId"/>
+    /// — lets a test arrange any active role (e.g. a non-payout role to assert the permission gate).</summary>
+    public async Task AddMembershipAsync(Guid tenantId, Guid userId, TenantRole role)
     {
         tenantDb.Memberships.Add(
-            TenantMembershipEntity.Create(tenantId, userId, TenantRole.Owner, invitedBy: null, DateTime.UtcNow));
+            TenantMembershipEntity.Create(tenantId, userId, role, invitedBy: null, DateTime.UtcNow));
         await tenantDb.SaveChangesAsync();
     }
 
