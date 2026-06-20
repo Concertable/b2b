@@ -32,6 +32,9 @@ internal sealed class TenantDevSeeder : IDevSeeder
             foreach (var tenant in seed.Tenants)
                 tenant.ClearDomainEvents();
             context.Tenants.AddRange(seed.Tenants);
+            // Founding Owner memberships ride alongside tenants (same direct-insert exception). The provisioning
+            // handler re-announces idempotently over both — it finds these rows and skips re-creating them.
+            context.Memberships.AddRange(seed.Memberships);
             await context.SaveChangesAsync(ct);
         });
 }

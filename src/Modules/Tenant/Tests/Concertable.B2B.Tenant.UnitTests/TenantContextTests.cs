@@ -1,4 +1,5 @@
 using Concertable.B2B.Tenant.Application.Interfaces;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.Tenant.Infrastructure.Services;
 using Concertable.Kernel.Identity;
@@ -23,20 +24,21 @@ public sealed class TenantContextTests
         httpContextAccessor.SetupGet(h => h.HttpContext).Returns((HttpContext?)null);
 
     [Fact]
-    public async Task ResolveAsync_AuthenticatedUserWithTenant_ResolvesThatTenant()
+    public async Task ResolveAsync_AuthenticatedUserWithMembership_ResolvesThatTenant()
     {
         var userId = Guid.NewGuid();
-        var tenant = TenantEntity.Create("Acme Ltd", userId, DateTime.UtcNow);
+        var tenantId = Guid.NewGuid();
+        var membership = TenantMembershipEntity.Create(tenantId, userId, TenantRole.Owner, invitedBy: null, DateTime.UtcNow);
         WithHttpRequest();
         currentUser.SetupGet(u => u.Id).Returns(userId);
-        repository.Setup(r => r.GetByCreatedByUserIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(tenant);
+        repository.Setup(r => r.GetMembershipByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(membership);
 
         var context = CreateContext();
         await context.ResolveAsync();
 
         ITenantContext ctx = context;
-        Assert.Equal(tenant.Id, ctx.TenantId);
+        Assert.Equal(tenantId, ctx.TenantId);
         Assert.True(ctx.HasTenant);
         Assert.False(ctx.IsHost);
     }
@@ -55,7 +57,7 @@ public sealed class TenantContextTests
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
         repository.Verify(
-            r => r.GetByCreatedByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r => r.GetMembershipByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -73,18 +75,18 @@ public sealed class TenantContextTests
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
         repository.Verify(
-            r => r.GetByCreatedByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r => r.GetMembershipByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
     [Fact]
-    public async Task ResolveAsync_AuthenticatedUserWithoutTenant_NotHostAndFailsClosed()
+    public async Task ResolveAsync_AuthenticatedUserWithoutMembership_NotHostAndFailsClosed()
     {
         var userId = Guid.NewGuid();
         WithHttpRequest();
         currentUser.SetupGet(u => u.Id).Returns(userId);
-        repository.Setup(r => r.GetByCreatedByUserIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((TenantEntity?)null);
+        repository.Setup(r => r.GetMembershipByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TenantMembershipEntity?)null);
 
         var context = CreateContext();
         await context.ResolveAsync();
