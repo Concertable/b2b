@@ -3,20 +3,22 @@ using Concertable.Kernel.Identity;
 namespace Concertable.B2B.Web.Middleware;
 
 /// <summary>
-/// Resolves the current request's tenant once, after authentication, so EF query filters read a populated
-/// <see cref="ITenantContext"/> synchronously at translation time. Runs after the static-file middleware, so
-/// only requests that reach the API pay the (memoized, single) lookup; it is a no-op for anonymous callers.
+/// Resolves the current request's tenant once, between authentication and authorization, so it is the single
+/// resolution point: EF query filters and the <c>PermissionAuthorizationHandler</c> both read a populated
+/// <see cref="ITenantContext"/> (the handler's own memoized <c>ResolveAsync</c> then no-ops). The lookup is
+/// memoized and a no-op for anonymous/host callers, so an unauthenticated request (static files included) pays
+/// nothing.
 /// </summary>
-internal sealed class TenantResolutionMiddleware
+internal sealed class TenantResolutionMiddleware : IMiddleware
 {
-    private readonly RequestDelegate next;
+    private readonly ITenantResolver tenantResolver;
 
-    public TenantResolutionMiddleware(RequestDelegate next)
+    public TenantResolutionMiddleware(ITenantResolver tenantResolver)
     {
-        this.next = next;
+        this.tenantResolver = tenantResolver;
     }
 
-    public async Task InvokeAsync(HttpContext context, ITenantResolver tenantResolver)
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
         await tenantResolver.ResolveAsync(context.RequestAborted);
         await next(context);
