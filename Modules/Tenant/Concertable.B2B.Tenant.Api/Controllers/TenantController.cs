@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Tenant.Api.Controllers;
 
 /// <summary>
-/// The user-facing surface of the tenant — "Organization" in UI/API vocabulary (see
-/// <c>TENANT_SCOPING_PLAN.md</c> §1). The caller's own tenant is resolved from <c>ITenantContext</c>;
+/// The user-facing surface of the tenant — "Organization" in UI/API vocabulary. The caller's own
+/// tenant is resolved from <c>ITenantContext</c>;
 /// a principal without a tenant gets nothing (GET) or 403 (PUT).
 /// </summary>
 [ApiController]
