@@ -68,7 +68,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<IEnumerable<ApplicationDto>> GetPendingForArtistAsync()
     {
-        var artistId = await artistModule.GetIdByUserIdAsync(currentUser.GetId())
+        var artistId = await artistModule.GetIdForCurrentTenantAsync()
             ?? throw new ForbiddenException("You must have an Artist account");
         var applications = await repository.GetPendingByArtistIdAsync(artistId);
         return await mapper.ToDtosAsync(applications);
@@ -76,7 +76,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<IEnumerable<ApplicationDto>> GetRecentDeniedForArtistAsync()
     {
-        var artistId = await artistModule.GetIdByUserIdAsync(currentUser.GetId())
+        var artistId = await artistModule.GetIdForCurrentTenantAsync()
             ?? throw new ForbiddenException("You must have an Artist account");
         var applications = await repository.GetRecentDeniedByArtistIdAsync(artistId);
         return await mapper.ToDtosAsync(applications);
@@ -105,7 +105,7 @@ internal sealed class ApplicationService : IApplicationService
     }
 
     private async Task<int> ResolveArtistIdAsync() =>
-        await artistModule.GetIdByUserIdAsync(currentUser.GetId())
+        await artistModule.GetIdForCurrentTenantAsync()
             ?? throw new ForbiddenException("You must create an Artist account before you apply for a concert opportunity");
 
     private async Task<ManagerDto> ValidateAndLoadOwnerAsync(int opportunityId, int artistId)

@@ -9,20 +9,13 @@ internal sealed class ArtistRepository : TenantScopedRepository<ArtistEntity>, I
 {
     public ArtistRepository(ArtistDbContext context, ITenantContext tenant) : base(context, tenant) { }
 
-    public async Task<ArtistEntity?> GetByUserIdAsync(Guid id) =>
-        await context.Artists
-            .Where(a => a.UserId == id)
-            .FirstOrDefaultAsync();
-
-    public async Task<int?> GetIdByUserIdAsync(Guid id) =>
-        await context.Artists.AsNoTracking()
-            .Where(a => a.UserId == id)
+    public async Task<int?> GetIdForCurrentTenantAsync() =>
+        await CurrentTenant.AsNoTracking()
             .Select(a => (int?)a.Id)
             .FirstOrDefaultAsync();
 
-    public async Task<ArtistDetails?> GetDetailsByUserIdAsync(Guid userId) =>
-        await context.Artists.AsNoTracking()
-            .Where(a => a.UserId == userId)
+    public async Task<ArtistDetails?> GetDetailsForCurrentTenantAsync() =>
+        await CurrentTenant.AsNoTracking()
             .ToDetails(context.ArtistRatingProjections.AsNoTracking())
             .FirstOrDefaultAsync();
 }
