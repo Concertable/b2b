@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Concertable.B2B.Tenant.Infrastructure.Events;
 
 /// <summary>
-/// Provisions a tenant when a venue or artist manager registers — the one-tenant-per-operator rule (see
-/// <c>TENANT_SCOPING_PLAN</c>). Idempotent per <see cref="CredentialRegisteredEvent"/> via the inbox. This is the
+/// Provisions a tenant when a venue or artist manager registers — the one-tenant-per-operator rule.
+/// Idempotent per <see cref="CredentialRegisteredEvent"/> via the inbox. This is the
 /// single, reliable <c>TenantCreatedEvent</c> trigger: it fires after the ASB subscriptions exist (registration
 /// events arrive once the listener is up). Creates the tenant if absent (<c>Create</c> raises the event); a
 /// dev/E2E-seeded tenant is already present with its create event suppressed at seed time, so this re-raises it
