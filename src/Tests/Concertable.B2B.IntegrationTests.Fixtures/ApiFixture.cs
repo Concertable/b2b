@@ -60,6 +60,7 @@ public class ApiFixture : IAsyncLifetime
     public MockStripeApiClient StripeApiClient { get; } = new MockStripeApiClient();
     public IMockEmailSender EmailSender { get; } = new MockEmailSender();
     public IMockManagerPaymentClient ManagerPaymentClient { get; }
+    public MockPayoutAccountClient PayoutAccountClient { get; } = new();
 
     public ApiFixture()
     {
@@ -125,6 +126,7 @@ public class ApiFixture : IAsyncLifetime
                         .UseSeedingSupport(sp));
                 services.AddSingleton<IManagerPaymentClient>(ManagerPaymentClient);
                 services.AddScoped<IEscrowClient, MockEscrowClient>();
+                services.AddSingleton<IPayoutAccountClient>(PayoutAccountClient);
 
                 services.AddSingleton<IWebhookSimulator, MockWebhookSimulator>();
                 services.Replace(ServiceDescriptor.Singleton<IHttpClientFactory>(_ => new WebApplicationHttpClientFactory(factory)));

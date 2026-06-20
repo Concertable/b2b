@@ -16,7 +16,9 @@ export default defineConfig({
     'import.meta.env.VITE_OIDC_SCOPE': JSON.stringify('openid profile roles concertable.b2b.api offline_access'),
     'import.meta.env.VITE_API_URL': JSON.stringify('https://localhost:7086/api'),
     'import.meta.env.VITE_BASE_URL': JSON.stringify('https://localhost:7086'),
-    'import.meta.env.VITE_PAYMENT_API_URL': JSON.stringify('https://localhost:7088/api'),
+    // Payout calls go through B2B's own backend (the tenant-scoped StripeAccount proxy), not the Payment
+    // host — B2B resolves the owner as the active tenant. Customer still points straight at Payment (7088).
+    'import.meta.env.VITE_PAYMENT_API_URL': JSON.stringify('https://localhost:7086/api'),
   },
   resolve: {
     alias: [

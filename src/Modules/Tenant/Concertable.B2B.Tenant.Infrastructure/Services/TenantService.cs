@@ -23,9 +23,6 @@ internal sealed class TenantService : ITenantService
         return tenant?.ToDto();
     }
 
-    public Task<Guid?> GetTenantIdByUserIdAsync(Guid userId, CancellationToken ct = default) =>
-        repository.GetDefaultTenantIdAsync(userId, ct);
-
     public async Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default)
     {
         var memberships = await repository.GetMembershipsAsync(userId, ct);
