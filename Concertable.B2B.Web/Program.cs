@@ -183,6 +183,8 @@ services.AddValidation();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+builder.Services.AddScoped<TenantResolutionMiddleware>();
+
 if (builder.Environment.IsEnvironment("E2E"))
     services.AddSingleton<StripeE2EAccountResolver>();
 
@@ -191,10 +193,10 @@ var app = builder.Build();
 app.UseExceptionHandler();
 app.UseCors();
 app.UseAuthentication();
+app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.MapDefaultEndpoints();
 app.MapControllers();

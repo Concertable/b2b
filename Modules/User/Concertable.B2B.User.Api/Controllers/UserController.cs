@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +13,14 @@ internal sealed class UserController : ControllerBase
     private readonly IUserService userService;
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
+    private readonly ITenantModule tenantModule;
 
-    public UserController(IUserService userService, ICurrentUser currentUser, IUserModule userModule)
+    public UserController(IUserService userService, ICurrentUser currentUser, IUserModule userModule, ITenantModule tenantModule)
     {
         this.userService = userService;
         this.currentUser = currentUser;
         this.userModule = userModule;
+        this.tenantModule = tenantModule;
     }
 
     [HttpPut("location")]
@@ -32,6 +35,8 @@ internal sealed class UserController : ControllerBase
     {
         var user = await userModule.GetByIdAsync(currentUser.GetId());
         if (user is null) return Unauthorized();
-        return Ok(user);
+
+        var memberships = await tenantModule.GetMembershipsAsync(currentUser.GetId());
+        return Ok(user with { Memberships = memberships });
     }
 }
