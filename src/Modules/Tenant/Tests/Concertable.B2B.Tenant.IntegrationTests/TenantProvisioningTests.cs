@@ -73,9 +73,9 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
     {
         var manager = fixture.SeedState.VenueManager1;
 
-        // The seeder already created this operator's tenant + Owner membership; re-running the handler (as the
-        // bus would on the real CredentialRegisteredEvent) must not duplicate either — the unique (TenantId,
-        // UserId) index would throw on a duplicate insert, so a clean run is itself the dedup assertion.
+        /* The seeder already created this operator's tenant + Owner membership; re-running the handler (as the
+           bus would on the real CredentialRegisteredEvent) must not duplicate either — the unique (TenantId,
+           UserId) index would throw on a duplicate insert, so a clean run is itself the dedup assertion. */
         await ProvisionAsync(new CredentialRegisteredEvent(manager.Id, manager.Email, ClientIds.VenueWeb));
 
         var ownerCount = await fixture.Memberships.CountAsync(m => m.UserId == manager.Id && m.Role == TenantRole.Owner);

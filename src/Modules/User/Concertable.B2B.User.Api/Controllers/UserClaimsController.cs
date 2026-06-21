@@ -18,10 +18,10 @@ internal sealed class UserClaimsController : ControllerBase
         this.logger = logger;
     }
 
-    // Identity-only: B2B no longer mints `owner`. Acting authority is the request-scoped active tenant,
-    // resolved per request from membership (X-Tenant-Id) — one claim can't represent a multi-tenant user,
-    // and B2B's payout proxy now passes the tenant id to Payment explicitly (USER_MODEL_PLAN Phase 5).
-    // `role` survives until Phase 7.
+    /* Identity-only: B2B no longer mints `owner`. Acting authority is the request-scoped active tenant,
+       resolved per request from membership (X-Tenant-Id) — one claim can't represent a multi-tenant user,
+       and B2B's payout proxy now passes the tenant id to Payment explicitly (USER_MODEL_PLAN Phase 5).
+       `role` survives until Phase 7. */
     [HttpGet("{sub:guid}/claims")]
     public async Task<ActionResult<ClaimDto[]>> GetClaims(Guid sub)
     {

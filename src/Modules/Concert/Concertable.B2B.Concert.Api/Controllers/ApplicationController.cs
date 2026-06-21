@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Requests;
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.Tenant.Api.Authorization;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
 

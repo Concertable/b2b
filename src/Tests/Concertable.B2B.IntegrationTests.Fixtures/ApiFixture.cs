@@ -113,7 +113,7 @@ public class ApiFixture : IAsyncLifetime
                 services.AddSingleton<IStripeApiClient>(StripeApiClient);
                 services.AddKeyedScoped<IStripePaymentIntentClient, MockStripePaymentIntentClient>(PaymentSession.OnSession);
                 services.AddKeyedScoped<IStripePaymentIntentClient, MockStripePaymentIntentClient>(PaymentSession.OffSession);
-                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient);
+                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient);
                 services.AddSingleton<IEmailSender>(EmailSender);
 
                 services.AddSingleton<PaymentConfigurationProvider>();

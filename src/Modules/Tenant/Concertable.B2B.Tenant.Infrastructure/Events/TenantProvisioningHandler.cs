@@ -53,9 +53,7 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
             context.Tenants.Add(tenant);
         }
         else
-        {
             tenant.Announce();
-        }
 
         var hasOwnerMembership = await context.Memberships
             .AnyAsync(m => m.TenantId == tenant.Id && m.UserId == e.UserId, ct);
