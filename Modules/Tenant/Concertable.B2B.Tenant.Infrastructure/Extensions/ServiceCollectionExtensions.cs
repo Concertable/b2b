@@ -44,16 +44,16 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITenantResolver>(sp => sp.GetRequiredService<TenantContext>());
         services.AddScoped<IMembershipContext>(sp => sp.GetRequiredService<TenantContext>());
 
-        // Persona permission catalog: a keyed strategy resolver over the per-persona catalogs. The facade is
-        // the interface registration; the persona strategies and their shared base register as concrete types.
+        /* Persona permission catalog: a keyed strategy resolver over the per-persona catalogs. The facade is
+           the interface registration; the persona strategies and their shared base register as concrete types. */
         services.AddSingleton<SharedPermissions>();
         services.AddSingleton<VenuePermissions>();
         services.AddSingleton<ArtistPermissions>();
         services.AddSingleton<IPermissionCatalog, PermissionCatalog>();
 
-        // String-permission authorization: a single on-demand policy provider (singleton) builds every
-        // perm:<name> policy and delegates Admin/[Authorize] to the default provider; the scoped handler
-        // reads the membership context. No startup policy loop.
+        /* String-permission authorization: a single on-demand policy provider (singleton) builds every
+           perm:<name> policy and delegates Admin/[Authorize] to the default provider; the scoped handler
+           reads the membership context. No startup policy loop. */
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         services.AddSingleton<IEndpointPersona, EndpointPersona>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
