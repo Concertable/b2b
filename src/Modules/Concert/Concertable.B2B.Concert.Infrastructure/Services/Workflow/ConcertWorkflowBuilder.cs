@@ -11,15 +11,15 @@ internal sealed class ConcertWorkflowBuilder
 {
     private readonly ContractType contractType;
     private readonly IServiceCollection services;
-    private readonly ConcertWorkflowCatalog catalog;
+    private readonly ConcertWorkflowRegistryBuilder registryBuilder;
     private readonly Dictionary<(LifecycleState, Trigger), LifecycleState> transitions = [];
     private Type workflowType = null!;
 
-    public ConcertWorkflowBuilder(ContractType contractType, IServiceCollection services, ConcertWorkflowCatalog catalog)
+    public ConcertWorkflowBuilder(ContractType contractType, IServiceCollection services, ConcertWorkflowRegistryBuilder registryBuilder)
     {
         this.contractType = contractType;
         this.services = services;
-        this.catalog = catalog;
+        this.registryBuilder = registryBuilder;
     }
 
     public ConcertWorkflowBuilder WithApply<TStep>() where TStep : class, IConcertStep
@@ -79,7 +79,7 @@ internal sealed class ConcertWorkflowBuilder
     {
         if (workflowType is null)
             throw new InvalidOperationException($"No workflow registered for {contractType}. Call WithWorkflow<T>().");
-        catalog.Add(contractType, workflowType, new ContractStateMachine(transitions));
+        registryBuilder.Add(contractType, workflowType, new ContractStateMachine(transitions));
     }
 
     private void Add(LifecycleState from, Trigger on, LifecycleState to)
