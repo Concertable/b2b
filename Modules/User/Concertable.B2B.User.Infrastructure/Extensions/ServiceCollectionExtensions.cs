@@ -53,14 +53,13 @@ public static class ServiceCollectionExtensions
 
         services.AddValidatorsFromAssemblyContaining<UpdateLocationRequestValidator>();
 
+        /* Admin alone survives the permission sweep — it gates platform endpoints orthogonal to tenancy
+           (it checks the AdminProfile row by sub, not a tenant membership). Venue/artist authorization is now
+           permission + persona via the Tenant module's PermissionPolicyProvider. */
         services.AddAuthorization(options =>
         {
-            options.AddPolicy("VenueManager", p => p.AddRequirements(new VenueManagerProfileRequirement()));
-            options.AddPolicy("ArtistManager", p => p.AddRequirements(new ArtistManagerProfileRequirement()));
             options.AddPolicy("Admin", p => p.AddRequirements(new AdminProfileRequirement()));
         });
-        services.AddScoped<IAuthorizationHandler, VenueManagerProfileHandler>();
-        services.AddScoped<IAuthorizationHandler, ArtistManagerProfileHandler>();
         services.AddScoped<IAuthorizationHandler, AdminProfileHandler>();
 
         return services;

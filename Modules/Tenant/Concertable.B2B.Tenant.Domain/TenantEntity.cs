@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Events;
 using Concertable.Kernel;
 
@@ -9,6 +10,9 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
 
     public Guid Id { get; private set; }
     public string LegalName { get; private set; } = null!;
+
+    /// <summary>Persona, fixed at provisioning from the registration client-id. Drives UI and permission persona constraints.</summary>
+    public TenantType Type { get; private set; }
     public Guid CreatedByUserId { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
@@ -26,15 +30,17 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     /// Creates a tenant from the operator's registration <paramref name="email"/> — the bare provisioning
     /// state before organization setup. The email seeds the placeholder <see cref="LegalName"/> and is carried
     /// on <see cref="TenantCreatedDomainEvent"/> as the Stripe account email, so downstream services (Payment)
-    /// provision off the resulting <c>TenantCreatedEvent</c>. <paramref name="id"/> lets seeders supply a
-    /// deterministic id (so the event carries it, not a throwaway one); production omits it for a random id.
+    /// provision off the resulting <c>TenantCreatedEvent</c>. <paramref name="type"/> is the persona derived
+    /// from the registration client-id. <paramref name="id"/> lets seeders supply a deterministic id (so the
+    /// event carries it, not a throwaway one); production omits it for a random id.
     /// </summary>
-    public static TenantEntity Create(string email, Guid createdByUserId, DateTime createdAt, Guid? id = null)
+    public static TenantEntity Create(string email, Guid createdByUserId, TenantType type, DateTime createdAt, Guid? id = null)
     {
         var tenant = new TenantEntity
         {
             Id = id ?? Guid.NewGuid(),
             LegalName = email,
+            Type = type,
             CreatedByUserId = createdByUserId,
             CreatedAt = createdAt,
         };

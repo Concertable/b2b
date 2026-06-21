@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Domain.Lifecycle;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
-internal sealed class ConcertWorkflowCatalog
+internal sealed class ConcertWorkflowRegistryBuilder
 {
     public Dictionary<ContractType, Type> WorkflowTypes { get; } = [];
     public Dictionary<ContractType, ContractStateMachine> StateMachines { get; } = [];

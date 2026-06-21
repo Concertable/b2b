@@ -60,6 +60,7 @@ public class ApiFixture : IAsyncLifetime
     public MockStripeApiClient StripeApiClient { get; } = new MockStripeApiClient();
     public IMockEmailSender EmailSender { get; } = new MockEmailSender();
     public IMockManagerPaymentClient ManagerPaymentClient { get; }
+    public MockPayoutAccountClient PayoutAccountClient { get; } = new();
 
     public ApiFixture()
     {
@@ -112,7 +113,7 @@ public class ApiFixture : IAsyncLifetime
                 services.AddSingleton<IStripeApiClient>(StripeApiClient);
                 services.AddKeyedScoped<IStripePaymentIntentClient, MockStripePaymentIntentClient>(PaymentSession.OnSession);
                 services.AddKeyedScoped<IStripePaymentIntentClient, MockStripePaymentIntentClient>(PaymentSession.OffSession);
-                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient);
+                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient);
                 services.AddSingleton<IEmailSender>(EmailSender);
 
                 services.AddSingleton<PaymentConfigurationProvider>();
@@ -125,6 +126,7 @@ public class ApiFixture : IAsyncLifetime
                         .UseSeedingSupport(sp));
                 services.AddSingleton<IManagerPaymentClient>(ManagerPaymentClient);
                 services.AddScoped<IEscrowClient, MockEscrowClient>();
+                services.AddSingleton<IPayoutAccountClient>(PayoutAccountClient);
 
                 services.AddSingleton<IWebhookSimulator, MockWebhookSimulator>();
                 services.Replace(ServiceDescriptor.Singleton<IHttpClientFactory>(_ => new WebApplicationHttpClientFactory(factory)));
@@ -193,6 +195,7 @@ public class ApiFixture : IAsyncLifetime
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
         client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, user.Role.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
         return client;
     }
 
@@ -214,6 +217,7 @@ public class ApiFixture : IAsyncLifetime
         var client = customFactory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
         client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, user.Role.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
         return client;
     }
 

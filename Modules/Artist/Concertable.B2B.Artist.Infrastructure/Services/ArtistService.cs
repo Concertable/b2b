@@ -15,7 +15,7 @@ internal sealed class ArtistService : IArtistService
     private readonly IPublicArtistRepository publicRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
-    private readonly IUserModule userModule;
+    private readonly ITenantContext tenantContext;
     private readonly IGeocodingClient geocodingClient;
     private readonly IGeometryProvider geometryProvider;
 
@@ -24,7 +24,7 @@ internal sealed class ArtistService : IArtistService
         IPublicArtistRepository publicRepository,
         IImageService imageService,
         ICurrentUser currentUser,
-        IUserModule userModule,
+        ITenantContext tenantContext,
         IGeocodingClient geocodingClient,
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
@@ -32,13 +32,13 @@ internal sealed class ArtistService : IArtistService
         this.publicRepository = publicRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
-        this.userModule = userModule;
+        this.tenantContext = tenantContext;
         this.geocodingClient = geocodingClient;
         this.geometryProvider = geometryProvider;
     }
 
     public Task<ArtistDetails?> GetDetailsForCurrentUserAsync() =>
-        repository.GetDetailsByUserIdAsync(currentUser.GetId());
+        repository.GetDetailsForCurrentTenantAsync();
 
     public async Task<ArtistDetails> GetDetailsByIdAsync(int id) =>
         await publicRepository.GetDetailsByIdAsync(id)
@@ -46,8 +46,8 @@ internal sealed class ArtistService : IArtistService
 
     public async Task<ArtistDetails> CreateAsync(CreateArtistRequest request)
     {
-        var user = await userModule.GetManagerByIdAsync(currentUser.GetId())
-            ?? throw new ForbiddenException("Manager not found");
+        if (!tenantContext.HasTenant)
+            throw new ForbiddenException("No active tenant");
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
@@ -55,14 +55,14 @@ internal sealed class ArtistService : IArtistService
         var coordinates = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
 
         var artist = ArtistEntity.Create(
-            user.Id,
+            currentUser.GetId(),
             request.Name,
             request.About,
             bannerUrl,
             avatarUrl,
             coordinates,
             address,
-            user.Email,
+            currentUser.Email!,
             request.Genres);
 
         var createdArtist = await repository.AddAsync(artist);
@@ -76,9 +76,6 @@ internal sealed class ArtistService : IArtistService
     {
         var artist = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Artist not found");
-
-        if (artist.UserId != currentUser.GetId())
-            throw new ForbiddenException("You do not own this Artist");
 
         var bannerUrl = request.Banner is not null
             ? await imageService.ReplaceAsync(request.Banner.File, request.Banner.Url)
@@ -102,7 +99,7 @@ internal sealed class ArtistService : IArtistService
 
     public async Task<int> GetIdForCurrentUserAsync()
     {
-        int? id = await repository.GetIdByUserIdAsync(currentUser.GetId());
+        int? id = await repository.GetIdForCurrentTenantAsync();
         ForbiddenException.ThrowIfNull(id, "You do not own an Artist");
 
         return id.Value;
@@ -110,7 +107,7 @@ internal sealed class ArtistService : IArtistService
 
     public async Task<bool> OwnsArtistAsync(int artistId)
     {
-        var id = await repository.GetIdByUserIdAsync(currentUser.GetId());
+        var id = await repository.GetIdForCurrentTenantAsync();
         return id == artistId;
     }
 

@@ -1,5 +1,6 @@
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Requests;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 
@@ -22,10 +23,12 @@ internal sealed class TenantService : ITenantService
         return tenant?.ToDto();
     }
 
-    public async Task<Guid?> GetTenantIdByUserIdAsync(Guid userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default)
     {
-        var tenant = await repository.GetByCreatedByUserIdAsync(userId, ct);
-        return tenant?.Id;
+        var memberships = await repository.GetMembershipsAsync(userId, ct);
+        return memberships
+            .Select(m => new MembershipDto(m.TenantId, m.LegalName, m.Type, m.Role))
+            .ToList();
     }
 
     public async Task<TenantDetails?> GetDetailsForCurrentTenantAsync(CancellationToken ct = default)

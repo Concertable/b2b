@@ -14,8 +14,8 @@ internal sealed class ArtistModule : IArtistModule
         this.repository = repository;
     }
 
-    public Task<int?> GetIdByUserIdAsync(Guid userId) =>
-        repository.GetIdByUserIdAsync(userId);
+    public Task<int?> GetIdForCurrentTenantAsync() =>
+        repository.GetIdForCurrentTenantAsync();
 
     public Task<ArtistSummary> GetSummaryAsync(int artistId) =>
         artistService.GetSummaryAsync(artistId);
