@@ -27,12 +27,12 @@ internal sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
 
     public Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
-        if (!PermissionPolicy.TryParse(policyName, out var permission, out var persona))
+        if (!PermissionPolicy.TryParse(policyName, out var permission))
             return fallback.GetPolicyAsync(policyName);
 
         var policy = new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
-            .AddRequirements(new PermissionRequirement(permission, persona))
+            .AddRequirements(new PermissionRequirement(permission))
             .Build();
 
         return Task.FromResult<AuthorizationPolicy?>(policy);

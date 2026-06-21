@@ -27,9 +27,7 @@ internal sealed class PermissionAuthorizationHandler : AuthorizationHandler<Perm
     {
         await resolver.ResolveAsync();
 
-        var persona = requirement.Persona ?? endpointPersona.Value;
-
-        if (membership.HasPermission(requirement.Permission, persona))
+        if (membership.HasPermission(requirement.Permission, endpointPersona.Value))
             context.Succeed(requirement);
     }
 }

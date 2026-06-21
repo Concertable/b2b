@@ -12,7 +12,7 @@ namespace Concertable.B2B.Tenant.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[HasPermission(Permissions.PayoutsManage)]
+[HasPermission(SharedPermissions.PayoutsManage)]
 internal sealed class StripeAccountController : ControllerBase
 {
     private readonly IPayoutAccountClient payoutAccountClient;
