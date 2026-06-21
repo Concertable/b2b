@@ -13,9 +13,8 @@ import { queryClient } from "shared/lib/queryClient";
 import { routeTree } from "./routeTree.gen";
 import { ThemeProvider } from "shared/providers/ThemeProvider";
 import { TooltipProvider } from "shared/components/ui/tooltip";
-import "shared/lib/axios";
+import "@b2b/lib/b2bAxios";
 import "shared/lib/searchAxios";
-import "shared/lib/paymentAxios";
 import "shared/lib/geocoding";
 import "shared/index.css";
 

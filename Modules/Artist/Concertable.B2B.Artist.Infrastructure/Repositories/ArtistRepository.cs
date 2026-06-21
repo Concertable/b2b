@@ -10,12 +10,12 @@ internal sealed class ArtistRepository : TenantScopedRepository<ArtistEntity>, I
     public ArtistRepository(ArtistDbContext context, ITenantContext tenant) : base(context, tenant) { }
 
     public async Task<int?> GetIdForCurrentTenantAsync() =>
-        await CurrentTenant.AsNoTracking()
+        await base.CurrentTenant.AsNoTracking()
             .Select(a => (int?)a.Id)
             .FirstOrDefaultAsync();
 
     public async Task<ArtistDetails?> GetDetailsForCurrentTenantAsync() =>
-        await CurrentTenant.AsNoTracking()
+        await base.CurrentTenant.AsNoTracking()
             .ToDetails(context.ArtistRatingProjections.AsNoTracking())
             .FirstOrDefaultAsync();
 }

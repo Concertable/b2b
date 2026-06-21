@@ -1,6 +1,5 @@
 using Concertable.B2B.Artist.Application.DTOs;
 using Concertable.B2B.Artist.Application.Interfaces;
-using Concertable.B2B.Tenant.Api.Authorization;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
 

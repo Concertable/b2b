@@ -1,4 +1,3 @@
-using Concertable.B2B.Tenant.Api.Authorization;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Application.Interfaces;

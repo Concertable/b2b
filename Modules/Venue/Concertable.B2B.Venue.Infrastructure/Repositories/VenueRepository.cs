@@ -10,12 +10,12 @@ internal sealed class VenueRepository : TenantScopedRepository<VenueEntity>, IVe
     public VenueRepository(VenueDbContext context, ITenantContext tenant) : base(context, tenant) { }
 
     public async Task<int?> GetIdForCurrentTenantAsync() =>
-        await CurrentTenant.AsNoTracking()
+        await base.CurrentTenant.AsNoTracking()
             .Select(v => (int?)v.Id)
             .FirstOrDefaultAsync();
 
     public async Task<VenueDetails?> GetDetailsForCurrentTenantAsync() =>
-        await CurrentTenant.AsNoTracking()
+        await base.CurrentTenant.AsNoTracking()
             .ToDetails(context.VenueRatingProjections.AsNoTracking())
             .FirstOrDefaultAsync();
 }

@@ -1,7 +1,6 @@
-using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Concertable.B2B.Tenant.Api.Authorization;
+namespace Concertable.B2B.Tenant.Contracts;
 
 /// <summary>
 /// Gates an endpoint on a <see cref="Permissions"/> constant — the modern string-permission shape where the
