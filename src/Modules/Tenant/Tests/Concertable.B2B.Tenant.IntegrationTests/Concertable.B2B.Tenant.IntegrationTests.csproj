@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Concertable.B2B.Tenant.Application\Concertable.B2B.Tenant.Application.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Tenant.Infrastructure\Concertable.B2B.Tenant.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\..\Tests\Concertable.B2B.IntegrationTests.Fixtures\Concertable.B2B.IntegrationTests.Fixtures.csproj" />
     <ProjectReference Include="..\..\..\..\..\Shared\Tests\Concertable.Testing\Concertable.Testing.csproj" />
   </ItemGroup>

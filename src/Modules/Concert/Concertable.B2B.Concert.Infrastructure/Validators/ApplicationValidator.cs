@@ -11,7 +11,7 @@ internal sealed class ApplicationValidator : IApplicationValidator
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IApplicationRepository applicationRepository;
     private readonly IArtistModule artistModule;
-    private readonly ICurrentUser currentUser;
+    private readonly ITenantContext tenantContext;
     private readonly TimeProvider timeProvider;
 
     public ApplicationValidator(
@@ -19,14 +19,14 @@ internal sealed class ApplicationValidator : IApplicationValidator
         IOpportunityRepository opportunityRepository,
         IApplicationRepository applicationRepository,
         IArtistModule artistModule,
-        ICurrentUser currentUser,
+        ITenantContext tenantContext,
         TimeProvider timeProvider)
     {
         this.availability = availability;
         this.opportunityRepository = opportunityRepository;
         this.applicationRepository = applicationRepository;
         this.artistModule = artistModule;
-        this.currentUser = currentUser;
+        this.tenantContext = tenantContext;
         this.timeProvider = timeProvider;
     }
 
@@ -48,7 +48,7 @@ internal sealed class ApplicationValidator : IApplicationValidator
 
     public async Task<Result> CanApplyAsync(int opportunityId)
     {
-        var artistId = await artistModule.GetIdByUserIdAsync(currentUser.GetId());
+        var artistId = await artistModule.GetIdForCurrentTenantAsync();
         if (artistId is null)
             return Result.Fail("You must have an artist account to apply for a concert opportunity");
 
@@ -63,7 +63,7 @@ internal sealed class ApplicationValidator : IApplicationValidator
     {
         var errors = new List<string>();
 
-        if (opportunity.Venue.UserId != currentUser.GetId())
+        if (opportunity.TenantId != tenantContext.TenantId)
             errors.Add("You do not own this concert opportunity");
 
         if (opportunity.Period.Start < timeProvider.GetUtcNow())

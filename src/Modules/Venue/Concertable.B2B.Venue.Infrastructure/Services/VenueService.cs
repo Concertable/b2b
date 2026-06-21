@@ -16,7 +16,7 @@ internal sealed class VenueService : IVenueService
     private readonly IAdminVenueRepository adminRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
-    private readonly IUserModule userModule;
+    private readonly ITenantContext tenantContext;
     private readonly IGeocodingClient geocodingClient;
     private readonly IGeometryProvider geometryProvider;
 
@@ -26,7 +26,7 @@ internal sealed class VenueService : IVenueService
         IAdminVenueRepository adminRepository,
         IImageService imageService,
         ICurrentUser currentUser,
-        IUserModule userModule,
+        ITenantContext tenantContext,
         IGeocodingClient geocodingClient,
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
@@ -35,7 +35,7 @@ internal sealed class VenueService : IVenueService
         this.adminRepository = adminRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
-        this.userModule = userModule;
+        this.tenantContext = tenantContext;
         this.geocodingClient = geocodingClient;
         this.geometryProvider = geometryProvider;
     }
@@ -48,8 +48,8 @@ internal sealed class VenueService : IVenueService
 
     public async Task<VenueDetails> CreateAsync(CreateVenueRequest request)
     {
-        var user = await userModule.GetManagerByIdAsync(currentUser.GetId())
-            ?? throw new ForbiddenException("Manager not found");
+        if (!tenantContext.HasTenant)
+            throw new ForbiddenException("No active tenant");
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
@@ -57,14 +57,14 @@ internal sealed class VenueService : IVenueService
         var coordinates = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
 
         var venue = VenueEntity.Create(
-            user.Id,
+            currentUser.GetId(),
             request.Name,
             request.About,
             bannerUrl,
             avatarUrl,
             coordinates,
             address,
-            user.Email);
+            currentUser.Email!);
 
         var createdVenue = await repository.AddAsync(venue);
         await repository.SaveChangesAsync();
@@ -77,9 +77,6 @@ internal sealed class VenueService : IVenueService
     {
         var venue = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Venue not found");
-
-        if (venue.UserId != currentUser.GetId())
-            throw new ForbiddenException("You do not own this venue");
 
         var bannerUrl = request.Banner is not null
             ? await imageService.ReplaceAsync(request.Banner.File, request.Banner.Url)
@@ -102,11 +99,11 @@ internal sealed class VenueService : IVenueService
     }
 
     public Task<VenueDetails?> GetDetailsForCurrentUserAsync() =>
-        repository.GetDetailsByUserIdAsync(currentUser.GetId());
+        repository.GetDetailsForCurrentTenantAsync();
 
     public async Task<int> GetIdForCurrentUserAsync()
     {
-        int? id = await repository.GetIdByUserIdAsync(currentUser.GetId());
+        int? id = await repository.GetIdForCurrentTenantAsync();
         ForbiddenException.ThrowIfNull(id, "You do not own a Venue");
 
         return id.Value;
@@ -114,7 +111,7 @@ internal sealed class VenueService : IVenueService
 
     public async Task<bool> OwnsVenueAsync(int venueId)
     {
-        var id = await repository.GetIdByUserIdAsync(currentUser.GetId());
+        var id = await repository.GetIdForCurrentTenantAsync();
         return id == venueId;
     }
 

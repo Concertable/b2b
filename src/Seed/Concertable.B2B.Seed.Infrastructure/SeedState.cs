@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Contract.Domain.Entities;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure.Factories;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.User.Domain;
 using Concertable.Contracts;
@@ -36,6 +37,10 @@ public sealed class SeedState
     /// <summary>One tenant per operator (the manager's legal entity) — every manager, venue and artist alike.
     /// Venues/opportunities/contracts and artists all carry the matching <c>TenantId</c>.</summary>
     public IReadOnlyList<TenantEntity> Tenants { get; }
+
+    /// <summary>The founding Owner membership per operator — the source of truth for tenant authority. Only
+    /// founding-Owner rows are ever seeded; invitation-derived memberships are handler/API-written, never seeded.</summary>
+    public IReadOnlyList<TenantMembershipEntity> Memberships { get; }
 
     public IReadOnlyList<ArtistEntity> Artists { get; }
     public IReadOnlyList<VenueEntity> Venues { get; }
@@ -290,7 +295,11 @@ public sealed class SeedState
 
         // Artists get a tenant too (they own no Bucket-A rows) so Payment provisions their Connect account off TenantCreatedEvent.
         Tenants = SeedUsers.Managers
-            .Select(m => TenantFactory.Create(m.Id, m.Email, now))
+            .Select(m => TenantFactory.Create(
+                m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantType.Venue : TenantType.Artist, now))
+            .ToList();
+        Memberships = SeedUsers.Managers
+            .Select(m => MembershipFactory.FoundingOwner(m.TenantId, m.Id, now))
             .ToList();
         var tenantByVenueId = Venues.ToDictionary(v => v.Id, v => TenantSeedIds.For(v.UserId));
         foreach (var venue in Venues)

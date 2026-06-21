@@ -163,9 +163,9 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddConcertWorkflows(this IServiceCollection services)
     {
-        var catalog = new ConcertWorkflowCatalog();
+        var registryBuilder = new ConcertWorkflowRegistryBuilder();
 
-        services.AddConcertWorkflow(catalog, ContractType.FlatFee, p => p
+        services.AddConcertWorkflow(registryBuilder, ContractType.FlatFee, p => p
             .WithApply<SimpleApplyStep>()
             .WithCheckout<HoldCheckoutStep>()
             .WithAccept<CaptureEscrowAcceptStep>()
@@ -174,7 +174,7 @@ public static class ServiceCollectionExtensions
             .WithFinish<ReleaseEscrowFinishStep>(Complete)
             .WithWorkflow<FlatFeeWorkflow>());
 
-        services.AddConcertWorkflow(catalog, ContractType.DoorSplit, p => p
+        services.AddConcertWorkflow(registryBuilder, ContractType.DoorSplit, p => p
             .WithApply<SimpleApplyStep>()
             .WithCheckout<VerifyCheckoutStep>()
             .WithAccept<PaidAcceptStep>()
@@ -184,7 +184,7 @@ public static class ServiceCollectionExtensions
             .WithSettlement()
             .WithWorkflow<DoorSplitWorkflow>());
 
-        services.AddConcertWorkflow(catalog, ContractType.Versus, p => p
+        services.AddConcertWorkflow(registryBuilder, ContractType.Versus, p => p
             .WithApply<SimpleApplyStep>()
             .WithCheckout<VerifyCheckoutStep>()
             .WithAccept<PaidAcceptStep>()
@@ -194,7 +194,7 @@ public static class ServiceCollectionExtensions
             .WithSettlement()
             .WithWorkflow<VersusWorkflow>());
 
-        services.AddConcertWorkflow(catalog, ContractType.VenueHire, p => p
+        services.AddConcertWorkflow(registryBuilder, ContractType.VenueHire, p => p
             .WithCheckout<SetupCheckoutStep>()
             .WithApply<PaidApplyStep>()
             .WithAccept<DepositEscrowAcceptStep>()
@@ -203,19 +203,19 @@ public static class ServiceCollectionExtensions
             .WithFinish<ReleaseEscrowFinishStep>(Complete)
             .WithWorkflow<VenueHireWorkflow>());
 
-        services.AddSingleton<IConcertWorkflowCapabilityRegistry>(new ConcertWorkflowCapabilityRegistry(catalog.WorkflowTypes));
-        services.AddSingleton<IConcertStateMachineRegistry>(new ConcertStateMachineRegistry(catalog.StateMachines));
+        services.AddSingleton<IConcertWorkflowCapabilityRegistry>(new ConcertWorkflowCapabilityRegistry(registryBuilder.WorkflowTypes));
+        services.AddSingleton<IConcertStateMachineRegistry>(new ConcertStateMachineRegistry(registryBuilder.StateMachines));
 
         return services;
     }
 
     private static void AddConcertWorkflow(
         this IServiceCollection services,
-        ConcertWorkflowCatalog catalog,
+        ConcertWorkflowRegistryBuilder registryBuilder,
         ContractType contractType,
         Action<ConcertWorkflowBuilder> configure)
     {
-        var builder = new ConcertWorkflowBuilder(contractType, services, catalog);
+        var builder = new ConcertWorkflowBuilder(contractType, services, registryBuilder);
         configure(builder);
         builder.Build();
     }

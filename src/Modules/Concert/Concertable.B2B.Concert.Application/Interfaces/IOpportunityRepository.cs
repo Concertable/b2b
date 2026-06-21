@@ -12,7 +12,6 @@ internal interface IOpportunityRepository : ITenantScopedRepository<OpportunityE
     /// read-only <see cref="IPublicOpportunityRepository"/> projection).
     /// </summary>
     Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId);
-    Task<OpportunityEntity?> GetWithVenueByIdAsync(int id);
     Task<OpportunityEntity?> GetByApplicationIdAsync(int id);
     Task<Guid?> GetOwnerByIdAsync(int id);
     Task<int?> GetContractIdByIdAsync(int opportunityId);

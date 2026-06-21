@@ -4,7 +4,9 @@ using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Validators;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Concertable.B2B.Tenant.Domain.Events;
+using Concertable.B2B.Tenant.Infrastructure.Authorization;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Data.Seeders;
 using Concertable.B2B.Tenant.Infrastructure.Events;
@@ -40,6 +42,21 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TenantContext>();
         services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
         services.AddScoped<ITenantResolver>(sp => sp.GetRequiredService<TenantContext>());
+        services.AddScoped<IMembershipContext>(sp => sp.GetRequiredService<TenantContext>());
+
+        /* Persona permission catalog: a keyed strategy resolver over the per-persona catalogs. The facade is
+           the interface registration; the persona strategies and their shared base register as concrete types. */
+        services.AddSingleton<SharedPermissions>();
+        services.AddSingleton<VenuePermissions>();
+        services.AddSingleton<ArtistPermissions>();
+        services.AddSingleton<IPermissionCatalog, PermissionCatalog>();
+
+        /* String-permission authorization: a single on-demand policy provider (singleton) builds every
+           perm:<name> policy and delegates Admin/[Authorize] to the default provider; the scoped handler
+           reads the membership context. No startup policy loop. */
+        services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+        services.AddSingleton<IEndpointPersona, EndpointPersona>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, TenantProvisioningHandler>();
         services.AddScoped<IDomainEventHandler<TenantCreatedDomainEvent>, TenantCreatedDomainEventHandler>();
