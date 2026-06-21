@@ -26,7 +26,7 @@ internal sealed class VenueController : ControllerBase
         return Ok((await venueService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
-    [HasPermission(Permissions.OperationsView)]
+    [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("user")]
     public async Task<ActionResult<VenueDetailsResponse>> GetDetailsForCurrentUser()
     {
@@ -34,7 +34,7 @@ internal sealed class VenueController : ControllerBase
         return venue is null ? NoContent() : Ok(venue.ToDetailsResponse());
     }
 
-    [HasPermission(Permissions.ProfileEdit)]
+    [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateVenueRequest request)
     {
@@ -42,7 +42,7 @@ internal sealed class VenueController : ControllerBase
         return CreatedAtAction(nameof(GetDetailsById), new { Id = venueDto.Id }, venueDto);
     }
 
-    [HasPermission(Permissions.ProfileEdit)]
+    [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] UpdateVenueRequest request)
     {
