@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions
         // perm:<name> policy and delegates Admin/[Authorize] to the default provider; the scoped handler
         // reads the membership context. No startup policy loop.
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+        services.AddSingleton<IEndpointPersona, EndpointPersona>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, TenantProvisioningHandler>();
