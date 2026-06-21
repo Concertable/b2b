@@ -10,6 +10,7 @@ namespace Concertable.B2B.Venue.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[TenantPersona(TenantType.Venue)]
 internal sealed class VenueController : ControllerBase
 {
     private readonly IVenueService venueService;
@@ -25,7 +26,7 @@ internal sealed class VenueController : ControllerBase
         return Ok((await venueService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
-    [HasPermission(Permissions.OperationsView, TenantType.Venue)]
+    [HasPermission(Permissions.OperationsView)]
     [HttpGet("user")]
     public async Task<ActionResult<VenueDetailsResponse>> GetDetailsForCurrentUser()
     {
@@ -33,7 +34,7 @@ internal sealed class VenueController : ControllerBase
         return venue is null ? NoContent() : Ok(venue.ToDetailsResponse());
     }
 
-    [HasPermission(Permissions.ProfileEdit, TenantType.Venue)]
+    [HasPermission(Permissions.ProfileEdit)]
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateVenueRequest request)
     {
@@ -41,7 +42,7 @@ internal sealed class VenueController : ControllerBase
         return CreatedAtAction(nameof(GetDetailsById), new { Id = venueDto.Id }, venueDto);
     }
 
-    [HasPermission(Permissions.ProfileEdit, TenantType.Venue)]
+    [HasPermission(Permissions.ProfileEdit)]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] UpdateVenueRequest request)
     {

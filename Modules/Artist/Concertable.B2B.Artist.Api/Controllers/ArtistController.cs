@@ -7,6 +7,7 @@ namespace Concertable.B2B.Artist.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[TenantPersona(TenantType.Artist)]
 internal sealed class ArtistController : ControllerBase
 {
     private readonly IArtistService artistService;
@@ -22,7 +23,7 @@ internal sealed class ArtistController : ControllerBase
         return Ok((await artistService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
-    [HasPermission(Permissions.OperationsView, TenantType.Artist)]
+    [HasPermission(Permissions.OperationsView)]
     [HttpGet("user")]
     public async Task<ActionResult<ArtistDetailsResponse>> GetDetailsForCurrentUser()
     {
@@ -30,7 +31,7 @@ internal sealed class ArtistController : ControllerBase
         return artist is null ? NoContent() : Ok(artist.ToDetailsResponse());
     }
 
-    [HasPermission(Permissions.ProfileEdit, TenantType.Artist)]
+    [HasPermission(Permissions.ProfileEdit)]
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateArtistRequest request)
     {
@@ -38,7 +39,7 @@ internal sealed class ArtistController : ControllerBase
         return CreatedAtAction(nameof(GetDetailsById), new { Id = artistDto.Id }, artistDto);
     }
 
-    [HasPermission(Permissions.ProfileEdit, TenantType.Artist)]
+    [HasPermission(Permissions.ProfileEdit)]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] UpdateArtistRequest request)
     {
