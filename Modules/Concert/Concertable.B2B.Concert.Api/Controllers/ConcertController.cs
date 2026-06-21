@@ -65,14 +65,14 @@ internal sealed class ConcertController : ControllerBase
         return Ok((await concertService.GetUnpostedByArtistIdAsync(id)).ToSummaryResponses());
     }
 
-    [HasPermission(Permissions.ConcertsManage)]
+    [HasPermission(VenuePermissions.ConcertsManage)]
     [HttpPut("{id}")]
     public async Task<ActionResult<ConcertUpdateResponse>> Update(int id, [FromBody] UpdateConcertRequest request)
     {
         return Ok(await concertService.UpdateAsync(id, request));
     }
 
-    [HasPermission(Permissions.ConcertsManage)]
+    [HasPermission(VenuePermissions.ConcertsManage)]
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
     {

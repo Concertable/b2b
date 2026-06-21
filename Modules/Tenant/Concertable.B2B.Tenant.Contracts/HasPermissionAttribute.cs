@@ -3,17 +3,16 @@ using Microsoft.AspNetCore.Authorization;
 namespace Concertable.B2B.Tenant.Contracts;
 
 /// <summary>
-/// Gates an endpoint on a <see cref="Permissions"/> constant — the modern string-permission shape where the
-/// permission <em>is</em> the policy name (resolved on demand by <c>PermissionPolicyProvider</c>). The
-/// optional <see cref="TenantType"/> pins the active tenant's persona, which is what replaces the old
-/// <c>[VenueManager]</c>/<c>[ArtistManager]</c> split: a venue-only endpoint is
-/// <c>[HasPermission(Permissions.X, TenantType.Venue)]</c>.
+/// Gates an endpoint on a permission constant — the modern string-permission shape where the permission
+/// <em>is</em> the policy name (resolved on demand by <c>PermissionPolicyProvider</c>). Pass a constant from
+/// the permission catalog: <see cref="SharedPermissions"/> for a both-persona permission,
+/// <see cref="VenuePermissions"/>/<see cref="ArtistPermissions"/> for a persona-exclusive one — the latter
+/// carry their persona by construction (a venue tenant's catalog has no artist permission, and vice versa).
+/// A controller's surface persona, for shared permissions on a single-persona surface, comes from
+/// <see cref="TenantPersonaAttribute"/>.
 /// </summary>
 public sealed class HasPermissionAttribute : AuthorizeAttribute
 {
     public HasPermissionAttribute(string permission)
         => Policy = PermissionPolicy.Name(permission);
-
-    public HasPermissionAttribute(string permission, TenantType persona)
-        => Policy = PermissionPolicy.Name(permission, persona);
 }

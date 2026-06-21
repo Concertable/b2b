@@ -13,9 +13,16 @@ public sealed class TenantContextTests
     private readonly Mock<IHttpContextAccessor> httpContextAccessor = new();
     private readonly Mock<ITenantRepository> repository = new();
     private readonly DefaultHttpContext httpContext = new();
+    private static readonly IPermissionCatalog Catalog = BuildCatalog();
+
+    private static IPermissionCatalog BuildCatalog()
+    {
+        var shared = new SharedPermissions();
+        return new PermissionCatalog(new VenuePermissions(shared), new ArtistPermissions(shared));
+    }
 
     private TenantContext CreateContext() =>
-        new(currentUser.Object, httpContextAccessor.Object, repository.Object);
+        new(currentUser.Object, httpContextAccessor.Object, repository.Object, Catalog);
 
     private void WithHttpRequest() =>
         httpContextAccessor.SetupGet(h => h.HttpContext).Returns(httpContext);
@@ -100,7 +107,7 @@ public sealed class TenantContextTests
         ITenantContext ctx = context;
         Assert.Equal(headerTenant, ctx.TenantId);
         Assert.Equal(TenantRole.Manager, ((IMembershipContext)context).Role);
-        Assert.True(((IMembershipContext)context).HasPermission(Permissions.ApplicationsSubmit, TenantType.Artist));
+        Assert.True(((IMembershipContext)context).HasPermission(ArtistPermissions.ApplicationsSubmit, TenantType.Artist));
         repository.Verify(
             r => r.GetMembershipsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
@@ -197,7 +204,7 @@ public sealed class TenantContextTests
 
         var membership = (IMembershipContext)context;
         Assert.Null(membership.Role);
-        Assert.False(membership.HasPermission(Permissions.OperationsView));
+        Assert.False(membership.HasPermission(SharedPermissions.OperationsView));
     }
 
     [Fact]
@@ -205,8 +212,8 @@ public sealed class TenantContextTests
     {
         var membership = await ResolvedMembership(TenantRole.Owner, TenantType.Venue);
 
-        Assert.True(membership.HasPermission(Permissions.ProfileEdit, TenantType.Venue));
-        Assert.True(membership.HasPermission(Permissions.OpportunitiesManage, TenantType.Venue));
+        Assert.True(membership.HasPermission(SharedPermissions.ProfileEdit, TenantType.Venue));
+        Assert.True(membership.HasPermission(VenuePermissions.OpportunitiesManage, TenantType.Venue));
     }
 
     [Fact]
@@ -214,11 +221,12 @@ public sealed class TenantContextTests
     {
         var membership = await ResolvedMembership(TenantRole.Owner, TenantType.Artist);
 
-        // Owner holds the permission in its bundle, but the active tenant's persona must match the call-site.
-        Assert.False(membership.HasPermission(Permissions.ProfileEdit, TenantType.Venue));
-        Assert.True(membership.HasPermission(Permissions.ProfileEdit, TenantType.Artist));
-        Assert.True(membership.HasPermission(Permissions.ApplicationsSubmit, TenantType.Artist));
-        Assert.False(membership.HasPermission(Permissions.ApplicationsDecide, TenantType.Venue));
+        // The shared permission is reachable only on the matching surface; the venue-exclusive permission is
+        // unreachable for an artist tenant by construction (its catalog has no applications.decide).
+        Assert.False(membership.HasPermission(SharedPermissions.ProfileEdit, TenantType.Venue));
+        Assert.True(membership.HasPermission(SharedPermissions.ProfileEdit, TenantType.Artist));
+        Assert.True(membership.HasPermission(ArtistPermissions.ApplicationsSubmit, TenantType.Artist));
+        Assert.False(membership.HasPermission(VenuePermissions.ApplicationsDecide, TenantType.Venue));
     }
 
     [Fact]
@@ -226,10 +234,10 @@ public sealed class TenantContextTests
     {
         var membership = await ResolvedMembership(TenantRole.Finance, TenantType.Venue);
 
-        Assert.True(membership.HasPermission(Permissions.PayoutsManage));
-        Assert.True(membership.HasPermission(Permissions.SettlementTrigger));
-        Assert.False(membership.HasPermission(Permissions.ProfileEdit));
-        Assert.False(membership.HasPermission(Permissions.OpportunitiesManage, TenantType.Venue));
+        Assert.True(membership.HasPermission(SharedPermissions.PayoutsManage));
+        Assert.True(membership.HasPermission(SharedPermissions.SettlementTrigger));
+        Assert.False(membership.HasPermission(SharedPermissions.ProfileEdit));
+        Assert.False(membership.HasPermission(VenuePermissions.OpportunitiesManage, TenantType.Venue));
     }
 
     [Fact]
@@ -237,8 +245,8 @@ public sealed class TenantContextTests
     {
         var membership = await ResolvedMembership(TenantRole.Manager, TenantType.Venue);
 
-        Assert.True(membership.HasPermission(Permissions.OpportunitiesManage, TenantType.Venue));
-        Assert.True(membership.HasPermission(Permissions.ConcertsManage, TenantType.Venue));
-        Assert.False(membership.HasPermission(Permissions.PayoutsManage));
+        Assert.True(membership.HasPermission(VenuePermissions.OpportunitiesManage, TenantType.Venue));
+        Assert.True(membership.HasPermission(VenuePermissions.ConcertsManage, TenantType.Venue));
+        Assert.False(membership.HasPermission(SharedPermissions.PayoutsManage));
     }
 }

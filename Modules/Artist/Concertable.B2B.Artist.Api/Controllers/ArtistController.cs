@@ -23,7 +23,7 @@ internal sealed class ArtistController : ControllerBase
         return Ok((await artistService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
-    [HasPermission(Permissions.OperationsView)]
+    [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("user")]
     public async Task<ActionResult<ArtistDetailsResponse>> GetDetailsForCurrentUser()
     {
@@ -31,7 +31,7 @@ internal sealed class ArtistController : ControllerBase
         return artist is null ? NoContent() : Ok(artist.ToDetailsResponse());
     }
 
-    [HasPermission(Permissions.ProfileEdit)]
+    [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateArtistRequest request)
     {
@@ -39,7 +39,7 @@ internal sealed class ArtistController : ControllerBase
         return CreatedAtAction(nameof(GetDetailsById), new { Id = artistDto.Id }, artistDto);
     }
 
-    [HasPermission(Permissions.ProfileEdit)]
+    [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] UpdateArtistRequest request)
     {

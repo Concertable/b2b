@@ -9,6 +9,7 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
     private readonly ICurrentUser currentUser;
     private readonly IHttpContextAccessor httpContextAccessor;
     private readonly ITenantRepository repository;
+    private readonly IPermissionCatalog permissionCatalog;
 
     private Guid? tenantId;
     private TenantRole? role;
@@ -18,11 +19,13 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
     public TenantContext(
         ICurrentUser currentUser,
         IHttpContextAccessor httpContextAccessor,
-        ITenantRepository repository)
+        ITenantRepository repository,
+        IPermissionCatalog permissionCatalog)
     {
         this.currentUser = currentUser;
         this.httpContextAccessor = httpContextAccessor;
         this.repository = repository;
+        this.permissionCatalog = permissionCatalog;
     }
 
     public Guid? TenantId => tenantId;
@@ -37,13 +40,13 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
 
     public bool HasPermission(string permission, TenantType? requiredPersona = null)
     {
-        if (role is not { } activeRole)
+        if (role is not { } activeRole || tenantType is not { } persona)
             return false;
 
-        if (requiredPersona is { } persona && tenantType != persona)
+        if (requiredPersona is { } required && persona != required)
             return false;
 
-        return PermissionCatalog.Grants(activeRole, permission);
+        return permissionCatalog.Grants(persona, activeRole, permission);
     }
 
     public async Task ResolveAsync(CancellationToken ct = default)

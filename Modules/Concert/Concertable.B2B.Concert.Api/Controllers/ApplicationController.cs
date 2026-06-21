@@ -24,7 +24,7 @@ internal sealed class ApplicationController : ControllerBase
         this.mapper = mapper;
     }
 
-    [HasPermission(Permissions.ApplicationsDecide, TenantType.Venue)]
+    [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpGet("opportunity/{id}")]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetAllByOpportunityId(int id)
     {
@@ -32,7 +32,7 @@ internal sealed class ApplicationController : ControllerBase
         return Ok(mapper.ToResponses(applications));
     }
 
-    [HasPermission(Permissions.ApplicationsSubmit, TenantType.Artist)]
+    [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpPost("{opportunityId}")]
     public async Task<IActionResult> Apply(int opportunityId, [FromBody] ApplyRequest? request = null)
     {
@@ -43,7 +43,7 @@ internal sealed class ApplicationController : ControllerBase
     }
 
     [HttpGet("artist/pending")]
-    [HasPermission(Permissions.ApplicationsSubmit, TenantType.Artist)]
+    [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetPendingForArtist()
     {
         var applications = await applicationService.GetPendingForArtistAsync();
@@ -51,7 +51,7 @@ internal sealed class ApplicationController : ControllerBase
     }
 
     [HttpGet("artist/recently-denied")]
-    [HasPermission(Permissions.ApplicationsSubmit, TenantType.Artist)]
+    [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetRecentDeniedForArtist()
     {
         var applications = await applicationService.GetRecentDeniedForArtistAsync();
@@ -65,7 +65,7 @@ internal sealed class ApplicationController : ControllerBase
         return Ok(mapper.ToResponse(application));
     }
 
-    [HasPermission(Permissions.ApplicationsSubmit, TenantType.Artist)]
+    [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpGet("opportunity/{opportunityId}/eligibility")]
     public async Task<ActionResult<bool>> CanApply(int opportunityId)
     {
@@ -73,7 +73,7 @@ internal sealed class ApplicationController : ControllerBase
         return Ok(result.IsSuccess);
     }
 
-    [HasPermission(Permissions.ApplicationsDecide, TenantType.Venue)]
+    [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpGet("{applicationId}/eligibility")]
     public async Task<ActionResult<bool>> CanAccept(int applicationId)
     {
@@ -81,7 +81,7 @@ internal sealed class ApplicationController : ControllerBase
         return Ok(result.IsSuccess);
     }
 
-    [HasPermission(Permissions.ApplicationsSubmit, TenantType.Artist)]
+    [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpPost("opportunity/{opportunityId}/checkout")]
     public async Task<IActionResult> ApplyCheckout(int opportunityId)
     {
@@ -89,7 +89,7 @@ internal sealed class ApplicationController : ControllerBase
         return Ok(checkout);
     }
 
-    [HasPermission(Permissions.ApplicationsDecide, TenantType.Venue)]
+    [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/checkout")]
     public async Task<IActionResult> AcceptCheckout(int applicationId)
     {
@@ -97,7 +97,7 @@ internal sealed class ApplicationController : ControllerBase
         return Ok(checkout);
     }
 
-    [HasPermission(Permissions.ApplicationsDecide, TenantType.Venue)]
+    [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/accept")]
     public async Task<IActionResult> Accept(int applicationId, [FromBody] AcceptRequest? request = null)
     {
