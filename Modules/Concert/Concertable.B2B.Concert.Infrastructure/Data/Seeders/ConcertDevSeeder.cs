@@ -32,8 +32,7 @@ internal sealed class ConcertDevSeeder : IDevSeeder
                 UserId = v.UserId,
                 Name = v.Name,
                 About = v.About,
-                County = v.Address.County,
-                Town = v.Address.Town,
+                Address = v.Address,
                 Location = v.Location
             }));
             await context.SaveChangesAsync(ct);
@@ -49,8 +48,7 @@ internal sealed class ConcertDevSeeder : IDevSeeder
                 Name = a.Name,
                 Avatar = a.Avatar,
                 BannerUrl = a.BannerUrl,
-                County = a.Address.County,
-                Town = a.Address.Town,
+                Address = a.Address,
                 Email = a.Email,
                 Genres = a.Genres.Select(g => new ArtistReadModelGenre { ArtistReadModelId = a.Id, Genre = g }).ToList()
             }));

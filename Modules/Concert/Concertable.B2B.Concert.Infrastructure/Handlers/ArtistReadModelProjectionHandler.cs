@@ -1,6 +1,7 @@
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Concert.Domain;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,8 +37,7 @@ internal sealed class ArtistReadModelProjectionHandler : IIntegrationEventHandle
                 Name = e.Name,
                 Avatar = e.Avatar,
                 BannerUrl = e.BannerUrl,
-                County = e.County,
-                Town = e.Town,
+                Address = new Address(e.County, e.Town),
                 Email = e.Email,
                 Genres = e.Genres
                     .Select(g => new ArtistReadModelGenre { ArtistReadModelId = e.ArtistId, Genre = g })
@@ -52,8 +52,7 @@ internal sealed class ArtistReadModelProjectionHandler : IIntegrationEventHandle
             artist.Name = e.Name;
             artist.Avatar = e.Avatar;
             artist.BannerUrl = e.BannerUrl;
-            artist.County = e.County;
-            artist.Town = e.Town;
+            artist.Address = new Address(e.County, e.Town);
             artist.Email = e.Email;
 
             var desired = e.Genres.ToHashSet();

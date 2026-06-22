@@ -13,7 +13,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260620142023_InitialCreate")]
+    [Migration("20260622101318_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -265,10 +265,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("County")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -279,10 +275,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Town")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -333,19 +325,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("County")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<Point>("Location")
                         .IsRequired()
                         .HasColumnType("geography");
 
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Town")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -611,6 +595,35 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Navigation("Venue");
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.ReadModels.ArtistReadModel", b =>
+                {
+                    b.OwnsOne("Concertable.Kernel.Address", "Address", b1 =>
+                        {
+                            b1.Property<int>("ArtistReadModelId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("County")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)")
+                                .HasColumnName("County");
+
+                            b1.Property<string>("Town")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)")
+                                .HasColumnName("Town");
+
+                            b1.HasKey("ArtistReadModelId");
+
+                            b1.ToTable("ArtistReadModels", "concert");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ArtistReadModelId");
+                        });
+
+                    b.Navigation("Address")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.ReadModels.ArtistReadModelGenre", b =>
                 {
                     b.HasOne("Concertable.B2B.Concert.Domain.ReadModels.ArtistReadModel", "Artist")
@@ -620,6 +633,35 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Artist");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.ReadModels.VenueReadModel", b =>
+                {
+                    b.OwnsOne("Concertable.Kernel.Address", "Address", b1 =>
+                        {
+                            b1.Property<int>("VenueReadModelId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("County")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)")
+                                .HasColumnName("County");
+
+                            b1.Property<string>("Town")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)")
+                                .HasColumnName("Town");
+
+                            b1.HasKey("VenueReadModelId");
+
+                            b1.ToTable("VenueReadModels", "concert");
+
+                            b1.WithOwner()
+                                .HasForeignKey("VenueReadModelId");
+                        });
+
+                    b.Navigation("Address")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ApplicationEntity", b =>
