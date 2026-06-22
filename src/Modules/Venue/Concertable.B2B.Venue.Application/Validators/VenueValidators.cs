@@ -46,7 +46,7 @@ internal sealed class UpdateVenueRequestValidator : AbstractValidator<UpdateVenu
 
         When(x => x.Banner != null, () =>
         {
-            RuleFor(x => x.Banner!.File)
+            RuleFor(x => x.Banner!)
                 .SetValidator(new BannerImageValidator());
         });
 

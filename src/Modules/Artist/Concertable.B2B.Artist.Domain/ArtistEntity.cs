@@ -7,7 +7,7 @@ namespace Concertable.B2B.Artist.Domain;
 
 public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantScoped
 {
-    private readonly EventRaiser _events = new();
+    private readonly EventRaiser events = new();
 
     private ArtistEntity() { }
 
@@ -29,8 +29,8 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
 
     public List<Genre> Genres { get; private set; } = [];
 
-    public IReadOnlyList<IDomainEvent> DomainEvents => _events.DomainEvents;
-    public void ClearDomainEvents() => _events.Clear();
+    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
+    public void ClearDomainEvents() => events.Clear();
 
     public static ArtistEntity Create(
         Guid userId,
@@ -58,7 +58,7 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
         };
 
         artist.SyncGenresInternal(genres);
-        artist._events.Raise(new ArtistChangedDomainEvent(artist));
+        artist.events.Raise(new ArtistChangedDomainEvent(artist));
 
         return artist;
     }
@@ -72,20 +72,20 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
         BannerUrl = bannerUrl;
 
         SyncGenresInternal(genres);
-        _events.Raise(new ArtistChangedDomainEvent(this));
+        events.Raise(new ArtistChangedDomainEvent(this));
     }
 
     public void SyncGenres(IEnumerable<Genre> genres)
     {
         SyncGenresInternal(genres);
-        _events.Raise(new ArtistChangedDomainEvent(this));
+        events.Raise(new ArtistChangedDomainEvent(this));
     }
 
     public void UpdateAvatar(string avatar)
     {
         DomainException.ThrowIfNullOrWhiteSpace(avatar, "Avatar");
         Avatar = avatar;
-        _events.Raise(new ArtistChangedDomainEvent(this));
+        events.Raise(new ArtistChangedDomainEvent(this));
     }
 
     public void UpdateLocation(Point location, Address address)
@@ -95,14 +95,14 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
             throw new DomainException("County and Town are required.");
         Location = location;
         Address = address;
-        _events.Raise(new ArtistChangedDomainEvent(this));
+        events.Raise(new ArtistChangedDomainEvent(this));
     }
 
     public void UpdateEmail(string email)
     {
         DomainException.ThrowIfNullOrWhiteSpace(email, "Email");
         Email = email;
-        _events.Raise(new ArtistChangedDomainEvent(this));
+        events.Raise(new ArtistChangedDomainEvent(this));
     }
 
     private void SyncGenresInternal(IEnumerable<Genre> genres) =>

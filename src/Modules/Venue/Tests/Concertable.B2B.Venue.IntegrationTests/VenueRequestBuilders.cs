@@ -23,13 +23,11 @@ internal static class VenueRequestBuilders
         string name = "Updated Venue",
         string about = "Updated about",
         double latitude = 51.5,
-        double longitude = -0.1,
-        bool approved = false) => new()
+        double longitude = -0.1) => new()
     {
         Name = name,
         About = about,
         Latitude = latitude,
-        Longitude = longitude,
-        Approved = approved
+        Longitude = longitude
     };
 }
