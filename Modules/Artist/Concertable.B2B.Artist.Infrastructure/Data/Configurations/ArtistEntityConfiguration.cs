@@ -1,4 +1,5 @@
 using Concertable.B2B.Artist.Domain;
+using Concertable.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,11 +11,7 @@ internal sealed class ArtistEntityConfiguration : IEntityTypeConfiguration<Artis
     {
         builder.ToTable(Schema.Tables.Artists, Schema.Name);
         builder.Property(a => a.Location).HasColumnType("geography");
-        builder.OwnsOne(a => a.Address, a =>
-        {
-            a.Property(x => x.County).HasColumnName("County");
-            a.Property(x => x.Town).HasColumnName("Town");
-        });
+        builder.OwnsAddress(a => a.Address);
         builder.PrimitiveCollection(a => a.Genres);
     }
 }

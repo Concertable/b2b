@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.ReadModels;
+using Concertable.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,6 +12,7 @@ internal sealed class ArtistReadModelConfiguration : IEntityTypeConfiguration<Ar
         builder.ToTable(Schema.Tables.ArtistReadModels, Schema.Name);
         builder.Property(a => a.Id).ValueGeneratedNever();
         builder.HasIndex(a => a.UserId).IsUnique();
+        builder.OwnsAddress(a => a.Address);
         builder.HasMany(a => a.Genres)
             .WithOne(g => g.Artist)
             .HasForeignKey(g => g.ArtistReadModelId)

@@ -39,8 +39,8 @@ internal static class QueryableConcertMappers
                 Id = c.Booking.Application.Opportunity.Venue.Id,
                 Name = c.Booking.Application.Opportunity.Venue.Name,
                 Rating = (double?)venueRating.AverageRating ?? 0.0,
-                County = c.Booking.Application.Opportunity.Venue.County,
-                Town = c.Booking.Application.Opportunity.Venue.Town,
+                County = c.Booking.Application.Opportunity.Venue.Address.County,
+                Town = c.Booking.Application.Opportunity.Venue.Address.Town,
                 Latitude = c.Booking.Application.Opportunity.Venue.Location.Y,
                 Longitude = c.Booking.Application.Opportunity.Venue.Location.X
             },
@@ -49,8 +49,8 @@ internal static class QueryableConcertMappers
                 Id = c.Booking.Application.Artist.Id,
                 Name = c.Booking.Application.Artist.Name,
                 Avatar = c.Booking.Application.Artist.Avatar,
-                County = c.Booking.Application.Artist.County,
-                Town = c.Booking.Application.Artist.Town,
+                County = c.Booking.Application.Artist.Address.County,
+                Town = c.Booking.Application.Artist.Address.Town,
                 Rating = (double?)artistRating.AverageRating ?? 0.0,
                 Genres = c.Booking.Application.Artist.Genres.Select(g => g.Genre)
             }

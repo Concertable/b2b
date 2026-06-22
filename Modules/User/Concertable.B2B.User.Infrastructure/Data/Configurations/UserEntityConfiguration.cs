@@ -1,3 +1,4 @@
+using Concertable.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,10 +11,6 @@ internal sealed class UserEntityConfiguration : IEntityTypeConfiguration<UserEnt
         builder.ToTable(Schema.Tables.Users, Schema.Name);
         builder.Property(u => u.Location).HasColumnType("geography");
         builder.HasIndex(u => new { u.Email, u.Role }).IsUnique();
-        builder.OwnsOne(u => u.Address, a =>
-        {
-            a.Property(x => x.County).HasColumnName("County");
-            a.Property(x => x.Town).HasColumnName("Town");
-        });
+        builder.OwnsAddress(u => u.Address, required: false);
     }
 }

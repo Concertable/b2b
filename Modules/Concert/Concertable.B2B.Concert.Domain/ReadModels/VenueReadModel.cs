@@ -14,7 +14,6 @@ public sealed class VenueReadModel : IIdEntity
     public Guid UserId { get; set; }
     public string Name { get; set; } = null!;
     public string About { get; set; } = null!;
-    public string County { get; set; } = null!;
-    public string Town { get; set; } = null!;
+    public Address Address { get; set; } = null!;
     public Point Location { get; set; } = null!;
 }

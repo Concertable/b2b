@@ -1,4 +1,5 @@
 using Concertable.B2B.Venue.Domain;
+using Concertable.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,11 +11,7 @@ internal sealed class VenueEntityConfiguration : IEntityTypeConfiguration<VenueE
     {
         builder.ToTable(Schema.Tables.Venues, Schema.Name);
         builder.Property(v => v.Location).HasColumnType("geography");
-        builder.OwnsOne(v => v.Address, a =>
-        {
-            a.Property(x => x.County).HasColumnName("County");
-            a.Property(x => x.Town).HasColumnName("Town");
-        });
+        builder.OwnsAddress(v => v.Address);
     }
 }
 

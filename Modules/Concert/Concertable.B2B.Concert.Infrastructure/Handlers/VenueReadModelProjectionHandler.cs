@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Domain;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Concertable.B2B.Venue.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
@@ -38,8 +39,7 @@ internal sealed class VenueReadModelProjectionHandler : IIntegrationEventHandler
                 UserId = e.UserId,
                 Name = e.Name,
                 About = e.About,
-                County = e.County,
-                Town = e.Town,
+                Address = new Address(e.County, e.Town),
                 Location = location
             });
         }
@@ -48,8 +48,7 @@ internal sealed class VenueReadModelProjectionHandler : IIntegrationEventHandler
             venue.UserId = e.UserId;
             venue.Name = e.Name;
             venue.About = e.About;
-            venue.County = e.County;
-            venue.Town = e.Town;
+            venue.Address = new Address(e.County, e.Town);
             venue.Location = location;
         }
 
