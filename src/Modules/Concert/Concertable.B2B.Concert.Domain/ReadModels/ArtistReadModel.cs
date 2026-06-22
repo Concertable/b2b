@@ -15,8 +15,7 @@ public sealed class ArtistReadModel : IIdEntity
     public string Name { get; set; } = null!;
     public string Avatar { get; set; } = null!;
     public string BannerUrl { get; set; } = null!;
-    public string County { get; set; } = null!;
-    public string Town { get; set; } = null!;
+    public Address Address { get; set; } = null!;
     public string Email { get; set; } = null!;
     public ICollection<ArtistReadModelGenre> Genres { get; set; } = [];
 }
