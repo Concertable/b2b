@@ -6,7 +6,7 @@ namespace Concertable.B2B.Venue.Domain;
 
 public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScoped
 {
-    private readonly EventRaiser _events = new();
+    private readonly EventRaiser events = new();
 
     private VenueEntity() { }
 
@@ -22,8 +22,8 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
     public string Avatar { get; private set; } = null!;
     public string Email { get; private set; } = null!;
 
-    public IReadOnlyList<IDomainEvent> DomainEvents => _events.DomainEvents;
-    public void ClearDomainEvents() => _events.Clear();
+    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
+    public void ClearDomainEvents() => events.Clear();
 
     public static VenueEntity Create(
         Guid userId,
@@ -48,7 +48,7 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
             Address = address,
             Email = email
         };
-        venue._events.Raise(new VenueChangedDomainEvent(venue));
+        venue.events.Raise(new VenueChangedDomainEvent(venue));
         return venue;
     }
 
@@ -58,20 +58,20 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
         Name = name;
         About = about;
         BannerUrl = bannerUrl;
-        _events.Raise(new VenueChangedDomainEvent(this));
+        events.Raise(new VenueChangedDomainEvent(this));
     }
 
     public void Approve()
     {
         Approved = true;
-        _events.Raise(new VenueChangedDomainEvent(this));
+        events.Raise(new VenueChangedDomainEvent(this));
     }
 
     public void UpdateAvatar(string avatar)
     {
         DomainException.ThrowIfNullOrWhiteSpace(avatar, "Avatar");
         Avatar = avatar;
-        _events.Raise(new VenueChangedDomainEvent(this));
+        events.Raise(new VenueChangedDomainEvent(this));
     }
 
     public void UpdateLocation(Point location, Address address)
@@ -81,14 +81,14 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
             throw new DomainException("County and Town are required.");
         Location = location;
         Address = address;
-        _events.Raise(new VenueChangedDomainEvent(this));
+        events.Raise(new VenueChangedDomainEvent(this));
     }
 
     public void UpdateEmail(string email)
     {
         DomainException.ThrowIfNullOrWhiteSpace(email, "Email");
         Email = email;
-        _events.Raise(new VenueChangedDomainEvent(this));
+        events.Raise(new VenueChangedDomainEvent(this));
     }
 
     private static void Validate(string name, string about, string bannerUrl, string avatar, Point location, Address address, string email)

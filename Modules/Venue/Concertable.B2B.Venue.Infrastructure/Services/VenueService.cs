@@ -79,7 +79,7 @@ internal sealed class VenueService : IVenueService
             ?? throw new NotFoundException("Venue not found");
 
         var bannerUrl = request.Banner is not null
-            ? await imageService.ReplaceAsync(request.Banner.File, request.Banner.Url)
+            ? await imageService.ReplaceAsync(request.Banner, venue.BannerUrl)
             : venue.BannerUrl;
 
         venue.Update(request.Name, request.About, bannerUrl);

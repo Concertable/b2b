@@ -30,12 +30,11 @@ internal static class VenueMappers
             { new StringContent(req.Name), "Name" },
             { new StringContent(req.About), "About" },
             { new StringContent(req.Latitude.ToString()), "Latitude" },
-            { new StringContent(req.Longitude.ToString()), "Longitude" },
-            { new StringContent(req.Approved.ToString()), "Approved" }
+            { new StringContent(req.Longitude.ToString()), "Longitude" }
         };
 
         if (req.Banner is not null)
-            content.Add(await req.Banner.ToFormContent());
+            await content.AddFileAsync(req.Banner, "Banner");
 
         return content;
     }
