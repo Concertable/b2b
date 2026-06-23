@@ -6,7 +6,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Contract.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
-using Concertable.Payment.Domain;
+using Concertable.Payment.Client;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
 using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
@@ -128,7 +128,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         Assert.All(fixture.NotificationService.DraftCreated, n => Assert.NotNull(n.Payload));
 
         var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
-        var escrow = await fixture.Escrows.FirstOrDefaultAsync(e => e.BookingId == booking.Id);
+        var escrow = fixture.Escrows.FirstOrDefault(e => e.BookingId == booking.Id);
         Assert.NotNull(escrow);
         Assert.Equal(EscrowStatus.Held, escrow!.Status);
         Assert.NotEmpty(escrow.ChargeId);

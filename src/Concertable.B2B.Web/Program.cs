@@ -36,7 +36,6 @@ using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.B2B.Seed.Contracts;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Concertable.Payment.Seed;
 using Concertable.B2B.Web.Extensions;
 using Concertable.B2B.Web.Middleware;
 using Concertable.Shared.Notification.Infrastructure.Hubs;
@@ -184,9 +183,6 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 builder.Services.AddScoped<TenantResolutionMiddleware>();
-
-if (builder.Environment.IsEnvironment("E2E"))
-    services.AddSingleton<StripeE2EAccountResolver>();
 
 var app = builder.Build();
 

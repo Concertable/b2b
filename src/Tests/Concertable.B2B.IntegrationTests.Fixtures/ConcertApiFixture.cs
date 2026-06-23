@@ -1,8 +1,5 @@
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.Payment.Domain;
-using Concertable.Payment.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
@@ -10,7 +7,7 @@ namespace Concertable.B2B.IntegrationTests.Fixtures;
 public sealed class ConcertApiFixture : ApiFixture
 {
     private PublicConcertDbContext concertReads = null!;
-    private PaymentDbContext paymentDbContext = null!;
+    private EscrowStore escrowStore = null!;
 
     /// <summary>
     /// The Concert module's unfiltered, read-only read stance — sees every tenant's rows, so
@@ -18,11 +15,11 @@ public sealed class ConcertApiFixture : ApiFixture
     /// </summary>
     public PublicDbContext ConcertReads => concertReads;
 
-    public IQueryable<EscrowEntity> Escrows => paymentDbContext.Escrows.AsNoTracking();
+    public IReadOnlyList<EscrowRecord> Escrows => escrowStore.Escrows;
 
     protected override void OnReset(IServiceScope scope)
     {
         concertReads = scope.ServiceProvider.GetRequiredService<PublicConcertDbContext>();
-        paymentDbContext = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
+        escrowStore = scope.ServiceProvider.GetRequiredService<EscrowStore>();
     }
 }
