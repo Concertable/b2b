@@ -20,7 +20,7 @@ internal sealed record UpdateArtistRequest
     public required string About { get; init; }
     public required double Latitude { get; init; }
     public required double Longitude { get; init; }
-    public ImageDto? Banner { get; init; }
+    public IFormFile? Banner { get; init; }
     public IFormFile? Avatar { get; init; }
     public IReadOnlyList<Genre> Genres { get; init; } = [];
 }

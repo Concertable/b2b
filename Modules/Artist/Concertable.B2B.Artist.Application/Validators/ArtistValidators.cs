@@ -34,7 +34,7 @@ internal sealed class UpdateArtistRequestValidator : AbstractValidator<UpdateArt
 
         When(x => x.Banner != null, () =>
         {
-            RuleFor(x => x.Banner!.File)
+            RuleFor(x => x.Banner!)
                 .SetValidator(new BannerImageValidator());
         });
 

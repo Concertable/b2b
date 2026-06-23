@@ -78,7 +78,7 @@ internal sealed class ArtistService : IArtistService
             ?? throw new NotFoundException("Artist not found");
 
         var bannerUrl = request.Banner is not null
-            ? await imageService.ReplaceAsync(request.Banner.File, request.Banner.Url)
+            ? await imageService.ReplaceAsync(request.Banner, artist.BannerUrl)
             : artist.BannerUrl;
 
         artist.Update(request.Name, request.About, bannerUrl, request.Genres);
