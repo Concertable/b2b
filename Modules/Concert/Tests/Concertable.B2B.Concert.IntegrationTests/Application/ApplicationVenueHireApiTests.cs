@@ -8,7 +8,7 @@ using Xunit;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Contract.Contracts;
 using Concertable.Contracts;
-using Concertable.Payment.Domain;
+using Concertable.Payment.Client;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
 
@@ -134,7 +134,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         Assert.All(fixture.NotificationService.DraftCreated, n => Assert.NotNull(n.Payload));
 
         var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == fixture.SeedState.VenueHireApp.Id);
-        var escrow = await fixture.Escrows.FirstOrDefaultAsync(e => e.BookingId == booking.Id);
+        var escrow = fixture.Escrows.FirstOrDefault(e => e.BookingId == booking.Id);
         Assert.NotNull(escrow);
         Assert.Equal(EscrowStatus.Held, escrow!.Status);
         Assert.NotEmpty(escrow.ChargeId);

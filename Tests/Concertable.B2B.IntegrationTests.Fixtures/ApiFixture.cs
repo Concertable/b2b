@@ -1,10 +1,6 @@
 using Concertable.Kernel.Notifications;
 using Concertable.Payment.Contracts;
 using Concertable.Payment.Client;
-using Concertable.Payment.Application.Interfaces;
-using Concertable.Payment.Application.Interfaces.Webhook;
-using Concertable.Payment.Infrastructure.Data;
-using Concertable.Payment.Infrastructure.Extensions;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.B2B.User.Domain;
@@ -61,6 +57,7 @@ public class ApiFixture : IAsyncLifetime
     public IMockEmailSender EmailSender { get; } = new MockEmailSender();
     public IMockManagerPaymentClient ManagerPaymentClient { get; }
     public MockPayoutAccountClient PayoutAccountClient { get; } = new();
+    private readonly EscrowStore escrowStore = new();
 
     public ApiFixture()
     {
@@ -106,24 +103,12 @@ public class ApiFixture : IAsyncLifetime
                 foreach (var d in asbDescriptors)
                     services.Remove(d);
                 services.Replace(ServiceDescriptor.Singleton<IBusTransport, MockBusTransport>());
-                services.AddScoped<IStripeAccountClient, MockStripeAccountClient>();
-                services.AddScoped<IStripeHoldClient, MockStripeHoldClient>();
                 services.AddSingleton<INotificationClient>(NotificationService);
                 services.AddSingleton(StripeApiClient);
-                services.AddSingleton<IStripeApiClient>(StripeApiClient);
-                services.AddKeyedScoped<IStripePaymentIntentClient, MockStripePaymentIntentClient>(PaymentSession.OnSession);
-                services.AddKeyedScoped<IStripePaymentIntentClient, MockStripePaymentIntentClient>(PaymentSession.OffSession);
-                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient);
+                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, escrowStore);
                 services.AddSingleton<IEmailSender>(EmailSender);
 
-                services.AddSingleton<PaymentConfigurationProvider>();
-                services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<PaymentConfigurationProvider>());
-                services.AddDbContext<PaymentDbContext>((sp, opts) =>
-                    opts.UseSqlServer(sqlFixture.ConnectionString)
-                        .AddInterceptors(
-                            sp.GetRequiredService<AuditInterceptor>(),
-                            sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                        .UseSeedingSupport(sp));
+                services.AddSingleton(escrowStore);
                 services.AddSingleton<IManagerPaymentClient>(ManagerPaymentClient);
                 services.AddScoped<IEscrowClient, MockEscrowClient>();
                 services.AddSingleton<IPayoutAccountClient>(PayoutAccountClient);
@@ -143,7 +128,6 @@ public class ApiFixture : IAsyncLifetime
                 services.AddVenueTestSeeder();
                 services.AddContractTestSeeder();
                 services.AddConcertTestSeeder();
-                services.AddPaymentTestSeeder();
                 services.AddConversationsTestSeeder();
 
                 services.PostConfigure<AuthenticationOptions>(opts =>
