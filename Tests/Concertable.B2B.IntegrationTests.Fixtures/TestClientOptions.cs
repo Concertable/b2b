@@ -1,7 +1,6 @@
 using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Mocks;
-using Concertable.Payment.Application.Interfaces;
-using Concertable.Payment.Application.Interfaces.Webhook;
+using Concertable.Payment.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -23,17 +22,7 @@ public sealed class TestClientOptions
 
     public TestClientOptions UseFailingPayment()
     {
-        Services += services => services.Replace(ServiceDescriptor.Singleton<IStripeApiClient, MockStripeApiClientFail>());
-        return this;
-    }
-
-    public TestClientOptions UseDeclineAtVerify()
-    {
-        Services += services =>
-        {
-            services.Replace(ServiceDescriptor.Scoped<IStripeAccountClient, MockStripeAccountClientFail>());
-            services.Replace(ServiceDescriptor.Scoped<IStripeHoldClient, MockStripeHoldClientFail>());
-        };
+        Services += services => services.Replace(ServiceDescriptor.Scoped<IEscrowClient, MockEscrowClientFail>());
         return this;
     }
 
