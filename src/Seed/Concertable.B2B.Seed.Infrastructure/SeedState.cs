@@ -184,8 +184,8 @@ public sealed class SeedState
         VersusAppContract = VersusContractFactory.Create(51, 100m, 70m);
         PostedDoorSplitAppContract = DoorSplitContractFactory.Create(53, 65m);
         PostedVersusAppContract = VersusContractFactory.Create(54, 120m, 60m);
-        FlatFeeAppContract = FlatFeeContractFactory.Create(58, 150m);
-        VenueHireAppContract = VenueHireContractFactory.Create(59, 300m);
+        FlatFeeAppContract = FlatFeeContractFactory.Create(55, 180m);
+        VenueHireAppContract = VenueHireContractFactory.Create(52, 170m);
         PastVersusAppContract = VersusContractFactory.Create(64, 100m, 70m);
         PastFlatFeeAppContract = FlatFeeContractFactory.Create(65, 200m);
         PastVenueHireAppContract = VenueHireContractFactory.Create(66, 300m);
@@ -244,14 +244,14 @@ public sealed class SeedState
             VersusContractFactory.Create(49, 85m, 50m),
             DoorSplitAppContract,                                                       // 50
             VersusAppContract,                                                          // 51
-            VenueHireContractFactory.Create(52, 170m),
+            VenueHireAppContract,                                                       // 52
             PostedDoorSplitAppContract,                                                 // 53
             PostedVersusAppContract,                                                    // 54
-            FlatFeeContractFactory.Create(55, 180m),
+            FlatFeeAppContract,                                                         // 55
             DoorSplitContractFactory.Create(56, 70m),
             VersusContractFactory.Create(57, 110m, 65m),
-            FlatFeeAppContract,                                                         // 58
-            VenueHireAppContract,                                                       // 59
+            FlatFeeContractFactory.Create(58, 150m),
+            VenueHireContractFactory.Create(59, 300m),
             FlatFeeContractFactory.Create(60, 200m),
             DoorSplitContractFactory.Create(61, 70m),
             VersusContractFactory.Create(62, 100m, 60m),

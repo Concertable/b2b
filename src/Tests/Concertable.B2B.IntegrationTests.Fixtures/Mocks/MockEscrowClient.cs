@@ -1,46 +1,42 @@
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
-using Concertable.Payment.Domain;
-using Concertable.Payment.Infrastructure.Data;
+using Concertable.Testing.Integration;
 using FluentResults;
 using Stripe;
-using ClientEscrowStatus = Concertable.Payment.Client.EscrowStatus;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal sealed class MockEscrowClient : IEscrowClient
+public sealed class MockEscrowClient : IEscrowClient, IResettable
 {
     private readonly MockStripeApiClient stripeApiClient;
-    private readonly PaymentDbContext dbContext;
 
-    public MockEscrowClient(MockStripeApiClient stripeApiClient, PaymentDbContext dbContext)
+    /// <summary>The escrow holds B2B initiated, in call order — assert B2B passed the right parties/booking.</summary>
+    public List<EscrowHold> Holds { get; } = [];
+
+    public MockEscrowClient(MockStripeApiClient stripeApiClient)
     {
         this.stripeApiClient = stripeApiClient;
-        this.dbContext = dbContext;
     }
+
+    public void Reset() => Holds.Clear();
 
     public async Task<Result<EscrowResponse>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
     {
-        var metadata = new Dictionary<string, string>
-        {
-            ["type"] = TransactionTypes.Escrow,
-            ["bookingId"] = bookingId.ToString()
-        };
         var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
         {
             Amount = (long)(amount * 100),
-            Metadata = metadata
+            Metadata = new Dictionary<string, string>
+            {
+                ["type"] = TransactionTypes.Escrow,
+                ["bookingId"] = bookingId.ToString()
+            }
         });
 
-        var escrow = EscrowEntity.Create(bookingId, payerId, payeeId, (long)(amount * 100), intent.Id);
-        escrow.Confirm();
-        dbContext.Escrows.Add(escrow);
-        await dbContext.SaveChangesAsync(ct);
-
-        return Result.Ok(new EscrowResponse(escrow.Id, escrow.ChargeId, (ClientEscrowStatus)escrow.Status));
+        Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));
+        return Result.Ok(new EscrowResponse(0, intent.Id, EscrowStatus.Held));
     }
 
-    public async Task<Result<EscrowResponse>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
+    public Task<Result<EscrowResponse>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
     {
         stripeApiClient.UpdateLastMetadata(new Dictionary<string, string>
         {
@@ -48,14 +44,12 @@ internal sealed class MockEscrowClient : IEscrowClient
             ["bookingId"] = bookingId.ToString()
         });
 
-        var escrow = EscrowEntity.Create(bookingId, payerId, payeeId, (long)(amount * 100), paymentIntentId);
-        escrow.Confirm();
-        dbContext.Escrows.Add(escrow);
-        await dbContext.SaveChangesAsync(ct);
-
-        return Result.Ok(new EscrowResponse(escrow.Id, escrow.ChargeId, (ClientEscrowStatus)escrow.Status));
+        Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));
+        return Task.FromResult(Result.Ok(new EscrowResponse(0, paymentIntentId, EscrowStatus.Held)));
     }
 
     public Task<Result<TransferResponse?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
         Task.FromResult(Result.Ok<TransferResponse?>(new TransferResponse("tr_mock")));
 }
+
+public sealed record EscrowHold(Guid PayerId, Guid PayeeId, decimal Amount, int BookingId);
