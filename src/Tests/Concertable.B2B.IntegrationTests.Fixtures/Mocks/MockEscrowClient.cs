@@ -1,21 +1,24 @@
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
+using Concertable.Testing.Integration;
 using FluentResults;
 using Stripe;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal sealed class MockEscrowClient : IEscrowClient
+public sealed class MockEscrowClient : IEscrowClient, IResettable
 {
     private readonly MockStripeApiClient stripeApiClient;
-    private readonly EscrowStore store;
 
-    public MockEscrowClient(MockStripeApiClient stripeApiClient, EscrowStore store)
+    /// <summary>The escrow holds B2B initiated, in call order — assert B2B passed the right parties/booking.</summary>
+    public List<EscrowHold> Holds { get; } = [];
+
+    public MockEscrowClient(MockStripeApiClient stripeApiClient)
     {
         this.stripeApiClient = stripeApiClient;
-        this.store = store;
     }
+
+    public void Reset() => Holds.Clear();
 
     public async Task<Result<EscrowResponse>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
     {
@@ -29,7 +32,8 @@ internal sealed class MockEscrowClient : IEscrowClient
             }
         });
 
-        return Hold(bookingId, payerId, payeeId, amount, intent.Id);
+        Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));
+        return Result.Ok(new EscrowResponse(0, intent.Id, EscrowStatus.Held));
     }
 
     public Task<Result<EscrowResponse>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
@@ -40,16 +44,12 @@ internal sealed class MockEscrowClient : IEscrowClient
             ["bookingId"] = bookingId.ToString()
         });
 
-        return Task.FromResult(Hold(bookingId, payerId, payeeId, amount, paymentIntentId));
-    }
-
-    private Result<EscrowResponse> Hold(int bookingId, Guid payerId, Guid payeeId, decimal amount, string chargeId)
-    {
-        var escrow = new EscrowRecord(bookingId, payerId, payeeId, (long)(amount * 100), chargeId, EscrowStatus.Held);
-        var id = store.Add(escrow);
-        return Result.Ok(new EscrowResponse(id, chargeId, EscrowStatus.Held));
+        Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));
+        return Task.FromResult(Result.Ok(new EscrowResponse(0, paymentIntentId, EscrowStatus.Held)));
     }
 
     public Task<Result<TransferResponse?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
         Task.FromResult(Result.Ok<TransferResponse?>(new TransferResponse("tr_mock")));
 }
+
+public sealed record EscrowHold(Guid PayerId, Guid PayeeId, decimal Amount, int BookingId);
