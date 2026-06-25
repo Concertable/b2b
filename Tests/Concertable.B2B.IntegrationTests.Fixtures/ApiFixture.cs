@@ -57,11 +57,12 @@ public class ApiFixture : IAsyncLifetime
     public IMockEmailSender EmailSender { get; } = new MockEmailSender();
     public IMockManagerPaymentClient ManagerPaymentClient { get; }
     public MockPayoutAccountClient PayoutAccountClient { get; } = new();
-    private readonly EscrowStore escrowStore = new();
+    public MockEscrowClient EscrowClient { get; }
 
     public ApiFixture()
     {
         ManagerPaymentClient = new MockManagerPaymentClient(StripeApiClient);
+        EscrowClient = new MockEscrowClient(StripeApiClient);
     }
     public IWebhookSimulator StripeClient { get; private set; } = null!;
     public SeedState SeedState { get; private set; } = null!;
@@ -105,12 +106,11 @@ public class ApiFixture : IAsyncLifetime
                 services.Replace(ServiceDescriptor.Singleton<IBusTransport, MockBusTransport>());
                 services.AddSingleton<INotificationClient>(NotificationService);
                 services.AddSingleton(StripeApiClient);
-                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, escrowStore);
+                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient);
                 services.AddSingleton<IEmailSender>(EmailSender);
 
-                services.AddSingleton(escrowStore);
                 services.AddSingleton<IManagerPaymentClient>(ManagerPaymentClient);
-                services.AddScoped<IEscrowClient, MockEscrowClient>();
+                services.AddSingleton<IEscrowClient>(EscrowClient);
                 services.AddSingleton<IPayoutAccountClient>(PayoutAccountClient);
 
                 services.AddSingleton<IWebhookSimulator, MockWebhookSimulator>();
