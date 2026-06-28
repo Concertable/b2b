@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <Description>Concertable B2B seed contracts: the canonical B2B seed catalog (Artist/Venue/Concert seed specs + their ToEvent() mappers) consumed by B2B's own seeders, its Seed.Simulator, and downstream consumers' projection-test seeders.</Description>
   </PropertyGroup>
 
   <ItemGroup>
