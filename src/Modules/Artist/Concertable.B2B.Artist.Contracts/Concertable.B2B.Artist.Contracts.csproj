@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <Description>Concertable B2B Artist contracts: the cross-service artist contract surface — integration events (ArtistChangedEvent, ArtistRatingUpdatedEvent) and view DTOs consumed by services downstream of B2B (Search, Customer).</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Contracts\Concertable.Contracts.csproj" />
