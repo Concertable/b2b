@@ -78,6 +78,7 @@
     <PackageVersion Include="Concertable.Messaging.AzureServiceBus" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Shared" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Identity" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Seed.Infrastructure" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Auth.Contracts" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Payment.Client" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Payment.Contracts" Version="$(ConcertablePlatformVersion)" />
