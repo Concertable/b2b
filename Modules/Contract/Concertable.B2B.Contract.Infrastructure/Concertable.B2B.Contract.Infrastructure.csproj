@@ -21,7 +21,7 @@
     <ProjectReference Include="..\Concertable.B2B.Contract.Domain\Concertable.B2B.Contract.Domain.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Contract.Application\Concertable.B2B.Contract.Application.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Infrastructure\Concertable.B2B.DataAccess.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.B2B\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
     <!-- TEMPORARY: legacy hosts retire as Payment + remaining Concertable.* extracts. -->
   </ItemGroup>
 
