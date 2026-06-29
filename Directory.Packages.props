@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <ConcertablePlatformVersion>0.1.0-alpha.0.533</ConcertablePlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,6 +48,40 @@
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
+  </ItemGroup>
+
+  <!-- Shared platform + cross-service contracts from the org feed, pinned lockstep via
+       ConcertablePlatformVersion above. Bump only to a version already published to the feed,
+       else restore fails NU1101. The churny core (Kernel, Messaging.*) is consumed as packages
+       by default; set UseLocalCore=true (env CONCERTABLE_LOCAL_CORE) to switch it to in-repo
+       ProjectReferences for fast cross-cutting local dev — see Directory.Build.props. -->
+  <ItemGroup>
+    <PackageVersion Include="Concertable.Kernel" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Contracts" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.DataAccess.Application" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.DataAccess.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.ServiceDefaults" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Api" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Notification.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Blob.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Email.Application" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Email.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Geocoding.Application" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Geocoding.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Imaging.Application" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Imaging.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Pdf.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Messaging.Contracts" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Messaging.Domain" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Messaging.Application" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Messaging.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Messaging.AzureServiceBus" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Seed.Shared" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Seed.Identity" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Auth.Contracts" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Payment.Client" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Payment.Contracts" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Customer.Review.Contracts" Version="$(ConcertablePlatformVersion)" />
   </ItemGroup>
 
   <ItemGroup>

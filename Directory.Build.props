@@ -5,6 +5,19 @@
     <NoWarn>$(NoWarn);NU1510</NoWarn>
   </PropertyGroup>
 
+  <!-- Hybrid inner loop for the churny core (Kernel, Messaging.*). Default: consume them as feed
+       packages (required for the standalone carve + CI, which have no sibling source on disk). Opt
+       in to in-repo ProjectReferences — for fast cross-cutting local dev against uncommitted core
+       changes, no publish/restore cycle — with `-p:UseLocalCore=true` or `set CONCERTABLE_LOCAL_CORE=1`.
+       The swap itself lives in Directory.Build.targets; ConcertableCoreRoot anchors it at api/ so the
+       paths don't vary by project depth. NEVER set UseLocalCore=true in committed config — it breaks
+       the carve. -->
+  <PropertyGroup>
+    <UseLocalCore Condition="'$(UseLocalCore)' == '' and '$(CONCERTABLE_LOCAL_CORE)' != ''">true</UseLocalCore>
+    <UseLocalCore Condition="'$(UseLocalCore)' == ''">false</UseLocalCore>
+    <ConcertableCoreRoot>$(MSBuildThisFileDirectory)..\</ConcertableCoreRoot>
+  </PropertyGroup>
+
   <!-- Package publishing. Projects opt in with <IsPackable>true</IsPackable>; everything
        else (libs not yet published, hosts, tests) stays unpackable so a solution-wide
        `dotnet pack` produces only the intended packages. Version is MinVer-derived

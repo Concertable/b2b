@@ -6,9 +6,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- Never a ProjectReference: would break B2B's standalone carve. The churny core
+       (Kernel, Messaging.*) is swapped back to ProjectReferences by Directory.Build.targets
+       when UseLocalCore=true; everything else is package-only. -->
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Concertable.DataAccess\Concertable.DataAccess.Application\Concertable.DataAccess.Application.csproj" />
-    <ProjectReference Include="..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
+    <PackageReference Include="Concertable.DataAccess.Application" />
+    <PackageReference Include="Concertable.Kernel" />
   </ItemGroup>
 
 </Project>

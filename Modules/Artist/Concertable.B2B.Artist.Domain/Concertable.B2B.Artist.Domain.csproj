@@ -8,8 +8,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Seed\Concertable.Seed.Identity\Concertable.Seed.Identity.csproj" />
+  </ItemGroup>
+
+  <!-- Never a ProjectReference: would break B2B's standalone carve. The churny core
+       (Kernel, Messaging.*) is swapped back to ProjectReferences by Directory.Build.targets
+       when UseLocalCore=true; everything else is package-only. -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Seed.Identity" />
   </ItemGroup>
 
 </Project>
