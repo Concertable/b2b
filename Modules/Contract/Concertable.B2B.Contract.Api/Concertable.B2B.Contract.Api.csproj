@@ -11,10 +11,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Shared.Api\Concertable.Shared.Api.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Contract.Contracts\Concertable.B2B.Contract.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Contract.Application\Concertable.B2B.Contract.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Contract.Infrastructure\Concertable.B2B.Contract.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <!-- Never a ProjectReference: would break B2B's standalone carve. The churny core
+       (Kernel, Messaging.*) is swapped back to ProjectReferences by Directory.Build.targets
+       when UseLocalCore=true; everything else is package-only. -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.Shared.Api" />
   </ItemGroup>
 
 </Project>

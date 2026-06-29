@@ -13,16 +13,22 @@
   <ItemGroup>
     <ProjectReference Include="..\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Artist.Domain\Concertable.B2B.Artist.Domain.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Contracts\Concertable.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Shared.Imaging\Concertable.Shared.Imaging.Application\Concertable.Shared.Imaging.Application.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.DataAccess\Concertable.DataAccess.Application\Concertable.DataAccess.Application.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Application\Concertable.B2B.DataAccess.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentResults" />
     <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+  <!-- Never a ProjectReference: would break B2B's standalone carve. The churny core
+       (Kernel, Messaging.*) is swapped back to ProjectReferences by Directory.Build.targets
+       when UseLocalCore=true; everything else is package-only. -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.Contracts" />
+    <PackageReference Include="Concertable.DataAccess.Application" />
+    <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Shared.Imaging.Application" />
   </ItemGroup>
 
 </Project>

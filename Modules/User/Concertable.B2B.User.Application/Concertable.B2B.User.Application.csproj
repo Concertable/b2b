@@ -9,13 +9,19 @@
   <ItemGroup>
     <ProjectReference Include="..\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.User.Domain\Concertable.B2B.User.Domain.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.DataAccess\Concertable.DataAccess.Application\Concertable.DataAccess.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentResults" />
     <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+  <!-- Never a ProjectReference: would break B2B's standalone carve. The churny core
+       (Kernel, Messaging.*) is swapped back to ProjectReferences by Directory.Build.targets
+       when UseLocalCore=true; everything else is package-only. -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.DataAccess.Application" />
+    <PackageReference Include="Concertable.Kernel" />
   </ItemGroup>
 
 </Project>

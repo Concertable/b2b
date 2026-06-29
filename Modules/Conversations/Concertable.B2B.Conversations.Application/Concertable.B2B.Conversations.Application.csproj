@@ -10,12 +10,18 @@
     <ProjectReference Include="..\Concertable.B2B.Conversations.Contracts\Concertable.B2B.Conversations.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Conversations.Domain\Concertable.B2B.Conversations.Domain.csproj" />
     <ProjectReference Include="..\..\User\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Contracts\Concertable.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+  <!-- Never a ProjectReference: would break B2B's standalone carve. The churny core
+       (Kernel, Messaging.*) is swapped back to ProjectReferences by Directory.Build.targets
+       when UseLocalCore=true; everything else is package-only. -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.Contracts" />
+    <PackageReference Include="Concertable.Kernel" />
   </ItemGroup>
 
 </Project>
