@@ -8,16 +8,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Concertable.ServiceDefaults\Concertable.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Modules\Venue\Concertable.B2B.Venue.Contracts\Concertable.B2B.Venue.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\Artist\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Seed.Contracts\Concertable.B2B.Seed.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\Shared\Seed\Concertable.Seed.Identity\Concertable.Seed.Identity.csproj" />
-    <ProjectReference Include="..\..\..\Concertable.Messaging\Concertable.Messaging.AzureServiceBus\Concertable.Messaging.AzureServiceBus.csproj" />
-    <ProjectReference Include="..\..\..\Concertable.Messaging\Concertable.Messaging.Application\Concertable.Messaging.Application.csproj" />
-    <ProjectReference Include="..\..\..\Concertable.Messaging\Concertable.Messaging.Contracts\Concertable.Messaging.Contracts.csproj" />
+  </ItemGroup>
+
+  <!-- Never a ProjectReference: would break B2B's standalone carve. The churny core
+       (Kernel, Messaging.*) is swapped back to ProjectReferences by Directory.Build.targets
+       when UseLocalCore=true; everything else is package-only. -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.Messaging.Application" />
+    <PackageReference Include="Concertable.Messaging.AzureServiceBus" />
+    <PackageReference Include="Concertable.Messaging.Contracts" />
+    <PackageReference Include="Concertable.Seed.Identity" />
+    <PackageReference Include="Concertable.ServiceDefaults" />
   </ItemGroup>
 
 </Project>

@@ -12,7 +12,13 @@
     <ProjectReference Include="..\..\Modules\Venue\Concertable.B2B.Venue.Contracts\Concertable.B2B.Venue.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\Artist\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\Shared\Seed\Concertable.Seed.Identity\Concertable.Seed.Identity.csproj" />
+  </ItemGroup>
+
+  <!-- Never a ProjectReference: would break B2B's standalone carve. The churny core
+       (Kernel, Messaging.*) is swapped back to ProjectReferences by Directory.Build.targets
+       when UseLocalCore=true; everything else is package-only. -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.Seed.Identity" />
   </ItemGroup>
 
 </Project>
