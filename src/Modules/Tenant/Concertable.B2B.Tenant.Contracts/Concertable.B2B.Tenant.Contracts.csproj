@@ -13,10 +13,11 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Contracts\Concertable.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.Messaging\Concertable.Messaging.Contracts\Concertable.Messaging.Contracts.csproj" />
+    <PackageReference Include="Concertable.Contracts" />
+    <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Messaging.Contracts" />
   </ItemGroup>
 
 </Project>

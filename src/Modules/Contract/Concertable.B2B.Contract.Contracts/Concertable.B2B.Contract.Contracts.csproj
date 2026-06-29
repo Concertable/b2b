@@ -5,9 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Contracts\Concertable.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
+    <PackageReference Include="Concertable.Contracts" />
+    <PackageReference Include="Concertable.Kernel" />
   </ItemGroup>
 
 </Project>
