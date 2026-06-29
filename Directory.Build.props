@@ -13,7 +13,7 @@
        paths don't vary by project depth. NEVER set UseLocalCore=true in committed config — it breaks
        the carve. -->
   <PropertyGroup>
-    <UseLocalCore Condition="'$(UseLocalCore)' == '' and '$(CONCERTABLE_LOCAL_CORE)' != ''">true</UseLocalCore>
+    <UseLocalCore Condition="'$(UseLocalCore)' == '' and ('$(CONCERTABLE_LOCAL_CORE)' == '1' or '$(CONCERTABLE_LOCAL_CORE)' == 'true')">true</UseLocalCore>
     <UseLocalCore Condition="'$(UseLocalCore)' == ''">false</UseLocalCore>
     <ConcertableCoreRoot>$(MSBuildThisFileDirectory)..\</ConcertableCoreRoot>
   </PropertyGroup>
