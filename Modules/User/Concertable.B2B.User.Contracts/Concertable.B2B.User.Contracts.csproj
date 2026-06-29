@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <Description>Concertable B2B User contracts: the cross-service user/manager contract surface — the IUserModule read port and the polymorphic UserBase/ManagerDto view shapes consumed by services downstream of B2B.</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
