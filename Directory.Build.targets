@@ -1,0 +1,35 @@
+<Project>
+
+  <!-- Hybrid inner loop (see Directory.Build.props for the why + how to opt in). Imported after the
+       project's items, so @(PackageReference) is fully populated here. When UseLocalCore=true, for
+       every churny-core package THIS project references, swap the feed package for the in-repo project
+       — all-or-nothing per id across the folder (UseLocalCore is global), so a local project and a feed
+       package of the same assembly never coexist. Default (UseLocalCore=false): this file is inert and
+       the core stays packages (the standalone carve + CI have no sibling source on disk).
+
+       Mechanism: ChurnyCorePackage is the single source of truth (id + in-repo path). Update tags each
+       core PackageReference this project actually has (by id — a no-op where it doesn't reference it)
+       with that path; then we add the ProjectReference and Remove the same ids. Both the tag and the
+       Remove derive from ChurnyCorePackage, so the set can't drift. ConcertableCoreRoot anchors the
+       paths at api/ so they don't vary by project depth. -->
+  <ItemGroup Condition="'$(UseLocalCore)' == 'true'">
+    <ChurnyCorePackage Include="Concertable.Kernel"                    Project="$(ConcertableCoreRoot)Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
+    <ChurnyCorePackage Include="Concertable.Messaging.Contracts"       Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.Contracts\Concertable.Messaging.Contracts.csproj" />
+    <ChurnyCorePackage Include="Concertable.Messaging.Domain"          Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.Domain\Concertable.Messaging.Domain.csproj" />
+    <ChurnyCorePackage Include="Concertable.Messaging.Application"     Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.Application\Concertable.Messaging.Application.csproj" />
+    <ChurnyCorePackage Include="Concertable.Messaging.Infrastructure"  Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.Infrastructure\Concertable.Messaging.Infrastructure.csproj" />
+    <ChurnyCorePackage Include="Concertable.Messaging.AzureServiceBus" Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.AzureServiceBus\Concertable.Messaging.AzureServiceBus.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalCore)' == 'true'">
+    <PackageReference Update="@(ChurnyCorePackage)" LocalCoreProject="%(ChurnyCorePackage.Project)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalCore)' == 'true'">
+    <!-- Transform emits a ProjectReference only for packages we tagged above (others -> empty Include,
+         skipped); the Remove drops the same core ids (a no-op where unreferenced). -->
+    <ProjectReference Include="@(PackageReference->'%(LocalCoreProject)')" />
+    <PackageReference Remove="@(ChurnyCorePackage)" />
+  </ItemGroup>
+
+</Project>

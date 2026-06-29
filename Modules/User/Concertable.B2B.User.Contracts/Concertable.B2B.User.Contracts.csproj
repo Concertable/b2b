@@ -8,9 +8,13 @@
     <Description>Concertable B2B User contracts: the cross-service user/manager contract surface — the IUserModule read port and the polymorphic UserBase/ManagerDto view shapes consumed by services downstream of B2B.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.Messaging\Concertable.Messaging.Contracts\Concertable.Messaging.Contracts.csproj" />
     <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
+  </ItemGroup>
+
+  <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Messaging.Contracts" />
   </ItemGroup>
 
 </Project>

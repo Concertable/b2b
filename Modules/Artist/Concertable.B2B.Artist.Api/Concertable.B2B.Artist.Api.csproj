@@ -11,11 +11,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Shared.Api\Concertable.Shared.Api.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Artist.Application\Concertable.B2B.Artist.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Artist.Infrastructure\Concertable.B2B.Artist.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
+  </ItemGroup>
+
+  <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.Shared.Api" />
   </ItemGroup>
 
 </Project>

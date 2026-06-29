@@ -20,13 +20,18 @@
     <ProjectReference Include="..\Concertable.B2B.Conversations.Application\Concertable.B2B.Conversations.Application.csproj" />
     <ProjectReference Include="..\..\User\Concertable.B2B.User.Domain\Concertable.B2B.User.Domain.csproj" />
     <ProjectReference Include="..\..\User\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.DataAccess\Concertable.DataAccess.Infrastructure\Concertable.DataAccess.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Seed\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
-    <ProjectReference Include="..\..\..\..\Concertable.B2B\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\..\Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
+    <ProjectReference Include="..\..\..\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Infrastructure\Concertable.B2B.DataAccess.Infrastructure.csproj" />
   </ItemGroup>
+
+  <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.DataAccess.Infrastructure" />
+    <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Seed.Shared" />
+  </ItemGroup>
+
 </Project>
