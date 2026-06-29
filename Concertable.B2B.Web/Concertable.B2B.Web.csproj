@@ -51,9 +51,7 @@
 
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1development_1json__JsonSchema="https://www.unpkg.com/wrangler/config-schema.json" /></VisualStudio></ProjectExtensions>
 
-  <!-- Never a ProjectReference: would break B2B's standalone carve. The churny core
-       (Kernel, Messaging.*) is swapped back to ProjectReferences by Directory.Build.targets
-       when UseLocalCore=true; everything else is package-only. -->
+  <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
   <ItemGroup>
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Messaging.AzureServiceBus" />

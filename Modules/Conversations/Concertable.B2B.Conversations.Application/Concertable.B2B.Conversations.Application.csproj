@@ -16,9 +16,7 @@
     <PackageReference Include="FluentValidation" />
   </ItemGroup>
 
-  <!-- Never a ProjectReference: would break B2B's standalone carve. The churny core
-       (Kernel, Messaging.*) is swapped back to ProjectReferences by Directory.Build.targets
-       when UseLocalCore=true; everything else is package-only. -->
+  <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
   <ItemGroup>
     <PackageReference Include="Concertable.Contracts" />
     <PackageReference Include="Concertable.Kernel" />
