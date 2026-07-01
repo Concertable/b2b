@@ -13,7 +13,7 @@
        Remove derive from ChurnyCorePackage, so the set can't drift. ConcertableCoreRoot anchors the
        paths at api/ so they don't vary by project depth. -->
   <ItemGroup Condition="'$(UseLocalCore)' == 'true'">
-    <ChurnyCorePackage Include="Concertable.Kernel"                    Project="$(ConcertableCoreRoot)Shared\Concertable.Kernel\Concertable.Kernel.csproj" />
+    <ChurnyCorePackage Include="Concertable.Kernel"                    Project="$(ConcertableCoreRoot)Concertable.Shared\src\Concertable.Kernel\Concertable.Kernel.csproj" />
     <ChurnyCorePackage Include="Concertable.Messaging.Contracts"       Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.Contracts\Concertable.Messaging.Contracts.csproj" />
     <ChurnyCorePackage Include="Concertable.Messaging.Domain"          Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.Domain\Concertable.Messaging.Domain.csproj" />
     <ChurnyCorePackage Include="Concertable.Messaging.Application"     Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.Application\Concertable.Messaging.Application.csproj" />
