@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\tests\Concertable.B2B.IntegrationTests.Fixtures\Concertable.B2B.IntegrationTests.Fixtures.csproj" />
-    <ProjectReference Include="..\..\..\..\..\..\Shared\Tests\Concertable.Testing\Concertable.Testing.csproj" />
+    <ProjectReference Include="..\..\..\..\..\..\Concertable.Shared\tests\Concertable.Testing\Concertable.Testing.csproj" />
     <ProjectReference Include="..\..\..\..\..\..\Concertable.Messaging\Concertable.Messaging.Domain\Concertable.Messaging.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\..\..\Concertable.Messaging\Concertable.Messaging.Infrastructure\Concertable.Messaging.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Concertable.B2B.Concert.Domain\Concertable.B2B.Concert.Domain.csproj" />

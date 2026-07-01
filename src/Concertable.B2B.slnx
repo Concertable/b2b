@@ -59,7 +59,7 @@
     <Project Path="src/Modules/Conversations/Concertable.B2B.Conversations.Infrastructure/Concertable.B2B.Conversations.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Shared/Notification/">
-    <Project Path="../Shared/Concertable.Shared.Notification/Concertable.Shared.Notification.Infrastructure/Concertable.Shared.Notification.Infrastructure.csproj" />
+    <Project Path="../Concertable.Shared/src/Concertable.Shared.Notification/Concertable.Shared.Notification.Infrastructure/Concertable.Shared.Notification.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/Tenant/">
     <Project Path="src/Modules/Tenant/Concertable.B2B.Tenant.Api/Concertable.B2B.Tenant.Api.csproj" />

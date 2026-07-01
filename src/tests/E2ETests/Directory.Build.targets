@@ -8,7 +8,7 @@
       <Category ParameterType="System.String" Required="false" />
     </ParameterGroup>
     <Task>
-      <Code Type="Class" Language="cs" Source="$(MSBuildThisFileDirectory)..\..\..\Shared\Tests\FilterNdjsonTagsTask.cs" />
+      <Code Type="Class" Language="cs" Source="$(MSBuildThisFileDirectory)..\..\..\Concertable.Shared\tests\FilterNdjsonTagsTask.cs" />
     </Task>
   </UsingTask>
 
@@ -29,7 +29,7 @@
       <Category ParameterType="System.String" Required="false" />
     </ParameterGroup>
     <Task>
-      <Code Type="Class" Language="cs" Source="$(MSBuildThisFileDirectory)..\..\..\Shared\Tests\StripFeatureTraitsTask.cs" />
+      <Code Type="Class" Language="cs" Source="$(MSBuildThisFileDirectory)..\..\..\Concertable.Shared\tests\StripFeatureTraitsTask.cs" />
     </Task>
   </UsingTask>
 
@@ -50,7 +50,7 @@
       <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
     </ParameterGroup>
     <Task>
-      <Code Type="Class" Language="cs" Source="$(MSBuildThisFileDirectory)..\..\..\Shared\Tests\StripReqnrollHooksTask.cs" />
+      <Code Type="Class" Language="cs" Source="$(MSBuildThisFileDirectory)..\..\..\Concertable.Shared\tests\StripReqnrollHooksTask.cs" />
     </Task>
   </UsingTask>
 
