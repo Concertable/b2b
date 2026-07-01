@@ -10,7 +10,7 @@ The simulator is **not** registered in the umbrella `Concertable.AppHost`. Real 
 
 ## Why it exists
 
-Concertable is a multi-microservice system. Customer (and other downstream services) reference B2B only via `Concertable.B2B.X.Contracts` projects — the integration event records and DTO shapes. They never reference B2B's runtime code. See [`api/ARCHITECTURE.md`](../../../ARCHITECTURE.md) for the full statement of the microservice premise.
+Concertable is a multi-microservice system. Customer (and other downstream services) reference B2B only via `Concertable.B2B.X.Contracts` projects — the integration event records and DTO shapes. They never reference B2B's runtime code. See [`api/ARCHITECTURE.md`](../../../../ARCHITECTURE.md) for the full statement of the microservice premise.
 
 This means `Concertable.Customer.AppHost` runs standalone with Auth + Customer.Web + Search + Payment + SPAs but **without B2B**. With no B2B running, Customer's projection event handlers receive nothing. Customer's projection tables (`[concert].[Concerts]`, `[venue].[Venues]`, `[artist].[Artists]`) stay empty. The Customer SPA shows nothing. Dev experience is unusable.
 
@@ -142,8 +142,8 @@ If you're not sure you've kept things on the right side of the line, these grep 
 
 ## Related docs
 
-- [`api/ARCHITECTURE.md`](../../../ARCHITECTURE.md) — microservice premise.
-- [`api/docs/SEEDING_CONVENTIONS.md`](../../../docs/SEEDING_CONVENTIONS.md) — the no-direct-projection-seeding rule and the rest of the seeding conventions.
-- `api/Concertable.B2B/Seed/Concertable.B2B.Seed.Infrastructure/` — B2B's own SeedState (consumes the catalog for venues/artists/concerts) plus the `Factories/` (`VenueFactory`/`ArtistFactory`/`ConcertFactory`).
-- `api/Concertable.B2B/Seed/Concertable.B2B.Seed.Contracts/` — the canonical `XSeedSpec` records and their `ToChangedEvent()` conversion.
+- [`api/ARCHITECTURE.md`](../../../../ARCHITECTURE.md) — microservice premise.
+- [`api/docs/SEEDING_CONVENTIONS.md`](../../../../docs/SEEDING_CONVENTIONS.md) — the no-direct-projection-seeding rule and the rest of the seeding conventions.
+- `api/Concertable.B2B/src/Seed/Concertable.B2B.Seed.Infrastructure/` — B2B's own SeedState (consumes the catalog for venues/artists/concerts) plus the `Factories/` (`VenueFactory`/`ArtistFactory`/`ConcertFactory`).
+- `api/Concertable.B2B/src/Seed/Concertable.B2B.Seed.Contracts/` — the canonical `XSeedSpec` records and their `ToChangedEvent()` conversion.
 - `api/Concertable.Customer/Concertable.Customer.AppHost/Program.cs` — where the simulator is registered.
