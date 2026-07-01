@@ -21,7 +21,7 @@
     <ProjectReference Include="..\..\src\Concertable.B2B.Workers\Concertable.B2B.Workers.csproj" />
     <ProjectReference Include="..\..\src\Modules\Concert\Concertable.B2B.Concert.Application\Concertable.B2B.Concert.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\Concert\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\Shared\Tests\Concertable.Testing\Concertable.Testing.csproj" />
+    <ProjectReference Include="..\..\..\Concertable.Shared\tests\Concertable.Testing\Concertable.Testing.csproj" />
   </ItemGroup>
 
 </Project>
