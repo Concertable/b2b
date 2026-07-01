@@ -22,8 +22,8 @@ them needs a GitHub [personal access token](https://github.com/settings/tokens) 
 
 ```sh
 export GITHUB_PACKAGES_TOKEN=<your read:packages PAT>
-dotnet build Concertable.B2B.Web/Concertable.B2B.Web.csproj
-dotnet build Concertable.B2B.Workers/Concertable.B2B.Workers.csproj
+dotnet build src/Concertable.B2B.Web/Concertable.B2B.Web.csproj
+dotnet build src/Concertable.B2B.Workers/Concertable.B2B.Workers.csproj
 ```
 
 Building the two host projects pulls the whole deployable closure. (In the monorepo's CI the same
