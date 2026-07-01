@@ -2,13 +2,13 @@
   <Project Path="src/Concertable.B2B.AppHost/Concertable.B2B.AppHost.csproj" />
   <Project Path="src/Concertable.B2B.AppHost.Extensions/Concertable.B2B.AppHost.Extensions.csproj" />
   <Project Path="../Concertable.Search/Concertable.Search.AppHost.Extensions/Concertable.Search.AppHost.Extensions.csproj" />
-  <Project Path="../Concertable.Payment/Concertable.Payment.AppHost.Extensions/Concertable.Payment.AppHost.Extensions.csproj" />
+  <Project Path="../Concertable.Payment/src/Concertable.Payment.AppHost.Extensions/Concertable.Payment.AppHost.Extensions.csproj" />
   <Project Path="src/Concertable.B2B.Web/Concertable.B2B.Web.csproj" />
   <Project Path="src/Concertable.B2B.Workers/Concertable.B2B.Workers.csproj" />
   <Project Path="../Concertable.AppHost.Shared/Concertable.AppHost.Shared.csproj" />
   <Project Path="../Concertable.Auth/Concertable.Auth.csproj" />
-  <Project Path="../Concertable.Payment/Concertable.Payment.Web/Concertable.Payment.Web.csproj" />
-  <Project Path="../Concertable.Payment/Concertable.Payment.Workers/Concertable.Payment.Workers.csproj" />
+  <Project Path="../Concertable.Payment/src/Concertable.Payment.Web/Concertable.Payment.Web.csproj" />
+  <Project Path="../Concertable.Payment/src/Concertable.Payment.Workers/Concertable.Payment.Workers.csproj" />
   <Project Path="../Concertable.Search/Concertable.Search.Web/Concertable.Search.Web.csproj" />
   <Project Path="../Concertable.Search/Concertable.Search.Workers/Concertable.Search.Workers.csproj" />
   <Folder Name="/DataAccess/">
