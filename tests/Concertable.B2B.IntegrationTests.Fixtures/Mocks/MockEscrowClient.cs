@@ -50,6 +50,9 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
 
     public Task<Result<TransferResponse?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
         Task.FromResult(Result.Ok<TransferResponse?>(new TransferResponse("tr_mock")));
+
+    public Task<Result<RefundResponse?>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result.Ok<RefundResponse?>(new RefundResponse("re_mock")));
 }
 
 public sealed record EscrowHold(Guid PayerId, Guid PayeeId, decimal Amount, int BookingId);
