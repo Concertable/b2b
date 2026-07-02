@@ -22,7 +22,7 @@ export function CancelBookingButton({ concertId }: Readonly<Props>) {
   async function handleConfirm() {
     try {
       await cancel.mutateAsync();
-      toast.success("Booking cancelled and payment refunded");
+      toast.success("Booking cancelled. Any payment held is refunded in full.");
       setOpen(false);
     } catch {
       toast.error("Couldn't cancel this booking. Please try again.");
@@ -39,8 +39,8 @@ export function CancelBookingButton({ concertId }: Readonly<Props>) {
           <DialogHeader>
             <DialogTitle>Cancel this booking?</DialogTitle>
             <DialogDescription>
-              The artist's payment is refunded in full and the concert is
-              removed. This can't be undone.
+              The concert is removed and any payment held is refunded in full.
+              This can't be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
