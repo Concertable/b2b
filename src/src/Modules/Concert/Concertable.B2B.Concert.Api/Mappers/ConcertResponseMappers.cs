@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
 
@@ -66,6 +67,10 @@ internal static class ConcertResponseMappers
             Town = dto.Venue.Town,
             Latitude = dto.Venue.Latitude,
             Longitude = dto.Venue.Longitude
-        }
+        },
+        Actions = new ConcertActions(
+            Cancel: dto.State == LifecycleState.Booked
+                ? new ActionLink($"/api/Concert/{dto.Id}/cancel", "POST")
+                : null)
     };
 }
