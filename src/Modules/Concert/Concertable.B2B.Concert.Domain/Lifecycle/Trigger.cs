@@ -12,4 +12,5 @@ public enum Trigger
     SettlementPaymentSucceeded,
     SettlementPaymentFailed,
     Finish,
+    Cancel,
 }

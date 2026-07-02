@@ -7,30 +7,27 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Workflows;
 
 internal sealed class DoorSplitWorkflow : IConcertWorkflow, IAppliesSimple, IAcceptsCheckout, IAcceptsPaid
 {
-    private readonly ISimpleApplyStep apply;
-    private readonly IAcceptCheckoutStep acceptCheckout;
-    private readonly IPaidAcceptStep accept;
-    private readonly IBookStep book;
-    private readonly IFinishStep finish;
-
     public DoorSplitWorkflow(
         SimpleApplyStep apply,
         VerifyCheckoutStep acceptCheckout,
         PaidAcceptStep accept,
         CreateConcertDraftStep book,
-        PayoutFinishStep finish)
+        PayoutFinishStep finish,
+        RefundEscrowStep cancel)
     {
-        this.apply = apply;
-        this.acceptCheckout = acceptCheckout;
-        this.accept = accept;
-        this.book = book;
-        this.finish = finish;
+        this.Apply = apply;
+        this.AcceptCheckout = acceptCheckout;
+        this.Accept = accept;
+        this.Book = book;
+        this.Finish = finish;
+        this.Cancel = cancel;
     }
 
     public ContractType Type => ContractType.DoorSplit;
-    public ISimpleApplyStep Apply => apply;
-    public IAcceptCheckoutStep AcceptCheckout => acceptCheckout;
-    public IPaidAcceptStep Accept => accept;
-    public IBookStep Book => book;
-    public IFinishStep Finish => finish;
+    public ISimpleApplyStep Apply { get; }
+    public IAcceptCheckoutStep AcceptCheckout { get; }
+    public IPaidAcceptStep Accept { get; }
+    public IBookStep Book { get; }
+    public IFinishStep Finish { get; }
+    public ICancelStep Cancel { get; }
 }
