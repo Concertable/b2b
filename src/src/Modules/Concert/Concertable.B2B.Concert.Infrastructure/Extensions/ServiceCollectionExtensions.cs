@@ -97,6 +97,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEscrowExecutor, EscrowExecutor>();
         services.AddScoped<ISettlementExecutor, SettlementExecutor>();
         services.AddScoped<IFinishExecutor, FinishExecutor>();
+        services.AddScoped<ICancelExecutor, CancelExecutor>();
 
         services.AddScoped<IApplyDispatcher, ApplyDispatcher>();
         services.AddScoped<IAcceptanceDispatcher, AcceptanceDispatcher>();
@@ -105,6 +106,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEscrowDispatcher, EscrowDispatcher>();
         services.AddScoped<ISettlementDispatcher, SettlementDispatcher>();
         services.AddScoped<ICompletionDispatcher, CompletionDispatcher>();
+        services.AddScoped<ICancellationDispatcher, CancellationDispatcher>();
 
         services.AddConcertWorkflows();
 
@@ -142,6 +144,7 @@ public static class ServiceCollectionExtensions
         // Domain event -> integration event + read-model projection handlers
         services.AddScoped<IDomainEventHandler<ConcertChangedDomainEvent>, ConcertChangedDomainEventHandler>();
         services.AddScoped<IDomainEventHandler<ConcertPostedDomainEvent>, ConcertPostedDomainEventHandler>();
+        services.AddScoped<IDomainEventHandler<ConcertCancelledDomainEvent>, ConcertCancelledDomainEventHandler>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistReadModelProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueReadModelProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ConcertReviewProjectionHandler>();
@@ -172,6 +175,7 @@ public static class ServiceCollectionExtensions
             .WithEscrowPayment()
             .WithBook<CreateConcertDraftStep>()
             .WithFinish<ReleaseEscrowFinishStep>(Complete)
+            .WithCancel<RefundEscrowStep>()
             .WithWorkflow<FlatFeeWorkflow>());
 
         services.AddConcertWorkflow(registryBuilder, ContractType.DoorSplit, p => p
@@ -182,6 +186,7 @@ public static class ServiceCollectionExtensions
             .WithBook<CreateConcertDraftStep>()
             .WithFinish<PayoutFinishStep>(AwaitingSettlement)
             .WithSettlement()
+            .WithCancel<RefundEscrowStep>()
             .WithWorkflow<DoorSplitWorkflow>());
 
         services.AddConcertWorkflow(registryBuilder, ContractType.Versus, p => p
@@ -192,6 +197,7 @@ public static class ServiceCollectionExtensions
             .WithBook<CreateConcertDraftStep>()
             .WithFinish<PayoutFinishStep>(AwaitingSettlement)
             .WithSettlement()
+            .WithCancel<RefundEscrowStep>()
             .WithWorkflow<VersusWorkflow>());
 
         services.AddConcertWorkflow(registryBuilder, ContractType.VenueHire, p => p
@@ -201,6 +207,7 @@ public static class ServiceCollectionExtensions
             .WithEscrowPayment()
             .WithBook<CreateConcertDraftStep>()
             .WithFinish<ReleaseEscrowFinishStep>(Complete)
+            .WithCancel<RefundEscrowStep>()
             .WithWorkflow<VenueHireWorkflow>());
 
         services.AddSingleton<IConcertWorkflowCapabilityRegistry>(new ConcertWorkflowCapabilityRegistry(registryBuilder.WorkflowTypes));

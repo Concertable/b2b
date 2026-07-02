@@ -7,4 +7,5 @@ internal interface IConcertWorkflow
     ContractType Type { get; }
     IBookStep Book { get; }
     IFinishStep Finish { get; }
+    ICancelStep Cancel { get; }
 }
