@@ -60,6 +60,12 @@ internal sealed class ConcertWorkflowBuilder
         return RegisterStep<TStep>();
     }
 
+    public ConcertWorkflowBuilder WithCancel<TStep>() where TStep : class, ICancelStep
+    {
+        Add(Booked, Cancel, Cancelled);
+        return RegisterStep<TStep>();
+    }
+
     public ConcertWorkflowBuilder WithSettlement()
     {
         Add(AwaitingSettlement, SettlementPaymentSucceeded, Complete);

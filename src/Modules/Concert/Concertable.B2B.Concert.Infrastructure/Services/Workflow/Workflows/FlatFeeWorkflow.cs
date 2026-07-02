@@ -7,30 +7,27 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Workflows;
 
 internal sealed class FlatFeeWorkflow : IConcertWorkflow, IAppliesSimple, IAcceptsCheckout, IAcceptsSimple
 {
-    private readonly ISimpleApplyStep apply;
-    private readonly IAcceptCheckoutStep acceptCheckout;
-    private readonly ISimpleAcceptStep accept;
-    private readonly IBookStep book;
-    private readonly IFinishStep finish;
-
     public FlatFeeWorkflow(
         SimpleApplyStep apply,
         HoldCheckoutStep acceptCheckout,
         CaptureEscrowAcceptStep accept,
         CreateConcertDraftStep book,
-        ReleaseEscrowFinishStep finish)
+        ReleaseEscrowFinishStep finish,
+        RefundEscrowStep cancel)
     {
-        this.apply = apply;
-        this.acceptCheckout = acceptCheckout;
-        this.accept = accept;
-        this.book = book;
-        this.finish = finish;
+        this.Apply = apply;
+        this.AcceptCheckout = acceptCheckout;
+        this.Accept = accept;
+        this.Book = book;
+        this.Finish = finish;
+        this.Cancel = cancel;
     }
 
     public ContractType Type => ContractType.FlatFee;
-    public ISimpleApplyStep Apply => apply;
-    public IAcceptCheckoutStep AcceptCheckout => acceptCheckout;
-    public ISimpleAcceptStep Accept => accept;
-    public IBookStep Book => book;
-    public IFinishStep Finish => finish;
+    public ISimpleApplyStep Apply { get; }
+    public IAcceptCheckoutStep AcceptCheckout { get; }
+    public ISimpleAcceptStep Accept { get; }
+    public IBookStep Book { get; }
+    public IFinishStep Finish { get; }
+    public ICancelStep Cancel { get; }
 }
