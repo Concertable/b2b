@@ -13,12 +13,19 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
     /// <summary>The escrow holds B2B initiated, in call order — assert B2B passed the right parties/booking.</summary>
     public List<EscrowHold> Holds { get; } = [];
 
+    /// <summary>Booking ids B2B requested a refund for, in call order — assert cancel refunded the right booking.</summary>
+    public List<int> Refunds { get; } = [];
+
     public MockEscrowClient(MockStripeApiClient stripeApiClient)
     {
         this.stripeApiClient = stripeApiClient;
     }
 
-    public void Reset() => Holds.Clear();
+    public void Reset()
+    {
+        Holds.Clear();
+        Refunds.Clear();
+    }
 
     public async Task<Result<EscrowResponse>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
     {
@@ -51,8 +58,11 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
     public Task<Result<TransferResponse?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
         Task.FromResult(Result.Ok<TransferResponse?>(new TransferResponse("tr_mock")));
 
-    public Task<Result<RefundResponse?>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Ok<RefundResponse?>(new RefundResponse("re_mock")));
+    public Task<Result<RefundResponse?>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default)
+    {
+        Refunds.Add(bookingId);
+        return Task.FromResult(Result.Ok<RefundResponse?>(new RefundResponse("re_mock")));
+    }
 }
 
 public sealed record EscrowHold(Guid PayerId, Guid PayeeId, decimal Amount, int BookingId);
