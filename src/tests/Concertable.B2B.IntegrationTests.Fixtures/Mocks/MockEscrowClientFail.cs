@@ -14,4 +14,7 @@ internal sealed class MockEscrowClientFail : IEscrowClient
 
     public Task<Result<TransferResponse?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
         Task.FromResult(Result.Fail<TransferResponse?>("Mock escrow release failure"));
+
+    public Task<Result<RefundResponse?>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result.Fail<RefundResponse?>("Mock escrow refund failure"));
 }
