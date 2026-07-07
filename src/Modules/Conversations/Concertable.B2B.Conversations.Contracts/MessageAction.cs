@@ -9,5 +9,6 @@ public enum MessageAction
     ApplicationAccepted,
     ConcertPosted,
     ApplicationWithdrawn,
-    ApplicationRejected
+    ApplicationRejected,
+    ApplicationCancelled
 }

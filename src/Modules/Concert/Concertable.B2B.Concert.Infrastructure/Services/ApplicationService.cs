@@ -16,6 +16,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly ICheckoutDispatcher checkoutDispatcher;
     private readonly IWithdrawalDispatcher withdrawalDispatcher;
     private readonly IRejectionDispatcher rejectionDispatcher;
+    private readonly IApplicationCancellationDispatcher applicationCancellationDispatcher;
     private readonly IApplicationMapper mapper;
 
     public ApplicationService(
@@ -30,6 +31,7 @@ internal sealed class ApplicationService : IApplicationService
         ICheckoutDispatcher checkoutDispatcher,
         IWithdrawalDispatcher withdrawalDispatcher,
         IRejectionDispatcher rejectionDispatcher,
+        IApplicationCancellationDispatcher applicationCancellationDispatcher,
         IApplicationMapper mapper)
     {
         this.repository = repository;
@@ -43,6 +45,7 @@ internal sealed class ApplicationService : IApplicationService
         this.checkoutDispatcher = checkoutDispatcher;
         this.withdrawalDispatcher = withdrawalDispatcher;
         this.rejectionDispatcher = rejectionDispatcher;
+        this.applicationCancellationDispatcher = applicationCancellationDispatcher;
         this.mapper = mapper;
     }
 
@@ -149,6 +152,12 @@ internal sealed class ApplicationService : IApplicationService
     {
         await rejectionDispatcher.RejectAsync(applicationId);
         await notifier.RejectedAsync(applicationId);
+    }
+
+    public async Task CancelAsync(int applicationId)
+    {
+        await applicationCancellationDispatcher.CancelAsync(applicationId);
+        await notifier.CancelledAsync(applicationId);
     }
 
     public async Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id) =>
