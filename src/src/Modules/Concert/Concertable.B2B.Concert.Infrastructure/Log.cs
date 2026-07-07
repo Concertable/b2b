@@ -47,6 +47,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to finish concert {ConcertId}")]
     internal static partial void FailedToFinishConcert(this ILogger logger, int concertId, Exception ex);
 
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to cancel concert {ConcertId}")]
+    internal static partial void FailedToCancelConcert(this ILogger logger, int concertId, Exception ex);
+
     #endregion
 
     #region ConcertDraftService

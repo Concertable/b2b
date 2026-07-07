@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MyConcertPage } from "@b2b/features/concerts";
+import { CancelBookingButton } from "../../../../features/concerts";
 
 export const Route = createFileRoute("/_venue/my/concerts/concert/$id")({
   params: {
@@ -8,6 +9,15 @@ export const Route = createFileRoute("/_venue/my/concerts/concert/$id")({
   },
   component: () => {
     const { id } = Route.useParams();
-    return <MyConcertPage id={id} />;
+    return (
+      <MyConcertPage
+        id={id}
+        renderActions={(concert) =>
+          concert.actions?.cancel ? (
+            <CancelBookingButton concertId={concert.id} />
+          ) : null
+        }
+      />
+    );
   },
 });

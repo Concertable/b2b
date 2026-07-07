@@ -9,17 +9,20 @@ internal sealed class ConcertWorkflowModule : IConcertWorkflowModule
     private readonly IEscrowDispatcher escrowDispatcher;
     private readonly ISettlementDispatcher settlementDispatcher;
     private readonly ICompletionDispatcher completionDispatcher;
+    private readonly ICancellationDispatcher cancellationDispatcher;
     private readonly IVerifyDispatcher verifyDispatcher;
 
     public ConcertWorkflowModule(
         IEscrowDispatcher escrowDispatcher,
         ISettlementDispatcher settlementDispatcher,
         ICompletionDispatcher completionDispatcher,
+        ICancellationDispatcher cancellationDispatcher,
         IVerifyDispatcher verifyDispatcher)
     {
         this.escrowDispatcher = escrowDispatcher;
         this.settlementDispatcher = settlementDispatcher;
         this.completionDispatcher = completionDispatcher;
+        this.cancellationDispatcher = cancellationDispatcher;
         this.verifyDispatcher = verifyDispatcher;
     }
 
@@ -35,6 +38,13 @@ internal sealed class ConcertWorkflowModule : IConcertWorkflowModule
     public async Task FinishAsync(int concertId, CancellationToken ct = default)
     {
         var result = await completionDispatcher.FinishAsync(concertId);
+        if (result.IsFailed)
+            throw new BadRequestException(result.Errors);
+    }
+
+    public async Task CancelAsync(int concertId, CancellationToken ct = default)
+    {
+        var result = await cancellationDispatcher.CancelAsync(concertId);
         if (result.IsFailed)
             throw new BadRequestException(result.Errors);
     }

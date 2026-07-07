@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Contracts;
 
 namespace Concertable.B2B.Concert.Application.DTOs;
@@ -16,6 +17,7 @@ internal sealed record ConcertDetails
     public DateTime StartDate { get; init; }
     public DateTime EndDate { get; init; }
     public DateTime? DatePosted { get; init; }
+    public LifecycleState State { get; init; }
     public required ConcertVenue Venue { get; init; }
     public required ConcertArtist Artist { get; init; }
     public IEnumerable<Genre> Genres { get; init; } = [];
