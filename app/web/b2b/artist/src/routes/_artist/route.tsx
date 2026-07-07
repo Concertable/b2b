@@ -8,6 +8,7 @@ import type { ProfileMenuItem } from "@/components/ProfileMenu";
 const links = [
   { label: "Dashboard", to: "/" },
   { label: "My Concerts", to: "/my" },
+  { label: "My Applications", to: "/my/applications" },
   { label: "Find Venues", to: "/find" },
 ];
 
