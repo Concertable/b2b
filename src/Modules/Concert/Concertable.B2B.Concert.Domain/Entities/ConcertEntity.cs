@@ -82,4 +82,6 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
         events.Raise(new ConcertChangedDomainEvent(Id, totalTickets, price, Period, now));
         events.Raise(new ConcertPostedDomainEvent(Id));
     }
+
+    public void Cancel() => events.Raise(new ConcertCancelledDomainEvent(Id));
 }

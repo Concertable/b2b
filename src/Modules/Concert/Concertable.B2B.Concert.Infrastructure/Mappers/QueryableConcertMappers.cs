@@ -33,6 +33,7 @@ internal static class QueryableConcertMappers
             DatePosted = c.DatePosted,
             StartDate = c.Booking.Application.Opportunity.Period.Start,
             EndDate = c.Booking.Application.Opportunity.Period.End,
+            State = c.Booking.Application.State,
             Genres = c.Genres,
             Venue = new ConcertVenue
             {

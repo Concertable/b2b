@@ -1,15 +1,20 @@
+import type { ReactNode } from "react";
 import { ConfigBar } from "@/components/ConfigBar";
 import { EditableProvider } from "@concertable/shared/providers";
 import { DetailsPageSkeleton } from "@/components/skeletons/DetailsPageSkeleton";
+import type { Concert } from "@concertable/shared/features/concerts/types";
 import { useMyConcert } from "../hooks/useMyConcert";
 import { useConcertStore } from "../store/useConcertStore";
 import { ConcertDetails } from "@/features/concerts";
 
 interface Props {
   id: number;
+  // Slot for app-specific manager actions (e.g. the venue's cancel-booking button).
+  // The artist app renders none — cancelling a booking is a venue-only decision.
+  renderActions?: (concert: Concert) => ReactNode;
 }
 
-export function MyConcertPage({ id }: Readonly<Props>) {
+export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
   const { concert, isDirty, isSaving, save, resetDraft, toggleEdit, editMode } =
     useMyConcert(id);
 
@@ -31,6 +36,7 @@ export function MyConcertPage({ id }: Readonly<Props>) {
         onSave={() => save()}
         onCancel={resetDraft}
       />
+      {renderActions?.(concert)}
       <EditableProvider editMode={editMode}>
         <ConcertDetails
           concert={display}

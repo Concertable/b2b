@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,10 +12,12 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 internal sealed class ConcertController : ControllerBase
 {
     private readonly IConcertService concertService;
+    private readonly IConcertWorkflowModule concertWorkflowModule;
 
-    public ConcertController(IConcertService concertService)
+    public ConcertController(IConcertService concertService, IConcertWorkflowModule concertWorkflowModule)
     {
         this.concertService = concertService;
+        this.concertWorkflowModule = concertWorkflowModule;
     }
 
     [HttpGet("{id}")]
@@ -77,6 +80,14 @@ internal sealed class ConcertController : ControllerBase
     public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
     {
         await concertService.PostAsync(id, request);
+        return NoContent();
+    }
+
+    [HasPermission(VenuePermissions.ApplicationsDecide)]
+    [HttpPost("{id}/cancel")]
+    public async Task<IActionResult> Cancel(int id, CancellationToken ct)
+    {
+        await concertWorkflowModule.CancelAsync(id, ct);
         return NoContent();
     }
 }

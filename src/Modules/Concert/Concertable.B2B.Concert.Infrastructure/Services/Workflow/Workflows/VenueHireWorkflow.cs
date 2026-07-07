@@ -7,30 +7,27 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Workflows;
 
 internal sealed class VenueHireWorkflow : IConcertWorkflow, IAppliesPaid, IAppliesCheckout, IAcceptsSimple
 {
-    private readonly IPaidApplyStep apply;
-    private readonly IApplyCheckoutStep applyCheckout;
-    private readonly ISimpleAcceptStep accept;
-    private readonly IBookStep book;
-    private readonly IFinishStep finish;
-
     public VenueHireWorkflow(
         PaidApplyStep apply,
         SetupCheckoutStep applyCheckout,
         DepositEscrowAcceptStep accept,
         CreateConcertDraftStep book,
-        ReleaseEscrowFinishStep finish)
+        ReleaseEscrowFinishStep finish,
+        RefundEscrowStep cancel)
     {
-        this.apply = apply;
-        this.applyCheckout = applyCheckout;
-        this.accept = accept;
-        this.book = book;
-        this.finish = finish;
+        this.Apply = apply;
+        this.ApplyCheckout = applyCheckout;
+        this.Accept = accept;
+        this.Book = book;
+        this.Finish = finish;
+        this.Cancel = cancel;
     }
 
     public ContractType Type => ContractType.VenueHire;
-    public IPaidApplyStep Apply => apply;
-    public IApplyCheckoutStep ApplyCheckout => applyCheckout;
-    public ISimpleAcceptStep Accept => accept;
-    public IBookStep Book => book;
-    public IFinishStep Finish => finish;
+    public IPaidApplyStep Apply { get; }
+    public IApplyCheckoutStep ApplyCheckout { get; }
+    public ISimpleAcceptStep Accept { get; }
+    public IBookStep Book { get; }
+    public IFinishStep Finish { get; }
+    public ICancelStep Cancel { get; }
 }
