@@ -15,5 +15,7 @@ internal interface IApplicationService
     Task<Checkout> ApplyCheckoutAsync(int opportunityId);
     Task<Checkout> AcceptCheckoutAsync(int applicationId);
     Task AcceptAsync(int applicationId, string? paymentMethodId);
+    Task WithdrawAsync(int applicationId);
+    Task RejectAsync(int applicationId);
     Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id);
 }

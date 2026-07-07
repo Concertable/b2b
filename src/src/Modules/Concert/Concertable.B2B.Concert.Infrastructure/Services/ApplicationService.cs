@@ -1,56 +1,48 @@
 using Concertable.B2B.Concert.Domain.ReadModels;
-using Concertable.B2B.Conversations.Contracts;
-using Concertable.Kernel.Identity;
-using Concertable.Shared.Email.Application;
-using Concertable.Kernel.Enums;
 using Concertable.Kernel.Exceptions;
-using Concertable.B2B.User.Contracts;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class ApplicationService : IApplicationService
 {
     private readonly IApplicationRepository repository;
-    private readonly ICurrentUser currentUser;
     private readonly IApplicationValidator applicationValidator;
-    private readonly IConversationsModule conversationsModule;
-    private readonly IEmailSender emailSender;
+    private readonly IApplicationNotifier notifier;
     private readonly IOpportunityService opportunityService;
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IArtistModule artistModule;
-    private readonly IUserModule userModule;
     private readonly IApplyDispatcher applyDispatcher;
     private readonly IAcceptanceDispatcher acceptanceDispatcher;
     private readonly ICheckoutDispatcher checkoutDispatcher;
+    private readonly IWithdrawalDispatcher withdrawalDispatcher;
+    private readonly IRejectionDispatcher rejectionDispatcher;
     private readonly IApplicationMapper mapper;
 
     public ApplicationService(
         IApplicationRepository repository,
-        ICurrentUser currentUser,
         IApplicationValidator applicationValidator,
-        IConversationsModule conversationsModule,
-        IEmailSender emailSender,
+        IApplicationNotifier notifier,
         IOpportunityService opportunityService,
         IOpportunityRepository opportunityRepository,
         IArtistModule artistModule,
-        IUserModule userModule,
         IApplyDispatcher applyDispatcher,
         IAcceptanceDispatcher acceptanceDispatcher,
         ICheckoutDispatcher checkoutDispatcher,
+        IWithdrawalDispatcher withdrawalDispatcher,
+        IRejectionDispatcher rejectionDispatcher,
         IApplicationMapper mapper)
     {
         this.repository = repository;
-        this.currentUser = currentUser;
         this.applicationValidator = applicationValidator;
-        this.conversationsModule = conversationsModule;
-        this.emailSender = emailSender;
+        this.notifier = notifier;
         this.opportunityService = opportunityService;
         this.opportunityRepository = opportunityRepository;
         this.artistModule = artistModule;
-        this.userModule = userModule;
         this.applyDispatcher = applyDispatcher;
         this.acceptanceDispatcher = acceptanceDispatcher;
         this.checkoutDispatcher = checkoutDispatcher;
+        this.withdrawalDispatcher = withdrawalDispatcher;
+        this.rejectionDispatcher = rejectionDispatcher;
         this.mapper = mapper;
     }
 
@@ -85,10 +77,10 @@ internal sealed class ApplicationService : IApplicationService
     public async Task<ApplicationDto> ApplyAsync(int opportunityId)
     {
         var artistId = await ResolveArtistIdAsync();
-        var opportunityOwner = await ValidateAndLoadOwnerAsync(opportunityId, artistId);
+        await ValidateCanApplyAsync(opportunityId, artistId);
 
         var application = await applyDispatcher.ApplyAsync(opportunityId, artistId);
-        await NotifyAppliedAsync(opportunityOwner);
+        await notifier.AppliedAsync(application.Id);
 
         return await GetByIdAsync(application.Id);
     }
@@ -96,10 +88,10 @@ internal sealed class ApplicationService : IApplicationService
     public async Task<ApplicationDto> ApplyAsync(int opportunityId, string paymentMethodId)
     {
         var artistId = await ResolveArtistIdAsync();
-        var opportunityOwner = await ValidateAndLoadOwnerAsync(opportunityId, artistId);
+        await ValidateCanApplyAsync(opportunityId, artistId);
 
         var application = await applyDispatcher.ApplyAsync(opportunityId, artistId, paymentMethodId);
-        await NotifyAppliedAsync(opportunityOwner);
+        await notifier.AppliedAsync(application.Id);
 
         return await GetByIdAsync(application.Id);
     }
@@ -108,12 +100,8 @@ internal sealed class ApplicationService : IApplicationService
         await artistModule.GetIdForCurrentTenantAsync()
             ?? throw new ForbiddenException("You must create an Artist account before you apply for a concert opportunity");
 
-    private async Task<ManagerDto> ValidateAndLoadOwnerAsync(int opportunityId, int artistId)
+    private async Task ValidateCanApplyAsync(int opportunityId, int artistId)
     {
-        var opportunityOwnerId = await opportunityRepository.GetOwnerByIdAsync(opportunityId)
-            ?? throw new NotFoundException("Concert Opportunity owner not found");
-        var opportunityOwner = await userModule.GetManagerByIdAsync(opportunityOwnerId)
-            ?? throw new NotFoundException("Venue manager not found for opportunity owner");
         var opportunity = await opportunityRepository.GetByIdAsync(opportunityId)
             ?? throw new NotFoundException("Concert Opportunity not found");
 
@@ -126,19 +114,6 @@ internal sealed class ApplicationService : IApplicationService
 
         if (opportunityGenres.Count > 0 && !artistGenres.Overlaps(opportunityGenres))
             throw new BadRequestException("You need to have the same genres as the Concert Opportunity to be able to apply to it");
-
-        return opportunityOwner;
-    }
-
-    private async Task NotifyAppliedAsync(ManagerDto opportunityOwner)
-    {
-        await conversationsModule.SendAsync(
-            fromUserId: currentUser.GetId(),
-            toUserId: opportunityOwner.Id,
-            content: $"{currentUser.Email} has applied to your concert opportunity",
-            action: MessageAction.ApplicationReceived);
-
-        await emailSender.SendEmailAsync(opportunityOwner.Email!, "Concert Application", $"{currentUser.Email} has applied to your concert opportunity");
     }
 
     public async Task<Checkout> ApplyCheckoutAsync(int opportunityId)
@@ -161,21 +136,19 @@ internal sealed class ApplicationService : IApplicationService
             throw new BadRequestException(result.Errors);
 
         await acceptanceDispatcher.AcceptAsync(applicationId, paymentMethodId);
-        await NotifyAcceptedAsync(applicationId);
+        await notifier.AcceptedAsync(applicationId);
     }
 
-    private async Task NotifyAcceptedAsync(int applicationId)
+    public async Task WithdrawAsync(int applicationId)
     {
-        var (artist, venue) = await repository.GetArtistAndVenueByIdAsync(applicationId)
-            ?? throw new NotFoundException("Concert application not found");
+        await withdrawalDispatcher.WithdrawAsync(applicationId);
+        await notifier.WithdrawnAsync(applicationId);
+    }
 
-        await conversationsModule.SendAndNotifyAsync(
-            fromUserId: venue.UserId,
-            toUserId: artist.UserId,
-            content: "Your application has been accepted!",
-            action: MessageAction.ApplicationAccepted);
-
-        await emailSender.SendEmailAsync(artist.Email!, "Concert Application Accepted", "Your application was accepted! A concert has been scheduled for you.");
+    public async Task RejectAsync(int applicationId)
+    {
+        await rejectionDispatcher.RejectAsync(applicationId);
+        await notifier.RejectedAsync(applicationId);
     }
 
     public async Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id) =>
