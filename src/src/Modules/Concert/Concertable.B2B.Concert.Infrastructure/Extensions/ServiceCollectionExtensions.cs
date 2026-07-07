@@ -8,6 +8,7 @@ using Concertable.B2B.Concert.Application.Resolvers;
 using Concertable.B2B.Concert.Application.Validators;
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
+using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
@@ -74,6 +75,8 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<IOpportunityRepository>(),
             sp.GetRequiredService<IContractModule>()));
         services.AddScoped<IApplicationService, ApplicationService>();
+        services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
+        services.AddScoped<INotifier, Notifier>();
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
         services.AddScoped<ContractAccessor>();
@@ -98,6 +101,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISettlementExecutor, SettlementExecutor>();
         services.AddScoped<IFinishExecutor, FinishExecutor>();
         services.AddScoped<ICancelExecutor, CancelExecutor>();
+        services.AddScoped<IWithdrawExecutor, WithdrawExecutor>();
+        services.AddScoped<IRejectExecutor, RejectExecutor>();
+        services.AddScoped<ICancelApplicationExecutor, CancelApplicationExecutor>();
+        services.AddScoped<IApplicationCancelStep, RefundEscrowByApplicationStep>();
 
         services.AddScoped<IApplyDispatcher, ApplyDispatcher>();
         services.AddScoped<IAcceptanceDispatcher, AcceptanceDispatcher>();
@@ -107,6 +114,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISettlementDispatcher, SettlementDispatcher>();
         services.AddScoped<ICompletionDispatcher, CompletionDispatcher>();
         services.AddScoped<ICancellationDispatcher, CancellationDispatcher>();
+        services.AddScoped<IWithdrawalDispatcher, WithdrawalDispatcher>();
+        services.AddScoped<IRejectionDispatcher, RejectionDispatcher>();
+        services.AddScoped<IApplicationCancellationDispatcher, ApplicationCancellationDispatcher>();
 
         services.AddConcertWorkflows();
 
@@ -176,6 +186,7 @@ public static class ServiceCollectionExtensions
             .WithBook<CreateConcertDraftStep>()
             .WithFinish<ReleaseEscrowFinishStep>(Complete)
             .WithCancel<RefundEscrowStep>()
+            .WithApplicationCancel()
             .WithWorkflow<FlatFeeWorkflow>());
 
         services.AddConcertWorkflow(registryBuilder, ContractType.DoorSplit, p => p
@@ -187,6 +198,7 @@ public static class ServiceCollectionExtensions
             .WithFinish<PayoutFinishStep>(AwaitingSettlement)
             .WithSettlement()
             .WithCancel<RefundEscrowStep>()
+            .WithApplicationCancel()
             .WithWorkflow<DoorSplitWorkflow>());
 
         services.AddConcertWorkflow(registryBuilder, ContractType.Versus, p => p
@@ -198,6 +210,7 @@ public static class ServiceCollectionExtensions
             .WithFinish<PayoutFinishStep>(AwaitingSettlement)
             .WithSettlement()
             .WithCancel<RefundEscrowStep>()
+            .WithApplicationCancel()
             .WithWorkflow<VersusWorkflow>());
 
         services.AddConcertWorkflow(registryBuilder, ContractType.VenueHire, p => p
@@ -208,6 +221,7 @@ public static class ServiceCollectionExtensions
             .WithBook<CreateConcertDraftStep>()
             .WithFinish<ReleaseEscrowFinishStep>(Complete)
             .WithCancel<RefundEscrowStep>()
+            .WithApplicationCancel()
             .WithWorkflow<VenueHireWorkflow>());
 
         services.AddSingleton<IConcertWorkflowCapabilityRegistry>(new ConcertWorkflowCapabilityRegistry(registryBuilder.WorkflowTypes));

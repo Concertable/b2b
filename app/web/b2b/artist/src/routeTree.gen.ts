@@ -25,6 +25,7 @@ import { Route as ArtistMyIndexRouteImport } from './routes/_artist/my/index'
 import { Route as ArtistFindIndexRouteImport } from './routes/_artist/find/index'
 import { Route as ArtistSettingsPaymentRouteImport } from './routes/_artist/settings/payment'
 import { Route as ArtistSettingsOrganizationRouteImport } from './routes/_artist/settings/organization'
+import { Route as ArtistMyApplicationsRouteImport } from './routes/_artist/my/applications'
 import { Route as ArtistOpportunityCheckoutOpportunityIdRouteImport } from './routes/_artist/opportunity/checkout.$opportunityId'
 import { Route as ArtistFindVenueIdRouteImport } from './routes/_artist/find/venue.$id'
 import { Route as ArtistFindConcertIdRouteImport } from './routes/_artist/find/concert.$id'
@@ -111,6 +112,11 @@ const ArtistSettingsOrganizationRoute =
     path: '/organization',
     getParentRoute: () => ArtistSettingsRouteRoute,
   } as any)
+const ArtistMyApplicationsRoute = ArtistMyApplicationsRouteImport.update({
+  id: '/my/applications',
+  path: '/my/applications',
+  getParentRoute: () => ArtistRouteRoute,
+} as any)
 const ArtistOpportunityCheckoutOpportunityIdRoute =
   ArtistOpportunityCheckoutOpportunityIdRouteImport.update({
     id: '/opportunity/checkout/$opportunityId',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof ArtistSettingsRouteRouteWithChildren
   '/create': typeof ArtistCreateRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/my/applications': typeof ArtistMyApplicationsRoute
   '/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/settings/payment': typeof ArtistSettingsPaymentRoute
   '/find/': typeof ArtistFindIndexRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/create': typeof ArtistCreateRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof ArtistIndexRoute
+  '/my/applications': typeof ArtistMyApplicationsRoute
   '/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/settings/payment': typeof ArtistSettingsPaymentRoute
   '/find': typeof ArtistFindIndexRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/_artist/create': typeof ArtistCreateRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_artist/': typeof ArtistIndexRoute
+  '/_artist/my/applications': typeof ArtistMyApplicationsRoute
   '/_artist/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/_artist/settings/payment': typeof ArtistSettingsPaymentRoute
   '/_artist/find/': typeof ArtistFindIndexRoute
@@ -219,6 +228,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/create'
     | '/auth/callback'
+    | '/my/applications'
     | '/settings/organization'
     | '/settings/payment'
     | '/find/'
@@ -240,6 +250,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/auth/callback'
     | '/'
+    | '/my/applications'
     | '/settings/organization'
     | '/settings/payment'
     | '/find'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/_artist/create'
     | '/auth/callback'
     | '/_artist/'
+    | '/_artist/my/applications'
     | '/_artist/settings/organization'
     | '/_artist/settings/payment'
     | '/_artist/find/'
@@ -400,6 +412,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtistSettingsOrganizationRouteImport
       parentRoute: typeof ArtistSettingsRouteRoute
     }
+    '/_artist/my/applications': {
+      id: '/_artist/my/applications'
+      path: '/my/applications'
+      fullPath: '/my/applications'
+      preLoaderRoute: typeof ArtistMyApplicationsRouteImport
+      parentRoute: typeof ArtistRouteRoute
+    }
     '/_artist/opportunity/checkout/$opportunityId': {
       id: '/_artist/opportunity/checkout/$opportunityId'
       path: '/opportunity/checkout/$opportunityId'
@@ -457,6 +476,7 @@ interface ArtistRouteRouteChildren {
   ArtistSettingsRouteRoute: typeof ArtistSettingsRouteRouteWithChildren
   ArtistCreateRoute: typeof ArtistCreateRoute
   ArtistIndexRoute: typeof ArtistIndexRoute
+  ArtistMyApplicationsRoute: typeof ArtistMyApplicationsRoute
   ArtistFindIndexRoute: typeof ArtistFindIndexRoute
   ArtistMyIndexRoute: typeof ArtistMyIndexRoute
   ArtistFindArtistIdRoute: typeof ArtistFindArtistIdRoute
@@ -470,6 +490,7 @@ const ArtistRouteRouteChildren: ArtistRouteRouteChildren = {
   ArtistSettingsRouteRoute: ArtistSettingsRouteRouteWithChildren,
   ArtistCreateRoute: ArtistCreateRoute,
   ArtistIndexRoute: ArtistIndexRoute,
+  ArtistMyApplicationsRoute: ArtistMyApplicationsRoute,
   ArtistFindIndexRoute: ArtistFindIndexRoute,
   ArtistMyIndexRoute: ArtistMyIndexRoute,
   ArtistFindArtistIdRoute: ArtistFindArtistIdRoute,

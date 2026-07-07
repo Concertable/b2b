@@ -105,4 +105,28 @@ internal sealed class ApplicationController : ControllerBase
         return NoContent();
     }
 
+    [HasPermission(ArtistPermissions.ApplicationsSubmit)]
+    [HttpPost("{applicationId}/withdraw")]
+    public async Task<IActionResult> Withdraw(int applicationId)
+    {
+        await applicationService.WithdrawAsync(applicationId);
+        return NoContent();
+    }
+
+    [HasPermission(VenuePermissions.ApplicationsDecide)]
+    [HttpPost("{applicationId}/reject")]
+    public async Task<IActionResult> Reject(int applicationId)
+    {
+        await applicationService.RejectAsync(applicationId);
+        return NoContent();
+    }
+
+    [HasPermission(VenuePermissions.ApplicationsDecide)]
+    [HttpPost("{applicationId}/cancel")]
+    public async Task<IActionResult> Cancel(int applicationId)
+    {
+        await applicationService.CancelAsync(applicationId);
+        return NoContent();
+    }
+
 }

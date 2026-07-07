@@ -8,5 +8,6 @@ public enum ApplicationStatus
     Pending,
     Rejected,
     Withdrawn,
-    Accepted
+    Accepted,
+    Cancelled
 }

@@ -8,11 +8,16 @@ import type { Application } from "@/features/concerts";
 interface Props {
   application: Application;
   onDeny?: (applicationId: number) => void;
+  onCancel?: (applicationId: number) => void;
 }
 
-export function ApplicationCard({ application, onDeny }: Readonly<Props>) {
+export function ApplicationCard({
+  application,
+  onDeny,
+  onCancel,
+}: Readonly<Props>) {
   const navigate = useNavigate();
-  const { artist, opportunity, status } = application;
+  const { artist, opportunity, status, actions } = application;
   const { data: avatarSrc } = useImageUrl(artist.avatar);
 
   function handleAccept() {
@@ -48,20 +53,29 @@ export function ApplicationCard({ application, onDeny }: Readonly<Props>) {
         <div className="flex shrink-0 items-center gap-2">
           <Badge variant="outline">{status}</Badge>
           {status === "Pending" && (
-            <>
-              <Button size="sm" onClick={handleAccept} data-testid="accept">
-                Accept
-              </Button>
-              {onDeny && (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => onDeny(application.id)}
-                >
-                  Deny
-                </Button>
-              )}
-            </>
+            <Button size="sm" onClick={handleAccept} data-testid="accept">
+              Accept
+            </Button>
+          )}
+          {onDeny && actions.reject && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onDeny(application.id)}
+              data-testid="deny"
+            >
+              Deny
+            </Button>
+          )}
+          {onCancel && actions.cancel && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onCancel(application.id)}
+              data-testid="cancel-application"
+            >
+              Cancel
+            </Button>
           )}
         </div>
       </div>
