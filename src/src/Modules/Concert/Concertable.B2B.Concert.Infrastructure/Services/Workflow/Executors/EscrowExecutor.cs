@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
+using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel.Exceptions;
 
@@ -10,15 +11,18 @@ internal sealed class EscrowExecutor : IEscrowExecutor
     private readonly ILifecycleTransitioner transitioner;
     private readonly IConcertWorkflowFactory workflows;
     private readonly IBookingRepository bookingRepository;
+    private readonly IApplicationCancelStep cancelStep;
 
     public EscrowExecutor(
         ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
-        IBookingRepository bookingRepository)
+        IBookingRepository bookingRepository,
+        IApplicationCancelStep cancelStep)
     {
         this.transitioner = transitioner;
         this.workflows = workflows;
         this.bookingRepository = bookingRepository;
+        this.cancelStep = cancelStep;
     }
 
     public async Task ExecuteAsync(int bookingId)
@@ -26,6 +30,14 @@ internal sealed class EscrowExecutor : IEscrowExecutor
         var applicationId = await LoadApplicationIdAsync(bookingId);
         await transitioner.TransitionAsync(applicationId, Trigger.EscrowPaymentSucceeded, async app =>
         {
+            // A late capture landing after application-cancel confirms money into escrow on a dead
+            // application — compensate by refunding instead of booking.
+            if (app.State == LifecycleState.Cancelled)
+            {
+                await cancelStep.ExecuteAsync(app.Id);
+                return;
+            }
+
             var workflow = workflows.Create(app.ContractType);
             await workflow.Book.ExecuteAsync(bookingId);
         });

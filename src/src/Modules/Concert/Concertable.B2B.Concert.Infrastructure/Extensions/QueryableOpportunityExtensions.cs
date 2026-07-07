@@ -14,5 +14,6 @@ internal static class QueryableOpportunityExtensions
         query.Where(o => !o.Applications.Any(a =>
             a.State != LifecycleState.Applied &&
             a.State != LifecycleState.Rejected &&
-            a.State != LifecycleState.Withdrawn));
+            a.State != LifecycleState.Withdrawn &&
+            a.State != LifecycleState.Cancelled));
 }

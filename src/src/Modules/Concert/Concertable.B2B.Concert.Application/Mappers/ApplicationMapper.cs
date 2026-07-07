@@ -18,7 +18,8 @@ internal sealed class ApplicationMapper : IApplicationMapper
         new(application.Id,
             BuildArtistSummary(application),
             await opportunityMapper.ToDtoAsync(application.Opportunity),
-            ToStatus(application.State));
+            ToStatus(application.State),
+            application.State);
 
     public async Task<IEnumerable<ApplicationDto>> ToDtosAsync(IEnumerable<ApplicationEntity> applications)
     {
@@ -26,7 +27,7 @@ internal sealed class ApplicationMapper : IApplicationMapper
         var opportunityDtos = await opportunityMapper.ToDtosAsync(applicationList.Select(a => a.Opportunity));
 
         return applicationList.Zip(opportunityDtos, (a, opp) =>
-            new ApplicationDto(a.Id, BuildArtistSummary(a), opp, ToStatus(a.State)));
+            new ApplicationDto(a.Id, BuildArtistSummary(a), opp, ToStatus(a.State), a.State));
     }
 
     private static ApplicationStatus ToStatus(LifecycleState state) => state switch
@@ -34,6 +35,7 @@ internal sealed class ApplicationMapper : IApplicationMapper
         LifecycleState.Applied => ApplicationStatus.Pending,
         LifecycleState.Rejected => ApplicationStatus.Rejected,
         LifecycleState.Withdrawn => ApplicationStatus.Withdrawn,
+        LifecycleState.Cancelled => ApplicationStatus.Cancelled,
         _ => ApplicationStatus.Accepted
     };
 

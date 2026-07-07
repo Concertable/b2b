@@ -17,5 +17,6 @@ internal interface IApplicationService
     Task AcceptAsync(int applicationId, string? paymentMethodId);
     Task WithdrawAsync(int applicationId);
     Task RejectAsync(int applicationId);
+    Task CancelAsync(int applicationId);
     Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id);
 }
