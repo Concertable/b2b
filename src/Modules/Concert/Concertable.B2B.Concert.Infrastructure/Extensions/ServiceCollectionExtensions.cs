@@ -74,6 +74,8 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<IOpportunityRepository>(),
             sp.GetRequiredService<IContractModule>()));
         services.AddScoped<IApplicationService, ApplicationService>();
+        services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
+        services.AddScoped<INotifier, Notifier>();
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
         services.AddScoped<ContractAccessor>();
@@ -98,6 +100,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISettlementExecutor, SettlementExecutor>();
         services.AddScoped<IFinishExecutor, FinishExecutor>();
         services.AddScoped<ICancelExecutor, CancelExecutor>();
+        services.AddScoped<IWithdrawExecutor, WithdrawExecutor>();
+        services.AddScoped<IRejectExecutor, RejectExecutor>();
 
         services.AddScoped<IApplyDispatcher, ApplyDispatcher>();
         services.AddScoped<IAcceptanceDispatcher, AcceptanceDispatcher>();
@@ -107,6 +111,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISettlementDispatcher, SettlementDispatcher>();
         services.AddScoped<ICompletionDispatcher, CompletionDispatcher>();
         services.AddScoped<ICancellationDispatcher, CancellationDispatcher>();
+        services.AddScoped<IWithdrawalDispatcher, WithdrawalDispatcher>();
+        services.AddScoped<IRejectionDispatcher, RejectionDispatcher>();
 
         services.AddConcertWorkflows();
 

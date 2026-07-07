@@ -16,12 +16,15 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
     public ApplicationResponse ToResponse(ApplicationDto dto)
     {
         var ct = dto.Opportunity.Contract.ContractType;
+        var isPending = dto.Status == ApplicationStatus.Pending;
 
         var actions = new ApplicationActions(
             Accept: new ActionLink($"/api/Application/{dto.Id}/accept", "POST"),
             Checkout: registry.Has<IAcceptsCheckout>(ct)
                 ? new ActionLink($"/api/Application/{dto.Id}/checkout", "POST")
-                : null);
+                : null,
+            Withdraw: isPending ? new ActionLink($"/api/Application/{dto.Id}/withdraw", "POST") : null,
+            Reject: isPending ? new ActionLink($"/api/Application/{dto.Id}/reject", "POST") : null);
 
         return new ApplicationResponse(
             dto.Id,
