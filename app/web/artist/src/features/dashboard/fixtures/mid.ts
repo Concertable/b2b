@@ -1,4 +1,4 @@
-import { daysAgo, daysAhead, hoursAgo, monthsAgoIso } from "@concertable/shared/features/dashboard";
+﻿import { daysAgo, daysAhead, hoursAgo, monthsAgoIso } from "@concertable/shared/features/dashboard";
 import type { ArtistDashboardFixture } from "./types";
 
 export const artistMid: ArtistDashboardFixture = {
@@ -40,7 +40,7 @@ export const artistMid: ArtistDashboardFixture = {
         contract: { $type: "versus", paymentMethod: "Transfer", guarantee: 250, artistDoorPercent: 70 },
       },
       actions: {
-        withdraw: { href: "/api/Application/301", method: "DELETE" },
+        withdraw: { href: "/api/Application/301/withdraw", method: "POST" },
       },
     },
     {
@@ -56,7 +56,7 @@ export const artistMid: ArtistDashboardFixture = {
         contract: { $type: "flatFee", paymentMethod: "Transfer", fee: 180 },
       },
       actions: {
-        withdraw: { href: "/api/Application/302", method: "DELETE" },
+        withdraw: { href: "/api/Application/302/withdraw", method: "POST" },
       },
     },
     {
@@ -88,7 +88,7 @@ export const artistMid: ArtistDashboardFixture = {
         contract: { $type: "doorSplit", paymentMethod: "Transfer", artistDoorPercent: 60 },
       },
       actions: {
-        withdraw: { href: "/api/Application/304", method: "DELETE" },
+        withdraw: { href: "/api/Application/304/withdraw", method: "POST" },
       },
     },
     {
@@ -107,7 +107,7 @@ export const artistMid: ArtistDashboardFixture = {
     },
   ],
   inbox: [
-    { id: 1101, otherPartyName: "The Crooked Owl", preview: "We loved the demo — quick Q on load-in.", at: hoursAgo(3), unread: true, href: "/_artist/messages/1101" },
+    { id: 1101, otherPartyName: "The Crooked Owl", preview: "We loved the demo â€” quick Q on load-in.", at: hoursAgo(3), unread: true, href: "/_artist/messages/1101" },
     { id: 1102, otherPartyName: "Backline Club", preview: "Door split confirmed for Friday.", at: hoursAgo(12), unread: false, href: "/_artist/messages/1102" },
   ],
   upcomingConcerts: [
@@ -165,9 +165,9 @@ export const artistMid: ArtistDashboardFixture = {
     },
   ],
   activity: [
-    { id: "ar1", type: "ApplicationAccepted", at: hoursAgo(2), subject: "Backline Club accepted your application — checkout to confirm", url: "/_artist/application/303" },
+    { id: "ar1", type: "ApplicationAccepted", at: hoursAgo(2), subject: "Backline Club accepted your application â€” checkout to confirm", url: "/_artist/application/303" },
     { id: "ar2", type: "MessageReceived", at: hoursAgo(3), subject: "New message from The Crooked Owl", url: "/_artist/messages/1101" },
-    { id: "ar3", type: "ConcertSettled", at: daysAgo(2), subject: "\"Riverside Tap evening\" settled — £312 to you", url: "/_artist/concerts/8400" },
+    { id: "ar3", type: "ConcertSettled", at: daysAgo(2), subject: "\"Riverside Tap evening\" settled â€” Â£312 to you", url: "/_artist/concerts/8400" },
     { id: "ar4", type: "ReviewReceived", at: daysAgo(4), subject: "Riverside Tap left a 5-star review", url: "/_artist/reviews" },
   ],
   recentReviews: [
@@ -175,7 +175,7 @@ export const artistMid: ArtistDashboardFixture = {
       id: 9501,
       reviewerName: "Riverside Tap",
       stars: 5,
-      excerpt: "Punters loved them. Tight set, easy to work with — book again.",
+      excerpt: "Punters loved them. Tight set, easy to work with â€” book again.",
       at: daysAgo(4),
       href: "/_artist/reviews/9501",
     },
@@ -191,7 +191,7 @@ export const artistMid: ArtistDashboardFixture = {
       id: 9503,
       reviewerName: "Backline Club",
       stars: 4,
-      excerpt: "Great performance — could tighten up the changeover.",
+      excerpt: "Great performance â€” could tighten up the changeover.",
       at: daysAgo(22),
       href: "/_artist/reviews/9503",
     },
