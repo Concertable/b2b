@@ -127,6 +127,14 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ---
 
+### Duplicate application attempt is a 500, not a 400
+
+`ApplicationValidator.CanApplyAsync` never checks for an existing application by the same artist on the same opportunity, but `concert.Applications` has a unique `(OpportunityId, ArtistId)` index — so a second apply (including re-applying after a withdraw/reject, where the opportunity legitimately shows as open) passes eligibility and then blows up as a `DbUpdateException` → 500. Surfaced while testing withdraw (`Feature/ApplicationCancel`).
+
+**Resolves when:** `CanApplyAsync` fails with a clear message when any application row exists for `(opportunityId, artistId)`, and an integration test covers apply-after-withdraw returning 400.
+
+---
+
 ### Intra-service read-model sync rides the bus instead of in-process dispatch
 
 Concert's read-model sync from `ArtistChangedEvent`/`VenueChangedEvent` and User's manager sync handlers consume events via the bus inbox rather than in-process domain events. Plan §8.5 says intra-service flows should stay in-process via `IEventRaiser`.

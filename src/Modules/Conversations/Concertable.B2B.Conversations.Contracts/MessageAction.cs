@@ -7,5 +7,7 @@ public enum MessageAction
 {
     ApplicationReceived,
     ApplicationAccepted,
-    ConcertPosted
+    ConcertPosted,
+    ApplicationWithdrawn,
+    ApplicationRejected
 }
