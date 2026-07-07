@@ -1,4 +1,4 @@
-﻿import { daysAgo, daysAhead, hoursAgo, monthsAgoIso } from "@concertable/shared/features/dashboard";
+import { daysAgo, daysAhead, hoursAgo, monthsAgoIso } from "@concertable/shared/features/dashboard";
 import type { ArtistDashboardFixture } from "./types";
 
 export const artistThriving: ArtistDashboardFixture = {
@@ -34,7 +34,7 @@ export const artistThriving: ArtistDashboardFixture = {
     { id: 405, status: "Confirmed", opportunity: { id: 9404, venueId: 35, venueName: "Riverside Tap", startDate: daysAhead(3), endDate: daysAhead(3), genres: ["Indie"], contract: { $type: "versus", paymentMethod: "Transfer", guarantee: 420, artistDoorPercent: 50 } }, actions: {} },
   ],
   inbox: [
-    { id: 1201, otherPartyName: "The Hare & Hounds", preview: "Set list looks great â€” see you Friday.", at: hoursAgo(1), unread: true, href: "/_artist/messages/1201" },
+    { id: 1201, otherPartyName: "The Hare & Hounds", preview: "Set list looks great — see you Friday.", at: hoursAgo(1), unread: true, href: "/_artist/messages/1201" },
     { id: 1202, otherPartyName: "Northgate Hall", preview: "Quick Q on backline.", at: hoursAgo(3), unread: true, href: "/_artist/messages/1202" },
     { id: 1203, otherPartyName: "The Black Box", preview: "We loved your stuff.", at: hoursAgo(8), unread: false, href: "/_artist/messages/1203" },
     { id: 1204, otherPartyName: "Quayside", preview: "Pencil us in?", at: daysAgo(1), unread: false, href: "/_artist/messages/1204" },
@@ -60,10 +60,10 @@ export const artistThriving: ArtistDashboardFixture = {
     { id: 9503, venueId: 43, venueName: "Halls of Light", county: "Edinburgh", town: "Edinburgh", startDate: daysAhead(55), endDate: daysAhead(55), genres: ["Rock"], contract: { $type: "versus", paymentMethod: "Transfer", guarantee: 1500, artistDoorPercent: 50 }, fitScore: 84, href: "/find/opportunity/9503" },
   ],
   activity: [
-    { id: "art1", type: "ApplicationAccepted", at: hoursAgo(2), subject: "The Hare & Hounds accepted you â€” checkout to confirm", url: "/_artist/application/401" },
-    { id: "art2", type: "ApplicationAccepted", at: hoursAgo(6), subject: "Northgate Hall accepted you â€” checkout to confirm", url: "/_artist/application/402" },
+    { id: "art1", type: "ApplicationAccepted", at: hoursAgo(2), subject: "The Hare & Hounds accepted you — checkout to confirm", url: "/_artist/application/401" },
+    { id: "art2", type: "ApplicationAccepted", at: hoursAgo(6), subject: "Northgate Hall accepted you — checkout to confirm", url: "/_artist/application/402" },
     { id: "art3", type: "TicketSold", at: hoursAgo(11), subject: "Ticket sold: \"Hare & Hounds launch\" (now 182/200)", url: "/_artist/concerts/8802" },
-    { id: "art4", type: "ConcertSettled", at: hoursAgo(28), subject: "\"Late slot\" settled â€” Â£842 to you", url: "/_artist/concerts/8700" },
+    { id: "art4", type: "ConcertSettled", at: hoursAgo(28), subject: "\"Late slot\" settled — £842 to you", url: "/_artist/concerts/8700" },
     { id: "art5", type: "ReviewReceived", at: daysAgo(1), subject: "The Black Box left a 5-star review", url: "/_artist/reviews" },
     { id: "art6", type: "MessageReceived", at: daysAgo(2), subject: "New message from Quayside", url: "/_artist/messages/1204" },
   ],
