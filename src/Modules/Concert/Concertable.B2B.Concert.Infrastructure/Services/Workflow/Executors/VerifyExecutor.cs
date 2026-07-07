@@ -27,6 +27,10 @@ internal sealed class VerifyExecutor : IVerifyExecutor
     public Task ExecuteAsync(int applicationId)
         => transitioner.TransitionAsync(applicationId, Trigger.VerifyPaymentSucceeded, async app =>
         {
+            // Verify events ring-fence no money — a late one on a cancelled application is a no-op.
+            if (app.State == LifecycleState.Cancelled)
+                return;
+
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
                 ?? throw new NotFoundException("Booking not found for application");
             var workflow = workflows.Create(app.ContractType);
@@ -35,5 +39,7 @@ internal sealed class VerifyExecutor : IVerifyExecutor
 
     public Task ExecuteFailedAsync(int applicationId, string venueManagerId, string? failureMessage)
         => transitioner.TransitionAsync(applicationId, Trigger.VerifyPaymentFailed, app =>
-            concertNotifier.VerifyPaymentFailedAsync(venueManagerId, new { applicationId = app.Id, FailureMessage = failureMessage }));
+            app.State == LifecycleState.Cancelled
+                ? Task.CompletedTask
+                : concertNotifier.VerifyPaymentFailedAsync(venueManagerId, new { applicationId = app.Id, FailureMessage = failureMessage }));
 }

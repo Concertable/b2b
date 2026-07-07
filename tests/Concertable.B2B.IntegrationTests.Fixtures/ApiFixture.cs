@@ -1,5 +1,6 @@
 using Concertable.Kernel.Notifications;
 using Concertable.Payment.Contracts;
+using Concertable.Payment.Contracts.Events;
 using Concertable.Payment.Client;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
@@ -171,6 +172,23 @@ public class ApiFixture : IAsyncLifetime
 
     /// <summary>Resolve module-specific read-back from the freshly-created reset <paramref name="scope"/>.</summary>
     protected virtual void OnReset(IServiceScope scope) { }
+
+    /// <summary>Fires B2B's <see cref="PaymentFailedEvent"/> handlers for an escrow payment on
+    /// <paramref name="bookingId"/> — the failure leg <see cref="IWebhookSimulator"/> cannot simulate.</summary>
+    public async Task SendEscrowFailedWebhookAsync(int bookingId)
+    {
+        using var eventScope = factory.Services.CreateScope();
+        var handlers = eventScope.ServiceProvider.GetServices<IIntegrationEventHandler<PaymentFailedEvent>>();
+        var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
+        var evt = new PaymentFailedEvent($"pi_fail_{bookingId}", "card_declined", "Card was declined", new Dictionary<string, string>
+        {
+            ["type"] = TransactionTypes.Escrow,
+            ["bookingId"] = bookingId.ToString()
+        });
+
+        foreach (var handler in handlers)
+            await handler.HandleAsync(evt, envelope, CancellationToken.None);
+    }
 
     public IServiceProvider Services => factory.Services;
 

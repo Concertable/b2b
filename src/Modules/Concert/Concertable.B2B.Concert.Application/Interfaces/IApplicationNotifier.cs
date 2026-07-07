@@ -6,4 +6,5 @@ internal interface IApplicationNotifier
     Task AcceptedAsync(int applicationId);
     Task WithdrawnAsync(int applicationId);
     Task RejectedAsync(int applicationId);
+    Task CancelledAsync(int applicationId);
 }

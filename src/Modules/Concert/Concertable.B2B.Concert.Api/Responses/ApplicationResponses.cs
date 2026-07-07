@@ -13,4 +13,4 @@ internal sealed record ApplicationResponse(
 
 internal sealed record OpportunitySummaryResponse(int Id, DateTime StartDate, DateTime EndDate, IContract Contract);
 
-internal sealed record ApplicationActions(ActionLink Accept, ActionLink? Checkout, ActionLink? Withdraw, ActionLink? Reject);
+internal sealed record ApplicationActions(ActionLink Accept, ActionLink? Checkout, ActionLink? Withdraw, ActionLink? Reject, ActionLink? Cancel);

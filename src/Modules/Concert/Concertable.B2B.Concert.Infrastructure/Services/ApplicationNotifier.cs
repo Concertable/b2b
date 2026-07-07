@@ -50,6 +50,13 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
             emailSubject: "Concert Application Update",
             emailBody: "Your application was not selected for this concert opportunity.");
 
+    public Task CancelledAsync(int applicationId) =>
+        NotifyArtistAsync(applicationId,
+            content: "Your accepted application has been cancelled",
+            action: MessageAction.ApplicationCancelled,
+            emailSubject: "Concert Application Cancelled",
+            emailBody: "Your accepted application has been cancelled. Any payment made towards it has been refunded.");
+
     private async Task NotifyVenueAsync(int applicationId, string content, MessageAction action, string emailSubject)
     {
         var venueManagerId = await repository.GetVenueManagerIdAsync(applicationId)
