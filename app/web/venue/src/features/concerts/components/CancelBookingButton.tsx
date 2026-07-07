@@ -31,7 +31,11 @@ export function CancelBookingButton({ concertId }: Readonly<Props>) {
 
   return (
     <>
-      <Button variant="destructive" onClick={() => setOpen(true)}>
+      <Button
+        variant="destructive"
+        data-testid="cancel-booking"
+        onClick={() => setOpen(true)}
+      >
         Cancel booking
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -53,6 +57,7 @@ export function CancelBookingButton({ concertId }: Readonly<Props>) {
             </Button>
             <Button
               variant="destructive"
+              data-testid="cancel-booking-confirm"
               onClick={() => void handleConfirm()}
               disabled={cancel.isPending}
             >
