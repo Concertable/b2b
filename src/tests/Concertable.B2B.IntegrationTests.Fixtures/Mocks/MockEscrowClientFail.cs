@@ -6,15 +6,15 @@ namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
 internal sealed class MockEscrowClientFail : IEscrowClient
 {
-    public Task<Result<EscrowResponse>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Fail<EscrowResponse>("Mock escrow deposit failure"));
+    public Task<Result<EscrowDeposit>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result.Fail<EscrowDeposit>("Mock escrow deposit failure"));
 
-    public Task<Result<EscrowResponse>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Fail<EscrowResponse>("Mock escrow capture failure"));
+    public Task<Result<EscrowDeposit>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result.Fail<EscrowDeposit>("Mock escrow capture failure"));
 
-    public Task<Result<TransferResponse?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Fail<TransferResponse?>("Mock escrow release failure"));
+    public Task<Result<Transfer?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result.Fail<Transfer?>("Mock escrow release failure"));
 
-    public Task<Result<RefundResponse?>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Fail<RefundResponse?>("Mock escrow refund failure"));
+    public Task<Result<Refund?>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result.Fail<Refund?>("Mock escrow refund failure"));
 }
