@@ -18,7 +18,7 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
 
     public void Reset() => Payments.Clear();
 
-    public async Task<Result<PaymentResponse>> PayAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
+    public async Task<Result<PaymentOutcome>> PayAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
     {
         var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
         {
@@ -30,7 +30,7 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
             }
         });
         Payments.Add((payerId, payeeId, amount, paymentMethodId, bookingId));
-        return Result.Ok(new PaymentResponse { RequiresAction = false, TransactionId = intent.Id });
+        return Result.Ok(new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id });
     }
 
     public async Task<CheckoutSession> CreateSetupSessionAsync(Guid payerId, IDictionary<string, string> metadata, CancellationToken ct = default)

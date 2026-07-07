@@ -3,6 +3,8 @@ using Concertable.Payment.Contracts;
 using Concertable.Testing.Integration;
 using FluentResults;
 using Stripe;
+using Transfer = Concertable.Payment.Contracts.Transfer;
+using Refund = Concertable.Payment.Contracts.Refund;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
@@ -27,7 +29,7 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
         Refunds.Clear();
     }
 
-    public async Task<Result<EscrowResponse>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
+    public async Task<Result<EscrowDeposit>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
     {
         var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
         {
@@ -40,10 +42,10 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
         });
 
         Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));
-        return Result.Ok(new EscrowResponse(0, intent.Id, EscrowStatus.Held));
+        return Result.Ok(new EscrowDeposit(0, intent.Id, EscrowStatus.Held));
     }
 
-    public Task<Result<EscrowResponse>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
+    public Task<Result<EscrowDeposit>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
     {
         stripeApiClient.UpdateLastMetadata(new Dictionary<string, string>
         {
@@ -52,16 +54,16 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
         });
 
         Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));
-        return Task.FromResult(Result.Ok(new EscrowResponse(0, paymentIntentId, EscrowStatus.Held)));
+        return Task.FromResult(Result.Ok(new EscrowDeposit(0, paymentIntentId, EscrowStatus.Held)));
     }
 
-    public Task<Result<TransferResponse?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Ok<TransferResponse?>(new TransferResponse("tr_mock")));
+    public Task<Result<Transfer?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result.Ok<Transfer?>(new Transfer("tr_mock")));
 
-    public Task<Result<RefundResponse?>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default)
+    public Task<Result<Refund?>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default)
     {
         Refunds.Add(bookingId);
-        return Task.FromResult(Result.Ok<RefundResponse?>(new RefundResponse("re_mock")));
+        return Task.FromResult(Result.Ok<Refund?>(new Refund("re_mock")));
     }
 }
 
