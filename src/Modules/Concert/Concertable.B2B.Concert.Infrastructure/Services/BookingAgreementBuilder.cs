@@ -1,0 +1,54 @@
+using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.Kernel.Exceptions;
+using Microsoft.Extensions.Options;
+
+namespace Concertable.B2B.Concert.Infrastructure.Services;
+
+internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
+{
+    private readonly IContractAccessor contractAccessor;
+    private readonly IApplicationRepository applicationRepository;
+    private readonly IBookingAgreementRepository agreementRepository;
+    private readonly IAgreementTermsRenderer termsRenderer;
+    private readonly LegalSettings legal;
+    private readonly TimeProvider timeProvider;
+
+    public BookingAgreementBuilder(
+        IContractAccessor contractAccessor,
+        IApplicationRepository applicationRepository,
+        IBookingAgreementRepository agreementRepository,
+        IAgreementTermsRenderer termsRenderer,
+        IOptions<LegalSettings> legal,
+        TimeProvider timeProvider)
+    {
+        this.contractAccessor = contractAccessor;
+        this.applicationRepository = applicationRepository;
+        this.agreementRepository = agreementRepository;
+        this.termsRenderer = termsRenderer;
+        this.legal = legal.Value;
+        this.timeProvider = timeProvider;
+    }
+
+    public async Task BuildAsync(ApplicationEntity application, int bookingId)
+    {
+        var contract = contractAccessor.Contract;
+        var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(application.Id)
+            ?? throw new NotFoundException("Application not found");
+
+        var agreement = BookingAgreementEntity.Create(
+            bookingId,
+            venue.Id,
+            venue.Name,
+            artist.Id,
+            artist.Name,
+            application.Opportunity.Period,
+            contract,
+            termsRenderer.Render(contract),
+            legal.PlatformTermsVersion,
+            timeProvider.GetUtcNow().UtcDateTime);
+        agreement.VenueTenantId = application.VenueTenantId;
+        agreement.ArtistTenantId = application.ArtistTenantId;
+
+        await agreementRepository.AddAsync(agreement);
+    }
+}
