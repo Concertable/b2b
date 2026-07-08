@@ -13,6 +13,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private readonly IConcertWorkflowFactory workflows;
     private readonly IContractResolver contractResolver;
     private readonly IBookingRepository bookingRepository;
+    private readonly IBookingAgreementBuilder agreementBuilder;
     private readonly IBackgroundTaskRunner taskRunner;
 
     public AcceptExecutor(
@@ -20,12 +21,14 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         IConcertWorkflowFactory workflows,
         IContractResolver contractResolver,
         IBookingRepository bookingRepository,
+        IBookingAgreementBuilder agreementBuilder,
         IBackgroundTaskRunner taskRunner)
     {
         this.transitioner = transitioner;
         this.workflows = workflows;
         this.contractResolver = contractResolver;
         this.bookingRepository = bookingRepository;
+        this.agreementBuilder = agreementBuilder;
         this.taskRunner = taskRunner;
     }
 
@@ -45,6 +48,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
                 ?? throw new NotFoundException("Booking not found for application");
             app.Accept(booking);
+            await agreementBuilder.BuildAsync(app, booking.Id);
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
