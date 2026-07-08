@@ -10,18 +10,18 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly IApplicationRepository repository;
     private readonly IUserModule userModule;
     private readonly ICurrentUser currentUser;
-    private readonly INotifier notifier;
+    private readonly IMessenger messenger;
 
     public ApplicationNotifier(
         IApplicationRepository repository,
         IUserModule userModule,
         ICurrentUser currentUser,
-        INotifier notifier)
+        IMessenger messenger)
     {
         this.repository = repository;
         this.userModule = userModule;
         this.currentUser = currentUser;
-        this.notifier = notifier;
+        this.messenger = messenger;
     }
 
     public Task AppliedAsync(int applicationId) =>
@@ -64,7 +64,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         var venueManager = await userModule.GetManagerByIdAsync(venueManagerId)
             ?? throw new NotFoundException("Venue manager not found for application");
 
-        await notifier.SendAsync(currentUser.GetId(), venueManager.Id, content, action,
+        await messenger.SendAsync(currentUser.GetId(), venueManager.Id, content, action,
             new EmailCopy(venueManager.Email!, emailSubject, content));
     }
 
@@ -73,7 +73,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         var (artist, venue) = await repository.GetArtistAndVenueByIdAsync(applicationId)
             ?? throw new NotFoundException("Concert application not found");
 
-        await notifier.SendAndNotifyAsync(venue.UserId, artist.UserId, content, action,
+        await messenger.SendAndNotifyAsync(venue.UserId, artist.UserId, content, action,
             new EmailCopy(artist.Email!, emailSubject, emailBody));
     }
 }

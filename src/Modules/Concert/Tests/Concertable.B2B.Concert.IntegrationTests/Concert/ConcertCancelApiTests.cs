@@ -31,7 +31,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
         await client.PostAsync($"/api/Application/{appId}/checkout");
-        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept");
+        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { agreedToTerms = true });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -62,7 +62,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         // Arrange — VenueHire is prepaid; accept + webhook reaches Booked with escrow held.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.VenueHireApp.Id;
-        await client.PostAsync($"/api/Application/{appId}/accept");
+        await client.PostAsync($"/api/Application/{appId}/accept", new { agreedToTerms = true });
         await fixture.StripeClient.SendWebhookAsync();
 
         var concertResponse = await client.GetAsync($"/api/Concert/application/{appId}");
@@ -87,7 +87,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.DoorSplitApp.Id;
         await client.PostAsync($"/api/Application/{appId}/checkout");
-        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { paymentMethodId = "pm_card_visa" });
+        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -112,7 +112,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
         await venueClient.PostAsync($"/api/Application/{appId}/checkout");
-        await venueClient.PostAsync($"/api/Application/{appId}/accept");
+        await venueClient.PostAsync($"/api/Application/{appId}/accept", new { agreedToTerms = true });
         await fixture.StripeClient.SendWebhookAsync();
         var concert = await (await venueClient.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<ConcertDetailsResponse>();
 

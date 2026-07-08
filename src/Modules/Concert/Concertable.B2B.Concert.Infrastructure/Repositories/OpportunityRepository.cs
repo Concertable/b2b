@@ -22,6 +22,13 @@ internal sealed class OpportunityRepository : OpportunityRepository<ConcertDbCon
             .Select(o => (int?)o.ContractId)
             .FirstOrDefaultAsync();
 
+    public Task<DateRange?> GetPeriodByIdAsync(int opportunityId) =>
+        context.Opportunities
+            .AsNoTracking()
+            .Where(o => o.Id == opportunityId)
+            .Select(o => (DateRange?)o.Period)
+            .FirstOrDefaultAsync();
+
     public async Task<OpportunityEntity?> GetByApplicationIdAsync(int id) =>
         await context.Opportunities
             .Where(o => o.Applications.Any(a => a.Id == id))
