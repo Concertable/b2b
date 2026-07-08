@@ -127,14 +127,6 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ---
 
-### `ApplicationMapper` buries pure conversions as private statics instead of `XMappers` extensions
-
-`docs/CODE_CONVENTIONS.md` ("Mappers — `XMappers` extension methods") puts type-to-type mapping in a static `XMappers` class as `ToTarget()` extensions, never as private helpers on the consumer. `Concert.Application/Mappers/ApplicationMapper.cs` violates it: `ToStatus(LifecycleState)` and the `BuildArtistSummary(ApplicationEntity)` builder are private statics inside the DI mapper class (the only such occurrence repo-wide). The DI class itself is fine — it exists for the async `IOpportunityMapper` dependency; only the pure conversions are misplaced.
-
-**Resolves when:** the pure conversions move to an `internal static class ApplicationMappers` (`state.ToStatus()`, `application.ToArtistSummary()`) and the private statics are deleted.
-
----
-
 ### Duplicate application attempt is a 500, not a 400
 
 `ApplicationValidator.CanApplyAsync` never checks for an existing application by the same artist on the same opportunity, but `concert.Applications` has a unique `(OpportunityId, ArtistId)` index — so a second apply (including re-applying after a withdraw/reject, where the opportunity legitimately shows as open) passes eligibility and then blows up as a `DbUpdateException` → 500. Surfaced while testing withdraw (`Feature/ApplicationCancel`).

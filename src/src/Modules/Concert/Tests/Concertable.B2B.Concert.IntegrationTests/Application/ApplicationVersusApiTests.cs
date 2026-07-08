@@ -70,7 +70,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
 
         // Act — artist applies directly with no payment method
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}");
+        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { agreedToTerms = true });
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
@@ -88,7 +88,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
 
         // Act
         var response = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
 
         // Assert — booking created but draft not created until verify webhook fires
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -105,7 +105,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/checkout");
 
         // Act
-        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -128,11 +128,11 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
 
         // Act
         var response = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -147,7 +147,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
 
         // Act
         var acceptResponse = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
         await fixture.StripeClient.SendWebhookAsync();
@@ -166,7 +166,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
 
         // Act
         var acceptResponse = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { paymentMethodId = "pm_card_visa" });
+            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 

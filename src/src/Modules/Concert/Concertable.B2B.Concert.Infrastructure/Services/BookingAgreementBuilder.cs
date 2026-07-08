@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Kernel.Exceptions;
+using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
@@ -10,6 +11,8 @@ internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
     private readonly IApplicationRepository applicationRepository;
     private readonly IBookingAgreementRepository agreementRepository;
     private readonly IAgreementTermsRenderer termsRenderer;
+    private readonly ICurrentUser currentUser;
+    private readonly IClientContext clientContext;
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
 
@@ -18,6 +21,8 @@ internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
         IApplicationRepository applicationRepository,
         IBookingAgreementRepository agreementRepository,
         IAgreementTermsRenderer termsRenderer,
+        ICurrentUser currentUser,
+        IClientContext clientContext,
         IOptions<LegalSettings> legal,
         TimeProvider timeProvider)
     {
@@ -25,6 +30,8 @@ internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
         this.applicationRepository = applicationRepository;
         this.agreementRepository = agreementRepository;
         this.termsRenderer = termsRenderer;
+        this.currentUser = currentUser;
+        this.clientContext = clientContext;
         this.legal = legal.Value;
         this.timeProvider = timeProvider;
     }
@@ -45,6 +52,12 @@ internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
             contract,
             termsRenderer.Render(contract),
             legal.PlatformTermsVersion,
+            application.ArtistConsent,
+            new Consent(
+                currentUser.Id ?? throw new ForbiddenException("No user for current request"),
+                timeProvider.GetUtcNow().UtcDateTime,
+                clientContext.IpAddress,
+                clientContext.UserAgent),
             timeProvider.GetUtcNow().UtcDateTime);
         agreement.VenueTenantId = application.VenueTenantId;
         agreement.ArtistTenantId = application.ArtistTenantId;

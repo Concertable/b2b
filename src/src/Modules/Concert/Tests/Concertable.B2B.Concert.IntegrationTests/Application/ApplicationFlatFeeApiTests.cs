@@ -70,7 +70,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 
         // Act — artist applies directly with no payment method
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}");
+        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { agreedToTerms = true });
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
@@ -88,10 +88,10 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
 
         // Act
-        var firstResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept");
+        var firstResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { agreedToTerms = true });
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept");
+        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { agreedToTerms = true });
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -106,7 +106,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
 
         // Act
-        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept");
+        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { agreedToTerms = true });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -144,7 +144,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
 
         // Act
-        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept");
+        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { agreedToTerms = true });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
         await fixture.StripeClient.SendWebhookAsync();
@@ -162,7 +162,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
 
         // Act
-        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept");
+        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { agreedToTerms = true });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -181,7 +181,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingPayment());
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept");
+        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { agreedToTerms = true });
 
         // Assert — a failed hold rejects the accept, leaves it un-accepted, posts no concert, notifies nobody
         await response.ShouldBe(HttpStatusCode.BadRequest);

@@ -8,6 +8,7 @@ import {
   useApplicationQuery,
   useAcceptApplicationMutation,
   AcceptContractSummary,
+  AgreeToTermsCheckbox,
 } from "@b2b/features/concerts";
 import { useCheckoutFlow } from "@/features/concerts/hooks/useCheckoutFlow";
 import { VenueAcceptCheckoutFlow } from "./VenueAcceptCheckoutPage";
@@ -16,6 +17,7 @@ export function AcceptApplicationPage() {
   const { applicationId } = useParams({ from: "/_venue/applications/$applicationId/accept" });
   const navigate = useNavigate();
   const [accepted, setAccepted] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const { data: application, isLoading } = useApplicationQuery(applicationId);
   const { data: accountStatus } = usePayoutAccountStatusQuery(true);
   const acceptMutation = useAcceptApplicationMutation(
@@ -58,6 +60,10 @@ export function AcceptApplicationPage() {
         <AcceptContractSummary contract={opportunity.contract} />
       </div>
 
+      {!requiresCheckout && (
+        <AgreeToTermsCheckbox checked={agreed} onCheckedChange={setAgreed} />
+      )}
+
       <div className="flex gap-3">
         <Button
           variant="outline"
@@ -71,7 +77,7 @@ export function AcceptApplicationPage() {
           Cancel
         </Button>
         <Button
-          disabled={accountStatus !== "Verified" || acceptMutation.isPending}
+          disabled={accountStatus !== "Verified" || acceptMutation.isPending || (!requiresCheckout && !agreed)}
           onClick={handleConfirm}
           data-testid="confirm"
         >
