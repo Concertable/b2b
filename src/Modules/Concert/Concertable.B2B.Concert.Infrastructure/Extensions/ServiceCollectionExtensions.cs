@@ -82,6 +82,8 @@ public static class ServiceCollectionExtensions
 
         services.Configure<LegalSettings>(configuration.GetSection("Legal"));
         services.AddScoped<IBookingAgreementBuilder, BookingAgreementBuilder>();
+        services.AddScoped<IBookingAgreementService, BookingAgreementService>();
+        services.AddScoped<IBookingAgreementPdfService, BookingAgreementPdfService>();
         services.AddScoped<IClientContext, ClientContextAccessor>();
         services.AddSingleton<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
 
