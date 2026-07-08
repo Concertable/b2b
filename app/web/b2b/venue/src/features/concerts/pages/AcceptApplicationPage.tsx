@@ -7,6 +7,7 @@ import type { ConcertDraftCreatedPayload } from "@/features/notifications";
 import {
   useApplicationQuery,
   useAcceptApplicationMutation,
+  useDownloadAgreement,
   AcceptContractSummary,
   AgreeToTermsCheckbox,
 } from "@b2b/features/concerts";
@@ -23,6 +24,7 @@ export function AcceptApplicationPage() {
   const acceptMutation = useAcceptApplicationMutation(
     application?.opportunity.id ?? 0,
   );
+  const downloadAgreement = useDownloadAgreement();
   const flow = useCheckoutFlow<ConcertDraftCreatedPayload>({ event: "ConcertDraftCreated" });
 
   if (isLoading || !application) return null;
@@ -59,6 +61,17 @@ export function AcceptApplicationPage() {
       <div className="border-border bg-card rounded-xl border p-4">
         <AcceptContractSummary contract={opportunity.contract} />
       </div>
+
+      {actions.agreement && (
+        <Button
+          variant="outline"
+          onClick={() => downloadAgreement.mutate(application.id)}
+          disabled={downloadAgreement.isPending}
+          data-testid="download-agreement"
+        >
+          Booking agreement
+        </Button>
+      )}
 
       {!requiresCheckout && (
         <AgreeToTermsCheckbox checked={agreed} onCheckedChange={setAgreed} />

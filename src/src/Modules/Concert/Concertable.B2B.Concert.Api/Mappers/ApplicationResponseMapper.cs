@@ -27,7 +27,8 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
                 : null,
             Withdraw: isPending || isCancellable ? new ActionLink($"/api/Application/{dto.Id}/withdraw", "POST") : null,
             Reject: isPending ? new ActionLink($"/api/Application/{dto.Id}/reject", "POST") : null,
-            Cancel: isCancellable ? new ActionLink($"/api/Application/{dto.Id}/cancel", "POST") : null);
+            Cancel: isCancellable ? new ActionLink($"/api/Application/{dto.Id}/cancel", "POST") : null,
+            Agreement: dto.AgreementId is not null ? new ActionLink($"/api/Application/{dto.Id}/agreement", "GET") : null);
 
         return new ApplicationResponse(
             dto.Id,

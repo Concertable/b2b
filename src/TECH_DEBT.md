@@ -111,6 +111,16 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ## LOW
 
+### Booking agreement PDFs share the `images` blob container and rely on app-level write-once
+
+`BookingAgreementPdfService` stores agreement PDFs under an `agreements/{bookingId}-{guid}.pdf` name in the **single shared `"images"` container** (the only container `Concertable.Shared.Blob` exposes), and immutability of a legal document is enforced only at the app level: `BookingAgreementEntity.AttachPdf` records the blob name once, and `IBlobStorageService.UploadAsync` is `overwrite: true` so nothing at the storage layer prevents a rewrite. A legal artefact ideally lives in its own container with a no-overwrite (write-once / immutability-policy) upload. Deliberately not done in the booking-agreement feature because both are **additive changes to the published `Concertable.Shared.Blob` package** (a dedicated container config + an overwrite-guarding `UploadAsync` overload), which would cross the package boundary the feature was scoped to avoid.
+
+Related: `BookingAgreementPdfService`'s render→upload→record→lazy-serve orchestration is currently the only blob-backed PDF in B2B (the Customer ticket-receipt PDF only renders + emails, no blob). If a second blob-backed PDF appears (e.g. the self-billed VAT invoice), that pattern becomes worth extracting into `Concertable.Shared.Pdf` as a shared `IPdfBlobStore`-style helper rather than duplicating.
+
+**Resolves when:** `Concertable.Shared.Blob` gains a dedicated-container + write-once upload path, agreement PDFs move to it, and `AttachPdf`'s app-level guard is backed by a storage-level immutability guarantee.
+
+---
+
 ### `ConcertDetailsResponse` coerces optional images to `string.Empty`
 
 `ConcertResponseMappers.ToDetailsResponse` maps `BannerUrl = dto.BannerUrl ?? string.Empty` and `Avatar = dto.Avatar ?? dto.Artist.Avatar ?? string.Empty` because `ConcertDetailsResponse` declares both as `required string` while the underlying data is legitimately optional. The mapper flattens "absent" into "present but blank", and the SPA has to re-interpret `""` as missing. Inconsistent with `ConcertArtistResponse.Avatar` in the same response family, which is honestly `string?`.

@@ -17,4 +17,5 @@ export {
   useRejectApplicationMutation,
   useCancelApplicationMutation,
 } from "./hooks/useApplicationQuery";
+export { useDownloadAgreement } from "./hooks/useDownloadAgreement";
 export { useConcertStore } from "./store/useConcertStore";

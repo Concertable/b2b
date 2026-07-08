@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Contract.Contracts;
@@ -237,6 +238,108 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueConsent.UserId);
     }
 
+    [Fact]
+    public async Task Agreement_Pdf_IsDownloadableByBothParties()
+    {
+        var applicationId = await AcceptedFlatFeeAsync();
+
+        foreach (var party in new[] { fixture.SeedState.VenueManager1, fixture.SeedState.ArtistManager1 })
+        {
+            var client = fixture.CreateClient(party);
+            var response = await client.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
+
+            await response.ShouldBe(HttpStatusCode.OK);
+            Assert.Equal("application/pdf", response.Content.Headers.ContentType?.MediaType);
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            Assert.NotEmpty(bytes);
+            Assert.Equal("%PDF", Encoding.ASCII.GetString(bytes, 0, 4)); // the PDF magic number
+        }
+    }
+
+    [Fact]
+    public async Task Agreement_Pdf_Returns404ForNonParty()
+    {
+        var applicationId = await AcceptedFlatFeeAsync();
+
+        var stranger = fixture.CreateClient(fixture.SeedState.VenueManager2);
+        var response = await stranger.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
+
+        // The two-party filter hides the deal document — 404, never a probe-able 403.
+        await response.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Agreement_Pdf_LazilyRendersAndPersistsBlobName()
+    {
+        var applicationId = await AcceptedFlatFeeAsync();
+
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var response = await client.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
+        await response.ShouldBe(HttpStatusCode.OK);
+
+        // FakeBlobStorageService reports the blob absent, so the download exercises the lazy-render
+        // path and must persist the recorded blob name under the agreements/ prefix.
+        var agreement = await GetAgreementAsync(applicationId);
+        Assert.NotNull(agreement.PdfBlobName);
+        Assert.StartsWith("agreements/", agreement.PdfBlobName);
+    }
+
+    [Fact]
+    public async Task Agreement_Metadata_IsReadableByParty_And404ForStranger()
+    {
+        var applicationId = await AcceptedFlatFeeAsync();
+
+        var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var response = await artist.GetAsync($"/api/Application/{applicationId}/agreement");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("The venue pays the artist a flat fee of", body);
+        Assert.Contains("2026-07", body); // platform terms version
+
+        var stranger = fixture.CreateClient(fixture.SeedState.VenueManager2);
+        await (await stranger.GetAsync($"/api/Application/{applicationId}/agreement")).ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task AcceptedApplication_ExposesAgreementHateoasLink()
+    {
+        var applicationId = await AcceptedFlatFeeAsync();
+
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var response = await venue.GetAsync($"/api/Application/{applicationId}");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var application = await response.Content.ReadAsync<ApplicationResponse>();
+
+        Assert.NotNull(application!.Actions.Agreement);
+        Assert.Equal($"/api/Application/{applicationId}/agreement", application.Actions.Agreement!.Href);
+        Assert.Equal("GET", application.Actions.Agreement.Method);
+    }
+
+    [Fact]
+    public async Task PendingApplication_HasNoAgreementLink()
+    {
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var applicationId = await ApplyAsync(opportunityId);
+
+        var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var response = await artist.GetAsync($"/api/Application/{applicationId}");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var application = await response.Content.ReadAsync<ApplicationResponse>();
+
+        Assert.Null(application!.Actions.Agreement);
+    }
+
+    private async Task<int> AcceptedFlatFeeAsync()
+    {
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var applicationId = await ApplyAsync(opportunityId);
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await venueClient.PostAsync($"/api/Application/{applicationId}/checkout");
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        return applicationId;
+    }
+
     private async Task<int> CreateOpportunityAsync(IContract contract)
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -279,7 +382,9 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         Assert.NotEqual(default, agreement.ArtistConsent.AtUtc);
         Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueConsent.UserId);
         Assert.NotEqual(default, agreement.VenueConsent.AtUtc);
-        Assert.Null(agreement.PdfBlobName);
+        // PdfBlobName is intentionally not asserted here: Phase 3 generates the PDF in a background
+        // task at Accept, so it becomes populated shortly after — racy to assert either way. The PDF
+        // lifecycle is covered by the dedicated Agreement_Pdf_* tests.
     }
 
     // The live edit venues make through OpportunitySyncer.UpdateAsync — mutates the contract row in place.

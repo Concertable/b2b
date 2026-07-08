@@ -41,6 +41,7 @@
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="QRCoder" Version="1.6.0" />
+    <PackageVersion Include="QuestPDF" Version="2025.1.3" />
     <PackageVersion Include="Reqnroll.Microsoft.Extensions.DependencyInjection" Version="3.3.4" />
     <PackageVersion Include="Reqnroll.xUnit" Version="3.3.4" />
     <PackageVersion Include="Stripe.net" Version="47.3.0" />
@@ -63,6 +64,7 @@
     <PackageVersion Include="Concertable.ServiceDefaults" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Api" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Notification.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Blob.Application" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Blob.Infrastructure" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Email.Application" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Email.Infrastructure" Version="$(ConcertablePlatformVersion)" />
@@ -70,6 +72,7 @@
     <PackageVersion Include="Concertable.Shared.Geocoding.Infrastructure" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Imaging.Application" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Imaging.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Pdf.Application" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Pdf.Infrastructure" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Messaging.Contracts" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Messaging.Domain" Version="$(ConcertablePlatformVersion)" />

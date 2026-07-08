@@ -7,10 +7,12 @@ namespace Concertable.B2B.Concert.Application.Mappers;
 internal sealed class ApplicationMapper : IApplicationMapper
 {
     private readonly IOpportunityMapper opportunityMapper;
+    private readonly IBookingAgreementRepository agreements;
 
-    public ApplicationMapper(IOpportunityMapper opportunityMapper)
+    public ApplicationMapper(IOpportunityMapper opportunityMapper, IBookingAgreementRepository agreements)
     {
         this.opportunityMapper = opportunityMapper;
+        this.agreements = agreements;
     }
 
     public async Task<ApplicationDto> ToDtoAsync(ApplicationEntity application) =>
@@ -18,14 +20,17 @@ internal sealed class ApplicationMapper : IApplicationMapper
             application.ToArtistSummary(),
             await opportunityMapper.ToDtoAsync(application.Opportunity),
             application.State.ToStatus(),
-            application.State);
+            application.State,
+            await agreements.GetIdByApplicationIdAsync(application.Id));
 
     public async Task<IEnumerable<ApplicationDto>> ToDtosAsync(IEnumerable<ApplicationEntity> applications)
     {
         var applicationList = applications.ToList();
         var opportunityDtos = await opportunityMapper.ToDtosAsync(applicationList.Select(a => a.Opportunity));
+        var agreementIds = await agreements.GetIdsByApplicationIdsAsync(applicationList.Select(a => a.Id).ToList());
 
         return applicationList.Zip(opportunityDtos, (a, opp) =>
-            new ApplicationDto(a.Id, a.ToArtistSummary(), opp, a.State.ToStatus(), a.State));
+            new ApplicationDto(a.Id, a.ToArtistSummary(), opp, a.State.ToStatus(), a.State,
+                agreementIds.TryGetValue(a.Id, out var id) ? id : null));
     }
 }
