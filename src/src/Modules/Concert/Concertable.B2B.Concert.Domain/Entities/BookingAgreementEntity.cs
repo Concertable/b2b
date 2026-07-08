@@ -43,13 +43,14 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
 
     private BookingAgreementEntity() { }
 
-    /* App-level write-once: the PDF is generated exactly once (background at Accept, or lazily on
-       first download) and its blob name recorded here. A missing blob is re-rendered under the SAME
-       name, so this is never called twice — the guard catches a regression that would orphan a blob. */
-    public void AttachPdf(string blobName)
+    /* The PDF's storage location, assigned once inside the accept transaction (single writer) before
+       any bytes exist. Generation then only ever fills THIS location — background at Accept, or lazily
+       on first download — so concurrent renders converge on one blob (overwrite) instead of racing to
+       mint competing names. The guard catches a regression that would reassign it. */
+    public void AssignPdfBlobName(string blobName)
     {
         if (PdfBlobName is not null)
-            throw new InvalidOperationException("Agreement PDF blob name is already recorded");
+            throw new InvalidOperationException("Agreement PDF blob name is already assigned");
         PdfBlobName = blobName;
     }
 

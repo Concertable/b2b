@@ -24,40 +24,37 @@ internal sealed class BookingAgreementPdfService : IBookingAgreementPdfService
 
     public async Task<byte[]> GetOrCreateAsync(BookingAgreementEntity agreement, CancellationToken ct = default)
     {
-        if (agreement.PdfBlobName is not null && await blobStorage.ExistsAsync(agreement.PdfBlobName))
+        var blobName = agreement.PdfBlobName
+            ?? throw new InvalidOperationException("Agreement has no assigned PDF blob name");
+
+        if (await blobStorage.ExistsAsync(blobName))
         {
-            await using var stream = await blobStorage.DownloadAsync(agreement.PdfBlobName);
+            await using var stream = await blobStorage.DownloadAsync(blobName);
             using var buffer = new MemoryStream();
             await stream.CopyToAsync(buffer, ct);
             return buffer.ToArray();
         }
 
-        return await RenderStoreAsync(agreement, ct);
+        return await RenderUploadAsync(agreement, blobName);
     }
 
     public async Task GenerateForBookingAsync(int bookingId, CancellationToken ct = default)
     {
         var agreement = await repository.GetByBookingIdIgnoringTenantAsync(bookingId, ct);
-        if (agreement is null || agreement.PdfBlobName is not null)
+        if (agreement?.PdfBlobName is null || await blobStorage.ExistsAsync(agreement.PdfBlobName))
             return;
 
-        await RenderStoreAsync(agreement, ct);
+        await RenderUploadAsync(agreement, agreement.PdfBlobName);
     }
 
-    private async Task<byte[]> RenderStoreAsync(BookingAgreementEntity agreement, CancellationToken ct)
+    /* Fills the location the accept transaction already assigned — never mints a name, never writes
+       the DB. Idempotent: overwriting the same blob with the same rendered bytes is a no-op in effect,
+       so a background render racing a lazy render can't orphan anything. */
+    private async Task<byte[]> RenderUploadAsync(BookingAgreementEntity agreement, string blobName)
     {
         var bytes = pdfService.Render(new BookingAgreementDocument(agreement));
-        var blobName = agreement.PdfBlobName ?? $"agreements/{agreement.BookingId}-{Guid.NewGuid():N}.pdf";
-
-        using (var upload = new MemoryStream(bytes, writable: false))
-            await blobStorage.UploadAsync(upload, blobName);
-
-        if (agreement.PdfBlobName is null)
-        {
-            agreement.AttachPdf(blobName);
-            await repository.SaveChangesAsync(ct);
-        }
-
+        using var upload = new MemoryStream(bytes, writable: false);
+        await blobStorage.UploadAsync(upload, blobName);
         return bytes;
     }
 }
