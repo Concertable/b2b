@@ -25,11 +25,6 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
     public ContractType ContractType { get; private set; }
     public PaymentMethod PaymentMethod { get; private set; }
 
-    public decimal? Fee { get; private set; }
-    public decimal? HireFee { get; private set; }
-    public decimal? Guarantee { get; private set; }
-    public decimal? ArtistDoorPercent { get; private set; }
-
     public string TermsText { get; private set; } = null!;
     public string PlatformTermsVersion { get; private set; } = null!;
 
@@ -76,15 +71,6 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
             Period = period,
             ContractType = contract.ContractType,
             PaymentMethod = contract.PaymentMethod,
-            Fee = (contract as FlatFeeContract)?.Fee,
-            HireFee = (contract as VenueHireContract)?.HireFee,
-            Guarantee = (contract as VersusContract)?.Guarantee,
-            ArtistDoorPercent = contract switch
-            {
-                DoorSplitContract doorSplit => doorSplit.ArtistDoorPercent,
-                VersusContract versus => versus.ArtistDoorPercent,
-                _ => null
-            },
             TermsText = termsText,
             PlatformTermsVersion = platformTermsVersion,
             ArtistConsent = artistConsent,

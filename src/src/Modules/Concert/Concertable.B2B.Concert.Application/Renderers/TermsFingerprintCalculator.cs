@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Security.Cryptography;
 using System.Text;
 using Concertable.B2B.Concert.Application.Interfaces;
@@ -7,16 +8,26 @@ namespace Concertable.B2B.Concert.Application.Renderers;
 
 internal sealed class TermsFingerprintCalculator : ITermsFingerprintCalculator
 {
+    private readonly FrozenDictionary<ContractType, IContractFingerprintComponent> components;
+
+    public TermsFingerprintCalculator(
+        FlatFeeFingerprintComponent flatFee,
+        DoorSplitFingerprintComponent doorSplit,
+        VersusFingerprintComponent versus,
+        VenueHireFingerprintComponent venueHire)
+    {
+        components = new Dictionary<ContractType, IContractFingerprintComponent>
+        {
+            [ContractType.FlatFee] = flatFee,
+            [ContractType.DoorSplit] = doorSplit,
+            [ContractType.Versus] = versus,
+            [ContractType.VenueHire] = venueHire,
+        }.ToFrozenDictionary();
+    }
+
     public string Calculate(IContract contract, DateRange period)
     {
-        var numbers = contract switch
-        {
-            FlatFeeContract c => Invariant($"Fee={c.Fee}"),
-            VenueHireContract c => Invariant($"HireFee={c.HireFee}"),
-            DoorSplitContract c => Invariant($"ArtistDoorPercent={c.ArtistDoorPercent}"),
-            VersusContract c => Invariant($"Guarantee={c.Guarantee};ArtistDoorPercent={c.ArtistDoorPercent}"),
-            _ => throw new ArgumentOutOfRangeException(nameof(contract), contract.ContractType, "Unknown contract type")
-        };
+        var numbers = components[contract.ContractType].Compose(contract);
         var payload = Invariant(
             $"{contract.ContractType}|{contract.PaymentMethod}|{numbers}|{period.Start:O}|{period.End:O}");
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload)));
