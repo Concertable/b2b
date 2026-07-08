@@ -99,9 +99,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal?>("ArtistDoorPercent")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
 
@@ -120,15 +117,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal?>("Fee")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("Guarantee")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("HireFee")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("PaymentMethod")
                         .HasColumnType("int");

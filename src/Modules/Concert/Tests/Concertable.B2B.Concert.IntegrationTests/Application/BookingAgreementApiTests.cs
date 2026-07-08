@@ -44,19 +44,14 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         var agreement = await GetAgreementAsync(applicationId);
         Assert.Equal(ContractType.FlatFee, agreement.ContractType);
         Assert.Equal(PaymentMethod.Transfer, agreement.PaymentMethod);
-        Assert.Equal(500m, agreement.Fee);
-        Assert.Null(agreement.HireFee);
-        Assert.Null(agreement.Guarantee);
-        Assert.Null(agreement.ArtistDoorPercent);
         Assert.Equal("The venue pays the artist a flat fee of £500.00.", agreement.TermsText);
         AssertCommonSnapshot(agreement);
 
         // Act — the venue edits the live contract after acceptance
         await UpdateContractAsync(opportunityId, new FlatFeeContract { PaymentMethod = PaymentMethod.Cash, Fee = 999m });
 
-        // Assert — the frozen agreement is untouched
+        // Assert — the frozen agreement is untouched (the terms text still states the agreed £500)
         var frozen = await GetAgreementAsync(applicationId);
-        Assert.Equal(500m, frozen.Fee);
         Assert.Equal(PaymentMethod.Transfer, frozen.PaymentMethod);
         Assert.Equal("The venue pays the artist a flat fee of £500.00.", frozen.TermsText);
     }
@@ -76,19 +71,14 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         var agreement = await GetAgreementAsync(applicationId);
         Assert.Equal(ContractType.DoorSplit, agreement.ContractType);
-        Assert.Equal(70m, agreement.ArtistDoorPercent);
-        Assert.Null(agreement.Fee);
-        Assert.Null(agreement.HireFee);
-        Assert.Null(agreement.Guarantee);
         Assert.Equal("The artist receives 70% of door revenue.", agreement.TermsText);
         AssertCommonSnapshot(agreement);
 
         // Act
         await UpdateContractAsync(opportunityId, new DoorSplitContract { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 15m });
 
-        // Assert
+        // Assert — the frozen terms text still states the agreed 70%
         var frozen = await GetAgreementAsync(applicationId);
-        Assert.Equal(70m, frozen.ArtistDoorPercent);
         Assert.Equal("The artist receives 70% of door revenue.", frozen.TermsText);
     }
 
@@ -107,20 +97,14 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         var agreement = await GetAgreementAsync(applicationId);
         Assert.Equal(ContractType.Versus, agreement.ContractType);
-        Assert.Equal(200m, agreement.Guarantee);
-        Assert.Equal(60m, agreement.ArtistDoorPercent);
-        Assert.Null(agreement.Fee);
-        Assert.Null(agreement.HireFee);
         Assert.Equal("The artist receives a guarantee of £200.00 plus 60% of door revenue.", agreement.TermsText);
         AssertCommonSnapshot(agreement);
 
         // Act
         await UpdateContractAsync(opportunityId, new VersusContract { PaymentMethod = PaymentMethod.Cash, Guarantee = 999m, ArtistDoorPercent = 10m });
 
-        // Assert
+        // Assert — the frozen terms text still states the agreed £200 guarantee + 60%
         var frozen = await GetAgreementAsync(applicationId);
-        Assert.Equal(200m, frozen.Guarantee);
-        Assert.Equal(60m, frozen.ArtistDoorPercent);
         Assert.Equal("The artist receives a guarantee of £200.00 plus 60% of door revenue.", frozen.TermsText);
     }
 
@@ -139,19 +123,14 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         var agreement = await GetAgreementAsync(applicationId);
         Assert.Equal(ContractType.VenueHire, agreement.ContractType);
-        Assert.Equal(250m, agreement.HireFee);
-        Assert.Null(agreement.Fee);
-        Assert.Null(agreement.Guarantee);
-        Assert.Null(agreement.ArtistDoorPercent);
         Assert.Equal("The artist pays the venue a hire fee of £250.00.", agreement.TermsText);
         AssertCommonSnapshot(agreement);
 
         // Act
         await UpdateContractAsync(opportunityId, new VenueHireContract { PaymentMethod = PaymentMethod.Cash, HireFee = 999m });
 
-        // Assert
+        // Assert — the frozen terms text still states the agreed £250
         var frozen = await GetAgreementAsync(applicationId);
-        Assert.Equal(250m, frozen.HireFee);
         Assert.Equal("The artist pays the venue a hire fee of £250.00.", frozen.TermsText);
     }
 
