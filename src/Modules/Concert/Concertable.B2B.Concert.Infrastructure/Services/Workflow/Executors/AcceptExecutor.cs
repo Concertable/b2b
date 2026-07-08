@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Capabilities;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
+using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel;
 using Concertable.Kernel.Exceptions;
@@ -14,6 +15,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private readonly IContractResolver contractResolver;
     private readonly IBookingRepository bookingRepository;
     private readonly IBookingAgreementBuilder agreementBuilder;
+    private readonly ITermsFingerprintCalculator termsFingerprint;
     private readonly IBackgroundTaskRunner taskRunner;
 
     public AcceptExecutor(
@@ -22,6 +24,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         IContractResolver contractResolver,
         IBookingRepository bookingRepository,
         IBookingAgreementBuilder agreementBuilder,
+        ITermsFingerprintCalculator termsFingerprint,
         IBackgroundTaskRunner taskRunner)
     {
         this.transitioner = transitioner;
@@ -29,13 +32,16 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.contractResolver = contractResolver;
         this.bookingRepository = bookingRepository;
         this.agreementBuilder = agreementBuilder;
+        this.termsFingerprint = termsFingerprint;
         this.taskRunner = taskRunner;
     }
 
     public Task ExecuteAsync(int applicationId, string? paymentMethodId)
         => transitioner.TransitionAsync(applicationId, Trigger.Accept, async app =>
         {
-            await contractResolver.ResolveByApplicationIdAsync(app.Id);
+            var contract = await contractResolver.ResolveByApplicationIdAsync(app.Id);
+            VerifyTermsUnchanged(app, contract);
+
             var workflow = workflows.Create(app.ContractType);
             await (workflow switch
             {
@@ -53,4 +59,16 @@ internal sealed class AcceptExecutor : IAcceptExecutor
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
         });
+
+    /* Must run BEFORE the accept step: the step captures/charges real money, and only the DB
+       side of this transition rolls back on a throw. */
+    private void VerifyTermsUnchanged(ApplicationEntity app, IContract contract)
+    {
+        /* Null fingerprint = the application predates click-wrap; there is no artist consent to
+           protect, so the guard only applies once one was recorded. */
+        if (app.TermsFingerprint is not null
+            && app.TermsFingerprint != termsFingerprint.Calculate(contract, app.Opportunity.Period))
+            throw new BadRequestException(
+                "The contract terms have changed since the artist applied — the artist must re-apply before you can accept");
+    }
 }

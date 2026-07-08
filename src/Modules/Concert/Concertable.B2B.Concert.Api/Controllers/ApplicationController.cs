@@ -34,9 +34,9 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpPost("{opportunityId}")]
-    public async Task<IActionResult> Apply(int opportunityId, [FromBody] ApplyRequest? request = null)
+    public async Task<IActionResult> Apply(int opportunityId, [FromBody] ApplyRequest request)
     {
-        var application = request is not null
+        var application = request.PaymentMethodId is not null
             ? await applicationService.ApplyAsync(opportunityId, request.PaymentMethodId)
             : await applicationService.ApplyAsync(opportunityId);
         return CreatedAtAction(nameof(GetById), new { id = application.Id }, mapper.ToResponse(application));
@@ -99,9 +99,9 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/accept")]
-    public async Task<IActionResult> Accept(int applicationId, [FromBody] AcceptRequest? request = null)
+    public async Task<IActionResult> Accept(int applicationId, [FromBody] AcceptRequest request)
     {
-        await applicationService.AcceptAsync(applicationId, request?.PaymentMethodId);
+        await applicationService.AcceptAsync(applicationId, request.PaymentMethodId);
         return NoContent();
     }
 

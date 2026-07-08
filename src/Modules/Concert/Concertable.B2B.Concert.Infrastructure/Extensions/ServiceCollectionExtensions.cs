@@ -77,11 +77,13 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<IContractModule>()));
         services.AddScoped<IApplicationService, ApplicationService>();
         services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
-        services.AddScoped<INotifier, Notifier>();
+        services.AddScoped<IMessenger, Messenger>();
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
         services.Configure<LegalSettings>(configuration.GetSection("Legal"));
         services.AddScoped<IBookingAgreementBuilder, BookingAgreementBuilder>();
+        services.AddScoped<IClientContext, ClientContextAccessor>();
+        services.AddSingleton<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
 
         services.AddScoped<ContractAccessor>();
         services.AddScoped<IContractAccessor>(sp => sp.GetRequiredService<ContractAccessor>());

@@ -6,7 +6,7 @@ internal sealed record EmailCopy(string To, string Subject, string Body);
 
 /// <summary>Sends a conversation message with an email copy to the recipient.
 /// Verbs mirror <see cref="IConversationsModule"/>: SendAndNotify also raises an in-app notification.</summary>
-internal interface INotifier
+internal interface IMessenger
 {
     Task SendAsync(Guid fromUserId, Guid toUserId, string content, MessageAction action, EmailCopy email);
     Task SendAndNotifyAsync(Guid fromUserId, Guid toUserId, string content, MessageAction action, EmailCopy email);

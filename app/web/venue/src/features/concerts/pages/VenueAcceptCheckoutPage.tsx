@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { ConcertDraftCreatedPayload } from "@/features/notifications";
 import {
   AcceptContractSummary,
+  AgreeToTermsCheckbox,
   useAcceptApplicationMutation,
   useAcceptCheckoutQuery,
   useApplicationQuery,
@@ -100,6 +101,7 @@ interface VenueAcceptCheckoutFormProps {
 
 function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Readonly<VenueAcceptCheckoutFormProps>) {
   const [submitted, setSubmitted] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const acceptMutation = useAcceptApplicationMutation(application.opportunity.id);
   const flow = useCheckoutFlow<ConcertDraftCreatedPayload>({ event: "ConcertDraftCreated" });
@@ -147,12 +149,15 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
         title="Payment Method"
         description={labels.paymentHint ?? undefined}
       >
-        <StripePaymentForm
-          session={checkout.session}
-          submitLabel={labels.submitLabel}
-          disabled={acceptMutation.isPending}
-          onSuccess={handleAccept}
-        />
+        <div className="space-y-4">
+          <AgreeToTermsCheckbox checked={agreed} onCheckedChange={setAgreed} />
+          <StripePaymentForm
+            session={checkout.session}
+            submitLabel={labels.submitLabel}
+            disabled={acceptMutation.isPending || !agreed}
+            onSuccess={handleAccept}
+          />
+        </div>
       </CheckoutSection>
       {error && <p data-testid="payment-error" className="text-destructive text-sm">{error}</p>}
     </CheckoutLayout>

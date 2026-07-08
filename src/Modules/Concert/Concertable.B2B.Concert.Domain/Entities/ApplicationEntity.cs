@@ -18,6 +18,10 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     public ArtistReadModel Artist { get; set; } = null!;
     public BookingEntity? Booking { get; set; }
 
+    /* Null = the application predates click-wrap consent. */
+    public Consent? ArtistConsent { get; private set; }
+    public string? TermsFingerprint { get; private set; }
+
     protected ApplicationEntity() { }
 
     protected ApplicationEntity(int artistId, int opportunityId, ContractType contractType)
@@ -28,6 +32,12 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     }
 
     public void Accept(BookingEntity booking) => Booking = booking;
+
+    public void RecordArtistConsent(Consent consent, string termsFingerprint)
+    {
+        ArtistConsent = consent;
+        TermsFingerprint = termsFingerprint;
+    }
 
     internal void Transition(Trigger trigger, ContractStateMachine machine) => State = machine.Next(State, trigger);
 }

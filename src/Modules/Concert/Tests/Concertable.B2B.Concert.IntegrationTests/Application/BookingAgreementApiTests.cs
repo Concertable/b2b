@@ -36,7 +36,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         await venueClient.PostAsync($"/api/Application/{applicationId}/checkout");
 
         // Act
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept");
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true });
 
         // Assert — snapshot written in the accept transaction
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -69,7 +69,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { paymentMethodId = "pm_card_visa" });
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -100,7 +100,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { paymentMethodId = "pm_card_visa" });
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -128,11 +128,11 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
     {
         // Arrange — VenueHire is prepaid: the artist applies with a payment method
         var opportunityId = await CreateOpportunityAsync(new VenueHireContract { PaymentMethod = PaymentMethod.Cash, HireFee = 250m });
-        var applicationId = await ApplyAsync(opportunityId, new { paymentMethodId = "pm_card_visa" });
+        var applicationId = await ApplyAsync(opportunityId, "pm_card_visa");
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept");
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true });
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -154,6 +154,89 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         Assert.Equal("The artist pays the venue a hire fee of £250.00.", frozen.TermsText);
     }
 
+    [Fact]
+    public async Task Apply_ShouldReturn400_WithoutConsent()
+    {
+        // Arrange
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        // Act
+        var response = await artistClient.PostAsync($"/api/Application/{opportunityId}", new { agreedToTerms = false });
+
+        // Assert — no application row written
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        Assert.False(await fixture.ConcertReads.Set<ApplicationEntity>().AnyAsync(a => a.OpportunityId == opportunityId));
+    }
+
+    [Fact]
+    public async Task Apply_ShouldRecordArtistConsentAndFingerprint()
+    {
+        // Arrange + Act
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var applicationId = await ApplyAsync(opportunityId);
+
+        // Assert
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == applicationId);
+        Assert.NotNull(application.ArtistConsent);
+        Assert.Equal(fixture.SeedState.ArtistManager1.Id, application.ArtistConsent!.UserId);
+        Assert.NotEqual(default, application.ArtistConsent.AtUtc);
+        Assert.NotNull(application.TermsFingerprint);
+    }
+
+    [Fact]
+    public async Task Accept_ShouldReturn400_WithoutConsent()
+    {
+        // Arrange
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var applicationId = await ApplyAsync(opportunityId);
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await venueClient.PostAsync($"/api/Application/{applicationId}/checkout");
+
+        // Act
+        var response = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = false });
+
+        // Assert — the accept never happened
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        Assert.False(await fixture.ConcertReads.Set<BookingEntity>().AnyAsync(b => b.ApplicationId == applicationId));
+    }
+
+    [Fact]
+    public async Task Accept_ShouldReturn400_WhenTermsChangedSinceApply()
+    {
+        // Arrange — artist consents to £500, then the venue edits the live contract to £999
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var applicationId = await ApplyAsync(opportunityId);
+        await UpdateContractAsync(opportunityId, new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 999m });
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await venueClient.PostAsync($"/api/Application/{applicationId}/checkout");
+
+        // Act
+        var response = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true });
+
+        // Assert — accept refused; no booking, no agreement
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        Assert.False(await fixture.ConcertReads.Set<BookingEntity>().AnyAsync(b => b.ApplicationId == applicationId));
+    }
+
+    [Fact]
+    public async Task Accept_ShouldSucceedWithNullArtistConsent_ForPreConsentApplication()
+    {
+        // Arrange — seeded applications predate click-wrap: no fingerprint, no artist consent
+        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await venueClient.PostAsync($"/api/Application/{appId}/checkout");
+
+        // Act
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{appId}/accept", new { agreedToTerms = true });
+
+        // Assert — accept works, agreement records the venue's consent and honestly omits the artist's
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        var agreement = await GetAgreementAsync(appId);
+        Assert.Null(agreement.ArtistConsent);
+        Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueConsent.UserId);
+    }
+
     private async Task<int> CreateOpportunityAsync(IContract contract)
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -163,12 +246,11 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         return opportunity!.Id;
     }
 
-    private async Task<int> ApplyAsync(int opportunityId, object? body = null)
+    private async Task<int> ApplyAsync(int opportunityId, string? paymentMethodId = null)
     {
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var response = body is null
-            ? await artistClient.PostAsync($"/api/Application/{opportunityId}")
-            : await artistClient.PostAsync($"/api/Application/{opportunityId}", body);
+        var response = await artistClient.PostAsync(
+            $"/api/Application/{opportunityId}", new { agreedToTerms = true, paymentMethodId });
         await response.ShouldBe(HttpStatusCode.Created);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>()
             .FirstAsync(a => a.OpportunityId == opportunityId);
@@ -186,16 +268,17 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         return agreement;
     }
 
-    private static void AssertCommonSnapshot(BookingAgreementEntity agreement)
+    private void AssertCommonSnapshot(BookingAgreementEntity agreement)
     {
         Assert.NotEmpty(agreement.VenueName);
         Assert.NotEmpty(agreement.ArtistName);
         Assert.Equal("2026-07", agreement.PlatformTermsVersion);
         Assert.NotEqual(default, agreement.CreatedAtUtc);
-        Assert.Null(agreement.ArtistConsentUserId);
-        Assert.Null(agreement.ArtistConsentAtUtc);
-        Assert.Null(agreement.VenueConsentUserId);
-        Assert.Null(agreement.VenueConsentAtUtc);
+        Assert.NotNull(agreement.ArtistConsent);
+        Assert.Equal(fixture.SeedState.ArtistManager1.Id, agreement.ArtistConsent!.UserId);
+        Assert.NotEqual(default, agreement.ArtistConsent.AtUtc);
+        Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueConsent.UserId);
+        Assert.NotEqual(default, agreement.VenueConsent.AtUtc);
         Assert.Null(agreement.PdfBlobName);
     }
 

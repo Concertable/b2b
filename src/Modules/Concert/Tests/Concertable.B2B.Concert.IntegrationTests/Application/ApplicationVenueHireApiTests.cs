@@ -79,7 +79,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var checkoutResponse = await artistClient.PostAsync($"/api/Application/opportunity/{opportunity!.Id}/checkout");
         await checkoutResponse.ShouldBe(HttpStatusCode.OK);
 
-        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity.Id}", new { paymentMethodId = "pm_card_visa" });
+        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity.Id}", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
         await applyResponse.ShouldBe(HttpStatusCode.Created);
 
         // Assert — a PrepaidApplication was created with the supplied PM
@@ -97,9 +97,9 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept");
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { agreedToTerms = true });
         await fixture.StripeClient.SendWebhookAsync();
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept");
+        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { agreedToTerms = true });
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -113,7 +113,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept");
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { agreedToTerms = true });
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
@@ -149,7 +149,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept");
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { agreedToTerms = true });
         await fixture.StripeClient.SendWebhookAsync();
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -165,7 +165,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept");
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { agreedToTerms = true });
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
@@ -183,7 +183,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingPayment());
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept");
+        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { agreedToTerms = true });
 
         // Assert — a failed hold rejects the accept, leaves it un-accepted, posts no concert, notifies nobody
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -211,7 +211,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
 
         // Act — artist applies directly with a payment method (no prior /checkout call)
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { paymentMethodId = "pm_card_visa" });
+        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
 
         // Assert — 201 Created, PrepaidApplication row created with stored PM
         await applyResponse.ShouldBe(HttpStatusCode.Created);

@@ -72,7 +72,7 @@ public sealed class OutboxVerificationTests : IAsyncLifetime
     {
         // Arrange — run the full VenueHire accept flow so production code creates the draft
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", (object?)null);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { agreedToTerms = true });
         await fixture.StripeClient.SendWebhookAsync();
         var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.VenueHireApp.Id}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);

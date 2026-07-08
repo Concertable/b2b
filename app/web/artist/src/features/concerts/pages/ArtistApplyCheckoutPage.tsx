@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useApplyCheckoutQuery } from "@b2b/features/concerts";
+import { AgreeToTermsCheckbox, useApplyCheckoutQuery } from "@b2b/features/concerts";
 import type { Checkout } from "@/features/concerts";
 import applicationApi from "@b2b/features/concerts/api/applicationApi";
 import { CheckoutAwaiting } from "@/features/concerts/components/checkout/CheckoutAwaiting";
@@ -40,6 +40,7 @@ interface Props {
 
 export function ArtistApplyCheckoutFlow({ opportunityId, checkout }: Readonly<Props>) {
   const [submitted, setSubmitted] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const { mutate, isPending, error } = useMutation({
     mutationFn: (paymentMethodId: string) =>
       applicationApi.applyToOpportunityWithPayment(opportunityId, paymentMethodId),
@@ -97,11 +98,15 @@ export function ArtistApplyCheckoutFlow({ opportunityId, checkout }: Readonly<Pr
         title="Payment Method"
         description="The venue will only charge this card if your application is accepted."
       >
-        <StripePaymentForm
-          session={checkout.session}
-          submitLabel="Authorise & Apply"
-          onSuccess={mutate}
-        />
+        <div className="space-y-4">
+          <AgreeToTermsCheckbox checked={agreed} onCheckedChange={setAgreed} />
+          <StripePaymentForm
+            session={checkout.session}
+            submitLabel="Authorise & Apply"
+            disabled={!agreed}
+            onSuccess={mutate}
+          />
+        </div>
       </CheckoutSection>
       {error && (
         <p data-testid="payment-error" className="text-destructive text-sm">{error.message}</p>

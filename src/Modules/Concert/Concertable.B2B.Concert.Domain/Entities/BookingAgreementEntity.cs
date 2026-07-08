@@ -33,14 +33,10 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
     public string TermsText { get; private set; } = null!;
     public string PlatformTermsVersion { get; private set; } = null!;
 
-    public Guid? ArtistConsentUserId { get; private set; }
-    public DateTime? ArtistConsentAtUtc { get; private set; }
-    public string? ArtistConsentIp { get; private set; }
-    public string? ArtistConsentUserAgent { get; private set; }
-    public Guid? VenueConsentUserId { get; private set; }
-    public DateTime? VenueConsentAtUtc { get; private set; }
-    public string? VenueConsentIp { get; private set; }
-    public string? VenueConsentUserAgent { get; private set; }
+    /* Null = the application predated click-wrap consent; venue consent is what gates Accept,
+       so an agreement without it must never exist. */
+    public Consent? ArtistConsent { get; private set; }
+    public Consent VenueConsent { get; private set; } = null!;
 
     public string? PdfBlobName { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
@@ -57,6 +53,8 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
         IContract contract,
         string termsText,
         string platformTermsVersion,
+        Consent? artistConsent,
+        Consent venueConsent,
         DateTime createdAtUtc) => new()
         {
             BookingId = bookingId,
@@ -78,6 +76,8 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
             },
             TermsText = termsText,
             PlatformTermsVersion = platformTermsVersion,
+            ArtistConsent = artistConsent,
+            VenueConsent = venueConsent,
             CreatedAtUtc = createdAtUtc
         };
 }
