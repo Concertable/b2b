@@ -171,6 +171,52 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "BookingAgreements",
+                schema: "concert",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BookingId = table.Column<int>(type: "int", nullable: false),
+                    VenueId = table.Column<int>(type: "int", nullable: false),
+                    VenueName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ArtistId = table.Column<int>(type: "int", nullable: false),
+                    ArtistName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Period_Start = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Period_End = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ContractType = table.Column<int>(type: "int", nullable: false),
+                    PaymentMethod = table.Column<int>(type: "int", nullable: false),
+                    Fee = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    HireFee = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    Guarantee = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    ArtistDoorPercent = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    TermsText = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PlatformTermsVersion = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ArtistConsentUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ArtistConsentAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ArtistConsentIp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ArtistConsentUserAgent = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    VenueConsentUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    VenueConsentAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    VenueConsentIp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    VenueConsentUserAgent = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PdfBlobName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BookingAgreements", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_BookingAgreements_Bookings_BookingId",
+                        column: x => x.BookingId,
+                        principalSchema: "concert",
+                        principalTable: "Bookings",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Concerts",
                 schema: "concert",
                 columns: table => new
@@ -262,6 +308,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_BookingAgreements_BookingId",
+                schema: "concert",
+                table: "BookingAgreements",
+                column: "BookingId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Bookings_ApplicationId",
                 schema: "concert",
                 table: "Bookings",
@@ -319,6 +372,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "ArtistReadModelGenres",
+                schema: "concert");
+
+            migrationBuilder.DropTable(
+                name: "BookingAgreements",
                 schema: "concert");
 
             migrationBuilder.DropTable(
