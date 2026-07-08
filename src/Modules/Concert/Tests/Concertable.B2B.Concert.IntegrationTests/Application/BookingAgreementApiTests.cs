@@ -269,19 +269,21 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Agreement_Pdf_LazilyRendersAndPersistsBlobName()
+    public async Task Agreement_Pdf_BlobNameAssignedAtAccept_AndRendersOnDownload()
     {
         var applicationId = await AcceptedFlatFeeAsync();
 
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var response = await client.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
-        await response.ShouldBe(HttpStatusCode.OK);
-
-        // FakeBlobStorageService reports the blob absent, so the download exercises the lazy-render
-        // path and must persist the recorded blob name under the agreements/ prefix.
+        // The blob location is assigned inside the accept transaction, before any bytes exist — so it
+        // is present immediately under the agreements/ prefix, independent of background PDF timing.
         var agreement = await GetAgreementAsync(applicationId);
         Assert.NotNull(agreement.PdfBlobName);
         Assert.StartsWith("agreements/", agreement.PdfBlobName);
+
+        // FakeBlobStorageService reports the blob absent, so the download exercises the lazy render-
+        // on-download path and still returns the PDF.
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var response = await client.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
+        await response.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]

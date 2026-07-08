@@ -61,6 +61,7 @@ internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
             timeProvider.GetUtcNow().UtcDateTime);
         agreement.VenueTenantId = application.VenueTenantId;
         agreement.ArtistTenantId = application.ArtistTenantId;
+        agreement.AssignPdfBlobName($"agreements/{bookingId}-{Guid.NewGuid():N}.pdf");
 
         await agreementRepository.AddAsync(agreement);
     }
