@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Capabilities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
 
@@ -21,14 +22,14 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
         var isCancellable = dto.State is LifecycleState.Accepted or LifecycleState.PaymentFailed;
 
         var actions = new ApplicationActions(
-            Accept: new ActionLink($"/api/Application/{dto.Id}/accept", "POST"),
+            Accept: new ActionLink($"/api/Application/{dto.Id}/accept", HttpMethods.Post),
             Checkout: registry.Has<IAcceptsCheckout>(ct)
-                ? new ActionLink($"/api/Application/{dto.Id}/checkout", "POST")
+                ? new ActionLink($"/api/Application/{dto.Id}/checkout", HttpMethods.Post)
                 : null,
-            Withdraw: isPending || isCancellable ? new ActionLink($"/api/Application/{dto.Id}/withdraw", "POST") : null,
-            Reject: isPending ? new ActionLink($"/api/Application/{dto.Id}/reject", "POST") : null,
-            Cancel: isCancellable ? new ActionLink($"/api/Application/{dto.Id}/cancel", "POST") : null,
-            Agreement: dto.AgreementId is not null ? new ActionLink($"/api/Application/{dto.Id}/agreement", "GET") : null);
+            Withdraw: isPending || isCancellable ? new ActionLink($"/api/Application/{dto.Id}/withdraw", HttpMethods.Post) : null,
+            Reject: isPending ? new ActionLink($"/api/Application/{dto.Id}/reject", HttpMethods.Post) : null,
+            Cancel: isCancellable ? new ActionLink($"/api/Application/{dto.Id}/cancel", HttpMethods.Post) : null,
+            Agreement: dto.AgreementId is not null ? new ActionLink($"/api/Application/{dto.Id}/agreement", HttpMethods.Get) : null);
 
         return new ApplicationResponse(
             dto.Id,

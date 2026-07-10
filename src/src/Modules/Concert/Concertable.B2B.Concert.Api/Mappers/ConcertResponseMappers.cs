@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
 
@@ -67,15 +68,20 @@ internal static class ConcertResponseMappers
             Town = dto.Venue.Town,
             Latitude = dto.Venue.Latitude,
             Longitude = dto.Venue.Longitude
-        },
-        Actions = new ConcertActions(
-            Cancel: dto.State == LifecycleState.Booked
-                ? new ActionLink($"/api/Concert/{dto.Id}/cancel", "POST")
-                : null,
-            // Booked => an agreement was frozen at accept. Cosmetic link only; the download endpoint
-            // is party-scoped (404 for non-parties), exactly like cancel's protected endpoint.
-            Agreement: dto.State == LifecycleState.Booked
-                ? new ActionLink($"/api/Concert/{dto.Id}/agreement/pdf", "GET")
-                : null)
+        }
     };
+
+    // Current-user (party) variant: served only by tenant-scoped endpoints (404 for non-parties), so
+    // reaching it proves you are a party — the party-only action links are emitted. Cancel is still
+    // state-gated (only valid while Booked); the agreement was frozen at accept so it always exists
+    // for a concert. The venue-only permission on POST cancel is the role gate, not this.
+    public static ConcertDetailsResponse ToCurrentUserDetailsResponse(this ConcertDetails dto) =>
+        dto.ToDetailsResponse() with
+        {
+            Actions = new ConcertActions(
+                Cancel: dto.State == LifecycleState.Booked
+                    ? new ActionLink($"/api/Concert/{dto.Id}/cancel", HttpMethods.Post)
+                    : null,
+                Agreement: new ActionLink($"/api/Concert/{dto.Id}/agreement/pdf", HttpMethods.Get))
+        };
 }

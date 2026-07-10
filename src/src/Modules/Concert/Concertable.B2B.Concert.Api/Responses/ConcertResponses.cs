@@ -19,7 +19,8 @@ internal sealed record ConcertDetailsResponse
     public required ConcertArtistResponse Artist { get; init; }
     public required ConcertVenueResponse Venue { get; init; }
     public IReadOnlyList<Genre> Genres { get; init; } = [];
-    public required ConcertActions Actions { get; init; }
+    // Null on the public/marketplace read; populated only by the tenant-scoped owner read.
+    public ConcertActions? Actions { get; init; }
 }
 
 internal sealed record ConcertActions(ActionLink? Cancel, ActionLink? Agreement);
