@@ -2,7 +2,6 @@ import dayjs from "dayjs";
 import {
   usePendingApplicationsQuery,
   useRecentDeniedApplicationsQuery,
-  useDownloadAgreement,
   ConfirmActionDialog,
 } from "@b2b/features/concerts";
 import type { Application } from "@/features/concerts";
@@ -17,7 +16,6 @@ interface RowProps {
 
 function ApplicationRow({ application, onWithdraw }: Readonly<RowProps>) {
   const { opportunity, status, actions } = application;
-  const downloadAgreement = useDownloadAgreement();
 
   return (
     <div
@@ -37,17 +35,6 @@ function ApplicationRow({ application, onWithdraw }: Readonly<RowProps>) {
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <Badge variant="outline">{status}</Badge>
-        {actions.agreement && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => downloadAgreement.mutate(application.id)}
-            disabled={downloadAgreement.isPending}
-            data-testid="download-agreement"
-          >
-            Booking agreement
-          </Button>
-        )}
         {onWithdraw && actions.withdraw && (
           <Button
             size="sm"

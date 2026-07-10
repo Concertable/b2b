@@ -71,6 +71,11 @@ internal static class ConcertResponseMappers
         Actions = new ConcertActions(
             Cancel: dto.State == LifecycleState.Booked
                 ? new ActionLink($"/api/Concert/{dto.Id}/cancel", "POST")
+                : null,
+            // Booked => an agreement was frozen at accept. Cosmetic link only; the download endpoint
+            // is party-scoped (404 for non-parties), exactly like cancel's protected endpoint.
+            Agreement: dto.State == LifecycleState.Booked
+                ? new ActionLink($"/api/Concert/{dto.Id}/agreement/pdf", "GET")
                 : null)
     };
 }

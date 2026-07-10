@@ -10,4 +10,5 @@ internal interface IBookingAgreementService
 {
     Task<BookingAgreementDto> GetByApplicationIdAsync(int applicationId);
     Task<AgreementPdf> GetPdfByApplicationIdAsync(int applicationId);
+    Task<AgreementPdf> GetPdfByConcertIdAsync(int concertId);
 }

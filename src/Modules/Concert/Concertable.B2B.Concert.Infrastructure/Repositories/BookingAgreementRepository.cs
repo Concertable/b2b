@@ -13,6 +13,10 @@ internal sealed class BookingAgreementRepository : VenueArtistTenantScopedReposi
         context.BookingAgreements
             .FirstOrDefaultAsync(a => a.Booking.ApplicationId == applicationId, ct);
 
+    public Task<BookingAgreementEntity?> GetByConcertIdAsync(int concertId, CancellationToken ct = default) =>
+        context.BookingAgreements
+            .FirstOrDefaultAsync(a => context.Concerts.Any(c => c.Id == concertId && c.BookingId == a.BookingId), ct);
+
     public Task<BookingAgreementEntity?> GetByBookingIdIgnoringTenantAsync(int bookingId, CancellationToken ct = default) =>
         context.BookingAgreements
             .IgnoreQueryFilters()

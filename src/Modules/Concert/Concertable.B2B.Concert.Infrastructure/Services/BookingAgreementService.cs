@@ -24,6 +24,18 @@ internal sealed class BookingAgreementService : IBookingAgreementService
     public async Task<AgreementPdf> GetPdfByApplicationIdAsync(int applicationId)
     {
         var agreement = await LoadForCallerAsync(applicationId);
+        return await ToPdfAsync(agreement);
+    }
+
+    public async Task<AgreementPdf> GetPdfByConcertIdAsync(int concertId)
+    {
+        var agreement = await repository.GetByConcertIdAsync(concertId)
+            ?? throw new NotFoundException("Booking agreement not found");
+        return await ToPdfAsync(agreement);
+    }
+
+    private async Task<AgreementPdf> ToPdfAsync(BookingAgreementEntity agreement)
+    {
         var bytes = await pdfService.GetOrCreateAsync(agreement);
         return new AgreementPdf(bytes, $"booking-agreement-BA-{agreement.Id}.pdf");
     }

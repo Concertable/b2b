@@ -22,7 +22,7 @@ internal sealed record ConcertDetailsResponse
     public required ConcertActions Actions { get; init; }
 }
 
-internal sealed record ConcertActions(ActionLink? Cancel);
+internal sealed record ConcertActions(ActionLink? Cancel, ActionLink? Agreement);
 
 internal sealed record ConcertArtistResponse
 {
