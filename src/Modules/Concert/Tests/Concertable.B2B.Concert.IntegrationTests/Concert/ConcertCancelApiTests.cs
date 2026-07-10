@@ -38,7 +38,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var concertResponse = await client.GetAsync($"/api/Concert/application/{appId}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
         var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
-        Assert.NotNull(concert!.Actions.Cancel); // cancel offered while Booked
+        Assert.NotNull(concert!.Actions!.Cancel); // cancel offered while Booked
 
         var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
 
@@ -53,7 +53,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         var afterResponse = await client.GetAsync($"/api/Concert/application/{appId}");
         var after = await afterResponse.Content.ReadAsync<ConcertDetailsResponse>();
-        Assert.Null(after!.Actions.Cancel);
+        Assert.Null(after!.Actions!.Cancel);
     }
 
     [Fact]

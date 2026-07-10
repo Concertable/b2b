@@ -41,6 +41,20 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .FirstOrDefaultAsync();
     }
 
+    /* Owner read by concert id. Concert itself is public/unfiltered, so scope by requiring a
+       tenant-visible Booking (Bookings is tenant-filtered) — a non-party sees none and gets a 404,
+       exactly like BookingAgreementRepository.GetByConcertIdAsync. */
+    public async Task<ConcertDetails?> GetDetailsByIdAsync(int id)
+    {
+        return await context.Concerts
+            .Where(e => e.Id == id && context.Bookings.Any(b => b.Id == e.BookingId))
+            .ToDetails(
+                context.ConcertRatingProjections,
+                context.ArtistRatingProjections,
+                context.VenueRatingProjections)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<ConcertDetails?> GetDetailsByApplicationIdAsync(int applicationId)
     {
         return await context.Concerts

@@ -31,6 +31,15 @@ internal sealed class ConcertController : ControllerBase
         return Ok((await concertService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
+    // Current-user (party) read: tenant-scoped (404 for non-parties), so it carries the party-only
+    // action links. No [HasPermission] — both parties read it; the repository stance is the gate,
+    // not a role. Mirrors venue's GET /venue/user.
+    [HttpGet("user/{id}")]
+    public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsForCurrentUser(int id)
+    {
+        return Ok((await concertService.GetDetailsForCurrentUserAsync(id)).ToCurrentUserDetailsResponse());
+    }
+
     [HttpGet("{id}/agreement/pdf")]
     public async Task<IActionResult> GetAgreementPdf(int id)
     {
@@ -41,7 +50,7 @@ internal sealed class ConcertController : ControllerBase
     [HttpGet("application/{applicationId}")]
     public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsByApplicationId(int applicationId)
     {
-        return Ok((await concertService.GetDetailsByApplicationIdAsync(applicationId)).ToDetailsResponse());
+        return Ok((await concertService.GetDetailsByApplicationIdAsync(applicationId)).ToCurrentUserDetailsResponse());
     }
 
     [HttpGet("upcoming/venue/{id}")]
