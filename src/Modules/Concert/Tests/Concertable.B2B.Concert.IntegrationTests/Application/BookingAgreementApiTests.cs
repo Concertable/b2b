@@ -4,8 +4,11 @@ using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Contract.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using UglyToad.PdfPig;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 using Xunit;
 using Xunit.Abstractions;
 using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
@@ -264,6 +267,57 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var response = await client.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Agreement_Pdf_RendersBothPartyESignatures()
+    {
+        // Distinct names so each extracted signature line ties to its party — artist signs on apply, venue on accept.
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        await (await artistClient.PostAsync($"/api/Application/{opportunityId}", new { eSignature = new { signatoryName = "Zola Banks" } })).ShouldBe(HttpStatusCode.Created);
+        var applicationId = (await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.OpportunityId == opportunityId)).Id;
+
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await venueClient.PostAsync($"/api/Application/{applicationId}/checkout");
+        await (await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "Marco Vento" } })).ShouldBe(HttpStatusCode.NoContent);
+
+        var response = await venueClient.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var text = ExtractPdfText(await response.Content.ReadAsByteArrayAsync());
+
+        Assert.Contains("Signatures", text);
+        Assert.Contains("Signed by Zola Banks", text);
+        Assert.Contains("Signed by Marco Vento", text);
+        Assert.DoesNotContain("No recorded signature", text);
+    }
+
+    [Fact]
+    public async Task Agreement_Pdf_RendersPlaceholder_ForPreESignArtistSignature()
+    {
+        // The seeded FlatFeeApp predates e-sign: no artist signature. The venue still signs at accept,
+        // so the PDF shows the venue's signature and the placeholder for the artist — never a fabricated one.
+        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await venueClient.PostAsync($"/api/Application/{appId}/checkout");
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Marco Vento" } });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+
+        var response = await venueClient.GetAsync($"/api/Application/{appId}/agreement/pdf");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var text = ExtractPdfText(await response.Content.ReadAsByteArrayAsync());
+
+        Assert.Contains("Signatures", text);
+        Assert.Contains("No recorded signature (predates e-sign)", text);
+        Assert.Contains("Signed by Marco Vento", text);
+    }
+
+    private static string ExtractPdfText(byte[] bytes)
+    {
+        Assert.Equal("%PDF", Encoding.ASCII.GetString(bytes, 0, 4));
+        using var pdf = PdfDocument.Open(bytes);
+        var raw = string.Join(" ", pdf.GetPages().Select(p => ContentOrderTextExtractor.GetText(p)));
+        return Regex.Replace(raw, @"\s+", " ");
     }
 
     [Fact]
