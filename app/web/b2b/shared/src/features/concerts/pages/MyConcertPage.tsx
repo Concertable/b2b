@@ -39,23 +39,22 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
         onToggleEdit={toggleEdit}
         onSave={() => save()}
         onCancel={resetDraft}
+        actions={
+          <>
+            {concert.actions?.agreement && (
+              <Button
+                variant="outline"
+                onClick={() => downloadAgreement.mutate(concert.id)}
+                disabled={downloadAgreement.isPending}
+                data-testid="download-agreement"
+              >
+                Booking agreement
+              </Button>
+            )}
+            {actions}
+          </>
+        }
       />
-      {(actions || concert.actions?.agreement) && (
-        <div className="mx-auto flex max-w-6xl items-center justify-end gap-2 px-6 pt-4">
-          {concert.actions?.agreement && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => downloadAgreement.mutate(concert.id)}
-              disabled={downloadAgreement.isPending}
-              data-testid="download-agreement"
-            >
-              Booking agreement
-            </Button>
-          )}
-          {actions}
-        </div>
-      )}
       <EditableProvider editMode={editMode}>
         <ConcertDetails
           concert={display}
