@@ -36,7 +36,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.taskRunner = taskRunner;
     }
 
-    public Task ExecuteAsync(int applicationId, string? paymentMethodId)
+    public Task ExecuteAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
         => transitioner.TransitionAsync(applicationId, Trigger.Accept, async app =>
         {
             var contract = await contractResolver.ResolveByApplicationIdAsync(app.Id);
@@ -54,7 +54,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
                 ?? throw new NotFoundException("Booking not found for application");
             app.Accept(booking);
-            await agreementBuilder.BuildAsync(app, booking.Id);
+            await agreementBuilder.BuildAsync(app, booking.Id, eSignature);
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));

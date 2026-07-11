@@ -37,7 +37,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         await venueClient.PostAsync($"/api/Application/{applicationId}/checkout");
 
         // Act
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true });
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert — snapshot written in the accept transaction
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -65,7 +65,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -91,7 +91,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -117,7 +117,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true });
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -142,7 +142,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await artistClient.PostAsync($"/api/Application/{opportunityId}", new { agreedToTerms = false });
+        var response = await artistClient.PostAsync($"/api/Application/{opportunityId}", new { eSignature = new { signatoryName = "" } });
 
         // Assert — no application row written
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -150,7 +150,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Apply_ShouldRecordArtistConsentAndFingerprint()
+    public async Task Apply_ShouldRecordArtistESignatureAndFingerprint()
     {
         // Arrange + Act
         var opportunityId = await CreateOpportunityAsync(new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
@@ -158,9 +158,10 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
 
         // Assert
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == applicationId);
-        Assert.NotNull(application.ArtistConsent);
-        Assert.Equal(fixture.SeedState.ArtistManager1.Id, application.ArtistConsent!.UserId);
-        Assert.NotEqual(default, application.ArtistConsent.AtUtc);
+        Assert.NotNull(application.ArtistESignature);
+        Assert.Equal(fixture.SeedState.ArtistManager1.Id, application.ArtistESignature!.UserId);
+        Assert.NotEqual(default, application.ArtistESignature.AtUtc);
+        Assert.Equal("Test Signatory", application.ArtistESignature.SignatoryName);
         Assert.NotNull(application.TermsFingerprint);
     }
 
@@ -174,7 +175,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         await venueClient.PostAsync($"/api/Application/{applicationId}/checkout");
 
         // Act
-        var response = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = false });
+        var response = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "" } });
 
         // Assert — the accept never happened
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -192,7 +193,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         await venueClient.PostAsync($"/api/Application/{applicationId}/checkout");
 
         // Act
-        var response = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true });
+        var response = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert — accept refused; no booking, no agreement
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -208,13 +209,13 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         await venueClient.PostAsync($"/api/Application/{appId}/checkout");
 
         // Act
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{appId}/accept", new { agreedToTerms = true });
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert — accept works, agreement records the venue's consent and honestly omits the artist's
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         var agreement = await GetAgreementAsync(appId);
-        Assert.Null(agreement.ArtistConsent);
-        Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueConsent.UserId);
+        Assert.Null(agreement.ArtistESignature);
+        Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueESignature.UserId);
     }
 
     [Fact]
@@ -316,7 +317,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         var applicationId = await ApplyAsync(opportunityId);
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/Application/{applicationId}/checkout");
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { agreedToTerms = true });
+        var acceptResponse = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         return applicationId;
     }
@@ -334,7 +335,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
     {
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var response = await artistClient.PostAsync(
-            $"/api/Application/{opportunityId}", new { agreedToTerms = true, paymentMethodId });
+            $"/api/Application/{opportunityId}", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId });
         await response.ShouldBe(HttpStatusCode.Created);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>()
             .FirstAsync(a => a.OpportunityId == opportunityId);
@@ -358,11 +359,13 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         Assert.NotEmpty(agreement.ArtistName);
         Assert.Equal("2026-07", agreement.PlatformTermsVersion);
         Assert.NotEqual(default, agreement.CreatedAtUtc);
-        Assert.NotNull(agreement.ArtistConsent);
-        Assert.Equal(fixture.SeedState.ArtistManager1.Id, agreement.ArtistConsent!.UserId);
-        Assert.NotEqual(default, agreement.ArtistConsent.AtUtc);
-        Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueConsent.UserId);
-        Assert.NotEqual(default, agreement.VenueConsent.AtUtc);
+        Assert.NotNull(agreement.ArtistESignature);
+        Assert.Equal(fixture.SeedState.ArtistManager1.Id, agreement.ArtistESignature!.UserId);
+        Assert.NotEqual(default, agreement.ArtistESignature.AtUtc);
+        Assert.Equal("Test Signatory", agreement.ArtistESignature.SignatoryName);
+        Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueESignature.UserId);
+        Assert.NotEqual(default, agreement.VenueESignature.AtUtc);
+        Assert.Equal("Test Signatory", agreement.VenueESignature.SignatoryName);
         // PdfBlobName is intentionally not asserted here: Phase 3 generates the PDF in a background
         // task at Accept, so it becomes populated shortly after — racy to assert either way. The PDF
         // lifecycle is covered by the dedicated Agreement_Pdf_* tests.

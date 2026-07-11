@@ -56,7 +56,7 @@ internal sealed class BookingAgreementService : IBookingAgreementService
             a.PaymentMethod,
             a.TermsText,
             a.PlatformTermsVersion,
-            a.ArtistConsent is null ? null : new ConsentDto(a.ArtistConsent.UserId, a.ArtistConsent.AtUtc),
-            new ConsentDto(a.VenueConsent.UserId, a.VenueConsent.AtUtc),
+            a.ArtistESignature is null ? null : new ESignatureDto(a.ArtistESignature.UserId, a.ArtistESignature.AtUtc, a.ArtistESignature.SignatoryName),
+            new ESignatureDto(a.VenueESignature.UserId, a.VenueESignature.AtUtc, a.VenueESignature.SignatoryName),
             a.CreatedAtUtc);
 }
