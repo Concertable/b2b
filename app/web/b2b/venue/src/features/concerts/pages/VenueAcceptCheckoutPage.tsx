@@ -6,10 +6,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { ConcertDraftCreatedPayload } from "@/features/notifications";
 import {
   AcceptContractSummary,
-  AgreeToTermsCheckbox,
+  ESignaturePanel,
   useAcceptApplicationMutation,
   useAcceptCheckoutQuery,
   useApplicationQuery,
+  type ESignatureRequest,
 } from "@b2b/features/concerts";
 import type { Application, Checkout } from "@/features/concerts";
 import { useCheckoutFlow, type CheckoutFlowState } from "@/features/concerts/hooks/useCheckoutFlow";
@@ -101,7 +102,7 @@ interface VenueAcceptCheckoutFormProps {
 
 function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Readonly<VenueAcceptCheckoutFormProps>) {
   const [submitted, setSubmitted] = useState(false);
-  const [agreed, setAgreed] = useState(false);
+  const [eSignature, setESignature] = useState<ESignatureRequest>({ signatoryName: "" });
   const [error, setError] = useState<string | null>(null);
   const acceptMutation = useAcceptApplicationMutation(application.opportunity.id);
   const flow = useCheckoutFlow<ConcertDraftCreatedPayload>({ event: "ConcertDraftCreated" });
@@ -117,7 +118,7 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
   async function handleAccept(paymentMethodId: string) {
     setError(null);
     try {
-      await acceptMutation.mutateAsync({ applicationId, body: { paymentMethodId } });
+      await acceptMutation.mutateAsync({ applicationId, eSignature, body: { paymentMethodId } });
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Acceptance failed. Please try again.");
@@ -150,11 +151,11 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
         description={labels.paymentHint ?? undefined}
       >
         <div className="space-y-4">
-          <AgreeToTermsCheckbox checked={agreed} onCheckedChange={setAgreed} />
+          <ESignaturePanel value={eSignature} onChange={setESignature} />
           <StripePaymentForm
             session={checkout.session}
             submitLabel={labels.submitLabel}
-            disabled={acceptMutation.isPending || !agreed}
+            disabled={acceptMutation.isPending || eSignature.signatoryName.trim() === ""}
             onSuccess={handleAccept}
           />
         </div>

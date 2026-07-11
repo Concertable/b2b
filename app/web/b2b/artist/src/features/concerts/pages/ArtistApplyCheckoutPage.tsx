@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AgreeToTermsCheckbox, useApplyCheckoutQuery } from "@b2b/features/concerts";
+import { ESignaturePanel, useApplyCheckoutQuery, type ESignatureRequest } from "@b2b/features/concerts";
 import type { Checkout } from "@/features/concerts";
 import applicationApi from "@b2b/features/concerts/api/applicationApi";
 import { CheckoutAwaiting } from "@/features/concerts/components/checkout/CheckoutAwaiting";
@@ -40,10 +40,10 @@ interface Props {
 
 export function ArtistApplyCheckoutFlow({ opportunityId, checkout }: Readonly<Props>) {
   const [submitted, setSubmitted] = useState(false);
-  const [agreed, setAgreed] = useState(false);
+  const [eSignature, setESignature] = useState<ESignatureRequest>({ signatoryName: "" });
   const { mutate, isPending, error } = useMutation({
     mutationFn: (paymentMethodId: string) =>
-      applicationApi.applyToOpportunityWithPayment(opportunityId, paymentMethodId),
+      applicationApi.applyToOpportunityWithPayment(opportunityId, paymentMethodId, eSignature),
     onSuccess: () => setSubmitted(true),
   });
 
@@ -99,11 +99,11 @@ export function ArtistApplyCheckoutFlow({ opportunityId, checkout }: Readonly<Pr
         description="The venue will only charge this card if your application is accepted."
       >
         <div className="space-y-4">
-          <AgreeToTermsCheckbox checked={agreed} onCheckedChange={setAgreed} />
+          <ESignaturePanel value={eSignature} onChange={setESignature} />
           <StripePaymentForm
             session={checkout.session}
             submitLabel="Authorise & Apply"
-            disabled={!agreed}
+            disabled={eSignature.signatoryName.trim() === ""}
             onSuccess={mutate}
           />
         </div>
