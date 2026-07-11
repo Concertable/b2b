@@ -55,16 +55,16 @@ internal sealed class BookingAgreementDocument : IDocument
                     Field(section, "Platform terms version", agreement.PlatformTermsVersion);
                 });
 
-                Section(column, "Consent", section =>
+                Section(column, "Signatures", section =>
                 {
-                    Consent(section, "Artist", agreement.ArtistESignature);
-                    Consent(section, "Venue", agreement.VenueESignature);
+                    Signature(section, "Artist", agreement.ArtistESignature);
+                    Signature(section, "Venue", agreement.VenueESignature);
                 });
             });
 
             page.Footer().AlignCenter().Text(t =>
             {
-                t.Span("Concertable — this agreement records the terms both parties click-wrapped. ");
+                t.Span("Concertable — this agreement records the terms both parties e-signed. ");
                 t.Span($"Platform terms {agreement.PlatformTermsVersion}.").FontColor(Colors.Grey.Darken1);
             });
         });
@@ -89,18 +89,50 @@ internal sealed class BookingAgreementDocument : IDocument
         });
     }
 
-    private static void Consent(ColumnDescriptor section, string party, ESignature? eSignature)
+    private static void Signature(ColumnDescriptor section, string party, ESignature? eSignature)
     {
-        if (eSignature is null)
+        section.Item().PaddingTop(6).Column(block =>
         {
-            Field(section, party, "No recorded consent (predates click-wrap)");
-            return;
-        }
+            block.Item().Text(party).SemiBold();
 
-        var detail = $"agreed {FormatUtc(eSignature.AtUtc)} · user {eSignature.UserId}";
-        if (!string.IsNullOrWhiteSpace(eSignature.Ip))
-            detail += $" · IP {eSignature.Ip}";
-        Field(section, party, detail);
+            if (eSignature is null)
+            {
+                block.Item().Text("No recorded signature (predates e-sign)")
+                    .Italic().FontColor(Colors.Grey.Darken1);
+                return;
+            }
+
+            block.Item().Text(t =>
+            {
+                t.Span("Signed by ");
+                t.Span(eSignature.SignatoryName).SemiBold();
+            });
+
+            var drawn = DecodeDrawnSignature(eSignature.DrawnSignatureImage);
+            if (drawn is not null)
+                block.Item().PaddingVertical(2).Width(180).Image(drawn);
+
+            var detail = $"{FormatUtc(eSignature.AtUtc)} · user {eSignature.UserId}";
+            if (!string.IsNullOrWhiteSpace(eSignature.Ip))
+                detail += $" · IP {eSignature.Ip}";
+            block.Item().Text(detail).FontSize(9).FontColor(Colors.Grey.Darken1);
+        });
+    }
+
+    /* Accepts a raw base64 PNG or a data: URI (strips the prefix). Returns null on anything
+       undecodable so a corrupt image never breaks the whole document render. */
+    private static byte[]? DecodeDrawnSignature(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var payload = value;
+        var comma = payload.IndexOf(',');
+        if (payload.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && comma >= 0)
+            payload = payload[(comma + 1)..];
+
+        try { return Convert.FromBase64String(payload); }
+        catch (FormatException) { return null; }
     }
 
     private static string FormatUtc(DateTime value) =>
