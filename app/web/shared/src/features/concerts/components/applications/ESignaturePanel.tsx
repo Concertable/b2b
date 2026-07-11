@@ -1,0 +1,58 @@
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import type { Contract } from "@b2b/features/contracts";
+import type { ESignatureRequest } from "@concertable/shared/features/concerts/api/applicationApi";
+import { AcceptContractSummary } from "./AcceptContractSummary";
+import { SignatureCanvas } from "./SignatureCanvas";
+
+interface Props {
+  /* Optional: when the caller has the contract it's shown conspicuously here. On the paid-apply
+     checkout the deal fee is already shown alongside (OrderSummaryCard), so it may be omitted. */
+  contract?: Contract;
+  value: ESignatureRequest;
+  onChange: (value: ESignatureRequest) => void;
+}
+
+/* The signature step: the binding terms shown conspicuously at the point of signing, a required
+   typed full name (the Advanced-tier attribution core), an optional drawn signature, and an
+   explicit intent line. Nothing is pre-filled or pre-checked. */
+export function ESignaturePanel({ contract, value, onChange }: Readonly<Props>) {
+  return (
+    <div className="border-border bg-card space-y-4 rounded-xl border p-4">
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold">What you are agreeing to</h3>
+        {contract && <AcceptContractSummary contract={contract} />}
+        <p className="text-muted-foreground text-xs">
+          Cancellation and liability follow the Concertable platform Terms &amp; Conditions, which
+          form part of this booking agreement. By signing you confirm you have read and accept them.
+        </p>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-2">
+        <Label htmlFor="e-sign">Full name</Label>
+        <Input
+          id="e-sign"
+          data-testid="e-sign"
+          autoComplete="off"
+          placeholder="Type your full name to sign"
+          value={value.signatoryName}
+          onChange={(e) => onChange({ ...value, signatoryName: e.target.value })}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-muted-foreground text-xs">Signature (optional)</Label>
+        <SignatureCanvas
+          onChange={(drawnSignatureImage) => onChange({ ...value, drawnSignatureImage })}
+        />
+      </div>
+
+      <p className="text-muted-foreground text-xs">
+        By signing, I agree to and e-sign this booking agreement.
+      </p>
+    </div>
+  );
+}

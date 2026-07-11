@@ -1,6 +1,7 @@
 export { OpportunitySection } from "./components/opportunities/OpportunitySection";
 export { AcceptContractSummary } from "./components/applications/AcceptContractSummary";
-export { AgreeToTermsCheckbox } from "./components/applications/AgreeToTermsCheckbox";
+export { ESignaturePanel } from "./components/applications/ESignaturePanel";
+export type { ESignatureRequest } from "@concertable/shared/features/concerts/api/applicationApi";
 export { ConfirmActionDialog } from "./components/applications/ConfirmActionDialog";
 export { MyConcertPage } from "./pages/MyConcertPage";
 export { useMyConcert } from "./hooks/useMyConcert";

@@ -8,7 +8,8 @@ import {
   useApplicationQuery,
   useAcceptApplicationMutation,
   AcceptContractSummary,
-  AgreeToTermsCheckbox,
+  ESignaturePanel,
+  type ESignatureRequest,
 } from "@b2b/features/concerts";
 import { useCheckoutFlow } from "@/features/concerts/hooks/useCheckoutFlow";
 import { VenueAcceptCheckoutFlow } from "./VenueAcceptCheckoutPage";
@@ -17,7 +18,7 @@ export function AcceptApplicationPage() {
   const { applicationId } = useParams({ from: "/_venue/applications/$applicationId/accept" });
   const navigate = useNavigate();
   const [accepted, setAccepted] = useState(false);
-  const [agreed, setAgreed] = useState(false);
+  const [eSignature, setESignature] = useState<ESignatureRequest>({ signatoryName: "" });
   const { data: application, isLoading } = useApplicationQuery(applicationId);
   const { data: accountStatus } = usePayoutAccountStatusQuery(true);
   const acceptMutation = useAcceptApplicationMutation(
@@ -41,7 +42,10 @@ export function AcceptApplicationPage() {
       return;
     }
 
-    acceptMutation.mutate({ applicationId }, { onSuccess: () => setAccepted(true) });
+    acceptMutation.mutate(
+      { applicationId, eSignature },
+      { onSuccess: () => setAccepted(true) },
+    );
   }
 
   return (
@@ -56,12 +60,16 @@ export function AcceptApplicationPage() {
 
       <StripeOnboardingBanner />
 
-      <div className="border-border bg-card rounded-xl border p-4">
-        <AcceptContractSummary contract={opportunity.contract} />
-      </div>
-
-      {!requiresCheckout && (
-        <AgreeToTermsCheckbox checked={agreed} onCheckedChange={setAgreed} />
+      {requiresCheckout ? (
+        <div className="border-border bg-card rounded-xl border p-4">
+          <AcceptContractSummary contract={opportunity.contract} />
+        </div>
+      ) : (
+        <ESignaturePanel
+          contract={opportunity.contract}
+          value={eSignature}
+          onChange={setESignature}
+        />
       )}
 
       <div className="flex gap-3">
@@ -77,7 +85,7 @@ export function AcceptApplicationPage() {
           Cancel
         </Button>
         <Button
-          disabled={accountStatus !== "Verified" || acceptMutation.isPending || (!requiresCheckout && !agreed)}
+          disabled={accountStatus !== "Verified" || acceptMutation.isPending || (!requiresCheckout && eSignature.signatoryName.trim() === "")}
           onClick={handleConfirm}
           data-testid="confirm"
         >
