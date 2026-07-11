@@ -541,7 +541,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.OwnsOne("Concertable.B2B.Concert.Domain.Entities.Consent", "ArtistConsent", b1 =>
+                    b.OwnsOne("Concertable.B2B.Concert.Domain.Entities.ESignature", "ArtistESignature", b1 =>
                         {
                             b1.Property<int>("ApplicationEntityId")
                                 .HasColumnType("int");
@@ -549,7 +549,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                             b1.Property<DateTime>("AtUtc")
                                 .HasColumnType("datetime2");
 
+                            b1.Property<string>("DrawnSignatureImage")
+                                .HasColumnType("nvarchar(max)");
+
                             b1.Property<string>("Ip")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("SignatoryName")
+                                .IsRequired()
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("UserAgent")
@@ -568,7 +575,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Navigation("Artist");
 
-                    b.Navigation("ArtistConsent");
+                    b.Navigation("ArtistESignature");
 
                     b.Navigation("Opportunity");
                 });
@@ -581,7 +588,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.OwnsOne("Concertable.B2B.Concert.Domain.Entities.Consent", "ArtistConsent", b1 =>
+                    b.OwnsOne("Concertable.B2B.Concert.Domain.Entities.ESignature", "ArtistESignature", b1 =>
                         {
                             b1.Property<int>("BookingAgreementEntityId")
                                 .HasColumnType("int");
@@ -589,7 +596,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                             b1.Property<DateTime>("AtUtc")
                                 .HasColumnType("datetime2");
 
+                            b1.Property<string>("DrawnSignatureImage")
+                                .HasColumnType("nvarchar(max)");
+
                             b1.Property<string>("Ip")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("SignatoryName")
+                                .IsRequired()
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("UserAgent")
@@ -627,7 +641,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasForeignKey("BookingAgreementEntityId");
                         });
 
-                    b.OwnsOne("Concertable.B2B.Concert.Domain.Entities.Consent", "VenueConsent", b1 =>
+                    b.OwnsOne("Concertable.B2B.Concert.Domain.Entities.ESignature", "VenueESignature", b1 =>
                         {
                             b1.Property<int>("BookingAgreementEntityId")
                                 .HasColumnType("int");
@@ -635,7 +649,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                             b1.Property<DateTime>("AtUtc")
                                 .HasColumnType("datetime2");
 
+                            b1.Property<string>("DrawnSignatureImage")
+                                .HasColumnType("nvarchar(max)");
+
                             b1.Property<string>("Ip")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("SignatoryName")
+                                .IsRequired()
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("UserAgent")
@@ -652,14 +673,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasForeignKey("BookingAgreementEntityId");
                         });
 
-                    b.Navigation("ArtistConsent");
+                    b.Navigation("ArtistESignature");
 
                     b.Navigation("Booking");
 
                     b.Navigation("Period")
                         .IsRequired();
 
-                    b.Navigation("VenueConsent")
+                    b.Navigation("VenueESignature")
                         .IsRequired();
                 });
 

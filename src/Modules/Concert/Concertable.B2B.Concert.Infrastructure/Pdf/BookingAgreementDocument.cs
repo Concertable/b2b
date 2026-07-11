@@ -57,8 +57,8 @@ internal sealed class BookingAgreementDocument : IDocument
 
                 Section(column, "Consent", section =>
                 {
-                    Consent(section, "Artist", agreement.ArtistConsent);
-                    Consent(section, "Venue", agreement.VenueConsent);
+                    Consent(section, "Artist", agreement.ArtistESignature);
+                    Consent(section, "Venue", agreement.VenueESignature);
                 });
             });
 
@@ -89,17 +89,17 @@ internal sealed class BookingAgreementDocument : IDocument
         });
     }
 
-    private static void Consent(ColumnDescriptor section, string party, Consent? consent)
+    private static void Consent(ColumnDescriptor section, string party, ESignature? eSignature)
     {
-        if (consent is null)
+        if (eSignature is null)
         {
             Field(section, party, "No recorded consent (predates click-wrap)");
             return;
         }
 
-        var detail = $"agreed {FormatUtc(consent.AtUtc)} · user {consent.UserId}";
-        if (!string.IsNullOrWhiteSpace(consent.Ip))
-            detail += $" · IP {consent.Ip}";
+        var detail = $"agreed {FormatUtc(eSignature.AtUtc)} · user {eSignature.UserId}";
+        if (!string.IsNullOrWhiteSpace(eSignature.Ip))
+            detail += $" · IP {eSignature.Ip}";
         Field(section, party, detail);
     }
 

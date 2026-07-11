@@ -18,8 +18,8 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     public ArtistReadModel Artist { get; set; } = null!;
     public BookingEntity? Booking { get; set; }
 
-    /* Null = the application predates click-wrap consent. */
-    public Consent? ArtistConsent { get; private set; }
+    /* Null = the application predates the e-signature step (was click-wrap, then unsigned). */
+    public ESignature? ArtistESignature { get; private set; }
     public string? TermsFingerprint { get; private set; }
 
     protected ApplicationEntity() { }
@@ -33,9 +33,9 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
 
     public void Accept(BookingEntity booking) => Booking = booking;
 
-    public void RecordArtistConsent(Consent consent, string termsFingerprint)
+    public void RecordArtistESignature(ESignature eSignature, string termsFingerprint)
     {
-        ArtistConsent = consent;
+        ArtistESignature = eSignature;
         TermsFingerprint = termsFingerprint;
     }
 

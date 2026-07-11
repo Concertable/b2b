@@ -42,7 +42,7 @@ public sealed class TenantScopingTests : IAsyncLifetime
 
         // Act — artist applies
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { agreedToTerms = true });
+        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { eSignature = new { signatoryName = "Test Signatory" } });
         await applyResponse.ShouldBe(HttpStatusCode.Created);
 
         // Assert — the row carries the frozen pair
@@ -62,7 +62,7 @@ public sealed class TenantScopingTests : IAsyncLifetime
         // Arrange + Act — full FlatFee accept flow
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
-        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { agreedToTerms = true });
+        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -126,7 +126,7 @@ public sealed class TenantScopingTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/Application/{appId}/checkout");
-        await venueClient.PostAsync($"/api/Application/{appId}/accept", new { agreedToTerms = true });
+        await venueClient.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.StripeClient.SendWebhookAsync();
 
         var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);

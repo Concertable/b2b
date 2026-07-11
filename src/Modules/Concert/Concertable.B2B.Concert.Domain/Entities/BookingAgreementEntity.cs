@@ -28,10 +28,10 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
     public string TermsText { get; private set; } = null!;
     public string PlatformTermsVersion { get; private set; } = null!;
 
-    /* Null = the application predated click-wrap consent; venue consent is what gates Accept,
-       so an agreement without it must never exist. */
-    public Consent? ArtistConsent { get; private set; }
-    public Consent VenueConsent { get; private set; } = null!;
+    /* Null = the application predated the e-signature step; the venue's signature is what gates
+       Accept, so an agreement without it must never exist. */
+    public ESignature? ArtistESignature { get; private set; }
+    public ESignature VenueESignature { get; private set; } = null!;
 
     public string? PdfBlobName { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
@@ -59,8 +59,8 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
         IContract contract,
         string termsText,
         string platformTermsVersion,
-        Consent? artistConsent,
-        Consent venueConsent,
+        ESignature? artistESignature,
+        ESignature venueESignature,
         DateTime createdAtUtc) => new()
         {
             BookingId = bookingId,
@@ -73,8 +73,8 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
             PaymentMethod = contract.PaymentMethod,
             TermsText = termsText,
             PlatformTermsVersion = platformTermsVersion,
-            ArtistConsent = artistConsent,
-            VenueConsent = venueConsent,
+            ArtistESignature = artistESignature,
+            VenueESignature = venueESignature,
             CreatedAtUtc = createdAtUtc
         };
 }

@@ -11,6 +11,6 @@ internal sealed class AcceptanceDispatcher : IAcceptanceDispatcher
         this.executor = executor;
     }
 
-    public Task AcceptAsync(int applicationId, string? paymentMethodId)
-        => executor.ExecuteAsync(applicationId, paymentMethodId);
+    public Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
+        => executor.ExecuteAsync(applicationId, paymentMethodId, eSignature);
 }

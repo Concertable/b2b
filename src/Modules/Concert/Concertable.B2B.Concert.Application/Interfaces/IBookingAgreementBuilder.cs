@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Domain.Entities;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
@@ -8,5 +9,5 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// </summary>
 internal interface IBookingAgreementBuilder
 {
-    Task BuildAsync(ApplicationEntity application, int bookingId);
+    Task BuildAsync(ApplicationEntity application, int bookingId, ESignatureRequest venueESignature);
 }

@@ -29,7 +29,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     {
         var appId = fixture.SeedState.FlatFeeApp.Id;
         await client.PostAsync($"/api/Application/{appId}/checkout");
-        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { agreedToTerms = true });
+        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         return await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
     }
@@ -37,7 +37,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     private async Task<BookingEntity> AcceptVenueHireAsync(HttpClient client)
     {
         var appId = fixture.SeedState.VenueHireApp.Id;
-        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { agreedToTerms = true });
+        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         return await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
     }
@@ -78,7 +78,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.DoorSplitApp.Id;
         await client.PostAsync($"/api/Application/{appId}/checkout");
-        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { agreedToTerms = true, paymentMethodId = "pm_card_visa" });
+        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
         // Act
