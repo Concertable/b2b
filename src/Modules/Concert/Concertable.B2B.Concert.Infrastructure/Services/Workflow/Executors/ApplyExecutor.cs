@@ -43,7 +43,7 @@ internal sealed class ApplyExecutor : IApplyExecutor
         this.timeProvider = timeProvider;
     }
 
-    public async Task<ApplicationEntity> ExecuteAsync(int opportunityId, int artistId, string? paymentMethodId)
+    public async Task<ApplicationEntity> ExecuteAsync(int opportunityId, int artistId, string? paymentMethodId, ESignatureRequest eSignature)
     {
         var contract = await contractResolver.ResolveByOpportunityIdAsync(opportunityId);
         var workflow = workflows.Create(contract.ContractType);
@@ -65,12 +65,14 @@ internal sealed class ApplyExecutor : IApplyExecutor
 
         var period = await opportunityRepository.GetPeriodByIdAsync(opportunityId)
             ?? throw new NotFoundException("Concert Opportunity not found");
-        application.RecordArtistConsent(
-            new Consent(
+        application.RecordArtistESignature(
+            new ESignature(
                 currentUser.Id ?? throw new ForbiddenException("No user for current request"),
                 timeProvider.GetUtcNow().UtcDateTime,
                 clientContext.IpAddress,
-                clientContext.UserAgent),
+                clientContext.UserAgent,
+                eSignature.SignatoryName,
+                eSignature.DrawnSignatureImage),
             termsFingerprint.Calculate(contract, period));
 
         await applicationRepository.AddAsync(application);

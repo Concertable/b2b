@@ -12,10 +12,10 @@ internal sealed record BookingAgreementDto(
     PaymentMethod PaymentMethod,
     string TermsText,
     string PlatformTermsVersion,
-    ConsentDto? ArtistConsent,
-    ConsentDto VenueConsent,
+    ESignatureDto? ArtistESignature,
+    ESignatureDto VenueESignature,
     DateTime CreatedAtUtc);
 
-internal sealed record ConsentDto(Guid UserId, DateTime AtUtc);
+internal sealed record ESignatureDto(Guid UserId, DateTime AtUtc, string SignatoryName);
 
 internal sealed record AgreementPdf(byte[] Content, string FileName);

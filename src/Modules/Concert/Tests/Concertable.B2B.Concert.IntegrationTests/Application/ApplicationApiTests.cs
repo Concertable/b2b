@@ -29,7 +29,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { agreedToTerms = true });
+        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -42,7 +42,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { agreedToTerms = true });
+        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);

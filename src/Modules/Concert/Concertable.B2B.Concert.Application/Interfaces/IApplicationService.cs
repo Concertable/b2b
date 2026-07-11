@@ -1,4 +1,5 @@
 ﻿using Concertable.B2B.Concert.Application.DTOs;
+using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Domain.ReadModels;
 
@@ -10,11 +11,11 @@ internal interface IApplicationService
     Task<IEnumerable<ApplicationDto>> GetByOpportunityIdAsync(int id);
     Task<IEnumerable<ApplicationDto>> GetPendingForArtistAsync();
     Task<IEnumerable<ApplicationDto>> GetRecentDeniedForArtistAsync();
-    Task<ApplicationDto> ApplyAsync(int opportunityId);
-    Task<ApplicationDto> ApplyAsync(int opportunityId, string paymentMethodId);
+    Task<ApplicationDto> ApplyAsync(int opportunityId, ESignatureRequest eSignature);
+    Task<ApplicationDto> ApplyAsync(int opportunityId, string paymentMethodId, ESignatureRequest eSignature);
     Task<Checkout> ApplyCheckoutAsync(int opportunityId);
     Task<Checkout> AcceptCheckoutAsync(int applicationId);
-    Task AcceptAsync(int applicationId, string? paymentMethodId);
+    Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature);
     Task WithdrawAsync(int applicationId);
     Task RejectAsync(int applicationId);
     Task CancelAsync(int applicationId);

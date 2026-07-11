@@ -36,7 +36,7 @@ internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
         this.timeProvider = timeProvider;
     }
 
-    public async Task BuildAsync(ApplicationEntity application, int bookingId)
+    public async Task BuildAsync(ApplicationEntity application, int bookingId, ESignatureRequest venueESignature)
     {
         var contract = contractAccessor.Contract;
         var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(application.Id)
@@ -52,12 +52,14 @@ internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
             contract,
             termsRenderer.Render(contract),
             legal.PlatformTermsVersion,
-            application.ArtistConsent,
-            new Consent(
+            application.ArtistESignature,
+            new ESignature(
                 currentUser.Id ?? throw new ForbiddenException("No user for current request"),
                 timeProvider.GetUtcNow().UtcDateTime,
                 clientContext.IpAddress,
-                clientContext.UserAgent),
+                clientContext.UserAgent,
+                venueESignature.SignatoryName,
+                venueESignature.DrawnSignatureImage),
             timeProvider.GetUtcNow().UtcDateTime);
         agreement.VenueTenantId = application.VenueTenantId;
         agreement.ArtistTenantId = application.ArtistTenantId;

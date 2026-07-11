@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Requests;
 using Concertable.Kernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +20,7 @@ internal sealed class DevController : ControllerBase
         [FromQuery] int applicationId,
         [FromServices] IAcceptanceDispatcher AcceptanceDispatcher)
     {
-        await AcceptanceDispatcher.AcceptAsync(applicationId, null);
+        await AcceptanceDispatcher.AcceptAsync(applicationId, null, new ESignatureRequest { SignatoryName = "Dev Venue Manager" });
         return NoContent();
     }
 
