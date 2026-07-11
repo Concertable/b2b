@@ -28,6 +28,7 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
   if (!concert) return <DetailsPageSkeleton sections={4} />;
 
   const display = draft ?? concert;
+  const actions = renderActions?.(concert);
 
   return (
     <div>
@@ -39,18 +40,20 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
         onSave={() => save()}
         onCancel={resetDraft}
       />
-      {renderActions?.(concert)}
-      {concert.actions?.agreement && (
-        <div className="mx-auto max-w-5xl px-4 pt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => downloadAgreement.mutate(concert.id)}
-            disabled={downloadAgreement.isPending}
-            data-testid="download-agreement"
-          >
-            Booking agreement
-          </Button>
+      {(actions || concert.actions?.agreement) && (
+        <div className="mx-auto flex max-w-6xl items-center justify-end gap-2 px-6 pt-4">
+          {concert.actions?.agreement && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadAgreement.mutate(concert.id)}
+              disabled={downloadAgreement.isPending}
+              data-testid="download-agreement"
+            >
+              Booking agreement
+            </Button>
+          )}
+          {actions}
         </div>
       )}
       <EditableProvider editMode={editMode}>
