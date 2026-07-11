@@ -8,6 +8,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class BookingAgreementPdfService : IBookingAgreementPdfService
 {
+    // QuestPDF's GeneratePdf is not thread-safe: concurrent renders (e.g. the background render-at-accept
+    // racing a render-on-download) corrupt the embedded font subset. Serialize every render in this process.
+    private static readonly SemaphoreSlim renderGate = new(1, 1);
+
     private readonly IPdfService pdfService;
     private readonly IBlobStorageService blobStorage;
     private readonly IBookingAgreementRepository repository;
@@ -52,7 +56,11 @@ internal sealed class BookingAgreementPdfService : IBookingAgreementPdfService
        so a background render racing a lazy render can't orphan anything. */
     private async Task<byte[]> RenderUploadAsync(BookingAgreementEntity agreement, string blobName)
     {
-        var bytes = pdfService.Render(new BookingAgreementDocument(agreement));
+        await renderGate.WaitAsync();
+        byte[] bytes;
+        try { bytes = pdfService.Render(new BookingAgreementDocument(agreement)); }
+        finally { renderGate.Release(); }
+
         using var upload = new MemoryStream(bytes, writable: false);
         await blobStorage.UploadAsync(upload, blobName);
         return bytes;

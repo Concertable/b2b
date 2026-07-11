@@ -92,6 +92,14 @@ Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `Art
 
 ---
 
+### PDF render thread-safety guarded in B2B, not in the shared PDF service
+
+QuestPDF's `GeneratePdf()` is **not thread-safe**: concurrent renders race on shared SkiaSharp font-subset state and emit PDFs whose embedded font subset lacks a usable glyph→Unicode map — the text renders but can't be extracted/copied/searched, and can render visually wrong. Reproduced deterministically: single-threaded rendering is always clean; ~5–10% of renders corrupt under 16-way concurrency, and a background render-at-accept racing a render-on-download corrupts too. `BookingAgreementPdfService` now serialises every render behind a process-wide `SemaphoreSlim`, which fixes B2B (its only PDF is the booking agreement). But the real chokepoint is the shared `Concertable.Shared.Pdf` `PdfService.Render` → `document.GeneratePdf()`, consumed by every service; **Customer's ticket-receipt PDF is still unguarded**. The B2B-local guard is a stopgap because the shared library is a published package this change couldn't republish.
+
+**Resolves when:** `Concertable.Shared.Pdf.Infrastructure.PdfService` serialises `GeneratePdf` (lock/`SemaphoreSlim`) so every consumer is protected, the platform package is published and consumed, and the redundant `renderGate` guard in `BookingAgreementPdfService` is removed.
+
+---
+
 ## RESOLVED
 
 ### ✅ Seed `TicketsSold` depends on the Payment seed simulator
