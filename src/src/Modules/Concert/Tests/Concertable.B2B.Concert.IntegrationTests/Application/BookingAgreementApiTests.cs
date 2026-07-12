@@ -183,7 +183,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldReturn400_WhenTermsChangedSinceApply()
+    public async Task Accept_ShouldReturn409_WhenTermsChangedSinceApply()
     {
         // Arrange — artist consents to £500, then the venue edits the live contract to £999
         var opportunityId = await CreateOpportunityAsync(new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
@@ -195,8 +195,8 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         // Act
         var response = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        // Assert — accept refused; no booking, no agreement
-        await response.ShouldBe(HttpStatusCode.BadRequest);
+        // Assert — accept refused as a stale-state conflict; no booking, no agreement
+        await response.ShouldBe(HttpStatusCode.Conflict);
         Assert.False(await fixture.ConcertReads.Set<BookingEntity>().AnyAsync(b => b.ApplicationId == applicationId));
     }
 

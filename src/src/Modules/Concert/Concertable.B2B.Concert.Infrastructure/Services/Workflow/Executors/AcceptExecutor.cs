@@ -71,7 +71,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private void VerifyTermsUnchanged(ApplicationEntity app, IContract contract)
     {
         if (app.TermsFingerprint != termsFingerprint.Calculate(contract, app.Opportunity.Period))
-            throw new BadRequestException(
+            throw new ConflictException(
                 "The contract terms have changed since the artist applied — the artist must re-apply before you can accept");
     }
 }
