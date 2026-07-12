@@ -4,11 +4,8 @@ using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Contract.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
-using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using UglyToad.PdfPig;
-using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 using Xunit;
 using Xunit.Abstractions;
 using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
@@ -284,7 +281,7 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
 
         var response = await venueClient.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
-        var text = ExtractPdfText(await response.Content.ReadAsByteArrayAsync());
+        var text = Pdf.ExtractText(await response.Content.ReadAsByteArrayAsync());
 
         Assert.Contains("Signatures", text);
         Assert.Contains("Signed by Zola Banks", text);
@@ -305,19 +302,11 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
 
         var response = await venueClient.GetAsync($"/api/Application/{appId}/agreement/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
-        var text = ExtractPdfText(await response.Content.ReadAsByteArrayAsync());
+        var text = Pdf.ExtractText(await response.Content.ReadAsByteArrayAsync());
 
         Assert.Contains("Signatures", text);
         Assert.Contains("No recorded signature (predates e-sign)", text);
         Assert.Contains("Signed by Marco Vento", text);
-    }
-
-    private static string ExtractPdfText(byte[] bytes)
-    {
-        Assert.Equal("%PDF", Encoding.ASCII.GetString(bytes, 0, 4));
-        using var pdf = PdfDocument.Open(bytes);
-        var raw = string.Join(" ", pdf.GetPages().Select(p => ContentOrderTextExtractor.GetText(p)));
-        return Regex.Replace(raw, @"\s+", " ");
     }
 
     [Fact]
