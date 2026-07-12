@@ -42,7 +42,7 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
             .HasForeignKey(ca => ca.ArtistId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);
-        builder.OwnsOne(ca => ca.ArtistESignature);
+        builder.OwnsOne(ca => ca.ArtistESignature, ESignatureConfiguration.Configure);
         builder.Navigation(ca => ca.ArtistESignature).IsRequired();
         builder.HasDiscriminator<string>("Discriminator")
             .HasValue<StandardApplication>(nameof(StandardApplication))
