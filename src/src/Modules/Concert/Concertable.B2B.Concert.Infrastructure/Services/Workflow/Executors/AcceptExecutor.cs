@@ -70,10 +70,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
        side of this transition rolls back on a throw. */
     private void VerifyTermsUnchanged(ApplicationEntity app, IContract contract)
     {
-        /* Null fingerprint = the application predates click-wrap; there is no artist consent to
-           protect, so the guard only applies once one was recorded. */
-        if (app.TermsFingerprint is not null
-            && app.TermsFingerprint != termsFingerprint.Calculate(contract, app.Opportunity.Period))
+        if (app.TermsFingerprint != termsFingerprint.Calculate(contract, app.Opportunity.Period))
             throw new BadRequestException(
                 "The contract terms have changed since the artist applied — the artist must re-apply before you can accept");
     }

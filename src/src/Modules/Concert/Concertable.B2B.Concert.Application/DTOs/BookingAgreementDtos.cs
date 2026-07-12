@@ -12,7 +12,7 @@ internal sealed record BookingAgreementDto(
     PaymentMethod PaymentMethod,
     string TermsText,
     string PlatformTermsVersion,
-    ESignatureDto? ArtistESignature,
+    ESignatureDto ArtistESignature,
     ESignatureDto VenueESignature,
     DateTime CreatedAtUtc);
 

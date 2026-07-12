@@ -13,7 +13,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(VenueDbContext))]
-    [Migration("20260622101301_InitialCreate")]
+    [Migration("20260712131540_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

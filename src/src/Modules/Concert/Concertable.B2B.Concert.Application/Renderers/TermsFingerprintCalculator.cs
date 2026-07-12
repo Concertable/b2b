@@ -29,7 +29,7 @@ internal sealed class TermsFingerprintCalculator : ITermsFingerprintCalculator
     {
         var numbers = components[contract.ContractType].Compose(contract);
         var payload = Invariant(
-            $"{contract.ContractType}|{contract.PaymentMethod}|{numbers}|{period.Start:O}|{period.End:O}");
+            $"{contract.ContractType}|{contract.PaymentMethod}|{numbers}|{TermsFingerprintFormat.Instant(period.Start)}|{TermsFingerprintFormat.Instant(period.End)}");
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload)));
     }
 }

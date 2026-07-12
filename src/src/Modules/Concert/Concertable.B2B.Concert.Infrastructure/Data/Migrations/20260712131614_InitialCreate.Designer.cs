@@ -13,7 +13,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260711120222_InitialCreate")]
+    [Migration("20260712131614_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -75,6 +75,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("TermsFingerprint")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("VenueTenantId")
@@ -578,7 +579,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Navigation("Artist");
 
-                    b.Navigation("ArtistESignature");
+                    b.Navigation("ArtistESignature")
+                        .IsRequired();
 
                     b.Navigation("Opportunity");
                 });
@@ -676,7 +678,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasForeignKey("BookingAgreementEntityId");
                         });
 
-                    b.Navigation("ArtistESignature");
+                    b.Navigation("ArtistESignature")
+                        .IsRequired();
 
                     b.Navigation("Booking");
 
