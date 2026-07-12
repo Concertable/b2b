@@ -95,18 +95,11 @@ internal sealed class BookingAgreementDocument : IDocument
         });
     }
 
-    private void Signature(ColumnDescriptor section, string party, ESignature? eSignature)
+    private void Signature(ColumnDescriptor section, string party, ESignature eSignature)
     {
         section.Item().PaddingTop(6).Column(block =>
         {
             block.Item().Text(party).SemiBold();
-
-            if (eSignature is null)
-            {
-                block.Item().Text("No recorded signature (predates e-sign)")
-                    .Italic().FontColor(Colors.Grey.Darken1);
-                return;
-            }
 
             block.Item().Text(t =>
             {

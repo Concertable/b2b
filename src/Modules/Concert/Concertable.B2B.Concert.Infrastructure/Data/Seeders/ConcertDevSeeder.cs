@@ -1,5 +1,7 @@
+using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Domain.ReadModels;
+using Concertable.B2B.Contract.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
@@ -13,11 +15,22 @@ internal sealed class ConcertDevSeeder : IDevSeeder
 
     private readonly ConcertDbContext context;
     private readonly SeedState seed;
+    private readonly IContractModule contracts;
+    private readonly ITermsFingerprintCalculator fingerprint;
+    private readonly TimeProvider timeProvider;
 
-    public ConcertDevSeeder(ConcertDbContext context, SeedState seed)
+    public ConcertDevSeeder(
+        ConcertDbContext context,
+        SeedState seed,
+        IContractModule contracts,
+        ITermsFingerprintCalculator fingerprint,
+        TimeProvider timeProvider)
     {
         this.context = context;
         this.seed = seed;
+        this.contracts = contracts;
+        this.fingerprint = fingerprint;
+        this.timeProvider = timeProvider;
     }
 
     public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
@@ -63,6 +76,8 @@ internal sealed class ConcertDevSeeder : IDevSeeder
 
         await context.Applications.SeedIfEmptyAsync(async () =>
         {
+            await SeededApplicationSigner.SignAsync(
+                seed, contracts, fingerprint, timeProvider.GetUtcNow().UtcDateTime, ct);
             context.Applications.AddRange(seed.Applications);
             await context.SaveChangesAsync(ct);
 

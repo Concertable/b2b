@@ -18,9 +18,8 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     public ArtistReadModel Artist { get; set; } = null!;
     public BookingEntity? Booking { get; set; }
 
-    /* Null = the application predates the e-signature step (was click-wrap, then unsigned). */
-    public ESignature? ArtistESignature { get; private set; }
-    public string? TermsFingerprint { get; private set; }
+    public ESignature ArtistESignature { get; private set; } = null!;
+    public string TermsFingerprint { get; private set; } = null!;
 
     protected ApplicationEntity() { }
 

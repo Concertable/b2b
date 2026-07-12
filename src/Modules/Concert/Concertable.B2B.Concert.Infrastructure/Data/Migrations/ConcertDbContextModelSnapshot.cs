@@ -72,6 +72,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("TermsFingerprint")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("VenueTenantId")
@@ -575,7 +576,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Navigation("Artist");
 
-                    b.Navigation("ArtistESignature");
+                    b.Navigation("ArtistESignature")
+                        .IsRequired();
 
                     b.Navigation("Opportunity");
                 });
@@ -673,7 +675,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasForeignKey("BookingAgreementEntityId");
                         });
 
-                    b.Navigation("ArtistESignature");
+                    b.Navigation("ArtistESignature")
+                        .IsRequired();
 
                     b.Navigation("Booking");
 

@@ -20,6 +20,7 @@ internal sealed class BookingAgreementEntityConfiguration : IEntityTypeConfigura
             p.Property(x => x.End).HasColumnName("Period_End");
         });
         builder.OwnsOne(a => a.ArtistESignature);
+        builder.Navigation(a => a.ArtistESignature).IsRequired();
         builder.OwnsOne(a => a.VenueESignature);
         builder.Navigation(a => a.VenueESignature).IsRequired();
     }

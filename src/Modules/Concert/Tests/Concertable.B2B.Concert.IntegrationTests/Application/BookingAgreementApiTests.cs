@@ -201,9 +201,11 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldSucceedWithNullArtistConsent_ForPreConsentApplication()
+    public async Task Accept_ShouldSucceed_ForSeededSignedApplication()
     {
-        // Arrange — seeded applications predate click-wrap: no fingerprint, no artist consent
+        // Seeded applications carry a real artist signature + a terms fingerprint computed by the
+        // canonical calculator, so the fingerprint the accept guard recomputes from the DB matches and
+        // the agreement snapshots both parties' consent.
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/Application/{appId}/checkout");
@@ -211,10 +213,10 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         // Act
         var acceptResponse = await venueClient.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        // Assert — accept works, agreement records the venue's consent and honestly omits the artist's
+        // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         var agreement = await GetAgreementAsync(appId);
-        Assert.Null(agreement.ArtistESignature);
+        Assert.NotNull(agreement.ArtistESignature);
         Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueESignature.UserId);
     }
 
@@ -287,26 +289,6 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         Assert.Contains("Signed by Zola Banks", text);
         Assert.Contains("Signed by Marco Vento", text);
         Assert.DoesNotContain("No recorded signature", text);
-    }
-
-    [Fact]
-    public async Task Agreement_Pdf_RendersPlaceholder_ForPreESignArtistSignature()
-    {
-        // The seeded FlatFeeApp predates e-sign: no artist signature. The venue still signs at accept,
-        // so the PDF shows the venue's signature and the placeholder for the artist — never a fabricated one.
-        var appId = fixture.SeedState.FlatFeeApp.Id;
-        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await venueClient.PostAsync($"/api/Application/{appId}/checkout");
-        var acceptResponse = await venueClient.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Marco Vento" } });
-        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-
-        var response = await venueClient.GetAsync($"/api/Application/{appId}/agreement/pdf");
-        await response.ShouldBe(HttpStatusCode.OK);
-        var text = Pdf.ExtractText(await response.Content.ReadAsByteArrayAsync());
-
-        Assert.Contains("Signatures", text);
-        Assert.Contains("No recorded signature (predates e-sign)", text);
-        Assert.Contains("Signed by Marco Vento", text);
     }
 
     [Fact]

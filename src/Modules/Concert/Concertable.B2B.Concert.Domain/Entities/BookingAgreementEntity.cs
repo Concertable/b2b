@@ -28,9 +28,7 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
     public string TermsText { get; private set; } = null!;
     public string PlatformTermsVersion { get; private set; } = null!;
 
-    /* Null = the application predated the e-signature step; the venue's signature is what gates
-       Accept, so an agreement without it must never exist. */
-    public ESignature? ArtistESignature { get; private set; }
+    public ESignature ArtistESignature { get; private set; } = null!;
     public ESignature VenueESignature { get; private set; } = null!;
 
     public string? PdfBlobName { get; private set; }
@@ -59,7 +57,7 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
         IContract contract,
         string termsText,
         string platformTermsVersion,
-        ESignature? artistESignature,
+        ESignature artistESignature,
         ESignature venueESignature,
         DateTime createdAtUtc) => new()
         {
