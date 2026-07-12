@@ -112,7 +112,7 @@ internal sealed class BookingAgreementDocument : IDocument
                 block.Item().PaddingVertical(2).Width(180).Image(drawn);
 
             var detail = $"{FormatUtc(eSignature.AtUtc)} · user {eSignature.UserId}";
-            if (!string.IsNullOrWhiteSpace(eSignature.Ip))
+            if (eSignature.Ip is not null)
                 detail += $" · IP {eSignature.Ip}";
             block.Item().Text(detail).FontSize(9).FontColor(Colors.Grey.Darken1);
         });

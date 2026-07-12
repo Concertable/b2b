@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
 /// <summary>
@@ -6,6 +8,6 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// </summary>
 internal interface IClientContext
 {
-    string? IpAddress { get; }
+    IPAddress? IpAddress { get; }
     string? UserAgent { get; }
 }

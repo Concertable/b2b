@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace Concertable.B2B.Concert.Domain.Entities;
 
 /// <summary>
@@ -9,7 +11,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 public sealed record ESignature(
     Guid UserId,
     DateTime AtUtc,
-    string? Ip,
+    IPAddress? Ip,
     string? UserAgent,
     string SignatoryName,
     string? DrawnSignatureImage);
