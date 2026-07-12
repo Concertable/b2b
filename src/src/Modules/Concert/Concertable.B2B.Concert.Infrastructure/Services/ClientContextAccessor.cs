@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
@@ -11,7 +12,7 @@ internal sealed class ClientContextAccessor : IClientContext
         this.httpContextAccessor = httpContextAccessor;
     }
 
-    public string? IpAddress => httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+    public IPAddress? IpAddress => httpContextAccessor.HttpContext?.Connection.RemoteIpAddress;
 
     public string? UserAgent => httpContextAccessor.HttpContext?.Request.Headers.UserAgent;
 }

@@ -554,14 +554,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Ip")
-                                .HasColumnType("nvarchar(max)");
+                                .HasMaxLength(45)
+                                .HasColumnType("nvarchar(45)");
 
                             b1.Property<string>("SignatoryName")
                                 .IsRequired()
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("UserAgent")
-                                .HasColumnType("nvarchar(max)");
+                                .HasMaxLength(512)
+                                .HasColumnType("nvarchar(512)");
 
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("uniqueidentifier");
@@ -602,14 +604,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Ip")
-                                .HasColumnType("nvarchar(max)");
+                                .HasMaxLength(45)
+                                .HasColumnType("nvarchar(45)");
 
                             b1.Property<string>("SignatoryName")
                                 .IsRequired()
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("UserAgent")
-                                .HasColumnType("nvarchar(max)");
+                                .HasMaxLength(512)
+                                .HasColumnType("nvarchar(512)");
 
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("uniqueidentifier");
@@ -655,14 +659,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Ip")
-                                .HasColumnType("nvarchar(max)");
+                                .HasMaxLength(45)
+                                .HasColumnType("nvarchar(45)");
 
                             b1.Property<string>("SignatoryName")
                                 .IsRequired()
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("UserAgent")
-                                .HasColumnType("nvarchar(max)");
+                                .HasMaxLength(512)
+                                .HasColumnType("nvarchar(512)");
 
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("uniqueidentifier");
