@@ -71,10 +71,8 @@ internal static class ConcertResponseMappers
         }
     };
 
-    // Current-user (party) variant: served only by tenant-scoped endpoints (404 for non-parties), so
-    // reaching it proves you are a party — the party-only action links are emitted. Cancel is still
-    // state-gated (only valid while Booked); the agreement was frozen at accept so it always exists
-    // for a concert. The venue-only permission on POST cancel is the role gate, not this.
+    // Party-only action links (fail-closed rationale at the GetDetailsForCurrentUser endpoint). Cancel
+    // stays state-gated (valid only while Booked); the agreement is frozen at accept so it always exists.
     public static ConcertDetailsResponse ToCurrentUserDetailsResponse(this ConcertDetails dto) =>
         dto.ToDetailsResponse() with
         {
