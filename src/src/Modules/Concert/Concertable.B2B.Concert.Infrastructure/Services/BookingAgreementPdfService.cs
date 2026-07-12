@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.Shared.Blob.Application;
 using Concertable.Shared.Pdf.Application;
+using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -15,15 +16,18 @@ internal sealed class BookingAgreementPdfService : IBookingAgreementPdfService
     private readonly IPdfService pdfService;
     private readonly IBlobStorageService blobStorage;
     private readonly IBookingAgreementRepository repository;
+    private readonly ILogger<BookingAgreementPdfService> logger;
 
     public BookingAgreementPdfService(
         IPdfService pdfService,
         IBlobStorageService blobStorage,
-        IBookingAgreementRepository repository)
+        IBookingAgreementRepository repository,
+        ILogger<BookingAgreementPdfService> logger)
     {
         this.pdfService = pdfService;
         this.blobStorage = blobStorage;
         this.repository = repository;
+        this.logger = logger;
     }
 
     public async Task<byte[]> GetOrCreateAsync(BookingAgreementEntity agreement, CancellationToken ct = default)
@@ -58,7 +62,7 @@ internal sealed class BookingAgreementPdfService : IBookingAgreementPdfService
     {
         await renderLock.WaitAsync();
         byte[] bytes;
-        try { bytes = pdfService.Render(new BookingAgreementDocument(agreement)); }
+        try { bytes = pdfService.Render(new BookingAgreementDocument(agreement, logger)); }
         finally { renderLock.Release(); }
 
         using var upload = new MemoryStream(bytes, writable: false);

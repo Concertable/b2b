@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import type { Contract } from "@b2b/features/contracts";
-import type { ESignatureRequest } from "@concertable/shared/features/concerts/api/applicationApi";
+import type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
 import { AcceptContractSummary } from "./AcceptContractSummary";
 import { SignatureCanvas } from "./SignatureCanvas";
 
