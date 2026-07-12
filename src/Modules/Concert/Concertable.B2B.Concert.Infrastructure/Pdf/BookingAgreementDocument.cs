@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Microsoft.Extensions.Logging;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -13,8 +14,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Pdf;
 internal sealed class BookingAgreementDocument : IDocument
 {
     private readonly BookingAgreementEntity agreement;
+    private readonly ILogger logger;
 
-    public BookingAgreementDocument(BookingAgreementEntity agreement) => this.agreement = agreement;
+    public BookingAgreementDocument(BookingAgreementEntity agreement, ILogger logger)
+    {
+        this.agreement = agreement;
+        this.logger = logger;
+    }
 
     public void Compose(IDocumentContainer container)
     {
@@ -89,7 +95,7 @@ internal sealed class BookingAgreementDocument : IDocument
         });
     }
 
-    private static void Signature(ColumnDescriptor section, string party, ESignature? eSignature)
+    private void Signature(ColumnDescriptor section, string party, ESignature? eSignature)
     {
         section.Item().PaddingTop(6).Column(block =>
         {
@@ -108,7 +114,7 @@ internal sealed class BookingAgreementDocument : IDocument
                 t.Span(eSignature.SignatoryName).SemiBold();
             });
 
-            var drawn = DecodeDrawnSignature(eSignature.DrawnSignatureImage);
+            var drawn = DecodeDrawnSignature(party, eSignature.DrawnSignatureImage);
             if (drawn is not null)
                 block.Item().PaddingVertical(2).Width(180).Image(drawn);
 
@@ -119,9 +125,10 @@ internal sealed class BookingAgreementDocument : IDocument
         });
     }
 
-    /* Accepts a raw base64 PNG or a data: URI (strips the prefix). Returns null on anything
-       undecodable so a corrupt image never breaks the whole document render. */
-    private static byte[]? DecodeDrawnSignature(string? value)
+    /* Accepts a raw base64 PNG or a data: URI (strips the prefix). Logs then degrades to null on an
+       undecodable image so a corrupt signature surfaces rather than silently rendering as "no image"
+       on a legal agreement, but never fails the whole document render over a display-only glyph. */
+    private byte[]? DecodeDrawnSignature(string party, string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
             return null;
@@ -132,7 +139,11 @@ internal sealed class BookingAgreementDocument : IDocument
             payload = payload[(comma + 1)..];
 
         try { return Convert.FromBase64String(payload); }
-        catch (FormatException) { return null; }
+        catch (FormatException)
+        {
+            logger.DrawnSignatureDecodeFailed(agreement.Id, party);
+            return null;
+        }
     }
 
     private static string FormatUtc(DateTime value) =>

@@ -65,6 +65,13 @@ internal static partial class Log
 
     #endregion
 
+    #region BookingAgreementDocument
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Agreement {AgreementId}: stored {Party} drawn signature could not be decoded; rendering without the drawn image")]
+    internal static partial void DrawnSignatureDecodeFailed(this ILogger logger, int agreementId, string party);
+
+    #endregion
+
     #region ConcertCompletionRunner
 
     [LoggerMessage(Level = LogLevel.Information, Message = "ConcertCompletionRunner: found {Count} ended confirmed concert(s) to settle")]
