@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Interfaces;
+using Concertable.B2B.Concert.Application.Mappers;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Kernel.Exceptions;
 
@@ -18,45 +19,21 @@ internal sealed class BookingAgreementService : IBookingAgreementService
         this.pdfService = pdfService;
     }
 
-    public async Task<BookingAgreementDto> GetByApplicationIdAsync(int applicationId) =>
-        ToDto(await LoadForCallerAsync(applicationId));
-
-    public async Task<AgreementPdf> GetPdfByApplicationIdAsync(int applicationId)
+    public async Task<BookingAgreementDto> GetByApplicationIdAsync(int applicationId)
     {
-        var agreement = await LoadForCallerAsync(applicationId);
-        return await ToPdfAsync(agreement);
+        var agreement = await repository.GetByApplicationIdAsync(applicationId).OrNotFound();
+        return agreement.ToDto();
     }
 
-    public async Task<AgreementPdf> GetPdfByConcertIdAsync(int concertId)
+    public async Task<FileDownload> GetPdfByApplicationIdAsync(int applicationId)
     {
-        var agreement = await repository.GetByConcertIdAsync(concertId)
-            ?? throw new NotFoundException("Booking agreement not found");
-        return await ToPdfAsync(agreement);
+        var agreement = await repository.GetByApplicationIdAsync(applicationId).OrNotFound();
+        return agreement.ToFileDownload(await pdfService.GetOrCreateAsync(agreement));
     }
 
-    private async Task<AgreementPdf> ToPdfAsync(BookingAgreementEntity agreement)
+    public async Task<FileDownload> GetPdfByConcertIdAsync(int concertId)
     {
-        var bytes = await pdfService.GetOrCreateAsync(agreement);
-        return new AgreementPdf(bytes, $"booking-agreement-BA-{agreement.Id}.pdf");
+        var agreement = await repository.GetByConcertIdAsync(concertId).OrNotFound();
+        return agreement.ToFileDownload(await pdfService.GetOrCreateAsync(agreement));
     }
-
-    /* Tenant-filtered read: a non-party sees null and gets a 404, exactly like reading the
-       application — the deal document never reveals its existence to a stranger. */
-    private async Task<BookingAgreementEntity> LoadForCallerAsync(int applicationId) =>
-        await repository.GetByApplicationIdAsync(applicationId)
-            ?? throw new NotFoundException("Booking agreement not found");
-
-    private static BookingAgreementDto ToDto(BookingAgreementEntity a) =>
-        new(a.Id,
-            a.VenueName,
-            a.ArtistName,
-            a.Period.Start,
-            a.Period.End,
-            a.ContractType,
-            a.PaymentMethod,
-            a.TermsText,
-            a.PlatformTermsVersion,
-            new ESignatureDto(a.ArtistESignature.UserId, a.ArtistESignature.AtUtc, a.ArtistESignature.SignatoryName),
-            new ESignatureDto(a.VenueESignature.UserId, a.VenueESignature.AtUtc, a.VenueESignature.SignatoryName),
-            a.CreatedAtUtc);
 }

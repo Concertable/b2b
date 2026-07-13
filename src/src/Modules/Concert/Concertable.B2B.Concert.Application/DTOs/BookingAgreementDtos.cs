@@ -17,5 +17,3 @@ internal sealed record BookingAgreementDto(
     DateTime CreatedAtUtc);
 
 internal sealed record ESignatureDto(Guid UserId, DateTime AtUtc, string SignatoryName);
-
-internal sealed record AgreementPdf(byte[] Content, string FileName);

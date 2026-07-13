@@ -27,7 +27,7 @@ internal sealed class ApplicationMapper : IApplicationMapper
     {
         var applicationList = applications.ToList();
         var opportunityDtos = await opportunityMapper.ToDtosAsync(applicationList.Select(a => a.Opportunity));
-        var agreementIds = await agreements.GetIdsByApplicationIdsAsync(applicationList.Select(a => a.Id).ToList());
+        var agreementIds = await agreements.GetAgreementIdsByApplicationIdsAsync(applicationList.Select(a => a.Id).ToList());
 
         return applicationList.Zip(opportunityDtos, (a, opp) =>
             new ApplicationDto(a.Id, a.ToArtistSummary(), opp, a.State.ToStatus(), a.State,

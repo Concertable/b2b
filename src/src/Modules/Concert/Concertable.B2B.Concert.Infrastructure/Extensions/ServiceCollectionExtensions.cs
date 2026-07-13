@@ -86,10 +86,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBookingAgreementPdfService, BookingAgreementPdfService>();
         services.AddScoped<IClientContext, ClientContextAccessor>();
         services.AddSingleton<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
-        services.AddSingleton<FlatFeeFingerprintComponent>();
-        services.AddSingleton<DoorSplitFingerprintComponent>();
-        services.AddSingleton<VersusFingerprintComponent>();
-        services.AddSingleton<VenueHireFingerprintComponent>();
+        services.AddSingleton<IContractTermsSerializer, ContractTermsSerializer>();
+        services.AddSingleton<FlatFeeTermsSerializer>();
+        services.AddSingleton<DoorSplitTermsSerializer>();
+        services.AddSingleton<VersusTermsSerializer>();
+        services.AddSingleton<VenueHireTermsSerializer>();
 
         services.AddScoped<ContractAccessor>();
         services.AddScoped<IContractAccessor>(sp => sp.GetRequiredService<ContractAccessor>());
