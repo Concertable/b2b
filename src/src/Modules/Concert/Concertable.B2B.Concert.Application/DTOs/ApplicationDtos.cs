@@ -8,4 +8,5 @@ internal sealed record ApplicationDto(
     ArtistSummary Artist,
     OpportunityDto Opportunity,
     ApplicationStatus Status,
-    LifecycleState State);
+    LifecycleState State,
+    int? AgreementId);

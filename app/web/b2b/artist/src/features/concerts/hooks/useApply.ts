@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth";
 import applicationApi from "@b2b/features/concerts/api/applicationApi";
+import type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
 
 export function useApply(opportunityId: number, options?: { onSuccess?: () => void }) {
   const isAuthenticated = useAuthStore((s) => s.user != null);
@@ -18,11 +19,12 @@ export function useApply(opportunityId: number, options?: { onSuccess?: () => vo
     isPending,
     error,
   } = useMutation({
-    mutationFn: () => applicationApi.applyToOpportunity(opportunityId),
+    mutationFn: (eSignature: ESignatureRequest) =>
+      applicationApi.applyToOpportunity(opportunityId, eSignature),
     onSuccess: () => options?.onSuccess?.(),
   });
 
-  const apply = () => applyMutate();
+  const apply = (eSignature: ESignatureRequest) => applyMutate(eSignature);
 
   return { apply, isPending, error, canApply };
 }

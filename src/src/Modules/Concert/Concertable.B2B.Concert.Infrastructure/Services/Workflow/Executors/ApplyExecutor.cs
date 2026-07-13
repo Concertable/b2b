@@ -16,22 +16,34 @@ internal sealed class ApplyExecutor : IApplyExecutor
     private readonly IConcertWorkflowFactory workflows;
     private readonly IContractResolver contractResolver;
     private readonly ITenantContext tenantContext;
+    private readonly ICurrentUser currentUser;
+    private readonly IClientContext clientContext;
+    private readonly ITermsFingerprintCalculator termsFingerprint;
+    private readonly TimeProvider timeProvider;
 
     public ApplyExecutor(
         IApplicationRepository applicationRepository,
         IOpportunityRepository opportunityRepository,
         IConcertWorkflowFactory workflows,
         IContractResolver contractResolver,
-        ITenantContext tenantContext)
+        ITenantContext tenantContext,
+        ICurrentUser currentUser,
+        IClientContext clientContext,
+        ITermsFingerprintCalculator termsFingerprint,
+        TimeProvider timeProvider)
     {
         this.applicationRepository = applicationRepository;
         this.opportunityRepository = opportunityRepository;
         this.workflows = workflows;
         this.contractResolver = contractResolver;
         this.tenantContext = tenantContext;
+        this.currentUser = currentUser;
+        this.clientContext = clientContext;
+        this.termsFingerprint = termsFingerprint;
+        this.timeProvider = timeProvider;
     }
 
-    public async Task<ApplicationEntity> ExecuteAsync(int opportunityId, int artistId, string? paymentMethodId)
+    public async Task<ApplicationEntity> ExecuteAsync(int opportunityId, int artistId, string? paymentMethodId, ESignatureRequest eSignature)
     {
         var contract = await contractResolver.ResolveByOpportunityIdAsync(opportunityId);
         var workflow = workflows.Create(contract.ContractType);
@@ -50,6 +62,18 @@ internal sealed class ApplyExecutor : IApplyExecutor
             ?? throw new NotFoundException("Concert Opportunity not found");
         application.ArtistTenantId = tenantContext.TenantId
             ?? throw new ForbiddenException("No tenant for current user");
+
+        var period = await opportunityRepository.GetPeriodByIdAsync(opportunityId)
+            ?? throw new NotFoundException("Concert Opportunity not found");
+        application.RecordArtistESignature(
+            new ESignature(
+                currentUser.Id ?? throw new ForbiddenException("No user for current request"),
+                timeProvider.GetUtcNow().UtcDateTime,
+                clientContext.IpAddress,
+                clientContext.UserAgent,
+                eSignature.SignatoryName,
+                eSignature.DrawnSignatureImage),
+            termsFingerprint.Calculate(contract, period));
 
         await applicationRepository.AddAsync(application);
         try

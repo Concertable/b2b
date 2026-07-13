@@ -3,12 +3,12 @@ using Concertable.Shared.Email.Application;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class Notifier : INotifier
+internal sealed class Messenger : IMessenger
 {
     private readonly IConversationsModule conversationsModule;
     private readonly IEmailSender emailSender;
 
-    public Notifier(IConversationsModule conversationsModule, IEmailSender emailSender)
+    public Messenger(IConversationsModule conversationsModule, IEmailSender emailSender)
     {
         this.conversationsModule = conversationsModule;
         this.emailSender = emailSender;

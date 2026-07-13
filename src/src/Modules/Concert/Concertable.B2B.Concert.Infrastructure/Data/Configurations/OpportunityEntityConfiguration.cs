@@ -42,6 +42,7 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
             .HasForeignKey(ca => ca.ArtistId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);
+        builder.ComplexProperty(ca => ca.ArtistESignature, ESignatureConfiguration.Configure);
         builder.HasDiscriminator<string>("Discriminator")
             .HasValue<StandardApplication>(nameof(StandardApplication))
             .HasValue<PrepaidApplication>(nameof(PrepaidApplication));

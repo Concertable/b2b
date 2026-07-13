@@ -6,9 +6,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { ConcertDraftCreatedPayload } from "@/features/notifications";
 import {
   AcceptContractSummary,
+  ESignaturePanel,
   useAcceptApplicationMutation,
   useAcceptCheckoutQuery,
   useApplicationQuery,
+  useESignature,
 } from "@b2b/features/concerts";
 import type { Application, Checkout } from "@/features/concerts";
 import { useCheckoutFlow, type CheckoutFlowState } from "@/features/concerts/hooks/useCheckoutFlow";
@@ -100,6 +102,7 @@ interface VenueAcceptCheckoutFormProps {
 
 function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Readonly<VenueAcceptCheckoutFormProps>) {
   const [submitted, setSubmitted] = useState(false);
+  const { signature, setSignature, isValid } = useESignature();
   const [error, setError] = useState<string | null>(null);
   const acceptMutation = useAcceptApplicationMutation(application.opportunity.id);
   const flow = useCheckoutFlow<ConcertDraftCreatedPayload>({ event: "ConcertDraftCreated" });
@@ -115,7 +118,7 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
   async function handleAccept(paymentMethodId: string) {
     setError(null);
     try {
-      await acceptMutation.mutateAsync({ applicationId, body: { paymentMethodId } });
+      await acceptMutation.mutateAsync({ applicationId, eSignature: signature, body: { paymentMethodId } });
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Acceptance failed. Please try again.");
@@ -147,12 +150,15 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
         title="Payment Method"
         description={labels.paymentHint ?? undefined}
       >
-        <StripePaymentForm
-          session={checkout.session}
-          submitLabel={labels.submitLabel}
-          disabled={acceptMutation.isPending}
-          onSuccess={handleAccept}
-        />
+        <div className="space-y-4">
+          <ESignaturePanel value={signature} onChange={setSignature} />
+          <StripePaymentForm
+            session={checkout.session}
+            submitLabel={labels.submitLabel}
+            disabled={acceptMutation.isPending || !isValid}
+            onSuccess={handleAccept}
+          />
+        </div>
       </CheckoutSection>
       {error && <p data-testid="payment-error" className="text-destructive text-sm">{error}</p>}
     </CheckoutLayout>
