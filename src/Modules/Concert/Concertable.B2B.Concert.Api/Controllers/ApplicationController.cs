@@ -12,15 +12,18 @@ internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
     private readonly IApplicationValidator applicationValidator;
+    private readonly IBookingAgreementService agreementService;
     private readonly IApplicationResponseMapper mapper;
 
     public ApplicationController(
         IApplicationService applicationService,
         IApplicationValidator applicationValidator,
+        IBookingAgreementService agreementService,
         IApplicationResponseMapper mapper)
     {
         this.applicationService = applicationService;
         this.applicationValidator = applicationValidator;
+        this.agreementService = agreementService;
         this.mapper = mapper;
     }
 
@@ -34,11 +37,11 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpPost("{opportunityId}")]
-    public async Task<IActionResult> Apply(int opportunityId, [FromBody] ApplyRequest? request = null)
+    public async Task<IActionResult> Apply(int opportunityId, [FromBody] ApplyRequest request)
     {
-        var application = request is not null
-            ? await applicationService.ApplyAsync(opportunityId, request.PaymentMethodId)
-            : await applicationService.ApplyAsync(opportunityId);
+        var application = request.PaymentMethodId is not null
+            ? await applicationService.ApplyAsync(opportunityId, request.PaymentMethodId, request.ESignature)
+            : await applicationService.ApplyAsync(opportunityId, request.ESignature);
         return CreatedAtAction(nameof(GetById), new { id = application.Id }, mapper.ToResponse(application));
     }
 
@@ -63,6 +66,22 @@ internal sealed class ApplicationController : ControllerBase
     {
         var application = await applicationService.GetByIdAsync(id);
         return Ok(mapper.ToResponse(application));
+    }
+
+    // No [HasPermission]: both parties read (venue + artist), enforced by the two-party tenant filter
+    // exactly like GetById — a stranger is filtered out and gets 404, never a probe-able 403.
+    [HttpGet("{id}/agreement")]
+    public async Task<ActionResult<BookingAgreementDto>> GetAgreement(int id)
+    {
+        var agreement = await agreementService.GetByApplicationIdAsync(id);
+        return Ok(agreement);
+    }
+
+    [HttpGet("{id}/agreement/pdf")]
+    public async Task<IActionResult> GetAgreementPdf(int id)
+    {
+        var pdf = await agreementService.GetPdfByApplicationIdAsync(id);
+        return File(pdf.Content, pdf.ContentType, pdf.FileName);
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
@@ -99,9 +118,9 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/accept")]
-    public async Task<IActionResult> Accept(int applicationId, [FromBody] AcceptRequest? request = null)
+    public async Task<IActionResult> Accept(int applicationId, [FromBody] AcceptRequest request)
     {
-        await applicationService.AcceptAsync(applicationId, request?.PaymentMethodId);
+        await applicationService.AcceptAsync(applicationId, request.PaymentMethodId, request.ESignature);
         return NoContent();
     }
 

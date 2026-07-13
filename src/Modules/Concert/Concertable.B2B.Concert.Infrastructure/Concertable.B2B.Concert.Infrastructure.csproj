@@ -17,6 +17,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" />
+    <PackageReference Include="QuestPDF" />
   </ItemGroup>
 
   <ItemGroup>
@@ -43,7 +44,9 @@
     <PackageReference Include="Concertable.Payment.Client" />
     <PackageReference Include="Concertable.Payment.Contracts" />
     <PackageReference Include="Concertable.Seed.Shared" />
+    <PackageReference Include="Concertable.Shared.Blob.Application" />
     <PackageReference Include="Concertable.Shared.Email.Application" />
+    <PackageReference Include="Concertable.Shared.Pdf.Application" />
   </ItemGroup>
 
 </Project>

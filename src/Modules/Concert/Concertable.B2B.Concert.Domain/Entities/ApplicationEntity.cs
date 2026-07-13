@@ -18,6 +18,9 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     public ArtistReadModel Artist { get; set; } = null!;
     public BookingEntity? Booking { get; set; }
 
+    public ESignature ArtistESignature { get; private set; } = null!;
+    public string TermsFingerprint { get; private set; } = null!;
+
     protected ApplicationEntity() { }
 
     protected ApplicationEntity(int artistId, int opportunityId, ContractType contractType)
@@ -28,6 +31,12 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     }
 
     public void Accept(BookingEntity booking) => Booking = booking;
+
+    public void RecordArtistESignature(ESignature eSignature, string termsFingerprint)
+    {
+        ArtistESignature = eSignature;
+        TermsFingerprint = termsFingerprint;
+    }
 
     internal void Transition(Trigger trigger, ContractStateMachine machine) => State = machine.Next(State, trigger);
 }

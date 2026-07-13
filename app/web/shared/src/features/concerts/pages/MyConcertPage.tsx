@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import { ConfigBar } from "@/components/ConfigBar";
+import { Button } from "@/components/ui/button";
 import { EditableProvider } from "@concertable/shared/providers";
 import { DetailsPageSkeleton } from "@/components/skeletons/DetailsPageSkeleton";
 import type { Concert } from "@concertable/shared/features/concerts/types";
 import { useMyConcert } from "../hooks/useMyConcert";
+import { useDownloadAgreement } from "../hooks/useDownloadAgreement";
 import { useConcertStore } from "../store/useConcertStore";
 import { ConcertDetails } from "@/features/concerts";
 
@@ -15,16 +17,27 @@ interface Props {
 }
 
 export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
-  const { concert, isDirty, isSaving, save, resetDraft, toggleEdit, editMode } =
-    useMyConcert(id);
+  const {
+    concert,
+    isDirty,
+    isSaving,
+    canSave,
+    saveError,
+    save,
+    resetDraft,
+    toggleEdit,
+    editMode,
+  } = useMyConcert(id);
 
   const draft = useConcertStore((state) => state.draft);
   const setName = useConcertStore((state) => state.setName);
   const setAbout = useConcertStore((state) => state.setAbout);
+  const downloadAgreement = useDownloadAgreement();
 
   if (!concert) return <DetailsPageSkeleton sections={4} />;
 
   const display = draft ?? concert;
+  const actions = renderActions?.(concert);
 
   return (
     <div>
@@ -32,11 +45,27 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
         editMode={editMode}
         isDirty={isDirty}
         isSaving={isSaving}
+        canSave={canSave}
+        error={saveError}
         onToggleEdit={toggleEdit}
         onSave={() => save()}
         onCancel={resetDraft}
+        actions={
+          <>
+            {concert.actions?.agreement && (
+              <Button
+                variant="outline"
+                onClick={() => downloadAgreement.mutate(concert.id)}
+                disabled={downloadAgreement.isPending}
+                data-testid="download-agreement"
+              >
+                Booking agreement
+              </Button>
+            )}
+            {actions}
+          </>
+        }
       />
-      {renderActions?.(concert)}
       <EditableProvider editMode={editMode}>
         <ConcertDetails
           concert={display}

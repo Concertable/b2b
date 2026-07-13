@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
 
@@ -67,10 +68,18 @@ internal static class ConcertResponseMappers
             Town = dto.Venue.Town,
             Latitude = dto.Venue.Latitude,
             Longitude = dto.Venue.Longitude
-        },
-        Actions = new ConcertActions(
-            Cancel: dto.State == LifecycleState.Booked
-                ? new ActionLink($"/api/Concert/{dto.Id}/cancel", "POST")
-                : null)
+        }
     };
+
+    // Party-only action links (fail-closed rationale at the GetDetailsForCurrentUser endpoint). Cancel
+    // stays state-gated (valid only while Booked); the agreement is frozen at accept so it always exists.
+    public static ConcertDetailsResponse ToCurrentUserDetailsResponse(this ConcertDetails dto) =>
+        dto.ToDetailsResponse() with
+        {
+            Actions = new ConcertActions(
+                Cancel: dto.State == LifecycleState.Booked
+                    ? new ActionLink($"/api/Concert/{dto.Id}/cancel", HttpMethods.Post)
+                    : null,
+                Agreement: new ActionLink($"/api/Concert/{dto.Id}/agreement/pdf", HttpMethods.Get))
+        };
 }

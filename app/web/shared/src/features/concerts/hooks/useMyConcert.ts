@@ -1,1 +1,69 @@
-export * from '@concertable/shared/features/concerts/hooks/useMyConcert';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import concertApi from "@concertable/shared/features/concerts/api/concertApi";
+import { useConcertStore } from "@concertable/shared/features/concerts/store/useConcertStore";
+import {
+  updateConcertRequestSchema,
+  type UpdateConcertRequest,
+} from "@concertable/shared/features/concerts/schemas/updateConcertRequestSchema";
+import type { Concert } from "@concertable/shared/features/concerts/types";
+import { useMyConcertQuery, myConcertQueryKey } from "./useMyConcertQuery";
+
+interface UseMyConcertResult {
+  concert: Concert | undefined;
+  draft: Concert | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  editMode: boolean;
+  isDirty: boolean;
+  isSaving: boolean;
+  canSave: boolean;
+  saveError: string | null;
+  save: () => void;
+  toggleEdit: () => void;
+  resetDraft: () => void;
+}
+
+export function useMyConcert(id: number): UseMyConcertResult {
+  const { data: concert, isLoading, isError } = useMyConcertQuery(id);
+  const queryClient = useQueryClient();
+
+  const { toggleEdit, resetDraft, draft, isDirty, editMode } =
+    useConcertStore();
+
+  const mutation = useMutation({
+    mutationFn: (request: UpdateConcertRequest) =>
+      concertApi.updateConcert(id, request),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(myConcertQueryKey(id), saved);
+      resetDraft(saved);
+    },
+  });
+
+  const validation = draft
+    ? updateConcertRequestSchema.safeParse(draft)
+    : undefined;
+  const canSave = validation?.success ?? false;
+  const saveError =
+    isDirty && validation && !validation.success
+      ? validation.error.issues[0].message
+      : null;
+
+  const save = () => {
+    if (validation?.success) mutation.mutate(validation.data);
+  };
+
+  return {
+    concert,
+    draft,
+    isLoading,
+    isError,
+    editMode,
+    isDirty,
+    canSave,
+    saveError,
+    save,
+    isSaving: mutation.isPending,
+    toggleEdit: () => toggleEdit(concert!),
+    resetDraft: () => resetDraft(concert!),
+  };
+}

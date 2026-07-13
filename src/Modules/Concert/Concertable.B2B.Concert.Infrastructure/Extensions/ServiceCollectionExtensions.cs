@@ -4,6 +4,7 @@ using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Concert.Application.Mappers;
+using Concertable.B2B.Concert.Application.Renderers;
 using Concertable.B2B.Concert.Application.Resolvers;
 using Concertable.B2B.Concert.Application.Validators;
 using Concertable.B2B.Concert.Application.Workflow;
@@ -76,8 +77,20 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<IContractModule>()));
         services.AddScoped<IApplicationService, ApplicationService>();
         services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
-        services.AddScoped<INotifier, Notifier>();
+        services.AddScoped<IMessenger, Messenger>();
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
+
+        services.Configure<LegalSettings>(configuration.GetSection("Legal"));
+        services.AddScoped<IBookingAgreementBuilder, BookingAgreementBuilder>();
+        services.AddScoped<IBookingAgreementService, BookingAgreementService>();
+        services.AddScoped<IBookingAgreementPdfService, BookingAgreementPdfService>();
+        services.AddScoped<IClientContext, ClientContextAccessor>();
+        services.AddSingleton<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
+        services.AddSingleton<IContractTermsSerializer, ContractTermsSerializer>();
+        services.AddSingleton<FlatFeeTermsSerializer>();
+        services.AddSingleton<DoorSplitTermsSerializer>();
+        services.AddSingleton<VersusTermsSerializer>();
+        services.AddSingleton<VenueHireTermsSerializer>();
 
         services.AddScoped<ContractAccessor>();
         services.AddScoped<IContractAccessor>(sp => sp.GetRequiredService<ContractAccessor>());
@@ -128,6 +141,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IBookingAgreementRepository, BookingAgreementRepository>();
 
         // Mappers
         services.AddScoped<IOpportunityMapper, OpportunityMapper>();
@@ -142,6 +156,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPayeeResolver, PayeeResolver>();
         services.AddSingleton<VenuePayeeResolver>();
         services.AddSingleton<ArtistPayeeResolver>();
+
+        services.AddSingleton<IAgreementTermsRenderer, AgreementTermsRenderer>();
+        services.AddSingleton<FlatFeeTermsRenderer>();
+        services.AddSingleton<DoorSplitTermsRenderer>();
+        services.AddSingleton<VersusTermsRenderer>();
+        services.AddSingleton<VenueHireTermsRenderer>();
 
         services.AddSingleton<IArtistShareCalculator, ArtistShareCalculator>();
         services.AddSingleton<DoorSplitCalculator>();

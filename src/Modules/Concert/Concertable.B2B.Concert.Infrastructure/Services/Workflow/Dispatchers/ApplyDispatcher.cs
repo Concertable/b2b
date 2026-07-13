@@ -12,9 +12,9 @@ internal sealed class ApplyDispatcher : IApplyDispatcher
         this.executor = executor;
     }
 
-    public Task<ApplicationEntity> ApplyAsync(int opportunityId, int artistId)
-        => executor.ExecuteAsync(opportunityId, artistId, null);
+    public Task<ApplicationEntity> ApplyAsync(int opportunityId, int artistId, ESignatureRequest eSignature)
+        => executor.ExecuteAsync(opportunityId, artistId, null, eSignature);
 
-    public Task<ApplicationEntity> ApplyAsync(int opportunityId, int artistId, string paymentMethodId)
-        => executor.ExecuteAsync(opportunityId, artistId, paymentMethodId);
+    public Task<ApplicationEntity> ApplyAsync(int opportunityId, int artistId, string paymentMethodId, ESignatureRequest eSignature)
+        => executor.ExecuteAsync(opportunityId, artistId, paymentMethodId, eSignature);
 }

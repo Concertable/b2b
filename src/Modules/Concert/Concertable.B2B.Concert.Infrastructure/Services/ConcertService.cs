@@ -55,6 +55,12 @@ internal sealed class ConcertService : IConcertService
             ?? throw new NotFoundException("Concert not found");
     }
 
+    public async Task<ConcertDetails> GetDetailsForCurrentUserAsync(int id)
+    {
+        return await repository.GetDetailsByIdAsync(id)
+            ?? throw new NotFoundException("Concert not found");
+    }
+
     public Task<Result<ConcertEntity>> CreateDraftAsync(int applicationId) =>
         concertDraftService.CreateAsync(applicationId);
 
