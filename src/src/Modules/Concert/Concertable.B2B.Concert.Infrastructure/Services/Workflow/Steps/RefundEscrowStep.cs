@@ -17,7 +17,7 @@ internal sealed class RefundEscrowStep : ICancelStep
     public async Task ExecuteAsync(int concertId)
     {
         var bookingId = await bookingRepository.GetIdByConcertIdAsync(concertId)
-            ?? throw new NotFoundException("Booking not found");
+            .OrNotFound("Booking");
 
         var refund = await escrowClient.RefundByBookingIdAsync(bookingId);
         if (refund.IsFailed)

@@ -11,6 +11,8 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
 
     private ArtistEntity() { }
 
+    public static string DisplayName => "Artist";
+
     public int Id { get; private set; }
 
     /// <summary>
