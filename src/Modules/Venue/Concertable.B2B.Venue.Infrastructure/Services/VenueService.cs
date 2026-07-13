@@ -43,7 +43,7 @@ internal sealed class VenueService : IVenueService
     public async Task<VenueDetails> GetDetailsByIdAsync(int id)
     {
         return await publicRepository.GetDetailsByIdAsync(id)
-            ?? throw new NotFoundException("Venue not found");
+            .OrNotFound("Venue");
     }
 
     public async Task<VenueDetails> CreateAsync(CreateVenueRequest request)
@@ -76,7 +76,7 @@ internal sealed class VenueService : IVenueService
     public async Task<VenueDetails> UpdateAsync(int id, UpdateVenueRequest request)
     {
         var venue = await repository.GetByIdAsync(id)
-            ?? throw new NotFoundException("Venue not found");
+            .OrNotFound();
 
         var bannerUrl = request.Banner is not null
             ? await imageService.ReplaceAsync(request.Banner, venue.BannerUrl)
@@ -118,7 +118,7 @@ internal sealed class VenueService : IVenueService
     public async Task ApproveAsync(int id)
     {
         var venue = await adminRepository.GetByIdAsync(id)
-            ?? throw new NotFoundException("Venue not found");
+            .OrNotFound();
 
         venue.Approve();
         await adminRepository.SaveChangesAsync();
@@ -126,5 +126,5 @@ internal sealed class VenueService : IVenueService
 
     public async Task<VenueSummary> GetSummaryAsync(int id) =>
         await publicRepository.GetSummaryAsync(id)
-            ?? throw new NotFoundException("Venue not found");
+            .OrNotFound("Venue");
 }

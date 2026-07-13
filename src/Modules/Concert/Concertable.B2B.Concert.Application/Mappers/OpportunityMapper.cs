@@ -19,7 +19,7 @@ internal sealed class OpportunityMapper : IOpportunityMapper
     public async Task<OpportunityDto> ToDtoAsync(OpportunityEntity opportunity)
     {
         var contract = await contractModule.GetByIdAsync(opportunity.ContractId)
-            ?? throw new NotFoundException($"Contract {opportunity.ContractId} not found");
+            .OrNotFound($"Contract {opportunity.ContractId}");
         return opportunity.ToDto(contract);
     }
 

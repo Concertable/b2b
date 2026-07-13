@@ -19,7 +19,7 @@ internal sealed class ContractController : ControllerBase
     public async Task<IActionResult> GetById(int id)
     {
         var contract = await contractService.GetByIdAsync(id)
-            ?? throw new NotFoundException($"Contract {id} not found");
+            .OrNotFound($"Contract {id}");
         return Ok(contract);
     }
 }

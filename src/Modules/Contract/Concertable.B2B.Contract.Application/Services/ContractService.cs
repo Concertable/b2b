@@ -42,7 +42,7 @@ internal sealed class ContractService : IContractService
     public async Task UpdateAsync(int contractId, IContract contract, CancellationToken ct = default)
     {
         var existing = await contractRepository.GetByIdAsync(contractId)
-            ?? throw new NotFoundException($"Contract {contractId} not found");
+            .OrNotFound($"Contract {contractId}");
 
         updater.Apply(existing, contract);
         contractRepository.Update(existing);

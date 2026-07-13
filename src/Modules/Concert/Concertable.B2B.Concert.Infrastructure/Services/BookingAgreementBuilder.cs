@@ -40,7 +40,7 @@ internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
     {
         var contract = contractAccessor.Contract;
         var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(application.Id)
-            ?? throw new NotFoundException("Application not found");
+            .OrNotFound("Application");
 
         var agreement = BookingAgreementEntity.Create(
             bookingId,

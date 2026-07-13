@@ -10,6 +10,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// </summary>
 public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
 {
+    public static string DisplayName => "Booking agreement";
     public int Id { get; private set; }
     public Guid VenueTenantId { get; set; }
     public Guid ArtistTenantId { get; set; }

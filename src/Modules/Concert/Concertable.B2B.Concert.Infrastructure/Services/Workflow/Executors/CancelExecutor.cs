@@ -35,7 +35,7 @@ internal sealed class CancelExecutor : ICancelExecutor
         try
         {
             var concert = await concertRepository.GetByIdWithBookingAsync(concertId)
-                ?? throw new NotFoundException("Concert not found");
+                .OrNotFound();
 
             await transitioner.TransitionAsync(concert.Booking.ApplicationId, Trigger.Cancel, async app =>
             {

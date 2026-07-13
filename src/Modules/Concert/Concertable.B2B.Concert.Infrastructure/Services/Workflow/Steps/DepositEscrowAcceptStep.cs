@@ -33,7 +33,7 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
     public async Task ExecuteAsync(int applicationId)
     {
         var application = await applicationRepository.GetByIdAsync(applicationId)
-            ?? throw new NotFoundException("Application not found");
+            .OrNotFound();
         if (application is not PrepaidApplication prepaid)
             throw new BadRequestException("VenueHire requires a PrepaidApplication");
 

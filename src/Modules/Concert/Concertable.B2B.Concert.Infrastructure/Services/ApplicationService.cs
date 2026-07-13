@@ -106,7 +106,7 @@ internal sealed class ApplicationService : IApplicationService
     private async Task ValidateCanApplyAsync(int opportunityId, int artistId)
     {
         var opportunity = await opportunityRepository.GetByIdAsync(opportunityId)
-            ?? throw new NotFoundException("Concert Opportunity not found");
+            .OrNotFound();
 
         var result = await applicationValidator.CanApplyAsync(opportunity, artistId);
         if (result.IsFailed)
@@ -166,7 +166,7 @@ internal sealed class ApplicationService : IApplicationService
     public async Task<ApplicationDto> GetByIdAsync(int id)
     {
         var application = await repository.GetByIdAsync(id)
-            ?? throw new NotFoundException("Application not found");
+            .OrNotFound();
         return await mapper.ToDtoAsync(application);
     }
 }

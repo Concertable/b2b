@@ -22,21 +22,21 @@ internal sealed class BookingAgreementService : IBookingAgreementService
     public async Task<BookingAgreementDto> GetByApplicationIdAsync(int applicationId)
     {
         var agreement = await repository.GetByApplicationIdAsync(applicationId)
-            ?? throw new NotFoundException("Booking agreement not found");
+            .OrNotFound();
         return agreement.ToDto();
     }
 
     public async Task<FileDownload> GetPdfByApplicationIdAsync(int applicationId)
     {
         var agreement = await repository.GetByApplicationIdAsync(applicationId)
-            ?? throw new NotFoundException("Booking agreement not found");
+            .OrNotFound();
         return agreement.ToFileDownload(await pdfService.GetOrCreateAsync(agreement));
     }
 
     public async Task<FileDownload> GetPdfByConcertIdAsync(int concertId)
     {
         var agreement = await repository.GetByConcertIdAsync(concertId)
-            ?? throw new NotFoundException("Booking agreement not found");
+            .OrNotFound();
         return agreement.ToFileDownload(await pdfService.GetOrCreateAsync(agreement));
     }
 }

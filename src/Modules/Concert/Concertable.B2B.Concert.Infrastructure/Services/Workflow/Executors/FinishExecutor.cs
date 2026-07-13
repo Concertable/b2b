@@ -38,7 +38,7 @@ internal sealed class FinishExecutor : IFinishExecutor
         try
         {
             var concert = await concertRepository.GetByIdWithBookingAsync(concertId)
-                ?? throw new NotFoundException("Concert not found");
+                .OrNotFound();
             if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
                 throw new BadRequestException("Concert cannot be finished before it has ended");
 
