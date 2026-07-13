@@ -17,8 +17,17 @@ interface Props {
 }
 
 export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
-  const { concert, isDirty, isSaving, save, resetDraft, toggleEdit, editMode } =
-    useMyConcert(id);
+  const {
+    concert,
+    isDirty,
+    isSaving,
+    canSave,
+    saveError,
+    save,
+    resetDraft,
+    toggleEdit,
+    editMode,
+  } = useMyConcert(id);
 
   const draft = useConcertStore((state) => state.draft);
   const setName = useConcertStore((state) => state.setName);
@@ -36,6 +45,8 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
         editMode={editMode}
         isDirty={isDirty}
         isSaving={isSaving}
+        canSave={canSave}
+        error={saveError}
         onToggleEdit={toggleEdit}
         onSave={() => save()}
         onCancel={resetDraft}
