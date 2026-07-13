@@ -113,7 +113,7 @@ internal sealed class OpportunityService : IOpportunityService
     public async Task<OpportunityDto> GetByIdAsync(int id)
     {
         var opportunity = await repository.GetByIdAsync(id)
-            ?? throw new NotFoundException("Concert Opportunity not found");
+            .OrNotFound();
         return await mapper.ToDtoAsync(opportunity);
     }
 

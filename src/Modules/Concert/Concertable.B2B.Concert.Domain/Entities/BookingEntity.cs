@@ -5,6 +5,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 
 public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped
 {
+    public static string DisplayName => "Booking";
     public int Id { get; private set; }
     public Guid VenueTenantId { get; set; }
     public Guid ArtistTenantId { get; set; }

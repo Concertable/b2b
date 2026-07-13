@@ -21,7 +21,7 @@ internal sealed class LifecycleTransitioner : ILifecycleTransitioner
     public async Task<ApplicationEntity> TransitionAsync(int applicationId, Trigger trigger, TransitionEffect? effect = null)
     {
         var application = await applicationRepository.GetByIdAsync(applicationId)
-            ?? throw new NotFoundException("Application not found");
+            .OrNotFound();
 
         var machine = machines.Get(application.ContractType);
         machine.Next(application.State, trigger);
