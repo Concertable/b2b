@@ -35,7 +35,7 @@ internal sealed class BookingService : IBookingService
     private async Task InheritTenantsAsync(BookingEntity booking, int applicationId)
     {
         var (venueTenantId, artistTenantId) = await applicationRepository.GetTenantPairAsync(applicationId)
-            ?? throw new NotFoundException("Application not found");
+            .OrNotFound("Application");
         booking.VenueTenantId = venueTenantId;
         booking.ArtistTenantId = artistTenantId;
     }
@@ -43,7 +43,7 @@ internal sealed class BookingService : IBookingService
     public async Task<BookingSettlement> GetSettlementByConcertIdAsync(int concertId)
     {
         var booking = await repository.GetForSettlementByConcertIdAsync(concertId)
-            ?? throw new NotFoundException("Booking not found");
+            .OrNotFound();
         if (booking is not DeferredBooking deferred)
             throw new BadRequestException("Concert finish requires a DeferredBooking");
         return deferred.ToSettlement();

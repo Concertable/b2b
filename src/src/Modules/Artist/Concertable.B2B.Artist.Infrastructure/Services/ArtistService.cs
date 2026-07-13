@@ -42,7 +42,7 @@ internal sealed class ArtistService : IArtistService
 
     public async Task<ArtistDetails> GetDetailsByIdAsync(int id) =>
         await publicRepository.GetDetailsByIdAsync(id)
-            ?? throw new NotFoundException("Artist not found");
+            .OrNotFound("Artist");
 
     public async Task<ArtistDetails> CreateAsync(CreateArtistRequest request)
     {
@@ -75,7 +75,7 @@ internal sealed class ArtistService : IArtistService
     public async Task<ArtistDetails> UpdateAsync(int id, UpdateArtistRequest request)
     {
         var artist = await repository.GetByIdAsync(id)
-            ?? throw new NotFoundException("Artist not found");
+            .OrNotFound();
 
         var bannerUrl = request.Banner is not null
             ? await imageService.ReplaceAsync(request.Banner, artist.BannerUrl)
@@ -113,7 +113,7 @@ internal sealed class ArtistService : IArtistService
 
     public async Task<ArtistSummary> GetSummaryAsync(int id) =>
         await publicRepository.GetSummaryAsync(id)
-            ?? throw new NotFoundException("Artist not found");
+            .OrNotFound("Artist");
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
         publicRepository.GetGenresAsync(id);
