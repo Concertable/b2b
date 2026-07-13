@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import type { Contract } from "@b2b/features/contracts";
+import { eSignatureRequestSchema } from "@concertable/shared/features/concerts";
 import type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
 import { AcceptContractSummary } from "./AcceptContractSummary";
 import { SignatureCanvas } from "./SignatureCanvas";
@@ -18,6 +20,12 @@ interface Props {
    typed full name (the Advanced-tier attribution core), an optional drawn signature, and an
    explicit intent line. Nothing is pre-filled or pre-checked. */
 export function ESignaturePanel({ contract, value, onChange }: Readonly<Props>) {
+  const [touched, setTouched] = useState(false);
+  const nameResult =
+    eSignatureRequestSchema.shape.signatoryName.safeParse(value.signatoryName);
+  const nameError =
+    touched && !nameResult.success ? nameResult.error.issues[0].message : null;
+
   return (
     <div className="border-border bg-card space-y-4 rounded-xl border p-4">
       <div className="space-y-3">
@@ -39,8 +47,15 @@ export function ESignaturePanel({ contract, value, onChange }: Readonly<Props>) 
           autoComplete="off"
           placeholder="Type your full name to sign"
           value={value.signatoryName}
+          aria-invalid={nameError != null}
+          onBlur={() => setTouched(true)}
           onChange={(e) => onChange({ ...value, signatoryName: e.target.value })}
         />
+        {nameError && (
+          <p className="text-destructive text-xs" data-testid="e-sign-error">
+            {nameError}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">

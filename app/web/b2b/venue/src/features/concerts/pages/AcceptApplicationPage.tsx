@@ -9,7 +9,7 @@ import {
   useAcceptApplicationMutation,
   AcceptContractSummary,
   ESignaturePanel,
-  type ESignatureRequest,
+  useESignature,
 } from "@b2b/features/concerts";
 import { useCheckoutFlow } from "@/features/concerts/hooks/useCheckoutFlow";
 import { VenueAcceptCheckoutFlow } from "./VenueAcceptCheckoutPage";
@@ -18,7 +18,7 @@ export function AcceptApplicationPage() {
   const { applicationId } = useParams({ from: "/_venue/applications/$applicationId/accept" });
   const navigate = useNavigate();
   const [accepted, setAccepted] = useState(false);
-  const [eSignature, setESignature] = useState<ESignatureRequest>({ signatoryName: "" });
+  const { signature, setSignature, isValid } = useESignature();
   const { data: application, isLoading } = useApplicationQuery(applicationId);
   const { data: accountStatus } = usePayoutAccountStatusQuery(true);
   const acceptMutation = useAcceptApplicationMutation(
@@ -43,7 +43,7 @@ export function AcceptApplicationPage() {
     }
 
     acceptMutation.mutate(
-      { applicationId, eSignature },
+      { applicationId, eSignature: signature },
       { onSuccess: () => setAccepted(true) },
     );
   }
@@ -67,8 +67,8 @@ export function AcceptApplicationPage() {
       ) : (
         <ESignaturePanel
           contract={opportunity.contract}
-          value={eSignature}
-          onChange={setESignature}
+          value={signature}
+          onChange={setSignature}
         />
       )}
 
@@ -85,7 +85,7 @@ export function AcceptApplicationPage() {
           Cancel
         </Button>
         <Button
-          disabled={accountStatus !== "Verified" || acceptMutation.isPending || (!requiresCheckout && eSignature.signatoryName.trim() === "")}
+          disabled={accountStatus !== "Verified" || acceptMutation.isPending || (!requiresCheckout && !isValid)}
           onClick={handleConfirm}
           data-testid="confirm"
         >

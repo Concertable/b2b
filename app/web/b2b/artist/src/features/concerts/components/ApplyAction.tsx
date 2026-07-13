@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Opportunity } from "@/features/concerts";
-import { ESignaturePanel, type ESignatureRequest } from "@b2b/features/concerts";
+import { ESignaturePanel, useESignature } from "@b2b/features/concerts";
 import { useApply } from "../hooks/useApply";
 
 interface Props {
@@ -19,7 +19,7 @@ interface Props {
 export function ApplyAction({ opportunity }: Readonly<Props>) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [eSignature, setESignature] = useState<ESignatureRequest>({ signatoryName: "" });
+  const { signature, setSignature, isValid } = useESignature();
   const { apply, isPending, error, canApply } = useApply(opportunity.id, {
     onSuccess: () => {
       setOpen(false);
@@ -55,13 +55,13 @@ export function ApplyAction({ opportunity }: Readonly<Props>) {
           </DialogHeader>
           <ESignaturePanel
             contract={opportunity.contract}
-            value={eSignature}
-            onChange={setESignature}
+            value={signature}
+            onChange={setSignature}
           />
           <Button
-            disabled={isPending || eSignature.signatoryName.trim() === ""}
+            disabled={isPending || !isValid}
             data-testid="confirm-apply"
-            onClick={() => apply(eSignature)}
+            onClick={() => apply(signature)}
           >
             {isPending ? "Applying..." : "Sign & Apply"}
           </Button>

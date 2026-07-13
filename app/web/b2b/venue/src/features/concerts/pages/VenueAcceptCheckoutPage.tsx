@@ -10,7 +10,7 @@ import {
   useAcceptApplicationMutation,
   useAcceptCheckoutQuery,
   useApplicationQuery,
-  type ESignatureRequest,
+  useESignature,
 } from "@b2b/features/concerts";
 import type { Application, Checkout } from "@/features/concerts";
 import { useCheckoutFlow, type CheckoutFlowState } from "@/features/concerts/hooks/useCheckoutFlow";
@@ -102,7 +102,7 @@ interface VenueAcceptCheckoutFormProps {
 
 function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Readonly<VenueAcceptCheckoutFormProps>) {
   const [submitted, setSubmitted] = useState(false);
-  const [eSignature, setESignature] = useState<ESignatureRequest>({ signatoryName: "" });
+  const { signature, setSignature, isValid } = useESignature();
   const [error, setError] = useState<string | null>(null);
   const acceptMutation = useAcceptApplicationMutation(application.opportunity.id);
   const flow = useCheckoutFlow<ConcertDraftCreatedPayload>({ event: "ConcertDraftCreated" });
@@ -118,7 +118,7 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
   async function handleAccept(paymentMethodId: string) {
     setError(null);
     try {
-      await acceptMutation.mutateAsync({ applicationId, eSignature, body: { paymentMethodId } });
+      await acceptMutation.mutateAsync({ applicationId, eSignature: signature, body: { paymentMethodId } });
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Acceptance failed. Please try again.");
@@ -151,11 +151,11 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
         description={labels.paymentHint ?? undefined}
       >
         <div className="space-y-4">
-          <ESignaturePanel value={eSignature} onChange={setESignature} />
+          <ESignaturePanel value={signature} onChange={setSignature} />
           <StripePaymentForm
             session={checkout.session}
             submitLabel={labels.submitLabel}
-            disabled={acceptMutation.isPending || eSignature.signatoryName.trim() === ""}
+            disabled={acceptMutation.isPending || !isValid}
             onSuccess={handleAccept}
           />
         </div>
