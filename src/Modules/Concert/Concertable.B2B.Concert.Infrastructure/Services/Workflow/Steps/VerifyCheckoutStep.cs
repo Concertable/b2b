@@ -27,12 +27,12 @@ internal sealed class VerifyCheckoutStep : IAcceptCheckoutStep
     public async Task<Checkout> ExecuteAsync(int applicationId)
     {
         var artist = await applicationRepository.GetArtistPayeeAsync(applicationId)
-            ?? throw new NotFoundException("Application not found");
+            .OrNotFound("Application");
         /* the user id rides the Stripe metadata so the failure webhook can notify the venue manager */
         var venueManagerId = await applicationRepository.GetVenueManagerIdAsync(applicationId)
-            ?? throw new NotFoundException("Application not found");
+            .OrNotFound("Application");
         var venueTenantId = await applicationRepository.GetVenueTenantIdAsync(applicationId)
-            ?? throw new NotFoundException("Application not found");
+            .OrNotFound("Application");
 
         var metadata = new Dictionary<string, string>
         {

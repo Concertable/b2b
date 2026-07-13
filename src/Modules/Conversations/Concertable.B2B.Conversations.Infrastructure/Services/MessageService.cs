@@ -84,7 +84,7 @@ internal sealed class MessageService : IMessageService
     private async Task<MessageUser> GetSenderDtoAsync(Guid fromUserId)
     {
         var sender = await userModule.GetByIdAsync(fromUserId)
-            ?? throw new NotFoundException("Message sender not found");
+            .OrNotFound("Message sender");
         return sender.ToMessageUser();
     }
 

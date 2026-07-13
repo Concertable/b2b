@@ -59,12 +59,12 @@ internal sealed class ApplyExecutor : IApplyExecutor
         /* Snapshot the two parties at apply; the booking and concert inherit this pair downstream.
            The applier IS the artist side, so their own tenant comes from the ambient context. */
         application.VenueTenantId = await opportunityRepository.GetTenantIdByIdAsync(opportunityId)
-            ?? throw new NotFoundException("Concert Opportunity not found");
+            .OrNotFound("Concert Opportunity");
         application.ArtistTenantId = tenantContext.TenantId
             ?? throw new ForbiddenException("No tenant for current user");
 
         var period = await opportunityRepository.GetPeriodByIdAsync(opportunityId)
-            ?? throw new NotFoundException("Concert Opportunity not found");
+            .OrNotFound("Concert Opportunity");
         application.RecordArtistESignature(
             new ESignature(
                 currentUser.Id ?? throw new ForbiddenException("No user for current request"),

@@ -52,13 +52,13 @@ internal sealed class ConcertService : IConcertService
     public async Task<ConcertDetails> GetDetailsByIdAsync(int id)
     {
         return await publicRepository.GetDetailsByIdAsync(id)
-            ?? throw new NotFoundException("Concert not found");
+            .OrNotFound("Concert");
     }
 
     public async Task<ConcertDetails> GetDetailsForCurrentUserAsync(int id)
     {
         return await repository.GetDetailsByIdAsync(id)
-            ?? throw new NotFoundException("Concert not found");
+            .OrNotFound("Concert");
     }
 
     public Task<Result<ConcertEntity>> CreateDraftAsync(int applicationId) =>
@@ -73,7 +73,7 @@ internal sealed class ConcertService : IConcertService
     public async Task<ConcertUpdateResponse> UpdateAsync(int id, UpdateConcertRequest request)
     {
         var concertEntity = await repository.GetByIdAsync(id)
-            ?? throw new NotFoundException("Concert not found");
+            .OrNotFound();
 
         var result = concertValidator.CanUpdate(concertEntity, request.TotalTickets);
         if (result.IsFailed)
@@ -97,7 +97,7 @@ internal sealed class ConcertService : IConcertService
     public async Task PostAsync(int id, UpdateConcertRequest request)
     {
         var concertEntity = await repository.GetByIdWithBookingAsync(id)
-            ?? throw new NotFoundException("Concert not found");
+            .OrNotFound();
 
         var result = concertValidator.CanPost(concertEntity);
         if (result.IsFailed)

@@ -10,6 +10,8 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
 
     private VenueEntity() { }
 
+    public static string DisplayName => "Venue";
+
     public int Id { get; private set; }
     public Guid TenantId { get; set; }
     public Guid UserId { get; private set; }
