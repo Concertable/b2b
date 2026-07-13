@@ -28,7 +28,7 @@ internal sealed class BookingAgreementRepository : VenueArtistTenantScopedReposi
             .Select(a => (int?)a.Id)
             .FirstOrDefaultAsync(ct);
 
-    public async Task<IReadOnlyDictionary<int, int>> GetIdsByApplicationIdsAsync(
+    public async Task<IReadOnlyDictionary<int, int>> GetAgreementIdsByApplicationIdsAsync(
         IReadOnlyCollection<int> applicationIds, CancellationToken ct = default)
     {
         if (applicationIds.Count == 0)

@@ -44,7 +44,7 @@ internal sealed class ConcertController : ControllerBase
     public async Task<IActionResult> GetAgreementPdf(int id)
     {
         var pdf = await agreementService.GetPdfByConcertIdAsync(id);
-        return File(pdf.Content, "application/pdf", pdf.FileName);
+        return File(pdf.Content, pdf.ContentType, pdf.FileName);
     }
 
     [HttpGet("application/{applicationId}")]

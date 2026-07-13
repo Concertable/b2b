@@ -9,6 +9,6 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 internal interface IBookingAgreementService
 {
     Task<BookingAgreementDto> GetByApplicationIdAsync(int applicationId);
-    Task<AgreementPdf> GetPdfByApplicationIdAsync(int applicationId);
-    Task<AgreementPdf> GetPdfByConcertIdAsync(int concertId);
+    Task<FileDownload> GetPdfByApplicationIdAsync(int applicationId);
+    Task<FileDownload> GetPdfByConcertIdAsync(int concertId);
 }

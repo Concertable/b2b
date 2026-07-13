@@ -26,6 +26,6 @@ internal interface IBookingAgreementRepository : IVenueArtistTenantScopedReposit
 
     Task<int?> GetIdByApplicationIdAsync(int applicationId, CancellationToken ct = default);
 
-    Task<IReadOnlyDictionary<int, int>> GetIdsByApplicationIdsAsync(
+    Task<IReadOnlyDictionary<int, int>> GetAgreementIdsByApplicationIdsAsync(
         IReadOnlyCollection<int> applicationIds, CancellationToken ct = default);
 }
