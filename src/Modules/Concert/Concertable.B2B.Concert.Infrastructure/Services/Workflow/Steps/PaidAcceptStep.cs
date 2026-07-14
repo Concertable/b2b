@@ -5,11 +5,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class PaidAcceptStep : IPaidAcceptStep
 {
     private readonly IBookingService bookingService;
-    private readonly IContractAccessor contractAccessor;
+    private readonly IDealAccessor contractAccessor;
 
     public PaidAcceptStep(
         IBookingService bookingService,
-        IContractAccessor contractAccessor)
+        IDealAccessor contractAccessor)
     {
         this.bookingService = bookingService;
         this.contractAccessor = contractAccessor;

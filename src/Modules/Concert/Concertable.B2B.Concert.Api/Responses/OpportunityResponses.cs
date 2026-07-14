@@ -1,4 +1,4 @@
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
 
 namespace Concertable.B2B.Concert.Api.Responses;
@@ -6,7 +6,7 @@ namespace Concertable.B2B.Concert.Api.Responses;
 internal sealed record OpportunityResponse(
     int Id,
     int VenueId,
-    IContract Contract,
+    IDeal Contract,
     DateTime StartDate,
     DateTime EndDate,
     IEnumerable<Genre> Genres,

@@ -27,7 +27,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
     {
         // Arrange
         var concert = fixture.SeedState.PastVersusBooking.Concert!;
-        var contract = fixture.SeedState.PastVersusAppContract;
+        var contract = fixture.SeedState.PastVersusAppDeal;
         var deferred = (DeferredBooking)fixture.SeedState.PastVersusBooking;
 
         // Act

@@ -5,10 +5,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
 internal sealed class ConcertWorkflowRegistryBuilder
 {
-    public Dictionary<ContractType, Type> WorkflowTypes { get; } = [];
-    public Dictionary<ContractType, ContractStateMachine> StateMachines { get; } = [];
+    public Dictionary<DealType, Type> WorkflowTypes { get; } = [];
+    public Dictionary<DealType, ContractStateMachine> StateMachines { get; } = [];
 
-    public void Add(ContractType contractType, Type workflowType, ContractStateMachine stateMachine)
+    public void Add(DealType contractType, Type workflowType, ContractStateMachine stateMachine)
     {
         WorkflowTypes[contractType] = workflowType;
         StateMachines[contractType] = stateMachine;

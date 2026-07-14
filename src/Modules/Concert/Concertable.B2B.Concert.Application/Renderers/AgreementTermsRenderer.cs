@@ -3,25 +3,25 @@ using Concertable.B2B.Concert.Application.Interfaces;
 
 namespace Concertable.B2B.Concert.Application.Renderers;
 
-internal sealed class AgreementTermsRenderer : IAgreementTermsRenderer
+internal sealed class DealTermsRenderer : IDealTermsRenderer
 {
-    private readonly FrozenDictionary<ContractType, IAgreementTermsRenderer> renderers;
+    private readonly FrozenDictionary<DealType, IDealTermsRenderer> renderers;
 
-    public AgreementTermsRenderer(
+    public DealTermsRenderer(
         FlatFeeTermsRenderer flatFee,
         DoorSplitTermsRenderer doorSplit,
         VersusTermsRenderer versus,
         VenueHireTermsRenderer venueHire)
     {
-        renderers = new Dictionary<ContractType, IAgreementTermsRenderer>
+        renderers = new Dictionary<DealType, IDealTermsRenderer>
         {
-            [ContractType.FlatFee] = flatFee,
-            [ContractType.DoorSplit] = doorSplit,
-            [ContractType.Versus] = versus,
-            [ContractType.VenueHire] = venueHire,
+            [DealType.FlatFee] = flatFee,
+            [DealType.DoorSplit] = doorSplit,
+            [DealType.Versus] = versus,
+            [DealType.VenueHire] = venueHire,
         }.ToFrozenDictionary();
     }
 
-    public string Render(IContract contract) =>
+    public string Render(IDeal contract) =>
         renderers[contract.ContractType].Render(contract);
 }

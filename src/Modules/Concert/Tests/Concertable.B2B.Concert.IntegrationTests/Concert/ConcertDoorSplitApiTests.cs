@@ -27,7 +27,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     {
         // Arrange
         var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
-        var contract = fixture.SeedState.PastDoorSplitAppContract;
+        var contract = fixture.SeedState.PastDoorSplitAppDeal;
         var deferred = (DeferredBooking)fixture.SeedState.PastDoorSplitBooking;
 
         // Act

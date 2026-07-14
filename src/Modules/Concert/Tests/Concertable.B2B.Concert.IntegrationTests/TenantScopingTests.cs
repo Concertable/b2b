@@ -1,7 +1,7 @@
 using System.Net;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -37,7 +37,7 @@ public sealed class TenantScopingTests : IAsyncLifetime
         // Arrange — venue manager creates a fresh FlatFee opportunity
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var oppResponse = await venueClient.PostAsync("/api/Opportunity",
-            BuildRequest(new FlatFeeContract { PaymentMethod = PaymentMethod.Cash, Fee = 500 }));
+            BuildRequest(new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 }));
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies

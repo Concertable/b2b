@@ -14,7 +14,7 @@ internal sealed class BookingService : IBookingService
         this.applicationRepository = applicationRepository;
     }
 
-    public async Task<StandardBookingDto> CreateStandardAsync(int applicationId, ContractType contractType)
+    public async Task<StandardBookingDto> CreateStandardAsync(int applicationId, DealType contractType)
     {
         var booking = StandardBooking.Create(applicationId, contractType);
         await InheritTenantsAsync(booking, applicationId);
@@ -23,7 +23,7 @@ internal sealed class BookingService : IBookingService
         return booking.ToDto();
     }
 
-    public async Task<DeferredBookingDto> CreateDeferredAsync(int applicationId, ContractType contractType, string paymentMethodId)
+    public async Task<DeferredBookingDto> CreateDeferredAsync(int applicationId, DealType contractType, string paymentMethodId)
     {
         var booking = DeferredBooking.Create(applicationId, contractType, paymentMethodId);
         await InheritTenantsAsync(booking, applicationId);

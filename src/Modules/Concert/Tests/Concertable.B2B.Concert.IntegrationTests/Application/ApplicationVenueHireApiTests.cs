@@ -6,7 +6,7 @@ using Concertable.B2B.Concert.Api.Responses;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
@@ -69,7 +69,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             StartDate = DateTime.UtcNow.AddMonths(13),
             EndDate = DateTime.UtcNow.AddMonths(13).AddHours(3),
             Genres = [Genre.Rock],
-            Contract = new VenueHireContract { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
+            Contract = new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
         };
         var oppResponse = await venueClient.PostAsync("/api/Opportunity", oppRequest);
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
@@ -139,7 +139,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var hold = Assert.Single(fixture.EscrowClient.Holds, h => h.BookingId == booking.Id); // exactly one hold — no double-charge
         Assert.Equal(artistTenantId, hold.PayerId);
         Assert.Equal(venueTenantId, hold.PayeeId);
-        Assert.Equal(fixture.SeedState.VenueHireAppContract.HireFee, hold.Amount);
+        Assert.Equal(fixture.SeedState.VenueHireAppDeal.HireFee, hold.Amount);
     }
 
     [Fact]
@@ -204,7 +204,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             StartDate = DateTime.UtcNow.AddMonths(13),
             EndDate = DateTime.UtcNow.AddMonths(13).AddHours(3),
             Genres = [Genre.Rock],
-            Contract = new VenueHireContract { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
+            Contract = new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
         };
         var oppResponse = await venueClient.PostAsync("/api/Opportunity", oppRequest);
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();

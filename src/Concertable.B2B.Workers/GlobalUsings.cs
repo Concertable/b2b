@@ -3,7 +3,7 @@ global using Concertable.B2B.User.Contracts;
 global using Concertable.B2B.User.Application.Interfaces;
 global using Concertable.B2B.User.Domain;
 global using Concertable.B2B.Concert.Domain;
-global using Concertable.B2B.Contract.Contracts;
+global using Concertable.B2B.Deal.Contracts;
 global using Concertable.B2B.Concert.Application.Interfaces;
 global using Concertable.B2B.Concert.Application.DTOs;
 global using Concertable.B2B.Concert.Application.Requests;

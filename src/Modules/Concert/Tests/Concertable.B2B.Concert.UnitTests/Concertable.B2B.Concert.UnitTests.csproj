@@ -21,14 +21,14 @@
     <ProjectReference Include="..\..\Concertable.B2B.Concert.Application\Concertable.B2B.Concert.Application.csproj" />
     <ProjectReference Include="..\..\Concertable.B2B.Concert.Domain\Concertable.B2B.Concert.Domain.csproj" />
     <ProjectReference Include="..\..\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\Contract\Concertable.B2B.Contract.Contracts\Concertable.B2B.Contract.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="Concertable.B2B.Concert.Domain" />
     <Using Include="Concertable.B2B.Concert.Application.Interfaces" />
-    <Using Include="Concertable.B2B.Contract.Contracts" />
+    <Using Include="Concertable.B2B.Deal.Contracts" />
   </ItemGroup>
 
 </Project>

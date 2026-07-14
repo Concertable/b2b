@@ -14,7 +14,7 @@ internal sealed class ApplyExecutor : IApplyExecutor
     private readonly IApplicationRepository applicationRepository;
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IConcertWorkflowFactory workflows;
-    private readonly IContractResolver contractResolver;
+    private readonly IDealResolver contractResolver;
     private readonly ITenantContext tenantContext;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
@@ -25,7 +25,7 @@ internal sealed class ApplyExecutor : IApplyExecutor
         IApplicationRepository applicationRepository,
         IOpportunityRepository opportunityRepository,
         IConcertWorkflowFactory workflows,
-        IContractResolver contractResolver,
+        IDealResolver contractResolver,
         ITenantContext tenantContext,
         ICurrentUser currentUser,
         IClientContext clientContext,

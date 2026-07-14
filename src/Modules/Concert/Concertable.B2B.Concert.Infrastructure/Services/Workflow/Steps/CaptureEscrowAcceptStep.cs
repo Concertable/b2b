@@ -1,6 +1,6 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Infrastructure;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +11,7 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
     private readonly IBookingService bookingService;
     private readonly IEscrowClient escrowClient;
     private readonly IApplicationRepository applicationRepository;
-    private readonly IContractAccessor contractAccessor;
+    private readonly IDealAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
     private readonly ILogger<CaptureEscrowAcceptStep> logger;
 
@@ -19,7 +19,7 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
         IBookingService bookingService,
         IEscrowClient escrowClient,
         IApplicationRepository applicationRepository,
-        IContractAccessor contractAccessor,
+        IDealAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient,
         ILogger<CaptureEscrowAcceptStep> logger)
     {
@@ -36,7 +36,7 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
         /* FlatFee: the venue tenant pays the artist tenant, per the application's frozen snapshot. */
         var (venueTenantId, artistTenantId) = await applicationRepository.GetTenantPairAsync(applicationId)
             .OrNotFound("Application");
-        var contract = (FlatFeeContract)contractAccessor.Contract;
+        var contract = (FlatFeeDeal)contractAccessor.Contract;
         var booking = await bookingService.CreateStandardAsync(applicationId, contract.ContractType);
 
         var paymentIntentId = await managerPaymentClient.FindHeldIntentAsync(venueTenantId, applicationId);

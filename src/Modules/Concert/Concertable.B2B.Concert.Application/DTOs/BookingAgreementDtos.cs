@@ -1,4 +1,4 @@
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 
 namespace Concertable.B2B.Concert.Application.DTOs;
 
@@ -8,7 +8,7 @@ internal sealed record BookingAgreementDto(
     string ArtistName,
     DateTime EventStart,
     DateTime EventEnd,
-    ContractType ContractType,
+    DealType ContractType,
     PaymentMethod PaymentMethod,
     string TermsText,
     string PlatformTermsVersion,

@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.UnitTests.Lifecycle;
 
 public sealed class ContractStateMachineTests
 {
-    public static TheoryData<ContractType> AllContractTypes => new(Enum.GetValues<ContractType>());
+    public static TheoryData<DealType> AllDealTypes => new(Enum.GetValues<DealType>());
 
     private static readonly IConcertStateMachineRegistry Registry = BuildRegistry();
 
@@ -20,15 +20,15 @@ public sealed class ContractStateMachineTests
     }
 
     [Theory]
-    [MemberData(nameof(AllContractTypes))]
-    public void Registry_ShouldProvideAMachine_ForEveryContractType(ContractType contractType)
+    [MemberData(nameof(AllDealTypes))]
+    public void Registry_ShouldProvideAMachine_ForEveryContractType(DealType contractType)
     {
         Assert.NotNull(Registry.Get(contractType));
     }
 
     [Theory]
-    [MemberData(nameof(AllContractTypes))]
-    public void Next_ShouldAdvance_ForEveryDeclaredRow(ContractType contractType)
+    [MemberData(nameof(AllDealTypes))]
+    public void Next_ShouldAdvance_ForEveryDeclaredRow(DealType contractType)
     {
         // Arrange
         var machine = Registry.Get(contractType);
@@ -39,8 +39,8 @@ public sealed class ContractStateMachineTests
     }
 
     [Theory]
-    [MemberData(nameof(AllContractTypes))]
-    public void Next_ShouldThrowConflict_ForEveryUndeclaredPair(ContractType contractType)
+    [MemberData(nameof(AllDealTypes))]
+    public void Next_ShouldThrowConflict_ForEveryUndeclaredPair(DealType contractType)
     {
         // Arrange
         var machine = Registry.Get(contractType);
@@ -56,8 +56,8 @@ public sealed class ContractStateMachineTests
     }
 
     [Theory]
-    [MemberData(nameof(AllContractTypes))]
-    public void Transitions_ShouldReachEveryDeclaredState_FromApplied(ContractType contractType)
+    [MemberData(nameof(AllDealTypes))]
+    public void Transitions_ShouldReachEveryDeclaredState_FromApplied(DealType contractType)
     {
         // Arrange
         var machine = Registry.Get(contractType);

@@ -1,12 +1,12 @@
 using System.Collections.Frozen;
 using Concertable.B2B.Concert.Application.Responses;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 
 namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal sealed class PaymentAmountMapper : IPaymentAmountMapper
 {
-    private readonly FrozenDictionary<ContractType, IPaymentAmountMapper> mappers;
+    private readonly FrozenDictionary<DealType, IPaymentAmountMapper> mappers;
 
     public PaymentAmountMapper(
         FlatFeePaymentAmountMapper flatFee,
@@ -14,15 +14,15 @@ internal sealed class PaymentAmountMapper : IPaymentAmountMapper
         VersusPaymentAmountMapper versus,
         VenueHirePaymentAmountMapper venueHire)
     {
-        mappers = new Dictionary<ContractType, IPaymentAmountMapper>
+        mappers = new Dictionary<DealType, IPaymentAmountMapper>
         {
-            [ContractType.FlatFee] = flatFee,
-            [ContractType.DoorSplit] = doorSplit,
-            [ContractType.Versus] = versus,
-            [ContractType.VenueHire] = venueHire,
+            [DealType.FlatFee] = flatFee,
+            [DealType.DoorSplit] = doorSplit,
+            [DealType.Versus] = versus,
+            [DealType.VenueHire] = venueHire,
         }.ToFrozenDictionary();
     }
 
-    public IPaymentAmount ToPaymentAmount(IContract contract) =>
+    public IPaymentAmount ToPaymentAmount(IDeal contract) =>
         mappers[contract.ContractType].ToPaymentAmount(contract);
 }

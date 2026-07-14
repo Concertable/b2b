@@ -7,8 +7,8 @@ using Concertable.B2B.Venue.Api.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Api.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
-using Concertable.B2B.Contract.Api.Extensions;
-using Concertable.B2B.Contract.Infrastructure.Extensions;
+using Concertable.B2B.Deal.Api.Extensions;
+using Concertable.B2B.Deal.Infrastructure.Extensions;
 using Concertable.Payment.Client.Extensions;
 using Concertable.Payment.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
@@ -158,7 +158,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
     services.AddTenantDevSeeder();
     services.AddArtistDevSeeder();
     services.AddVenueDevSeeder();
-    services.AddContractDevSeeder();
+    services.AddDealDevSeeder();
     services.AddConcertDevSeeder();
     services.AddConversationsDevSeeder();
 }
@@ -170,7 +170,7 @@ services.AddConversationsApi(builder.Configuration);
 services.AddArtistApi(builder.Configuration);
 services.AddVenueApi(builder.Configuration);
 services.AddConcertApi(builder.Configuration);
-services.AddContractApi(builder.Configuration);
+services.AddDealApi(builder.Configuration);
 if (!builder.Environment.IsEnvironment("Testing"))
     services.AddPaymentClient(builder.Configuration);
 services.AddQueueHostedService();

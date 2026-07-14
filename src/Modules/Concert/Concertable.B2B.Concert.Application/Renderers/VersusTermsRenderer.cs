@@ -3,11 +3,11 @@ using static Concertable.B2B.Concert.Application.Renderers.AgreementTermsFormat;
 
 namespace Concertable.B2B.Concert.Application.Renderers;
 
-internal sealed class VersusTermsRenderer : IAgreementTermsRenderer
+internal sealed class VersusTermsRenderer : IDealTermsRenderer
 {
-    public string Render(IContract contract)
+    public string Render(IDeal contract)
     {
-        var c = (VersusContract)contract;
+        var c = (VersusDeal)contract;
         return $"The artist receives a guarantee of {Gbp(c.Guarantee)} plus {Percent(c.ArtistDoorPercent)} of door revenue.";
     }
 }

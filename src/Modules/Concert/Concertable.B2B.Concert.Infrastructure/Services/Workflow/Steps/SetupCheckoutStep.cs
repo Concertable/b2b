@@ -1,6 +1,6 @@
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Application.Workflow.Steps;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.Exceptions;
@@ -11,14 +11,14 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
 {
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IUserModule userModule;
-    private readonly IContractAccessor contractAccessor;
+    private readonly IDealAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
     private readonly ITenantContext tenantContext;
 
     public SetupCheckoutStep(
         IOpportunityRepository opportunityRepository,
         IUserModule userModule,
-        IContractAccessor contractAccessor,
+        IDealAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient,
         ITenantContext tenantContext)
     {
@@ -35,7 +35,7 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
             .OrNotFound("Opportunity");
         var manager = await userModule.GetManagerByIdAsync(venueSummary.UserId);
         var venue = new PayeeSummary(venueSummary.Name, manager?.Email);
-        var contract = (VenueHireContract)contractAccessor.Contract;
+        var contract = (VenueHireDeal)contractAccessor.Contract;
 
         var metadata = new Dictionary<string, string>
         {

@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.Exceptions;
@@ -11,7 +11,7 @@ internal sealed class OpportunityService : IOpportunityService
     private readonly IOpportunityRepository repository;
     private readonly IPublicOpportunityRepository publicRepository;
     private readonly IVenueModule venueModule;
-    private readonly IContractModule contractModule;
+    private readonly IDealModule contractModule;
     private readonly IOpportunitySyncer syncer;
     private readonly IOpportunityMapper mapper;
     private readonly ITenantContext tenantContext;
@@ -21,7 +21,7 @@ internal sealed class OpportunityService : IOpportunityService
         IOpportunityRepository repository,
         IPublicOpportunityRepository publicRepository,
         IVenueModule venueModule,
-        IContractModule contractModule,
+        IDealModule contractModule,
         IOpportunitySyncer syncer,
         IOpportunityMapper mapper,
         ITenantContext tenantContext,

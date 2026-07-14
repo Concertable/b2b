@@ -13,10 +13,10 @@ public sealed class HoldCheckoutStepTests
     private readonly Guid venueTenantId = Guid.NewGuid();
     private readonly PayeeSummary artist = new("Artist", "artist@example.com");
     private readonly CheckoutSession session = new("pi_secret", "cs", "cus");
-    private readonly FlatFeeContract contract = new() { PaymentMethod = PaymentMethod.Cash, Fee = 100 };
+    private readonly FlatFeeDeal contract = new() { PaymentMethod = PaymentMethod.Cash, Fee = 100 };
 
     private readonly Mock<IApplicationRepository> applicationRepository;
-    private readonly Mock<IContractAccessor> contractAccessor;
+    private readonly Mock<IDealAccessor> contractAccessor;
     private readonly Mock<IManagerPaymentClient> managerPaymentClient;
     private readonly HoldCheckoutStep step;
 
@@ -25,7 +25,7 @@ public sealed class HoldCheckoutStepTests
     public HoldCheckoutStepTests()
     {
         this.applicationRepository = new Mock<IApplicationRepository>();
-        this.contractAccessor = new Mock<IContractAccessor>();
+        this.contractAccessor = new Mock<IDealAccessor>();
         this.managerPaymentClient = new Mock<IManagerPaymentClient>();
 
         applicationRepository.Setup(r => r.GetArtistPayeeAsync(ApplicationId)).ReturnsAsync(artist);

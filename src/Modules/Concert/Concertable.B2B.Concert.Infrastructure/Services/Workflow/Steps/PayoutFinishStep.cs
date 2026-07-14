@@ -11,7 +11,7 @@ internal sealed class PayoutFinishStep : IFinishStep
 {
     private readonly IBookingService bookingService;
     private readonly IConcertRepository concertRepository;
-    private readonly IContractAccessor contractAccessor;
+    private readonly IDealAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
     private readonly IArtistShareCalculator artistShareCalculator;
     private readonly ILogger<PayoutFinishStep> logger;
@@ -19,7 +19,7 @@ internal sealed class PayoutFinishStep : IFinishStep
     public PayoutFinishStep(
         IBookingService bookingService,
         IConcertRepository concertRepository,
-        IContractAccessor contractAccessor,
+        IDealAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient,
         IArtistShareCalculator artistShareCalculator,
         ILogger<PayoutFinishStep> logger)

@@ -7,20 +7,20 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
 {
-    private readonly IContractAccessor contractAccessor;
+    private readonly IDealAccessor contractAccessor;
     private readonly IApplicationRepository applicationRepository;
     private readonly IBookingAgreementRepository agreementRepository;
-    private readonly IAgreementTermsRenderer termsRenderer;
+    private readonly IDealTermsRenderer termsRenderer;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
 
     public BookingAgreementBuilder(
-        IContractAccessor contractAccessor,
+        IDealAccessor contractAccessor,
         IApplicationRepository applicationRepository,
         IBookingAgreementRepository agreementRepository,
-        IAgreementTermsRenderer termsRenderer,
+        IDealTermsRenderer termsRenderer,
         ICurrentUser currentUser,
         IClientContext clientContext,
         IOptions<LegalSettings> legal,

@@ -6,10 +6,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
 internal sealed class ConcertStateMachineRegistry : IConcertStateMachineRegistry
 {
-    private readonly FrozenDictionary<ContractType, ContractStateMachine> machines;
+    private readonly FrozenDictionary<DealType, ContractStateMachine> machines;
 
-    public ConcertStateMachineRegistry(IReadOnlyDictionary<ContractType, ContractStateMachine> machines)
+    public ConcertStateMachineRegistry(IReadOnlyDictionary<DealType, ContractStateMachine> machines)
         => this.machines = machines.ToFrozenDictionary();
 
-    public ContractStateMachine Get(ContractType type) => machines[type];
+    public ContractStateMachine Get(DealType type) => machines[type];
 }

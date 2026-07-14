@@ -8,16 +8,16 @@ public sealed class PaidAcceptStepTests
 {
     private const int ApplicationId = 1;
     private const string PaymentMethodId = "pm_card_visa";
-    private readonly DoorSplitContract contract = new() { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
+    private readonly DoorSplitDeal contract = new() { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
 
     private readonly Mock<IBookingService> bookingService;
-    private readonly Mock<IContractAccessor> contractAccessor;
+    private readonly Mock<IDealAccessor> contractAccessor;
     private readonly PaidAcceptStep step;
 
     public PaidAcceptStepTests()
     {
         this.bookingService = new Mock<IBookingService>();
-        this.contractAccessor = new Mock<IContractAccessor>();
+        this.contractAccessor = new Mock<IDealAccessor>();
 
         contractAccessor.SetupGet(c => c.Contract).Returns(contract);
 

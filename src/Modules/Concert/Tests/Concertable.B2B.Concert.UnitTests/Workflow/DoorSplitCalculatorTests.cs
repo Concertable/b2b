@@ -15,7 +15,7 @@ public sealed class DoorSplitCalculatorTests
     {
         // Arrange
         var calculator = new DoorSplitCalculator();
-        var contract = new DoorSplitContract { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = artistDoorPercent };
+        var contract = new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = artistDoorPercent };
 
         // Act
         var result = calculator.Calculate(contract, totalRevenue);

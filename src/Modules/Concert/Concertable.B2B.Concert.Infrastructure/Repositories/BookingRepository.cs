@@ -62,11 +62,11 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             .FirstOrDefaultAsync();
     }
 
-    public Task<int?> GetContractIdByIdAsync(int bookingId)
+    public Task<int?> GetDealIdByIdAsync(int bookingId)
     {
         return context.Bookings
             .Where(b => b.Id == bookingId)
-            .Select(b => (int?)b.Application.Opportunity.ContractId)
+            .Select(b => (int?)b.Application.Opportunity.DealId)
             .FirstOrDefaultAsync();
     }
 

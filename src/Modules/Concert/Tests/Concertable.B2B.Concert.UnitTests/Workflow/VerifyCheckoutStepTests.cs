@@ -16,11 +16,11 @@ public sealed class VerifyCheckoutStepTests
     private readonly Guid venueTenantId = Guid.NewGuid();
     private readonly PayeeSummary artist = new("Artist", "artist@example.com");
     private readonly CheckoutSession session = new("seti_secret", "cs", "cus");
-    private readonly DoorSplitContract contract = new() { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
+    private readonly DoorSplitDeal contract = new() { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
     private readonly DoorSharePayment amount = new(70);
 
     private readonly Mock<IApplicationRepository> applicationRepository;
-    private readonly Mock<IContractAccessor> contractAccessor;
+    private readonly Mock<IDealAccessor> contractAccessor;
     private readonly Mock<IManagerPaymentClient> managerPaymentClient;
     private readonly Mock<IPaymentAmountMapper> paymentAmountMapper;
     private readonly VerifyCheckoutStep step;
@@ -30,7 +30,7 @@ public sealed class VerifyCheckoutStepTests
     public VerifyCheckoutStepTests()
     {
         this.applicationRepository = new Mock<IApplicationRepository>();
-        this.contractAccessor = new Mock<IContractAccessor>();
+        this.contractAccessor = new Mock<IDealAccessor>();
         this.managerPaymentClient = new Mock<IManagerPaymentClient>();
         this.paymentAmountMapper = new Mock<IPaymentAmountMapper>();
 

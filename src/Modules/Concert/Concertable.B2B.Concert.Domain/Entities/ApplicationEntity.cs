@@ -14,7 +14,7 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     internal LifecycleState State { get; private set; } = LifecycleState.Applied;
     public int OpportunityId { get; private set; }
     public int ArtistId { get; private set; }
-    public ContractType ContractType { get; private set; }
+    public DealType ContractType { get; private set; }
     public OpportunityEntity Opportunity { get; set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
     public BookingEntity? Booking { get; set; }
@@ -24,7 +24,7 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
 
     protected ApplicationEntity() { }
 
-    protected ApplicationEntity(int artistId, int opportunityId, ContractType contractType)
+    protected ApplicationEntity(int artistId, int opportunityId, DealType contractType)
     {
         ArtistId = artistId;
         OpportunityId = opportunityId;
@@ -46,13 +46,13 @@ public sealed class StandardApplication : ApplicationEntity
 {
     private StandardApplication() { }
 
-    private StandardApplication(int artistId, int opportunityId, ContractType contractType)
+    private StandardApplication(int artistId, int opportunityId, DealType contractType)
         : base(artistId, opportunityId, contractType) { }
 
     public static StandardApplication Create(int artistId, int opportunityId) =>
         new(artistId, opportunityId, default);
 
-    public static StandardApplication Create(int artistId, int opportunityId, ContractType contractType) =>
+    public static StandardApplication Create(int artistId, int opportunityId, DealType contractType) =>
         new(artistId, opportunityId, contractType);
 }
 
@@ -62,7 +62,7 @@ public sealed class PrepaidApplication : ApplicationEntity
 
     private PrepaidApplication() { }
 
-    private PrepaidApplication(int artistId, int opportunityId, ContractType contractType, string paymentMethodId)
+    private PrepaidApplication(int artistId, int opportunityId, DealType contractType, string paymentMethodId)
         : base(artistId, opportunityId, contractType)
     {
         PaymentMethodId = paymentMethodId;
@@ -71,6 +71,6 @@ public sealed class PrepaidApplication : ApplicationEntity
     public static PrepaidApplication Create(int artistId, int opportunityId, string paymentMethodId) =>
         new(artistId, opportunityId, default, paymentMethodId);
 
-    public static PrepaidApplication Create(int artistId, int opportunityId, ContractType contractType, string paymentMethodId) =>
+    public static PrepaidApplication Create(int artistId, int opportunityId, DealType contractType, string paymentMethodId) =>
         new(artistId, opportunityId, contractType, paymentMethodId);
 }

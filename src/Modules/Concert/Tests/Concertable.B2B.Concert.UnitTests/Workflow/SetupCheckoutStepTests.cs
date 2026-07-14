@@ -15,11 +15,11 @@ public sealed class SetupCheckoutStepTests
     private readonly Guid venueManagerId = Guid.NewGuid();
     private readonly Guid artistTenantId = Guid.NewGuid();
     private readonly CheckoutSession session = new("seti_secret", "cs", "cus");
-    private readonly VenueHireContract contract = new() { PaymentMethod = PaymentMethod.Cash, HireFee = 300 };
+    private readonly VenueHireDeal contract = new() { PaymentMethod = PaymentMethod.Cash, HireFee = 300 };
 
     private readonly Mock<IOpportunityRepository> opportunityRepository;
     private readonly Mock<IUserModule> userModule;
-    private readonly Mock<IContractAccessor> contractAccessor;
+    private readonly Mock<IDealAccessor> contractAccessor;
     private readonly Mock<IManagerPaymentClient> managerPaymentClient;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly SetupCheckoutStep step;
@@ -30,7 +30,7 @@ public sealed class SetupCheckoutStepTests
     {
         this.opportunityRepository = new Mock<IOpportunityRepository>();
         this.userModule = new Mock<IUserModule>();
-        this.contractAccessor = new Mock<IContractAccessor>();
+        this.contractAccessor = new Mock<IDealAccessor>();
         this.managerPaymentClient = new Mock<IManagerPaymentClient>();
         this.tenantContext = new Mock<ITenantContext>();
 

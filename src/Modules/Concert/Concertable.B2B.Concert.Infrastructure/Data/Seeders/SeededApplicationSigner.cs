@@ -1,6 +1,6 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Seed.Infrastructure;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Seeders;
@@ -16,13 +16,13 @@ internal static class SeededApplicationSigner
 {
     public static async Task SignAsync(
         SeedState seed,
-        IContractModule contracts,
+        IDealModule contracts,
         ITermsFingerprintCalculator fingerprint,
         DateTime signedAtUtc,
         CancellationToken ct)
     {
         var periodByOpportunityId = seed.Opportunities.ToDictionary(o => o.Id, o => o.Period);
-        var contractIdByOpportunityId = seed.Opportunities.ToDictionary(o => o.Id, o => o.ContractId);
+        var contractIdByOpportunityId = seed.Opportunities.ToDictionary(o => o.Id, o => o.DealId);
         var contractById = (await contracts.GetByIdsAsync(contractIdByOpportunityId.Values.Distinct(), ct))
             .ToDictionary(c => c.Id);
         var artistById = seed.Artists.ToDictionary(a => a.Id);

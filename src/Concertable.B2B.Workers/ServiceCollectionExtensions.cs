@@ -1,7 +1,7 @@
 using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
-using Concertable.B2B.Contract.Infrastructure.Extensions;
+using Concertable.B2B.Deal.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
 using Concertable.Shared.Email.Infrastructure.Extensions;
@@ -54,7 +54,7 @@ internal static class ServiceCollectionExtensions
         services.AddArtistModule(configuration);
         services.AddVenueModule(configuration);
         services.AddConcertModule(configuration);
-        services.AddContractModule(configuration);
+        services.AddDealModule(configuration);
         services.AddClientCredentials(opts =>
         {
             opts.Authority = configuration["Auth:Authority"] ?? configuration["services:auth:https:0"] ?? "";

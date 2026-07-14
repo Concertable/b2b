@@ -23,7 +23,7 @@ internal sealed class VenueHireWorkflow : IConcertWorkflow, IAppliesPaid, IAppli
         this.Cancel = cancel;
     }
 
-    public ContractType Type => ContractType.VenueHire;
+    public DealType Type => DealType.VenueHire;
     public IPaidApplyStep Apply { get; }
     public IApplyCheckoutStep ApplyCheckout { get; }
     public ISimpleAcceptStep Accept { get; }

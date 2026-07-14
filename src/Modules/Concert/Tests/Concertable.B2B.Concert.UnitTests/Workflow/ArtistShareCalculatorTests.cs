@@ -15,7 +15,7 @@ public sealed class ArtistShareCalculatorTests
     public void Calculate_ShouldDispatchToDoorSplitCalculator_ForDoorSplitContract()
     {
         // Arrange
-        var contract = new DoorSplitContract { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
+        var contract = new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
 
         // Act
         var result = calculator.Calculate(contract, 1000);
@@ -28,7 +28,7 @@ public sealed class ArtistShareCalculatorTests
     public void Calculate_ShouldDispatchToVersusCalculator_ForVersusContract()
     {
         // Arrange
-        var contract = new VersusContract { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 };
+        var contract = new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 };
 
         // Act
         var result = calculator.Calculate(contract, 1000);

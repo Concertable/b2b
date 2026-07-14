@@ -12,14 +12,14 @@ internal sealed class CancelExecutor : ICancelExecutor
 {
     private readonly ILifecycleTransitioner transitioner;
     private readonly IConcertWorkflowFactory workflows;
-    private readonly IContractResolver contractResolver;
+    private readonly IDealResolver contractResolver;
     private readonly IConcertRepository concertRepository;
     private readonly ILogger<CancelExecutor> logger;
 
     public CancelExecutor(
         ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
-        IContractResolver contractResolver,
+        IDealResolver contractResolver,
         IConcertRepository concertRepository,
         ILogger<CancelExecutor> logger)
     {
