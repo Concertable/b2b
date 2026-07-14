@@ -15,10 +15,10 @@ namespace Concertable.B2B.Concert.UnitTests.Services;
 
 public sealed class BookingAgreementBuilderTests
 {
-    private readonly Mock<IContractAccessor> contractAccessor = new();
+    private readonly Mock<IDealAccessor> contractAccessor = new();
     private readonly Mock<IApplicationRepository> applicationRepository = new();
     private readonly Mock<IBookingAgreementRepository> agreementRepository = new();
-    private readonly Mock<IAgreementTermsRenderer> termsRenderer = new();
+    private readonly Mock<IDealTermsRenderer> termsRenderer = new();
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<IClientContext> clientContext = new();
     private readonly BookingAgreementBuilder builder;
@@ -29,13 +29,13 @@ public sealed class BookingAgreementBuilderTests
 
     public BookingAgreementBuilderTests()
     {
-        contractAccessor.SetupGet(c => c.Contract).Returns(new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        contractAccessor.SetupGet(c => c.Contract).Returns(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         applicationRepository
             .Setup(r => r.GetArtistAndVenueByIdAsync(It.IsAny<int>()))
             .ReturnsAsync(((ArtistReadModel, VenueReadModel)?)(
                 new ArtistReadModel { Id = 1, Name = "Artie Artist" },
                 new VenueReadModel { Id = 2, Name = "Vera Venue" }));
-        termsRenderer.Setup(r => r.Render(It.IsAny<IContract>())).Returns("terms");
+        termsRenderer.Setup(r => r.Render(It.IsAny<IDeal>())).Returns("terms");
         currentUser.SetupGet(u => u.Id).Returns(Guid.NewGuid());
         clientContext.SetupGet(c => c.IpAddress).Returns(IPAddress.Loopback);
         clientContext.SetupGet(c => c.UserAgent).Returns("venue-agent");
@@ -62,7 +62,7 @@ public sealed class BookingAgreementBuilderTests
             .Callback<BookingAgreementEntity, CancellationToken>((a, _) => built = a)
             .ReturnsAsync((BookingAgreementEntity a, CancellationToken _) => a);
 
-        var application = StandardApplication.Create(artistId: 1, opportunityId: 10, ContractType.FlatFee);
+        var application = StandardApplication.Create(artistId: 1, opportunityId: 10, DealType.FlatFee);
         application.Opportunity = OpportunityEntity.Create(
             venueId: 2,
             new DateRange(new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc), new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc)),

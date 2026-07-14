@@ -10,13 +10,13 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped
     public Guid VenueTenantId { get; set; }
     public Guid ArtistTenantId { get; set; }
     public int ApplicationId { get; private set; }
-    public ContractType ContractType { get; private set; }
+    public DealType ContractType { get; private set; }
     public ApplicationEntity Application { get; set; } = null!;
     public ConcertEntity? Concert { get; private set; }
 
     protected BookingEntity() { }
 
-    protected BookingEntity(int applicationId, ContractType contractType)
+    protected BookingEntity(int applicationId, DealType contractType)
     {
         ApplicationId = applicationId;
         ContractType = contractType;
@@ -29,10 +29,10 @@ public sealed class StandardBooking : BookingEntity
 {
     private StandardBooking() { }
 
-    private StandardBooking(int applicationId, ContractType contractType)
+    private StandardBooking(int applicationId, DealType contractType)
         : base(applicationId, contractType) { }
 
-    public static StandardBooking Create(int applicationId, ContractType contractType) =>
+    public static StandardBooking Create(int applicationId, DealType contractType) =>
         new(applicationId, contractType);
 }
 
@@ -42,12 +42,12 @@ public sealed class DeferredBooking : BookingEntity
 
     private DeferredBooking() { }
 
-    private DeferredBooking(int applicationId, ContractType contractType, string paymentMethodId)
+    private DeferredBooking(int applicationId, DealType contractType, string paymentMethodId)
         : base(applicationId, contractType)
     {
         PaymentMethodId = paymentMethodId;
     }
 
-    public static DeferredBooking Create(int applicationId, ContractType contractType, string paymentMethodId) =>
+    public static DeferredBooking Create(int applicationId, DealType contractType, string paymentMethodId) =>
         new(applicationId, contractType, paymentMethodId);
 }

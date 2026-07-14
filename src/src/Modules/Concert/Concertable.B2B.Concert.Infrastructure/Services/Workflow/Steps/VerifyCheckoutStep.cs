@@ -8,13 +8,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class VerifyCheckoutStep : IAcceptCheckoutStep
 {
     private readonly IApplicationRepository applicationRepository;
-    private readonly IContractAccessor contractAccessor;
+    private readonly IDealAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
     private readonly IPaymentAmountMapper paymentAmountMapper;
 
     public VerifyCheckoutStep(
         IApplicationRepository applicationRepository,
-        IContractAccessor contractAccessor,
+        IDealAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient,
         IPaymentAmountMapper paymentAmountMapper)
     {

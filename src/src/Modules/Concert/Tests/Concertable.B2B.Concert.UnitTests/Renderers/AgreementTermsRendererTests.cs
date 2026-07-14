@@ -4,7 +4,7 @@ namespace Concertable.B2B.Concert.UnitTests.Renderers;
 
 public sealed class AgreementTermsRendererTests
 {
-    private readonly AgreementTermsRenderer renderer = new(
+    private readonly DealTermsRenderer renderer = new(
         new FlatFeeTermsRenderer(),
         new DoorSplitTermsRenderer(),
         new VersusTermsRenderer(),
@@ -13,7 +13,7 @@ public sealed class AgreementTermsRendererTests
     [Fact]
     public void Render_ShouldStateFlatFee_ForFlatFeeContract()
     {
-        var contract = new FlatFeeContract { PaymentMethod = PaymentMethod.Transfer, Fee = 500m };
+        var contract = new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m };
 
         var text = renderer.Render(contract);
 
@@ -23,7 +23,7 @@ public sealed class AgreementTermsRendererTests
     [Fact]
     public void Render_ShouldStateDoorPercent_ForDoorSplitContract()
     {
-        var contract = new DoorSplitContract { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m };
+        var contract = new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m };
 
         var text = renderer.Render(contract);
 
@@ -33,7 +33,7 @@ public sealed class AgreementTermsRendererTests
     [Fact]
     public void Render_ShouldStateGuaranteePlusDoorPercent_ForVersusContract()
     {
-        var contract = new VersusContract { PaymentMethod = PaymentMethod.Cash, Guarantee = 200m, ArtistDoorPercent = 62.5m };
+        var contract = new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200m, ArtistDoorPercent = 62.5m };
 
         var text = renderer.Render(contract);
 
@@ -43,7 +43,7 @@ public sealed class AgreementTermsRendererTests
     [Fact]
     public void Render_ShouldStateHireFee_ForVenueHireContract()
     {
-        var contract = new VenueHireContract { PaymentMethod = PaymentMethod.Transfer, HireFee = 300m };
+        var contract = new VenueHireDeal { PaymentMethod = PaymentMethod.Transfer, HireFee = 300m };
 
         var text = renderer.Render(contract);
 

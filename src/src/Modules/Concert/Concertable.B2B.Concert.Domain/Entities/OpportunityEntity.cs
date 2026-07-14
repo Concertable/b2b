@@ -15,7 +15,7 @@ public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opp
     public int VenueId { get; set; }
     public DateRange Period { get; private set; } = null!;
     public VenueReadModel Venue { get; set; } = null!;
-    public int ContractId { get; private set; }
+    public int DealId { get; private set; }
     public HashSet<ApplicationEntity> Applications { get; private set; } = [];
     public List<Genre> Genres { get; private set; } = [];
 
@@ -24,14 +24,14 @@ public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opp
         {
             VenueId = venueId,
             Period = period,
-            ContractId = contractId,
+            DealId = contractId,
             Genres = genres?.ToList() ?? []
         };
 
     public void Update(DateRange period, int contractId, IEnumerable<Genre> genres)
     {
         Period = period;
-        ContractId = contractId;
+        DealId = contractId;
         Genres = genres.ToList();
     }
 

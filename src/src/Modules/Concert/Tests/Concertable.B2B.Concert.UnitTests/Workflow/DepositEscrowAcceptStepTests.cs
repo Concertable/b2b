@@ -15,7 +15,7 @@ public sealed class DepositEscrowAcceptStepTests
 
     private readonly Mock<IBookingService> bookingService;
     private readonly Mock<IEscrowClient> escrowClient;
-    private readonly Mock<IContractAccessor> contractAccessor;
+    private readonly Mock<IDealAccessor> contractAccessor;
     private readonly Mock<IApplicationRepository> applicationRepository;
     private readonly DepositEscrowAcceptStep step;
 
@@ -23,7 +23,7 @@ public sealed class DepositEscrowAcceptStepTests
     {
         this.bookingService = new Mock<IBookingService>();
         this.escrowClient = new Mock<IEscrowClient>();
-        this.contractAccessor = new Mock<IContractAccessor>();
+        this.contractAccessor = new Mock<IDealAccessor>();
         this.applicationRepository = new Mock<IApplicationRepository>();
 
         this.step = new DepositEscrowAcceptStep(

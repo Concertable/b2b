@@ -14,7 +14,7 @@ public sealed class VersusCalculatorTests
     {
         // Arrange
         var calculator = new VersusCalculator();
-        var contract = new VersusContract { PaymentMethod = PaymentMethod.Cash, Guarantee = guarantee, ArtistDoorPercent = artistDoorPercent };
+        var contract = new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = guarantee, ArtistDoorPercent = artistDoorPercent };
 
         // Act
         var result = calculator.Calculate(contract, totalRevenue);

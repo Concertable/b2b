@@ -23,7 +23,7 @@ internal sealed class VersusWorkflow : IConcertWorkflow, IAppliesSimple, IAccept
         this.Cancel = cancel;
     }
 
-    public ContractType Type => ContractType.Versus;
+    public DealType Type => DealType.Versus;
     public ISimpleApplyStep Apply { get; }
     public IAcceptCheckoutStep AcceptCheckout { get; }
     public IPaidAcceptStep Accept { get; }

@@ -8,5 +8,5 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// </summary>
 internal interface ITermsFingerprintCalculator
 {
-    string Calculate(IContract contract, DateRange period);
+    string Calculate(IDeal contract, DateRange period);
 }

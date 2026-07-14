@@ -1,4 +1,4 @@
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
@@ -7,7 +7,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// (and reused by its PDF). Deal terms only — payment method and event dates are separate
 /// agreement fields.
 /// </summary>
-internal interface IAgreementTermsRenderer
+internal interface IDealTermsRenderer
 {
-    string Render(IContract contract);
+    string Render(IDeal contract);
 }

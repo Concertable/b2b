@@ -8,9 +8,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
 internal sealed class CheckoutDispatcher : ICheckoutDispatcher
 {
     private readonly IConcertWorkflowFactory workflows;
-    private readonly IContractResolver contractResolver;
+    private readonly IDealResolver contractResolver;
 
-    public CheckoutDispatcher(IConcertWorkflowFactory workflows, IContractResolver contractResolver)
+    public CheckoutDispatcher(IConcertWorkflowFactory workflows, IDealResolver contractResolver)
     {
         this.workflows = workflows;
         this.contractResolver = contractResolver;

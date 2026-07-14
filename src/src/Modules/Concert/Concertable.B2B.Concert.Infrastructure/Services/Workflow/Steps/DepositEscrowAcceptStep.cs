@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Kernel.Enums;
 using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -12,14 +12,14 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
 {
     private readonly IBookingService bookingService;
     private readonly IEscrowClient escrowClient;
-    private readonly IContractAccessor contractAccessor;
+    private readonly IDealAccessor contractAccessor;
     private readonly IApplicationRepository applicationRepository;
     private readonly ILogger<DepositEscrowAcceptStep> logger;
 
     public DepositEscrowAcceptStep(
         IBookingService bookingService,
         IEscrowClient escrowClient,
-        IContractAccessor contractAccessor,
+        IDealAccessor contractAccessor,
         IApplicationRepository applicationRepository,
         ILogger<DepositEscrowAcceptStep> logger)
     {
@@ -37,7 +37,7 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
         if (application is not PrepaidApplication prepaid)
             throw new BadRequestException("VenueHire requires a PrepaidApplication");
 
-        var contract = (VenueHireContract)contractAccessor.Contract;
+        var contract = (VenueHireDeal)contractAccessor.Contract;
         var booking = await bookingService.CreateStandardAsync(applicationId, contract.ContractType);
 
         /* VenueHire: the artist hires the venue, so the artist tenant pays the venue tenant —

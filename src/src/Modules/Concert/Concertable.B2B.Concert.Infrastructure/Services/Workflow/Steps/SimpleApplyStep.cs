@@ -5,6 +5,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
 internal sealed class SimpleApplyStep : ISimpleApplyStep
 {
-    public Task<ApplicationEntity> ApplyAsync(int artistId, int opportunityId, ContractType contractType)
+    public Task<ApplicationEntity> ApplyAsync(int artistId, int opportunityId, DealType contractType)
         => Task.FromResult<ApplicationEntity>(StandardApplication.Create(artistId, opportunityId, contractType));
 }

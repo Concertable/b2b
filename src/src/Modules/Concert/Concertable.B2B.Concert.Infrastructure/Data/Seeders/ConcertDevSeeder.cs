@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Domain.ReadModels;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
@@ -15,14 +15,14 @@ internal sealed class ConcertDevSeeder : IDevSeeder
 
     private readonly ConcertDbContext context;
     private readonly SeedState seed;
-    private readonly IContractModule contracts;
+    private readonly IDealModule contracts;
     private readonly ITermsFingerprintCalculator fingerprint;
     private readonly TimeProvider timeProvider;
 
     public ConcertDevSeeder(
         ConcertDbContext context,
         SeedState seed,
-        IContractModule contracts,
+        IDealModule contracts,
         ITermsFingerprintCalculator fingerprint,
         TimeProvider timeProvider)
     {

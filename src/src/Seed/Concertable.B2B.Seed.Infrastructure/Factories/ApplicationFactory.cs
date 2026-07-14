@@ -1,6 +1,6 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;
@@ -10,13 +10,13 @@ public static class ApplicationFactory
     public static StandardApplication Create(int artistId, int opportunityId)
         => StandardApplication.Create(artistId, opportunityId);
 
-    public static StandardApplication Create(int artistId, int opportunityId, ContractType contractType)
+    public static StandardApplication Create(int artistId, int opportunityId, DealType contractType)
         => StandardApplication.Create(artistId, opportunityId, contractType);
 
     public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
         => PrepaidApplication.Create(artistId, opportunityId, paymentMethodId);
 
-    public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, ContractType contractType, string paymentMethodId = "pm_card_visa")
+    public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, DealType contractType, string paymentMethodId = "pm_card_visa")
         => PrepaidApplication.Create(artistId, opportunityId, contractType, paymentMethodId);
 
     public static StandardApplication Accepted(int artistId, int opportunityId, BookingEntity booking)

@@ -15,5 +15,5 @@ internal interface IConcertRepository : IRepository<ConcertEntity>
     Task<IEnumerable<ConcertSummary>> GetUnpostedByVenueIdAsync(int id);
     Task<IEnumerable<int>> GetEndedConfirmedIdsAsync();
     Task<decimal> GetTotalRevenueByConcertIdAsync(int concertId);
-    Task<int?> GetContractIdByIdAsync(int concertId);
+    Task<int?> GetDealIdByIdAsync(int concertId);
 }

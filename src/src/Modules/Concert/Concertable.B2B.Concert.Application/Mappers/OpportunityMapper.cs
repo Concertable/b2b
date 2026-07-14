@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
 using Concertable.Kernel.Exceptions;
 
@@ -9,30 +9,30 @@ namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal sealed class OpportunityMapper : IOpportunityMapper
 {
-    private readonly IContractModule contractModule;
+    private readonly IDealModule contractModule;
 
-    public OpportunityMapper(IContractModule contractModule)
+    public OpportunityMapper(IDealModule contractModule)
     {
         this.contractModule = contractModule;
     }
 
     public async Task<OpportunityDto> ToDtoAsync(OpportunityEntity opportunity)
     {
-        var contract = await contractModule.GetByIdAsync(opportunity.ContractId)
-            .OrNotFound($"Contract {opportunity.ContractId}");
+        var contract = await contractModule.GetByIdAsync(opportunity.DealId)
+            .OrNotFound($"Contract {opportunity.DealId}");
         return opportunity.ToDto(contract);
     }
 
     public async Task<IEnumerable<OpportunityDto>> ToDtosAsync(IEnumerable<OpportunityEntity> opportunities)
     {
         var opportunityList = opportunities.ToList();
-        var contractMap = (await contractModule.GetByIdsAsync(opportunityList.Select(o => o.ContractId).Distinct()))
+        var contractMap = (await contractModule.GetByIdsAsync(opportunityList.Select(o => o.DealId).Distinct()))
             .ToDictionary(c => c.Id);
 
         return opportunityList.Select(o =>
         {
-            if (!contractMap.TryGetValue(o.ContractId, out var contract))
-                throw new NotFoundException($"Contract {o.ContractId} not found");
+            if (!contractMap.TryGetValue(o.DealId, out var contract))
+                throw new NotFoundException($"Contract {o.DealId} not found");
             return o.ToDto(contract);
         });
     }
@@ -46,11 +46,11 @@ internal sealed class OpportunityMapper : IOpportunityMapper
 
 internal static class OpportunityMappers
 {
-    public static OpportunityDto ToDto(this OpportunityEntity opportunity, IContract contract) => new()
+    public static OpportunityDto ToDto(this OpportunityEntity opportunity, IDeal contract) => new()
     {
         Id = opportunity.Id,
         VenueId = opportunity.VenueId,
-        ContractId = opportunity.ContractId,
+        DealId = opportunity.DealId,
         Contract = contract,
         StartDate = opportunity.Period.Start,
         EndDate = opportunity.Period.End,

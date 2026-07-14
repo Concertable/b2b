@@ -23,7 +23,7 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
     public string ArtistName { get; private set; } = null!;
 
     public DateRange Period { get; private set; } = null!;
-    public ContractType ContractType { get; private set; }
+    public DealType ContractType { get; private set; }
     public PaymentMethod PaymentMethod { get; private set; }
 
     public string TermsText { get; private set; } = null!;
@@ -55,7 +55,7 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
         int artistId,
         string artistName,
         DateRange period,
-        IContract contract,
+        IDeal contract,
         string termsText,
         string platformTermsVersion,
         ESignature artistESignature,

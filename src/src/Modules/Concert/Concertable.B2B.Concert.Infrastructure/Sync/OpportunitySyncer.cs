@@ -7,9 +7,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Sync;
 internal sealed class OpportunitySyncer
     : CollectionSyncer<OpportunityEntity, OpportunityRequest>, IOpportunitySyncer
 {
-    private readonly IContractModule contractModule;
+    private readonly IDealModule contractModule;
 
-    public OpportunitySyncer(IBaseRepository<OpportunityEntity> repo, IContractModule contractModule)
+    public OpportunitySyncer(IBaseRepository<OpportunityEntity> repo, IDealModule contractModule)
         : base(repo)
     {
         this.contractModule = contractModule;
@@ -27,7 +27,7 @@ internal sealed class OpportunitySyncer
 
     protected override async Task UpdateAsync(OpportunityEntity entity, OpportunityRequest dto)
     {
-        await contractModule.UpdateAsync(entity.ContractId, dto.Contract);
-        entity.Update(new DateRange(dto.StartDate, dto.EndDate), entity.ContractId, dto.Genres);
+        await contractModule.UpdateAsync(entity.DealId, dto.Contract);
+        entity.Update(new DateRange(dto.StartDate, dto.EndDate), entity.DealId, dto.Genres);
     }
 }

@@ -1,21 +1,21 @@
 using System.Collections.Frozen;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 
 namespace Concertable.B2B.Concert.Application.Workflow;
 
 internal sealed class ArtistShareCalculator : IArtistShareCalculator
 {
-    private readonly FrozenDictionary<ContractType, IArtistShareCalculator> calculators;
+    private readonly FrozenDictionary<DealType, IArtistShareCalculator> calculators;
 
     public ArtistShareCalculator(DoorSplitCalculator doorSplit, VersusCalculator versus)
     {
-        calculators = new Dictionary<ContractType, IArtistShareCalculator>
+        calculators = new Dictionary<DealType, IArtistShareCalculator>
         {
-            [ContractType.DoorSplit] = doorSplit,
-            [ContractType.Versus] = versus,
+            [DealType.DoorSplit] = doorSplit,
+            [DealType.Versus] = versus,
         }.ToFrozenDictionary();
     }
 
-    public decimal Calculate(IContract contract, decimal totalRevenue) =>
+    public decimal Calculate(IDeal contract, decimal totalRevenue) =>
         calculators[contract.ContractType].Calculate(contract, totalRevenue);
 }

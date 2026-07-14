@@ -7,11 +7,11 @@ namespace Concertable.B2B.Concert.Application.Renderers;
 
 internal sealed class TermsFingerprintCalculator : ITermsFingerprintCalculator
 {
-    private readonly IContractTermsSerializer termsSerializer;
+    private readonly IDealTermsSerializer termsSerializer;
 
-    public TermsFingerprintCalculator(IContractTermsSerializer termsSerializer) => this.termsSerializer = termsSerializer;
+    public TermsFingerprintCalculator(IDealTermsSerializer termsSerializer) => this.termsSerializer = termsSerializer;
 
-    public string Calculate(IContract contract, DateRange period)
+    public string Calculate(IDeal contract, DateRange period)
     {
         var numbers = termsSerializer.Serialize(contract);
         var payload = Invariant(

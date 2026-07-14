@@ -12,7 +12,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
 {
     private readonly ILifecycleTransitioner transitioner;
     private readonly IConcertWorkflowFactory workflows;
-    private readonly IContractResolver contractResolver;
+    private readonly IDealResolver contractResolver;
     private readonly IBookingRepository bookingRepository;
     private readonly IBookingAgreementBuilder agreementBuilder;
     private readonly ITermsFingerprintCalculator termsFingerprint;
@@ -21,7 +21,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     public AcceptExecutor(
         ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
-        IContractResolver contractResolver,
+        IDealResolver contractResolver,
         IBookingRepository bookingRepository,
         IBookingAgreementBuilder agreementBuilder,
         ITermsFingerprintCalculator termsFingerprint,
@@ -68,7 +68,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
 
     /* Must run BEFORE the accept step: the step captures/charges real money, and only the DB
        side of this transition rolls back on a throw. */
-    private void VerifyTermsUnchanged(ApplicationEntity app, IContract contract)
+    private void VerifyTermsUnchanged(ApplicationEntity app, IDeal contract)
     {
         if (app.TermsFingerprint != termsFingerprint.Calculate(contract, app.Opportunity.Period))
             throw new ConflictException(

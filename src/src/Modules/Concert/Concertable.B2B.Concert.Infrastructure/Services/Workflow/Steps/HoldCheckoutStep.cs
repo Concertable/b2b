@@ -1,6 +1,6 @@
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Application.Workflow.Steps;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
@@ -8,12 +8,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
 {
     private readonly IApplicationRepository applicationRepository;
-    private readonly IContractAccessor contractAccessor;
+    private readonly IDealAccessor contractAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
 
     public HoldCheckoutStep(
         IApplicationRepository applicationRepository,
-        IContractAccessor contractAccessor,
+        IDealAccessor contractAccessor,
         IManagerPaymentClient managerPaymentClient)
     {
         this.applicationRepository = applicationRepository;
@@ -27,7 +27,7 @@ internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
             .OrNotFound("Application");
         var venueTenantId = await applicationRepository.GetVenueTenantIdAsync(applicationId)
             .OrNotFound("Application");
-        var contract = (FlatFeeContract)contractAccessor.Contract;
+        var contract = (FlatFeeDeal)contractAccessor.Contract;
 
         var metadata = new Dictionary<string, string>
         {

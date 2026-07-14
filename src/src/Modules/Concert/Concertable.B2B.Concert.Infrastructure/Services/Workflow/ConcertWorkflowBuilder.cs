@@ -9,13 +9,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
 internal sealed class ConcertWorkflowBuilder
 {
-    private readonly ContractType contractType;
+    private readonly DealType contractType;
     private readonly IServiceCollection services;
     private readonly ConcertWorkflowRegistryBuilder registryBuilder;
     private readonly Dictionary<(LifecycleState, Trigger), LifecycleState> transitions = [];
     private Type workflowType = null!;
 
-    public ConcertWorkflowBuilder(ContractType contractType, IServiceCollection services, ConcertWorkflowRegistryBuilder registryBuilder)
+    public ConcertWorkflowBuilder(DealType contractType, IServiceCollection services, ConcertWorkflowRegistryBuilder registryBuilder)
     {
         this.contractType = contractType;
         this.services = services;

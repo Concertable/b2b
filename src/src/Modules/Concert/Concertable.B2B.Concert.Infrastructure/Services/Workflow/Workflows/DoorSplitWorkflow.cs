@@ -23,7 +23,7 @@ internal sealed class DoorSplitWorkflow : IConcertWorkflow, IAppliesSimple, IAcc
         this.Cancel = cancel;
     }
 
-    public ContractType Type => ContractType.DoorSplit;
+    public DealType Type => DealType.DoorSplit;
     public ISimpleApplyStep Apply { get; }
     public IAcceptCheckoutStep AcceptCheckout { get; }
     public IPaidAcceptStep Accept { get; }

@@ -6,7 +6,7 @@ global using Concertable.B2B.Conversations.Api.Extensions;
 global using Concertable.B2B.Venue.Contracts;
 global using Concertable.B2B.Concert.Contracts;
 global using Concertable.B2B.Concert.Domain;
-global using Concertable.B2B.Contract.Contracts;
+global using Concertable.B2B.Deal.Contracts;
 global using Concertable.B2B.Concert.Application.Interfaces;
 global using Concertable.B2B.Concert.Application.DTOs;
 global using Concertable.B2B.Concert.Application.Requests;

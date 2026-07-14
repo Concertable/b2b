@@ -6,16 +6,16 @@ namespace Concertable.B2B.Concert.Application.Resolvers;
 
 internal sealed class PayeeResolver : IPayeeResolver
 {
-    private readonly FrozenDictionary<ContractType, IPayeeResolver> resolvers;
+    private readonly FrozenDictionary<DealType, IPayeeResolver> resolvers;
 
     public PayeeResolver(VenuePayeeResolver venue, ArtistPayeeResolver artist)
     {
-        resolvers = new Dictionary<ContractType, IPayeeResolver>
+        resolvers = new Dictionary<DealType, IPayeeResolver>
         {
-            [ContractType.FlatFee] = venue,
-            [ContractType.DoorSplit] = venue,
-            [ContractType.Versus] = venue,
-            [ContractType.VenueHire] = artist,
+            [DealType.FlatFee] = venue,
+            [DealType.DoorSplit] = venue,
+            [DealType.Versus] = venue,
+            [DealType.VenueHire] = artist,
         }.ToFrozenDictionary();
     }
 

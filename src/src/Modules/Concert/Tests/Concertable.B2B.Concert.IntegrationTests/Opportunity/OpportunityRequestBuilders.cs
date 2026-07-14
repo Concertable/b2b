@@ -1,13 +1,13 @@
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.Testing.Integration;
 using Concertable.Contracts;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
 
 internal static class OpportunityRequestBuilders
 {
-    public static OpportunityRequest BuildRequest(IContract contract) =>
+    public static OpportunityRequest BuildRequest(IDeal contract) =>
         new()
         {
             StartDate = DateTime.UtcNow.AddMonths(1),
@@ -17,5 +17,5 @@ internal static class OpportunityRequestBuilders
         };
 
     public static OpportunityRequest BuildDefaultRequest() =>
-        BuildRequest(new FlatFeeContract { PaymentMethod = PaymentMethod.Cash, Fee = 500 });
+        BuildRequest(new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 });
 }
