@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ConcertDraftCreatedPayload } from "@/features/notifications";
 import {
-  AcceptContractSummary,
+  AcceptDealSummary,
   ESignaturePanel,
   useAcceptApplicationMutation,
   useAcceptCheckoutQuery,
@@ -143,7 +143,7 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
       }
     >
       <CheckoutSection title="Contract Terms">
-        <AcceptContractSummary contract={opportunity.contract} />
+        <AcceptDealSummary contract={opportunity.contract} />
       </CheckoutSection>
 
       <CheckoutSection

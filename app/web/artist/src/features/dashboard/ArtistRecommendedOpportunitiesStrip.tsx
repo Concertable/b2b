@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import dayjs from "dayjs";
 import { useArtistRecommendedOpportunities } from "./hooks";
-import { contractSummary } from "@concertable/shared/features/contracts";
+import { dealSummary } from "@concertable/shared/features/deals";
 import { genreLabel } from "@concertable/shared/types";
 import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 
@@ -44,7 +44,7 @@ export function ArtistRecommendedOpportunitiesStrip() {
                 {o.town}, {o.county}
               </div>
               <div className="text-muted-foreground line-clamp-1 text-xs">
-                {contractSummary(o.contract)}
+                {dealSummary(o.contract)}
               </div>
               <div className="text-muted-foreground line-clamp-1 text-[11px]">
                 {o.genres.map((g) => genreLabel(g)).join(" · ")}

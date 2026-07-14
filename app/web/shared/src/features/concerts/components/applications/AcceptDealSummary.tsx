@@ -1,13 +1,13 @@
 import type { ComponentType } from "react";
 import type {
-  Contract,
-  FlatFeeContract,
-  DoorSplitContract,
-  VersusContract,
-  VenueHireContract,
-} from "@b2b/features/contracts";
+  Deal,
+  FlatFeeDeal,
+  DoorSplitDeal,
+  VersusDeal,
+  VenueHireDeal,
+} from "@b2b/features/deals";
 
-function FlatFeeSummary({ contract }: { contract: FlatFeeContract }) {
+function FlatFeeSummary({ contract }: { contract: FlatFeeDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">
@@ -21,7 +21,7 @@ function FlatFeeSummary({ contract }: { contract: FlatFeeContract }) {
   );
 }
 
-function DoorSplitSummary({ contract }: { contract: DoorSplitContract }) {
+function DoorSplitSummary({ contract }: { contract: DoorSplitDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">Artist receives</p>
@@ -35,7 +35,7 @@ function DoorSplitSummary({ contract }: { contract: DoorSplitContract }) {
   );
 }
 
-function VersusSummary({ contract }: { contract: VersusContract }) {
+function VersusSummary({ contract }: { contract: VersusDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">Artist guaranteed</p>
@@ -48,7 +48,7 @@ function VersusSummary({ contract }: { contract: VersusContract }) {
   );
 }
 
-function VenueHireSummary({ contract }: { contract: VenueHireContract }) {
+function VenueHireSummary({ contract }: { contract: VenueHireDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">
@@ -67,13 +67,13 @@ const summaryRegistry = {
   doorSplit: DoorSplitSummary,
   versus: VersusSummary,
   venueHire: VenueHireSummary,
-} as Record<Contract["$type"], ComponentType<{ contract: Contract }>>;
+} as Record<Deal["$type"], ComponentType<{ contract: Deal }>>;
 
 interface Props {
-  contract: Contract;
+  contract: Deal;
 }
 
-export function AcceptContractSummary({ contract }: Readonly<Props>) {
+export function AcceptDealSummary({ contract }: Readonly<Props>) {
   const Summary = summaryRegistry[contract.$type];
   return <Summary contract={contract} />;
 }

@@ -1,13 +1,13 @@
 import type { ComponentType } from "react";
 import type {
-  Contract,
-  FlatFeeContract,
-  DoorSplitContract,
-  VersusContract,
-  VenueHireContract,
+  Deal,
+  FlatFeeDeal,
+  DoorSplitDeal,
+  VersusDeal,
+  VenueHireDeal,
 } from "../types";
 
-function FlatFeeDetails({ contract }: { contract: FlatFeeContract }) {
+function FlatFeeDetails({ contract }: { contract: FlatFeeDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">Type</p>
@@ -20,7 +20,7 @@ function FlatFeeDetails({ contract }: { contract: FlatFeeContract }) {
   );
 }
 
-function DoorSplitDetails({ contract }: { contract: DoorSplitContract }) {
+function DoorSplitDetails({ contract }: { contract: DoorSplitDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">Type</p>
@@ -33,7 +33,7 @@ function DoorSplitDetails({ contract }: { contract: DoorSplitContract }) {
   );
 }
 
-function VersusDetails({ contract }: { contract: VersusContract }) {
+function VersusDetails({ contract }: { contract: VersusDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">Type</p>
@@ -48,7 +48,7 @@ function VersusDetails({ contract }: { contract: VersusContract }) {
   );
 }
 
-function VenueHireDetails({ contract }: { contract: VenueHireContract }) {
+function VenueHireDetails({ contract }: { contract: VenueHireDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">Type</p>
@@ -66,13 +66,13 @@ const contractRegistry = {
   doorSplit: DoorSplitDetails,
   versus: VersusDetails,
   venueHire: VenueHireDetails,
-} as Record<Contract["$type"], ComponentType<{ contract: Contract }>>;
+} as Record<Deal["$type"], ComponentType<{ contract: Deal }>>;
 
 interface Props {
-  contract: Contract;
+  contract: Deal;
 }
 
-export function ContractDetails({ contract }: Readonly<Props>) {
+export function DealDetails({ contract }: Readonly<Props>) {
   const Component = contractRegistry[contract.$type];
   return <Component contract={contract} />;
 }

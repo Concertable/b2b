@@ -1,5 +1,5 @@
 export { OpportunitySection } from "./components/opportunities/OpportunitySection";
-export { AcceptContractSummary } from "./components/applications/AcceptContractSummary";
+export { AcceptDealSummary } from "./components/applications/AcceptDealSummary";
 export { ESignaturePanel } from "./components/applications/ESignaturePanel";
 export type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
 export { useESignature } from "./hooks/useESignature";
