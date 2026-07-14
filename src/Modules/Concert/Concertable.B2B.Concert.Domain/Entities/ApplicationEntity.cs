@@ -39,7 +39,7 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
         TermsFingerprint = termsFingerprint;
     }
 
-    internal void Transition(Trigger trigger, ContractStateMachine machine) => State = machine.Next(State, trigger);
+    internal void Transition(Trigger trigger, LifecycleStateMachine machine) => State = machine.Next(State, trigger);
 }
 
 public sealed class StandardApplication : ApplicationEntity
