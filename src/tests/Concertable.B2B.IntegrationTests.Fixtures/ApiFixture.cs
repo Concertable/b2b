@@ -104,6 +104,8 @@ public class ApiFixture : IAsyncLifetime
                     .ToList();
                 foreach (var d in asbDescriptors)
                     services.Remove(d);
+                services.AddTransient<IStartupFilter, TestClientIpStartupFilter>();
+
                 services.Replace(ServiceDescriptor.Singleton<IBusTransport, MockBusTransport>());
                 services.AddSingleton<INotificationClient>(NotificationService);
                 services.AddSingleton(StripeApiClient);
