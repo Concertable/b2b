@@ -12,13 +12,13 @@ internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
     private readonly IApplicationValidator applicationValidator;
-    private readonly IBookingAgreementService agreementService;
+    private readonly IContractService agreementService;
     private readonly IApplicationResponseMapper mapper;
 
     public ApplicationController(
         IApplicationService applicationService,
         IApplicationValidator applicationValidator,
-        IBookingAgreementService agreementService,
+        IContractService agreementService,
         IApplicationResponseMapper mapper)
     {
         this.applicationService = applicationService;
@@ -71,7 +71,7 @@ internal sealed class ApplicationController : ControllerBase
     // No [HasPermission]: both parties read (venue + artist), enforced by the two-party tenant filter
     // exactly like GetById — a stranger is filtered out and gets 404, never a probe-able 403.
     [HttpGet("{id}/agreement")]
-    public async Task<ActionResult<BookingAgreementDto>> GetAgreement(int id)
+    public async Task<ActionResult<ContractDto>> GetAgreement(int id)
     {
         var agreement = await agreementService.GetByApplicationIdAsync(id);
         return Ok(agreement);

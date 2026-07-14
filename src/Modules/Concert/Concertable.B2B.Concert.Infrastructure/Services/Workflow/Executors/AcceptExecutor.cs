@@ -14,7 +14,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private readonly IConcertWorkflowFactory workflows;
     private readonly IDealResolver contractResolver;
     private readonly IBookingRepository bookingRepository;
-    private readonly IBookingAgreementBuilder agreementBuilder;
+    private readonly IContractBuilder agreementBuilder;
     private readonly ITermsFingerprintCalculator termsFingerprint;
     private readonly IBackgroundTaskRunner taskRunner;
 
@@ -23,7 +23,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         IConcertWorkflowFactory workflows,
         IDealResolver contractResolver,
         IBookingRepository bookingRepository,
-        IBookingAgreementBuilder agreementBuilder,
+        IContractBuilder agreementBuilder,
         ITermsFingerprintCalculator termsFingerprint,
         IBackgroundTaskRunner taskRunner)
     {
@@ -62,7 +62,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
             /* Render + store the agreement PDF off the request thread once the transition commits;
                the download endpoint lazily regenerates if the blob is ever missing, so a blob
                outage here is non-fatal. */
-            await taskRunner.RunAsync<IBookingAgreementPdfService>(
+            await taskRunner.RunAsync<IContractPdfService>(
                 (pdf, runCt) => pdf.GenerateForBookingAsync(booking.Id, runCt));
         });
 

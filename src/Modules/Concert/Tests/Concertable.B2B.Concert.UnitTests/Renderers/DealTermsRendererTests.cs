@@ -2,7 +2,7 @@ using Concertable.B2B.Concert.Application.Renderers;
 
 namespace Concertable.B2B.Concert.UnitTests.Renderers;
 
-public sealed class AgreementTermsRendererTests
+public sealed class DealTermsRendererTests
 {
     private readonly DealTermsRenderer renderer = new(
         new FlatFeeTermsRenderer(),

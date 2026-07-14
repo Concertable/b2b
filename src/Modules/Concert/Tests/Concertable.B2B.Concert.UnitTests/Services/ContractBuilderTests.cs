@@ -13,21 +13,21 @@ using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests.Services;
 
-public sealed class BookingAgreementBuilderTests
+public sealed class ContractBuilderTests
 {
     private readonly Mock<IDealAccessor> contractAccessor = new();
     private readonly Mock<IApplicationRepository> applicationRepository = new();
-    private readonly Mock<IBookingAgreementRepository> agreementRepository = new();
+    private readonly Mock<IContractRepository> agreementRepository = new();
     private readonly Mock<IDealTermsRenderer> termsRenderer = new();
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<IClientContext> clientContext = new();
-    private readonly BookingAgreementBuilder builder;
+    private readonly ContractBuilder builder;
 
     private readonly ESignature artistESignature = new(
         Guid.NewGuid(), new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
         IPAddress.Parse("203.0.113.7"), "artist-agent", "Artie Artist", null);
 
-    public BookingAgreementBuilderTests()
+    public ContractBuilderTests()
     {
         contractAccessor.SetupGet(c => c.Contract).Returns(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         applicationRepository
@@ -40,7 +40,7 @@ public sealed class BookingAgreementBuilderTests
         clientContext.SetupGet(c => c.IpAddress).Returns(IPAddress.Loopback);
         clientContext.SetupGet(c => c.UserAgent).Returns("venue-agent");
 
-        builder = new BookingAgreementBuilder(
+        builder = new ContractBuilder(
             contractAccessor.Object,
             applicationRepository.Object,
             agreementRepository.Object,
@@ -56,11 +56,11 @@ public sealed class BookingAgreementBuilderTests
     [Fact]
     public async Task BuildAsync_SnapshotsArtistSignatureFromApplication_AndBuildsVenueSignatureFromRequest()
     {
-        BookingAgreementEntity? built = null;
+        ContractEntity? built = null;
         agreementRepository
-            .Setup(r => r.AddAsync(It.IsAny<BookingAgreementEntity>(), It.IsAny<CancellationToken>()))
-            .Callback<BookingAgreementEntity, CancellationToken>((a, _) => built = a)
-            .ReturnsAsync((BookingAgreementEntity a, CancellationToken _) => a);
+            .Setup(r => r.AddAsync(It.IsAny<ContractEntity>(), It.IsAny<CancellationToken>()))
+            .Callback<ContractEntity, CancellationToken>((a, _) => built = a)
+            .ReturnsAsync((ContractEntity a, CancellationToken _) => a);
 
         var application = StandardApplication.Create(artistId: 1, opportunityId: 10, DealType.FlatFee);
         application.Opportunity = OpportunityEntity.Create(
