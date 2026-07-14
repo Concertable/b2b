@@ -7,7 +7,7 @@ import type { ConcertDraftCreatedPayload } from "@/features/notifications";
 import {
   useApplicationQuery,
   useAcceptApplicationMutation,
-  AcceptContractSummary,
+  AcceptDealSummary,
   ESignaturePanel,
   useESignature,
 } from "@b2b/features/concerts";
@@ -62,7 +62,7 @@ export function AcceptApplicationPage() {
 
       {requiresCheckout ? (
         <div className="border-border bg-card rounded-xl border p-4">
-          <AcceptContractSummary contract={opportunity.contract} />
+          <AcceptDealSummary contract={opportunity.contract} />
         </div>
       ) : (
         <ESignaturePanel

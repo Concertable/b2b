@@ -1,19 +1,19 @@
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Label } from "@/components/ui/label";
 import type {
-  Contract,
-  FlatFeeContract,
-  DoorSplitContract,
-  VersusContract,
-  VenueHireContract,
+  Deal,
+  FlatFeeDeal,
+  DoorSplitDeal,
+  VersusDeal,
+  VenueHireDeal,
 } from "../types";
 
-interface FieldProps<T extends Contract> {
+interface FieldProps<T extends Deal> {
   contract: T;
   onChange: (next: T) => void;
 }
 
-function FlatFeeFields({ contract, onChange }: FieldProps<FlatFeeContract>) {
+function FlatFeeFields({ contract, onChange }: FieldProps<FlatFeeDeal>) {
   return (
     <div>
       <Label className="text-muted-foreground text-xs">Fee (£)</Label>
@@ -31,7 +31,7 @@ function FlatFeeFields({ contract, onChange }: FieldProps<FlatFeeContract>) {
 function DoorSplitFields({
   contract,
   onChange,
-}: FieldProps<DoorSplitContract>) {
+}: FieldProps<DoorSplitDeal>) {
   return (
     <div>
       <Label className="text-muted-foreground text-xs">Artist door %</Label>
@@ -48,7 +48,7 @@ function DoorSplitFields({
   );
 }
 
-function VersusFields({ contract, onChange }: FieldProps<VersusContract>) {
+function VersusFields({ contract, onChange }: FieldProps<VersusDeal>) {
   return (
     <div className="grid grid-cols-2 gap-3">
       <div>
@@ -82,7 +82,7 @@ function VersusFields({ contract, onChange }: FieldProps<VersusContract>) {
 function VenueHireFields({
   contract,
   onChange,
-}: FieldProps<VenueHireContract>) {
+}: FieldProps<VenueHireDeal>) {
   return (
     <div>
       <Label className="text-muted-foreground text-xs">Hire fee (£)</Label>
@@ -100,11 +100,11 @@ function VenueHireFields({
 }
 
 interface Props {
-  contract: Contract;
-  onChange: (next: Contract) => void;
+  contract: Deal;
+  onChange: (next: Deal) => void;
 }
 
-export function ContractFields({ contract, onChange }: Readonly<Props>) {
+export function DealFields({ contract, onChange }: Readonly<Props>) {
   switch (contract.$type) {
     case "flatFee":
       return <FlatFeeFields contract={contract} onChange={onChange} />;

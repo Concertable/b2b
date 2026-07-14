@@ -2,16 +2,16 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import type { Contract } from "@b2b/features/contracts";
+import type { Deal } from "@b2b/features/deals";
 import { eSignatureRequestSchema } from "@concertable/shared/features/concerts";
 import type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
-import { AcceptContractSummary } from "./AcceptContractSummary";
+import { AcceptDealSummary } from "./AcceptDealSummary";
 import { SignatureCanvas } from "./SignatureCanvas";
 
 interface Props {
   /* Optional: when the caller has the contract it's shown conspicuously here. On the paid-apply
      checkout the deal fee is already shown alongside (OrderSummaryCard), so it may be omitted. */
-  contract?: Contract;
+  contract?: Deal;
   value: ESignatureRequest;
   onChange: (value: ESignatureRequest) => void;
 }
@@ -30,7 +30,7 @@ export function ESignaturePanel({ contract, value, onChange }: Readonly<Props>) 
     <div className="border-border bg-card space-y-4 rounded-xl border p-4">
       <div className="space-y-3">
         <h3 className="text-sm font-semibold">What you are agreeing to</h3>
-        {contract && <AcceptContractSummary contract={contract} />}
+        {contract && <AcceptDealSummary contract={contract} />}
         <p className="text-muted-foreground text-xs">
           Cancellation and liability follow the Concertable platform Terms &amp; Conditions, which
           form part of this booking agreement. By signing you confirm you have read and accept them.

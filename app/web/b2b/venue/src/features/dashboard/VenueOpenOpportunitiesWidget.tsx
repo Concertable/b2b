@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Inbox } from "lucide-react";
 import dayjs from "dayjs";
 import { useVenueOpenOpportunities } from "./hooks";
-import { contractSummary } from "@concertable/shared/features/contracts";
+import { dealSummary } from "@concertable/shared/features/deals";
 import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function VenueOpenOpportunitiesWidget() {
@@ -33,7 +33,7 @@ export function VenueOpenOpportunitiesWidget() {
                     {dayjs(o.opportunity.startDate).format("ddd D MMM")}
                   </div>
                   <div className="text-muted-foreground text-xs">
-                    {contractSummary(o.opportunity.contract)}
+                    {dealSummary(o.opportunity.contract)}
                   </div>
                 </div>
                 <div className="text-right">
