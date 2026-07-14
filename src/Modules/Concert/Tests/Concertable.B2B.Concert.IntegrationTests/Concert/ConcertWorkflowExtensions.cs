@@ -17,8 +17,8 @@ internal static class ConcertWorkflowExtensions
     public static async Task DeclareDoorRevenueAsync(this ConcertApiFixture fixture, int concertId, decimal doorRevenue)
     {
         using var scope = fixture.Services.CreateScope();
-        var concertWorkflowModule = scope.ServiceProvider.GetRequiredService<IConcertWorkflowModule>();
-        await concertWorkflowModule.DeclareDoorRevenueAsync(concertId, doorRevenue);
+        var concertService = scope.ServiceProvider.GetRequiredService<IConcertService>();
+        await concertService.DeclareDoorRevenueAsync(concertId, doorRevenue);
     }
 
     public static async Task RunCompletionAsync(this ConcertApiFixture fixture)
