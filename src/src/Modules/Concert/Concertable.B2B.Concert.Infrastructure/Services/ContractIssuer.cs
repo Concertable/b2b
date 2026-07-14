@@ -63,7 +63,6 @@ internal sealed class ContractIssuer : IContractIssuer
             timeProvider.GetUtcNow().UtcDateTime);
         contract.VenueTenantId = application.VenueTenantId;
         contract.ArtistTenantId = application.ArtistTenantId;
-        contract.AssignPdfBlobName($"contracts/{bookingId}-{Guid.NewGuid():N}.pdf");
 
         await contractRepository.AddAsync(contract);
     }
