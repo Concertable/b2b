@@ -4,5 +4,5 @@ namespace Concertable.B2B.Concert.Application.Workflow;
 
 internal interface IConcertStateMachineRegistry
 {
-    ContractStateMachine Get(DealType type);
+    LifecycleStateMachine Get(DealType type);
 }
