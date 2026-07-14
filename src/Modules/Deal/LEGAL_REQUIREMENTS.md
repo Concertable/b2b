@@ -83,7 +83,7 @@ requirement, but it blocks the contract types that *are* the USP.)
 ## 2. Booking agreement + e-signature — ABSENT
 **Legal basis:** contract law; Electronic Communications Act 2000; retained eIDAS.
 The `Accept` lifecycle transition is an *implicit* agreement that produces **no signed
-record**. Concertable has a sophisticated *settlement* contract (`ContractEntity`) but no
+record**. Concertable has a sophisticated *settlement* contract (`DealEntity`) but no
 legal *agreement artifact* — the thing GigPig/GigXchange market as "contract signing". This
 matters **more** here than for them: money moves in multiple directions (incl. artist-pays-
 venue VenueHire), so evidence of what was agreed carries higher stakes. It is also the
@@ -92,9 +92,9 @@ item 6 (cancellation terms are stated *and consented to* here), item 7 (terms ac
 and item 9 (the audit trail of who agreed to what).
 **Build:**
 - A `BookingAgreement` entity — **not** named `Contract` (don't collide with
-  `ContractEntity`). It **snapshots** the agreed terms at Accept: both parties + details,
+  `DealEntity`). It **snapshots** the agreed terms at Accept: both parties + details,
   contract type + numbers, date, cancellation terms, platform-terms version. Snapshot, **not**
-  an FK to the live contract — `ContractEntity` can be edited later and the agreement must
+  an FK to the live contract — `DealEntity` can be edited later and the agreement must
   freeze what was agreed (the existing purchase-time-snapshot convention).
 - Capture affirmative consent. **Tier 1 (do first): click-wrap** — an "I agree" gate wired
   into the existing `AcceptExecutor` / checkout step, recording identity + UTC timestamp
@@ -106,7 +106,7 @@ and item 9 (the audit trail of who agreed to what).
 - **Tier 2 (later / optional):** full e-signature (drawn/typed, or DocuSign / Dropbox Sign /
   Yousign). Overkill for grassroots bookings — add only if a customer demands it.
 **Lives in:** the Concert module (owns the `Accept` transition + the parties); reads terms
-via `IContractModule` to build the snapshot.
+via `IDealModule` to build the snapshot.
 
 ---
 
