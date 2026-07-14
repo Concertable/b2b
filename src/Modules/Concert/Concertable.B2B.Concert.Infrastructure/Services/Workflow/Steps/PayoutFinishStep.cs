@@ -34,12 +34,12 @@ internal sealed class PayoutFinishStep : IFinishStep
 
     public async Task ExecuteAsync(int concertId)
     {
-        var doorRevenue = await concertRepository.GetDoorRevenueByConcertIdAsync(concertId)
+        var totalRevenue = await concertRepository.GetTotalRevenueByConcertIdAsync(concertId)
             ?? throw new InvalidOperationException(
                 $"Concert {concertId} reached settlement with no declared door revenue — the completion gate should make this unreachable.");
-        var artistShare = artistShareCalculator.Calculate(dealAccessor.Deal, doorRevenue);
+        var artistShare = artistShareCalculator.Calculate(dealAccessor.Deal, totalRevenue);
 
-        logger.ArtistShareCalculated(concertId, doorRevenue, artistShare);
+        logger.ArtistShareCalculated(concertId, totalRevenue, artistShare);
 
         /* DoorSplit/Versus: the venue tenant pays the artist tenant, per the booking's frozen snapshot. */
         var settlement = await bookingService.GetSettlementByConcertIdAsync(concertId);
