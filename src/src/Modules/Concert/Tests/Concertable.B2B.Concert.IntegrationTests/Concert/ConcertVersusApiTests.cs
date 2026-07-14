@@ -11,6 +11,8 @@ namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 public sealed class ConcertVersusApiTests : IAsyncLifetime
 {
+    private const decimal DoorRevenue = 200m;
+
     private readonly ConcertApiFixture fixture;
 
     public ConcertVersusApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
@@ -23,12 +25,13 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
-    public async Task Finish_ShouldChargeGuaranteePlusDoorShareOffSession()
+    public async Task Finish_ShouldChargeGuaranteePlusDoorShareOffSession_AfterDoorRevenueDeclared()
     {
-        // Arrange
+        // Arrange — the venue declares the door revenue; Versus settles guarantee + a % of it
         var concert = fixture.SeedState.PastVersusBooking.Concert!;
         var deal = fixture.SeedState.PastVersusAppDeal;
         var deferred = (DeferredBooking)fixture.SeedState.PastVersusBooking;
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
         // Act
         await fixture.FinishConcertAsync(concert.Id);
@@ -39,7 +42,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
         Assert.Equal(venueTenantId, payment.PayerId);
         Assert.Equal(artistTenantId, payment.PayeeId);
-        Assert.Equal(deal.CalculateArtistShare(concert.TicketsSold * concert.Price), payment.Amount);
+        Assert.Equal(deal.CalculateArtistShare(DoorRevenue), payment.Amount);
         Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
         Assert.Equal(deferred.Id, payment.BookingId);
 
@@ -51,7 +54,9 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
     public async Task Finish_ShouldCompleteBooking_WhenSettlementWebhookSucceeds()
     {
         // Arrange
-        await fixture.FinishConcertAsync(fixture.SeedState.PastVersusBooking.Concert!.Id);
+        var concert = fixture.SeedState.PastVersusBooking.Concert!;
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
+        await fixture.FinishConcertAsync(concert.Id);
 
         // Act
         await fixture.StripeClient.SendWebhookAsync();
