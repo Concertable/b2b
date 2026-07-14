@@ -5,25 +5,25 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class BookingAgreementRepository : VenueArtistTenantScopedRepository<BookingAgreementEntity>, IBookingAgreementRepository
+internal sealed class ContractRepository : VenueArtistTenantScopedRepository<ContractEntity>, IContractRepository
 {
-    public BookingAgreementRepository(ConcertDbContext context) : base(context) { }
+    public ContractRepository(ConcertDbContext context) : base(context) { }
 
-    public Task<BookingAgreementEntity?> GetByApplicationIdAsync(int applicationId, CancellationToken ct = default) =>
-        context.BookingAgreements
+    public Task<ContractEntity?> GetByApplicationIdAsync(int applicationId, CancellationToken ct = default) =>
+        context.Contracts
             .FirstOrDefaultAsync(a => a.Booking.ApplicationId == applicationId, ct);
 
-    public Task<BookingAgreementEntity?> GetByConcertIdAsync(int concertId, CancellationToken ct = default) =>
-        context.BookingAgreements
+    public Task<ContractEntity?> GetByConcertIdAsync(int concertId, CancellationToken ct = default) =>
+        context.Contracts
             .FirstOrDefaultAsync(a => context.Concerts.Any(c => c.Id == concertId && c.BookingId == a.BookingId), ct);
 
-    public Task<BookingAgreementEntity?> GetByBookingIdIgnoringTenantAsync(int bookingId, CancellationToken ct = default) =>
-        context.BookingAgreements
+    public Task<ContractEntity?> GetByBookingIdIgnoringTenantAsync(int bookingId, CancellationToken ct = default) =>
+        context.Contracts
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(a => a.BookingId == bookingId, ct);
 
     public Task<int?> GetIdByApplicationIdAsync(int applicationId, CancellationToken ct = default) =>
-        context.BookingAgreements
+        context.Contracts
             .Where(a => a.Booking.ApplicationId == applicationId)
             .Select(a => (int?)a.Id)
             .FirstOrDefaultAsync(ct);
@@ -34,7 +34,7 @@ internal sealed class BookingAgreementRepository : VenueArtistTenantScopedReposi
         if (applicationIds.Count == 0)
             return new Dictionary<int, int>();
 
-        var pairs = await context.BookingAgreements
+        var pairs = await context.Contracts
             .Where(a => applicationIds.Contains(a.Booking.ApplicationId))
             .Select(a => new { ApplicationId = a.Booking.ApplicationId, AgreementId = a.Id })
             .ToListAsync(ct);

@@ -4,9 +4,9 @@ using Concertable.B2B.Concert.Domain.Entities;
 
 namespace Concertable.B2B.Concert.Application.Mappers;
 
-internal static class BookingAgreementMappers
+internal static class ContractMappers
 {
-    public static BookingAgreementDto ToDto(this BookingAgreementEntity a) =>
+    public static ContractDto ToDto(this ContractEntity a) =>
         new(a.Id,
             a.VenueName,
             a.ArtistName,
@@ -20,6 +20,6 @@ internal static class BookingAgreementMappers
             a.VenueESignature.ToDto(),
             a.CreatedAtUtc);
 
-    public static FileDownload ToFileDownload(this BookingAgreementEntity a, byte[] content) =>
+    public static FileDownload ToFileDownload(this ContractEntity a, byte[] content) =>
         new(content, $"booking-agreement-BA-{a.Id}.pdf", MediaTypeNames.Application.Pdf);
 }

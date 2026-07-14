@@ -14,11 +14,11 @@ namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
 [Collection("Integration")]
 
-public sealed class BookingAgreementApiTests : IAsyncLifetime
+public sealed class ContractApiTests : IAsyncLifetime
 {
     private readonly ConcertApiFixture fixture;
 
-    public BookingAgreementApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    public ContractApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -367,18 +367,18 @@ public sealed class BookingAgreementApiTests : IAsyncLifetime
         return application.Id;
     }
 
-    private async Task<BookingAgreementEntity> GetAgreementAsync(int applicationId)
+    private async Task<ContractEntity> GetAgreementAsync(int applicationId)
     {
         var booking = await fixture.ConcertReads.Set<BookingEntity>()
             .FirstAsync(b => b.ApplicationId == applicationId);
-        var agreement = await fixture.ConcertReads.Set<BookingAgreementEntity>()
+        var agreement = await fixture.ConcertReads.Set<ContractEntity>()
             .SingleAsync(a => a.BookingId == booking.Id);
         Assert.Equal(booking.VenueTenantId, agreement.VenueTenantId);
         Assert.Equal(booking.ArtistTenantId, agreement.ArtistTenantId);
         return agreement;
     }
 
-    private void AssertCommonSnapshot(BookingAgreementEntity agreement)
+    private void AssertCommonSnapshot(ContractEntity agreement)
     {
         Assert.NotEmpty(agreement.VenueName);
         Assert.NotEmpty(agreement.ArtistName);

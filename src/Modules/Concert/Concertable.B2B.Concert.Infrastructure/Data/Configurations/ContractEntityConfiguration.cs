@@ -4,14 +4,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Configurations;
 
-internal sealed class BookingAgreementEntityConfiguration : IEntityTypeConfiguration<BookingAgreementEntity>
+internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<ContractEntity>
 {
-    public void Configure(EntityTypeBuilder<BookingAgreementEntity> builder)
+    public void Configure(EntityTypeBuilder<ContractEntity> builder)
     {
-        builder.ToTable(Schema.Tables.BookingAgreements, Schema.Name);
+        builder.ToTable(Schema.Tables.Contracts, Schema.Name);
         builder.HasOne(a => a.Booking)
             .WithOne()
-            .HasForeignKey<BookingAgreementEntity>(a => a.BookingId)
+            .HasForeignKey<ContractEntity>(a => a.BookingId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);
         builder.OwnsOne(a => a.Period, p =>

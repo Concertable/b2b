@@ -7,16 +7,16 @@ using QuestPDF.Infrastructure;
 namespace Concertable.B2B.Concert.Infrastructure.Pdf;
 
 /// <summary>
-/// The human-readable booking agreement, rendered from the immutable <see cref="BookingAgreementEntity"/>
+/// The human-readable booking agreement, rendered from the immutable <see cref="ContractEntity"/>
 /// snapshot — never from the live contract. Mirrors the QuestPDF <c>IDocument</c> precedent
 /// (Customer's TicketReceiptDocument): plain data in via the ctor, one <see cref="Compose"/>.
 /// </summary>
-internal sealed class BookingAgreementDocument : IDocument
+internal sealed class ContractDocument : IDocument
 {
-    private readonly BookingAgreementEntity agreement;
+    private readonly ContractEntity agreement;
     private readonly ILogger logger;
 
-    public BookingAgreementDocument(BookingAgreementEntity agreement, ILogger logger)
+    public ContractDocument(ContractEntity agreement, ILogger logger)
     {
         this.agreement = agreement;
         this.logger = logger;

@@ -2,7 +2,7 @@ using Concertable.B2B.Deal.Contracts;
 
 namespace Concertable.B2B.Concert.Application.DTOs;
 
-internal sealed record BookingAgreementDto(
+internal sealed record ContractDto(
     int Id,
     string VenueName,
     string ArtistName,

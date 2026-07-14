@@ -6,20 +6,20 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class BookingAgreementService : IBookingAgreementService
+internal sealed class ContractService : IContractService
 {
-    private readonly IBookingAgreementRepository repository;
-    private readonly IBookingAgreementPdfService pdfService;
+    private readonly IContractRepository repository;
+    private readonly IContractPdfService pdfService;
 
-    public BookingAgreementService(
-        IBookingAgreementRepository repository,
-        IBookingAgreementPdfService pdfService)
+    public ContractService(
+        IContractRepository repository,
+        IContractPdfService pdfService)
     {
         this.repository = repository;
         this.pdfService = pdfService;
     }
 
-    public async Task<BookingAgreementDto> GetByApplicationIdAsync(int applicationId)
+    public async Task<ContractDto> GetByApplicationIdAsync(int applicationId)
     {
         var agreement = await repository.GetByApplicationIdAsync(applicationId)
             .OrNotFound();

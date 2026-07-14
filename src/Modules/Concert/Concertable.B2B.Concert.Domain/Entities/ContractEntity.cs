@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// Columns are copies, never references to the live contract — opportunity edits must not
 /// change what was agreed. Never update a persisted row's terms.
 /// </summary>
-public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
+public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
 {
     public static string DisplayName => "Booking agreement";
     public int Id { get; private set; }
@@ -35,7 +35,7 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
     public string? PdfBlobName { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
-    private BookingAgreementEntity() { }
+    private ContractEntity() { }
 
     /* The PDF's storage location, assigned once inside the accept transaction (single writer) before
        any bytes exist. Generation then only ever fills THIS location — background at Accept, or lazily
@@ -48,7 +48,7 @@ public sealed class BookingAgreementEntity : IIdEntity, IVenueArtistTenantScoped
         PdfBlobName = blobName;
     }
 
-    public static BookingAgreementEntity Create(
+    public static ContractEntity Create(
         int bookingId,
         int venueId,
         string venueName,

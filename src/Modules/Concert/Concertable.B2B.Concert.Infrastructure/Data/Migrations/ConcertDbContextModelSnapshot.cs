@@ -119,117 +119,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.BookingAgreementEntity", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ArtistId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ArtistName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("ArtistTenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("BookingId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ContractType")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("PaymentMethod")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PdfBlobName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PlatformTermsVersion")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TermsText")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("VenueId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("VenueName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("VenueTenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "ArtistESignature", "Concertable.B2B.Concert.Domain.Entities.BookingAgreementEntity.ArtistESignature#ESignature", b1 =>
-                        {
-                            b1.IsRequired();
-
-                            b1.Property<DateTime>("AtUtc")
-                                .HasColumnType("datetime2");
-
-                            b1.Property<string>("DrawnSignatureImage")
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<string>("Ip")
-                                .HasMaxLength(45)
-                                .HasColumnType("nvarchar(45)");
-
-                            b1.Property<string>("SignatoryName")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<string>("UserAgent")
-                                .HasMaxLength(512)
-                                .HasColumnType("nvarchar(512)");
-
-                            b1.Property<Guid>("UserId")
-                                .HasColumnType("uniqueidentifier");
-                        });
-
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "VenueESignature", "Concertable.B2B.Concert.Domain.Entities.BookingAgreementEntity.VenueESignature#ESignature", b1 =>
-                        {
-                            b1.IsRequired();
-
-                            b1.Property<DateTime>("AtUtc")
-                                .HasColumnType("datetime2");
-
-                            b1.Property<string>("DrawnSignatureImage")
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<string>("Ip")
-                                .HasMaxLength(45)
-                                .HasColumnType("nvarchar(45)");
-
-                            b1.Property<string>("SignatoryName")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<string>("UserAgent")
-                                .HasMaxLength(512)
-                                .HasColumnType("nvarchar(512)");
-
-                            b1.Property<Guid>("UserId")
-                                .HasColumnType("uniqueidentifier");
-                        });
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BookingId")
-                        .IsUnique();
-
-                    b.ToTable("BookingAgreements", "concert");
-                });
-
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.BookingEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -358,6 +247,117 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.HasIndex("ConcertId");
 
                     b.ToTable("ConcertImages", "concert");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ContractEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ArtistId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ArtistName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ArtistTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ContractType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PdfBlobName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlatformTermsVersion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TermsText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("VenueId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VenueName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("VenueTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ArtistESignature", "Concertable.B2B.Concert.Domain.Entities.ContractEntity.ArtistESignature#ESignature", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<DateTime>("AtUtc")
+                                .HasColumnType("datetime2");
+
+                            b1.Property<string>("DrawnSignatureImage")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Ip")
+                                .HasMaxLength(45)
+                                .HasColumnType("nvarchar(45)");
+
+                            b1.Property<string>("SignatoryName")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("UserAgent")
+                                .HasMaxLength(512)
+                                .HasColumnType("nvarchar(512)");
+
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uniqueidentifier");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "VenueESignature", "Concertable.B2B.Concert.Domain.Entities.ContractEntity.VenueESignature#ESignature", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<DateTime>("AtUtc")
+                                .HasColumnType("datetime2");
+
+                            b1.Property<string>("DrawnSignatureImage")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Ip")
+                                .HasMaxLength(45)
+                                .HasColumnType("nvarchar(45)");
+
+                            b1.Property<string>("SignatoryName")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("UserAgent")
+                                .HasMaxLength(512)
+                                .HasColumnType("nvarchar(512)");
+
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uniqueidentifier");
+                        });
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId")
+                        .IsUnique();
+
+                    b.ToTable("Contracts", "concert");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.OpportunityEntity", b =>
@@ -626,41 +626,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Navigation("Opportunity");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.BookingAgreementEntity", b =>
-                {
-                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.BookingEntity", "Booking")
-                        .WithOne()
-                        .HasForeignKey("Concertable.B2B.Concert.Domain.Entities.BookingAgreementEntity", "BookingId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.OwnsOne("Concertable.Kernel.DateRange", "Period", b1 =>
-                        {
-                            b1.Property<int>("BookingAgreementEntityId")
-                                .HasColumnType("int");
-
-                            b1.Property<DateTime>("End")
-                                .HasColumnType("datetime2")
-                                .HasColumnName("Period_End");
-
-                            b1.Property<DateTime>("Start")
-                                .HasColumnType("datetime2")
-                                .HasColumnName("Period_Start");
-
-                            b1.HasKey("BookingAgreementEntityId");
-
-                            b1.ToTable("BookingAgreements", "concert");
-
-                            b1.WithOwner()
-                                .HasForeignKey("BookingAgreementEntityId");
-                        });
-
-                    b.Navigation("Booking");
-
-                    b.Navigation("Period")
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.BookingEntity", b =>
                 {
                     b.HasOne("Concertable.B2B.Concert.Domain.Entities.ApplicationEntity", "Application")
@@ -732,6 +697,41 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Concert");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ContractEntity", b =>
+                {
+                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.BookingEntity", "Booking")
+                        .WithOne()
+                        .HasForeignKey("Concertable.B2B.Concert.Domain.Entities.ContractEntity", "BookingId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.OwnsOne("Concertable.Kernel.DateRange", "Period", b1 =>
+                        {
+                            b1.Property<int>("ContractEntityId")
+                                .HasColumnType("int");
+
+                            b1.Property<DateTime>("End")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("Period_End");
+
+                            b1.Property<DateTime>("Start")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("Period_Start");
+
+                            b1.HasKey("ContractEntityId");
+
+                            b1.ToTable("Contracts", "concert");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ContractEntityId");
+                        });
+
+                    b.Navigation("Booking");
+
+                    b.Navigation("Period")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.OpportunityEntity", b =>
