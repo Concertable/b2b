@@ -8,31 +8,31 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
 internal sealed class CheckoutDispatcher : ICheckoutDispatcher
 {
     private readonly IConcertWorkflowFactory workflows;
-    private readonly IContractResolver contractResolver;
+    private readonly IDealResolver dealResolver;
 
-    public CheckoutDispatcher(IConcertWorkflowFactory workflows, IContractResolver contractResolver)
+    public CheckoutDispatcher(IConcertWorkflowFactory workflows, IDealResolver dealResolver)
     {
         this.workflows = workflows;
-        this.contractResolver = contractResolver;
+        this.dealResolver = dealResolver;
     }
 
     public async Task<Checkout> ApplyCheckoutAsync(int opportunityId)
     {
-        var contract = await contractResolver.ResolveByOpportunityIdAsync(opportunityId);
-        var workflow = workflows.Create(contract.ContractType);
+        var deal = await dealResolver.ResolveByOpportunityIdAsync(opportunityId);
+        var workflow = workflows.Create(deal.DealType);
 
         return workflow is IAppliesCheckout w
             ? await w.ApplyCheckout.ExecuteAsync(opportunityId)
-            : throw new BadRequestException("This contract does not support a pre-apply checkout");
+            : throw new BadRequestException("This deal does not support a pre-apply checkout");
     }
 
     public async Task<Checkout> AcceptCheckoutAsync(int applicationId)
     {
-        var contract = await contractResolver.ResolveByApplicationIdAsync(applicationId);
-        var workflow = workflows.Create(contract.ContractType);
+        var deal = await dealResolver.ResolveByApplicationIdAsync(applicationId);
+        var workflow = workflows.Create(deal.DealType);
 
         return workflow is IAcceptsCheckout w
             ? await w.AcceptCheckout.ExecuteAsync(applicationId)
-            : throw new BadRequestException("This contract does not support an accept checkout");
+            : throw new BadRequestException("This deal does not support an accept checkout");
     }
 }

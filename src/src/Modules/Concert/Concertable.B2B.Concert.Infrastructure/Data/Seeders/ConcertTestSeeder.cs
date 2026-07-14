@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
@@ -15,20 +15,20 @@ internal sealed class ConcertTestSeeder : ITestSeeder
 
     private readonly ConcertDbContext context;
     private readonly SeedState seed;
-    private readonly IContractModule contracts;
+    private readonly IDealModule deals;
     private readonly ITermsFingerprintCalculator fingerprint;
     private readonly TimeProvider timeProvider;
 
     public ConcertTestSeeder(
         ConcertDbContext context,
         SeedState seed,
-        IContractModule contracts,
+        IDealModule deals,
         ITermsFingerprintCalculator fingerprint,
         TimeProvider timeProvider)
     {
         this.context = context;
         this.seed = seed;
-        this.contracts = contracts;
+        this.deals = deals;
         this.fingerprint = fingerprint;
         this.timeProvider = timeProvider;
     }
@@ -77,7 +77,7 @@ internal sealed class ConcertTestSeeder : ITestSeeder
         await context.Applications.SeedIfEmptyAsync(async () =>
         {
             await SeededApplicationSigner.SignAsync(
-                seed, contracts, fingerprint, timeProvider.GetUtcNow().UtcDateTime, ct);
+                seed, deals, fingerprint, timeProvider.GetUtcNow().UtcDateTime, ct);
             context.Applications.AddRange(seed.Applications);
             await context.SaveChangesAsync(ct);
 

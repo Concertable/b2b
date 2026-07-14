@@ -10,7 +10,7 @@ using Concertable.Testing.Integration.Logging;
 using Concertable.Testing.Integration.Mocks;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
-using Concertable.B2B.Contract.Infrastructure.Extensions;
+using Concertable.B2B.Deal.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
@@ -127,7 +127,7 @@ public class ApiFixture : IAsyncLifetime
                 services.AddTenantTestSeeder();
                 services.AddArtistTestSeeder();
                 services.AddVenueTestSeeder();
-                services.AddContractTestSeeder();
+                services.AddDealTestSeeder();
                 services.AddConcertTestSeeder();
                 services.AddConversationsTestSeeder();
 

@@ -5,7 +5,7 @@ import { EditableProvider } from "@concertable/shared/providers";
 import { DetailsPageSkeleton } from "@/components/skeletons/DetailsPageSkeleton";
 import type { Concert } from "@concertable/shared/features/concerts/types";
 import { useMyConcert } from "../hooks/useMyConcert";
-import { useDownloadAgreement } from "../hooks/useDownloadAgreement";
+import { useDownloadContract } from "../hooks/useDownloadContract";
 import { useConcertStore } from "../store/useConcertStore";
 import { ConcertDetails } from "@/features/concerts";
 
@@ -32,7 +32,7 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
   const draft = useConcertStore((state) => state.draft);
   const setName = useConcertStore((state) => state.setName);
   const setAbout = useConcertStore((state) => state.setAbout);
-  const downloadAgreement = useDownloadAgreement();
+  const downloadContract = useDownloadContract();
 
   if (!concert) return <DetailsPageSkeleton sections={4} />;
 
@@ -52,14 +52,14 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
         onCancel={resetDraft}
         actions={
           <>
-            {concert.actions?.agreement && (
+            {concert.actions?.contract && (
               <Button
                 variant="outline"
-                onClick={() => downloadAgreement.mutate(concert.id)}
-                disabled={downloadAgreement.isPending}
-                data-testid="download-agreement"
+                onClick={() => downloadContract.mutate(concert.id)}
+                disabled={downloadContract.isPending}
+                data-testid="download-contract"
               >
-                Booking agreement
+                Contract
               </Button>
             )}
             {actions}

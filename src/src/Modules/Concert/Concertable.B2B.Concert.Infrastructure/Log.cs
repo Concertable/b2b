@@ -65,10 +65,10 @@ internal static partial class Log
 
     #endregion
 
-    #region BookingAgreementDocument
+    #region ContractDocument
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Agreement {AgreementId}: stored {Party} drawn signature could not be decoded; rendering without the drawn image")]
-    internal static partial void DrawnSignatureDecodeFailed(this ILogger logger, int agreementId, string party);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Contract {ContractId}: stored {Party} drawn signature could not be decoded; rendering without the drawn image")]
+    internal static partial void DrawnSignatureDecodeFailed(this ILogger logger, int contractId, string party);
 
     #endregion
 

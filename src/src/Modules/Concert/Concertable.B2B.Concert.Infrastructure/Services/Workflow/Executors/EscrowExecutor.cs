@@ -38,7 +38,7 @@ internal sealed class EscrowExecutor : IEscrowExecutor
                 return;
             }
 
-            var workflow = workflows.Create(app.ContractType);
+            var workflow = workflows.Create(app.DealType);
             await workflow.Book.ExecuteAsync(bookingId);
         });
     }

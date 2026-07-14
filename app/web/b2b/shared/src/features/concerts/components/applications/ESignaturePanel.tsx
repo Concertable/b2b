@@ -2,16 +2,16 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import type { Contract } from "@b2b/features/contracts";
+import type { Deal } from "@b2b/features/deals";
 import { eSignatureRequestSchema } from "@concertable/shared/features/concerts";
 import type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
-import { AcceptContractSummary } from "./AcceptContractSummary";
+import { AcceptDealSummary } from "./AcceptDealSummary";
 import { SignatureCanvas } from "./SignatureCanvas";
 
 interface Props {
-  /* Optional: when the caller has the contract it's shown conspicuously here. On the paid-apply
+  /* Optional: when the caller has the deal it's shown conspicuously here. On the paid-apply
      checkout the deal fee is already shown alongside (OrderSummaryCard), so it may be omitted. */
-  contract?: Contract;
+  deal?: Deal;
   value: ESignatureRequest;
   onChange: (value: ESignatureRequest) => void;
 }
@@ -19,7 +19,7 @@ interface Props {
 /* The signature step: the binding terms shown conspicuously at the point of signing, a required
    typed full name (the Advanced-tier attribution core), an optional drawn signature, and an
    explicit intent line. Nothing is pre-filled or pre-checked. */
-export function ESignaturePanel({ contract, value, onChange }: Readonly<Props>) {
+export function ESignaturePanel({ deal, value, onChange }: Readonly<Props>) {
   const [touched, setTouched] = useState(false);
   const nameResult =
     eSignatureRequestSchema.shape.signatoryName.safeParse(value.signatoryName);
@@ -30,10 +30,10 @@ export function ESignaturePanel({ contract, value, onChange }: Readonly<Props>) 
     <div className="border-border bg-card space-y-4 rounded-xl border p-4">
       <div className="space-y-3">
         <h3 className="text-sm font-semibold">What you are agreeing to</h3>
-        {contract && <AcceptContractSummary contract={contract} />}
+        {deal && <AcceptDealSummary deal={deal} />}
         <p className="text-muted-foreground text-xs">
           Cancellation and liability follow the Concertable platform Terms &amp; Conditions, which
-          form part of this booking agreement. By signing you confirm you have read and accept them.
+          form part of this contract. By signing you confirm you have read and accept them.
         </p>
       </div>
 
@@ -66,7 +66,7 @@ export function ESignaturePanel({ contract, value, onChange }: Readonly<Props>) 
       </div>
 
       <p className="text-muted-foreground text-xs">
-        By signing, I agree to and e-sign this booking agreement.
+        By signing, I agree to and e-sign this contract.
       </p>
     </div>
   );

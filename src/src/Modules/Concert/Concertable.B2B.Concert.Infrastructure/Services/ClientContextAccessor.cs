@@ -12,7 +12,9 @@ internal sealed class ClientContextAccessor : IClientContext
         this.httpContextAccessor = httpContextAccessor;
     }
 
-    public IPAddress? IpAddress => httpContextAccessor.HttpContext?.Connection.RemoteIpAddress;
+    public IPAddress IpAddress =>
+        httpContextAccessor.HttpContext?.Connection.RemoteIpAddress
+        ?? throw new InvalidOperationException("Cannot record an e-signature without a client IP address");
 
     public string? UserAgent => httpContextAccessor.HttpContext?.Request.Headers.UserAgent;
 }

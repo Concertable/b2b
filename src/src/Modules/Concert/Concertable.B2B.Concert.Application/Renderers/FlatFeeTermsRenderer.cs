@@ -1,13 +1,13 @@
 using Concertable.B2B.Concert.Application.Interfaces;
-using static Concertable.B2B.Concert.Application.Renderers.AgreementTermsFormat;
+using static Concertable.B2B.Concert.Application.Renderers.DealTermsFormat;
 
 namespace Concertable.B2B.Concert.Application.Renderers;
 
-internal sealed class FlatFeeTermsRenderer : IAgreementTermsRenderer
+internal sealed class FlatFeeTermsRenderer : IDealTermsRenderer
 {
-    public string Render(IContract contract)
+    public string Render(IDeal deal)
     {
-        var c = (FlatFeeContract)contract;
+        var c = (FlatFeeDeal)deal;
         return $"The venue pays the artist a flat fee of {Gbp(c.Fee)}.";
     }
 }

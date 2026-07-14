@@ -19,16 +19,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { DateRangeField } from "@/components/datetime/DateRangeField";
 import {
-  ContractDetails,
-  ContractFields,
-  ContractSummaryLabel,
-  CONTRACT_TYPE_LABELS,
-} from "@b2b/features/contracts";
+  DealDetails,
+  DealFields,
+  DealSummaryLabel,
+  DEAL_TYPE_LABELS,
+} from "@b2b/features/deals";
 import { useGenresQuery } from "@/features/search/hooks/useGenreQuery";
 import { X } from "lucide-react";
 import dayjs from "dayjs";
 import type { Opportunity, OpportunityDraft } from "@/features/concerts/types";
-import type { Contract, PaymentMethod } from "@b2b/features/contracts";
+import type { Deal, PaymentMethod } from "@b2b/features/deals";
 import type { Genre } from "@/types/common";
 import { genreLabel } from "@/types/common";
 
@@ -51,7 +51,7 @@ export function OpportunityCard({ opportunity, actions }: Readonly<OpportunityCa
           actions={
             <>
               <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-                View Contract
+                View Deal
               </Button>
               {actions}
             </>
@@ -62,9 +62,9 @@ export function OpportunityCard({ opportunity, actions }: Readonly<OpportunityCa
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Contract Details</DialogTitle>
+            <DialogTitle>Deal Details</DialogTitle>
           </DialogHeader>
-          <ContractDetails contract={opportunity.contract} />
+          <DealDetails deal={opportunity.deal} />
           <DialogFooter showCloseButton />
         </DialogContent>
       </Dialog>
@@ -81,7 +81,7 @@ function OpportunityRead({ opportunity, actions }: { opportunity: OpportunityDra
             {dayjs(opportunity.startDate).format("D MMM YYYY")} —{" "}
             {dayjs(opportunity.endDate).format("D MMM YYYY")}
           </p>
-          <ContractSummaryLabel contract={opportunity.contract} />
+          <DealSummaryLabel deal={opportunity.deal} />
         </div>
         {actions && <div className="flex shrink-0 gap-2">{actions}</div>}
       </div>
@@ -105,8 +105,8 @@ function OpportunityRead({ opportunity, actions }: { opportunity: OpportunityDra
 interface EditCallbacks {
   onRemove: () => void;
   onSetDates: (start: string, end: string) => void;
-  onSetContractType: (type: Contract["$type"]) => void;
-  onSetContract: (contract: Contract) => void;
+  onSetDealType: (type: Deal["$type"]) => void;
+  onSetDeal: (deal: Deal) => void;
   onSetPaymentMethod: (method: PaymentMethod) => void;
   onToggleGenre: (genre: Genre) => void;
 }
@@ -115,9 +115,9 @@ interface OpportunityEditCardProps extends EditCallbacks {
   opportunity: OpportunityDraft;
 }
 
-export function OpportunityEditCard({ opportunity, onRemove, onSetDates, onSetContractType, onSetContract, onSetPaymentMethod, onToggleGenre }: Readonly<OpportunityEditCardProps>) {
+export function OpportunityEditCard({ opportunity, onRemove, onSetDates, onSetDealType, onSetDeal, onSetPaymentMethod, onToggleGenre }: Readonly<OpportunityEditCardProps>) {
   const { data: genres } = useGenresQuery();
-  const contract = opportunity.contract;
+  const deal = opportunity.deal;
 
   return (
     <div
@@ -133,30 +133,30 @@ export function OpportunityEditCard({ opportunity, onRemove, onSetDates, onSetCo
           />
 
           <div>
-            <Label className="text-muted-foreground text-xs">Contract type</Label>
+            <Label className="text-muted-foreground text-xs">Deal type</Label>
             <Select
-              value={contract.$type}
-              onValueChange={(v) => onSetContractType(v as Contract["$type"])}
+              value={deal.$type}
+              onValueChange={(v) => onSetDealType(v as Deal["$type"])}
             >
-              <SelectTrigger data-testid="opportunity-contract-type">
+              <SelectTrigger data-testid="opportunity-deal-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(CONTRACT_TYPE_LABELS) as Contract["$type"][]).map((type) => (
+                {(Object.keys(DEAL_TYPE_LABELS) as Deal["$type"][]).map((type) => (
                   <SelectItem key={type} value={type}>
-                    {CONTRACT_TYPE_LABELS[type]}
+                    {DEAL_TYPE_LABELS[type]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <ContractFields contract={contract} onChange={onSetContract} />
+          <DealFields deal={deal} onChange={onSetDeal} />
 
           <div>
             <Label className="text-muted-foreground text-xs">Payment method</Label>
             <Select
-              value={contract.paymentMethod}
+              value={deal.paymentMethod}
               onValueChange={(v) => onSetPaymentMethod(v as PaymentMethod)}
             >
               <SelectTrigger data-testid="opportunity-payment-method">

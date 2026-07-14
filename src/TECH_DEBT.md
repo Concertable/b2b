@@ -94,9 +94,9 @@ Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `Art
 
 ### PDF render thread-safety guarded in B2B, not in the shared PDF service
 
-QuestPDF's `GeneratePdf()` is **not thread-safe**: concurrent renders race on shared SkiaSharp font-subset state and emit PDFs whose embedded font subset lacks a usable glyph→Unicode map — the text renders but can't be extracted/copied/searched, and can render visually wrong. Reproduced deterministically: single-threaded rendering is always clean; ~5–10% of renders corrupt under 16-way concurrency, and a background render-at-accept racing a render-on-download corrupts too. `BookingAgreementPdfService` now serialises every render behind a process-wide `SemaphoreSlim`, which fixes B2B (its only PDF is the booking agreement). But the real chokepoint is the shared `Concertable.Shared.Pdf` `PdfService.Render` → `document.GeneratePdf()`, consumed by every service; **Customer's ticket-receipt PDF is still unguarded**. The B2B-local guard is a stopgap because the shared library is a published package this change couldn't republish.
+QuestPDF's `GeneratePdf()` is **not thread-safe**: concurrent renders race on shared SkiaSharp font-subset state and emit PDFs whose embedded font subset lacks a usable glyph→Unicode map — the text renders but can't be extracted/copied/searched, and can render visually wrong. Reproduced deterministically: single-threaded rendering is always clean; ~5–10% of renders corrupt under 16-way concurrency, and a background render-at-accept racing a render-on-download corrupts too. `ContractPdfService` now serialises every render behind a process-wide `SemaphoreSlim`, which fixes B2B (its only PDF is the contract). But the real chokepoint is the shared `Concertable.Shared.Pdf` `PdfService.Render` → `document.GeneratePdf()`, consumed by every service; **Customer's ticket-receipt PDF is still unguarded**. The B2B-local guard is a stopgap because the shared library is a published package this change couldn't republish.
 
-**Resolves when:** `Concertable.Shared.Pdf.Infrastructure.PdfService` serialises `GeneratePdf` (lock/`SemaphoreSlim`) so every consumer is protected, the platform package is published and consumed, and the redundant `renderLock` guard in `BookingAgreementPdfService` is removed.
+**Resolves when:** `Concertable.Shared.Pdf.Infrastructure.PdfService` serialises `GeneratePdf` (lock/`SemaphoreSlim`) so every consumer is protected, the platform package is published and consumed, and the redundant `renderLock` guard in `ContractPdfService` is removed.
 
 ---
 
@@ -119,13 +119,21 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ## LOW
 
-### Booking agreement PDFs share the `images` blob container and rely on app-level write-once
+### Contract PDFs share the `images` blob container and rely on app-level write-once
 
-`BookingAgreementPdfService` stores agreement PDFs under an `agreements/{bookingId}-{guid}.pdf` name in the **single shared `"images"` container** (the only container `Concertable.Shared.Blob` exposes). The blob *name* is assigned once, transactionally, at Accept (`BookingAgreementEntity.AssignPdfBlobName`), so generation can't race to mint competing names — but immutability of the *bytes* is still only app-level: `IBlobStorageService.UploadAsync` is `overwrite: true`, so nothing at the storage layer prevents a rewrite of a persisted legal document. A legal artefact ideally lives in its own container with a no-overwrite (write-once / immutability-policy) upload. Deliberately not done in the booking-agreement feature because both are **additive changes to the published `Concertable.Shared.Blob` package** (a dedicated container config + an overwrite-guarding `UploadAsync` overload), which would cross the package boundary the feature was scoped to avoid.
+`ContractPdfService` stores contract PDFs under a `contracts/{bookingId}-{guid}.pdf` name in the **single shared `"images"` container** (the only container `Concertable.Shared.Blob` exposes). The blob *name* is fixed at creation, transactionally, at Accept (`ContractEntity.Create`), so generation can't race to mint competing names — but immutability of the *bytes* is still only app-level: `IBlobStorageService.UploadAsync` is `overwrite: true`, so nothing at the storage layer prevents a rewrite of a persisted legal document. A legal artefact ideally lives in its own container with a no-overwrite (write-once / immutability-policy) upload. Deliberately not done in the contract feature because both are **additive changes to the published `Concertable.Shared.Blob` package** (a dedicated container config + an overwrite-guarding `UploadAsync` overload), which would cross the package boundary the feature was scoped to avoid.
 
-Related: `BookingAgreementPdfService`'s render→upload→record→lazy-serve orchestration is currently the only blob-backed PDF in B2B (the Customer ticket-receipt PDF only renders + emails, no blob). If a second blob-backed PDF appears (e.g. the self-billed VAT invoice), that pattern becomes worth extracting into `Concertable.Shared.Pdf` as a shared `IPdfBlobStore`-style helper rather than duplicating.
+Related: `ContractPdfService`'s render→upload→record→lazy-serve orchestration is currently the only blob-backed PDF in B2B (the Customer ticket-receipt PDF only renders + emails, no blob). If a second blob-backed PDF appears (e.g. the self-billed VAT invoice), that pattern becomes worth extracting into `Concertable.Shared.Pdf` as a shared `IPdfBlobStore`-style helper rather than duplicating.
 
-**Resolves when:** `Concertable.Shared.Blob` gains a dedicated-container + write-once upload path, agreement PDFs move to it, and `AttachPdf`'s app-level guard is backed by a storage-level immutability guarantee.
+**Resolves when:** `Concertable.Shared.Blob` gains a dedicated-container + write-once upload path, contract PDFs move to it, and `AttachPdf`'s app-level guard is backed by a storage-level immutability guarantee.
+
+---
+
+### `ContractEntity` "created only at Accept" is convention, not an enforced invariant
+
+`ContractEntity`'s terms are immutable once built (private setters + `Create` factory), but nothing binds `Create` to the Accept transition — that timing lives in `ContractIssuer`/`AcceptExecutor`, so a future caller could mint a contract outside Accept and the model wouldn't stop them. `VenueTenantId`/`ArtistTenantId` are also publicly settable (for the tenant interceptor + issuer), so the snapshot isn't fully sealed either. Not addressed in the DEAL_RENAME refactor, which was names-only.
+
+**Resolves when:** the Accept aggregate owns contract creation (e.g. `Create` becomes internal to the transition, or the booking aggregate is the only path that can produce one), and the tenant fields are stamped through a constructor/interceptor seam rather than public setters.
 
 ---
 

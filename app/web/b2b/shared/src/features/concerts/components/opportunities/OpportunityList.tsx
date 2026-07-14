@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { defaultContract } from "@b2b/features/contracts";
+import { defaultDeal } from "@b2b/features/deals";
 import { useOpportunities } from "../../hooks/useOpportunities";
 import { OpportunityEditCard } from "./OpportunityCard";
 import dayjs from "dayjs";
@@ -18,7 +18,7 @@ function buildDraft(): OpportunityDraft {
     startDate: start.toISOString(),
     endDate: end.toISOString(),
     genres: [],
-    contract: defaultContract("flatFee"),
+    deal: defaultDeal("flatFee"),
   };
 }
 
@@ -36,8 +36,8 @@ export function OpportunityList({ venueId }: Readonly<Props>) {
           opportunity={opportunity}
           onRemove={() => opportunityActions.remove(i)}
           onSetDates={(s, e) => opportunityActions.setDates(i, s, e)}
-          onSetContractType={(t) => opportunityActions.setContractType(i, t)}
-          onSetContract={(c) => opportunityActions.setContract(i, c)}
+          onSetDealType={(t) => opportunityActions.setDealType(i, t)}
+          onSetDeal={(c) => opportunityActions.setDeal(i, c)}
           onSetPaymentMethod={(m) => opportunityActions.setPaymentMethod(i, m)}
           onToggleGenre={(g) => opportunityActions.toggleGenre(i, g)}
         />
@@ -49,8 +49,8 @@ export function OpportunityList({ venueId }: Readonly<Props>) {
           opportunity={draft}
           onRemove={() => draftActions.remove(i)}
           onSetDates={(s, e) => draftActions.setDates(i, s, e)}
-          onSetContractType={(t) => draftActions.setContractType(i, t)}
-          onSetContract={(c) => draftActions.setContract(i, c)}
+          onSetDealType={(t) => draftActions.setDealType(i, t)}
+          onSetDeal={(c) => draftActions.setDeal(i, c)}
           onSetPaymentMethod={(m) => draftActions.setPaymentMethod(i, m)}
           onToggleGenre={(g) => draftActions.toggleGenre(i, g)}
         />

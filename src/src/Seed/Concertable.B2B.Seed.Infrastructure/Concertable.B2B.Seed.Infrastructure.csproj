@@ -12,7 +12,7 @@
     <ProjectReference Include="..\..\Modules\Artist\Concertable.B2B.Artist.Domain\Concertable.B2B.Artist.Domain.csproj" />
     <ProjectReference Include="..\..\Modules\Venue\Concertable.B2B.Venue.Domain\Concertable.B2B.Venue.Domain.csproj" />
     <ProjectReference Include="..\..\Modules\Concert\Concertable.B2B.Concert.Domain\Concertable.B2B.Concert.Domain.csproj" />
-    <ProjectReference Include="..\..\Modules\Contract\Concertable.B2B.Contract.Domain\Concertable.B2B.Contract.Domain.csproj" />
+    <ProjectReference Include="..\..\Modules\Deal\Concertable.B2B.Deal.Domain\Concertable.B2B.Deal.Domain.csproj" />
     <ProjectReference Include="..\..\Modules\Tenant\Concertable.B2B.Tenant.Domain\Concertable.B2B.Tenant.Domain.csproj" />
     <ProjectReference Include="..\..\Modules\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Seed.Contracts\Concertable.B2B.Seed.Contracts.csproj" />

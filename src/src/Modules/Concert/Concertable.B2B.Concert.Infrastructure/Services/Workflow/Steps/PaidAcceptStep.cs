@@ -5,18 +5,18 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class PaidAcceptStep : IPaidAcceptStep
 {
     private readonly IBookingService bookingService;
-    private readonly IContractAccessor contractAccessor;
+    private readonly IDealAccessor dealAccessor;
 
     public PaidAcceptStep(
         IBookingService bookingService,
-        IContractAccessor contractAccessor)
+        IDealAccessor dealAccessor)
     {
         this.bookingService = bookingService;
-        this.contractAccessor = contractAccessor;
+        this.dealAccessor = dealAccessor;
     }
 
     public async Task ExecuteAsync(int applicationId, string paymentMethodId)
     {
-        await bookingService.CreateDeferredAsync(applicationId, contractAccessor.Contract.ContractType, paymentMethodId);
+        await bookingService.CreateDeferredAsync(applicationId, dealAccessor.Deal.DealType, paymentMethodId);
     }
 }

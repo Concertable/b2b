@@ -10,7 +10,7 @@ global using Concertable.Payment.Client;
 global using Concertable.Payment.Contracts;
 global using Concertable.Payment.Contracts.Events;
 global using Concertable.Kernel.Notifications;
-global using Concertable.B2B.Contract.Contracts;
+global using Concertable.B2B.Deal.Contracts;
 global using Concertable.B2B.Concert.Domain;
 global using Concertable.B2B.Concert.Domain.ReadModels;
 global using Concertable.B2B.Concert.Contracts;

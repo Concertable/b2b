@@ -13,16 +13,16 @@ internal sealed class ConcertController : ControllerBase
 {
     private readonly IConcertService concertService;
     private readonly IConcertWorkflowModule concertWorkflowModule;
-    private readonly IBookingAgreementService agreementService;
+    private readonly IContractService contractService;
 
     public ConcertController(
         IConcertService concertService,
         IConcertWorkflowModule concertWorkflowModule,
-        IBookingAgreementService agreementService)
+        IContractService contractService)
     {
         this.concertService = concertService;
         this.concertWorkflowModule = concertWorkflowModule;
-        this.agreementService = agreementService;
+        this.contractService = contractService;
     }
 
     [HttpGet("{id}")]
@@ -40,10 +40,10 @@ internal sealed class ConcertController : ControllerBase
         return Ok((await concertService.GetDetailsForCurrentUserAsync(id)).ToCurrentUserDetailsResponse());
     }
 
-    [HttpGet("{id}/agreement/pdf")]
-    public async Task<IActionResult> GetAgreementPdf(int id)
+    [HttpGet("{id}/contract/pdf")]
+    public async Task<IActionResult> GetContractPdf(int id)
     {
-        var pdf = await agreementService.GetPdfByConcertIdAsync(id);
+        var pdf = await contractService.GetPdfByConcertIdAsync(id);
         return File(pdf.Content, pdf.ContentType, pdf.FileName);
     }
 

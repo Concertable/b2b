@@ -1,13 +1,13 @@
 using Concertable.B2B.Concert.Application.Interfaces;
-using static Concertable.B2B.Concert.Application.Renderers.AgreementTermsFormat;
+using static Concertable.B2B.Concert.Application.Renderers.DealTermsFormat;
 
 namespace Concertable.B2B.Concert.Application.Renderers;
 
-internal sealed class DoorSplitTermsRenderer : IAgreementTermsRenderer
+internal sealed class DoorSplitTermsRenderer : IDealTermsRenderer
 {
-    public string Render(IContract contract)
+    public string Render(IDeal deal)
     {
-        var c = (DoorSplitContract)contract;
+        var c = (DoorSplitDeal)deal;
         return $"The artist receives {Percent(c.ArtistDoorPercent)} of door revenue.";
     }
 }

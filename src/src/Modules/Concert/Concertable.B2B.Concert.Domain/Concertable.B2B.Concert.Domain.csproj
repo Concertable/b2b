@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
-    <ProjectReference Include="..\..\Contract\Concertable.B2B.Contract.Contracts\Concertable.B2B.Contract.Contracts.csproj" />
+    <ProjectReference Include="..\..\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Application\Concertable.B2B.DataAccess.Application.csproj" />
   </ItemGroup>
 

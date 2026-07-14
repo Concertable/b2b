@@ -2,8 +2,8 @@ using Concertable.B2B.Concert.Application.Interfaces;
 
 namespace Concertable.B2B.Concert.Application.Renderers;
 
-internal sealed class DoorSplitTermsSerializer : IContractTermsSerializer
+internal sealed class DoorSplitTermsSerializer : IDealTermsSerializer
 {
-    public string Serialize(IContract contract) =>
-        $"ArtistDoorPercent={TermsFingerprintFormat.Number(((DoorSplitContract)contract).ArtistDoorPercent)}";
+    public string Serialize(IDeal deal) =>
+        $"ArtistDoorPercent={TermsFingerprintFormat.Number(((DoorSplitDeal)deal).ArtistDoorPercent)}";
 }
