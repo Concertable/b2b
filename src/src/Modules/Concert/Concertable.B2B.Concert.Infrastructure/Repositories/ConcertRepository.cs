@@ -103,10 +103,13 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .ToListAsync();
     }
 
-    public Task<decimal?> GetDoorRevenueByConcertIdAsync(int concertId) =>
+    /* The gross the artist's revenue share settles against: Concertable's own ticket sales
+       (TicketsSold * Price, known) plus the venue-declared external/box-office/cash take
+       (DoorRevenue). Null until the venue has declared — DoorRevenue null propagates to null. */
+    public Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId) =>
         context.Concerts
             .Where(c => c.Id == concertId)
-            .Select(c => c.DoorRevenue)
+            .Select(c => c.TicketsSold * c.Price + c.DoorRevenue)
             .FirstOrDefaultAsync();
 
 }
