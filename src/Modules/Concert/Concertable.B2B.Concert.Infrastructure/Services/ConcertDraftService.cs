@@ -53,7 +53,7 @@ internal sealed class ConcertDraftService : IConcertDraftService
             opportunity.Period,
             $"{artist.Name} performing at {venue.Name}",
             venue.About,
-            bookingConcert.ContractType,
+            bookingConcert.DealType,
             matchingGenres);
 
         concert.VenueTenantId = bookingConcert.VenueTenantId;

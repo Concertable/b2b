@@ -12,6 +12,6 @@ internal sealed class ConcertWorkflowFactory : IConcertWorkflowFactory
         this.serviceProvider = serviceProvider;
     }
 
-    public IConcertWorkflow Create(ContractType type) =>
+    public IConcertWorkflow Create(DealType type) =>
         serviceProvider.GetRequiredKeyedService<IConcertWorkflow>(type);
 }

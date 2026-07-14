@@ -12,26 +12,26 @@ internal sealed class AcceptExecutor : IAcceptExecutor
 {
     private readonly ILifecycleTransitioner transitioner;
     private readonly IConcertWorkflowFactory workflows;
-    private readonly IContractResolver contractResolver;
+    private readonly IDealResolver dealResolver;
     private readonly IBookingRepository bookingRepository;
-    private readonly IBookingAgreementBuilder agreementBuilder;
+    private readonly IContractIssuer contractIssuer;
     private readonly ITermsFingerprintCalculator termsFingerprint;
     private readonly IBackgroundTaskRunner taskRunner;
 
     public AcceptExecutor(
         ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
-        IContractResolver contractResolver,
+        IDealResolver dealResolver,
         IBookingRepository bookingRepository,
-        IBookingAgreementBuilder agreementBuilder,
+        IContractIssuer contractIssuer,
         ITermsFingerprintCalculator termsFingerprint,
         IBackgroundTaskRunner taskRunner)
     {
         this.transitioner = transitioner;
         this.workflows = workflows;
-        this.contractResolver = contractResolver;
+        this.dealResolver = dealResolver;
         this.bookingRepository = bookingRepository;
-        this.agreementBuilder = agreementBuilder;
+        this.contractIssuer = contractIssuer;
         this.termsFingerprint = termsFingerprint;
         this.taskRunner = taskRunner;
     }
@@ -39,39 +39,39 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     public Task ExecuteAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
         => transitioner.TransitionAsync(applicationId, Trigger.Accept, async app =>
         {
-            var contract = await contractResolver.ResolveByApplicationIdAsync(app.Id);
-            VerifyTermsUnchanged(app, contract);
+            var deal = await dealResolver.ResolveByApplicationIdAsync(app.Id);
+            VerifyTermsUnchanged(app, deal);
 
-            var workflow = workflows.Create(app.ContractType);
+            var workflow = workflows.Create(app.DealType);
             await (workflow switch
             {
                 IAcceptsPaid w when paymentMethodId is not null => w.Accept.ExecuteAsync(app.Id, paymentMethodId),
-                IAcceptsPaid => throw new BadRequestException("This contract requires a payment method at acceptance"),
+                IAcceptsPaid => throw new BadRequestException("This deal requires a payment method at acceptance"),
                 IAcceptsSimple w => w.Accept.ExecuteAsync(app.Id),
-                _ => throw new BadRequestException($"Contract {workflow.Type} does not support Accept")
+                _ => throw new BadRequestException($"Deal {workflow.Type} does not support Accept")
             });
 
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
                 ?? throw new NotFoundException("Booking not found for application");
             app.Accept(booking);
-            await agreementBuilder.BuildAsync(app, booking.Id, eSignature);
+            await contractIssuer.IssueAsync(app, booking.Id, eSignature);
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
 
-            /* Render + store the agreement PDF off the request thread once the transition commits;
+            /* Render + store the contract PDF off the request thread once the transition commits;
                the download endpoint lazily regenerates if the blob is ever missing, so a blob
                outage here is non-fatal. */
-            await taskRunner.RunAsync<IBookingAgreementPdfService>(
+            await taskRunner.RunAsync<IContractPdfService>(
                 (pdf, runCt) => pdf.GenerateForBookingAsync(booking.Id, runCt));
         });
 
     /* Must run BEFORE the accept step: the step captures/charges real money, and only the DB
        side of this transition rolls back on a throw. */
-    private void VerifyTermsUnchanged(ApplicationEntity app, IContract contract)
+    private void VerifyTermsUnchanged(ApplicationEntity app, IDeal deal)
     {
-        if (app.TermsFingerprint != termsFingerprint.Calculate(contract, app.Opportunity.Period))
+        if (app.TermsFingerprint != termsFingerprint.Calculate(deal, app.Opportunity.Period))
             throw new ConflictException(
-                "The contract terms have changed since the artist applied — the artist must re-apply before you can accept");
+                "The deal terms have changed since the artist applied — the artist must re-apply before you can accept");
     }
 }

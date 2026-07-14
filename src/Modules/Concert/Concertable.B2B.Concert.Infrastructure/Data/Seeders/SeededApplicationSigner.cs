@@ -1,6 +1,7 @@
+using System.Net;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Seed.Infrastructure;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Seeders;
@@ -16,24 +17,24 @@ internal static class SeededApplicationSigner
 {
     public static async Task SignAsync(
         SeedState seed,
-        IContractModule contracts,
+        IDealModule deals,
         ITermsFingerprintCalculator fingerprint,
         DateTime signedAtUtc,
         CancellationToken ct)
     {
         var periodByOpportunityId = seed.Opportunities.ToDictionary(o => o.Id, o => o.Period);
-        var contractIdByOpportunityId = seed.Opportunities.ToDictionary(o => o.Id, o => o.ContractId);
-        var contractById = (await contracts.GetByIdsAsync(contractIdByOpportunityId.Values.Distinct(), ct))
+        var dealIdByOpportunityId = seed.Opportunities.ToDictionary(o => o.Id, o => o.DealId);
+        var dealById = (await deals.GetByIdsAsync(dealIdByOpportunityId.Values.Distinct(), ct))
             .ToDictionary(c => c.Id);
         var artistById = seed.Artists.ToDictionary(a => a.Id);
 
         foreach (var application in seed.Applications)
         {
             var artist = artistById[application.ArtistId];
-            var contract = contractById[contractIdByOpportunityId[application.OpportunityId]];
+            var deal = dealById[dealIdByOpportunityId[application.OpportunityId]];
             application.RecordArtistESignature(
-                new ESignature(artist.UserId, signedAtUtc, null, null, artist.Name, null),
-                fingerprint.Calculate(contract, periodByOpportunityId[application.OpportunityId]));
+                new ESignature(artist.UserId, signedAtUtc, IPAddress.Loopback, null, artist.Name, null),
+                fingerprint.Calculate(deal, periodByOpportunityId[application.OpportunityId]));
         }
     }
 }

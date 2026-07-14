@@ -19,8 +19,8 @@ internal sealed class OpportunityEntityConfiguration : IEntityTypeConfiguration<
             .HasForeignKey(o => o.VenueId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);
-        builder.Property(o => o.ContractId).IsRequired();
-        builder.HasIndex(o => o.ContractId).IsUnique();
+        builder.Property(o => o.DealId).IsRequired();
+        builder.HasIndex(o => o.DealId).IsUnique();
         builder.PrimitiveCollection(o => o.Genres);
     }
 }

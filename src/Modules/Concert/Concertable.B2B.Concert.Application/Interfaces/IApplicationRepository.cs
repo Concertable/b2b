@@ -12,7 +12,7 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
     Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistIdAsync(int id);
     Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id);
     Task RejectAllExceptAsync(int opportunityId, int applicationId);
-    Task<int?> GetContractIdByIdAsync(int applicationId);
+    Task<int?> GetDealIdByIdAsync(int applicationId);
     Task<PayeeSummary?> GetArtistPayeeAsync(int applicationId);
     Task<Guid?> GetVenueManagerIdAsync(int applicationId);
 }

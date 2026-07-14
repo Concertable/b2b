@@ -14,7 +14,7 @@ internal interface IOpportunityRepository : ITenantScopedRepository<OpportunityE
     Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId);
     Task<OpportunityEntity?> GetByApplicationIdAsync(int id);
     Task<Guid?> GetOwnerByIdAsync(int id);
-    Task<int?> GetContractIdByIdAsync(int opportunityId);
+    Task<int?> GetDealIdByIdAsync(int opportunityId);
     Task<DateRange?> GetPeriodByIdAsync(int opportunityId);
     Task<(string Name, Guid UserId)?> GetVenueSummaryByIdAsync(int opportunityId);
 }

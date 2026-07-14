@@ -2,7 +2,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 
 namespace Concertable.B2B.Concert.Application.Renderers;
 
-internal sealed class FlatFeeTermsSerializer : IContractTermsSerializer
+internal sealed class FlatFeeTermsSerializer : IDealTermsSerializer
 {
-    public string Serialize(IContract contract) => $"Fee={TermsFingerprintFormat.Number(((FlatFeeContract)contract).Fee)}";
+    public string Serialize(IDeal deal) => $"Fee={TermsFingerprintFormat.Number(((FlatFeeDeal)deal).Fee)}";
 }

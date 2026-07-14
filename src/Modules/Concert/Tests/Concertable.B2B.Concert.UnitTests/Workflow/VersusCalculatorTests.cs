@@ -14,10 +14,10 @@ public sealed class VersusCalculatorTests
     {
         // Arrange
         var calculator = new VersusCalculator();
-        var contract = new VersusContract { PaymentMethod = PaymentMethod.Cash, Guarantee = guarantee, ArtistDoorPercent = artistDoorPercent };
+        var deal = new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = guarantee, ArtistDoorPercent = artistDoorPercent };
 
         // Act
-        var result = calculator.Calculate(contract, totalRevenue);
+        var result = calculator.Calculate(deal, totalRevenue);
 
         // Assert
         Assert.Equal(expected, result);

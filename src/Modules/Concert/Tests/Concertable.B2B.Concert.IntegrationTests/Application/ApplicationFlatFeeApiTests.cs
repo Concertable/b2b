@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.IntegrationTests.Fixtures;
@@ -65,7 +65,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         // Arrange — venue manager creates a fresh FlatFee opportunity
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var oppResponse = await venueClient.PostAsync("/api/Opportunity",
-            BuildRequest(new FlatFeeContract { PaymentMethod = PaymentMethod.Cash, Fee = 500 }));
+            BuildRequest(new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 }));
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies directly with no payment method
@@ -133,7 +133,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         var hold = Assert.Single(fixture.EscrowClient.Holds, h => h.BookingId == booking.Id); // exactly one hold — no double-charge
         Assert.Equal(venueTenantId, hold.PayerId);
         Assert.Equal(artistTenantId, hold.PayeeId);
-        Assert.Equal(fixture.SeedState.FlatFeeAppContract.Fee, hold.Amount);
+        Assert.Equal(fixture.SeedState.FlatFeeAppDeal.Fee, hold.Amount);
     }
 
     [Fact]

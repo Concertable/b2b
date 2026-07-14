@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Kernel.Enums;
 using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -12,20 +12,20 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
 {
     private readonly IBookingService bookingService;
     private readonly IEscrowClient escrowClient;
-    private readonly IContractAccessor contractAccessor;
+    private readonly IDealAccessor dealAccessor;
     private readonly IApplicationRepository applicationRepository;
     private readonly ILogger<DepositEscrowAcceptStep> logger;
 
     public DepositEscrowAcceptStep(
         IBookingService bookingService,
         IEscrowClient escrowClient,
-        IContractAccessor contractAccessor,
+        IDealAccessor dealAccessor,
         IApplicationRepository applicationRepository,
         ILogger<DepositEscrowAcceptStep> logger)
     {
         this.bookingService = bookingService;
         this.escrowClient = escrowClient;
-        this.contractAccessor = contractAccessor;
+        this.dealAccessor = dealAccessor;
         this.applicationRepository = applicationRepository;
         this.logger = logger;
     }
@@ -37,14 +37,14 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
         if (application is not PrepaidApplication prepaid)
             throw new BadRequestException("VenueHire requires a PrepaidApplication");
 
-        var contract = (VenueHireContract)contractAccessor.Contract;
-        var booking = await bookingService.CreateStandardAsync(applicationId, contract.ContractType);
+        var deal = (VenueHireDeal)dealAccessor.Deal;
+        var booking = await bookingService.CreateStandardAsync(applicationId, deal.DealType);
 
         /* VenueHire: the artist hires the venue, so the artist tenant pays the venue tenant —
            both read off the application's frozen snapshot. */
-        logger.AcceptingVenueHireApplication(applicationId, booking.Id, contract.HireFee, prepaid.ArtistTenantId, prepaid.VenueTenantId);
+        logger.AcceptingVenueHireApplication(applicationId, booking.Id, deal.HireFee, prepaid.ArtistTenantId, prepaid.VenueTenantId);
 
-        var hold = await escrowClient.DepositAsync(prepaid.ArtistTenantId, prepaid.VenueTenantId, contract.HireFee, prepaid.PaymentMethodId, PaymentSession.OffSession, booking.Id);
+        var hold = await escrowClient.DepositAsync(prepaid.ArtistTenantId, prepaid.VenueTenantId, deal.HireFee, prepaid.PaymentMethodId, PaymentSession.OffSession, booking.Id);
         if (hold.IsFailed)
             throw new BadRequestException(hold.Errors);
     }

@@ -10,16 +10,16 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped
     public Guid VenueTenantId { get; set; }
     public Guid ArtistTenantId { get; set; }
     public int ApplicationId { get; private set; }
-    public ContractType ContractType { get; private set; }
+    public DealType DealType { get; private set; }
     public ApplicationEntity Application { get; set; } = null!;
     public ConcertEntity? Concert { get; private set; }
 
     protected BookingEntity() { }
 
-    protected BookingEntity(int applicationId, ContractType contractType)
+    protected BookingEntity(int applicationId, DealType dealType)
     {
         ApplicationId = applicationId;
-        ContractType = contractType;
+        DealType = dealType;
     }
 
     public void Confirm(ConcertEntity concert) => Concert = concert;
@@ -29,11 +29,11 @@ public sealed class StandardBooking : BookingEntity
 {
     private StandardBooking() { }
 
-    private StandardBooking(int applicationId, ContractType contractType)
-        : base(applicationId, contractType) { }
+    private StandardBooking(int applicationId, DealType dealType)
+        : base(applicationId, dealType) { }
 
-    public static StandardBooking Create(int applicationId, ContractType contractType) =>
-        new(applicationId, contractType);
+    public static StandardBooking Create(int applicationId, DealType dealType) =>
+        new(applicationId, dealType);
 }
 
 public sealed class DeferredBooking : BookingEntity
@@ -42,12 +42,12 @@ public sealed class DeferredBooking : BookingEntity
 
     private DeferredBooking() { }
 
-    private DeferredBooking(int applicationId, ContractType contractType, string paymentMethodId)
-        : base(applicationId, contractType)
+    private DeferredBooking(int applicationId, DealType dealType, string paymentMethodId)
+        : base(applicationId, dealType)
     {
         PaymentMethodId = paymentMethodId;
     }
 
-    public static DeferredBooking Create(int applicationId, ContractType contractType, string paymentMethodId) =>
-        new(applicationId, contractType, paymentMethodId);
+    public static DeferredBooking Create(int applicationId, DealType dealType, string paymentMethodId) =>
+        new(applicationId, dealType, paymentMethodId);
 }

@@ -1,7 +1,7 @@
 using System.Net;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -37,7 +37,7 @@ public sealed class TenantScopingTests : IAsyncLifetime
         // Arrange — venue manager creates a fresh FlatFee opportunity
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var oppResponse = await venueClient.PostAsync("/api/Opportunity",
-            BuildRequest(new FlatFeeContract { PaymentMethod = PaymentMethod.Cash, Fee = 500 }));
+            BuildRequest(new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 }));
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies
@@ -122,7 +122,7 @@ public sealed class TenantScopingTests : IAsyncLifetime
     [Fact]
     public async Task CurrentUserConcertRead_ScopesActionsToPartiesAndKeepsPublicReadActionFree()
     {
-        // Arrange — drive FlatFee to Booked so a concert (with a frozen agreement) exists.
+        // Arrange — drive FlatFee to Booked so a concert (with a frozen contract) exists.
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/Application/{appId}/checkout");
@@ -137,15 +137,15 @@ public sealed class TenantScopingTests : IAsyncLifetime
         await venueRead.ShouldBe(HttpStatusCode.OK);
         var venueConcert = await venueRead.Content.ReadAsync<ConcertDetailsResponse>();
         Assert.NotNull(venueConcert!.Actions);
-        Assert.Equal($"/api/Concert/{concertId}/agreement/pdf", venueConcert.Actions!.Agreement!.Href);
+        Assert.Equal($"/api/Concert/{concertId}/contract/pdf", venueConcert.Actions!.Contract!.Href);
         Assert.NotNull(venueConcert.Actions.Cancel); // Booked
 
-        // Artist party — the other side of the deal reads it too, with the agreement link.
+        // Artist party — the other side of the deal reads it too, with the contract link.
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var artistRead = await artistClient.GetAsync($"/api/Concert/user/{concertId}");
         await artistRead.ShouldBe(HttpStatusCode.OK);
         var artistConcert = await artistRead.Content.ReadAsync<ConcertDetailsResponse>();
-        Assert.NotNull(artistConcert!.Actions!.Agreement);
+        Assert.NotNull(artistConcert!.Actions!.Contract);
 
         // Stranger tenant — the deal document does not exist for them (404, not 403).
         var stranger = fixture.CreateClient(fixture.SeedState.VenueManager2);

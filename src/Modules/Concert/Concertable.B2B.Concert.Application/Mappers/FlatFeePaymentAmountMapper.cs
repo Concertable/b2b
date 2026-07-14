@@ -1,13 +1,13 @@
 using Concertable.B2B.Concert.Application.Responses;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 
 namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal sealed class FlatFeePaymentAmountMapper : IPaymentAmountMapper
 {
-    public IPaymentAmount ToPaymentAmount(IContract contract)
+    public IPaymentAmount ToPaymentAmount(IDeal deal)
     {
-        var c = (FlatFeeContract)contract;
+        var c = (FlatFeeDeal)deal;
         return new FlatPayment(c.Fee);
     }
 }

@@ -14,7 +14,7 @@ public sealed class ApplicationValidatorTests
     private const int OpportunityId = 1;
     private const int VenueId = 1;
     private const int ArtistId = 1;
-    private const int ContractId = 1;
+    private const int DealId = 1;
 
     private readonly Guid venueTenantId = Guid.NewGuid();
 
@@ -53,7 +53,7 @@ public sealed class ApplicationValidatorTests
 
     private OpportunityEntity Opportunity(DateRange period)
     {
-        var opportunity = OpportunityEntity.Create(VenueId, period, ContractId);
+        var opportunity = OpportunityEntity.Create(VenueId, period, DealId);
         opportunity.TenantId = venueTenantId;
         return opportunity;
     }

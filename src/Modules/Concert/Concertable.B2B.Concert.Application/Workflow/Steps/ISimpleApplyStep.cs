@@ -4,5 +4,5 @@ namespace Concertable.B2B.Concert.Application.Workflow.Steps;
 
 internal interface ISimpleApplyStep : IConcertStep
 {
-    Task<ApplicationEntity> ApplyAsync(int artistId, int opportunityId, ContractType contractType);
+    Task<ApplicationEntity> ApplyAsync(int artistId, int opportunityId, DealType dealType);
 }

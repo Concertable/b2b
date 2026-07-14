@@ -33,7 +33,7 @@ internal sealed class VerifyExecutor : IVerifyExecutor
 
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
                 ?? throw new NotFoundException("Booking not found for application");
-            var workflow = workflows.Create(app.ContractType);
+            var workflow = workflows.Create(app.DealType);
             await workflow.Book.ExecuteAsync(booking.Id);
         });
 

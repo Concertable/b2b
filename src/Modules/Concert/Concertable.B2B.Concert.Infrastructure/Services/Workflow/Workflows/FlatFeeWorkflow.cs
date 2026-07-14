@@ -23,7 +23,7 @@ internal sealed class FlatFeeWorkflow : IConcertWorkflow, IAppliesSimple, IAccep
         this.Cancel = cancel;
     }
 
-    public ContractType Type => ContractType.FlatFee;
+    public DealType Type => DealType.FlatFee;
     public ISimpleApplyStep Apply { get; }
     public IAcceptCheckoutStep AcceptCheckout { get; }
     public ISimpleAcceptStep Accept { get; }

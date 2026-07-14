@@ -23,7 +23,7 @@ internal sealed record ConcertDetailsResponse
     public ConcertActions? Actions { get; init; }
 }
 
-internal sealed record ConcertActions(ActionLink? Cancel, ActionLink? Agreement);
+internal sealed record ConcertActions(ActionLink? Cancel, ActionLink? Contract);
 
 internal sealed record ConcertArtistResponse
 {

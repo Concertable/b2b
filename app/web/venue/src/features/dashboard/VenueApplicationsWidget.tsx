@@ -9,7 +9,7 @@ import {
 } from "./applicationActions";
 import type { Application } from "./types";
 import type { DashboardApplicationStatus } from "@concertable/shared/features/dashboard";
-import { contractSummary } from "@concertable/shared/features/contracts";
+import { dealSummary } from "@concertable/shared/features/deals";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import {
@@ -58,7 +58,7 @@ const columns: ColumnDef<Application>[] = [
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{a.name}</p>
           <p className="text-muted-foreground text-xs">
-            {dayjs(o.startDate).format("ddd D MMM")} · {contractSummary(o.contract)}
+            {dayjs(o.startDate).format("ddd D MMM")} · {dealSummary(o.deal)}
           </p>
         </div>
       );

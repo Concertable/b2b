@@ -4,7 +4,7 @@ using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Api.Responses;
 using Xunit;
 using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
-using Concertable.B2B.Contract.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
@@ -25,23 +25,23 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    public static TheoryData<IContract> AllContractTypes =>
+    public static TheoryData<IDeal> AllDealTypes =>
     [
-        new FlatFeeContract { PaymentMethod = PaymentMethod.Cash, Fee = 500 },
-        new DoorSplitContract { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 },
-        new VersusContract { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 },
-        new VenueHireContract { PaymentMethod = PaymentMethod.Cash, HireFee = 300 },
+        new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 },
+        new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 },
+        new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 },
+        new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 300 },
     ];
 
     #region Create
 
     [Theory]
-    [MemberData(nameof(AllContractTypes))]
-    public async Task Create_ShouldReturnCreatedOpportunity(IContract contract)
+    [MemberData(nameof(AllDealTypes))]
+    public async Task Create_ShouldReturnCreatedOpportunity(IDeal deal)
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var request = BuildRequest(contract);
+        var request = BuildRequest(deal);
 
         // Act
         var response = await client.PostAsync("/api/Opportunity", request);

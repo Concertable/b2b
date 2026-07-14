@@ -16,11 +16,11 @@ public sealed class VerifyCheckoutStepTests
     private readonly Guid venueTenantId = Guid.NewGuid();
     private readonly PayeeSummary artist = new("Artist", "artist@example.com");
     private readonly CheckoutSession session = new("seti_secret", "cs", "cus");
-    private readonly DoorSplitContract contract = new() { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
+    private readonly DoorSplitDeal deal = new() { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
     private readonly DoorSharePayment amount = new(70);
 
     private readonly Mock<IApplicationRepository> applicationRepository;
-    private readonly Mock<IContractAccessor> contractAccessor;
+    private readonly Mock<IDealAccessor> dealAccessor;
     private readonly Mock<IManagerPaymentClient> managerPaymentClient;
     private readonly Mock<IPaymentAmountMapper> paymentAmountMapper;
     private readonly VerifyCheckoutStep step;
@@ -30,7 +30,7 @@ public sealed class VerifyCheckoutStepTests
     public VerifyCheckoutStepTests()
     {
         this.applicationRepository = new Mock<IApplicationRepository>();
-        this.contractAccessor = new Mock<IContractAccessor>();
+        this.dealAccessor = new Mock<IDealAccessor>();
         this.managerPaymentClient = new Mock<IManagerPaymentClient>();
         this.paymentAmountMapper = new Mock<IPaymentAmountMapper>();
 
@@ -39,14 +39,14 @@ public sealed class VerifyCheckoutStepTests
         applicationRepository
             .Setup(r => r.GetVenueTenantIdAsync(ApplicationId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(venueTenantId);
-        contractAccessor.SetupGet(c => c.Contract).Returns(contract);
-        paymentAmountMapper.Setup(m => m.ToPaymentAmount(contract)).Returns(amount);
+        dealAccessor.SetupGet(c => c.Deal).Returns(deal);
+        paymentAmountMapper.Setup(m => m.ToPaymentAmount(deal)).Returns(amount);
         managerPaymentClient
             .Setup(c => c.CreateVerifySessionAsync(It.IsAny<Guid>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
             .Callback<Guid, IDictionary<string, string>, CancellationToken>((_, m, _) => capturedMetadata = m)
             .ReturnsAsync(session);
 
-        this.step = new VerifyCheckoutStep(applicationRepository.Object, contractAccessor.Object, managerPaymentClient.Object, paymentAmountMapper.Object);
+        this.step = new VerifyCheckoutStep(applicationRepository.Object, dealAccessor.Object, managerPaymentClient.Object, paymentAmountMapper.Object);
     }
 
     [Fact]
