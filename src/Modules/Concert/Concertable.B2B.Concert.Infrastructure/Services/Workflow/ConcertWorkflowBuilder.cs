@@ -98,7 +98,7 @@ internal sealed class ConcertWorkflowBuilder
     {
         if (workflowType is null)
             throw new InvalidOperationException($"No workflow registered for {contractType}. Call WithWorkflow<T>().");
-        registryBuilder.Add(contractType, workflowType, new ContractStateMachine(transitions));
+        registryBuilder.Add(contractType, workflowType, new LifecycleStateMachine(transitions));
     }
 
     private void Add(LifecycleState from, Trigger on, LifecycleState to)

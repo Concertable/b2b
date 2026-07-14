@@ -3,11 +3,11 @@ using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Domain.Lifecycle;
 
-internal sealed class ContractStateMachine
+internal sealed class LifecycleStateMachine
 {
     public FrozenDictionary<(LifecycleState, Trigger), LifecycleState> Transitions { get; }
 
-    public ContractStateMachine(Dictionary<(LifecycleState, Trigger), LifecycleState> transitions)
+    public LifecycleStateMachine(Dictionary<(LifecycleState, Trigger), LifecycleState> transitions)
     {
         Transitions = transitions.ToFrozenDictionary();
     }

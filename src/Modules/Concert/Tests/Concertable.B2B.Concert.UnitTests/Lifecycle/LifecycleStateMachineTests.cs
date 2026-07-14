@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Concert.UnitTests.Lifecycle;
 
-public sealed class ContractStateMachineTests
+public sealed class LifecycleStateMachineTests
 {
     public static TheoryData<DealType> AllDealTypes => new(Enum.GetValues<DealType>());
 
