@@ -14,8 +14,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Configurations;
 /// </summary>
 internal static class ESignatureConfiguration
 {
-    private static readonly ValueConverter<IPAddress?, string?> IpConverter =
-        new(ip => ip == null ? null : ip.ToString(), text => text == null ? null : IPAddress.Parse(text));
+    private static readonly ValueConverter<IPAddress, string> IpConverter =
+        new(ip => ip.ToString(), text => IPAddress.Parse(text));
 
     public static void Configure(ComplexPropertyBuilder<ESignature> builder)
     {

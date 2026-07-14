@@ -111,9 +111,7 @@ internal sealed class ContractDocument : IDocument
             if (drawn is not null)
                 block.Item().PaddingVertical(2).Width(180).Image(drawn);
 
-            var detail = $"{FormatUtc(eSignature.AtUtc)} · user {eSignature.UserId}";
-            if (eSignature.Ip is not null)
-                detail += $" · IP {eSignature.Ip}";
+            var detail = $"{FormatUtc(eSignature.AtUtc)} · user {eSignature.UserId} · IP {eSignature.Ip}";
             block.Item().Text(detail).FontSize(9).FontColor(Colors.Grey.Darken1);
         });
     }

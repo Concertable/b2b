@@ -14,7 +14,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260714145531_InitialCreate")]
+    [Migration("20260714163713_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -93,6 +93,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Ip")
+                                .IsRequired()
                                 .HasMaxLength(45)
                                 .HasColumnType("nvarchar(45)");
 
@@ -314,6 +315,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Ip")
+                                .IsRequired()
                                 .HasMaxLength(45)
                                 .HasColumnType("nvarchar(45)");
 
@@ -340,6 +342,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Ip")
+                                .IsRequired()
                                 .HasMaxLength(45)
                                 .HasColumnType("nvarchar(45)");
 
