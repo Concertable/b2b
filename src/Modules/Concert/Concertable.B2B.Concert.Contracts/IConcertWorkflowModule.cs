@@ -6,5 +6,6 @@ public interface IConcertWorkflowModule
     Task EscrowSucceededAsync(int bookingId, CancellationToken ct = default);
     Task SettlementSucceededAsync(int bookingId, CancellationToken ct = default);
     Task FinishAsync(int concertId, CancellationToken ct = default);
+    Task DeclareDoorRevenueAsync(int concertId, decimal doorRevenue, CancellationToken ct = default);
     Task CancelAsync(int concertId, CancellationToken ct = default);
 }

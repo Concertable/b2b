@@ -196,6 +196,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     TotalTickets = table.Column<int>(type: "int", nullable: false),
                     TicketsSold = table.Column<int>(type: "int", nullable: false),
+                    DoorRevenue = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DatePosted = table.Column<DateTime>(type: "datetime2", nullable: true),

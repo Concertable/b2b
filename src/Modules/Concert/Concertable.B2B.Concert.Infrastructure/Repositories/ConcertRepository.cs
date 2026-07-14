@@ -90,20 +90,23 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .FirstOrDefaultAsync();
     }
 
+    /* Ended, Booked gigs ready for the completion sweep to settle — but a revenue-share gig
+       (DeferredBooking) isn't ready until its venue has declared the door take, so exclude those. */
     public async Task<IEnumerable<int>> GetEndedConfirmedIdsAsync()
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await context.Concerts
-            .Where(c => c.Booking.Application.State == LifecycleState.Booked
-                     && c.Period.End < now)
+            .Where(c => c.Period.End < now
+                     && c.Booking.Application.State == LifecycleState.Booked
+                     && !(c.Booking is DeferredBooking && c.DoorRevenue == null))
             .Select(c => c.Id)
             .ToListAsync();
     }
 
-    public Task<decimal> GetTotalRevenueByConcertIdAsync(int concertId) =>
+    public Task<decimal?> GetDoorRevenueByConcertIdAsync(int concertId) =>
         context.Concerts
             .Where(c => c.Id == concertId)
-            .Select(c => c.TicketsSold * c.Price)
+            .Select(c => c.DoorRevenue)
             .FirstOrDefaultAsync();
 
 }

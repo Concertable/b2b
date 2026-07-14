@@ -113,6 +113,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEscrowExecutor, EscrowExecutor>();
         services.AddScoped<ISettlementExecutor, SettlementExecutor>();
         services.AddScoped<IFinishExecutor, FinishExecutor>();
+        services.AddScoped<IDoorRevenueExecutor, DoorRevenueExecutor>();
         services.AddScoped<ICancelExecutor, CancelExecutor>();
         services.AddScoped<IWithdrawExecutor, WithdrawExecutor>();
         services.AddScoped<IRejectExecutor, RejectExecutor>();
@@ -126,6 +127,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEscrowDispatcher, EscrowDispatcher>();
         services.AddScoped<ISettlementDispatcher, SettlementDispatcher>();
         services.AddScoped<ICompletionDispatcher, CompletionDispatcher>();
+        services.AddScoped<IDoorRevenueDispatcher, DoorRevenueDispatcher>();
         services.AddScoped<ICancellationDispatcher, CancellationDispatcher>();
         services.AddScoped<IWithdrawalDispatcher, WithdrawalDispatcher>();
         services.AddScoped<IRejectionDispatcher, RejectionDispatcher>();

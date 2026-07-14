@@ -47,6 +47,12 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to finish concert {ConcertId}")]
     internal static partial void FailedToFinishConcert(this ILogger logger, int concertId, Exception ex);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Door revenue {DoorRevenue} GBP declared for concert {ConcertId}")]
+    internal static partial void DoorRevenueDeclared(this ILogger logger, int concertId, decimal doorRevenue);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to declare door revenue for concert {ConcertId}")]
+    internal static partial void FailedToDeclareDoorRevenue(this ILogger logger, int concertId, Exception ex);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to cancel concert {ConcertId}")]
     internal static partial void FailedToCancelConcert(this ILogger logger, int concertId, Exception ex);
 
