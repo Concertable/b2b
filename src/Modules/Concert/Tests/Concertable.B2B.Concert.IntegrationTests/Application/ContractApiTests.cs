@@ -28,7 +28,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
-    public async Task Accept_ShouldSnapshotAgreement_ThatSurvivesContractEdit_ForFlatFee()
+    public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForFlatFee()
     {
         // Arrange — fresh FlatFee opportunity, artist applies, venue checkout + accept
         var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
@@ -41,23 +41,23 @@ public sealed class ContractApiTests : IAsyncLifetime
 
         // Assert — snapshot written in the accept transaction
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        var agreement = await GetAgreementAsync(applicationId);
-        Assert.Equal(DealType.FlatFee, agreement.ContractType);
-        Assert.Equal(PaymentMethod.Transfer, agreement.PaymentMethod);
-        Assert.Equal("The venue pays the artist a flat fee of £500.00.", agreement.TermsText);
-        AssertCommonSnapshot(agreement);
+        var contract = await GetContractAsync(applicationId);
+        Assert.Equal(DealType.FlatFee, contract.DealType);
+        Assert.Equal(PaymentMethod.Transfer, contract.PaymentMethod);
+        Assert.Equal("The venue pays the artist a flat fee of £500.00.", contract.TermsText);
+        AssertCommonSnapshot(contract);
 
         // Act — the venue edits the live contract after acceptance
         await UpdateDealAsync(opportunityId, new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 999m });
 
-        // Assert — the frozen agreement is untouched (the terms text still states the agreed £500)
-        var frozen = await GetAgreementAsync(applicationId);
+        // Assert — the frozen contract is untouched (the terms text still states the agreed £500)
+        var frozen = await GetContractAsync(applicationId);
         Assert.Equal(PaymentMethod.Transfer, frozen.PaymentMethod);
         Assert.Equal("The venue pays the artist a flat fee of £500.00.", frozen.TermsText);
     }
 
     [Fact]
-    public async Task Accept_ShouldSnapshotAgreement_ThatSurvivesContractEdit_ForDoorSplit()
+    public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForDoorSplit()
     {
         // Arrange
         var opportunityId = await CreateOpportunityAsync(new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m });
@@ -69,21 +69,21 @@ public sealed class ContractApiTests : IAsyncLifetime
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        var agreement = await GetAgreementAsync(applicationId);
-        Assert.Equal(DealType.DoorSplit, agreement.ContractType);
-        Assert.Equal("The artist receives 70% of door revenue.", agreement.TermsText);
-        AssertCommonSnapshot(agreement);
+        var contract = await GetContractAsync(applicationId);
+        Assert.Equal(DealType.DoorSplit, contract.DealType);
+        Assert.Equal("The artist receives 70% of door revenue.", contract.TermsText);
+        AssertCommonSnapshot(contract);
 
         // Act
         await UpdateDealAsync(opportunityId, new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 15m });
 
         // Assert — the frozen terms text still states the agreed 70%
-        var frozen = await GetAgreementAsync(applicationId);
+        var frozen = await GetContractAsync(applicationId);
         Assert.Equal("The artist receives 70% of door revenue.", frozen.TermsText);
     }
 
     [Fact]
-    public async Task Accept_ShouldSnapshotAgreement_ThatSurvivesContractEdit_ForVersus()
+    public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForVersus()
     {
         // Arrange
         var opportunityId = await CreateOpportunityAsync(new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200m, ArtistDoorPercent = 60m });
@@ -95,21 +95,21 @@ public sealed class ContractApiTests : IAsyncLifetime
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        var agreement = await GetAgreementAsync(applicationId);
-        Assert.Equal(DealType.Versus, agreement.ContractType);
-        Assert.Equal("The artist receives a guarantee of £200.00 plus 60% of door revenue.", agreement.TermsText);
-        AssertCommonSnapshot(agreement);
+        var contract = await GetContractAsync(applicationId);
+        Assert.Equal(DealType.Versus, contract.DealType);
+        Assert.Equal("The artist receives a guarantee of £200.00 plus 60% of door revenue.", contract.TermsText);
+        AssertCommonSnapshot(contract);
 
         // Act
         await UpdateDealAsync(opportunityId, new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 999m, ArtistDoorPercent = 10m });
 
         // Assert — the frozen terms text still states the agreed £200 guarantee + 60%
-        var frozen = await GetAgreementAsync(applicationId);
+        var frozen = await GetContractAsync(applicationId);
         Assert.Equal("The artist receives a guarantee of £200.00 plus 60% of door revenue.", frozen.TermsText);
     }
 
     [Fact]
-    public async Task Accept_ShouldSnapshotAgreement_ThatSurvivesContractEdit_ForVenueHire()
+    public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForVenueHire()
     {
         // Arrange — VenueHire is prepaid: the artist applies with a payment method
         var opportunityId = await CreateOpportunityAsync(new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 250m });
@@ -121,16 +121,16 @@ public sealed class ContractApiTests : IAsyncLifetime
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        var agreement = await GetAgreementAsync(applicationId);
-        Assert.Equal(DealType.VenueHire, agreement.ContractType);
-        Assert.Equal("The artist pays the venue a hire fee of £250.00.", agreement.TermsText);
-        AssertCommonSnapshot(agreement);
+        var contract = await GetContractAsync(applicationId);
+        Assert.Equal(DealType.VenueHire, contract.DealType);
+        Assert.Equal("The artist pays the venue a hire fee of £250.00.", contract.TermsText);
+        AssertCommonSnapshot(contract);
 
         // Act
         await UpdateDealAsync(opportunityId, new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 999m });
 
         // Assert — the frozen terms text still states the agreed £250
-        var frozen = await GetAgreementAsync(applicationId);
+        var frozen = await GetContractAsync(applicationId);
         Assert.Equal("The artist pays the venue a hire fee of £250.00.", frozen.TermsText);
     }
 
@@ -195,7 +195,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         // Act
         var response = await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        // Assert — accept refused as a stale-state conflict; no booking, no agreement
+        // Assert — accept refused as a stale-state conflict; no booking, no contract
         await response.ShouldBe(HttpStatusCode.Conflict);
         Assert.False(await fixture.ConcertReads.Set<BookingEntity>().AnyAsync(b => b.ApplicationId == applicationId));
     }
@@ -205,7 +205,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     {
         // Seeded applications carry a real artist signature + a terms fingerprint computed by the
         // canonical calculator, so the fingerprint the accept guard recomputes from the DB matches and
-        // the agreement snapshots both parties' consent.
+        // the contract snapshots both parties' consent.
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/Application/{appId}/checkout");
@@ -215,20 +215,20 @@ public sealed class ContractApiTests : IAsyncLifetime
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        var agreement = await GetAgreementAsync(appId);
-        Assert.NotNull(agreement.ArtistESignature);
-        Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueESignature.UserId);
+        var contract = await GetContractAsync(appId);
+        Assert.NotNull(contract.ArtistESignature);
+        Assert.Equal(fixture.SeedState.VenueManager1.Id, contract.VenueESignature.UserId);
     }
 
     [Fact]
-    public async Task Agreement_Pdf_IsDownloadableByBothParties()
+    public async Task Contract_Pdf_IsDownloadableByBothParties()
     {
         var applicationId = await AcceptedFlatFeeAsync();
 
         foreach (var party in new[] { fixture.SeedState.VenueManager1, fixture.SeedState.ArtistManager1 })
         {
             var client = fixture.CreateClient(party);
-            var response = await client.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
+            var response = await client.GetAsync($"/api/Application/{applicationId}/contract/pdf");
 
             await response.ShouldBe(HttpStatusCode.OK);
             Assert.Equal("application/pdf", response.Content.Headers.ContentType?.MediaType);
@@ -239,37 +239,37 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Agreement_Pdf_Returns404ForNonParty()
+    public async Task Contract_Pdf_Returns404ForNonParty()
     {
         var applicationId = await AcceptedFlatFeeAsync();
 
         var stranger = fixture.CreateClient(fixture.SeedState.VenueManager2);
-        var response = await stranger.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
+        var response = await stranger.GetAsync($"/api/Application/{applicationId}/contract/pdf");
 
         // The two-party filter hides the deal document — 404, never a probe-able 403.
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
-    public async Task Agreement_Pdf_BlobNameAssignedAtAccept_AndRendersOnDownload()
+    public async Task Contract_Pdf_BlobNameAssignedAtAccept_AndRendersOnDownload()
     {
         var applicationId = await AcceptedFlatFeeAsync();
 
         // The blob location is assigned inside the accept transaction, before any bytes exist — so it
-        // is present immediately under the agreements/ prefix, independent of background PDF timing.
-        var agreement = await GetAgreementAsync(applicationId);
-        Assert.NotNull(agreement.PdfBlobName);
-        Assert.StartsWith("agreements/", agreement.PdfBlobName);
+        // is present immediately under the contracts/ prefix, independent of background PDF timing.
+        var contract = await GetContractAsync(applicationId);
+        Assert.NotNull(contract.PdfBlobName);
+        Assert.StartsWith("contracts/", contract.PdfBlobName);
 
         // FakeBlobStorageService reports the blob absent, so the download exercises the lazy render-
         // on-download path and still returns the PDF.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var response = await client.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
+        var response = await client.GetAsync($"/api/Application/{applicationId}/contract/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task Agreement_Pdf_RendersBothPartyESignatures()
+    public async Task Contract_Pdf_RendersBothPartyESignatures()
     {
         // Distinct names so each extracted signature line ties to its party — artist signs on apply, venue on accept.
         var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
@@ -281,7 +281,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         await venueClient.PostAsync($"/api/Application/{applicationId}/checkout");
         await (await venueClient.PostAsync($"/api/Application/{applicationId}/accept", new { eSignature = new { signatoryName = "Marco Vento" } })).ShouldBe(HttpStatusCode.NoContent);
 
-        var response = await venueClient.GetAsync($"/api/Application/{applicationId}/agreement/pdf");
+        var response = await venueClient.GetAsync($"/api/Application/{applicationId}/contract/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
         var text = Pdf.ExtractText(await response.Content.ReadAsByteArrayAsync());
 
@@ -292,23 +292,23 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Agreement_Metadata_IsReadableByParty_And404ForStranger()
+    public async Task Contract_Metadata_IsReadableByParty_And404ForStranger()
     {
         var applicationId = await AcceptedFlatFeeAsync();
 
         var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var response = await artist.GetAsync($"/api/Application/{applicationId}/agreement");
+        var response = await artist.GetAsync($"/api/Application/{applicationId}/contract");
         await response.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
         Assert.Contains("The venue pays the artist a flat fee of", body);
         Assert.Contains("2026-07", body); // platform terms version
 
         var stranger = fixture.CreateClient(fixture.SeedState.VenueManager2);
-        await (await stranger.GetAsync($"/api/Application/{applicationId}/agreement")).ShouldBe(HttpStatusCode.NotFound);
+        await (await stranger.GetAsync($"/api/Application/{applicationId}/contract")).ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
-    public async Task AcceptedApplication_ExposesAgreementHateoasLink()
+    public async Task AcceptedApplication_ExposesContractHateoasLink()
     {
         var applicationId = await AcceptedFlatFeeAsync();
 
@@ -317,13 +317,13 @@ public sealed class ContractApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var application = await response.Content.ReadAsync<ApplicationResponse>();
 
-        Assert.NotNull(application!.Actions.Agreement);
-        Assert.Equal($"/api/Application/{applicationId}/agreement", application.Actions.Agreement!.Href);
-        Assert.Equal("GET", application.Actions.Agreement.Method);
+        Assert.NotNull(application!.Actions.Contract);
+        Assert.Equal($"/api/Application/{applicationId}/contract", application.Actions.Contract!.Href);
+        Assert.Equal("GET", application.Actions.Contract.Method);
     }
 
     [Fact]
-    public async Task PendingApplication_HasNoAgreementLink()
+    public async Task PendingApplication_HasNoContractLink()
     {
         var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         var applicationId = await ApplyAsync(opportunityId);
@@ -333,7 +333,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var application = await response.Content.ReadAsync<ApplicationResponse>();
 
-        Assert.Null(application!.Actions.Agreement);
+        Assert.Null(application!.Actions.Contract);
     }
 
     private async Task<int> AcceptedFlatFeeAsync()
@@ -347,10 +347,10 @@ public sealed class ContractApiTests : IAsyncLifetime
         return applicationId;
     }
 
-    private async Task<int> CreateOpportunityAsync(IDeal contract)
+    private async Task<int> CreateOpportunityAsync(IDeal deal)
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var response = await venueClient.PostAsync("/api/Opportunity", BuildRequest(contract));
+        var response = await venueClient.PostAsync("/api/Opportunity", BuildRequest(deal));
         await response.ShouldBe(HttpStatusCode.Created);
         var opportunity = await response.Content.ReadAsync<OpportunityResponse>();
         return opportunity!.Id;
@@ -367,33 +367,33 @@ public sealed class ContractApiTests : IAsyncLifetime
         return application.Id;
     }
 
-    private async Task<ContractEntity> GetAgreementAsync(int applicationId)
+    private async Task<ContractEntity> GetContractAsync(int applicationId)
     {
         var booking = await fixture.ConcertReads.Set<BookingEntity>()
             .FirstAsync(b => b.ApplicationId == applicationId);
-        var agreement = await fixture.ConcertReads.Set<ContractEntity>()
+        var contract = await fixture.ConcertReads.Set<ContractEntity>()
             .SingleAsync(a => a.BookingId == booking.Id);
-        Assert.Equal(booking.VenueTenantId, agreement.VenueTenantId);
-        Assert.Equal(booking.ArtistTenantId, agreement.ArtistTenantId);
-        return agreement;
+        Assert.Equal(booking.VenueTenantId, contract.VenueTenantId);
+        Assert.Equal(booking.ArtistTenantId, contract.ArtistTenantId);
+        return contract;
     }
 
-    private void AssertCommonSnapshot(ContractEntity agreement)
+    private void AssertCommonSnapshot(ContractEntity contract)
     {
-        Assert.NotEmpty(agreement.VenueName);
-        Assert.NotEmpty(agreement.ArtistName);
-        Assert.Equal("2026-07", agreement.PlatformTermsVersion);
-        Assert.NotEqual(default, agreement.CreatedAtUtc);
-        Assert.NotNull(agreement.ArtistESignature);
-        Assert.Equal(fixture.SeedState.ArtistManager1.Id, agreement.ArtistESignature!.UserId);
-        Assert.NotEqual(default, agreement.ArtistESignature.AtUtc);
-        Assert.Equal("Test Signatory", agreement.ArtistESignature.SignatoryName);
-        Assert.Equal(fixture.SeedState.VenueManager1.Id, agreement.VenueESignature.UserId);
-        Assert.NotEqual(default, agreement.VenueESignature.AtUtc);
-        Assert.Equal("Test Signatory", agreement.VenueESignature.SignatoryName);
+        Assert.NotEmpty(contract.VenueName);
+        Assert.NotEmpty(contract.ArtistName);
+        Assert.Equal("2026-07", contract.PlatformTermsVersion);
+        Assert.NotEqual(default, contract.CreatedAtUtc);
+        Assert.NotNull(contract.ArtistESignature);
+        Assert.Equal(fixture.SeedState.ArtistManager1.Id, contract.ArtistESignature!.UserId);
+        Assert.NotEqual(default, contract.ArtistESignature.AtUtc);
+        Assert.Equal("Test Signatory", contract.ArtistESignature.SignatoryName);
+        Assert.Equal(fixture.SeedState.VenueManager1.Id, contract.VenueESignature.UserId);
+        Assert.NotEqual(default, contract.VenueESignature.AtUtc);
+        Assert.Equal("Test Signatory", contract.VenueESignature.SignatoryName);
         // PdfBlobName is intentionally not asserted here: Phase 3 generates the PDF in a background
         // task at Accept, so it becomes populated shortly after — racy to assert either way. The PDF
-        // lifecycle is covered by the dedicated Agreement_Pdf_* tests.
+        // lifecycle is covered by the dedicated Contract_Pdf_* tests.
     }
 
     // The live edit venues make through OpportunitySyncer.UpdateAsync — mutates the contract row in place.

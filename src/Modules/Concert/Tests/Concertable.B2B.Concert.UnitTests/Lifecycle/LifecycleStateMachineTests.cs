@@ -21,17 +21,17 @@ public sealed class LifecycleStateMachineTests
 
     [Theory]
     [MemberData(nameof(AllDealTypes))]
-    public void Registry_ShouldProvideAMachine_ForEveryContractType(DealType contractType)
+    public void Registry_ShouldProvideAMachine_ForEveryDealType(DealType dealType)
     {
-        Assert.NotNull(Registry.Get(contractType));
+        Assert.NotNull(Registry.Get(dealType));
     }
 
     [Theory]
     [MemberData(nameof(AllDealTypes))]
-    public void Next_ShouldAdvance_ForEveryDeclaredRow(DealType contractType)
+    public void Next_ShouldAdvance_ForEveryDeclaredRow(DealType dealType)
     {
         // Arrange
-        var machine = Registry.Get(contractType);
+        var machine = Registry.Get(dealType);
 
         // Act + Assert
         foreach (var ((state, trigger), next) in machine.Transitions)
@@ -40,10 +40,10 @@ public sealed class LifecycleStateMachineTests
 
     [Theory]
     [MemberData(nameof(AllDealTypes))]
-    public void Next_ShouldThrowConflict_ForEveryUndeclaredPair(DealType contractType)
+    public void Next_ShouldThrowConflict_ForEveryUndeclaredPair(DealType dealType)
     {
         // Arrange
-        var machine = Registry.Get(contractType);
+        var machine = Registry.Get(dealType);
         var undeclared =
             from state in Enum.GetValues<LifecycleState>()
             from trigger in Enum.GetValues<Trigger>()
@@ -57,10 +57,10 @@ public sealed class LifecycleStateMachineTests
 
     [Theory]
     [MemberData(nameof(AllDealTypes))]
-    public void Transitions_ShouldReachEveryDeclaredState_FromApplied(DealType contractType)
+    public void Transitions_ShouldReachEveryDeclaredState_FromApplied(DealType dealType)
     {
         // Arrange
-        var machine = Registry.Get(contractType);
+        var machine = Registry.Get(dealType);
         var declared = machine.Transitions.Keys.Select(key => key.Item1)
             .Concat(machine.Transitions.Values)
             .ToHashSet();

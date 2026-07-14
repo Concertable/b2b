@@ -4,25 +4,25 @@ namespace Concertable.B2B.Deal.Infrastructure;
 
 internal sealed class DealModule : IDealModule
 {
-    private readonly IDealService contractService;
+    private readonly IDealService dealService;
 
-    public DealModule(IDealService contractService)
+    public DealModule(IDealService dealService)
     {
-        this.contractService = contractService;
+        this.dealService = dealService;
     }
 
-    public Task<IDeal?> GetByIdAsync(int contractId, CancellationToken ct = default)
-        => contractService.GetByIdAsync(contractId, ct);
+    public Task<IDeal?> GetByIdAsync(int dealId, CancellationToken ct = default)
+        => dealService.GetByIdAsync(dealId, ct);
 
-    public Task<IEnumerable<IDeal>> GetByIdsAsync(IEnumerable<int> contractIds, CancellationToken ct = default)
-        => contractService.GetByIdsAsync(contractIds, ct);
+    public Task<IEnumerable<IDeal>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
+        => dealService.GetByIdsAsync(dealIds, ct);
 
-    public Task<int> CreateAsync(IDeal contract, CancellationToken ct = default)
-        => contractService.CreateAsync(contract, ct);
+    public Task<int> CreateAsync(IDeal deal, CancellationToken ct = default)
+        => dealService.CreateAsync(deal, ct);
 
-    public Task UpdateAsync(int contractId, IDeal contract, CancellationToken ct = default)
-        => contractService.UpdateAsync(contractId, contract, ct);
+    public Task UpdateAsync(int dealId, IDeal deal, CancellationToken ct = default)
+        => dealService.UpdateAsync(dealId, deal, ct);
 
-    public Task DeleteAsync(int contractId, CancellationToken ct = default)
-        => contractService.DeleteAsync(contractId, ct);
+    public Task DeleteAsync(int dealId, CancellationToken ct = default)
+        => dealService.DeleteAsync(dealId, ct);
 }

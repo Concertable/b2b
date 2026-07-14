@@ -8,18 +8,18 @@ namespace Concertable.B2B.Deal.Api.Controllers;
 [Route("api/[controller]")]
 internal sealed class DealController : ControllerBase
 {
-    private readonly IDealService contractService;
+    private readonly IDealService dealService;
 
-    public DealController(IDealService contractService)
+    public DealController(IDealService dealService)
     {
-        this.contractService = contractService;
+        this.dealService = dealService;
     }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var contract = await contractService.GetByIdAsync(id)
+        var deal = await dealService.GetByIdAsync(id)
             .OrNotFound($"Contract {id}");
-        return Ok(contract);
+        return Ok(deal);
     }
 }

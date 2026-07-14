@@ -8,16 +8,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
 {
     private readonly IApplicationRepository applicationRepository;
-    private readonly IDealAccessor contractAccessor;
+    private readonly IDealAccessor dealAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
 
     public HoldCheckoutStep(
         IApplicationRepository applicationRepository,
-        IDealAccessor contractAccessor,
+        IDealAccessor dealAccessor,
         IManagerPaymentClient managerPaymentClient)
     {
         this.applicationRepository = applicationRepository;
-        this.contractAccessor = contractAccessor;
+        this.dealAccessor = dealAccessor;
         this.managerPaymentClient = managerPaymentClient;
     }
 
@@ -27,7 +27,7 @@ internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
             .OrNotFound("Application");
         var venueTenantId = await applicationRepository.GetVenueTenantIdAsync(applicationId)
             .OrNotFound("Application");
-        var contract = (FlatFeeDeal)contractAccessor.Contract;
+        var deal = (FlatFeeDeal)dealAccessor.Deal;
 
         var metadata = new Dictionary<string, string>
         {
@@ -35,7 +35,7 @@ internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
             ["applicationId"] = applicationId.ToString()
         };
 
-        var session = await managerPaymentClient.CreateHoldSessionAsync(venueTenantId, contract.Fee, metadata);
-        return new Checkout(new FlatPayment(contract.Fee), artist, session, CheckoutLabels.Charge);
+        var session = await managerPaymentClient.CreateHoldSessionAsync(venueTenantId, deal.Fee, metadata);
+        return new Checkout(new FlatPayment(deal.Fee), artist, session, CheckoutLabels.Charge);
     }
 }

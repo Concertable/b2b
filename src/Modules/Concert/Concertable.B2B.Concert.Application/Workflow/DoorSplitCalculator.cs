@@ -4,9 +4,9 @@ namespace Concertable.B2B.Concert.Application.Workflow;
 
 internal sealed class DoorSplitCalculator : IArtistShareCalculator
 {
-    public decimal Calculate(IDeal contract, decimal totalRevenue)
+    public decimal Calculate(IDeal deal, decimal totalRevenue)
     {
-        var c = (DoorSplitDeal)contract;
+        var c = (DoorSplitDeal)deal;
         return totalRevenue * (c.ArtistDoorPercent / 100);
     }
 }

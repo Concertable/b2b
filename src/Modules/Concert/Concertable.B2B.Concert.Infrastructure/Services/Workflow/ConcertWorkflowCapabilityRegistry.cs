@@ -9,6 +9,6 @@ internal sealed class ConcertWorkflowCapabilityRegistry : IConcertWorkflowCapabi
     public ConcertWorkflowCapabilityRegistry(IReadOnlyDictionary<DealType, Type> strategyTypes)
         => this.strategyTypes = strategyTypes;
 
-    public bool Has<TCapability>(DealType contractType) where TCapability : class
-        => strategyTypes[contractType].IsAssignableTo(typeof(TCapability));
+    public bool Has<TCapability>(DealType dealType) where TCapability : class
+        => strategyTypes[dealType].IsAssignableTo(typeof(TCapability));
 }

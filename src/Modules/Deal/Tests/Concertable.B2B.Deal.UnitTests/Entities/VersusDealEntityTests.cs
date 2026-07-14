@@ -12,9 +12,9 @@ public sealed class VersusDealEntityTests
     [InlineData(0, 0, 50, 0)]
     public void CalculateArtistShare_ShouldReturnCorrectAmount(decimal guarantee, decimal totalRevenue, decimal artistDoorPercent, decimal expected)
     {
-        var contract = VersusDealEntity.Create(guarantee, artistDoorPercent, PaymentMethod.Cash);
+        var deal = VersusDealEntity.Create(guarantee, artistDoorPercent, PaymentMethod.Cash);
 
-        var result = contract.CalculateArtistShare(totalRevenue);
+        var result = deal.CalculateArtistShare(totalRevenue);
 
         Assert.Equal(expected, result);
     }

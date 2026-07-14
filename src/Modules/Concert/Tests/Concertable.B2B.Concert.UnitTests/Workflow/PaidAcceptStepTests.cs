@@ -8,20 +8,20 @@ public sealed class PaidAcceptStepTests
 {
     private const int ApplicationId = 1;
     private const string PaymentMethodId = "pm_card_visa";
-    private readonly DoorSplitDeal contract = new() { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
+    private readonly DoorSplitDeal deal = new() { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
 
     private readonly Mock<IBookingService> bookingService;
-    private readonly Mock<IDealAccessor> contractAccessor;
+    private readonly Mock<IDealAccessor> dealAccessor;
     private readonly PaidAcceptStep step;
 
     public PaidAcceptStepTests()
     {
         this.bookingService = new Mock<IBookingService>();
-        this.contractAccessor = new Mock<IDealAccessor>();
+        this.dealAccessor = new Mock<IDealAccessor>();
 
-        contractAccessor.SetupGet(c => c.Contract).Returns(contract);
+        dealAccessor.SetupGet(c => c.Deal).Returns(deal);
 
-        this.step = new PaidAcceptStep(bookingService.Object, contractAccessor.Object);
+        this.step = new PaidAcceptStep(bookingService.Object, dealAccessor.Object);
     }
 
     [Fact]
@@ -31,6 +31,6 @@ public sealed class PaidAcceptStepTests
         await step.ExecuteAsync(ApplicationId, PaymentMethodId);
 
         // Assert
-        bookingService.Verify(b => b.CreateDeferredAsync(ApplicationId, contract.ContractType, PaymentMethodId), Times.Once);
+        bookingService.Verify(b => b.CreateDeferredAsync(ApplicationId, deal.DealType, PaymentMethodId), Times.Once);
     }
 }

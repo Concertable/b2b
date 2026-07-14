@@ -13,23 +13,23 @@ using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests.Services;
 
-public sealed class ContractBuilderTests
+public sealed class ContractIssuerTests
 {
-    private readonly Mock<IDealAccessor> contractAccessor = new();
+    private readonly Mock<IDealAccessor> dealAccessor = new();
     private readonly Mock<IApplicationRepository> applicationRepository = new();
-    private readonly Mock<IContractRepository> agreementRepository = new();
+    private readonly Mock<IContractRepository> contractRepository = new();
     private readonly Mock<IDealTermsRenderer> termsRenderer = new();
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<IClientContext> clientContext = new();
-    private readonly ContractBuilder builder;
+    private readonly ContractIssuer issuer;
 
     private readonly ESignature artistESignature = new(
         Guid.NewGuid(), new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
         IPAddress.Parse("203.0.113.7"), "artist-agent", "Artie Artist", null);
 
-    public ContractBuilderTests()
+    public ContractIssuerTests()
     {
-        contractAccessor.SetupGet(c => c.Contract).Returns(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        dealAccessor.SetupGet(c => c.Deal).Returns(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         applicationRepository
             .Setup(r => r.GetArtistAndVenueByIdAsync(It.IsAny<int>()))
             .ReturnsAsync(((ArtistReadModel, VenueReadModel)?)(
@@ -40,10 +40,10 @@ public sealed class ContractBuilderTests
         clientContext.SetupGet(c => c.IpAddress).Returns(IPAddress.Loopback);
         clientContext.SetupGet(c => c.UserAgent).Returns("venue-agent");
 
-        builder = new ContractBuilder(
-            contractAccessor.Object,
+        issuer = new ContractIssuer(
+            dealAccessor.Object,
             applicationRepository.Object,
-            agreementRepository.Object,
+            contractRepository.Object,
             termsRenderer.Object,
             currentUser.Object,
             clientContext.Object,
@@ -51,13 +51,13 @@ public sealed class ContractBuilderTests
             new FakeTimeProvider());
     }
 
-    // The agreement snapshots the artist's apply-time signature (a complex-type value copied by value
+    // The contract snapshots the artist's apply-time signature (a complex-type value copied by value
     // on save) and builds the venue's fresh from the accepting user + request context.
     [Fact]
-    public async Task BuildAsync_SnapshotsArtistSignatureFromApplication_AndBuildsVenueSignatureFromRequest()
+    public async Task IssueAsync_SnapshotsArtistSignatureFromApplication_AndBuildsVenueSignatureFromRequest()
     {
         ContractEntity? built = null;
-        agreementRepository
+        contractRepository
             .Setup(r => r.AddAsync(It.IsAny<ContractEntity>(), It.IsAny<CancellationToken>()))
             .Callback<ContractEntity, CancellationToken>((a, _) => built = a)
             .ReturnsAsync((ContractEntity a, CancellationToken _) => a);
@@ -66,10 +66,10 @@ public sealed class ContractBuilderTests
         application.Opportunity = OpportunityEntity.Create(
             venueId: 2,
             new DateRange(new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc), new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc)),
-            contractId: 3);
+            dealId: 3);
         application.RecordArtistESignature(artistESignature, "fingerprint");
 
-        await builder.BuildAsync(application, bookingId: 42, new ESignatureRequest { SignatoryName = "Vera Venue" });
+        await issuer.IssueAsync(application, bookingId: 42, new ESignatureRequest { SignatoryName = "Vera Venue" });
 
         Assert.NotNull(built);
         Assert.Equal(application.ArtistESignature, built.ArtistESignature);

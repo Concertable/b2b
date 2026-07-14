@@ -4,9 +4,9 @@ namespace Concertable.B2B.Concert.Application.Renderers;
 
 internal sealed class VersusTermsSerializer : IDealTermsSerializer
 {
-    public string Serialize(IDeal contract)
+    public string Serialize(IDeal deal)
     {
-        var c = (VersusDeal)contract;
+        var c = (VersusDeal)deal;
         return $"Guarantee={TermsFingerprintFormat.Number(c.Guarantee)};ArtistDoorPercent={TermsFingerprintFormat.Number(c.ArtistDoorPercent)}";
     }
 }

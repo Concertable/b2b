@@ -9,7 +9,7 @@ internal sealed class DoorSplitDealUpdater : IDealUpdater
     public void Apply(DealEntity existing, IDeal source)
     {
         var entity = (DoorSplitDealEntity)existing;
-        var contract = (DoorSplitDeal)source;
-        entity.Update(contract.ArtistDoorPercent, contract.PaymentMethod);
+        var deal = (DoorSplitDeal)source;
+        entity.Update(deal.ArtistDoorPercent, deal.PaymentMethod);
     }
 }

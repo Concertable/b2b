@@ -35,7 +35,7 @@ public sealed class SeedState
     public VenueEntity Venue { get; }
 
     /// <summary>One tenant per operator (the manager's legal entity) — every manager, venue and artist alike.
-    /// Venues/opportunities/contracts and artists all carry the matching <c>TenantId</c>.</summary>
+    /// Venues/opportunities/deals and artists all carry the matching <c>TenantId</c>.</summary>
     public IReadOnlyList<TenantEntity> Tenants { get; }
 
     /// <summary>The founding Owner membership per operator — the source of truth for tenant authority. Only
@@ -288,7 +288,7 @@ public sealed class SeedState
                 i + 1,
                 venueId,
                 new DateRange(now.AddDays(days), now.AddDays(days).AddHours(hours)),
-                contractId: Deals[i].Id));
+                dealId: Deals[i].Id));
         }
         Opportunities = opps;
         FreshVenueHireOpportunity = opps[62];
@@ -309,9 +309,9 @@ public sealed class SeedState
         var tenantByDealId = Opportunities
             .GroupBy(o => o.DealId)
             .ToDictionary(g => g.Key, g => g.First().TenantId);
-        foreach (var contract in Deals)
-            if (tenantByDealId.TryGetValue(contract.Id, out var tenantId))
-                contract.TenantId = tenantId;
+        foreach (var deal in Deals)
+            if (tenantByDealId.TryGetValue(deal.Id, out var tenantId))
+                deal.TenantId = tenantId;
 
         ConfirmedBooking = BookingFactory.Standard(1);
         PostedDoorSplitBooking = BookingFactory.Deferred(2);
@@ -370,10 +370,10 @@ public sealed class SeedState
         UpcomingFlatFeeApp = ApplicationFactory.Booked(2, 58, Bookings[12]);
         UpcomingVenueHireApp = ApplicationFactory.BookedPrepaid(1, 59, Bookings[13]);
 
-        DoorSplitApp = ApplicationFactory.Create(1, Opportunities[55].Id, Deals[55].ContractType);
-        VersusApp = ApplicationFactory.Create(1, Opportunities[56].Id, Deals[56].ContractType);
-        VenueHireApp = ApplicationFactory.CreatePrepaid(1, Opportunities[51].Id, Deals[51].ContractType);
-        FlatFeeApp = ApplicationFactory.Create(1, Opportunities[54].Id, Deals[54].ContractType);
+        DoorSplitApp = ApplicationFactory.Create(1, Opportunities[55].Id, Deals[55].DealType);
+        VersusApp = ApplicationFactory.Create(1, Opportunities[56].Id, Deals[56].DealType);
+        VenueHireApp = ApplicationFactory.CreatePrepaid(1, Opportunities[51].Id, Deals[51].DealType);
+        FlatFeeApp = ApplicationFactory.Create(1, Opportunities[54].Id, Deals[54].DealType);
 
         Applications =
         [
@@ -481,9 +481,9 @@ public sealed class SeedState
         var artistTenantById = Artists.ToDictionary(a => a.Id, a => a.TenantId);
         foreach (var application in Applications)
         {
-            var contractType = Deals[Opportunities[application.OpportunityId - 1].DealId - 1].ContractType;
-            application.With(nameof(ApplicationEntity.ContractType), contractType);
-            application.Booking?.With(nameof(BookingEntity.ContractType), contractType);
+            var dealType = Deals[Opportunities[application.OpportunityId - 1].DealId - 1].DealType;
+            application.With(nameof(ApplicationEntity.DealType), dealType);
+            application.Booking?.With(nameof(BookingEntity.DealType), dealType);
 
             application.VenueTenantId = Opportunities[application.OpportunityId - 1].TenantId;
             application.ArtistTenantId = artistTenantById[application.ArtistId];

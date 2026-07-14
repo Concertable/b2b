@@ -9,7 +9,7 @@ internal sealed class VenueHireDealUpdater : IDealUpdater
     public void Apply(DealEntity existing, IDeal source)
     {
         var entity = (VenueHireDealEntity)existing;
-        var contract = (VenueHireDeal)source;
-        entity.Update(contract.HireFee, contract.PaymentMethod);
+        var deal = (VenueHireDeal)source;
+        entity.Update(deal.HireFee, deal.PaymentMethod);
     }
 }

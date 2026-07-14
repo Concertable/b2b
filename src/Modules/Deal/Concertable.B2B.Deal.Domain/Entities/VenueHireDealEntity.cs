@@ -4,7 +4,7 @@ public sealed class VenueHireDealEntity : DealEntity
 {
     private VenueHireDealEntity() { }
 
-    public override DealType ContractType => DealType.VenueHire;
+    public override DealType DealType => DealType.VenueHire;
     public decimal HireFee { get; private set; }
 
     public static VenueHireDealEntity Create(decimal hireFee, PaymentMethod paymentMethod)

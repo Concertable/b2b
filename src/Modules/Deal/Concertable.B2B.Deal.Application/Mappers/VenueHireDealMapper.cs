@@ -16,9 +16,9 @@ internal sealed class VenueHireDealMapper : IDealMapper
         };
     }
 
-    public DealEntity ToEntity(IDeal contract)
+    public DealEntity ToEntity(IDeal deal)
     {
-        var c = (VenueHireDeal)contract;
+        var c = (VenueHireDeal)deal;
         return VenueHireDealEntity.Create(c.HireFee, c.PaymentMethod);
     }
 }

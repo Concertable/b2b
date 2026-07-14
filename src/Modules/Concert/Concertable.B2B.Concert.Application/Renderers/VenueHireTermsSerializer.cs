@@ -4,5 +4,5 @@ namespace Concertable.B2B.Concert.Application.Renderers;
 
 internal sealed class VenueHireTermsSerializer : IDealTermsSerializer
 {
-    public string Serialize(IDeal contract) => $"HireFee={TermsFingerprintFormat.Number(((VenueHireDeal)contract).HireFee)}";
+    public string Serialize(IDeal deal) => $"HireFee={TermsFingerprintFormat.Number(((VenueHireDeal)deal).HireFee)}";
 }

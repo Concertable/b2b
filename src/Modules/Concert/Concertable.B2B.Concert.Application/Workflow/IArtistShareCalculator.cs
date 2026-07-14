@@ -4,5 +4,5 @@ namespace Concertable.B2B.Concert.Application.Workflow;
 
 internal interface IArtistShareCalculator
 {
-    decimal Calculate(IDeal contract, decimal totalRevenue);
+    decimal Calculate(IDeal deal, decimal totalRevenue);
 }

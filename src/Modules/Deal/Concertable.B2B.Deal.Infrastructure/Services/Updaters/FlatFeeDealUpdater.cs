@@ -9,7 +9,7 @@ internal sealed class FlatFeeDealUpdater : IDealUpdater
     public void Apply(DealEntity existing, IDeal source)
     {
         var entity = (FlatFeeDealEntity)existing;
-        var contract = (FlatFeeDeal)source;
-        entity.Update(contract.Fee, contract.PaymentMethod);
+        var deal = (FlatFeeDeal)source;
+        entity.Update(deal.Fee, deal.PaymentMethod);
     }
 }

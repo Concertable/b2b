@@ -11,11 +11,11 @@ internal sealed class TermsFingerprintCalculator : ITermsFingerprintCalculator
 
     public TermsFingerprintCalculator(IDealTermsSerializer termsSerializer) => this.termsSerializer = termsSerializer;
 
-    public string Calculate(IDeal contract, DateRange period)
+    public string Calculate(IDeal deal, DateRange period)
     {
-        var numbers = termsSerializer.Serialize(contract);
+        var numbers = termsSerializer.Serialize(deal);
         var payload = Invariant(
-            $"{contract.ContractType}|{contract.PaymentMethod}|{numbers}|{TermsFingerprintFormat.Instant(period.Start)}|{TermsFingerprintFormat.Instant(period.End)}");
+            $"{deal.DealType}|{deal.PaymentMethod}|{numbers}|{TermsFingerprintFormat.Instant(period.Start)}|{TermsFingerprintFormat.Instant(period.End)}");
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload)));
     }
 }

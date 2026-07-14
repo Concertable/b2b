@@ -9,7 +9,7 @@ internal sealed class VersusDealUpdater : IDealUpdater
     public void Apply(DealEntity existing, IDeal source)
     {
         var entity = (VersusDealEntity)existing;
-        var contract = (VersusDeal)source;
-        entity.Update(contract.Guarantee, contract.ArtistDoorPercent, contract.PaymentMethod);
+        var deal = (VersusDeal)source;
+        entity.Update(deal.Guarantee, deal.ArtistDoorPercent, deal.PaymentMethod);
     }
 }

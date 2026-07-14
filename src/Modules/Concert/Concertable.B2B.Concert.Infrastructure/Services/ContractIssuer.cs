@@ -5,30 +5,30 @@ using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class ContractBuilder : IContractBuilder
+internal sealed class ContractIssuer : IContractIssuer
 {
-    private readonly IDealAccessor contractAccessor;
+    private readonly IDealAccessor dealAccessor;
     private readonly IApplicationRepository applicationRepository;
-    private readonly IContractRepository agreementRepository;
+    private readonly IContractRepository contractRepository;
     private readonly IDealTermsRenderer termsRenderer;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
 
-    public ContractBuilder(
-        IDealAccessor contractAccessor,
+    public ContractIssuer(
+        IDealAccessor dealAccessor,
         IApplicationRepository applicationRepository,
-        IContractRepository agreementRepository,
+        IContractRepository contractRepository,
         IDealTermsRenderer termsRenderer,
         ICurrentUser currentUser,
         IClientContext clientContext,
         IOptions<LegalSettings> legal,
         TimeProvider timeProvider)
     {
-        this.contractAccessor = contractAccessor;
+        this.dealAccessor = dealAccessor;
         this.applicationRepository = applicationRepository;
-        this.agreementRepository = agreementRepository;
+        this.contractRepository = contractRepository;
         this.termsRenderer = termsRenderer;
         this.currentUser = currentUser;
         this.clientContext = clientContext;
@@ -36,21 +36,21 @@ internal sealed class ContractBuilder : IContractBuilder
         this.timeProvider = timeProvider;
     }
 
-    public async Task BuildAsync(ApplicationEntity application, int bookingId, ESignatureRequest venueESignature)
+    public async Task IssueAsync(ApplicationEntity application, int bookingId, ESignatureRequest venueESignature)
     {
-        var contract = contractAccessor.Contract;
+        var deal = dealAccessor.Deal;
         var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(application.Id)
             .OrNotFound("Application");
 
-        var agreement = ContractEntity.Create(
+        var contract = ContractEntity.Create(
             bookingId,
             venue.Id,
             venue.Name,
             artist.Id,
             artist.Name,
             application.Opportunity.Period,
-            contract,
-            termsRenderer.Render(contract),
+            deal,
+            termsRenderer.Render(deal),
             legal.PlatformTermsVersion,
             application.ArtistESignature,
             new ESignature(
@@ -61,10 +61,10 @@ internal sealed class ContractBuilder : IContractBuilder
                 venueESignature.SignatoryName,
                 venueESignature.DrawnSignatureImage),
             timeProvider.GetUtcNow().UtcDateTime);
-        agreement.VenueTenantId = application.VenueTenantId;
-        agreement.ArtistTenantId = application.ArtistTenantId;
-        agreement.AssignPdfBlobName($"agreements/{bookingId}-{Guid.NewGuid():N}.pdf");
+        contract.VenueTenantId = application.VenueTenantId;
+        contract.ArtistTenantId = application.ArtistTenantId;
+        contract.AssignPdfBlobName($"contracts/{bookingId}-{Guid.NewGuid():N}.pdf");
 
-        await agreementRepository.AddAsync(agreement);
+        await contractRepository.AddAsync(contract);
     }
 }

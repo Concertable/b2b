@@ -4,7 +4,7 @@ public sealed class DoorSplitDealEntity : DealEntity
 {
     private DoorSplitDealEntity() { }
 
-    public override DealType ContractType => DealType.DoorSplit;
+    public override DealType DealType => DealType.DoorSplit;
     public decimal ArtistDoorPercent { get; private set; }
 
     public static DoorSplitDealEntity Create(decimal artistDoorPercent, PaymentMethod paymentMethod)

@@ -7,13 +7,13 @@ namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
 
 internal static class OpportunityRequestBuilders
 {
-    public static OpportunityRequest BuildRequest(IDeal contract) =>
+    public static OpportunityRequest BuildRequest(IDeal deal) =>
         new()
         {
             StartDate = DateTime.UtcNow.AddMonths(1),
             EndDate = DateTime.UtcNow.AddMonths(1).AddHours(3),
             Genres = [Genre.Rock],
-            Contract = contract
+            Deal = deal
         };
 
     public static OpportunityRequest BuildDefaultRequest() =>

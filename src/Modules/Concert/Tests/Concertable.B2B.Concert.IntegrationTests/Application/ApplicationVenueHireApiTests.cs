@@ -69,7 +69,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             StartDate = DateTime.UtcNow.AddMonths(13),
             EndDate = DateTime.UtcNow.AddMonths(13).AddHours(3),
             Genres = [Genre.Rock],
-            Contract = new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
+            Deal = new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
         };
         var oppResponse = await venueClient.PostAsync("/api/Opportunity", oppRequest);
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
@@ -204,7 +204,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             StartDate = DateTime.UtcNow.AddMonths(13),
             EndDate = DateTime.UtcNow.AddMonths(13).AddHours(3),
             Genres = [Genre.Rock],
-            Contract = new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
+            Deal = new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
         };
         var oppResponse = await venueClient.PostAsync("/api/Opportunity", oppRequest);
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();

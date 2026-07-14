@@ -62,11 +62,11 @@ export function AcceptApplicationPage() {
 
       {requiresCheckout ? (
         <div className="border-border bg-card rounded-xl border p-4">
-          <AcceptDealSummary contract={opportunity.contract} />
+          <AcceptDealSummary deal={opportunity.deal} />
         </div>
       ) : (
         <ESignaturePanel
-          contract={opportunity.contract}
+          deal={opportunity.deal}
           value={signature}
           onChange={setSignature}
         />

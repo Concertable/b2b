@@ -16,6 +16,6 @@ internal sealed class ArtistShareCalculator : IArtistShareCalculator
         }.ToFrozenDictionary();
     }
 
-    public decimal Calculate(IDeal contract, decimal totalRevenue) =>
-        calculators[contract.ContractType].Calculate(contract, totalRevenue);
+    public decimal Calculate(IDeal deal, decimal totalRevenue) =>
+        calculators[deal.DealType].Calculate(deal, totalRevenue);
 }

@@ -8,9 +8,9 @@ internal sealed class ConcertWorkflowRegistryBuilder
     public Dictionary<DealType, Type> WorkflowTypes { get; } = [];
     public Dictionary<DealType, LifecycleStateMachine> StateMachines { get; } = [];
 
-    public void Add(DealType contractType, Type workflowType, LifecycleStateMachine stateMachine)
+    public void Add(DealType dealType, Type workflowType, LifecycleStateMachine stateMachine)
     {
-        WorkflowTypes[contractType] = workflowType;
-        StateMachines[contractType] = stateMachine;
+        WorkflowTypes[dealType] = workflowType;
+        StateMachines[dealType] = stateMachine;
     }
 }

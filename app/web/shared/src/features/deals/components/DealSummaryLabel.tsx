@@ -5,15 +5,15 @@ import {
 } from "@concertable/shared/features/deals";
 
 interface Props {
-  contract: Deal;
+  deal: Deal;
 }
 
-export function DealSummaryLabel({ contract }: Readonly<Props>) {
+export function DealSummaryLabel({ deal }: Readonly<Props>) {
   return (
     <p className="font-medium">
-      {DEAL_TYPE_LABELS[contract.$type]}{" "}
+      {DEAL_TYPE_LABELS[deal.$type]}{" "}
       <span className="text-muted-foreground text-sm font-normal">
-        · {dealSummary(contract)}
+        · {dealSummary(deal)}
       </span>
     </p>
   );

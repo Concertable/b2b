@@ -16,7 +16,7 @@ internal sealed class ApplyRequestValidator : AbstractValidator<ApplyRequest>
 {
     public ApplyRequestValidator()
     {
-        RuleFor(x => x.ESignature).NotNull().WithMessage("You must sign the booking agreement");
+        RuleFor(x => x.ESignature).NotNull().WithMessage("You must sign the booking contract");
         RuleFor(x => x.ESignature).SetValidator(new ESignatureRequestValidator()).When(x => x.ESignature is not null);
     }
 }
@@ -25,7 +25,7 @@ internal sealed class AcceptRequestValidator : AbstractValidator<AcceptRequest>
 {
     public AcceptRequestValidator()
     {
-        RuleFor(x => x.ESignature).NotNull().WithMessage("You must sign the booking agreement");
+        RuleFor(x => x.ESignature).NotNull().WithMessage("You must sign the booking contract");
         RuleFor(x => x.ESignature).SetValidator(new ESignatureRequestValidator()).When(x => x.ESignature is not null);
     }
 }

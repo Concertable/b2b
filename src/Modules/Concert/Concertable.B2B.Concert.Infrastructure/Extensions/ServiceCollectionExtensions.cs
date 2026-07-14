@@ -81,7 +81,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
         services.Configure<LegalSettings>(configuration.GetSection("Legal"));
-        services.AddScoped<IContractBuilder, ContractBuilder>();
+        services.AddScoped<IContractIssuer, ContractIssuer>();
         services.AddScoped<IContractService, ContractService>();
         services.AddScoped<IContractPdfService, ContractPdfService>();
         services.AddScoped<IClientContext, ClientContextAccessor>();
@@ -253,10 +253,10 @@ public static class ServiceCollectionExtensions
     private static void AddConcertWorkflow(
         this IServiceCollection services,
         ConcertWorkflowRegistryBuilder registryBuilder,
-        DealType contractType,
+        DealType dealType,
         Action<ConcertWorkflowBuilder> configure)
     {
-        var builder = new ConcertWorkflowBuilder(contractType, services, registryBuilder);
+        var builder = new ConcertWorkflowBuilder(dealType, services, registryBuilder);
         configure(builder);
         builder.Build();
     }

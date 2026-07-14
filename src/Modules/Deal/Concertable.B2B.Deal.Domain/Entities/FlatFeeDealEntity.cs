@@ -4,7 +4,7 @@ public sealed class FlatFeeDealEntity : DealEntity
 {
     private FlatFeeDealEntity() { }
 
-    public override DealType ContractType => DealType.FlatFee;
+    public override DealType DealType => DealType.FlatFee;
     public decimal Fee { get; private set; }
 
     public static FlatFeeDealEntity Create(decimal fee, PaymentMethod paymentMethod)

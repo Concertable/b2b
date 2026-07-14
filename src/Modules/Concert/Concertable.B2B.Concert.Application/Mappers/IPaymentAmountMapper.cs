@@ -5,5 +5,5 @@ namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal interface IPaymentAmountMapper
 {
-    IPaymentAmount ToPaymentAmount(IDeal contract);
+    IPaymentAmount ToPaymentAmount(IDeal deal);
 }

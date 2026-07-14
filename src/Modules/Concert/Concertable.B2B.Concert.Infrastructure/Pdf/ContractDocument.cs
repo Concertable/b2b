@@ -7,18 +7,18 @@ using QuestPDF.Infrastructure;
 namespace Concertable.B2B.Concert.Infrastructure.Pdf;
 
 /// <summary>
-/// The human-readable booking agreement, rendered from the immutable <see cref="ContractEntity"/>
+/// The human-readable booking contract, rendered from the immutable <see cref="ContractEntity"/>
 /// snapshot — never from the live contract. Mirrors the QuestPDF <c>IDocument</c> precedent
 /// (Customer's TicketReceiptDocument): plain data in via the ctor, one <see cref="Compose"/>.
 /// </summary>
 internal sealed class ContractDocument : IDocument
 {
-    private readonly ContractEntity agreement;
+    private readonly ContractEntity contract;
     private readonly ILogger logger;
 
-    public ContractDocument(ContractEntity agreement, ILogger logger)
+    public ContractDocument(ContractEntity contract, ILogger logger)
     {
-        this.agreement = agreement;
+        this.contract = contract;
         this.logger = logger;
     }
 
@@ -32,9 +32,9 @@ internal sealed class ContractDocument : IDocument
 
             page.Header().Column(header =>
             {
-                header.Item().Text("Booking Agreement").FontSize(22).Bold();
-                header.Item().Text($"Reference: BA-{agreement.Id}").FontColor(Colors.Grey.Darken1);
-                header.Item().Text($"Generated: {FormatUtc(agreement.CreatedAtUtc)}").FontColor(Colors.Grey.Darken1);
+                header.Item().Text("Contract").FontSize(22).Bold();
+                header.Item().Text($"Reference: C-{contract.Id}").FontColor(Colors.Grey.Darken1);
+                header.Item().Text($"Generated: {FormatUtc(contract.CreatedAtUtc)}").FontColor(Colors.Grey.Darken1);
             });
 
             page.Content().PaddingVertical(20).Column(column =>
@@ -43,35 +43,35 @@ internal sealed class ContractDocument : IDocument
 
                 Section(column, "Parties", section =>
                 {
-                    Field(section, "Venue", agreement.VenueName);
-                    Field(section, "Artist", agreement.ArtistName);
+                    Field(section, "Venue", contract.VenueName);
+                    Field(section, "Artist", contract.ArtistName);
                 });
 
                 Section(column, "Event", section =>
                 {
-                    Field(section, "From", FormatUtc(agreement.Period.Start));
-                    Field(section, "To", FormatUtc(agreement.Period.End));
+                    Field(section, "From", FormatUtc(contract.Period.Start));
+                    Field(section, "To", FormatUtc(contract.Period.End));
                 });
 
                 Section(column, "Terms", section =>
                 {
-                    Field(section, "Contract type", agreement.ContractType.ToString());
-                    Field(section, "Payment method", agreement.PaymentMethod.ToString());
-                    section.Item().PaddingTop(4).Text(agreement.TermsText);
-                    Field(section, "Platform terms version", agreement.PlatformTermsVersion);
+                    Field(section, "Contract type", contract.DealType.ToString());
+                    Field(section, "Payment method", contract.PaymentMethod.ToString());
+                    section.Item().PaddingTop(4).Text(contract.TermsText);
+                    Field(section, "Platform terms version", contract.PlatformTermsVersion);
                 });
 
                 Section(column, "Signatures", section =>
                 {
-                    Signature(section, "Artist", agreement.ArtistESignature);
-                    Signature(section, "Venue", agreement.VenueESignature);
+                    Signature(section, "Artist", contract.ArtistESignature);
+                    Signature(section, "Venue", contract.VenueESignature);
                 });
             });
 
             page.Footer().AlignCenter().Text(t =>
             {
-                t.Span("Concertable — this agreement records the terms both parties e-signed. ");
-                t.Span($"Platform terms {agreement.PlatformTermsVersion}.").FontColor(Colors.Grey.Darken1);
+                t.Span("Concertable — this contract records the terms both parties e-signed. ");
+                t.Span($"Platform terms {contract.PlatformTermsVersion}.").FontColor(Colors.Grey.Darken1);
             });
         });
     }
@@ -120,7 +120,7 @@ internal sealed class ContractDocument : IDocument
 
     /* Accepts a raw base64 PNG or a data: URI (strips the prefix). Logs then degrades to null on an
        undecodable image so a corrupt signature surfaces rather than silently rendering as "no image"
-       on a legal agreement, but never fails the whole document render over a display-only glyph. */
+       on a legal contract, but never fails the whole document render over a display-only glyph. */
     private byte[]? DecodeDrawnSignature(string party, string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -134,7 +134,7 @@ internal sealed class ContractDocument : IDocument
         try { return Convert.FromBase64String(payload); }
         catch (FormatException)
         {
-            logger.DrawnSignatureDecodeFailed(agreement.Id, party);
+            logger.DrawnSignatureDecodeFailed(contract.Id, party);
             return null;
         }
     }

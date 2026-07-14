@@ -11,20 +11,20 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
 {
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IUserModule userModule;
-    private readonly IDealAccessor contractAccessor;
+    private readonly IDealAccessor dealAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
     private readonly ITenantContext tenantContext;
 
     public SetupCheckoutStep(
         IOpportunityRepository opportunityRepository,
         IUserModule userModule,
-        IDealAccessor contractAccessor,
+        IDealAccessor dealAccessor,
         IManagerPaymentClient managerPaymentClient,
         ITenantContext tenantContext)
     {
         this.opportunityRepository = opportunityRepository;
         this.userModule = userModule;
-        this.contractAccessor = contractAccessor;
+        this.dealAccessor = dealAccessor;
         this.managerPaymentClient = managerPaymentClient;
         this.tenantContext = tenantContext;
     }
@@ -35,7 +35,7 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
             .OrNotFound("Opportunity");
         var manager = await userModule.GetManagerByIdAsync(venueSummary.UserId);
         var venue = new PayeeSummary(venueSummary.Name, manager?.Email);
-        var contract = (VenueHireDeal)contractAccessor.Contract;
+        var deal = (VenueHireDeal)dealAccessor.Deal;
 
         var metadata = new Dictionary<string, string>
         {
@@ -49,6 +49,6 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
             ?? throw new ForbiddenException("No tenant for current user");
 
         var session = await managerPaymentClient.CreateSetupSessionAsync(ownerId, metadata);
-        return new Checkout(new FlatPayment(contract.HireFee), venue, session, CheckoutLabels.Charge);
+        return new Checkout(new FlatPayment(deal.HireFee), venue, session, CheckoutLabels.Charge);
     }
 }

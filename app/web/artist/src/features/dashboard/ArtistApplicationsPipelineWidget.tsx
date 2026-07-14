@@ -47,7 +47,7 @@ const columns: ColumnDef<Application>[] = [
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{o.venueName}</p>
           <p className="text-muted-foreground text-xs">
-            {dayjs(o.startDate).format("ddd D MMM")} · {dealSummary(o.contract)}
+            {dayjs(o.startDate).format("ddd D MMM")} · {dealSummary(o.deal)}
           </p>
         </div>
       );

@@ -16,9 +16,9 @@ internal sealed class DoorSplitDealMapper : IDealMapper
         };
     }
 
-    public DealEntity ToEntity(IDeal contract)
+    public DealEntity ToEntity(IDeal deal)
     {
-        var c = (DoorSplitDeal)contract;
+        var c = (DoorSplitDeal)deal;
         return DoorSplitDealEntity.Create(c.ArtistDoorPercent, c.PaymentMethod);
     }
 }

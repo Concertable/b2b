@@ -15,10 +15,10 @@ public sealed class DoorSplitCalculatorTests
     {
         // Arrange
         var calculator = new DoorSplitCalculator();
-        var contract = new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = artistDoorPercent };
+        var deal = new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = artistDoorPercent };
 
         // Act
-        var result = calculator.Calculate(contract, totalRevenue);
+        var result = calculator.Calculate(deal, totalRevenue);
 
         // Assert
         Assert.Equal(expected, result);

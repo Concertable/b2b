@@ -12,18 +12,18 @@ internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
     private readonly IApplicationValidator applicationValidator;
-    private readonly IContractService agreementService;
+    private readonly IContractService contractService;
     private readonly IApplicationResponseMapper mapper;
 
     public ApplicationController(
         IApplicationService applicationService,
         IApplicationValidator applicationValidator,
-        IContractService agreementService,
+        IContractService contractService,
         IApplicationResponseMapper mapper)
     {
         this.applicationService = applicationService;
         this.applicationValidator = applicationValidator;
-        this.agreementService = agreementService;
+        this.contractService = contractService;
         this.mapper = mapper;
     }
 
@@ -70,17 +70,17 @@ internal sealed class ApplicationController : ControllerBase
 
     // No [HasPermission]: both parties read (venue + artist), enforced by the two-party tenant filter
     // exactly like GetById — a stranger is filtered out and gets 404, never a probe-able 403.
-    [HttpGet("{id}/agreement")]
-    public async Task<ActionResult<ContractDto>> GetAgreement(int id)
+    [HttpGet("{id}/contract")]
+    public async Task<ActionResult<ContractDto>> GetContract(int id)
     {
-        var agreement = await agreementService.GetByApplicationIdAsync(id);
-        return Ok(agreement);
+        var contract = await contractService.GetByApplicationIdAsync(id);
+        return Ok(contract);
     }
 
-    [HttpGet("{id}/agreement/pdf")]
-    public async Task<IActionResult> GetAgreementPdf(int id)
+    [HttpGet("{id}/contract/pdf")]
+    public async Task<IActionResult> GetContractPdf(int id)
     {
-        var pdf = await agreementService.GetPdfByApplicationIdAsync(id);
+        var pdf = await contractService.GetPdfByApplicationIdAsync(id);
         return File(pdf.Content, pdf.ContentType, pdf.FileName);
     }
 

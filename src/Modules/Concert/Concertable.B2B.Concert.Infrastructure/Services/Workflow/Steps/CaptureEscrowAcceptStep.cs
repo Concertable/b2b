@@ -11,7 +11,7 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
     private readonly IBookingService bookingService;
     private readonly IEscrowClient escrowClient;
     private readonly IApplicationRepository applicationRepository;
-    private readonly IDealAccessor contractAccessor;
+    private readonly IDealAccessor dealAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
     private readonly ILogger<CaptureEscrowAcceptStep> logger;
 
@@ -19,14 +19,14 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
         IBookingService bookingService,
         IEscrowClient escrowClient,
         IApplicationRepository applicationRepository,
-        IDealAccessor contractAccessor,
+        IDealAccessor dealAccessor,
         IManagerPaymentClient managerPaymentClient,
         ILogger<CaptureEscrowAcceptStep> logger)
     {
         this.bookingService = bookingService;
         this.escrowClient = escrowClient;
         this.applicationRepository = applicationRepository;
-        this.contractAccessor = contractAccessor;
+        this.dealAccessor = dealAccessor;
         this.managerPaymentClient = managerPaymentClient;
         this.logger = logger;
     }
@@ -36,14 +36,14 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
         /* FlatFee: the venue tenant pays the artist tenant, per the application's frozen snapshot. */
         var (venueTenantId, artistTenantId) = await applicationRepository.GetTenantPairAsync(applicationId)
             .OrNotFound("Application");
-        var contract = (FlatFeeDeal)contractAccessor.Contract;
-        var booking = await bookingService.CreateStandardAsync(applicationId, contract.ContractType);
+        var deal = (FlatFeeDeal)dealAccessor.Deal;
+        var booking = await bookingService.CreateStandardAsync(applicationId, deal.DealType);
 
         var paymentIntentId = await managerPaymentClient.FindHeldIntentAsync(venueTenantId, applicationId);
 
-        logger.AcceptingFlatFeeApplication(applicationId, booking.Id, paymentIntentId, contract.Fee, "GBP", venueTenantId, artistTenantId);
+        logger.AcceptingFlatFeeApplication(applicationId, booking.Id, paymentIntentId, deal.Fee, "GBP", venueTenantId, artistTenantId);
 
-        var bind = await escrowClient.CaptureAsync(venueTenantId, artistTenantId, contract.Fee, paymentIntentId, booking.Id);
+        var bind = await escrowClient.CaptureAsync(venueTenantId, artistTenantId, deal.Fee, paymentIntentId, booking.Id);
         if (bind.IsFailed)
             throw new BadRequestException(bind.Errors);
     }

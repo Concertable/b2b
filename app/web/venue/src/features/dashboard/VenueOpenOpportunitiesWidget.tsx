@@ -33,7 +33,7 @@ export function VenueOpenOpportunitiesWidget() {
                     {dayjs(o.opportunity.startDate).format("ddd D MMM")}
                   </div>
                   <div className="text-muted-foreground text-xs">
-                    {dealSummary(o.opportunity.contract)}
+                    {dealSummary(o.opportunity.deal)}
                   </div>
                 </div>
                 <div className="text-right">

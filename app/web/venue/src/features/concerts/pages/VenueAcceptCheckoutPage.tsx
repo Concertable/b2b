@@ -142,8 +142,8 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
         />
       }
     >
-      <CheckoutSection title="Contract Terms">
-        <AcceptDealSummary contract={opportunity.contract} />
+      <CheckoutSection title="Deal Terms">
+        <AcceptDealSummary deal={opportunity.deal} />
       </CheckoutSection>
 
       <CheckoutSection

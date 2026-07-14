@@ -29,7 +29,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public int TicketsSold { get; private set; }
     public DateRange Period { get; private set; } = null!;
     public DateTime? DatePosted { get; private set; }
-    public DealType ContractType { get; private set; }
+    public DealType DealType { get; private set; }
     public BookingEntity Booking { get; set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
     public VenueReadModel Venue { get; set; } = null!;
@@ -49,7 +49,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
         DateRange period,
         string name,
         string about,
-        DealType contractType,
+        DealType dealType,
         IEnumerable<Genre> genres) => new()
         {
             BookingId = bookingId,
@@ -58,7 +58,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
             Period = period,
             Name = name,
             About = about,
-            ContractType = contractType,
+            DealType = dealType,
             Genres = genres.ToList()
         };
 

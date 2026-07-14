@@ -9,15 +9,15 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
 internal sealed class ConcertWorkflowBuilder
 {
-    private readonly DealType contractType;
+    private readonly DealType dealType;
     private readonly IServiceCollection services;
     private readonly ConcertWorkflowRegistryBuilder registryBuilder;
     private readonly Dictionary<(LifecycleState, Trigger), LifecycleState> transitions = [];
     private Type workflowType = null!;
 
-    public ConcertWorkflowBuilder(DealType contractType, IServiceCollection services, ConcertWorkflowRegistryBuilder registryBuilder)
+    public ConcertWorkflowBuilder(DealType dealType, IServiceCollection services, ConcertWorkflowRegistryBuilder registryBuilder)
     {
-        this.contractType = contractType;
+        this.dealType = dealType;
         this.services = services;
         this.registryBuilder = registryBuilder;
     }
@@ -89,7 +89,7 @@ internal sealed class ConcertWorkflowBuilder
 
     public ConcertWorkflowBuilder WithWorkflow<TWorkflow>() where TWorkflow : class, IConcertWorkflow
     {
-        services.AddKeyedScoped<IConcertWorkflow, TWorkflow>(contractType);
+        services.AddKeyedScoped<IConcertWorkflow, TWorkflow>(dealType);
         workflowType = typeof(TWorkflow);
         return this;
     }
@@ -97,14 +97,14 @@ internal sealed class ConcertWorkflowBuilder
     public void Build()
     {
         if (workflowType is null)
-            throw new InvalidOperationException($"No workflow registered for {contractType}. Call WithWorkflow<T>().");
-        registryBuilder.Add(contractType, workflowType, new LifecycleStateMachine(transitions));
+            throw new InvalidOperationException($"No workflow registered for {dealType}. Call WithWorkflow<T>().");
+        registryBuilder.Add(dealType, workflowType, new LifecycleStateMachine(transitions));
     }
 
     private void Add(LifecycleState from, Trigger on, LifecycleState to)
     {
         if (!transitions.TryAdd((from, on), to))
-            throw new InvalidOperationException($"Duplicate transition for {contractType}: {from} + {on}");
+            throw new InvalidOperationException($"Duplicate transition for {dealType}: {from} + {on}");
     }
 
     private ConcertWorkflowBuilder RegisterStep<TStep>() where TStep : class, IConcertStep

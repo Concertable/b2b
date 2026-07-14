@@ -4,13 +4,13 @@ using Concertable.Kernel;
 namespace Concertable.B2B.Concert.Domain.Entities;
 
 /// <summary>
-/// The immutable record of the deal both parties agreed to, snapshotted at Accept.
-/// Columns are copies, never references to the live contract — opportunity edits must not
-/// change what was agreed. Never update a persisted row's terms.
+/// A by-value snapshot of the deal's terms, copied at creation and immutable after (private setters),
+/// so a later edit to the live deal can't change what was signed. Created by <c>ContractIssuer</c>
+/// during Accept — but that timing is convention, not an invariant the model enforces (see TECH_DEBT).
 /// </summary>
 public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
 {
-    public static string DisplayName => "Booking agreement";
+    public static string DisplayName => "Contract";
     public int Id { get; private set; }
     public Guid VenueTenantId { get; set; }
     public Guid ArtistTenantId { get; set; }
@@ -23,7 +23,7 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
     public string ArtistName { get; private set; } = null!;
 
     public DateRange Period { get; private set; } = null!;
-    public DealType ContractType { get; private set; }
+    public DealType DealType { get; private set; }
     public PaymentMethod PaymentMethod { get; private set; }
 
     public string TermsText { get; private set; } = null!;
@@ -44,7 +44,7 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
     public void AssignPdfBlobName(string blobName)
     {
         if (PdfBlobName is not null)
-            throw new InvalidOperationException("Agreement PDF blob name is already assigned");
+            throw new InvalidOperationException("Contract PDF blob name is already assigned");
         PdfBlobName = blobName;
     }
 
@@ -55,7 +55,7 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
         int artistId,
         string artistName,
         DateRange period,
-        IDeal contract,
+        IDeal deal,
         string termsText,
         string platformTermsVersion,
         ESignature artistESignature,
@@ -68,8 +68,8 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
             ArtistId = artistId,
             ArtistName = artistName,
             Period = period,
-            ContractType = contract.ContractType,
-            PaymentMethod = contract.PaymentMethod,
+            DealType = deal.DealType,
+            PaymentMethod = deal.PaymentMethod,
             TermsText = termsText,
             PlatformTermsVersion = platformTermsVersion,
             ArtistESignature = artistESignature,

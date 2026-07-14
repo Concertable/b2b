@@ -17,7 +17,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
 
     public ApplicationResponse ToResponse(ApplicationDto dto)
     {
-        var ct = dto.Opportunity.Contract.ContractType;
+        var ct = dto.Opportunity.Deal.DealType;
         var isPending = dto.State == LifecycleState.Applied;
         var isCancellable = dto.State is LifecycleState.Accepted or LifecycleState.PaymentFailed;
 
@@ -29,7 +29,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
             Withdraw: isPending || isCancellable ? new ActionLink($"/api/Application/{dto.Id}/withdraw", HttpMethods.Post) : null,
             Reject: isPending ? new ActionLink($"/api/Application/{dto.Id}/reject", HttpMethods.Post) : null,
             Cancel: isCancellable ? new ActionLink($"/api/Application/{dto.Id}/cancel", HttpMethods.Post) : null,
-            Agreement: dto.AgreementId is not null ? new ActionLink($"/api/Application/{dto.Id}/agreement", HttpMethods.Get) : null);
+            Contract: dto.ContractId is not null ? new ActionLink($"/api/Application/{dto.Id}/contract", HttpMethods.Get) : null);
 
         return new ApplicationResponse(
             dto.Id,
@@ -38,7 +38,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
                 dto.Opportunity.Id,
                 dto.Opportunity.StartDate,
                 dto.Opportunity.EndDate,
-                dto.Opportunity.Contract),
+                dto.Opportunity.Deal),
             dto.Status,
             actions);
     }

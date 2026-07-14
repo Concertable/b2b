@@ -22,6 +22,6 @@ internal sealed class DealTermsSerializer : IDealTermsSerializer
         }.ToFrozenDictionary();
     }
 
-    public string Serialize(IDeal contract) =>
-        serializers[contract.ContractType].Serialize(contract);
+    public string Serialize(IDeal deal) =>
+        serializers[deal.DealType].Serialize(deal);
 }
