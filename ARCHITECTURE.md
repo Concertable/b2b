@@ -33,7 +33,7 @@ All modules live under `Modules/`. Each follows the `Concertable.B2B.<Module>.*`
 |---|---|---|
 | **Artist** | `ArtistEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
 | **Concert** | `ConcertEntity` (workflow: stage, BookingId, ContractType), `OpportunityEntity`, `ApplicationEntity`, `BookingEntity`, `SettlementTransactionEntity`, `TicketTransactionEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
-| **Contract** | `ContractEntity` (TPH: `FlatFeeContractEntity`, `DoorSplitContractEntity`, `VersusContractEntity`, `VenueHireContractEntity`), `EscrowEntity` | Api, Application, Contracts, Domain, Infrastructure, UnitTests |
+| **Contract** | `DealEntity` (TPH: `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity`), `EscrowEntity` | Api, Application, Contracts, Domain, Infrastructure, UnitTests |
 | **Conversations** | `MessageEntity` | Api, Application, Contracts, Domain, Infrastructure |
 | **Notification** | SignalR hub (`NotificationHub` at `/hub/notifications`) | Contracts, Infrastructure — slim, no Domain/Application. Pending deletion after Phase 8 Step 24 (see TECH_DEBT). |
 | **Tenant** | `TenantEntity` (org legal/VAT/Stripe identity; owns venues; settlement payee — the renamed `OrganizationEntity`) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
