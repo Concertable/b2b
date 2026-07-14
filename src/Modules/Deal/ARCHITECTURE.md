@@ -1,472 +1,400 @@
-# Deal Architecture
+# Deal & Concert-Workflow Architecture
 
-> **Staleness warning (read first).** This doc predates two refactors and has only had its
-> type/path *names* mechanically updated, not its narrative:
-> 1. **The `Contract` → `Deal` rename** (`plans/b2b/DEAL_RENAME.md`). What this doc calls a
->    "contract" / "contract type" is the **deal** and **`DealType`** — the economic arrangement
->    (flat fee / door split / versus / venue hire), *not* the binding artifact. The binding
->    artifact (parties + e-signatures + PDF, formed at Accept) is now the separate `Contract`
->    entity in the Concert module. Both the enum *type* and the `IDeal.DealType` **property** are now
->    `DealType`, and the JSON wire uses `dealType` (the deal object serialises under the key `deal`).
-> 2. **The workflow executor refactor.** §2 onward describes an earlier `ConcertStage` / `Steps/` /
->    `IContractLoader` design; the code now uses `LifecycleState`, executors, `LifecycleTransitioner`,
->    and `IDealAccessor`. Treat §2's mechanics as indicative, not authoritative, pending a rewrite.
+How the **deal** data and the **concert lifecycle workflow** fit together. Read this before touching
+`api/.../Modules/Deal/`, `api/.../Modules/Concert/Concertable.B2B.Concert.Application/Workflow/`, or
+`api/.../Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/Workflow/`.
 
-How the deal data and the concert lifecycle workflow fit together. Read this
-before touching `api/Modules/Concert/Concertable.Concert.Application/Workflow/`,
-`api/Modules/Concert/Concertable.Concert.Infrastructure/Services/Workflow/`, or
-`api/Modules/Deal/`.
+Two names that are easy to confuse, and that a past refactor deliberately separated:
 
-See [`OVERVIEW.md`](./OVERVIEW.md) for the product-level summary. This doc is about the *code*.
+- **Deal** — the *economic arrangement* (flat fee / door split / versus / venue hire), with its
+  numbers (`Fee`, `HireFee`, `ArtistDoorPercent`, `Guarantee`) and its `PaymentMethod`. It is the
+  editable current offer. Lives in the **Deal module** (`Modules/Deal/`), keyed by the `DealType` enum.
+- **Contract** — the *signed binding artifact* (parties + both e-signatures + rendered legal terms +
+  PDF), a frozen by-value snapshot formed at Accept. It is the `ContractEntity` in the **Concert
+  module**, and is a different thing from the Deal it was rendered from.
 
 ---
 
 ## TL;DR
 
-There are two collaborating sub-systems:
+Two collaborating sub-systems, connected by a `DealType` enum value:
 
-1. **The Contract module** owns the *data* — what kind of contract, with what numbers,
-   on which `PaymentMethod`. Shape per contract type is fixed at compile time via
-   a TPH (table-per-hierarchy) entity model in `Concertable.B2B.Deal.Domain`.
-2. **The Concert workflow** owns the *behaviour* — how an application progresses
-   from `Applied → … → Finished` for that contract type, who pays whom, when Stripe
-   gets called, and what each lifecycle stage does. Lives entirely in the Concert
-   module (`api/Modules/Concert/`); the Contract module knows nothing about it.
-
-A `DealType` enum value is the strategy key that connects them.
+1. **The Deal module** owns the *data* — what kind of deal, with what numbers, on which
+   `PaymentMethod`. Shape per deal type is fixed at compile time via a TPH (table-per-hierarchy)
+   entity model in `Concertable.B2B.Deal.Domain`. It knows nothing about the lifecycle.
+2. **The Concert workflow** owns the *behaviour* — how an application progresses from `Applied → … →
+   Complete` for that deal type, who pays whom, when Stripe is called, and what each lifecycle step
+   does. It lives entirely in the Concert module and reads deals through the `IDealModule` facade.
 
 ```
-                Apply         Checkout?     Accept       Verify?   Settle      Finish
-  FlatFee       Simple        AcceptCO      Simple        -        NoOp        Release escrow
-  DoorSplit     Simple        AcceptCO      Paid          Yes      Deferred    Off-session pay
-  Versus        Simple        AcceptCO      Paid          Yes      Deferred    Off-session pay
-  VenueHire     Paid          ApplyCO       Simple        -        NoOp        Release escrow
+                Apply        Checkout       Accept (money leg)     Finish            Settle
+  FlatFee       Simple       at Accept      capture → escrow       release escrow    —
+  DoorSplit     Simple       at Accept      verify card (deferred) off-session payout  await settlement
+  Versus        Simple       at Accept      verify card (deferred) off-session payout  await settlement
+  VenueHire     Paid         at Apply       deposit → escrow       release escrow     —
 ```
 
 ---
 
-## 1. The Contract module
+## 1. The Deal module
 
 ```
-api/Modules/Deal/
+api/.../Modules/Deal/
 ├─ Concertable.B2B.Deal.Domain/Entities/
-│  ├─ DealEntity.cs                      (abstract TPH root)
-│  ├─ FlatFeeDealEntity.cs               { Fee }
-│  ├─ DoorSplitDealEntity.cs             { ArtistDoorPercent, CalculateArtistShare(rev) }
-│  ├─ VenueHireDealEntity.cs             { HireFee }
-│  └─ VersusDealEntity.cs                { Guarantee, ArtistDoorPercent, CalculateArtistShare(rev) }
+│  ├─ DealEntity.cs                  (abstract TPH root: Id, PaymentMethod, abstract DealType)
+│  ├─ FlatFeeDealEntity.cs           { Fee }
+│  ├─ DoorSplitDealEntity.cs         { ArtistDoorPercent, CalculateArtistShare(rev) }
+│  ├─ VenueHireDealEntity.cs         { HireFee }
+│  └─ VersusDealEntity.cs            { Guarantee, ArtistDoorPercent, CalculateArtistShare(rev) }
 ├─ Concertable.B2B.Deal.Contracts/
-│  ├─ DealType.cs                        enum { FlatFee, DoorSplit, Versus, VenueHire }
-│  ├─ PaymentMethod.cs                       enum { Cash, Transfer }
-│  ├─ IDeal.cs                           interface (+ [JsonDerivedType] for SPA wire)
-│  ├─ FlatFeeDeal.cs / DoorSplitDeal.cs / …  records implementing IDeal
-│  ├─ IDealModule.cs                     facade (Get/Create/Update/Delete)
-│  └─ IDealStrategy.cs                   empty marker for keyed strategies
-└─ Concertable.B2B.Deal.Application/Services + Concertable.B2B.Deal.Infrastructure/…
+│  ├─ DealType.cs                    enum { FlatFee, DoorSplit, Versus, VenueHire }
+│  ├─ PaymentMethod.cs               enum { Cash, Transfer }
+│  ├─ IDeal.cs                       interface (+ [JsonDerivedType] per subtype for the SPA wire)
+│  ├─ FlatFeeDeal.cs / DoorSplitDeal.cs / …   records implementing IDeal
+│  ├─ IDealModule.cs                 cross-module facade (Get / Create / Update / Delete)
+│  └─ IDealStrategy.cs               empty marker for keyed strategies
+└─ Concertable.B2B.Deal.Application/ (services, mappers, updaters)
+   Concertable.B2B.Deal.Infrastructure/ (EF configs, DbContext, updaters, DI)
 ```
 
 Key invariants:
 
-- **`DealEntity`** is a TPH base with `Id`, `PaymentMethod`, abstract `DealType`.
-  Each subtype adds its own typed columns (`Fee`, `HireFee`, `ArtistDoorPercent`,
-  `Guarantee`). Validation lives on the entity (`ValidateFee`, `ValidateArtistDoorPercent`).
-- **`PaymentMethod`** (`Cash | Transfer`) is metadata for the off-platform settlement
-  channel — it does **not** drive workflow timing. The dev seeders use it to label
-  payouts, but no workflow code branches on it. (OVERVIEW.md's "decides *when* money
-  moves" is a simplification — what actually decides "when" is which lifecycle stage
-  a step is wired to.)
-- **`IDealStrategy`** is currently only used to mark
-  `IStripeValidationStrategy` in the Payment module (keyed-DI by `DealType` —
-  Account vs Customer onboarding rules per contract).
-- **`Concert.Opportunity.DealId`** is a satellite FK (no nav back, no SQL FK
-  across the context boundary). Concert *reads* contracts through
-  `IContractLoader` (request-scoped memoizer) which delegates to `IDealModule`.
+- **`DealEntity`** is a TPH base with `Id`, `PaymentMethod`, abstract `DealType`. Each subtype adds
+  its own typed columns (`Fee`, `HireFee`, `ArtistDoorPercent`, `Guarantee`). Validation lives on the
+  entity (`ValidateFee`, `ValidateArtistDoorPercent`).
+- **`PaymentMethod`** (`Cash | Transfer`) is metadata for the off-platform settlement channel — it
+  does **not** drive workflow timing. What decides "when money moves" is which lifecycle stage a step
+  is wired to, not this field.
+- **`IDealStrategy`** is currently only a marker: the sole extender is Payment's
+  `IStripeValidationStrategy` (keyed-DI by `DealType` — Account vs Customer onboarding rules per deal).
+- **`Concert.Opportunity.DealId`** is a satellite FK into the Deal module's DB (no nav back, no SQL FK
+  across the context boundary). The Concert module reads deals through `IDealAccessor` /
+  `IDealResolver` (§2.6), which delegate to `IDealModule`.
 
-There are 29 references to `DealType.<value>` across the codebase. The enum is
-load-bearing and assumed to be closed.
+The `DealType` enum is load-bearing and assumed closed — every keyed-DI lookup, capability match, and
+JSON polymorphic discriminator assumes a finite set known at compile time.
 
 ---
 
 ## 2. The Concert workflow
 
-### 2.1 Lifecycle stage enum
+The lifecycle lives on **`ApplicationEntity.State`** — one state machine per deal type. A request
+enters via `controller → IApplicationService`/`IConcertWorkflowModule → *Dispatcher → *Executor →
+ILifecycleTransitioner → the deal-type's IConcertWorkflow step`. Deal *terms* are read through a
+request-scoped `IDealAccessor`; money movement is delegated to Payment via `IEscrowClient` /
+`IManagerPaymentClient`.
 
-`api/Modules/Concert/Concertable.Concert.Domain/Enums/ConcertStage.cs`:
+### 2.1 Lifecycle state + trigger
 
-```csharp
-enum ConcertStage { None, Applied, Verified, Accepted, Settled, Finished }
-```
-
-`ConcertStage` is **global across all contracts**, but each contract walks a
-**subset** of it. FlatFee for example skips `Verified` and `Settled` (NoOp). The
-subset is declared implicitly by which steps you register for that contract — see
-§2.5.
-
-### 2.2 The three lifecycle entities
-
-Three entities implement `ILifecycleEntity` (`Concert.Domain/ILifecycleEntity.cs`).
-Each owns a slice of the stage range:
-
-| Entity              | Stages it can hold                  | TPH subtypes                              |
-|---------------------|-------------------------------------|-------------------------------------------|
-| `ApplicationEntity` | Applied / Verified / Accepted       | `StandardApplication`, `PrepaidApplication { PaymentMethodId }` |
-| `BookingEntity`     | Accepted / Settled                  | `StandardBooking`, `DeferredBooking { PaymentMethodId }` |
-| `ConcertEntity`     | (after booking) → Finished          | (single type)                             |
-
-The TPH split on Application/Booking exists so prepaid-at-apply (VenueHire) and
-deferred-pay-at-finish (DoorSplit/Versus) can carry a `PaymentMethodId` without
-nullable columns on the standard variants. See memory
-`project_application_booking_tph.md`.
-
-Each entity has a local `AdvanceStage(next)` guard that hard-codes which stages
-the entity is allowed to transition through — these duplicate the per-contract
-transition validator and are mostly belt-and-braces (see §6.1).
-
-### 2.3 Step interfaces (`Workflow/Steps/`)
-
-A **step** is the unit of contract-specific behaviour at one stage. Every step
-implements `IConcertStep` which declares a static `Stage` (the `ConcertStage` it
-lives at). Steps come in two flavours:
-
-**Action steps** — perform the state change for a stage. One implementer per
-contract, registered into the workflow:
-
-- `IApplyCheckoutStep`       (stage `Applied`)  — returns a `Checkout` *before* applying
-- `IAcceptCheckoutStep`      (stage `Accepted`) — returns a `Checkout` *before* accepting
-- `ISimpleApplyStep`         (stage `Applied`)  — no payment-method input
-- `IPaidApplyStep`           (stage `Applied`)  — captures `paymentMethodId`
-- `ISimpleAcceptStep`        (stage `Accepted`)
-- `IPaidAcceptStep`          (stage `Accepted`)
-- `IVerifyStep`              (stage `Verified`)
-- `ISettleStep`              (stage `Settled`)
-- `IFinishStep`              (stage `Finished`)
-
-**Concrete steps live in `Concert.Infrastructure/Services/Workflow/Steps/`.**
-Most of the contract-specific money logic is in these files — e.g.
-`DoorSplitFinishStep` reads the contract, computes `artistShare = rev * pct`,
-and calls `IManagerPaymentModule.PayAsync(...)` off-session.
-
-### 2.4 Capability interfaces (`Workflow/Capabilities/`)
-
-A **capability** is the marker interface a workflow uses to advertise that it
-*has* a given step. Dispatchers pattern-match on these:
-
-```
-IAppliesSimple { ISimpleApplyStep Apply }
-IAppliesPaid   { IPaidApplyStep   Apply }
-IAppliesCheckout { IApplyCheckoutStep ApplyCheckout }
-
-IAcceptsSimple { ISimpleAcceptStep Accept }
-IAcceptsPaid   { IPaidAcceptStep   Accept }
-IAcceptsCheckout { IAcceptCheckoutStep AcceptCheckout }
-
-IVerifies      { IVerifyStep Verify }
-```
-
-`ISettleStep` and `IFinishStep` live on `IConcertWorkflow` directly because every
-workflow has them (Settle as `NoOpSettleStep` if the contract pays at-finish).
-
-### 2.5 Workflow classes (`Workflow/Workflows/`)
-
-A workflow class is a contract-specific bundle of steps that exposes the
-capability matrix. Example (`FlatFeeWorkflow.cs`):
+`Concert.Domain/Lifecycle/LifecycleState.cs` — 10 states:
 
 ```csharp
-internal sealed class FlatFeeWorkflow
-    : IConcertWorkflow, IAppliesSimple, IAcceptsCheckout, IAcceptsSimple
-{
-    public FlatFeeWorkflow(
-        SimpleApplyStep apply,
-        FlatFeeAcceptCheckoutStep acceptCheckout,
-        FlatFeeAcceptStep accept,
-        NoOpSettleStep settle,
-        FlatFeeFinishStep finish) { … }
-
-    public DealType Type => DealType.FlatFee;
-    public ISimpleApplyStep   Apply          => apply;
-    public IAcceptCheckoutStep AcceptCheckout => acceptCheckout;
-    public ISimpleAcceptStep  Accept         => accept;
-    public ISettleStep        Settle         => settle;
-    public IFinishStep        Finish         => finish;
+enum LifecycleState {
+    Applied, Rejected, Withdrawn,
+    Accepted,            // accept landed; payment leg pending (which leg = deal type)
+    PaymentFailed,       // accept-leg payment failed (verify hold / escrow capture) — retryable
+    Booked,              // payment confirmed, draft created — CanPost gate
+    AwaitingSettlement,  // deferred payout leg (DoorSplit / Versus)
+    SettlementFailed,    // post-Finish payout failed — recovery lands Complete, not Booked
+    Complete,
+    Cancelled,           // booking killed while escrow Held — escrow refunded, concert dead
 }
 ```
 
-There are four: `FlatFeeWorkflow`, `DoorSplitWorkflow`, `VenueHireWorkflow`,
-`VersusWorkflow`. Each picks its own combination of capabilities.
+`Concert.Domain/Lifecycle/Trigger.cs` — 11 triggers: `Accept, Reject, Withdraw,
+VerifyPaymentSucceeded/Failed, EscrowPaymentSucceeded/Failed, SettlementPaymentSucceeded/Failed,
+Finish, Cancel`.
 
-### 2.6 Composition in DI (`Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs`)
+`LifecycleStateMachine` (`Domain/Lifecycle/`) wraps a
+`FrozenDictionary<(LifecycleState, Trigger), LifecycleState>`; `Next(current, trigger)` returns the
+target or throws `ConflictException("Cannot {trigger} from {current}")`. The state machine carries no
+identity of its own — the *table content* is what makes it deal-type-specific.
 
-`ConcertWorkflowBuilder` is a small fluent builder that:
+### 2.2 The transition table is per-deal-type, assembled by a fluent builder
 
-1. Registers each step type as scoped (`services.AddScoped<TStep>()`).
-2. Records the step's static `Stage` into a per-contract `stages` list.
-3. Registers the workflow itself **keyed by `DealType`** under
-   `IConcertWorkflow` (`AddKeyedScoped<IConcertWorkflow, TWorkflow>(dealType)`).
-4. On `.Build()`, materialises the per-contract transition sequence
-   (`None → step.Stage[0] → step.Stage[1] → …`) and registers a keyed
-   `IConcertTransitionValidator` for that contract.
+`ConcertWorkflowBuilder` (`Infrastructure/Services/Workflow/`) accumulates edges into a dictionary via
+`With*` methods, each adding a fixed slice; `.Build()` wraps the dictionary in a
+`LifecycleStateMachine` and registers `(DealType → stateMachine, workflowType)`. `Add` throws on a
+duplicate `(from, trigger)`, so overlapping slices are a startup error.
 
-Usage:
+Edge slices: `WithApply` (`Applied +Accept→Accepted`, `+Reject→Rejected`, `+Withdraw→Withdrawn`);
+`WithEscrowPayment` (`Accepted/PaymentFailed +EscrowSucceeded→Booked`, `+EscrowFailed→PaymentFailed`,
+plus idempotent `Cancelled +Escrow*→Cancelled` late-webhook self-loops); `WithVerifiedPayment`
+(the equivalent using the Verify triggers); `WithFinish(to)` (`Booked +Finish→to`); `WithSettlement`
+(`AwaitingSettlement/SettlementFailed +Settlement*→Complete/SettlementFailed`); `WithCancel`
+(`Booked +Cancel→Cancelled`); `WithApplicationCancel` (`Accepted/PaymentFailed +Withdraw/Cancel→
+Cancelled`).
 
-```csharp
-workflowTypes[DealType.FlatFee] = services.AddConcertWorkflow(
-    DealType.FlatFee, p => p
-        .WithApply<SimpleApplyStep>()
-        .WithCheckout<FlatFeeAcceptCheckoutStep>()
-        .WithAccept<FlatFeeAcceptStep>()
-        .WithSettle<NoOpSettleStep>()
-        .WithFinish<FlatFeeFinishStep>()
-        .WithWorkflow<FlatFeeWorkflow>());
-```
+The graphs therefore **differ by deal type** (composed in `AddConcertWorkflows()`,
+`Infrastructure/Extensions/ServiceCollectionExtensions.cs`):
 
-The `workflowTypes` dictionary is also handed to
-`ConcertWorkflowCapabilityRegistry` so callers can ask
-`registry.Has<IAppliesPaid>(DealType.VenueHire)` without resolving the workflow.
+| Deal type | Accept-leg triggers | `WithFinish(to)` | Finish leg | Settlement states |
+|---|---|---|---|---|
+| **FlatFee**   | `WithEscrowPayment`   | `Complete`           | `ReleaseEscrowFinishStep` | none |
+| **VenueHire** | `WithEscrowPayment`   | `Complete`           | `ReleaseEscrowFinishStep` | none |
+| **DoorSplit** | `WithVerifiedPayment` | `AwaitingSettlement` | `PayoutFinishStep`        | `WithSettlement` |
+| **Versus**    | `WithVerifiedPayment` | `AwaitingSettlement` | `PayoutFinishStep`        | `WithSettlement` |
 
-### 2.7 Dispatch path
+`AddConcertWorkflows` registers two singletons off the accumulated maps:
+`IConcertStateMachineRegistry → ConcertStateMachineRegistry` (`FrozenDictionary<DealType,
+LifecycleStateMachine>`, `Get(type)`) and `IConcertWorkflowCapabilityRegistry →
+ConcertWorkflowCapabilityRegistry` (`DealType → workflow CLR type`; `Has<TCapability>(dealType)` tests
+`IsAssignableTo`). Workflow instances themselves are keyed-scoped:
+`AddKeyedScoped<IConcertWorkflow, TWorkflow>(dealType)`.
 
-The flow for any lifecycle transition is:
+### 2.3 `ILifecycleTransitioner` — the atomic transition
 
-```
-Controller / event handler
-   ↓
-IXDispatcher              (Concert.Infrastructure/Services/Workflow/Dispatchers/)
-   ↓
-IXExecutor                (Concert.Infrastructure/Services/Workflow/Executors/)
-   ↓
-IWorkflowStateMachine<TEntity>
-   ├── ConcertTransitionValidator.CanTransitionTo(from, target)   ← per-contract
-   ├── IConcertWorkflowFactory.Create(dealType)               ← keyed-DI lookup
-   ├── pattern-match on capability interface (IAppliesPaid, …)
-   ├── invoke the matched IXStep.ExecuteAsync(...)
-   └── entity.AdvanceStage(target) + SaveChanges
-```
+Interface `Application/Workflow/ILifecycleTransitioner.cs`; impl
+`Infrastructure/Services/Workflow/LifecycleTransitioner.cs`. It also declares
+`internal delegate Task TransitionEffect(ApplicationEntity application)`.
 
-Dispatch examples (see `Workflow/Executors/`):
+`TransitionAsync(int applicationId, Trigger trigger, TransitionEffect? effect = null)` advances one
+application's state for a trigger, running an optional side-effect **inside** the same transition:
 
-- `ApplyExecutor`: `workflow switch { IAppliesPaid w when pm!=null => w.Apply…, IAppliesSimple w => w.Apply…, _ => throw }`
-- `AcceptExecutor`: same pattern with `IAcceptsPaid` / `IAcceptsSimple`
-- `CheckoutDispatcher`: `IAppliesCheckout` / `IAcceptsCheckout`
-- `VerifyExecutor`: `IVerifies` (or throws — Verify is optional)
-- `SettleExecutor` / `FinishExecutor`: every workflow has Settle+Finish, no switch needed
+1. Load the application; `.OrNotFound()`.
+2. `machines.Get(application.DealType)` → the deal-type state machine.
+3. `machine.Next(application.State, trigger)` — **validates** the transition is legal (throws if not),
+   as a guard *before* any effect runs.
+4. If `effect` is non-null, `await effect(application)` — the real work (payment capture, booking
+   creation, contract issue, …).
+5. `application.Transition(trigger, machine)` — flips `State`.
+6. `SaveChangesAsync()`.
 
-The cross-module entry point is `IConcertWorkflowModule` in `Concert.Contracts`
-(Settle / Finish / Verify) — the rest of the dispatchers are called from
-controllers in `Concert.Api`.
+Ordering matters: the guard runs first, the money effect second, the state flip + save last — so a
+throwing effect leaves the DB state unmoved.
 
-### 2.8 Money-movement coupling
+### 2.4 Executors and dispatchers (the two-layer split)
 
-Steps call into Payment via two facades from `Payment.Contracts`:
+An **executor** holds the real orchestration (calls `ILifecycleTransitioner`,
+`IConcertWorkflowFactory`, repositories, `IDealResolver`). A **dispatcher** is a razor-thin
+`internal sealed` adapter implementing an `Application/Interfaces/I*Dispatcher` contract and forwarding
+1:1 to its executor — so the Application layer / `IConcertWorkflowModule` depends on an interface while
+the orchestration stays in Infrastructure. **Dispatcher calls executor.** The one exception is
+`CheckoutDispatcher`, which contains real logic (§2.5).
 
-- `IManagerPaymentModule` — `CreateHoldSessionAsync`, `CreateSetupSessionAsync`,
-  `CreateVerifySessionAsync`, `FindHeldIntentAsync`, `PayAsync` (off-session).
-- `IEscrowModule` — `DepositAsync`, `CaptureAsync`, `ReleaseByBookingIdAsync`.
+| Executor | Responsibility | Entry point |
+|---|---|---|
+| `ApplyExecutor` | Create the `ApplicationEntity` (simple or paid), snapshot both tenant ids + terms fingerprint + artist e-signature. Does **not** go through the transitioner (initial state `Applied`). | `ApplicationController.Apply` |
+| `AcceptExecutor` | The `Accept` transition: resolve deal, verify terms unchanged, run the deal's Accept step, link booking, **issue the `ContractEntity`**, background-reject other applications + render the PDF. | `ApplicationController.Accept` |
+| `RejectExecutor` / `WithdrawExecutor` / `CancelApplicationExecutor` | `Reject` / `Withdraw` / `Cancel` on an application (pre-concert). Withdraw/Cancel from `Accepted`/`PaymentFailed` run `IApplicationCancelStep` (escrow refund). | `ApplicationController.*` |
+| `VerifyExecutor` / `EscrowExecutor` | Payment-outcome callbacks (`VerifyPayment*` / `EscrowPayment*`). On success run the deal's `Book` step; late events on a `Cancelled` app are no-ops (or compensating refund). | `IConcertWorkflowModule.{Verify,Escrow}SucceededAsync` ← Stripe `*Processor`s |
+| `SettlementExecutor` | `SettlementPayment*`, state-only. | `IConcertWorkflowModule.SettlementSucceededAsync` ← `SettlementPaymentProcessor` |
+| `FinishExecutor` | `Finish`: guard concert has ended, resolve deal, run the deal's `Finish` step. | `IConcertWorkflowModule.FinishAsync` ← `ConcertCompletionRunner` (batch) |
+| `CancelExecutor` | `Cancel` a booked concert: run the deal's `Cancel` step + `concert.Cancel()`. | `IConcertWorkflowModule.CancelAsync` ← `ConcertController` |
 
-The step picks the right call based on the contract's economics:
+Dispatch never uses `switch(dealType)`: deal-type routing is always either keyed-DI resolution
+(`IConcertWorkflowFactory.Create(type)`) or capability-interface pattern-matching.
 
-| Contract  | At Accept                       | At Finish                              |
-|-----------|----------------------------------|----------------------------------------|
-| FlatFee   | `Escrow.CaptureAsync` (bind pre-auth) | `Escrow.ReleaseByBookingIdAsync`    |
-| DoorSplit | (none — booking deferred)        | `ManagerPaymentModule.PayAsync` off-session |
-| Versus    | (none — booking deferred)        | `ManagerPaymentModule.PayAsync` off-session |
-| VenueHire | `Escrow.DepositAsync` (artist pays venue) | `Escrow.ReleaseByBookingIdAsync` |
+### 2.5 Steps and capabilities
 
-Note that the artist-share formula is duplicated:
+A **step** is the unit of deal-type-specific behaviour at one point in the lifecycle. Interfaces in
+`Application/Workflow/Steps/`, all marker-derived from `IConcertStep`:
 
-- Domain: `DoorSplitDealEntity.CalculateArtistShare(rev)`,
-  `VersusDealEntity.CalculateArtistShare(rev)`
-- Step: same formula re-written inline in `DoorSplitFinishStep` /
-  `VersusFinishStep` (against the DTO records, not the entities)
+| Interface | Method |
+|---|---|
+| `ISimpleApplyStep` / `IPaidApplyStep` | `ApplyAsync(…) → ApplicationEntity` (paid variant also takes `paymentMethodId`) |
+| `IApplyCheckoutStep` / `IAcceptCheckoutStep` | `ExecuteAsync(…) → Checkout` (pre-apply / pre-accept Stripe session) |
+| `ISimpleAcceptStep` / `IPaidAcceptStep` | `ExecuteAsync(applicationId[, paymentMethodId])` |
+| `IBookStep` / `IFinishStep` / `ICancelStep` | `ExecuteAsync(bookingId | concertId)` |
+| `IApplicationCancelStep` | `ExecuteAsync(applicationId)` — global, not `IConcertStep`-derived |
 
-Either remove the entity methods (unused at runtime) or move the calculation to a
-shared helper the step calls.
+`IConcertWorkflow` (`Application/Workflow/IConcertWorkflow.cs`) exposes only the three *universal*
+steps every deal has — `DealType Type`, `IBookStep Book`, `IFinishStep Finish`, `ICancelStep Cancel`.
+Apply / Accept / Checkout are **not** on the base interface; they attach via **capability interfaces**
+(`Application/Workflow/Capabilities/`) that each concrete workflow additionally implements:
+`IAppliesSimple`/`IAppliesPaid`/`IAppliesCheckout` and `IAcceptsSimple`/`IAcceptsPaid`/
+`IAcceptsCheckout`. This is why executors pattern-match — e.g. `AcceptExecutor` does
+`workflow switch { IAcceptsPaid w when pm != null => …, IAcceptsSimple w => …, _ => throw }`, and
+`CheckoutDispatcher` matches `IAppliesCheckout` (apply-time) / `IAcceptsCheckout` (accept-time),
+throwing `BadRequestException` if the deal lacks the capability.
 
-### 2.9 Ticket payee
+Concrete workflows (`Infrastructure/Services/Workflow/Workflows/`):
 
-`TicketPayeeResolver` (`Workflow/TicketPayeeResolver.cs`) is the only other place
-`DealType` is hard-coded — it picks who receives ticket revenue:
-VenueHire → artist; everything else → venue.
+| Workflow | Capabilities | Apply / Checkout / Accept steps |
+|---|---|---|
+| `FlatFeeWorkflow`   | `IAppliesSimple, IAcceptsCheckout, IAcceptsSimple` | `SimpleApplyStep`, `HoldCheckoutStep` (accept), `CaptureEscrowAcceptStep` |
+| `DoorSplitWorkflow` | `IAppliesSimple, IAcceptsCheckout, IAcceptsPaid`   | `SimpleApplyStep`, `VerifyCheckoutStep`, `PaidAcceptStep` |
+| `VersusWorkflow`    | `IAppliesSimple, IAcceptsCheckout, IAcceptsPaid`   | `SimpleApplyStep`, `VerifyCheckoutStep`, `PaidAcceptStep` |
+| `VenueHireWorkflow` | `IAppliesPaid, IAppliesCheckout, IAcceptsSimple`   | `PaidApplyStep`, `SetupCheckoutStep` (**apply**), `DepositEscrowAcceptStep` |
 
----
+Note the asymmetry: FlatFee/DoorSplit/Versus check out at **accept** time; VenueHire checks out at
+**apply** time (the artist is the payer and is present at apply). All four inject the shared
+`CreateConcertDraftStep` (Book) and `RefundEscrowStep` (Cancel); `SimpleApplyStep` is reused by three.
 
-## 3. Adding a new contract type — current workflow
+### 2.6 How the Concert module reads deal terms
 
-1. **Contract.Contracts**
-   - Add `DealType.MyNewType` to the enum.
-   - Add `[JsonDerivedType(typeof(MyNewTypeContract), "myNewType")]` to `IDeal`.
-   - Add `MyNewTypeContract : IDeal` record with the contract's fields.
-2. **Contract.Domain**
-   - Add `MyNewTypeContractEntity : DealEntity` with the typed columns
-     and a `Create`/`Update`/validator.
-3. **Contract.Infrastructure**
-   - Add an `IEntityTypeConfiguration<MyNewTypeContractEntity>` and a
-     `MyNewTypeContractUpdater`. Wire the updater into `DealUpdater`.
-4. **Migrations** — run `./initial-migrations.ps1` from `api/` (per `CLAUDE.md`).
-5. **Concert.Infrastructure/Services/Workflow/Steps/** — write whatever new
-   step impls you need (or reuse existing ones — `SimpleApplyStep`,
-   `PaidAcceptStep`, `NoOpSettleStep`, `DeferredVerifyStep` are deliberately
-   contract-agnostic and reusable).
-6. **Concert.Infrastructure/Services/Workflow/Workflows/** — add
-   `MyNewTypeWorkflow` implementing `IConcertWorkflow` plus whichever
-   capability interfaces apply.
-7. **`AddConcertModule`** — add the `services.AddConcertWorkflow(DealType.MyNewType, p => p.With…())` block.
-8. **Payment** — if your contract needs onboarding verification, register an
-   `IStripeValidationStrategy` keyed by your `DealType`.
-9. **TicketPayeeResolver** — add a row to its frozen dictionary.
-10. **Frontend** — add a contract form + accept/apply checkout UI variant.
+A single `internal sealed class DealAccessor : IDealAccessor, IDealResolver`
+(`Infrastructure/Services/DealAccessor.cs`), registered request-scoped and aliased so both interfaces
+resolve to the *same* instance:
 
-Re-using existing step impls (steps 5–6) is the main win of the capability-
-interface design — `SimpleApplyStep` for example is reused by FlatFee, DoorSplit,
-and Versus with zero contract-specific code.
+- **`IDealResolver`** (write side, used by executors): `ResolveByOpportunityIdAsync` /
+  `…ApplicationIdAsync` / `…ConcertIdAsync`. Each maps entity id → `DealId` (via a repository's
+  `GetDealIdByIdAsync`) → `IDealModule.GetByIdAsync(dealId)`, **memoizing** the result — first resolve
+  wins.
+- **`IDealAccessor`** (read side, used by steps): a single `IDeal Deal` property that returns the
+  memoized deal, or throws `InvalidOperationException` ("No deal resolved this scope …") if the
+  orchestrator hasn't resolved one yet. Steps cast to the concrete type (e.g.
+  `(FlatFeeDeal)dealAccessor.Deal`).
 
----
+So the contract is: the executor resolves the deal, then the step reads it. (This request-scoped
+memoizer replaced an earlier `IContractLoader` design — that type no longer exists.)
 
-## 4. Can this support custom / drag-and-drop contracts?
+### 2.7 Money movement
 
-**Short answer:** not in its current shape. But the workflow scaffold is closer
-than it looks — the blocker is the *data* side, not the *behaviour* side.
+Steps call two Payment facades from `Concertable.Payment.Client`: **`IEscrowClient`**
+(`DepositAsync`, `CaptureAsync`, `ReleaseByBookingIdAsync`, `RefundByBookingIdAsync`) and
+**`IManagerPaymentClient`** (`PayAsync` off-session, `CreateSetupSessionAsync`,
+`CreateVerifySessionAsync`, `CreateHoldSessionAsync`, `FindHeldIntentAsync`). Amounts flow tenant →
+tenant, sourced from the frozen tenant snapshot on the application/booking.
 
-### 4.1 What stands in the way of a fully user-defined contract
+| Deal | Checkout session | Accept-step money | Finish-step money |
+|---|---|---|---|
+| **FlatFee**   | `HoldCheckoutStep` → hold `deal.Fee` (venue pre-auth) | `CaptureEscrowAcceptStep`: `FindHeldIntentAsync` → `CaptureAsync` (venue→artist) into escrow | `ReleaseEscrowFinishStep`: `ReleaseByBookingIdAsync` → artist |
+| **VenueHire** | `SetupCheckoutStep` (apply-time) → setup `deal.HireFee` (artist off-session) | `DepositEscrowAcceptStep`: `DepositAsync` (artist→venue) into escrow off-session | `ReleaseEscrowFinishStep`: `ReleaseByBookingIdAsync` → venue |
+| **DoorSplit** | `VerifyCheckoutStep` → `CreateVerifySessionAsync` (venue card verify) | `PaidAcceptStep`: no charge — `CreateDeferredAsync` stores the card | `PayoutFinishStep`: off-session `PayAsync` (venue→artist), `artistShare = rev × ArtistDoorPercent` |
+| **Versus**    | `VerifyCheckoutStep` → `CreateVerifySessionAsync` | `PaidAcceptStep`: no charge (deferred) | `PayoutFinishStep`: off-session `PayAsync`, `artistShare = Guarantee + rev × ArtistDoorPercent` |
 
-| Concern | Where it lives | Why it blocks dynamic contracts |
-|---------|----------------|----------------------------------|
-| `DealType` is a closed enum | `Concertable.B2B.Deal.Contracts/DealType.cs` | Every keyed-DI lookup, every switch, every JSON polymorphic discriminator assumes a finite set known at compile time. User-defined contracts would need an open identifier (string/Guid) and runtime registration. |
-| TPH schema per subtype | `Contract.Domain/Entities/*DealEntity.cs` + EF configs | Each contract type currently gets its own columns. A user-defined contract has unknown shape at migration time — has to be a JSON blob, a generic key-value table, or a rule list. |
-| Step impls are typed code | `Workflow/Steps/*Step.cs` | `DoorSplitFinishStep` reads `contract.ArtistDoorPercent` directly. A custom contract has no typed property to read — you'd need an expression interpreter (`rev * <pct field>`) or a finite set of "rule kinds" (FlatCharge, PercentSplit, Hold, Release) the step iterates over. |
-| Stripe primitives are rigid | `Payment.Infrastructure/Services/` | Connect has a small finite set of operations (PaymentIntent on/off-session, SetupIntent, Transfer, Refund). Custom contracts still ultimately map to that finite set — the interpreter doesn't get to invent payment flows. |
-| `ConcertStage` is a closed enum | `Concert.Domain/Enums/ConcertStage.cs` + `AdvanceStage` guards on the three lifecycle entities | A "drag your own stages" UX would need stages to be open values (string/record-struct). See §6.1. |
-| `TicketPayeeResolver` hard-codes direction | `Workflow/TicketPayeeResolver.cs` | Who-pays-whom for ticket revenue is a table keyed by `DealType`. A custom contract would need to declare its payee explicitly. |
+Escrow deals (FlatFee, VenueHire) confirm money **at Accept** and release **at Finish**
+(`Booked +Finish→Complete`). Payout deals (DoorSplit, Versus) ring-fence nothing at Accept (verify +
+store card) and pay off-session **at Finish** (`Booked +Finish→AwaitingSettlement`, then
+`SettlementPaymentSucceeded→Complete`). Cancellation always refunds escrow. The `artistShare` figure
+is computed by `IArtistShareCalculator` (keyed strategy — `DoorSplitCalculator` / `VersusCalculator`)
+consumed by `PayoutFinishStep`. Payment webhooks return as integration events
+(`PaymentSucceeded/FailedEvent`) handled by the `*Processor` classes, which route by
+`Metadata["type"]` and drive the matching `IConcertWorkflowModule` method; idempotency via the inbox.
 
-### 4.2 The realistic options
+### 2.8 Ticket payee
 
-**Option A — Keep the closed shape, make adding new types cheaper.**
-The current architecture is already pretty composable for *developer-defined*
-contract types. The work to add a new one is largely mechanical (§3). Quality-of-life
-wins worth taking even without going dynamic:
-
-- Open up `ConcertStage` per §6.1 so workflow-private stages don't bloat the
-  shared enum.
-- Move the artist-share formula off the steps onto the domain entity (the methods
-  already exist; they're just unused).
-- Generate the `TicketPayeeResolver` dictionary from a method/attribute on the
-  workflow rather than a separate file.
-
-**Option B — Add a single `Composite` contract type that's user-configurable.**
-This is the pragmatic middle path and the one I'd recommend if drag-and-drop is
-the goal. You add **one** new `DealType.Composite` (or `Custom`) with:
-
-- A `CompositeContractEntity : DealEntity` whose single column is a JSON
-  document: a *contract template* describing a list of `Rule`s (each rule has
-  a kind, amount expression, payer/payee, trigger stage).
-- A `CompositeContract : IDeal` record exposing the parsed template to
-  the SPA.
-- A `CompositeWorkflow` whose steps **interpret** the template:
-  `CompositeAcceptStep` iterates rules with trigger `Accepted` and invokes
-  the matching escrow/payment primitive; `CompositeFinishStep` does the same
-  for `Finished`; etc.
-- A finite vocabulary of `Rule` kinds: `FlatCharge`, `PercentSplit`,
-  `Guarantee`, `Hold`, `Release`, `Refund`. The SPA's drag-and-drop palette is
-  exactly this vocabulary.
-
-This approach:
-- Keeps the rest of the system entirely unchanged. The four existing contract
-  types stay as-is.
-- Doesn't require migrations per user contract (one JSON column).
-- Lets you build the UI incrementally — start with one rule kind, add more.
-- Stripe primitives map cleanly to rule kinds, so the interpreter has a finite
-  switch instead of an open language.
-- The four built-ins (FlatFee, DoorSplit, Versus, VenueHire) can eventually be
-  re-expressed as preset templates, and the typed entities deprecated. But you
-  don't have to do that day one.
-
-**Option C — Open the `DealType` identifier entirely.**
-Replace the enum with a `DealTypeId` value type (string or Guid) backed by
-a `ContractTemplate` table, runtime DI registration, and a generic workflow
-factory. Workable but invasive — touches 17+ files and breaks the JSON polymorphic
-discriminator. Only worth doing if Option B's single-composite model proves too
-restrictive.
-
-### 4.3 Recommendation
-
-If the product question is "can a venue/artist drag-and-drop their own contract
-terms": **build Option B as a new contract type**. The capability-interface +
-workflow-builder pattern accommodates it cleanly — `CompositeWorkflow` is just
-one more workflow class, and the interpreter lives in its steps. Almost all of
-the existing scaffolding is reusable; the new work is the rule schema, the
-interpreter, and the SPA builder UI.
-
-If the product question is "I want to keep adding hard-coded contract types
-without it feeling so heavyweight": Option A is what to do, and §6 lists the
-specific files to touch.
+`PayeeResolver` (`Application/Resolvers/PayeeResolver.cs`, `IPayeeResolver`) decides who receives a
+concert's **ticket revenue**, via a `FrozenDictionary<DealType, IPayeeResolver>` (keyed strategy):
+FlatFee/DoorSplit/Versus → `VenuePayeeResolver` (the venue is the box office); VenueHire →
+`ArtistPayeeResolver` (the artist rents the room and keeps the gate). Consumers never branch on deal
+type themselves.
 
 ---
 
-## 5. Frequently confused things
+## 3. The lifecycle entities
 
-- **`PaymentMethod` ≠ `paymentMethodId`.** `PaymentMethod` is the contract-domain
-  enum (`Cash | Transfer`) used for accounting. `paymentMethodId` is a Stripe
-  PM id (`pm_…`) flowed through `PaidApplyStep` / `PaidAcceptStep` /
-  `DeferredBooking`. Different things.
-- **`ConcertWorkflowBuilder` is at the composition root, not at runtime.** All
-  workflows are wired once in `AddConcertModule`. There is no per-request
-  workflow construction.
-- **`IConcertWorkflowModule` (in `Concert.Contracts`) is a thin facade**: only
-  Settle / Finish / Verify. Apply / Accept / Checkout are HTTP-only and called
-  directly via dispatchers from `Concert.Api` controllers.
-- **`IDealStrategy` is currently a near-empty marker.** Only
-  `IStripeValidationStrategy` extends it. Not a general extension point yet.
-- **The `Standard` vs `Prepaid` Application split and `Standard` vs `Deferred`
-  Booking split are about *carrying a `PaymentMethodId`*, not about workflow
-  branching.** Workflow branching is the capability interfaces; the TPH split
-  is just so we don't have nullable PM-id columns on rows that don't use them.
+| Entity | Holds `LifecycleState`? | Role | TPH subtypes |
+|---|---|---|---|
+| `ApplicationEntity` | **Yes** (`State`, the only place) | The lifecycle owner | `StandardApplication`, `PrepaidApplication { PaymentMethodId }` (VenueHire) |
+| `BookingEntity` | No | Links an accepted application to its concert | `StandardBooking`, `DeferredBooking { PaymentMethodId }` (DoorSplit/Versus) |
+| `ConcertEntity` | No (`DatePosted` = draft vs posted) | The live concert | (single type) |
+| `ContractEntity` | No | The signed binding artifact (see below) | (single type) |
+
+FK chain: `OpportunityEntity (1)→(N) ApplicationEntity (1)→(0..1) BookingEntity (1)→(0..1)
+ConcertEntity`, and `BookingEntity (1)→(0..1) ContractEntity`. `OpportunityEntity` is `ITenantScoped`
+(the venue) and holds the satellite `DealId` FK into the Deal module.
+
+The TPH split on Application/Booking exists so prepaid-at-apply (VenueHire) and deferred-pay-at-finish
+(DoorSplit/Versus) can carry a `PaymentMethodId` without nullable columns on the standard variants.
+
+**`ContractEntity`** (`Concert.Domain/Entities/ContractEntity.cs`) is a by-value immutable snapshot
+(all private setters): `BookingId`, `VenueId`/`VenueName`, `ArtistId`/`ArtistName`, `Period`,
+`DealType`, `PaymentMethod`, `TermsText` (rendered legal prose), `PlatformTermsVersion`,
+`ArtistESignature` + `VenueESignature`, `PdfBlobName?` (write-once via `AssignPdfBlobName`),
+`CreatedAtUtc`. It is created by **`ContractIssuer.IssueAsync`** (`Infrastructure/Services/`), invoked
+from `AcceptExecutor` during the Accept transition: it renders terms via `IDealTermsRenderer`, copies
+the artist's e-signature (captured at apply) and the venue's (from the accept request), assigns the
+PDF blob name, and persists via `IContractRepository`. The Deal is the *editable* current offer; the
+Contract is the *frozen, signed copy* — "formed at Accept" is a convention of the workflow, not a
+model-enforced invariant. `ESignature` is a `sealed record` (`UserId, AtUtc, Ip?, UserAgent?,
+SignatoryName, DrawnSignatureImage?`), attributed server-side.
 
 ---
 
-## 6. Open issues / future work
+## 4. Adding a new deal type
 
-### 6.1 Stage-enum bloat for workflow-private stages
+The single spot that ties a deal type to its lifecycle + steps + workflow is one `AddConcertWorkflow`
+block. The executors, dispatchers, transitioner, factory, and registries are all deal-type-agnostic
+(keyed DI + capability matching) and need no changes.
 
-Today, declaring a new step `FooStep` for `FooWorkflow` only that lives at a
-*new* lifecycle stage means:
+1. **`Deal.Contracts`** — add the case to `DealType.cs`; add an `XDeal : IDeal` record + a
+   `[JsonDerivedType]` line on `IDeal.cs`.
+2. **`Deal.Domain` / `.Application` / `.Infrastructure`** — add `XDealEntity : DealEntity` (typed
+   columns + `Create`/`Update`/validator), an `XDealMapper`, an `XDealUpdater` wired into `DealUpdater`,
+   and an EF config.
+3. **Migrations** — re-scaffold: run `./initial-migrations.ps1` from `api/` (per `api/CLAUDE.md`; never
+   an additive migration).
+4. **Concert `Infrastructure/.../Steps/`** — reuse an existing step where the money shape fits
+   (`SimpleApplyStep`, `PaidAcceptStep`, `CreateConcertDraftStep`, `RefundEscrowStep`, …); write a new
+   concrete step only if the money movement is genuinely new.
+5. **Concert `Infrastructure/.../Workflows/`** — add `XWorkflow : IConcertWorkflow, I{Applies…},
+   I{Accepts…}` picking the capability interfaces that match its apply/accept/checkout shape.
+6. **`AddConcertWorkflows()`** (`Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs`) —
+   add the `services.AddConcertWorkflow(registryBuilder, DealType.X, p => p.WithApply<…>()…
+   .WithFinish<…>(state).WithWorkflow<XWorkflow>())` block. This wires the state-machine edges, the
+   keyed workflow, and the steps.
+7. **Revenue/payee, only if new** — add a key to `PayeeResolver`; if the deal pays a revenue share at
+   Finish, add an `IArtistShareCalculator` strategy + key; add the matching
+   `PaymentAmountMapper`/`TermsRenderer`/`TermsSerializer` variant (each a per-deal-type keyed family).
+8. **Payment** — if the deal needs onboarding verification, register an `IStripeValidationStrategy`
+   keyed by the new `DealType`.
+9. **Frontend** — add the deal form + accept/apply checkout UI variant.
 
-- Add `Foo` to `ConcertStage` enum.
-- Update the `AdvanceStage` guards on whichever of `ApplicationEntity` /
-  `BookingEntity` / `ConcertEntity` owns that stage.
+Re-using existing step impls is the main win of the capability-interface design.
 
-The per-contract transition validator (built from registered steps' `Stage`s) is
-already isolated — other contracts' validators won't include `Foo`. The bloat is
-purely in the global enum file and the entity guards.
+---
 
-Two cleanups:
+## 5. Could this support custom / drag-and-drop deals?
 
-1. **Replace `enum ConcertStage` with `readonly record struct ConcertStage(string Name)`**
-   (or a sealed class with static singletons). Each workflow declares its own
-   stages by name; the validator's sequence-comparison logic is unchanged.
-   Storage becomes `string`/`int`-hash on the DB column.
-2. **Remove the per-entity `AdvanceStage` guards.** They duplicate
-   `ConcertTransitionValidator` (which the state machine already calls) and are
-   the only reason the entities need to know about every stage. Once the
-   validator is the single source of truth, adding a stage touches only the
-   workflow that uses it.
+**Short answer:** not in its current shape — but the workflow scaffold is closer than it looks. The
+blocker is the *data* side (a closed `DealType`, typed TPH columns, typed step reads), not the
+*behaviour* side (the capability + workflow-builder pattern already composes cleanly).
 
-Combined, this would make adding `FooStep`+`Foo` stage a single-file change
-inside the Foo workflow registration.
+### 5.1 What stands in the way
 
-### 6.2 Artist-share formula duplication
+| Concern | Where | Why it blocks dynamic deals |
+|---|---|---|
+| `DealType` is a closed enum | `Deal.Contracts/DealType.cs` | Every keyed-DI lookup, capability match, and JSON discriminator assumes a finite compile-time set. User-defined deals need an open identifier + runtime registration. |
+| TPH schema per subtype | `Deal.Domain/Entities/*DealEntity.cs` + EF configs | Each deal type gets its own columns; a user-defined deal has unknown shape at migration time (needs a JSON blob or rule list). |
+| Step impls read typed properties | `Concert.Infrastructure/.../Steps/*Step.cs` | `PayoutFinishStep` reads `ArtistDoorPercent` via the calculator; a custom deal has no typed property — you'd need a rule interpreter or a finite set of rule kinds. |
+| Stripe primitives are rigid | Payment | Connect exposes a small finite set of operations; custom deals still map onto that set. |
+| `PayeeResolver` hard-codes direction | `Concert.Application/Resolvers/PayeeResolver.cs` | Who keeps ticket revenue is a table keyed by `DealType`; a custom deal must declare its payee. |
 
-`DoorSplitDealEntity.CalculateArtistShare` and
-`VersusDealEntity.CalculateArtistShare` exist on the entities but aren't
-called — the finish steps re-implement the same formulas against the DTO
-records. Pick one home.
+### 5.2 Realistic options
 
-### 6.3 `IDealStrategy` is under-used
+- **Option A — keep the closed shape, make adding types cheaper.** Adding a developer-defined type is
+  already largely mechanical (§4). QoL wins: move the share formula to a single home (§6.1), generate
+  the `PayeeResolver` map from workflow metadata.
+- **Option B (recommended if drag-and-drop is the goal) — one `Composite` deal type.** Add a single
+  `DealType.Composite` whose `CompositeDealEntity` stores a JSON *template* (a list of `Rule`s: kind,
+  amount expression, payer/payee, trigger state); a `CompositeWorkflow` whose steps **interpret** the
+  template against a finite rule vocabulary (`FlatCharge`, `PercentSplit`, `Guarantee`, `Hold`,
+  `Release`, `Refund`) — which is exactly the SPA's drag-and-drop palette. Keeps the four built-ins
+  unchanged, needs no per-deal migration (one JSON column), maps cleanly to Stripe primitives, and can
+  be built incrementally.
+- **Option C — open the `DealType` identifier entirely** (string/Guid + template table + runtime DI +
+  generic factory). Workable but invasive (breaks the JSON discriminator, touches many files); only
+  worth it if Option B proves too restrictive.
 
-It's a marker but only used to constrain Stripe validation strategies. Either
-expand it into a real cross-module extension surface (per-contract calculators,
-projections, validators) or drop it.
+---
 
-### 6.4 OVERVIEW.md drift
+## 6. Frequently confused things & open issues
 
-OVERVIEW.md says `PaymentMethod` "decides *when* money moves through Stripe."
-What actually decides "when" is which lifecycle stage a step is wired to.
-`PaymentMethod` is just settlement-channel metadata. Worth a one-line fix.
+- **`Deal` ≠ `Contract`.** The Deal is the editable economic offer (Deal module); the `ContractEntity`
+  is the frozen signed artifact formed at Accept (Concert module). Different lifetimes, different
+  models.
+- **`PaymentMethod` ≠ `paymentMethodId`.** `PaymentMethod` is the Deal-domain enum (`Cash | Transfer`)
+  used for accounting; `paymentMethodId` is a Stripe PM id (`pm_…`) flowed through the paid steps and
+  the `Prepaid`/`Deferred` TPH variants. Different things.
+- **`IConcertWorkflowModule`** (in `Concert.Contracts`) is the thin cross-module facade — the
+  payment-outcome callbacks (`VerifySucceededAsync`, `EscrowSucceededAsync`, `SettlementSucceededAsync`)
+  plus `FinishAsync` / `CancelAsync`. Apply / Accept / Checkout are HTTP-only, called via dispatchers
+  from `Concert.Api` controllers.
+- **`ConcertWorkflowBuilder` runs at the composition root**, not per request; all workflows and state
+  machines are wired once in `AddConcertWorkflows`.
+
+### 6.1 Artist-share formula lives in two places
+
+The share formula exists both on the domain entities (`DoorSplitDealEntity.CalculateArtistShare`,
+`VersusDealEntity.CalculateArtistShare`) and in the runtime `IArtistShareCalculator` strategies
+(`DoorSplitCalculator`, `VersusCalculator`) used by `PayoutFinishStep`. At runtime only the strategies
+are used; the entity methods survive **only as the oracle in the integration tests**
+(`ConcertDoorSplitApiTests`, `ConcertVersusApiTests`). Pick one home — or keep the entity method as the
+deliberate independent test oracle and note that intent where it's defined.
+
+### 6.2 `IDealStrategy` is under-used
+
+It's a marker with a single extender (`IStripeValidationStrategy` in Payment). Either grow it into a
+real cross-module extension surface (per-deal calculators, projections, validators) or drop it.
