@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel.Identity;
 using Concertable.Shared.Email.Application;
 using Concertable.Kernel.Exceptions;
@@ -105,6 +106,24 @@ internal sealed class ConcertService : IConcertService
 
         concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime);
 
+        await repository.SaveChangesAsync();
+    }
+
+    public async Task DeclareDoorRevenueAsync(int id, decimal doorRevenue)
+    {
+        var concert = await repository.GetByIdWithBookingAsync(id)
+            .OrNotFound();
+
+        /* Only revenue-share settlements (DeferredBooking) take a declared door figure, and only once
+           the gig has ended and before it settles. Re-declarable while Booked; frozen after. */
+        if (concert.Booking is not DeferredBooking)
+            throw new BadRequestException("Door revenue can only be declared for a revenue-share concert.");
+        if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
+            throw new BadRequestException("Door revenue can only be declared after the concert has ended.");
+        if (concert.Booking.Application.State != LifecycleState.Booked)
+            throw new ConflictException("Door revenue can only be declared before the concert has settled.");
+
+        concert.DeclareDoorRevenue(doorRevenue);
         await repository.SaveChangesAsync();
     }
 

@@ -34,7 +34,9 @@ internal sealed class PayoutFinishStep : IFinishStep
 
     public async Task ExecuteAsync(int concertId)
     {
-        var totalRevenue = await concertRepository.GetTotalRevenueByConcertIdAsync(concertId);
+        var totalRevenue = await concertRepository.GetTotalRevenueByConcertIdAsync(concertId)
+            ?? throw new InvalidOperationException(
+                $"Concert {concertId} reached settlement with no declared door revenue — the completion gate should make this unreachable.");
         var artistShare = artistShareCalculator.Calculate(dealAccessor.Deal, totalRevenue);
 
         logger.ArtistShareCalculated(concertId, totalRevenue, artistShare);
