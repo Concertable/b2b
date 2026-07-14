@@ -190,6 +190,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("DealType")
                         .HasColumnType("int");
 
+                    b.Property<decimal?>("DoorRevenue")
+                        .HasColumnType("decimal(18,2)");
+
                     b.PrimitiveCollection<string>("Genres")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");

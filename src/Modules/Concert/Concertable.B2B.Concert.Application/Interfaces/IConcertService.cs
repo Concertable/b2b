@@ -16,6 +16,7 @@ internal interface IConcertService
     Task<Result<ConcertEntity>> CreateDraftAsync(int applicationId);
     Task<ConcertUpdateResponse> UpdateAsync(int id, UpdateConcertRequest request);
     Task PostAsync(int id, UpdateConcertRequest request);
+    Task DeclareDoorRevenueAsync(int id, decimal doorRevenue);
     Task<IEnumerable<ConcertSummary>> GetHistoryByArtistIdAsync(int id);
     Task<IEnumerable<ConcertSummary>> GetHistoryByVenueIdAsync(int id);
     Task<IEnumerable<ConcertSummary>> GetUnpostedByArtistIdAsync(int id);
