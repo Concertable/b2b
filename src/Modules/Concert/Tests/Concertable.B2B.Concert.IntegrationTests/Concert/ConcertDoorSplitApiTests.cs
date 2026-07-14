@@ -11,6 +11,8 @@ namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 {
+    private const decimal DoorRevenue = 200m;
+
     private readonly ConcertApiFixture fixture;
 
     public ConcertDoorSplitApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
@@ -23,12 +25,13 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
-    public async Task Finish_ShouldChargeArtistDoorShareOffSession()
+    public async Task Finish_ShouldChargeArtistDoorShareOffSession_AfterDoorRevenueDeclared()
     {
-        // Arrange
+        // Arrange — the venue declares the night's door revenue; settlement is a % of that
         var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
         var deal = fixture.SeedState.PastDoorSplitAppDeal;
         var deferred = (DeferredBooking)fixture.SeedState.PastDoorSplitBooking;
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
         // Act
         await fixture.FinishConcertAsync(concert.Id);
@@ -39,7 +42,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
         Assert.Equal(venueTenantId, payment.PayerId);
         Assert.Equal(artistTenantId, payment.PayeeId);
-        Assert.Equal(deal.CalculateArtistShare(concert.TicketsSold * concert.Price), payment.Amount);
+        Assert.Equal(deal.CalculateArtistShare(DoorRevenue), payment.Amount);
         Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
         Assert.Equal(deferred.Id, payment.BookingId);
 
@@ -48,10 +51,24 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Finish_ShouldNotSettle_WhenDoorRevenueNotDeclared()
+    {
+        // Act — the completion sweep runs with no door revenue declared for the revenue-share gig
+        await fixture.RunCompletionAsync();
+
+        // Assert — the gig is skipped (no payout), still awaiting its declaration
+        Assert.DoesNotContain(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
+        Assert.Equal(LifecycleState.Booked, application.State);
+    }
+
+    [Fact]
     public async Task Finish_ShouldCompleteBooking_WhenSettlementWebhookSucceeds()
     {
         // Arrange
-        await fixture.FinishConcertAsync(fixture.SeedState.PastDoorSplitBooking.Concert!.Id);
+        var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
+        await fixture.FinishConcertAsync(concert.Id);
 
         // Act
         await fixture.StripeClient.SendWebhookAsync();
@@ -65,7 +82,9 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     public async Task Finish_ShouldIgnoreDuplicateSettlementWebhookEvent()
     {
         // Arrange
-        await fixture.FinishConcertAsync(fixture.SeedState.PastDoorSplitBooking.Concert!.Id);
+        var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
+        await fixture.FinishConcertAsync(concert.Id);
 
         // Act
         await fixture.StripeClient.SendWebhookAsync();
