@@ -22,6 +22,6 @@ internal sealed class DealTermsRenderer : IDealTermsRenderer
         }.ToFrozenDictionary();
     }
 
-    public string Render(IDeal contract) =>
-        renderers[contract.ContractType].Render(contract);
+    public string Render(IDeal deal) =>
+        renderers[deal.DealType].Render(deal);
 }

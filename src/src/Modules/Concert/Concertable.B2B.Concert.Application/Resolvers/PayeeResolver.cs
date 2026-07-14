@@ -20,8 +20,8 @@ internal sealed class PayeeResolver : IPayeeResolver
     }
 
     public Guid ResolveUserId(ConcertEntity concert) =>
-        resolvers[concert.ContractType].ResolveUserId(concert);
+        resolvers[concert.DealType].ResolveUserId(concert);
 
     public Guid ResolveTenantId(ConcertEntity concert) =>
-        resolvers[concert.ContractType].ResolveTenantId(concert);
+        resolvers[concert.DealType].ResolveTenantId(concert);
 }

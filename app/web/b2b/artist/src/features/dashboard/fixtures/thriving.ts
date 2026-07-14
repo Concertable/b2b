@@ -27,11 +27,11 @@ export const artistThriving: ArtistDashboardFixture = {
     mtdPayoutsDeltaPercent: 21,
   },
   applications: [
-    { id: 401, status: "AwaitingPayment", opportunity: { id: 9101, venueId: 31, venueName: "The Hare & Hounds", startDate: daysAhead(6), endDate: daysAhead(6), genres: ["Indie"], contract: { $type: "versus", paymentMethod: "Transfer", guarantee: 800, artistDoorPercent: 70 } }, actions: { checkout: { href: "/api/Application/401/checkout", method: "POST" } } },
-    { id: 402, status: "AwaitingPayment", opportunity: { id: 9401, venueId: 32, venueName: "Northgate Hall", startDate: daysAhead(14), endDate: daysAhead(14), genres: ["Indie"], contract: { $type: "flatFee", paymentMethod: "Transfer", fee: 1400 } }, actions: { checkout: { href: "/api/Application/402/checkout", method: "POST" } } },
-    { id: 403, status: "Pending", opportunity: { id: 9402, venueId: 33, venueName: "The Black Box", startDate: daysAhead(25), endDate: daysAhead(25), genres: ["Indie"], contract: { $type: "versus", paymentMethod: "Transfer", guarantee: 600, artistDoorPercent: 80 } }, actions: { withdraw: { href: "/api/Application/403/withdraw", method: "POST" } } },
-    { id: 404, status: "Pending", opportunity: { id: 9403, venueId: 34, venueName: "Quayside", startDate: daysAhead(33), endDate: daysAhead(33), genres: ["Indie"], contract: { $type: "versus", paymentMethod: "Transfer", guarantee: 900, artistDoorPercent: 60 } }, actions: { withdraw: { href: "/api/Application/404/withdraw", method: "POST" } } },
-    { id: 405, status: "Confirmed", opportunity: { id: 9404, venueId: 35, venueName: "Riverside Tap", startDate: daysAhead(3), endDate: daysAhead(3), genres: ["Indie"], contract: { $type: "versus", paymentMethod: "Transfer", guarantee: 420, artistDoorPercent: 50 } }, actions: {} },
+    { id: 401, status: "AwaitingPayment", opportunity: { id: 9101, venueId: 31, venueName: "The Hare & Hounds", startDate: daysAhead(6), endDate: daysAhead(6), genres: ["Indie"], deal: { $type: "versus", paymentMethod: "Transfer", guarantee: 800, artistDoorPercent: 70 } }, actions: { checkout: { href: "/api/Application/401/checkout", method: "POST" } } },
+    { id: 402, status: "AwaitingPayment", opportunity: { id: 9401, venueId: 32, venueName: "Northgate Hall", startDate: daysAhead(14), endDate: daysAhead(14), genres: ["Indie"], deal: { $type: "flatFee", paymentMethod: "Transfer", fee: 1400 } }, actions: { checkout: { href: "/api/Application/402/checkout", method: "POST" } } },
+    { id: 403, status: "Pending", opportunity: { id: 9402, venueId: 33, venueName: "The Black Box", startDate: daysAhead(25), endDate: daysAhead(25), genres: ["Indie"], deal: { $type: "versus", paymentMethod: "Transfer", guarantee: 600, artistDoorPercent: 80 } }, actions: { withdraw: { href: "/api/Application/403/withdraw", method: "POST" } } },
+    { id: 404, status: "Pending", opportunity: { id: 9403, venueId: 34, venueName: "Quayside", startDate: daysAhead(33), endDate: daysAhead(33), genres: ["Indie"], deal: { $type: "versus", paymentMethod: "Transfer", guarantee: 900, artistDoorPercent: 60 } }, actions: { withdraw: { href: "/api/Application/404/withdraw", method: "POST" } } },
+    { id: 405, status: "Confirmed", opportunity: { id: 9404, venueId: 35, venueName: "Riverside Tap", startDate: daysAhead(3), endDate: daysAhead(3), genres: ["Indie"], deal: { $type: "versus", paymentMethod: "Transfer", guarantee: 420, artistDoorPercent: 50 } }, actions: {} },
   ],
   inbox: [
     { id: 1201, otherPartyName: "The Hare & Hounds", preview: "Set list looks great — see you Friday.", at: hoursAgo(1), unread: true, href: "/_artist/messages/1201" },
@@ -55,9 +55,9 @@ export const artistThriving: ArtistDashboardFixture = {
     { month: monthsAgoIso(0), grossCents: 728_500, netCents: 633_800, count: 11 },
   ],
   recommendedOpportunities: [
-    { id: 9501, venueId: 41, venueName: "The Pillar", county: "Manchester", town: "Manchester", startDate: daysAhead(40), endDate: daysAhead(40), genres: ["Rock"], contract: { $type: "versus", paymentMethod: "Transfer", guarantee: 900, artistDoorPercent: 70 }, fitScore: 92, href: "/find/opportunity/9501" },
-    { id: 9502, venueId: 42, venueName: "Iron Works", county: "West Yorkshire", town: "Leeds", startDate: daysAhead(48), endDate: daysAhead(48), genres: ["Rock", "Indie"], contract: { $type: "flatFee", paymentMethod: "Transfer", fee: 1200 }, fitScore: 89, href: "/find/opportunity/9502" },
-    { id: 9503, venueId: 43, venueName: "Halls of Light", county: "Edinburgh", town: "Edinburgh", startDate: daysAhead(55), endDate: daysAhead(55), genres: ["Rock"], contract: { $type: "versus", paymentMethod: "Transfer", guarantee: 1500, artistDoorPercent: 50 }, fitScore: 84, href: "/find/opportunity/9503" },
+    { id: 9501, venueId: 41, venueName: "The Pillar", county: "Manchester", town: "Manchester", startDate: daysAhead(40), endDate: daysAhead(40), genres: ["Rock"], deal: { $type: "versus", paymentMethod: "Transfer", guarantee: 900, artistDoorPercent: 70 }, fitScore: 92, href: "/find/opportunity/9501" },
+    { id: 9502, venueId: 42, venueName: "Iron Works", county: "West Yorkshire", town: "Leeds", startDate: daysAhead(48), endDate: daysAhead(48), genres: ["Rock", "Indie"], deal: { $type: "flatFee", paymentMethod: "Transfer", fee: 1200 }, fitScore: 89, href: "/find/opportunity/9502" },
+    { id: 9503, venueId: 43, venueName: "Halls of Light", county: "Edinburgh", town: "Edinburgh", startDate: daysAhead(55), endDate: daysAhead(55), genres: ["Rock"], deal: { $type: "versus", paymentMethod: "Transfer", guarantee: 1500, artistDoorPercent: 50 }, fitScore: 84, href: "/find/opportunity/9503" },
   ],
   activity: [
     { id: "art1", type: "ApplicationAccepted", at: hoursAgo(2), subject: "The Hare & Hounds accepted you — checkout to confirm", url: "/_artist/application/401" },

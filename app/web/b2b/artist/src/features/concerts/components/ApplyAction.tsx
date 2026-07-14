@@ -54,7 +54,7 @@ export function ApplyAction({ opportunity }: Readonly<Props>) {
             <DialogTitle>Sign &amp; apply</DialogTitle>
           </DialogHeader>
           <ESignaturePanel
-            contract={opportunity.contract}
+            deal={opportunity.deal}
             value={signature}
             onChange={setSignature}
           />

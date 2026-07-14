@@ -4,7 +4,7 @@ public sealed class VersusDealEntity : DealEntity
 {
     private VersusDealEntity() { }
 
-    public override DealType ContractType => DealType.Versus;
+    public override DealType DealType => DealType.Versus;
     public decimal Guarantee { get; private set; }
     public decimal ArtistDoorPercent { get; private set; }
 

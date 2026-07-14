@@ -17,9 +17,9 @@ internal sealed class VersusDealMapper : IDealMapper
         };
     }
 
-    public DealEntity ToEntity(IDeal contract)
+    public DealEntity ToEntity(IDeal deal)
     {
-        var c = (VersusDeal)contract;
+        var c = (VersusDeal)deal;
         return VersusDealEntity.Create(c.Guarantee, c.ArtistDoorPercent, c.PaymentMethod);
     }
 }

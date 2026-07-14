@@ -9,4 +9,4 @@ internal sealed record ApplicationDto(
     OpportunityDto Opportunity,
     ApplicationStatus Status,
     LifecycleState State,
-    int? AgreementId);
+    int? ContractId);

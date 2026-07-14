@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace Concertable.B2B.Concert.Application.Renderers;
 
-internal static class AgreementTermsFormat
+internal static class DealTermsFormat
 {
     private static readonly CultureInfo Gb = CultureInfo.GetCultureInfo("en-GB");
 

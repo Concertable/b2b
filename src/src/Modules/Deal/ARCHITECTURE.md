@@ -6,8 +6,8 @@
 >    "contract" / "contract type" is the **deal** and **`DealType`** — the economic arrangement
 >    (flat fee / door split / versus / venue hire), *not* the binding artifact. The binding
 >    artifact (parties + e-signatures + PDF, formed at Accept) is now the separate `Contract`
->    entity in the Concert module. The `IDeal.ContractType` **property** keeps its name on purpose
->    (the SPA wire key `contractType` is unchanged); only the enum *type* is `DealType`.
+>    entity in the Concert module. Both the enum *type* and the `IDeal.DealType` **property** are now
+>    `DealType`, and the JSON wire uses `dealType` (the deal object serialises under the key `deal`).
 > 2. **The workflow executor refactor.** §2 onward describes an earlier `ConcertStage` / `Steps/` /
 >    `IContractLoader` design; the code now uses `LifecycleState`, executors, `LifecycleTransitioner`,
 >    and `IDealAccessor`. Treat §2's mechanics as indicative, not authoritative, pending a rewrite.
@@ -33,7 +33,7 @@ There are two collaborating sub-systems:
    gets called, and what each lifecycle stage does. Lives entirely in the Concert
    module (`api/Modules/Concert/`); the Contract module knows nothing about it.
 
-A `ContractType` enum value is the strategy key that connects them.
+A `DealType` enum value is the strategy key that connects them.
 
 ```
                 Apply         Checkout?     Accept       Verify?   Settle      Finish
@@ -67,7 +67,7 @@ api/Modules/Deal/
 
 Key invariants:
 
-- **`DealEntity`** is a TPH base with `Id`, `PaymentMethod`, abstract `ContractType`.
+- **`DealEntity`** is a TPH base with `Id`, `PaymentMethod`, abstract `DealType`.
   Each subtype adds its own typed columns (`Fee`, `HireFee`, `ArtistDoorPercent`,
   `Guarantee`). Validation lives on the entity (`ValidateFee`, `ValidateArtistDoorPercent`).
 - **`PaymentMethod`** (`Cash | Transfer`) is metadata for the off-platform settlement
@@ -76,7 +76,7 @@ Key invariants:
   moves" is a simplification — what actually decides "when" is which lifecycle stage
   a step is wired to.)
 - **`IDealStrategy`** is currently only used to mark
-  `IStripeValidationStrategy` in the Payment module (keyed-DI by `ContractType` —
+  `IStripeValidationStrategy` in the Payment module (keyed-DI by `DealType` —
   Account vs Customer onboarding rules per contract).
 - **`Concert.Opportunity.DealId`** is a satellite FK (no nav back, no SQL FK
   across the context boundary). Concert *reads* contracts through
@@ -200,8 +200,8 @@ There are four: `FlatFeeWorkflow`, `DoorSplitWorkflow`, `VenueHireWorkflow`,
 
 1. Registers each step type as scoped (`services.AddScoped<TStep>()`).
 2. Records the step's static `Stage` into a per-contract `stages` list.
-3. Registers the workflow itself **keyed by `ContractType`** under
-   `IConcertWorkflow` (`AddKeyedScoped<IConcertWorkflow, TWorkflow>(contractType)`).
+3. Registers the workflow itself **keyed by `DealType`** under
+   `IConcertWorkflow` (`AddKeyedScoped<IConcertWorkflow, TWorkflow>(dealType)`).
 4. On `.Build()`, materialises the per-contract transition sequence
    (`None → step.Stage[0] → step.Stage[1] → …`) and registers a keyed
    `IConcertTransitionValidator` for that contract.
@@ -236,7 +236,7 @@ IXExecutor                (Concert.Infrastructure/Services/Workflow/Executors/)
    ↓
 IWorkflowStateMachine<TEntity>
    ├── ConcertTransitionValidator.CanTransitionTo(from, target)   ← per-contract
-   ├── IConcertWorkflowFactory.Create(contractType)               ← keyed-DI lookup
+   ├── IConcertWorkflowFactory.Create(dealType)               ← keyed-DI lookup
    ├── pattern-match on capability interface (IAppliesPaid, …)
    ├── invoke the matched IXStep.ExecuteAsync(...)
    └── entity.AdvanceStage(target) + SaveChanges
@@ -284,7 +284,7 @@ shared helper the step calls.
 ### 2.9 Ticket payee
 
 `TicketPayeeResolver` (`Workflow/TicketPayeeResolver.cs`) is the only other place
-`ContractType` is hard-coded — it picks who receives ticket revenue:
+`DealType` is hard-coded — it picks who receives ticket revenue:
 VenueHire → artist; everything else → venue.
 
 ---
@@ -311,7 +311,7 @@ VenueHire → artist; everything else → venue.
    capability interfaces apply.
 7. **`AddConcertModule`** — add the `services.AddConcertWorkflow(DealType.MyNewType, p => p.With…())` block.
 8. **Payment** — if your contract needs onboarding verification, register an
-   `IStripeValidationStrategy` keyed by your `ContractType`.
+   `IStripeValidationStrategy` keyed by your `DealType`.
 9. **TicketPayeeResolver** — add a row to its frozen dictionary.
 10. **Frontend** — add a contract form + accept/apply checkout UI variant.
 
@@ -330,12 +330,12 @@ than it looks — the blocker is the *data* side, not the *behaviour* side.
 
 | Concern | Where it lives | Why it blocks dynamic contracts |
 |---------|----------------|----------------------------------|
-| `ContractType` is a closed enum | `Contract.Contracts/DealType.cs` | Every keyed-DI lookup, every switch, every JSON polymorphic discriminator assumes a finite set known at compile time. User-defined contracts would need an open identifier (string/Guid) and runtime registration. |
+| `DealType` is a closed enum | `Concertable.B2B.Deal.Contracts/DealType.cs` | Every keyed-DI lookup, every switch, every JSON polymorphic discriminator assumes a finite set known at compile time. User-defined contracts would need an open identifier (string/Guid) and runtime registration. |
 | TPH schema per subtype | `Contract.Domain/Entities/*DealEntity.cs` + EF configs | Each contract type currently gets its own columns. A user-defined contract has unknown shape at migration time — has to be a JSON blob, a generic key-value table, or a rule list. |
 | Step impls are typed code | `Workflow/Steps/*Step.cs` | `DoorSplitFinishStep` reads `contract.ArtistDoorPercent` directly. A custom contract has no typed property to read — you'd need an expression interpreter (`rev * <pct field>`) or a finite set of "rule kinds" (FlatCharge, PercentSplit, Hold, Release) the step iterates over. |
 | Stripe primitives are rigid | `Payment.Infrastructure/Services/` | Connect has a small finite set of operations (PaymentIntent on/off-session, SetupIntent, Transfer, Refund). Custom contracts still ultimately map to that finite set — the interpreter doesn't get to invent payment flows. |
 | `ConcertStage` is a closed enum | `Concert.Domain/Enums/ConcertStage.cs` + `AdvanceStage` guards on the three lifecycle entities | A "drag your own stages" UX would need stages to be open values (string/record-struct). See §6.1. |
-| `TicketPayeeResolver` hard-codes direction | `Workflow/TicketPayeeResolver.cs` | Who-pays-whom for ticket revenue is a table keyed by `ContractType`. A custom contract would need to declare its payee explicitly. |
+| `TicketPayeeResolver` hard-codes direction | `Workflow/TicketPayeeResolver.cs` | Who-pays-whom for ticket revenue is a table keyed by `DealType`. A custom contract would need to declare its payee explicitly. |
 
 ### 4.2 The realistic options
 
@@ -379,8 +379,8 @@ This approach:
   re-expressed as preset templates, and the typed entities deprecated. But you
   don't have to do that day one.
 
-**Option C — Open the `ContractType` identifier entirely.**
-Replace the enum with a `ContractTypeId` value type (string or Guid) backed by
+**Option C — Open the `DealType` identifier entirely.**
+Replace the enum with a `DealTypeId` value type (string or Guid) backed by
 a `ContractTemplate` table, runtime DI registration, and a generic workflow
 factory. Workable but invasive — touches 17+ files and breaks the JSON polymorphic
 discriminator. Only worth doing if Option B's single-composite model proves too

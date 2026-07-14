@@ -13,9 +13,9 @@ public sealed class DealTermsRendererTests
     [Fact]
     public void Render_ShouldStateFlatFee_ForFlatFeeContract()
     {
-        var contract = new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m };
+        var deal = new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m };
 
-        var text = renderer.Render(contract);
+        var text = renderer.Render(deal);
 
         Assert.Equal("The venue pays the artist a flat fee of £500.00.", text);
     }
@@ -23,9 +23,9 @@ public sealed class DealTermsRendererTests
     [Fact]
     public void Render_ShouldStateDoorPercent_ForDoorSplitContract()
     {
-        var contract = new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m };
+        var deal = new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m };
 
-        var text = renderer.Render(contract);
+        var text = renderer.Render(deal);
 
         Assert.Equal("The artist receives 70% of door revenue.", text);
     }
@@ -33,9 +33,9 @@ public sealed class DealTermsRendererTests
     [Fact]
     public void Render_ShouldStateGuaranteePlusDoorPercent_ForVersusContract()
     {
-        var contract = new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200m, ArtistDoorPercent = 62.5m };
+        var deal = new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200m, ArtistDoorPercent = 62.5m };
 
-        var text = renderer.Render(contract);
+        var text = renderer.Render(deal);
 
         Assert.Equal("The artist receives a guarantee of £200.00 plus 62.5% of door revenue.", text);
     }
@@ -43,9 +43,9 @@ public sealed class DealTermsRendererTests
     [Fact]
     public void Render_ShouldStateHireFee_ForVenueHireContract()
     {
-        var contract = new VenueHireDeal { PaymentMethod = PaymentMethod.Transfer, HireFee = 300m };
+        var deal = new VenueHireDeal { PaymentMethod = PaymentMethod.Transfer, HireFee = 300m };
 
-        var text = renderer.Render(contract);
+        var text = renderer.Render(deal);
 
         Assert.Equal("The artist pays the venue a hire fee of £300.00.", text);
     }

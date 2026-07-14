@@ -10,5 +10,5 @@ public interface IDeal
 {
     int Id { get; set; }
     PaymentMethod PaymentMethod { get; set; }
-    DealType ContractType { get; }
+    DealType DealType { get; }
 }

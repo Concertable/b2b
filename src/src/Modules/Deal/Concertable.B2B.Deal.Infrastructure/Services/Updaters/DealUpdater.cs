@@ -25,5 +25,5 @@ internal sealed class DealUpdater : IDealUpdater
     }
 
     public void Apply(DealEntity existing, IDeal source) =>
-        updaters[source.ContractType].Apply(existing, source);
+        updaters[source.DealType].Apply(existing, source);
 }

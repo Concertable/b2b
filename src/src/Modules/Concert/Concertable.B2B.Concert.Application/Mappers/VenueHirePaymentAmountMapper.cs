@@ -5,9 +5,9 @@ namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal sealed class VenueHirePaymentAmountMapper : IPaymentAmountMapper
 {
-    public IPaymentAmount ToPaymentAmount(IDeal contract)
+    public IPaymentAmount ToPaymentAmount(IDeal deal)
     {
-        var c = (VenueHireDeal)contract;
+        var c = (VenueHireDeal)deal;
         return new FlatPayment(c.HireFee);
     }
 }

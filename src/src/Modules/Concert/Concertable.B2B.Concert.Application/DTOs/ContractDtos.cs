@@ -8,7 +8,7 @@ internal sealed record ContractDto(
     string ArtistName,
     DateTime EventStart,
     DateTime EventEnd,
-    DealType ContractType,
+    DealType DealType,
     PaymentMethod PaymentMethod,
     string TermsText,
     string PlatformTermsVersion,

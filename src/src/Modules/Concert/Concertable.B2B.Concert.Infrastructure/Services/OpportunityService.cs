@@ -11,7 +11,7 @@ internal sealed class OpportunityService : IOpportunityService
     private readonly IOpportunityRepository repository;
     private readonly IPublicOpportunityRepository publicRepository;
     private readonly IVenueModule venueModule;
-    private readonly IDealModule contractModule;
+    private readonly IDealModule dealModule;
     private readonly IOpportunitySyncer syncer;
     private readonly IOpportunityMapper mapper;
     private readonly ITenantContext tenantContext;
@@ -21,7 +21,7 @@ internal sealed class OpportunityService : IOpportunityService
         IOpportunityRepository repository,
         IPublicOpportunityRepository publicRepository,
         IVenueModule venueModule,
-        IDealModule contractModule,
+        IDealModule dealModule,
         IOpportunitySyncer syncer,
         IOpportunityMapper mapper,
         ITenantContext tenantContext,
@@ -30,7 +30,7 @@ internal sealed class OpportunityService : IOpportunityService
         this.repository = repository;
         this.publicRepository = publicRepository;
         this.venueModule = venueModule;
-        this.contractModule = contractModule;
+        this.dealModule = dealModule;
         this.syncer = syncer;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
@@ -44,11 +44,11 @@ internal sealed class OpportunityService : IOpportunityService
 
         var opportunity = await uowBehavior.ExecuteAsync(async () =>
         {
-            var contractId = await contractModule.CreateAsync(request.Contract);
+            var dealId = await dealModule.CreateAsync(request.Deal);
             var entity = OpportunityEntity.Create(
                 venueId,
                 new DateRange(request.StartDate, request.EndDate),
-                contractId,
+                dealId,
                 request.Genres);
             await repository.AddAsync(entity);
             return entity;
@@ -69,11 +69,11 @@ internal sealed class OpportunityService : IOpportunityService
         {
             foreach (var request in requestList)
             {
-                var contractId = await contractModule.CreateAsync(request.Contract);
+                var dealId = await dealModule.CreateAsync(request.Deal);
                 var opportunity = OpportunityEntity.Create(
                     venueId,
                     new DateRange(request.StartDate, request.EndDate),
-                    contractId,
+                    dealId,
                     request.Genres);
                 await repository.AddAsync(opportunity);
             }

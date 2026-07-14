@@ -24,8 +24,8 @@ internal sealed class DealMapper : IDealMapper
     }
 
     public IDeal ToDeal(DealEntity entity) =>
-        mappers[entity.ContractType].ToDeal(entity);
+        mappers[entity.DealType].ToDeal(entity);
 
-    public DealEntity ToEntity(IDeal contract) =>
-        mappers[contract.ContractType].ToEntity(contract);
+    public DealEntity ToEntity(IDeal deal) =>
+        mappers[deal.DealType].ToEntity(deal);
 }

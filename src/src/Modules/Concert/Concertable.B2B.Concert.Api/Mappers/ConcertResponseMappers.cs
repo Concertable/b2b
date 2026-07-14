@@ -72,7 +72,7 @@ internal static class ConcertResponseMappers
     };
 
     // Party-only action links (fail-closed rationale at the GetDetailsForCurrentUser endpoint). Cancel
-    // stays state-gated (valid only while Booked); the agreement is frozen at accept so it always exists.
+    // stays state-gated (valid only while Booked); the contract is frozen at accept so it always exists.
     public static ConcertDetailsResponse ToCurrentUserDetailsResponse(this ConcertDetails dto) =>
         dto.ToDetailsResponse() with
         {
@@ -80,6 +80,6 @@ internal static class ConcertResponseMappers
                 Cancel: dto.State == LifecycleState.Booked
                     ? new ActionLink($"/api/Concert/{dto.Id}/cancel", HttpMethods.Post)
                     : null,
-                Agreement: new ActionLink($"/api/Concert/{dto.Id}/agreement/pdf", HttpMethods.Get))
+                Contract: new ActionLink($"/api/Concert/{dto.Id}/contract/pdf", HttpMethods.Get))
         };
 }

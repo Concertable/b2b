@@ -12,7 +12,7 @@ internal sealed class FinishExecutor : IFinishExecutor
 {
     private readonly ILifecycleTransitioner transitioner;
     private readonly IConcertWorkflowFactory workflows;
-    private readonly IDealResolver contractResolver;
+    private readonly IDealResolver dealResolver;
     private readonly IConcertRepository concertRepository;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<FinishExecutor> logger;
@@ -20,14 +20,14 @@ internal sealed class FinishExecutor : IFinishExecutor
     public FinishExecutor(
         ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
-        IDealResolver contractResolver,
+        IDealResolver dealResolver,
         IConcertRepository concertRepository,
         TimeProvider timeProvider,
         ILogger<FinishExecutor> logger)
     {
         this.transitioner = transitioner;
         this.workflows = workflows;
-        this.contractResolver = contractResolver;
+        this.dealResolver = dealResolver;
         this.concertRepository = concertRepository;
         this.timeProvider = timeProvider;
         this.logger = logger;
@@ -44,8 +44,8 @@ internal sealed class FinishExecutor : IFinishExecutor
 
             await transitioner.TransitionAsync(concert.Booking.ApplicationId, Trigger.Finish, async app =>
             {
-                await contractResolver.ResolveByConcertIdAsync(concertId);
-                var workflow = workflows.Create(app.ContractType);
+                await dealResolver.ResolveByConcertIdAsync(concertId);
+                var workflow = workflows.Create(app.DealType);
                 await workflow.Finish.ExecuteAsync(concertId);
             });
             return Result.Ok();

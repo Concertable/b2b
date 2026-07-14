@@ -10,14 +10,14 @@ public static class ApplicationFactory
     public static StandardApplication Create(int artistId, int opportunityId)
         => StandardApplication.Create(artistId, opportunityId);
 
-    public static StandardApplication Create(int artistId, int opportunityId, DealType contractType)
-        => StandardApplication.Create(artistId, opportunityId, contractType);
+    public static StandardApplication Create(int artistId, int opportunityId, DealType dealType)
+        => StandardApplication.Create(artistId, opportunityId, dealType);
 
     public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
         => PrepaidApplication.Create(artistId, opportunityId, paymentMethodId);
 
-    public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, DealType contractType, string paymentMethodId = "pm_card_visa")
-        => PrepaidApplication.Create(artistId, opportunityId, contractType, paymentMethodId);
+    public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, DealType dealType, string paymentMethodId = "pm_card_visa")
+        => PrepaidApplication.Create(artistId, opportunityId, dealType, paymentMethodId);
 
     public static StandardApplication Accepted(int artistId, int opportunityId, BookingEntity booking)
         => InState<StandardApplication>(artistId, opportunityId, booking, LifecycleState.Accepted);

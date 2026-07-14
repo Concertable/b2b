@@ -11,7 +11,7 @@ internal sealed class PayoutFinishStep : IFinishStep
 {
     private readonly IBookingService bookingService;
     private readonly IConcertRepository concertRepository;
-    private readonly IDealAccessor contractAccessor;
+    private readonly IDealAccessor dealAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
     private readonly IArtistShareCalculator artistShareCalculator;
     private readonly ILogger<PayoutFinishStep> logger;
@@ -19,14 +19,14 @@ internal sealed class PayoutFinishStep : IFinishStep
     public PayoutFinishStep(
         IBookingService bookingService,
         IConcertRepository concertRepository,
-        IDealAccessor contractAccessor,
+        IDealAccessor dealAccessor,
         IManagerPaymentClient managerPaymentClient,
         IArtistShareCalculator artistShareCalculator,
         ILogger<PayoutFinishStep> logger)
     {
         this.bookingService = bookingService;
         this.concertRepository = concertRepository;
-        this.contractAccessor = contractAccessor;
+        this.dealAccessor = dealAccessor;
         this.managerPaymentClient = managerPaymentClient;
         this.artistShareCalculator = artistShareCalculator;
         this.logger = logger;
@@ -35,7 +35,7 @@ internal sealed class PayoutFinishStep : IFinishStep
     public async Task ExecuteAsync(int concertId)
     {
         var totalRevenue = await concertRepository.GetTotalRevenueByConcertIdAsync(concertId);
-        var artistShare = artistShareCalculator.Calculate(contractAccessor.Contract, totalRevenue);
+        var artistShare = artistShareCalculator.Calculate(dealAccessor.Deal, totalRevenue);
 
         logger.ArtistShareCalculated(concertId, totalRevenue, artistShare);
 

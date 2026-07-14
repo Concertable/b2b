@@ -44,7 +44,7 @@ export function ArtistRecommendedOpportunitiesStrip() {
                 {o.town}, {o.county}
               </div>
               <div className="text-muted-foreground line-clamp-1 text-xs">
-                {dealSummary(o.contract)}
+                {dealSummary(o.deal)}
               </div>
               <div className="text-muted-foreground line-clamp-1 text-[11px]">
                 {o.genres.map((g) => genreLabel(g)).join(" · ")}

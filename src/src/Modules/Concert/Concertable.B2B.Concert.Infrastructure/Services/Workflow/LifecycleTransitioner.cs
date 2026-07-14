@@ -23,7 +23,7 @@ internal sealed class LifecycleTransitioner : ILifecycleTransitioner
         var application = await applicationRepository.GetByIdAsync(applicationId)
             .OrNotFound();
 
-        var machine = machines.Get(application.ContractType);
+        var machine = machines.Get(application.DealType);
         machine.Next(application.State, trigger);
 
         if (effect is not null)

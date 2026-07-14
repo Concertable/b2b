@@ -16,9 +16,9 @@ internal sealed class FlatFeeDealMapper : IDealMapper
         };
     }
 
-    public DealEntity ToEntity(IDeal contract)
+    public DealEntity ToEntity(IDeal deal)
     {
-        var c = (FlatFeeDeal)contract;
+        var c = (FlatFeeDeal)deal;
         return FlatFeeDealEntity.Create(c.Fee, c.PaymentMethod);
     }
 }

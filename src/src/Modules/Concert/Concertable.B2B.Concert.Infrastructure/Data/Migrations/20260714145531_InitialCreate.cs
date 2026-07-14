@@ -124,7 +124,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     State = table.Column<int>(type: "int", nullable: false),
                     OpportunityId = table.Column<int>(type: "int", nullable: false),
                     ArtistId = table.Column<int>(type: "int", nullable: false),
-                    ContractType = table.Column<int>(type: "int", nullable: false),
+                    DealType = table.Column<int>(type: "int", nullable: false),
                     TermsFingerprint = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Discriminator = table.Column<string>(type: "nvarchar(21)", maxLength: 21, nullable: false),
                     ArtistESignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -162,7 +162,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ApplicationId = table.Column<int>(type: "int", nullable: false),
-                    ContractType = table.Column<int>(type: "int", nullable: false),
+                    DealType = table.Column<int>(type: "int", nullable: false),
                     Discriminator = table.Column<string>(type: "nvarchar(21)", maxLength: 21, nullable: false),
                     PaymentMethodId = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -199,7 +199,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DatePosted = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ContractType = table.Column<int>(type: "int", nullable: false),
+                    DealType = table.Column<int>(type: "int", nullable: false),
                     Genres = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -241,7 +241,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     ArtistName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Period_Start = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Period_End = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ContractType = table.Column<int>(type: "int", nullable: false),
+                    DealType = table.Column<int>(type: "int", nullable: false),
                     PaymentMethod = table.Column<int>(type: "int", nullable: false),
                     TermsText = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PlatformTermsVersion = table.Column<string>(type: "nvarchar(max)", nullable: false),

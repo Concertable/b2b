@@ -17,7 +17,7 @@ internal sealed class OpportunityResponseMapper : IOpportunityResponseMapper
 
     public OpportunityResponse ToResponse(OpportunityDto dto)
     {
-        var ct = dto.Contract.ContractType;
+        var ct = dto.Deal.DealType;
 
         var actions = new OpportunityActions(
             Checkout: registry.Has<IAppliesCheckout>(ct)
@@ -27,7 +27,7 @@ internal sealed class OpportunityResponseMapper : IOpportunityResponseMapper
         return new OpportunityResponse(
             dto.Id,
             dto.VenueId,
-            dto.Contract,
+            dto.Deal,
             dto.StartDate,
             dto.EndDate,
             dto.Genres,

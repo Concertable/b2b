@@ -27,7 +27,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     {
         // Arrange
         var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
-        var contract = fixture.SeedState.PastDoorSplitAppDeal;
+        var deal = fixture.SeedState.PastDoorSplitAppDeal;
         var deferred = (DeferredBooking)fixture.SeedState.PastDoorSplitBooking;
 
         // Act
@@ -39,7 +39,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
         Assert.Equal(venueTenantId, payment.PayerId);
         Assert.Equal(artistTenantId, payment.PayeeId);
-        Assert.Equal(contract.CalculateArtistShare(concert.TicketsSold * concert.Price), payment.Amount);
+        Assert.Equal(deal.CalculateArtistShare(concert.TicketsSold * concert.Price), payment.Amount);
         Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
         Assert.Equal(deferred.Id, payment.BookingId);
 

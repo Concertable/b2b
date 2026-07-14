@@ -12,7 +12,7 @@ internal static class ContractMappers
             a.ArtistName,
             a.Period.Start,
             a.Period.End,
-            a.ContractType,
+            a.DealType,
             a.PaymentMethod,
             a.TermsText,
             a.PlatformTermsVersion,
@@ -21,5 +21,5 @@ internal static class ContractMappers
             a.CreatedAtUtc);
 
     public static FileDownload ToFileDownload(this ContractEntity a, byte[] content) =>
-        new(content, $"booking-agreement-BA-{a.Id}.pdf", MediaTypeNames.Application.Pdf);
+        new(content, $"contract-{a.Id}.pdf", MediaTypeNames.Application.Pdf);
 }

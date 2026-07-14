@@ -37,11 +37,11 @@ public sealed class OpportunityApiTests : IAsyncLifetime
 
     [Theory]
     [MemberData(nameof(AllDealTypes))]
-    public async Task Create_ShouldReturnCreatedOpportunity(IDeal contract)
+    public async Task Create_ShouldReturnCreatedOpportunity(IDeal deal)
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var request = BuildRequest(contract);
+        var request = BuildRequest(deal);
 
         // Act
         var response = await client.PostAsync("/api/Opportunity", request);

@@ -19,19 +19,19 @@ public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opp
     public HashSet<ApplicationEntity> Applications { get; private set; } = [];
     public List<Genre> Genres { get; private set; } = [];
 
-    public static OpportunityEntity Create(int venueId, DateRange period, int contractId, IEnumerable<Genre>? genres = null) =>
+    public static OpportunityEntity Create(int venueId, DateRange period, int dealId, IEnumerable<Genre>? genres = null) =>
         new()
         {
             VenueId = venueId,
             Period = period,
-            DealId = contractId,
+            DealId = dealId,
             Genres = genres?.ToList() ?? []
         };
 
-    public void Update(DateRange period, int contractId, IEnumerable<Genre> genres)
+    public void Update(DateRange period, int dealId, IEnumerable<Genre> genres)
     {
         Period = period;
-        DealId = contractId;
+        DealId = dealId;
         Genres = genres.ToList();
     }
 

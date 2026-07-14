@@ -80,27 +80,27 @@ requirement, but it blocks the contract types that *are* the USP.)
 
 ---
 
-## 2. Booking agreement + e-signature — ABSENT
+## 2. Signed contract + e-signature — ABSENT
 **Legal basis:** contract law; Electronic Communications Act 2000; retained eIDAS.
-The `Accept` lifecycle transition is an *implicit* agreement that produces **no signed
-record**. Concertable has a sophisticated *settlement* contract (`DealEntity`) but no
-legal *agreement artifact* — the thing GigPig/GigXchange market as "contract signing". This
+The `Accept` lifecycle transition is *implicit* consent that produces **no signed
+record**. Concertable has a sophisticated *settlement* model (`DealEntity`) but no
+legal *contract artifact* — the thing GigPig/GigXchange market as "contract signing". This
 matters **more** here than for them: money moves in multiple directions (incl. artist-pays-
 venue VenueHire), so evidence of what was agreed carries higher stakes. It is also the
 **backbone** for several items below — item 4 (the invoice references the agreed terms),
 item 6 (cancellation terms are stated *and consented to* here), item 7 (terms acceptance),
 and item 9 (the audit trail of who agreed to what).
 **Build:**
-- A `BookingAgreement` entity — **not** named `Contract` (don't collide with
-  `DealEntity`). It **snapshots** the agreed terms at Accept: both parties + details,
-  contract type + numbers, date, cancellation terms, platform-terms version. Snapshot, **not**
-  an FK to the live contract — `DealEntity` can be edited later and the agreement must
+- A `ContractEntity` — the binding artifact, distinct from the `DealEntity` money-terms it
+  records. It **snapshots** the agreed terms at Accept: both parties + details,
+  deal type + numbers, date, cancellation terms, platform-terms version. Snapshot, **not**
+  an FK to the live deal — `DealEntity` can be edited later and the contract must
   freeze what was agreed (the existing purchase-time-snapshot convention).
 - Capture affirmative consent. **Tier 1 (do first): click-wrap** — an "I agree" gate wired
   into the existing `AcceptExecutor` / checkout step, recording identity + UTC timestamp
   (+ optionally IP / user-agent). In the UK that is a legally binding electronic signature
   for a B2B booking — no DocuSign needed.
-- Generate the agreement PDF via `IPdfService` (QuestPDF, already in
+- Generate the contract PDF via `IPdfService` (QuestPDF, already in
   `Concertable.Shared.Pdf`, currently unused in B2B); store immutably; expose download. Same
   plumbing the invoice (item 4) reuses.
 - **Tier 2 (later / optional):** full e-signature (drawn/typed, or DocuSign / Dropbox Sign /
@@ -118,7 +118,7 @@ tenancy design), resolved from a venue's/artist's owning organisation — not du
 profile. Validate format. Feeds the per-type calculator in item 1.
 
 ## 4. VAT-compliant invoice / self-billing — ABSENT
-**Legal basis:** HMRC VAT invoice rules; self-billing agreement rules.
+**Legal basis:** HMRC VAT invoice rules; self-billing rules.
 `IPdfService` (QuestPDF) exists in `Concertable.Shared.Pdf` but is unused in B2B. No
 `InvoiceEntity`, no numbering.
 **Build:** per settlement, generate an invoice in the **direction item 1 dictates** with
@@ -133,7 +133,7 @@ terms. Store immutably; expose download. Reuse `IPdfService`.
 platform's liability**. The live popular-music tariff is ~**4.2% of box office** (6.5%
 classical) and rises over time; PRS is the **venue's** obligation (venues hold their own
 licence or use the Gigs & Clubs scheme, and typically pass cost to the artist in the hire
-agreement). A hardcoded "platform deducts 3% PRS" risks double-charging an already-licensed
+contract). A hardcoded "platform deducts 3% PRS" risks double-charging an already-licensed
 venue.
 **Build (only if product wants it):** a **per-venue/per-contract configurable pass-through**,
 gated on a "venue is self-licensed for PRS" flag, rate from config (default to current
@@ -175,8 +175,8 @@ the tension explicitly.
 `ConcertEntity` — so who accepted what contract terms, and when, has no record, despite
 money moving on those transitions.
 **Build:** apply `IAuditable` (or an append-only event log) to the booking lifecycle
-entities so every money-affecting transition is attributable and timestamped. The booking
-agreement (item 2) captures the *terms* consented to; this captures the *transitions* — the
+entities so every money-affecting transition is attributable and timestamped. The signed
+contract (item 2) captures the *terms* consented to; this captures the *transitions* — the
 two together are the full evidential record.
 
 ---
@@ -186,7 +186,7 @@ two together are the full evidential record.
 1. **Item 0** (posture) — done; accountant sign-off before launch.
 2. **Tenancy / legal-entity model** (shipped — Tenant module) +
    **item 3** (VAT status) — unblocks the rest.
-3. **Item 2** (booking agreement + e-signature) — backbone for items 4/6/7/9; ship the
+3. **Item 2** (signed contract + e-signature) — backbone for items 4/6/7/9; ship the
    click-wrap tier early (it also gives you item 9's terms record for free).
 4. **Items 7, 8** (consent, retention) — launch-blocking, money-model-independent.
 5. **Item 1 → 4** (per-contract VAT calc, then invoicing) — the core, in order; reuses the

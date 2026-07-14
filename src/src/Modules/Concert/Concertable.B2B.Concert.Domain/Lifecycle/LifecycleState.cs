@@ -5,7 +5,7 @@ public enum LifecycleState
     Applied,
     Rejected,
     Withdrawn,
-    Accepted,               // accept landed; payment leg pending (which leg = contract type)
+    Accepted,               // accept landed; payment leg pending (which leg = deal type)
     PaymentFailed,          // accept-leg payment failed (verify hold / escrow capture) â€” retryable
     Booked,                 // payment confirmed, draft created â€” CanPost gate
     AwaitingSettlement,     // deferred payout leg

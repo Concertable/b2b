@@ -7,56 +7,56 @@ import type {
   VenueHireDeal,
 } from "@b2b/features/deals";
 
-function FlatFeeSummary({ contract }: { contract: FlatFeeDeal }) {
+function FlatFeeSummary({ deal }: { deal: FlatFeeDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">
         You agree to pay the artist
       </p>
-      <p className="text-2xl font-semibold">£{contract.fee}</p>
+      <p className="text-2xl font-semibold">£{deal.fee}</p>
       <p className="text-muted-foreground text-sm">
-        via {contract.paymentMethod}
+        via {deal.paymentMethod}
       </p>
     </div>
   );
 }
 
-function DoorSplitSummary({ contract }: { contract: DoorSplitDeal }) {
+function DoorSplitSummary({ deal }: { deal: DoorSplitDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">Artist receives</p>
       <p className="text-2xl font-semibold">
-        {contract.artistDoorPercent}% of door revenue
+        {deal.artistDoorPercent}% of door revenue
       </p>
       <p className="text-muted-foreground text-sm">
-        settled after the event via {contract.paymentMethod}
+        settled after the event via {deal.paymentMethod}
       </p>
     </div>
   );
 }
 
-function VersusSummary({ contract }: { contract: VersusDeal }) {
+function VersusSummary({ deal }: { deal: VersusDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">Artist guaranteed</p>
-      <p className="text-2xl font-semibold">£{contract.guarantee}</p>
+      <p className="text-2xl font-semibold">£{deal.guarantee}</p>
       <p className="text-muted-foreground text-sm">
-        or {contract.artistDoorPercent}% of door — whichever is greater, settled
-        via {contract.paymentMethod}
+        or {deal.artistDoorPercent}% of door — whichever is greater, settled
+        via {deal.paymentMethod}
       </p>
     </div>
   );
 }
 
-function VenueHireSummary({ contract }: { contract: VenueHireDeal }) {
+function VenueHireSummary({ deal }: { deal: VenueHireDeal }) {
   return (
     <div className="space-y-1">
       <p className="text-muted-foreground text-sm">
         Artist pays you a hire fee of
       </p>
-      <p className="text-2xl font-semibold">£{contract.hireFee}</p>
+      <p className="text-2xl font-semibold">£{deal.hireFee}</p>
       <p className="text-muted-foreground text-sm">
-        via {contract.paymentMethod}
+        via {deal.paymentMethod}
       </p>
     </div>
   );
@@ -67,13 +67,13 @@ const summaryRegistry = {
   doorSplit: DoorSplitSummary,
   versus: VersusSummary,
   venueHire: VenueHireSummary,
-} as Record<Deal["$type"], ComponentType<{ contract: Deal }>>;
+} as Record<Deal["$type"], ComponentType<{ deal: Deal }>>;
 
 interface Props {
-  contract: Deal;
+  deal: Deal;
 }
 
-export function AcceptDealSummary({ contract }: Readonly<Props>) {
-  const Summary = summaryRegistry[contract.$type];
-  return <Summary contract={contract} />;
+export function AcceptDealSummary({ deal }: Readonly<Props>) {
+  const Summary = summaryRegistry[deal.$type];
+  return <Summary deal={deal} />;
 }

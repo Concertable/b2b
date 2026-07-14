@@ -15,11 +15,11 @@ public sealed class SetupCheckoutStepTests
     private readonly Guid venueManagerId = Guid.NewGuid();
     private readonly Guid artistTenantId = Guid.NewGuid();
     private readonly CheckoutSession session = new("seti_secret", "cs", "cus");
-    private readonly VenueHireDeal contract = new() { PaymentMethod = PaymentMethod.Cash, HireFee = 300 };
+    private readonly VenueHireDeal deal = new() { PaymentMethod = PaymentMethod.Cash, HireFee = 300 };
 
     private readonly Mock<IOpportunityRepository> opportunityRepository;
     private readonly Mock<IUserModule> userModule;
-    private readonly Mock<IDealAccessor> contractAccessor;
+    private readonly Mock<IDealAccessor> dealAccessor;
     private readonly Mock<IManagerPaymentClient> managerPaymentClient;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly SetupCheckoutStep step;
@@ -30,7 +30,7 @@ public sealed class SetupCheckoutStepTests
     {
         this.opportunityRepository = new Mock<IOpportunityRepository>();
         this.userModule = new Mock<IUserModule>();
-        this.contractAccessor = new Mock<IDealAccessor>();
+        this.dealAccessor = new Mock<IDealAccessor>();
         this.managerPaymentClient = new Mock<IManagerPaymentClient>();
         this.tenantContext = new Mock<ITenantContext>();
 
@@ -40,7 +40,7 @@ public sealed class SetupCheckoutStepTests
         userModule
             .Setup(m => m.GetManagerByIdAsync(venueManagerId))
             .ReturnsAsync(new ManagerDto { Id = venueManagerId, Email = "venue@example.com" });
-        contractAccessor.SetupGet(c => c.Contract).Returns(contract);
+        dealAccessor.SetupGet(c => c.Deal).Returns(deal);
         tenantContext.SetupGet(c => c.TenantId).Returns(artistTenantId);
         managerPaymentClient
             .Setup(c => c.CreateSetupSessionAsync(It.IsAny<Guid>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
@@ -48,7 +48,7 @@ public sealed class SetupCheckoutStepTests
             .ReturnsAsync(session);
 
         this.step = new SetupCheckoutStep(
-            opportunityRepository.Object, userModule.Object, contractAccessor.Object, managerPaymentClient.Object, tenantContext.Object);
+            opportunityRepository.Object, userModule.Object, dealAccessor.Object, managerPaymentClient.Object, tenantContext.Object);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public sealed class SetupCheckoutStepTests
 
         // Assert — the session belongs to the applying artist's own TENANT (ambient context)
         Assert.Equal(CheckoutLabels.Charge, checkout.Labels);
-        Assert.Equal(contract.HireFee, Assert.IsType<FlatPayment>(checkout.Amount).Amount);
+        Assert.Equal(deal.HireFee, Assert.IsType<FlatPayment>(checkout.Amount).Amount);
         Assert.Equal(new PayeeSummary("Venue", "venue@example.com"), checkout.Payee);
         Assert.Equal(session, checkout.Session);
         managerPaymentClient.Verify(

@@ -9,31 +9,31 @@ namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal sealed class OpportunityMapper : IOpportunityMapper
 {
-    private readonly IDealModule contractModule;
+    private readonly IDealModule dealModule;
 
-    public OpportunityMapper(IDealModule contractModule)
+    public OpportunityMapper(IDealModule dealModule)
     {
-        this.contractModule = contractModule;
+        this.dealModule = dealModule;
     }
 
     public async Task<OpportunityDto> ToDtoAsync(OpportunityEntity opportunity)
     {
-        var contract = await contractModule.GetByIdAsync(opportunity.DealId)
-            .OrNotFound($"Contract {opportunity.DealId}");
-        return opportunity.ToDto(contract);
+        var deal = await dealModule.GetByIdAsync(opportunity.DealId)
+            .OrNotFound($"Deal {opportunity.DealId}");
+        return opportunity.ToDto(deal);
     }
 
     public async Task<IEnumerable<OpportunityDto>> ToDtosAsync(IEnumerable<OpportunityEntity> opportunities)
     {
         var opportunityList = opportunities.ToList();
-        var contractMap = (await contractModule.GetByIdsAsync(opportunityList.Select(o => o.DealId).Distinct()))
+        var dealMap = (await dealModule.GetByIdsAsync(opportunityList.Select(o => o.DealId).Distinct()))
             .ToDictionary(c => c.Id);
 
         return opportunityList.Select(o =>
         {
-            if (!contractMap.TryGetValue(o.DealId, out var contract))
-                throw new NotFoundException($"Contract {o.DealId} not found");
-            return o.ToDto(contract);
+            if (!dealMap.TryGetValue(o.DealId, out var deal))
+                throw new NotFoundException($"Deal {o.DealId} not found");
+            return o.ToDto(deal);
         });
     }
 
@@ -46,12 +46,12 @@ internal sealed class OpportunityMapper : IOpportunityMapper
 
 internal static class OpportunityMappers
 {
-    public static OpportunityDto ToDto(this OpportunityEntity opportunity, IDeal contract) => new()
+    public static OpportunityDto ToDto(this OpportunityEntity opportunity, IDeal deal) => new()
     {
         Id = opportunity.Id,
         VenueId = opportunity.VenueId,
         DealId = opportunity.DealId,
-        Contract = contract,
+        Deal = deal,
         StartDate = opportunity.Period.Start,
         EndDate = opportunity.Period.End,
         Genres = opportunity.Genres

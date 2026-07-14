@@ -58,7 +58,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<Guid>("ArtistTenantId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("ContractType")
+                    b.Property<int>("DealType")
                         .HasColumnType("int");
 
                     b.Property<string>("Discriminator")
@@ -133,7 +133,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<Guid>("ArtistTenantId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("ContractType")
+                    b.Property<int>("DealType")
                         .HasColumnType("int");
 
                     b.Property<string>("Discriminator")
@@ -183,11 +183,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("BookingId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ContractType")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("DatePosted")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("DealType")
+                        .HasColumnType("int");
 
                     b.PrimitiveCollection<string>("Genres")
                         .IsRequired()
@@ -270,11 +270,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("BookingId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ContractType")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("DealType")
+                        .HasColumnType("int");
 
                     b.Property<int>("PaymentMethod")
                         .HasColumnType("int");

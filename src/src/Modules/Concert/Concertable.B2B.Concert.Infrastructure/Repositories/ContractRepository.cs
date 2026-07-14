@@ -28,7 +28,7 @@ internal sealed class ContractRepository : VenueArtistTenantScopedRepository<Con
             .Select(a => (int?)a.Id)
             .FirstOrDefaultAsync(ct);
 
-    public async Task<IReadOnlyDictionary<int, int>> GetAgreementIdsByApplicationIdsAsync(
+    public async Task<IReadOnlyDictionary<int, int>> GetContractIdsByApplicationIdsAsync(
         IReadOnlyCollection<int> applicationIds, CancellationToken ct = default)
     {
         if (applicationIds.Count == 0)
@@ -36,9 +36,9 @@ internal sealed class ContractRepository : VenueArtistTenantScopedRepository<Con
 
         var pairs = await context.Contracts
             .Where(a => applicationIds.Contains(a.Booking.ApplicationId))
-            .Select(a => new { ApplicationId = a.Booking.ApplicationId, AgreementId = a.Id })
+            .Select(a => new { ApplicationId = a.Booking.ApplicationId, ContractId = a.Id })
             .ToListAsync(ct);
 
-        return pairs.ToDictionary(p => p.ApplicationId, p => p.AgreementId);
+        return pairs.ToDictionary(p => p.ApplicationId, p => p.ContractId);
     }
 }

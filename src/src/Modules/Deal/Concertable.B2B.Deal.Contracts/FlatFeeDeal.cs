@@ -5,6 +5,6 @@ public sealed record FlatFeeDeal : IDeal
     public int Id { get; set; }
 
     public PaymentMethod PaymentMethod { get; set; }
-    public DealType ContractType => DealType.FlatFee;
+    public DealType DealType => DealType.FlatFee;
     public decimal Fee { get; set; }
 }

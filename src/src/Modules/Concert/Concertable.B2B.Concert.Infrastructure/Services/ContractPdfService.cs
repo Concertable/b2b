@@ -30,10 +30,10 @@ internal sealed class ContractPdfService : IContractPdfService
         this.logger = logger;
     }
 
-    public async Task<byte[]> GetOrCreateAsync(ContractEntity agreement, CancellationToken ct = default)
+    public async Task<byte[]> GetOrCreateAsync(ContractEntity contract, CancellationToken ct = default)
     {
-        var blobName = agreement.PdfBlobName
-            ?? throw new InvalidOperationException("Agreement has no assigned PDF blob name");
+        var blobName = contract.PdfBlobName
+            ?? throw new InvalidOperationException("Contract has no assigned PDF blob name");
 
         if (await blobStorage.ExistsAsync(blobName))
         {
@@ -43,26 +43,26 @@ internal sealed class ContractPdfService : IContractPdfService
             return buffer.ToArray();
         }
 
-        return await RenderUploadAsync(agreement, blobName);
+        return await RenderUploadAsync(contract, blobName);
     }
 
     public async Task GenerateForBookingAsync(int bookingId, CancellationToken ct = default)
     {
-        var agreement = await repository.GetByBookingIdIgnoringTenantAsync(bookingId, ct);
-        if (agreement?.PdfBlobName is null || await blobStorage.ExistsAsync(agreement.PdfBlobName))
+        var contract = await repository.GetByBookingIdIgnoringTenantAsync(bookingId, ct);
+        if (contract?.PdfBlobName is null || await blobStorage.ExistsAsync(contract.PdfBlobName))
             return;
 
-        await RenderUploadAsync(agreement, agreement.PdfBlobName);
+        await RenderUploadAsync(contract, contract.PdfBlobName);
     }
 
     /* Fills the location the accept transaction already assigned — never mints a name, never writes
        the DB. Idempotent: overwriting the same blob with the same rendered bytes is a no-op in effect,
        so a background render racing a lazy render can't orphan anything. */
-    private async Task<byte[]> RenderUploadAsync(ContractEntity agreement, string blobName)
+    private async Task<byte[]> RenderUploadAsync(ContractEntity contract, string blobName)
     {
         await renderLock.WaitAsync();
         byte[] bytes;
-        try { bytes = pdfService.Render(new ContractDocument(agreement, logger)); }
+        try { bytes = pdfService.Render(new ContractDocument(contract, logger)); }
         finally { renderLock.Release(); }
 
         using var upload = new MemoryStream(bytes, writable: false);

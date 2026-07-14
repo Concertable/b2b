@@ -15,25 +15,25 @@ public sealed class ArtistShareCalculatorTests
     public void Calculate_ShouldDispatchToDoorSplitCalculator_ForDoorSplitContract()
     {
         // Arrange
-        var contract = new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
+        var deal = new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
 
         // Act
-        var result = calculator.Calculate(contract, 1000);
+        var result = calculator.Calculate(deal, 1000);
 
         // Assert — matches the door-split calculator it delegates to
-        Assert.Equal(new DoorSplitCalculator().Calculate(contract, 1000), result);
+        Assert.Equal(new DoorSplitCalculator().Calculate(deal, 1000), result);
     }
 
     [Fact]
     public void Calculate_ShouldDispatchToVersusCalculator_ForVersusContract()
     {
         // Arrange
-        var contract = new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 };
+        var deal = new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 };
 
         // Act
-        var result = calculator.Calculate(contract, 1000);
+        var result = calculator.Calculate(deal, 1000);
 
         // Assert — matches the versus calculator it delegates to
-        Assert.Equal(new VersusCalculator().Calculate(contract, 1000), result);
+        Assert.Equal(new VersusCalculator().Calculate(deal, 1000), result);
     }
 }

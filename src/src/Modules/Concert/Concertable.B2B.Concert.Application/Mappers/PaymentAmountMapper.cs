@@ -23,6 +23,6 @@ internal sealed class PaymentAmountMapper : IPaymentAmountMapper
         }.ToFrozenDictionary();
     }
 
-    public IPaymentAmount ToPaymentAmount(IDeal contract) =>
-        mappers[contract.ContractType].ToPaymentAmount(contract);
+    public IPaymentAmount ToPaymentAmount(IDeal deal) =>
+        mappers[deal.DealType].ToPaymentAmount(deal);
 }

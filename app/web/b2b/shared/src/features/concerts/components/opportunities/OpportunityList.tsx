@@ -18,7 +18,7 @@ function buildDraft(): OpportunityDraft {
     startDate: start.toISOString(),
     endDate: end.toISOString(),
     genres: [],
-    contract: defaultDeal("flatFee"),
+    deal: defaultDeal("flatFee"),
   };
 }
 
