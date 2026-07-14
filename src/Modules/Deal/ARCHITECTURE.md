@@ -292,14 +292,15 @@ The TPH split on Application/Booking exists so prepaid-at-apply (VenueHire) and 
 **`ContractEntity`** (`Concert.Domain/Entities/ContractEntity.cs`) is a by-value immutable snapshot
 (all private setters): `BookingId`, `VenueId`/`VenueName`, `ArtistId`/`ArtistName`, `Period`,
 `DealType`, `PaymentMethod`, `TermsText` (rendered legal prose), `PlatformTermsVersion`,
-`ArtistESignature` + `VenueESignature`, `PdfBlobName?` (write-once via `AssignPdfBlobName`),
+`ArtistESignature` + `VenueESignature`, `PdfBlobName` (assigned in `Create`),
 `CreatedAtUtc`. It is created by **`ContractIssuer.IssueAsync`** (`Infrastructure/Services/`), invoked
 from `AcceptExecutor` during the Accept transition: it renders terms via `IDealTermsRenderer`, copies
-the artist's e-signature (captured at apply) and the venue's (from the accept request), assigns the
-PDF blob name, and persists via `IContractRepository`. The Deal is the *editable* current offer; the
+the artist's e-signature (captured at apply) and the venue's (from the accept request), and persists
+via `IContractRepository`. The Deal is the *editable* current offer; the
 Contract is the *frozen, signed copy* — "formed at Accept" is a convention of the workflow, not a
-model-enforced invariant. `ESignature` is a `sealed record` (`UserId, AtUtc, Ip?, UserAgent?,
-SignatoryName, DrawnSignatureImage?`), attributed server-side.
+model-enforced invariant. `ESignature` is a `sealed record` (`UserId, AtUtc, Ip, UserAgent?,
+SignatoryName, DrawnSignatureImage?`), attributed server-side — the `Ip` is required (fail-closed at
+capture), the client-supplied `UserAgent` stays optional.
 
 ---
 

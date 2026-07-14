@@ -37,17 +37,6 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
 
     private ContractEntity() { }
 
-    /* The PDF's storage location, assigned once inside the accept transaction (single writer) before
-       any bytes exist. Generation then only ever fills THIS location — background at Accept, or lazily
-       on first download — so concurrent renders converge on one blob (overwrite) instead of racing to
-       mint competing names. The guard catches a regression that would reassign it. */
-    public void AssignPdfBlobName(string blobName)
-    {
-        if (PdfBlobName is not null)
-            throw new InvalidOperationException("Contract PDF blob name is already assigned");
-        PdfBlobName = blobName;
-    }
-
     public static ContractEntity Create(
         int bookingId,
         int venueId,
@@ -74,6 +63,7 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
             PlatformTermsVersion = platformTermsVersion,
             ArtistESignature = artistESignature,
             VenueESignature = venueESignature,
-            CreatedAtUtc = createdAtUtc
+            CreatedAtUtc = createdAtUtc,
+            PdfBlobName = $"contracts/{bookingId}-{Guid.NewGuid():N}.pdf"
         };
 }
