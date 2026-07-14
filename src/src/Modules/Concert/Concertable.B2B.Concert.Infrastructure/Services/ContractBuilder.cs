@@ -5,21 +5,21 @@ using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
+internal sealed class ContractBuilder : IContractBuilder
 {
     private readonly IDealAccessor contractAccessor;
     private readonly IApplicationRepository applicationRepository;
-    private readonly IBookingAgreementRepository agreementRepository;
+    private readonly IContractRepository agreementRepository;
     private readonly IDealTermsRenderer termsRenderer;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
 
-    public BookingAgreementBuilder(
+    public ContractBuilder(
         IDealAccessor contractAccessor,
         IApplicationRepository applicationRepository,
-        IBookingAgreementRepository agreementRepository,
+        IContractRepository agreementRepository,
         IDealTermsRenderer termsRenderer,
         ICurrentUser currentUser,
         IClientContext clientContext,
@@ -42,7 +42,7 @@ internal sealed class BookingAgreementBuilder : IBookingAgreementBuilder
         var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(application.Id)
             .OrNotFound("Application");
 
-        var agreement = BookingAgreementEntity.Create(
+        var agreement = ContractEntity.Create(
             bookingId,
             venue.Id,
             venue.Name,

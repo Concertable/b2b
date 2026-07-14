@@ -6,9 +6,9 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// Reads a booking agreement for one of its two parties (the tenant filter answers 404 to anyone
 /// else, matching how the application itself reads). Serves the metadata and the PDF.
 /// </summary>
-internal interface IBookingAgreementService
+internal interface IContractService
 {
-    Task<BookingAgreementDto> GetByApplicationIdAsync(int applicationId);
+    Task<ContractDto> GetByApplicationIdAsync(int applicationId);
     Task<FileDownload> GetPdfByApplicationIdAsync(int applicationId);
     Task<FileDownload> GetPdfByConcertIdAsync(int concertId);
 }

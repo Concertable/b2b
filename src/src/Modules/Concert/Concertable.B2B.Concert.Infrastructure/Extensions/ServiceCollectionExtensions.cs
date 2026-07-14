@@ -81,9 +81,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
         services.Configure<LegalSettings>(configuration.GetSection("Legal"));
-        services.AddScoped<IBookingAgreementBuilder, BookingAgreementBuilder>();
-        services.AddScoped<IBookingAgreementService, BookingAgreementService>();
-        services.AddScoped<IBookingAgreementPdfService, BookingAgreementPdfService>();
+        services.AddScoped<IContractBuilder, ContractBuilder>();
+        services.AddScoped<IContractService, ContractService>();
+        services.AddScoped<IContractPdfService, ContractPdfService>();
         services.AddScoped<IClientContext, ClientContextAccessor>();
         services.AddSingleton<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
         services.AddSingleton<IDealTermsSerializer, DealTermsSerializer>();
@@ -141,7 +141,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
-        services.AddScoped<IBookingAgreementRepository, BookingAgreementRepository>();
+        services.AddScoped<IContractRepository, ContractRepository>();
 
         // Mappers
         services.AddScoped<IOpportunityMapper, OpportunityMapper>();

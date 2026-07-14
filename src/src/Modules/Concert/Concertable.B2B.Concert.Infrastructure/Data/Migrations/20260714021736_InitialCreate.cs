@@ -178,52 +178,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "BookingAgreements",
-                schema: "concert",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    BookingId = table.Column<int>(type: "int", nullable: false),
-                    VenueId = table.Column<int>(type: "int", nullable: false),
-                    VenueName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ArtistId = table.Column<int>(type: "int", nullable: false),
-                    ArtistName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Period_Start = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Period_End = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ContractType = table.Column<int>(type: "int", nullable: false),
-                    PaymentMethod = table.Column<int>(type: "int", nullable: false),
-                    TermsText = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PlatformTermsVersion = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PdfBlobName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ArtistESignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ArtistESignature_DrawnSignatureImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ArtistESignature_Ip = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: true),
-                    ArtistESignature_SignatoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ArtistESignature_UserAgent = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
-                    ArtistESignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    VenueESignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    VenueESignature_DrawnSignatureImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    VenueESignature_Ip = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: true),
-                    VenueESignature_SignatoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    VenueESignature_UserAgent = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
-                    VenueESignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_BookingAgreements", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_BookingAgreements_Bookings_BookingId",
-                        column: x => x.BookingId,
-                        principalSchema: "concert",
-                        principalTable: "Bookings",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Concerts",
                 schema: "concert",
                 columns: table => new
@@ -272,6 +226,52 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Contracts",
+                schema: "concert",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BookingId = table.Column<int>(type: "int", nullable: false),
+                    VenueId = table.Column<int>(type: "int", nullable: false),
+                    VenueName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ArtistId = table.Column<int>(type: "int", nullable: false),
+                    ArtistName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Period_Start = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Period_End = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ContractType = table.Column<int>(type: "int", nullable: false),
+                    PaymentMethod = table.Column<int>(type: "int", nullable: false),
+                    TermsText = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PlatformTermsVersion = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PdfBlobName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ArtistESignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ArtistESignature_DrawnSignatureImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ArtistESignature_Ip = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: true),
+                    ArtistESignature_SignatoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ArtistESignature_UserAgent = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
+                    ArtistESignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    VenueESignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    VenueESignature_DrawnSignatureImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    VenueESignature_Ip = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: true),
+                    VenueESignature_SignatoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    VenueESignature_UserAgent = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
+                    VenueESignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Contracts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Contracts_Bookings_BookingId",
+                        column: x => x.BookingId,
+                        principalSchema: "concert",
+                        principalTable: "Bookings",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ConcertImages",
                 schema: "concert",
                 columns: table => new
@@ -315,13 +315,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_BookingAgreements_BookingId",
-                schema: "concert",
-                table: "BookingAgreements",
-                column: "BookingId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Bookings_ApplicationId",
                 schema: "concert",
                 table: "Bookings",
@@ -354,6 +347,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 column: "VenueId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Contracts_BookingId",
+                schema: "concert",
+                table: "Contracts",
+                column: "BookingId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Opportunities_DealId",
                 schema: "concert",
                 table: "Opportunities",
@@ -382,15 +382,15 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 schema: "concert");
 
             migrationBuilder.DropTable(
-                name: "BookingAgreements",
-                schema: "concert");
-
-            migrationBuilder.DropTable(
                 name: "ConcertImages",
                 schema: "concert");
 
             migrationBuilder.DropTable(
                 name: "ConcertRatingProjections",
+                schema: "concert");
+
+            migrationBuilder.DropTable(
+                name: "Contracts",
                 schema: "concert");
 
             migrationBuilder.DropTable(

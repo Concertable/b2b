@@ -13,12 +13,12 @@ internal sealed class ConcertController : ControllerBase
 {
     private readonly IConcertService concertService;
     private readonly IConcertWorkflowModule concertWorkflowModule;
-    private readonly IBookingAgreementService agreementService;
+    private readonly IContractService agreementService;
 
     public ConcertController(
         IConcertService concertService,
         IConcertWorkflowModule concertWorkflowModule,
-        IBookingAgreementService agreementService)
+        IContractService agreementService)
     {
         this.concertService = concertService;
         this.concertWorkflowModule = concertWorkflowModule;

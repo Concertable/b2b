@@ -7,9 +7,9 @@ namespace Concertable.B2B.Concert.Application.Mappers;
 internal sealed class ApplicationMapper : IApplicationMapper
 {
     private readonly IOpportunityMapper opportunityMapper;
-    private readonly IBookingAgreementRepository agreements;
+    private readonly IContractRepository agreements;
 
-    public ApplicationMapper(IOpportunityMapper opportunityMapper, IBookingAgreementRepository agreements)
+    public ApplicationMapper(IOpportunityMapper opportunityMapper, IContractRepository agreements)
     {
         this.opportunityMapper = opportunityMapper;
         this.agreements = agreements;
