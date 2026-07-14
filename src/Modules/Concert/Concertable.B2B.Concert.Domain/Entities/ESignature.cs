@@ -11,7 +11,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 public sealed record ESignature(
     Guid UserId,
     DateTime AtUtc,
-    IPAddress? Ip,
+    IPAddress Ip,
     string? UserAgent,
     string SignatoryName,
     string? DrawnSignatureImage);

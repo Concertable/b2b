@@ -1,3 +1,4 @@
+using System.Net;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
@@ -32,7 +33,7 @@ internal static class SeededApplicationSigner
             var artist = artistById[application.ArtistId];
             var deal = dealById[dealIdByOpportunityId[application.OpportunityId]];
             application.RecordArtistESignature(
-                new ESignature(artist.UserId, signedAtUtc, null, null, artist.Name, null),
+                new ESignature(artist.UserId, signedAtUtc, IPAddress.Loopback, null, artist.Name, null),
                 fingerprint.Calculate(deal, periodByOpportunityId[application.OpportunityId]));
         }
     }

@@ -90,6 +90,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Ip")
+                                .IsRequired()
                                 .HasMaxLength(45)
                                 .HasColumnType("nvarchar(45)");
 
@@ -311,6 +312,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Ip")
+                                .IsRequired()
                                 .HasMaxLength(45)
                                 .HasColumnType("nvarchar(45)");
 
@@ -337,6 +339,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Ip")
+                                .IsRequired()
                                 .HasMaxLength(45)
                                 .HasColumnType("nvarchar(45)");
 
