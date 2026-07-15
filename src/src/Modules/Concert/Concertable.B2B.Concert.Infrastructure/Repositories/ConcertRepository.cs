@@ -2,17 +2,24 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
+using Concertable.Kernel.Specifications;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRepository
 {
-    private readonly TimeProvider timeProvider;
+    private readonly IEndedAndBookedSpecification endedAndBooked;
+    private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
 
-    public ConcertRepository(ConcertDbContext context, TimeProvider timeProvider) : base(context)
+    public ConcertRepository(
+        ConcertDbContext context,
+        IEndedAndBookedSpecification endedAndBooked,
+        IDoorRevenueOutstandingSpecification doorRevenueOutstanding) : base(context)
     {
-        this.timeProvider = timeProvider;
+        this.endedAndBooked = endedAndBooked;
+        this.doorRevenueOutstanding = doorRevenueOutstanding;
     }
 
     public async Task<ConcertEntity?> GetByIdWithArtistAndVenueAsync(int id)
@@ -90,18 +97,11 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .FirstOrDefaultAsync();
     }
 
-    /* Ended, Booked gigs ready for the completion sweep to settle — but a revenue-share gig
-       (DeferredBooking) isn't ready until its venue has declared the door take, so exclude those. */
-    public async Task<IEnumerable<int>> GetEndedConfirmedIdsAsync()
-    {
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-        return await context.Concerts
-            .Where(c => c.Period.End < now
-                     && c.Booking.Application.State == LifecycleState.Booked
-                     && !(c.Booking is DeferredBooking && c.DoorRevenue == null))
+    public async Task<IEnumerable<int>> GetEndedConfirmedIdsAsync() =>
+        await endedAndBooked.And(doorRevenueOutstanding.Not())
+            .Apply(context.Concerts)
             .Select(c => c.Id)
             .ToListAsync();
-    }
 
     /* The gross the artist's revenue share settles against: Concertable's own ticket sales
        (TicketsSold * Price, known) plus the venue-declared external/box-office/cash take

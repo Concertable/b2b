@@ -71,15 +71,24 @@ internal static class ConcertResponseMappers
         }
     };
 
-    // Party-only action links (fail-closed rationale at the GetDetailsForCurrentUser endpoint). Cancel
-    // stays state-gated (valid only while Booked); the contract is frozen at accept so it always exists.
-    public static ConcertDetailsResponse ToCurrentUserDetailsResponse(this ConcertDetails dto) =>
+    /// <summary>
+    /// The owner (party-scoped) read: adds the party-only action links and venue-private figures the
+    /// anonymous read omits. Cancel is offered only while Booked; the contract is frozen at accept so it
+    /// always exists; DeclareDoorRevenue shows only for an ended, still-Booked, undeclared revenue-share gig.
+    /// </summary>
+    public static ConcertDetailsResponse ToCurrentUserDetailsResponse(this ConcertDetails dto, DateTime utcNow) =>
         dto.ToDetailsResponse() with
         {
+            TicketsSold = dto.TicketsSold,
+            DoorRevenue = dto.DoorRevenue,
             Actions = new ConcertActions(
                 Cancel: dto.State == LifecycleState.Booked
                     ? new ActionLink($"/api/Concert/{dto.Id}/cancel", HttpMethods.Post)
                     : null,
-                Contract: new ActionLink($"/api/Concert/{dto.Id}/contract/pdf", HttpMethods.Get))
+                Contract: new ActionLink($"/api/Concert/{dto.Id}/contract/pdf", HttpMethods.Get),
+                DeclareDoorRevenue: dto.State == LifecycleState.Booked
+                    && dto.IsRevenueShare && dto.DoorRevenue is null && dto.EndDate < utcNow
+                    ? new ActionLink($"/api/Concert/{dto.Id}/door-revenue", HttpMethods.Post)
+                    : null)
         };
 }
