@@ -34,6 +34,9 @@ internal static class QueryableConcertMappers
             StartDate = c.Booking.Application.Opportunity.Period.Start,
             EndDate = c.Booking.Application.Opportunity.Period.End,
             State = c.Booking.Application.State,
+            IsRevenueShare = c.Booking is DeferredBooking,
+            TicketsSold = c.TicketsSold,
+            DoorRevenue = c.DoorRevenue,
             Genres = c.Genres,
             Venue = new ConcertVenue
             {

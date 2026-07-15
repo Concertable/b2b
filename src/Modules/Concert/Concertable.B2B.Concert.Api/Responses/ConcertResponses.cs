@@ -19,11 +19,14 @@ internal sealed record ConcertDetailsResponse
     public required ConcertArtistResponse Artist { get; init; }
     public required ConcertVenueResponse Venue { get; init; }
     public IReadOnlyList<Genre> Genres { get; init; } = [];
-    // Null on the public/marketplace read; populated only by the tenant-scoped owner read.
+    /// <summary>Venue-private; populated only by the tenant-scoped owner read, never exposed anonymously.</summary>
+    public int? TicketsSold { get; init; }
+    /// <inheritdoc cref="TicketsSold"/>
+    public decimal? DoorRevenue { get; init; }
     public ConcertActions? Actions { get; init; }
 }
 
-internal sealed record ConcertActions(ActionLink? Cancel, ActionLink? Contract);
+internal sealed record ConcertActions(ActionLink? Cancel, ActionLink? Contract, ActionLink? DeclareDoorRevenue);
 
 internal sealed record ConcertArtistResponse
 {
