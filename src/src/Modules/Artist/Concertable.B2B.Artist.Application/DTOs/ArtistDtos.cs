@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using Concertable.B2B.Artist.Contracts;
 using Concertable.Contracts;
 using Concertable.Kernel;
 
@@ -16,6 +18,7 @@ public sealed record ArtistDto : IAddress
     public required string Email { get; init; }
 }
 
+[DisplayName(DisplayNames.Artist)]
 public sealed record ArtistDetails : IAddress
 {
     public int Id { get; init; }

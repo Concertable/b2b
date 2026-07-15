@@ -1,3 +1,4 @@
+using Concertable.B2B.Conversations.Contracts;
 using Concertable.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.Exceptions;
@@ -84,7 +85,7 @@ internal sealed class MessageService : IMessageService
     private async Task<MessageUser> GetSenderDtoAsync(Guid fromUserId)
     {
         var sender = await userModule.GetByIdAsync(fromUserId)
-            .OrNotFound("Message sender");
+            .OrNotFound(DisplayNames.MessageSender);
         return sender.ToMessageUser();
     }
 

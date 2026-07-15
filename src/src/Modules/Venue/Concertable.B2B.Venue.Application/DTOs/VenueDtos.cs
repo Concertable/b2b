@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Venue.Application.DTOs;
@@ -17,6 +19,7 @@ public sealed record VenueDto : IAddress
     public required string Email { get; init; }
 }
 
+[DisplayName(DisplayNames.Venue)]
 public sealed record VenueDetails : IAddress
 {
     public int Id { get; init; }

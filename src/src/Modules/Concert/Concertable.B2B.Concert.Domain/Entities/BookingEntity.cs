@@ -1,10 +1,11 @@
 using System.ComponentModel;
+using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
-[DisplayName("Booking")]
+[DisplayName(DisplayNames.Booking)]
 public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped
 {
     public int Id { get; private set; }
