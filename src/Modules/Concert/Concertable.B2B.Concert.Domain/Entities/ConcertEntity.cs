@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Application;
@@ -12,9 +13,9 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// Holds denormalized <see cref="ArtistReadModel"/> and <see cref="VenueReadModel"/> references
 /// so the Concert module can satisfy queries in a single DB context without crossing module boundaries.
 /// </summary>
+[DisplayName("Concert")]
 public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRaiser, IVenueArtistTenantScoped
 {
-    public static string DisplayName => "Concert";
     public int Id { get; private set; }
     public Guid VenueTenantId { get; set; }
     public Guid ArtistTenantId { get; set; }
