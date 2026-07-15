@@ -17,7 +17,7 @@ internal sealed class ReleaseEscrowFinishStep : IFinishStep
     public async Task ExecuteAsync(int concertId)
     {
         var bookingId = await bookingRepository.GetIdByConcertIdAsync(concertId)
-            .OrNotFound("Booking");
+            .OrNotFound(DisplayNames.Booking);
 
         var release = await escrowClient.ReleaseByBookingIdAsync(bookingId);
         if (release.IsFailed)

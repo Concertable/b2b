@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Artist.Domain.Events;
 using Concertable.Contracts;
 using Concertable.Kernel;
@@ -6,7 +7,7 @@ using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Artist.Domain;
 
-[DisplayName("Artist")]
+[DisplayName(DisplayNames.Artist)]
 public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantScoped
 {
     private readonly EventRaiser events = new();

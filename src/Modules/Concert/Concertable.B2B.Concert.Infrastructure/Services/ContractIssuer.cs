@@ -40,7 +40,7 @@ internal sealed class ContractIssuer : IContractIssuer
     {
         var deal = dealAccessor.Deal;
         var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(application.Id)
-            .OrNotFound("Application");
+            .OrNotFound(DisplayNames.Application);
 
         var contract = ContractEntity.Create(
             bookingId,

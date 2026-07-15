@@ -1,11 +1,12 @@
 using System.ComponentModel;
+using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel;
 using Concertable.B2B.Venue.Domain.Events;
 using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Venue.Domain;
 
-[DisplayName("Venue")]
+[DisplayName(DisplayNames.Venue)]
 public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScoped
 {
     private readonly EventRaiser events = new();

@@ -53,13 +53,13 @@ internal sealed class ConcertService : IConcertService
     public async Task<ConcertDetails> GetDetailsByIdAsync(int id)
     {
         return await publicRepository.GetDetailsByIdAsync(id)
-            .OrNotFound("Concert");
+            .OrNotFound();
     }
 
     public async Task<ConcertDetails> GetDetailsForCurrentUserAsync(int id)
     {
         return await repository.GetDetailsByIdAsync(id)
-            .OrNotFound("Concert");
+            .OrNotFound();
     }
 
     public Task<Result<ConcertEntity>> CreateDraftAsync(int applicationId) =>

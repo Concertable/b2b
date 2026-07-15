@@ -35,7 +35,7 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
     {
         /* FlatFee: the venue tenant pays the artist tenant, per the application's frozen snapshot. */
         var (venueTenantId, artistTenantId) = await applicationRepository.GetTenantPairAsync(applicationId)
-            .OrNotFound("Application");
+            .OrNotFound(DisplayNames.Application);
         var deal = (FlatFeeDeal)dealAccessor.Deal;
         var booking = await bookingService.CreateStandardAsync(applicationId, deal.DealType);
 

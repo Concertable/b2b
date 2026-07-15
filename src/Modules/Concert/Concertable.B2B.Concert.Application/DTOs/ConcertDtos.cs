@@ -1,8 +1,10 @@
+using System.ComponentModel;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Contracts;
 
 namespace Concertable.B2B.Concert.Application.DTOs;
 
+[DisplayName(DisplayNames.Concert)]
 internal sealed record ConcertDetails
 {
     public int Id { get; init; }

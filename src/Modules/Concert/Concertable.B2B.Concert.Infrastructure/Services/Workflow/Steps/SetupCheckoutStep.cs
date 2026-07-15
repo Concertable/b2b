@@ -32,7 +32,7 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
     public async Task<Checkout> ExecuteAsync(int opportunityId)
     {
         var venueSummary = await opportunityRepository.GetVenueSummaryByIdAsync(opportunityId)
-            .OrNotFound("Opportunity");
+            .OrNotFound(DisplayNames.Opportunity);
         var manager = await userModule.GetManagerByIdAsync(venueSummary.UserId);
         var venue = new PayeeSummary(venueSummary.Name, manager?.Email);
         var deal = (VenueHireDeal)dealAccessor.Deal;
