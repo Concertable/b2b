@@ -42,7 +42,7 @@ internal sealed class ArtistService : IArtistService
 
     public async Task<ArtistDetails> GetDetailsByIdAsync(int id) =>
         await publicRepository.GetDetailsByIdAsync(id)
-            .OrNotFound("Artist");
+            .OrNotFound();
 
     public async Task<ArtistDetails> CreateAsync(CreateArtistRequest request)
     {
@@ -113,7 +113,7 @@ internal sealed class ArtistService : IArtistService
 
     public async Task<ArtistSummary> GetSummaryAsync(int id) =>
         await publicRepository.GetSummaryAsync(id)
-            .OrNotFound("Artist");
+            .OrNotFound();
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
         publicRepository.GetGenresAsync(id);

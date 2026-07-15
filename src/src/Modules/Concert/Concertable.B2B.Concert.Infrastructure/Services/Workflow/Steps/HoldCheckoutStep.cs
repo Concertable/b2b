@@ -24,9 +24,9 @@ internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
     public async Task<Checkout> ExecuteAsync(int applicationId)
     {
         var artist = await applicationRepository.GetArtistPayeeAsync(applicationId)
-            .OrNotFound("Application");
+            .OrNotFound(DisplayNames.Application);
         var venueTenantId = await applicationRepository.GetVenueTenantIdAsync(applicationId)
-            .OrNotFound("Application");
+            .OrNotFound(DisplayNames.Application);
         var deal = (FlatFeeDeal)dealAccessor.Deal;
 
         var metadata = new Dictionary<string, string>

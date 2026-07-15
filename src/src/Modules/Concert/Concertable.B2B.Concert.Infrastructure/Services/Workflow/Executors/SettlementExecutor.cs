@@ -30,5 +30,5 @@ internal sealed class SettlementExecutor : ISettlementExecutor
 
     private async Task<int> LoadApplicationIdAsync(int bookingId)
         => await bookingRepository.GetApplicationIdByIdAsync(bookingId)
-            .OrNotFound("Booking");
+            .OrNotFound(DisplayNames.Booking);
 }

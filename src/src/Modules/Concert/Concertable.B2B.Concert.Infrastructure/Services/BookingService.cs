@@ -35,7 +35,7 @@ internal sealed class BookingService : IBookingService
     private async Task InheritTenantsAsync(BookingEntity booking, int applicationId)
     {
         var (venueTenantId, artistTenantId) = await applicationRepository.GetTenantPairAsync(applicationId)
-            .OrNotFound("Application");
+            .OrNotFound(DisplayNames.Application);
         booking.VenueTenantId = venueTenantId;
         booking.ArtistTenantId = artistTenantId;
     }
