@@ -27,6 +27,7 @@ using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
 using Concertable.B2B.Concert.Infrastructure.Services.Payment;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
 using Concertable.B2B.Concert.Infrastructure.Validators;
 using Concertable.B2B.Venue.Contracts.Events;
 using FluentValidation;
@@ -142,6 +143,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
+
+        // Query specifications
+        services.AddScoped<IEndedAndBookedSpecification, EndedAndBookedSpecification>();
+        services.AddScoped<IDoorRevenueOutstandingSpecification, DoorRevenueOutstandingSpecification>();
 
         // Mappers
         services.AddScoped<IOpportunityMapper, OpportunityMapper>();

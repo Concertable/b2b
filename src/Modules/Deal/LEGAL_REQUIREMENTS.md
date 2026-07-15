@@ -44,6 +44,23 @@ here, because standalone B2B has no fan ticket sales.
 This posture anchors the tenancy model: the legal/VAT entity *is* the tenant (realized in the
 Tenant module — `TenantEntity` + the `Compliance` value object).
 
+## 0.1 Door-revenue is venue-declared, not verified (DoorSplit/Versus) — SHIPPED
+
+**Decided; shipped `Feature/DoorRevenueSettlement`.** For any ticket Concertable doesn't process
+itself, the night's revenue can only be **declared by the venue**, never verified — you cannot
+verify a transaction you were never part of. This is the permanent shape for externally-sold
+tickets, not a launch stopgap; the industry settles door deals this way (promoter's count +
+cashbox). The artist's share settles on `TicketsSold × Price + DoorRevenue` — Concertable's own
+sales (known) **plus** the venue-declared external take.
+
+We do **not** claim the declared figure is verified. The checks are **contractual** (the signed
+booking agreement binds the split), **social** (the artist was in the room and sees a full/empty
+house), and **repeated-game** (a venue that lowballs loses its acts). The residual risk — a venue
+shaving a slice the artist can't precisely dispute — is real and inherent; no self-declared system
+removes it. Verified coverage (own checkout, or a ticketer feed) only ever **shrinks** the declared
+slice for sales through that channel; cash on the door and unconnected channels stay declared
+forever.
+
 ---
 
 ## 1. Per-contract-type legal handling — the core work — ABSENT

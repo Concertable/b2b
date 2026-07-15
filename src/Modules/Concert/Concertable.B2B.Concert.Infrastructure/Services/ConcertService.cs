@@ -17,6 +17,7 @@ internal sealed class ConcertService : IConcertService
     private readonly IEmailSender emailSender;
     private readonly IConcertDraftService concertDraftService;
     private readonly TimeProvider timeProvider;
+    private readonly ITenantContext tenantContext;
 
     public ConcertService(
         IConcertRepository repository,
@@ -26,7 +27,8 @@ internal sealed class ConcertService : IConcertService
         IApplicationValidator applicationValidator,
         IEmailSender emailSender,
         IConcertDraftService concertDraftService,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ITenantContext tenantContext)
     {
         this.repository = repository;
         this.publicRepository = publicRepository;
@@ -36,6 +38,7 @@ internal sealed class ConcertService : IConcertService
         this.emailSender = emailSender;
         this.concertDraftService = concertDraftService;
         this.timeProvider = timeProvider;
+        this.tenantContext = tenantContext;
     }
 
     public Task<IEnumerable<ConcertSummary>> GetUpcomingByVenueIdAsync(int id) =>
@@ -113,6 +116,11 @@ internal sealed class ConcertService : IConcertService
     {
         var concert = await repository.GetByIdWithBookingAsync(id)
             .OrNotFound();
+
+        /* Only the concert's own venue may declare its door take. A non-party sees a null (tenant-filtered)
+           Booking; the host/worker path (no HTTP context) bypasses tenant scoping, as elsewhere. */
+        if (!tenantContext.IsHost && concert.Booking?.VenueTenantId != tenantContext.TenantId)
+            throw new ForbiddenException("Only the concert's venue can declare its door revenue.");
 
         /* Only revenue-share settlements (DeferredBooking) take a declared door figure, and only once
            the gig has ended and before it settles. Re-declarable while Booked; frozen after. */

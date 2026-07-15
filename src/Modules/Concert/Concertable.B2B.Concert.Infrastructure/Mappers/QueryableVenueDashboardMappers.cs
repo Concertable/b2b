@@ -11,9 +11,11 @@ internal static class QueryableVenueDashboardMappers
         this IQueryable<VenueReadModel> query,
         IQueryable<ApplicationEntity> applications,
         IQueryable<OpportunityEntity> openOpportunities,
-        IQueryable<ConcertEntity> upcomingConcerts)
+        IQueryable<ConcertEntity> upcomingConcerts,
+        IQueryable<ConcertEntity> awaitingDoorRevenue)
         => query.Select(v => new VenueDashboardCounts(
             applications.Count(),
             openOpportunities.Count(),
-            upcomingConcerts.Count()));
+            upcomingConcerts.Count(),
+            awaitingDoorRevenue.Count()));
 }
