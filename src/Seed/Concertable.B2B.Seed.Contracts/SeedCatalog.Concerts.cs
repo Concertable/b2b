@@ -22,7 +22,7 @@ public sealed partial class SeedCatalog
         ConcertSeedSpec.Create(9, "Past Versus Show", 20m, 100, Artists[0], Venues[0], -120, -120, Now, ticketsSold: 1),
         ConcertSeedSpec.Create(10, "Past FlatFee Show", 20m, 100, Artists[0], Venues[0], -85, -85, Now),
         ConcertSeedSpec.CreateHire(11, "Past VenueHire Show", 30m, 100, Artists[0], Venues[0], -40, -40, Now),
-        ConcertSeedSpec.Create(12, "Past DoorSplit Show", 20m, 100, Artists[0], Venues[0], -60, -60, Now, ticketsSold: 1),
+        ConcertSeedSpec.Create(12, "Past DoorSplit Show", 20m, 100, Artists[0], Venues[0], -60, -60, Now, ticketsSold: 10),
         ConcertSeedSpec.Create(13, "Upcoming FlatFee Show", 20m, 150, Artists[1], Venues[0], 15, 0, Now, [Genre.Rock, Genre.Indie]),
         ConcertSeedSpec.CreateHire(14, "Upcoming VenueHire Show", 30m, 200, Artists[0], Venues[0], 20, 0, Now, [Genre.Rock, Genre.Indie]),
         ConcertSeedSpec.Create(15, "Rockin' all Night", 15m, 120, Artists[0], Venues[0], -60, -58, Now),
