@@ -43,7 +43,7 @@ internal sealed class VenueService : IVenueService
     public async Task<VenueDetails> GetDetailsByIdAsync(int id)
     {
         return await publicRepository.GetDetailsByIdAsync(id)
-            .OrNotFound("Venue");
+            .OrNotFound();
     }
 
     public async Task<VenueDetails> CreateAsync(CreateVenueRequest request)
@@ -126,5 +126,5 @@ internal sealed class VenueService : IVenueService
 
     public async Task<VenueSummary> GetSummaryAsync(int id) =>
         await publicRepository.GetSummaryAsync(id)
-            .OrNotFound("Venue");
+            .OrNotFound();
 }

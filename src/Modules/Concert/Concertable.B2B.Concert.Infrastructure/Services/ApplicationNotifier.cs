@@ -60,7 +60,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private async Task NotifyVenueAsync(int applicationId, string content, MessageAction action, string emailSubject)
     {
         var venueManagerId = await repository.GetVenueManagerIdAsync(applicationId)
-            .OrNotFound("Concert application");
+            .OrNotFound(DisplayNames.Application);
         var venueManager = await userModule.GetManagerByIdAsync(venueManagerId)
             ?? throw new NotFoundException("Venue manager not found for application");
 
@@ -71,7 +71,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private async Task NotifyArtistAsync(int applicationId, string content, MessageAction action, string emailSubject, string emailBody)
     {
         var (artist, venue) = await repository.GetArtistAndVenueByIdAsync(applicationId)
-            .OrNotFound("Concert application");
+            .OrNotFound(DisplayNames.Application);
 
         await messenger.SendAndNotifyAsync(venue.UserId, artist.UserId, content, action,
             new EmailCopy(artist.Email!, emailSubject, emailBody));
