@@ -1,13 +1,13 @@
+using System.ComponentModel;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.Contracts;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
+[DisplayName("Concert Opportunity")]
 public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<OpportunityEntity>, ITenantScoped
 {
-    public static string DisplayName => "Concert Opportunity";
-
     private OpportunityEntity() { }
 
     public int Id { get; private set; }

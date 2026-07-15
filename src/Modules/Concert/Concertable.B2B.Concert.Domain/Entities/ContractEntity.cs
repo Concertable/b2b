@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Kernel;
 
@@ -8,9 +9,9 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// so a later edit to the live deal can't change what was signed. Created by <c>ContractIssuer</c>
 /// during Accept — but that timing is convention, not an invariant the model enforces (see TECH_DEBT).
 /// </summary>
+[DisplayName("Contract")]
 public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
 {
-    public static string DisplayName => "Contract";
     public int Id { get; private set; }
     public Guid VenueTenantId { get; set; }
     public Guid ArtistTenantId { get; set; }

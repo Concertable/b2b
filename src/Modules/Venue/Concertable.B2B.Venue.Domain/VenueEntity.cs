@@ -1,16 +1,16 @@
+using System.ComponentModel;
 using Concertable.Kernel;
 using Concertable.B2B.Venue.Domain.Events;
 using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Venue.Domain;
 
+[DisplayName("Venue")]
 public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScoped
 {
     private readonly EventRaiser events = new();
 
     private VenueEntity() { }
-
-    public static string DisplayName => "Venue";
 
     public int Id { get; private set; }
     public Guid TenantId { get; set; }

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Application;
@@ -5,9 +6,9 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
+[DisplayName("Application")]
 public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
 {
-    public static string DisplayName => "Application";
     public int Id { get; private set; }
     public Guid VenueTenantId { get; set; }
     public Guid ArtistTenantId { get; set; }
