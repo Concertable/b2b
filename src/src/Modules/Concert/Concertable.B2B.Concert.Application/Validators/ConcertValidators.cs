@@ -14,6 +14,14 @@ internal sealed class UpdateConcertRequestValidator : AbstractValidator<UpdateCo
     }
 }
 
+internal sealed class DoorRevenueRequestValidator : AbstractValidator<DoorRevenueRequest>
+{
+    public DoorRevenueRequestValidator()
+    {
+        RuleFor(x => x.DoorRevenue).GreaterThanOrEqualTo(0);
+    }
+}
+
 internal sealed class BookingParamsValidator : AbstractValidator<BookingParams>
 {
     public BookingParamsValidator()

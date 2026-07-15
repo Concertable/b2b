@@ -5,5 +5,6 @@ public sealed record VenueDashboardKpis(
     int? ApplicationsToReviewDelta,
     int OpenOpportunities,
     int UpcomingConcerts,
+    int AwaitingDoorRevenue,
     long MtdRevenueCents,
     double? MtdRevenueDeltaPercent);

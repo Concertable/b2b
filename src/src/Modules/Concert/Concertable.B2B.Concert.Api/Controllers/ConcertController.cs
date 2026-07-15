@@ -14,15 +14,18 @@ internal sealed class ConcertController : ControllerBase
     private readonly IConcertService concertService;
     private readonly IConcertWorkflowModule concertWorkflowModule;
     private readonly IContractService contractService;
+    private readonly TimeProvider timeProvider;
 
     public ConcertController(
         IConcertService concertService,
         IConcertWorkflowModule concertWorkflowModule,
-        IContractService contractService)
+        IContractService contractService,
+        TimeProvider timeProvider)
     {
         this.concertService = concertService;
         this.concertWorkflowModule = concertWorkflowModule;
         this.contractService = contractService;
+        this.timeProvider = timeProvider;
     }
 
     [HttpGet("{id}")]
@@ -37,7 +40,8 @@ internal sealed class ConcertController : ControllerBase
     [HttpGet("user/{id}")]
     public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsForCurrentUser(int id)
     {
-        return Ok((await concertService.GetDetailsForCurrentUserAsync(id)).ToCurrentUserDetailsResponse());
+        return Ok((await concertService.GetDetailsForCurrentUserAsync(id))
+            .ToCurrentUserDetailsResponse(timeProvider.GetUtcNow().UtcDateTime));
     }
 
     [HttpGet("{id}/contract/pdf")]
@@ -50,7 +54,8 @@ internal sealed class ConcertController : ControllerBase
     [HttpGet("application/{applicationId}")]
     public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsByApplicationId(int applicationId)
     {
-        return Ok((await concertService.GetDetailsByApplicationIdAsync(applicationId)).ToCurrentUserDetailsResponse());
+        return Ok((await concertService.GetDetailsByApplicationIdAsync(applicationId))
+            .ToCurrentUserDetailsResponse(timeProvider.GetUtcNow().UtcDateTime));
     }
 
     [HttpGet("upcoming/venue/{id}")]
@@ -109,6 +114,18 @@ internal sealed class ConcertController : ControllerBase
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
     {
         await concertWorkflowModule.CancelAsync(id, ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Venue declares the external door take (own-site + other ticketers + cash) for an ended,
+    /// still-Booked revenue-share gig, gating its settlement. Re-declarable until it settles, then frozen.
+    /// </summary>
+    [HasPermission(VenuePermissions.ConcertsManage)]
+    [HttpPost("{id}/door-revenue")]
+    public async Task<IActionResult> DeclareDoorRevenue(int id, [FromBody] DoorRevenueRequest request)
+    {
+        await concertService.DeclareDoorRevenueAsync(id, request.DoorRevenue);
         return NoContent();
     }
 }

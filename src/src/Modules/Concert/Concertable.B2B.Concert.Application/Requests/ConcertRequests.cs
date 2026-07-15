@@ -7,3 +7,9 @@ internal sealed record UpdateConcertRequest
     public decimal Price { get; init; }
     public int TotalTickets { get; init; }
 }
+
+internal sealed record DoorRevenueRequest
+{
+    /// <summary>External take only (excludes Concertable's own ticket sales, which settlement already knows).</summary>
+    public decimal DoorRevenue { get; init; }
+}

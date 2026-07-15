@@ -31,6 +31,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
             ApplicationsToReviewDelta: null,
             OpenOpportunities: counts.OpenOpportunities,
             UpcomingConcerts: counts.UpcomingConcerts,
+            AwaitingDoorRevenue: counts.AwaitingDoorRevenue,
             MtdRevenueCents: 0,
             MtdRevenueDeltaPercent: null);
     }
