@@ -40,8 +40,6 @@ public static class ServiceCollectionExtensions
         services.Configure<TenantProvisioningOptions>(configuration.GetSection("Tenant"));
         services.Configure<UkDac7Options>(configuration.GetSection("Dac7:Gb"));
 
-        /* DAC7 per-jurisdiction rule: a keyed strategy resolver (api/docs/CODE_PATTERNS.md). The facade is the
-           IDac7Strategy default; each concrete strategy registers as its concrete type and is injected into it. */
         services.AddSingleton<IDac7Strategy, Dac7Strategy>();
         services.AddSingleton<UkDac7Strategy>();
 
