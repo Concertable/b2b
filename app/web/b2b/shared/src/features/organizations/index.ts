@@ -4,8 +4,8 @@ export { useOrganizationQuery } from "./hooks/useOrganizationQuery";
 export { useUpdateOrganizationMutation } from "./hooks/useUpdateOrganizationMutation";
 export type {
   Organization,
-  Compliance,
-  Dac7,
+  TaxCompliance,
+  TaxFormLabels,
   RegisteredAddress,
   UpdateOrganizationRequest,
 } from "./types";

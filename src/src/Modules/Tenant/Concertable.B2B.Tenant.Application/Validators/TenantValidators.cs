@@ -12,20 +12,18 @@ internal sealed class UpdateTenantRequestValidator : AbstractValidator<UpdateTen
             .NotEmpty()
             .MaximumLength(200);
 
-        RuleFor(x => x.Compliance)
+        RuleFor(x => x.TaxCompliance)
             .NotNull()
-            .SetValidator(new ComplianceDtoValidator());
+            .SetValidator(new TaxComplianceDtoValidator());
     }
 }
 
-// Jurisdiction-agnostic shape only. The jurisdiction-specific check (VAT-number format) is applied by
-// TenantService against the loaded tenant's own Jurisdiction, via IDac7Strategy — a validator can't see it.
-internal sealed class ComplianceDtoValidator : AbstractValidator<ComplianceDto>
+internal sealed class TaxComplianceDtoValidator : AbstractValidator<TaxComplianceDto>
 {
-    public ComplianceDtoValidator()
+    public TaxComplianceDtoValidator()
     {
-        // VatNumber is optional (null/absent = not VAT-registered); only its length is jurisdiction-agnostic.
-        // Format validity is jurisdiction-scoped and applied by TenantService via IDac7Strategy.
+        // VatNumber is optional (null/absent = not VAT-registered); only its length is region-agnostic.
+        // Format validity is region-specific and applied by TenantService via ITaxComplianceRules.
         RuleFor(x => x.VatNumber)
             .MaximumLength(20);
 

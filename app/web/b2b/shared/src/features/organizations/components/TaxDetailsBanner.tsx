@@ -5,7 +5,7 @@ import { useOrganizationQuery } from "../hooks/useOrganizationQuery";
 export function TaxDetailsBanner() {
   const { data: organization, isLoading } = useOrganizationQuery();
 
-  if (isLoading || !organization || organization.dac7.complete) return null;
+  if (isLoading || !organization || organization.taxComplete) return null;
 
   return (
     <div className="border-border bg-card flex items-center justify-between gap-4 rounded-xl border p-4">

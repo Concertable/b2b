@@ -22,7 +22,7 @@ internal sealed class ConcertCompletionRunner(
 
             if (result.IsFailed)
                 logger.ConcertCompletionFailed(concertId, result.Errors);
-            else if (!result.HasSuccess<SettlementDeferred>())
+            else if (result.Value == SettlementOutcome.Settled)
                 logger.ConcertFinished(concertId);
         }
     }

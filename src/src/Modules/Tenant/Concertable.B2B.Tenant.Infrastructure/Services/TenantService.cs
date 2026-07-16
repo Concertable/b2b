@@ -1,5 +1,5 @@
 using Concertable.B2B.Tenant.Application.DTOs;
-using Concertable.B2B.Tenant.Application.Dac7;
+using Concertable.B2B.Tenant.Application.Tax;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
@@ -11,13 +11,13 @@ internal sealed class TenantService : ITenantService
 {
     private readonly ITenantRepository repository;
     private readonly ITenantContext tenantContext;
-    private readonly IDac7Strategy dac7;
+    private readonly ITaxComplianceRules taxRules;
 
-    public TenantService(ITenantRepository repository, ITenantContext tenantContext, IDac7Strategy dac7)
+    public TenantService(ITenantRepository repository, ITenantContext tenantContext, ITaxComplianceRules taxRules)
     {
         this.repository = repository;
         this.tenantContext = tenantContext;
-        this.dac7 = dac7;
+        this.taxRules = taxRules;
     }
 
     public async Task<TenantDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -40,7 +40,7 @@ internal sealed class TenantService : ITenantService
             return null;
 
         var tenant = await repository.GetByIdAsync(tenantId, ct);
-        return tenant is null ? null : tenant.ToDetails(BuildDac7(tenant));
+        return tenant is null ? null : ToDetails(tenant);
     }
 
     public async Task<TenantDetails> UpdateAsync(UpdateTenantRequest request, CancellationToken ct = default)
@@ -51,34 +51,24 @@ internal sealed class TenantService : ITenantService
         var tenant = await repository.GetByIdAsync(tenantId, ct)
             ?? throw new NotFoundException($"Tenant {tenantId} not found.");
 
-        // Jurisdiction-specific format check + message, both sourced from the tenant's own Jurisdiction (the
-        // org-form validator can't see it). A null VAT number just means not VAT-registered — nothing to check.
-        if (!string.IsNullOrWhiteSpace(request.Compliance.VatNumber)
-            && !dac7.IsValidVatNumber(tenant.Jurisdiction, request.Compliance.VatNumber))
-            throw new BadRequestException(dac7.DescribeVatNumberRequirement(tenant.Jurisdiction));
+        // Region-specific VAT format check + message, from the deployment's tax-compliance rules (the org-form
+        // validator is region-agnostic). A null VAT number just means not VAT-registered — nothing to check.
+        if (!string.IsNullOrWhiteSpace(request.TaxCompliance.VatNumber)
+            && !taxRules.IsValidVatNumber(request.TaxCompliance.VatNumber))
+            throw new BadRequestException(taxRules.DescribeVatNumberRequirement());
 
-        tenant.UpdateLegalDetails(request.LegalName, request.Compliance.ToCompliance());
+        tenant.UpdateLegalDetails(request.LegalName, request.TaxCompliance.ToTaxCompliance());
         await repository.SaveChangesAsync(ct);
 
-        return tenant.ToDetails(BuildDac7(tenant));
+        return ToDetails(tenant);
     }
 
-    public async Task<bool> IsDac7CompleteAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default)
     {
         var tenant = await repository.GetByIdAsync(tenantId, ct);
-        return tenant is not null && dac7.IsComplete(tenant.Jurisdiction, tenant.Compliance);
+        return tenant is not null && taxRules.IsComplete(tenant.TaxCompliance);
     }
 
-    private Dac7Dto BuildDac7(TenantEntity tenant)
-    {
-        var labels = dac7.GetFieldLabels(tenant.Jurisdiction);
-        return new Dac7Dto
-        {
-            Complete = dac7.IsComplete(tenant.Jurisdiction, tenant.Compliance),
-            SellerIdentifierLabel = labels.SellerIdentifierLabel,
-            SellerIdentifierHint = labels.SellerIdentifierHint,
-            VatLabel = labels.VatLabel,
-            VatNumberPlaceholder = labels.VatNumberPlaceholder,
-        };
-    }
+    private TenantDetails ToDetails(TenantEntity tenant) =>
+        tenant.ToDetails(taxRules.IsComplete(tenant.TaxCompliance), taxRules.GetFieldLabels());
 }

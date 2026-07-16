@@ -2,18 +2,18 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Tenant.Domain;
 
-public sealed record Compliance
+public sealed record TaxCompliance
 {
     /// <summary>The seller's VAT number, or null when not VAT-registered. Absence is the registration status —
-    /// there is no separate flag to contradict it. Format validity is jurisdiction-scoped (<c>IDac7Strategy</c>).</summary>
+    /// there is no separate flag to contradict it. Format validity is region-specific (<c>ITaxComplianceRules</c>).</summary>
     public string? VatNumber { get; private init; }
     public string SellerIdentifier { get; private init; } = null!;
     public RegisteredAddress RegisteredAddress { get; private init; } = null!;
     public string BankReference { get; private init; } = null!;
 
-    private Compliance() { }
+    private TaxCompliance() { }
 
-    public Compliance(
+    public TaxCompliance(
         string? vatNumber,
         string sellerIdentifier,
         RegisteredAddress registeredAddress,
