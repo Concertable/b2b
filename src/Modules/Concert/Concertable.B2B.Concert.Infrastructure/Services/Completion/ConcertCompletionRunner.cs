@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.DataAccess.Application;
 using Microsoft.Extensions.Logging;
@@ -21,7 +22,7 @@ internal sealed class ConcertCompletionRunner(
 
             if (result.IsFailed)
                 logger.ConcertCompletionFailed(concertId, result.Errors);
-            else
+            else if (!result.HasSuccess<SettlementDeferred>())
                 logger.ConcertFinished(concertId);
         }
     }

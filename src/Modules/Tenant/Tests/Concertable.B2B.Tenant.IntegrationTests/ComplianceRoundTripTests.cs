@@ -33,7 +33,6 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
         LegalName = "The Grand Venue Ltd",
         Compliance = new ComplianceDto
         {
-            VatRegistered = true,
             VatNumber = "GB123456789",
             SellerIdentifier = "12345678",
             RegisteredAddress = new RegisteredAddressDto
@@ -51,7 +50,8 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
     [Fact]
     public async Task Get_BeforeSetup_ReturnsOrganizationWithoutCompliance()
     {
-        var manager = fixture.SeedState.VenueManager1;
+        // A registered operator who hasn't completed organization setup — the only seeded tenant left DAC7-bare.
+        var manager = fixture.SeedState.VenueManagerNoVenue;
         var expectedTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == manager.Id).Id;
 
         var client = fixture.CreateClient(manager);
@@ -62,6 +62,9 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
         Assert.NotNull(organization);
         Assert.Equal(expectedTenantId, organization!.Id);
         Assert.Null(organization.Compliance);
+        // The nag's source of truth: a bare tenant is not DAC7-complete, and the form gets jurisdiction labels.
+        Assert.False(organization.Dac7.Complete);
+        Assert.Equal("National Insurance number or UTR", organization.Dac7.SellerIdentifierLabel);
     }
 
     [Fact]
@@ -79,11 +82,12 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
         Assert.NotNull(read);
         Assert.Equal(request.LegalName, read!.LegalName);
         Assert.Equal(request.Compliance, read.Compliance);
+        // Completing valid compliance flips the nag off — the same rule the payout gate consumes.
+        Assert.True(read.Dac7.Complete);
 
         var tenant = await fixture.Tenants.SingleOrDefaultAsync(t => t.Id == tenantId);
 
         var expected = new Compliance(
-            vatRegistered: true,
             vatNumber: "GB123456789",
             sellerIdentifier: "12345678",
             registeredAddress: new RegisteredAddress("1 High Street", "Floor 2", "Manchester", "M1 1AA", "United Kingdom"),
@@ -105,7 +109,6 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
             LegalName = "Grand Venue Holdings Ltd",
             Compliance = new ComplianceDto
             {
-                VatRegistered = false,
                 VatNumber = null,
                 SellerIdentifier = "87654321",
                 RegisteredAddress = new RegisteredAddressDto
@@ -128,12 +131,12 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Update_VatRegisteredWithoutNumber_ReturnsBadRequest()
+    public async Task Update_InvalidVatNumberFormat_ReturnsBadRequest()
     {
         var manager = fixture.SeedState.VenueManager1;
         var request = BuildRequest() with
         {
-            Compliance = BuildRequest().Compliance with { VatNumber = null },
+            Compliance = BuildRequest().Compliance with { VatNumber = "NOTAVATNUMBER" },
         };
 
         var client = fixture.CreateClient(manager);

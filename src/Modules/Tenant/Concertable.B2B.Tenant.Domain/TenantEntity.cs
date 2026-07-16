@@ -13,6 +13,9 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
 
     /// <summary>Persona, fixed at provisioning from the registration client-id. Drives UI and permission persona constraints.</summary>
     public TenantType Type { get; private set; }
+
+    /// <summary>Tax jurisdiction, fixed at provisioning. The key resolving every region-varying DAC7 rule (see <see cref="Jurisdiction"/>).</summary>
+    public Jurisdiction Jurisdiction { get; private set; }
     public Guid CreatedByUserId { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
@@ -31,16 +34,18 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     /// state before organization setup. The email seeds the placeholder <see cref="LegalName"/> and is carried
     /// on <see cref="TenantCreatedDomainEvent"/> as the Stripe account email, so downstream services (Payment)
     /// provision off the resulting <c>TenantCreatedEvent</c>. <paramref name="type"/> is the persona derived
-    /// from the registration client-id. <paramref name="id"/> lets seeders supply a deterministic id (so the
-    /// event carries it, not a throwaway one); production omits it for a random id.
+    /// from the registration client-id; <paramref name="jurisdiction"/> is the tax jurisdiction the caller
+    /// sources from config (never a literal at the call site). <paramref name="id"/> lets seeders supply a
+    /// deterministic id (so the event carries it, not a throwaway one); production omits it for a random id.
     /// </summary>
-    public static TenantEntity Create(string email, Guid createdByUserId, TenantType type, DateTime createdAt, Guid? id = null)
+    public static TenantEntity Create(string email, Guid createdByUserId, TenantType type, Jurisdiction jurisdiction, DateTime createdAt, Guid? id = null)
     {
         var tenant = new TenantEntity
         {
             Id = id ?? Guid.NewGuid(),
             LegalName = email,
             Type = type,
+            Jurisdiction = jurisdiction,
             CreatedByUserId = createdByUserId,
             CreatedAt = createdAt,
         };

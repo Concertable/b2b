@@ -4,11 +4,11 @@ using Concertable.B2B.Concert.Domain.Entities;
 
 namespace Concertable.B2B.Concert.Application.Resolvers;
 
-internal sealed class PayeeResolver : IPayeeResolver
+internal sealed class TicketPayeeResolver : ITicketPayeeResolver
 {
     private readonly FrozenDictionary<DealType, IPayeeResolver> resolvers;
 
-    public PayeeResolver(VenuePayeeResolver venue, ArtistPayeeResolver artist)
+    public TicketPayeeResolver(VenuePayeeResolver venue, ArtistPayeeResolver artist)
     {
         resolvers = new Dictionary<DealType, IPayeeResolver>
         {

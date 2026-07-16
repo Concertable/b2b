@@ -18,25 +18,16 @@ internal sealed class UpdateTenantRequestValidator : AbstractValidator<UpdateTen
     }
 }
 
+// Jurisdiction-agnostic shape only. The jurisdiction-specific check (VAT-number format) is applied by
+// TenantService against the loaded tenant's own Jurisdiction, via IDac7Strategy — a validator can't see it.
 internal sealed class ComplianceDtoValidator : AbstractValidator<ComplianceDto>
 {
     public ComplianceDtoValidator()
     {
-        When(x => x.VatRegistered, () =>
-        {
-            RuleFor(x => x.VatNumber)
-                .NotEmpty()
-                .MaximumLength(20)
-                .Matches(@"^(GB)?(\d{9}|\d{12})$")
-                .WithMessage("VAT number must be 9 or 12 digits, optionally prefixed with GB.");
-        });
-
-        When(x => !x.VatRegistered, () =>
-        {
-            RuleFor(x => x.VatNumber)
-                .Empty()
-                .WithMessage("VAT number must be empty when not VAT-registered.");
-        });
+        // VatNumber is optional (null/absent = not VAT-registered); only its length is jurisdiction-agnostic.
+        // Format validity is jurisdiction-scoped and applied by TenantService via IDac7Strategy.
+        RuleFor(x => x.VatNumber)
+            .MaximumLength(20);
 
         RuleFor(x => x.SellerIdentifier)
             .NotEmpty()
