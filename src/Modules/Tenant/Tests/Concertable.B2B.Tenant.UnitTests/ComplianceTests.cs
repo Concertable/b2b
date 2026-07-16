@@ -9,13 +9,12 @@ public sealed class ComplianceTests
         new("1 High Street", null, "Manchester", "M1 1AA", "United Kingdom");
 
     [Fact]
-    public void Constructor_WithVatRegisteredAndNumber_SetsAllValues()
+    public void Constructor_SetsAllValues()
     {
         var address = Address();
 
-        var compliance = new Compliance(true, "GB123456789", "12345678", address, "GB00BANK1234");
+        var compliance = new Compliance("GB123456789", "12345678", address, "GB00BANK1234");
 
-        Assert.True(compliance.VatRegistered);
         Assert.Equal("GB123456789", compliance.VatNumber);
         Assert.Equal("12345678", compliance.SellerIdentifier);
         Assert.Equal(address, compliance.RegisteredAddress);
@@ -23,25 +22,20 @@ public sealed class ComplianceTests
     }
 
     [Fact]
-    public void Constructor_VatRegisteredWithoutNumber_Throws()
+    public void Constructor_NullVatNumber_MeansNotRegistered()
     {
-        Assert.Throws<DomainException>(() =>
-            new Compliance(true, null, "12345678", Address(), "GB00BANK1234"));
+        var compliance = new Compliance(null, "12345678", Address(), "GB00BANK1234");
+
+        Assert.Null(compliance.VatNumber);
     }
 
-    [Fact]
-    public void Constructor_NotVatRegisteredWithNumber_Throws()
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void Constructor_BlankVatNumber_NormalizesToNull(string vatNumber)
     {
-        Assert.Throws<DomainException>(() =>
-            new Compliance(false, "GB123456789", "12345678", Address(), "GB00BANK1234"));
-    }
+        var compliance = new Compliance(vatNumber, "12345678", Address(), "GB00BANK1234");
 
-    [Fact]
-    public void Constructor_NotVatRegistered_LeavesVatNumberNull()
-    {
-        var compliance = new Compliance(false, null, "12345678", Address(), "GB00BANK1234");
-
-        Assert.False(compliance.VatRegistered);
         Assert.Null(compliance.VatNumber);
     }
 
@@ -51,7 +45,7 @@ public sealed class ComplianceTests
     public void Constructor_MissingSellerIdentifier_Throws(string sellerIdentifier)
     {
         Assert.Throws<DomainException>(() =>
-            new Compliance(false, null, sellerIdentifier, Address(), "GB00BANK1234"));
+            new Compliance(null, sellerIdentifier, Address(), "GB00BANK1234"));
     }
 
     [Theory]
@@ -60,14 +54,14 @@ public sealed class ComplianceTests
     public void Constructor_MissingBankReference_Throws(string bankReference)
     {
         Assert.Throws<DomainException>(() =>
-            new Compliance(false, null, "12345678", Address(), bankReference));
+            new Compliance(null, "12345678", Address(), bankReference));
     }
 
     [Fact]
     public void Constructor_MissingAddress_Throws()
     {
         Assert.Throws<DomainException>(() =>
-            new Compliance(false, null, "12345678", null!, "GB00BANK1234"));
+            new Compliance(null, "12345678", null!, "GB00BANK1234"));
     }
 
     [Fact]

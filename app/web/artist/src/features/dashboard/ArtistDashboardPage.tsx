@@ -1,3 +1,4 @@
+import { TaxDetailsBanner } from "@b2b/features/organizations";
 import { PersonaSwitcher, SectionGrid } from "@/features/dashboard";
 import { ArtistActivityWidget } from "./ArtistActivityWidget";
 import { ArtistApplicationsPipelineWidget } from "./ArtistApplicationsPipelineWidget";
@@ -22,6 +23,8 @@ export function ArtistDashboardPage() {
       </SectionGrid>
 
       <ArtistStripeBanner />
+
+      <TaxDetailsBanner />
 
       <ArtistNextConcertHero />
 

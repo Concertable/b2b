@@ -47,6 +47,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to finish concert {ConcertId}")]
     internal static partial void FailedToFinishConcert(this ILogger logger, int concertId, Exception ex);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Settlement of concert {ConcertId} deferred: payee tenant {PayeeTenantId} is not DAC7-complete; will retry on the next completion sweep once tax details are provided")]
+    internal static partial void SettlementDeferredPendingDac7(this ILogger logger, int concertId, Guid payeeTenantId);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to cancel concert {ConcertId}")]
     internal static partial void FailedToCancelConcert(this ILogger logger, int concertId, Exception ex);
 
