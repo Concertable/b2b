@@ -1,11 +1,10 @@
 namespace Concertable.B2B.Tenant.Contracts;
 
 /// <summary>
-/// A tenant's tax jurisdiction, fixed at provisioning. The closed key that drives every region-varying DAC7
-/// rule: the <c>IDac7Strategy</c> that decides what makes a seller's tax identity complete &amp; valid, and the
-/// per-region reference data (VAT format, seller-id label, reporting authority). A new region is added here,
-/// given its strategy + options, and every consumer picks it up without branching — an unmapped jurisdiction
-/// throws rather than silently falling back to another region's rules.
+/// A tenant's tax jurisdiction, fixed at provisioning from config (<c>TenantProvisioningOptions.DefaultJurisdiction</c>).
+/// A deployment serves one region, so the matching <c>ITaxComplianceRules</c> is registered once at startup; this
+/// records which region a tenant was provisioned under (the per-region VAT format, seller-id label, and reporting
+/// authority all follow from it). A new region adds an enum member plus its rules + options.
 /// </summary>
 public enum Jurisdiction
 {

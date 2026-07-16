@@ -13,17 +13,14 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
 
     /// <summary>Persona, fixed at provisioning from the registration client-id. Drives UI and permission persona constraints.</summary>
     public TenantType Type { get; private set; }
-
-    /// <summary>Tax jurisdiction, fixed at provisioning. The key resolving every region-varying DAC7 rule (see <see cref="Jurisdiction"/>).</summary>
-    public Jurisdiction Jurisdiction { get; private set; }
     public Guid CreatedByUserId { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
     /// <summary>
-    /// The legal/tax identity backing settlement and DAC7 reporting (<c>LEGAL_REQUIREMENTS.md</c> item 3).
+    /// The legal/tax identity backing settlement and tax reporting (<c>LEGAL_REQUIREMENTS.md</c> item 3).
     /// Null until the operator completes organization setup — provisioning creates the tenant bare.
     /// </summary>
-    public Compliance? Compliance { get; private set; }
+    public TaxCompliance? TaxCompliance { get; private set; }
 
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
@@ -34,18 +31,16 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     /// state before organization setup. The email seeds the placeholder <see cref="LegalName"/> and is carried
     /// on <see cref="TenantCreatedDomainEvent"/> as the Stripe account email, so downstream services (Payment)
     /// provision off the resulting <c>TenantCreatedEvent</c>. <paramref name="type"/> is the persona derived
-    /// from the registration client-id; <paramref name="jurisdiction"/> is the tax jurisdiction the caller
-    /// sources from config (never a literal at the call site). <paramref name="id"/> lets seeders supply a
-    /// deterministic id (so the event carries it, not a throwaway one); production omits it for a random id.
+    /// from the registration client-id. <paramref name="id"/> lets seeders supply a deterministic id (so the
+    /// event carries it, not a throwaway one); production omits it for a random id.
     /// </summary>
-    public static TenantEntity Create(string email, Guid createdByUserId, TenantType type, Jurisdiction jurisdiction, DateTime createdAt, Guid? id = null)
+    public static TenantEntity Create(string email, Guid createdByUserId, TenantType type, DateTime createdAt, Guid? id = null)
     {
         var tenant = new TenantEntity
         {
             Id = id ?? Guid.NewGuid(),
             LegalName = email,
             Type = type,
-            Jurisdiction = jurisdiction,
             CreatedByUserId = createdByUserId,
             CreatedAt = createdAt,
         };
@@ -64,13 +59,13 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
 
     /// <summary>
     /// Organization setup: replaces the provisioning placeholder legal name (the registration email)
-    /// and the compliance details in one transition — the <c>/organizations</c> form submits them together.
+    /// and the tax-compliance details in one transition — the <c>/organizations</c> form submits them together.
     /// </summary>
-    public void UpdateLegalDetails(string legalName, Compliance compliance)
+    public void UpdateLegalDetails(string legalName, TaxCompliance taxCompliance)
     {
         DomainException.ThrowIfNullOrWhiteSpace(legalName, "Legal name");
-        DomainException.ThrowIfNull(compliance, "Compliance");
+        DomainException.ThrowIfNull(taxCompliance, "Tax compliance");
         LegalName = legalName;
-        Compliance = compliance;
+        TaxCompliance = taxCompliance;
     }
 }

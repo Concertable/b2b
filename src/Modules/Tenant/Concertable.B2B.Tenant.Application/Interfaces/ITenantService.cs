@@ -14,5 +14,5 @@ internal interface ITenantService
 
     Task<TenantDetails> UpdateAsync(UpdateTenantRequest request, CancellationToken ct = default);
 
-    Task<bool> IsDac7CompleteAsync(Guid tenantId, CancellationToken ct = default);
+    Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default);
 }

@@ -3,7 +3,7 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Tenant.UnitTests;
 
-public sealed class ComplianceTests
+public sealed class TaxComplianceTests
 {
     private static RegisteredAddress Address() =>
         new("1 High Street", null, "Manchester", "M1 1AA", "United Kingdom");
@@ -13,20 +13,20 @@ public sealed class ComplianceTests
     {
         var address = Address();
 
-        var compliance = new Compliance("GB123456789", "12345678", address, "GB00BANK1234");
+        var taxCompliance = new TaxCompliance("GB123456789", "12345678", address, "GB00BANK1234");
 
-        Assert.Equal("GB123456789", compliance.VatNumber);
-        Assert.Equal("12345678", compliance.SellerIdentifier);
-        Assert.Equal(address, compliance.RegisteredAddress);
-        Assert.Equal("GB00BANK1234", compliance.BankReference);
+        Assert.Equal("GB123456789", taxCompliance.VatNumber);
+        Assert.Equal("12345678", taxCompliance.SellerIdentifier);
+        Assert.Equal(address, taxCompliance.RegisteredAddress);
+        Assert.Equal("GB00BANK1234", taxCompliance.BankReference);
     }
 
     [Fact]
     public void Constructor_NullVatNumber_MeansNotRegistered()
     {
-        var compliance = new Compliance(null, "12345678", Address(), "GB00BANK1234");
+        var taxCompliance = new TaxCompliance(null, "12345678", Address(), "GB00BANK1234");
 
-        Assert.Null(compliance.VatNumber);
+        Assert.Null(taxCompliance.VatNumber);
     }
 
     [Theory]
@@ -34,9 +34,9 @@ public sealed class ComplianceTests
     [InlineData("  ")]
     public void Constructor_BlankVatNumber_NormalizesToNull(string vatNumber)
     {
-        var compliance = new Compliance(vatNumber, "12345678", Address(), "GB00BANK1234");
+        var taxCompliance = new TaxCompliance(vatNumber, "12345678", Address(), "GB00BANK1234");
 
-        Assert.Null(compliance.VatNumber);
+        Assert.Null(taxCompliance.VatNumber);
     }
 
     [Theory]
@@ -45,7 +45,7 @@ public sealed class ComplianceTests
     public void Constructor_MissingSellerIdentifier_Throws(string sellerIdentifier)
     {
         Assert.Throws<DomainException>(() =>
-            new Compliance(null, sellerIdentifier, Address(), "GB00BANK1234"));
+            new TaxCompliance(null, sellerIdentifier, Address(), "GB00BANK1234"));
     }
 
     [Theory]
@@ -54,14 +54,14 @@ public sealed class ComplianceTests
     public void Constructor_MissingBankReference_Throws(string bankReference)
     {
         Assert.Throws<DomainException>(() =>
-            new Compliance(null, "12345678", Address(), bankReference));
+            new TaxCompliance(null, "12345678", Address(), bankReference));
     }
 
     [Fact]
     public void Constructor_MissingAddress_Throws()
     {
         Assert.Throws<DomainException>(() =>
-            new Compliance(null, "12345678", null!, "GB00BANK1234"));
+            new TaxCompliance(null, "12345678", null!, "GB00BANK1234"));
     }
 
     [Fact]

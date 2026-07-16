@@ -7,20 +7,21 @@ internal static class TenantMappers
     public static TenantDto ToDto(this TenantEntity tenant) =>
         new(tenant.Id, tenant.LegalName);
 
-    public static TenantDetails ToDetails(this TenantEntity tenant, Dac7Dto dac7) => new()
+    public static TenantDetails ToDetails(this TenantEntity tenant, bool taxComplete, TaxFormLabels formLabels) => new()
     {
         Id = tenant.Id,
         LegalName = tenant.LegalName,
-        Compliance = tenant.Compliance?.ToDto(),
-        Dac7 = dac7,
+        TaxCompliance = tenant.TaxCompliance?.ToDto(),
+        TaxComplete = taxComplete,
+        FormLabels = formLabels,
     };
 
-    public static ComplianceDto ToDto(this Compliance compliance) => new()
+    public static TaxComplianceDto ToDto(this TaxCompliance taxCompliance) => new()
     {
-        VatNumber = compliance.VatNumber,
-        SellerIdentifier = compliance.SellerIdentifier,
-        RegisteredAddress = compliance.RegisteredAddress.ToDto(),
-        BankReference = compliance.BankReference,
+        VatNumber = taxCompliance.VatNumber,
+        SellerIdentifier = taxCompliance.SellerIdentifier,
+        RegisteredAddress = taxCompliance.RegisteredAddress.ToDto(),
+        BankReference = taxCompliance.BankReference,
     };
 
     public static RegisteredAddressDto ToDto(this RegisteredAddress address) => new()
@@ -32,7 +33,7 @@ internal static class TenantMappers
         Country = address.Country,
     };
 
-    public static Compliance ToCompliance(this ComplianceDto dto) => new(
+    public static TaxCompliance ToTaxCompliance(this TaxComplianceDto dto) => new(
         dto.VatNumber,
         dto.SellerIdentifier,
         new RegisteredAddress(

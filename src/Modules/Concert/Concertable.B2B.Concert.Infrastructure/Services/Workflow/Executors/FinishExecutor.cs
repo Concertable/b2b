@@ -41,7 +41,7 @@ internal sealed class FinishExecutor : IFinishExecutor
         this.logger = logger;
     }
 
-    public async Task<Result> ExecuteAsync(int concertId)
+    public async Task<Result<SettlementOutcome>> ExecuteAsync(int concertId)
     {
         try
         {
@@ -50,13 +50,13 @@ internal sealed class FinishExecutor : IFinishExecutor
             if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
                 throw new BadRequestException("Concert cannot be finished before it has ended");
 
-            // Fail-closed DAC7 gate: no complete tax identity for the settlement payee → don't transition, don't
-            // pay; leave it for the hourly sweep to retry (self-heals once the seller completes their details).
+            // Fail-closed payout gate: the settlement payee's tax identity isn't complete for its jurisdiction →
+            // don't transition, don't pay; leave it for the hourly sweep to retry (self-heals once details land).
             var payeeTenantId = settlementPayeeResolver.ResolveTenantId(concert);
-            if (!await tenantModule.IsDac7CompleteAsync(payeeTenantId))
+            if (!await tenantModule.IsTaxComplianceCompleteAsync(payeeTenantId))
             {
-                logger.SettlementDeferredPendingDac7(concertId, payeeTenantId);
-                return Result.Ok().WithSuccess(new SettlementDeferred());
+                logger.SettlementDeferredPendingTaxCompliance(concertId, payeeTenantId);
+                return Result.Ok(SettlementOutcome.DeferredPendingTaxCompliance);
             }
 
             await transitioner.TransitionAsync(concert.Booking.ApplicationId, Trigger.Finish, async app =>
@@ -65,12 +65,12 @@ internal sealed class FinishExecutor : IFinishExecutor
                 var workflow = workflows.Create(app.DealType);
                 await workflow.Finish.ExecuteAsync(concertId);
             });
-            return Result.Ok();
+            return Result.Ok(SettlementOutcome.Settled);
         }
         catch (Exception ex)
         {
             logger.FailedToFinishConcert(concertId, ex);
-            return Result.Fail(ex.Message);
+            return Result.Fail<SettlementOutcome>(ex.Message);
         }
     }
 }

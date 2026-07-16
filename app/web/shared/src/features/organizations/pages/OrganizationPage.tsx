@@ -42,27 +42,31 @@ export function OrganizationPage({ title, description }: OrganizationPageProps) 
 function OrganizationForm({ organization }: { organization: Organization }) {
   const { mutate: save, isPending } = useUpdateOrganizationMutation();
 
-  const compliance = organization.compliance;
-  const dac7 = organization.dac7;
+  const taxCompliance = organization.taxCompliance;
+  const formLabels = organization.formLabels;
   const [legalName, setLegalName] = useState(organization.legalName);
   const [vatRegistered, setVatRegistered] = useState(
-    compliance?.vatNumber != null,
+    taxCompliance?.vatNumber != null,
   );
-  const [vatNumber, setVatNumber] = useState(compliance?.vatNumber ?? "");
+  const [vatNumber, setVatNumber] = useState(taxCompliance?.vatNumber ?? "");
   const [sellerIdentifier, setSellerIdentifier] = useState(
-    compliance?.sellerIdentifier ?? "",
+    taxCompliance?.sellerIdentifier ?? "",
   );
-  const [line1, setLine1] = useState(compliance?.registeredAddress.line1 ?? "");
-  const [line2, setLine2] = useState(compliance?.registeredAddress.line2 ?? "");
-  const [city, setCity] = useState(compliance?.registeredAddress.city ?? "");
+  const [line1, setLine1] = useState(
+    taxCompliance?.registeredAddress.line1 ?? "",
+  );
+  const [line2, setLine2] = useState(
+    taxCompliance?.registeredAddress.line2 ?? "",
+  );
+  const [city, setCity] = useState(taxCompliance?.registeredAddress.city ?? "");
   const [postcode, setPostcode] = useState(
-    compliance?.registeredAddress.postcode ?? "",
+    taxCompliance?.registeredAddress.postcode ?? "",
   );
   const [country, setCountry] = useState(
-    compliance?.registeredAddress.country ?? "United Kingdom",
+    taxCompliance?.registeredAddress.country ?? "United Kingdom",
   );
   const [bankReference, setBankReference] = useState(
-    compliance?.bankReference ?? "",
+    taxCompliance?.bankReference ?? "",
   );
 
   function handleSubmit(e: React.FormEvent) {
@@ -70,7 +74,7 @@ function OrganizationForm({ organization }: { organization: Organization }) {
     save(
       {
         legalName,
-        compliance: {
+        taxCompliance: {
           vatNumber: vatRegistered ? vatNumber : undefined,
           sellerIdentifier,
           registeredAddress: {
@@ -106,7 +110,7 @@ function OrganizationForm({ organization }: { organization: Organization }) {
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="sellerIdentifier">{dac7.sellerIdentifierLabel}</Label>
+          <Label htmlFor="sellerIdentifier">{formLabels.sellerIdentifierLabel}</Label>
           <Input
             id="sellerIdentifier"
             value={sellerIdentifier}
@@ -115,7 +119,7 @@ function OrganizationForm({ organization }: { organization: Organization }) {
             maxLength={50}
           />
           <p className="text-muted-foreground text-xs">
-            {dac7.sellerIdentifierHint}
+            {formLabels.sellerIdentifierHint}
           </p>
         </div>
       </div>
@@ -134,14 +138,14 @@ function OrganizationForm({ organization }: { organization: Organization }) {
         </div>
         {vatRegistered && (
           <div className="space-y-1">
-            <Label htmlFor="vatNumber">{dac7.vatLabel}</Label>
+            <Label htmlFor="vatNumber">{formLabels.vatLabel}</Label>
             <Input
               id="vatNumber"
               value={vatNumber}
               onChange={(e) => setVatNumber(e.target.value)}
               required
               maxLength={20}
-              placeholder={dac7.vatNumberPlaceholder}
+              placeholder={formLabels.vatNumberPlaceholder}
             />
           </div>
         )}

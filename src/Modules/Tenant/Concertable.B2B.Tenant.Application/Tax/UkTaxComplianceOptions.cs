@@ -1,14 +1,14 @@
-namespace Concertable.B2B.Tenant.Application.Dac7;
+namespace Concertable.B2B.Tenant.Application.Tax;
 
 /// <summary>
-/// Tier-1 per-region DAC7 reference data for the UK (<see cref="Jurisdiction.Gb"/>), bound from the
-/// <c>Dac7:Gb</c> config section. Pure values that vary by region but drive no logic — the field labels the
-/// org form renders, the VAT-number format the strategy validates against, the reporting authority. Adding a
-/// region's <em>data</em> is a new config section + options class; the <em>behaviour</em> that reads it lives
-/// in that region's <c>IDac7Strategy</c>. Ships with UK defaults so the module runs without config; a host
-/// overrides them via the config section.
+/// Tier-1 per-region tax-compliance reference data for the UK (<see cref="Jurisdiction.Gb"/>), whose regime is
+/// DAC7, bound from the <c>TaxCompliance:Gb</c> config section. Pure values that vary by region but drive no
+/// logic — the field labels the org form renders, the VAT-number format the rules validate against, the
+/// reporting authority. Adding a region's <em>data</em> is a new config section + options class; the
+/// <em>behaviour</em> that reads it lives in that region's <see cref="ITaxComplianceRules"/>. Ships with UK
+/// defaults so the module runs without config; a host overrides them via the config section.
 /// </summary>
-public sealed class UkDac7Options
+public sealed class UkTaxComplianceOptions
 {
     /// <summary>Label for the seller-identifier field on the org form — UK sellers give a NINO or UTR.</summary>
     public string SellerIdentifierLabel { get; set; } = "National Insurance number or UTR";

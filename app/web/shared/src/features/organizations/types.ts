@@ -6,7 +6,7 @@ export interface RegisteredAddress {
   country: string;
 }
 
-export interface Compliance {
+export interface TaxCompliance {
   // Absent = not VAT-registered; the presence of a number is the registration status.
   vatNumber?: string;
   sellerIdentifier: string;
@@ -14,8 +14,7 @@ export interface Compliance {
   bankReference: string;
 }
 
-export interface Dac7 {
-  complete: boolean;
+export interface TaxFormLabels {
   sellerIdentifierLabel: string;
   sellerIdentifierHint: string;
   vatLabel: string;
@@ -25,11 +24,15 @@ export interface Dac7 {
 export interface Organization {
   id: string;
   legalName: string;
-  compliance: Compliance | null;
-  dac7: Dac7;
+  // Stored tax details (form pre-fill); null until organization setup is completed.
+  taxCompliance: TaxCompliance | null;
+  // Derived nag flag — the same completeness rule the payout gate consumes.
+  taxComplete: boolean;
+  // Region field labels the form renders (region config, not per-tenant data).
+  formLabels: TaxFormLabels;
 }
 
 export interface UpdateOrganizationRequest {
   legalName: string;
-  compliance: Compliance;
+  taxCompliance: TaxCompliance;
 }

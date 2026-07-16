@@ -10,20 +10,20 @@ using Xunit.Abstractions;
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 /// <summary>
-/// The fail-closed DAC7 payout gate (<c>FinishExecutor</c>): a settlement's payee — the DAC7 "seller" who
+/// The fail-closed tax-compliance payout gate (<c>FinishExecutor</c>): a settlement's payee — the seller who
 /// receives the money — must hold complete, jurisdiction-valid tax details, or the concert is not transitioned
 /// and not paid (it self-heals on the next sweep once the seller completes onboarding). The payee is
 /// direction-dependent: the artist for revenue-share/fixed-fee, the venue for VenueHire. These arrange an
 /// incomplete payee by repointing the concert at a seeded operator who never completed organization setup.
 /// </summary>
 [Collection("Integration")]
-public sealed class ConcertDac7GateApiTests : IAsyncLifetime
+public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 {
     private const decimal DoorRevenue = 200m;
 
     private readonly ConcertApiFixture fixture;
 
-    public ConcertDac7GateApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    public ConcertPayoutComplianceGateApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -53,7 +53,7 @@ public sealed class ConcertDac7GateApiTests : IAsyncLifetime
     // --- Revenue-share (PayoutFinishStep): the artist is the payee ---
 
     [Fact]
-    public async Task Finish_RevenueShare_Defers_WhenPayeeArtistNotDac7Complete()
+    public async Task Finish_RevenueShare_Defers_WhenPayeeArtistTaxComplianceIncomplete()
     {
         var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
         await RepointTenantAsync(concert.Id, artistTenantId: TenantOf(fixture.SeedState.ArtistManagerNoArtist.Id));
@@ -67,7 +67,7 @@ public sealed class ConcertDac7GateApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Finish_RevenueShare_Settles_WhenPayeeArtistDac7Complete()
+    public async Task Finish_RevenueShare_Settles_WhenPayeeArtistTaxComplianceComplete()
     {
         // The seeded artist operator completed onboarding, so the gate lets settlement through.
         var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
@@ -83,7 +83,7 @@ public sealed class ConcertDac7GateApiTests : IAsyncLifetime
     // --- Fixed-fee (ReleaseEscrowFinishStep): the artist is the payee ---
 
     [Fact]
-    public async Task Finish_FixedFee_Defers_WhenPayeeArtistNotDac7Complete()
+    public async Task Finish_FixedFee_Defers_WhenPayeeArtistTaxComplianceIncomplete()
     {
         var concertId = fixture.SeedState.PastFlatFeeBooking.Concert!.Id;
         await RepointTenantAsync(concertId, artistTenantId: TenantOf(fixture.SeedState.ArtistManagerNoArtist.Id));
@@ -95,7 +95,7 @@ public sealed class ConcertDac7GateApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Finish_FixedFee_Settles_WhenPayeeArtistDac7Complete()
+    public async Task Finish_FixedFee_Settles_WhenPayeeArtistTaxComplianceComplete()
     {
         var concertId = fixture.SeedState.PastFlatFeeBooking.Concert!.Id;
 
@@ -108,7 +108,7 @@ public sealed class ConcertDac7GateApiTests : IAsyncLifetime
     // --- VenueHire direction-flip: the venue is the payee, so it is the tenant gated ---
 
     [Fact]
-    public async Task Finish_VenueHire_Defers_WhenPayeeVenueNotDac7Complete()
+    public async Task Finish_VenueHire_Defers_WhenPayeeVenueTaxComplianceIncomplete()
     {
         var concertId = fixture.SeedState.PastVenueHireBooking.Concert!.Id;
         await RepointTenantAsync(concertId, venueTenantId: TenantOf(fixture.SeedState.VenueManagerNoVenue.Id));
