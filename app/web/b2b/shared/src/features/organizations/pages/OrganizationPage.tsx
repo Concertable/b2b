@@ -43,9 +43,10 @@ function OrganizationForm({ organization }: { organization: Organization }) {
   const { mutate: save, isPending } = useUpdateOrganizationMutation();
 
   const compliance = organization.compliance;
+  const dac7 = organization.dac7;
   const [legalName, setLegalName] = useState(organization.legalName);
   const [vatRegistered, setVatRegistered] = useState(
-    compliance?.vatRegistered ?? false,
+    compliance?.vatNumber != null,
   );
   const [vatNumber, setVatNumber] = useState(compliance?.vatNumber ?? "");
   const [sellerIdentifier, setSellerIdentifier] = useState(
@@ -70,8 +71,7 @@ function OrganizationForm({ organization }: { organization: Organization }) {
       {
         legalName,
         compliance: {
-          vatRegistered,
-          vatNumber: vatRegistered ? vatNumber : null,
+          vatNumber: vatRegistered ? vatNumber : undefined,
           sellerIdentifier,
           registeredAddress: {
             line1,
@@ -106,7 +106,7 @@ function OrganizationForm({ organization }: { organization: Organization }) {
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="sellerIdentifier">Company / seller identifier</Label>
+          <Label htmlFor="sellerIdentifier">{dac7.sellerIdentifierLabel}</Label>
           <Input
             id="sellerIdentifier"
             value={sellerIdentifier}
@@ -115,7 +115,7 @@ function OrganizationForm({ organization }: { organization: Organization }) {
             maxLength={50}
           />
           <p className="text-muted-foreground text-xs">
-            Companies House number, or your UTR if you're a sole trader.
+            {dac7.sellerIdentifierHint}
           </p>
         </div>
       </div>
@@ -134,14 +134,14 @@ function OrganizationForm({ organization }: { organization: Organization }) {
         </div>
         {vatRegistered && (
           <div className="space-y-1">
-            <Label htmlFor="vatNumber">VAT number</Label>
+            <Label htmlFor="vatNumber">{dac7.vatLabel}</Label>
             <Input
               id="vatNumber"
               value={vatNumber}
               onChange={(e) => setVatNumber(e.target.value)}
               required
               maxLength={20}
-              placeholder="GB123456789"
+              placeholder={dac7.vatNumberPlaceholder}
             />
           </div>
         )}

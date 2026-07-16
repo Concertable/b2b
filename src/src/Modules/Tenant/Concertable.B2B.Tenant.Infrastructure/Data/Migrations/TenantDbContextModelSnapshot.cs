@@ -35,6 +35,11 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("Jurisdiction")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
                     b.Property<string>("LegalName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -168,9 +173,6 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                             b1.Property<string>("VatNumber")
                                 .HasMaxLength(20)
                                 .HasColumnType("nvarchar(20)");
-
-                            b1.Property<bool>("VatRegistered")
-                                .HasColumnType("bit");
 
                             b1.HasKey("TenantEntityId");
 

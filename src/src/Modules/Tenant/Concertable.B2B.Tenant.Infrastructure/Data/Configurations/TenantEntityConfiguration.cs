@@ -11,6 +11,7 @@ internal sealed class TenantEntityConfiguration : IEntityTypeConfiguration<Tenan
         builder.HasKey(o => o.Id);
         builder.Property(o => o.LegalName).IsRequired().HasMaxLength(200);
         builder.Property(o => o.Type).IsRequired();
+        builder.Property(o => o.Jurisdiction).IsRequired().HasDefaultValue(Jurisdiction.Gb);
         builder.Property(o => o.CreatedAt).IsRequired();
 
         builder.OwnsOne(o => o.Compliance, c =>

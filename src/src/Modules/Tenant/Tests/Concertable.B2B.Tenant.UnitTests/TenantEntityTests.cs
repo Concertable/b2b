@@ -13,11 +13,12 @@ public sealed class TenantEntityTests
         var userId = Guid.NewGuid();
         var now = DateTime.UtcNow;
 
-        var tenant = TenantEntity.Create("Acme Ltd", userId, TenantType.Venue, now);
+        var tenant = TenantEntity.Create("Acme Ltd", userId, TenantType.Venue, Jurisdiction.Gb, now);
 
         Assert.NotEqual(Guid.Empty, tenant.Id);
         Assert.Equal("Acme Ltd", tenant.LegalName);
         Assert.Equal(TenantType.Venue, tenant.Type);
+        Assert.Equal(Jurisdiction.Gb, tenant.Jurisdiction);
         Assert.Equal(userId, tenant.CreatedByUserId);
         Assert.Equal(now, tenant.CreatedAt);
     }
@@ -25,7 +26,7 @@ public sealed class TenantEntityTests
     [Fact]
     public void Create_PersistsThePersona()
     {
-        var artistTenant = TenantEntity.Create("manager@acme.com", Guid.NewGuid(), TenantType.Artist, DateTime.UtcNow);
+        var artistTenant = TenantEntity.Create("manager@acme.com", Guid.NewGuid(), TenantType.Artist, Jurisdiction.Gb, DateTime.UtcNow);
 
         Assert.Equal(TenantType.Artist, artistTenant.Type);
     }
@@ -35,7 +36,7 @@ public sealed class TenantEntityTests
     {
         var userId = Guid.NewGuid();
 
-        var tenant = TenantEntity.Create("manager@acme.com", userId, TenantType.Venue, DateTime.UtcNow);
+        var tenant = TenantEntity.Create("manager@acme.com", userId, TenantType.Venue, Jurisdiction.Gb, DateTime.UtcNow);
 
         var raised = Assert.IsType<TenantCreatedDomainEvent>(Assert.Single(tenant.DomainEvents));
         Assert.Equal(tenant.Id, raised.TenantId);
@@ -47,7 +48,7 @@ public sealed class TenantEntityTests
     public void Announce_ReRaisesTenantCreatedDomainEvent_AfterEventsCleared()
     {
         var userId = Guid.NewGuid();
-        var tenant = TenantEntity.Create("manager@acme.com", userId, TenantType.Artist, DateTime.UtcNow);
+        var tenant = TenantEntity.Create("manager@acme.com", userId, TenantType.Artist, Jurisdiction.Gb, DateTime.UtcNow);
         tenant.ClearDomainEvents();
 
         tenant.Announce();
@@ -61,7 +62,7 @@ public sealed class TenantEntityTests
     [Fact]
     public void Create_LeavesComplianceNull()
     {
-        var tenant = TenantEntity.Create("Acme Ltd", Guid.NewGuid(), TenantType.Venue, DateTime.UtcNow);
+        var tenant = TenantEntity.Create("Acme Ltd", Guid.NewGuid(), TenantType.Venue, Jurisdiction.Gb, DateTime.UtcNow);
 
         Assert.Null(tenant.Compliance);
     }
@@ -69,9 +70,8 @@ public sealed class TenantEntityTests
     [Fact]
     public void UpdateLegalDetails_SetsLegalNameAndCompliance()
     {
-        var tenant = TenantEntity.Create("manager@acme.com", Guid.NewGuid(), TenantType.Venue, DateTime.UtcNow);
+        var tenant = TenantEntity.Create("manager@acme.com", Guid.NewGuid(), TenantType.Venue, Jurisdiction.Gb, DateTime.UtcNow);
         var compliance = new Compliance(
-            true,
             "GB123456789",
             "12345678",
             new RegisteredAddress("1 High Street", null, "Manchester", "M1 1AA", "United Kingdom"),
@@ -86,9 +86,8 @@ public sealed class TenantEntityTests
     [Fact]
     public void UpdateLegalDetails_BlankLegalName_Throws()
     {
-        var tenant = TenantEntity.Create("manager@acme.com", Guid.NewGuid(), TenantType.Venue, DateTime.UtcNow);
+        var tenant = TenantEntity.Create("manager@acme.com", Guid.NewGuid(), TenantType.Venue, Jurisdiction.Gb, DateTime.UtcNow);
         var compliance = new Compliance(
-            false,
             null,
             "12345678",
             new RegisteredAddress("1 High Street", null, "Manchester", "M1 1AA", "United Kingdom"),

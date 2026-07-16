@@ -1,8 +1,10 @@
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
+using Concertable.B2B.Tenant.Application;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Events;
 
@@ -28,11 +30,13 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
 
     private readonly TenantDbContext context;
     private readonly TimeProvider timeProvider;
+    private readonly TenantProvisioningOptions provisioning;
 
-    public TenantProvisioningHandler(TenantDbContext context, TimeProvider timeProvider)
+    public TenantProvisioningHandler(TenantDbContext context, TimeProvider timeProvider, IOptions<TenantProvisioningOptions> provisioning)
     {
         this.context = context;
         this.timeProvider = timeProvider;
+        this.provisioning = provisioning.Value;
     }
 
     public async Task HandleAsync(CredentialRegisteredEvent e, MessageEnvelope envelope, CancellationToken ct = default)
@@ -49,7 +53,7 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
         var tenant = await context.Tenants.FirstOrDefaultAsync(t => t.CreatedByUserId == e.UserId, ct);
         if (tenant is null)
         {
-            tenant = TenantEntity.Create(e.Email, e.UserId, type, now);
+            tenant = TenantEntity.Create(e.Email, e.UserId, type, provisioning.DefaultJurisdiction, now);
             context.Tenants.Add(tenant);
         }
         else
