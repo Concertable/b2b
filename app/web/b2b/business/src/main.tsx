@@ -116,7 +116,7 @@ function App() {
         <p className="text-xs text-muted-foreground/60">
           Looking to buy tickets?{" "}
           <a href={customerUrl} className="font-semibold text-primary hover:underline">
-            Go to concertable.com
+            Go to concertable.co.uk
           </a>
         </p>
       </footer>
