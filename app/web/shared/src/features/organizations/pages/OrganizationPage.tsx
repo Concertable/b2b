@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useOrganizationQuery } from "../hooks/useOrganizationQuery";
 import { useUpdateOrganizationMutation } from "../hooks/useUpdateOrganizationMutation";
+import { taxFormLabels } from "../taxFormLabels";
 import type { Organization } from "../types";
 
 interface OrganizationPageProps {
@@ -42,40 +43,35 @@ export function OrganizationPage({ title, description }: OrganizationPageProps) 
 function OrganizationForm({ organization }: { organization: Organization }) {
   const { mutate: save, isPending } = useUpdateOrganizationMutation();
 
-  const compliance = organization.compliance;
+  const tax = organization.taxCompliance;
   const [legalName, setLegalName] = useState(organization.legalName);
-  const [vatRegistered, setVatRegistered] = useState(
-    compliance?.vatRegistered ?? false,
-  );
-  const [vatNumber, setVatNumber] = useState(compliance?.vatNumber ?? "");
+  const [vatRegistered, setVatRegistered] = useState(tax?.vatNumber != null);
+  const [vatNumber, setVatNumber] = useState(tax?.vatNumber ?? "");
   const [sellerIdentifier, setSellerIdentifier] = useState(
-    compliance?.sellerIdentifier ?? "",
+    tax?.sellerIdentifier ?? "",
   );
-  const [line1, setLine1] = useState(compliance?.registeredAddress.line1 ?? "");
-  const [line2, setLine2] = useState(compliance?.registeredAddress.line2 ?? "");
-  const [city, setCity] = useState(compliance?.registeredAddress.city ?? "");
+  const [line1, setLine1] = useState(tax?.registeredAddress.line1 ?? "");
+  const [line2, setLine2] = useState(tax?.registeredAddress.line2 ?? "");
+  const [city, setCity] = useState(tax?.registeredAddress.city ?? "");
   const [postcode, setPostcode] = useState(
-    compliance?.registeredAddress.postcode ?? "",
+    tax?.registeredAddress.postcode ?? "",
   );
   const [country, setCountry] = useState(
-    compliance?.registeredAddress.country ?? "United Kingdom",
+    tax?.registeredAddress.country ?? "United Kingdom",
   );
-  const [bankReference, setBankReference] = useState(
-    compliance?.bankReference ?? "",
-  );
+  const [bankReference, setBankReference] = useState(tax?.bankReference ?? "");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     save(
       {
         legalName,
-        compliance: {
-          vatRegistered,
-          vatNumber: vatRegistered ? vatNumber : null,
+        taxCompliance: {
+          vatNumber: vatRegistered ? vatNumber : undefined,
           sellerIdentifier,
           registeredAddress: {
             line1,
-            line2: line2 || null,
+            line2: line2 || undefined,
             city,
             postcode,
             country,
@@ -106,7 +102,7 @@ function OrganizationForm({ organization }: { organization: Organization }) {
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="sellerIdentifier">Company / seller identifier</Label>
+          <Label htmlFor="sellerIdentifier">{taxFormLabels.sellerIdentifierLabel}</Label>
           <Input
             id="sellerIdentifier"
             value={sellerIdentifier}
@@ -115,7 +111,7 @@ function OrganizationForm({ organization }: { organization: Organization }) {
             maxLength={50}
           />
           <p className="text-muted-foreground text-xs">
-            Companies House number, or your UTR if you're a sole trader.
+            {taxFormLabels.sellerIdentifierHint}
           </p>
         </div>
       </div>
@@ -134,14 +130,14 @@ function OrganizationForm({ organization }: { organization: Organization }) {
         </div>
         {vatRegistered && (
           <div className="space-y-1">
-            <Label htmlFor="vatNumber">VAT number</Label>
+            <Label htmlFor="vatNumber">{taxFormLabels.vatLabel}</Label>
             <Input
               id="vatNumber"
               value={vatNumber}
               onChange={(e) => setVatNumber(e.target.value)}
               required
               maxLength={20}
-              placeholder="GB123456789"
+              placeholder={taxFormLabels.vatNumberPlaceholder}
             />
           </div>
         )}

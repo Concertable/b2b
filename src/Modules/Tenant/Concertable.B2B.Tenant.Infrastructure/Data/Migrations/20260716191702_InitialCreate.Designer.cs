@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(TenantDbContext))]
-    [Migration("20260712143419_InitialCreate")]
+    [Migration("20260716191702_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -153,7 +153,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.TenantEntity", b =>
                 {
-                    b.OwnsOne("Concertable.B2B.Tenant.Domain.Compliance", "Compliance", b1 =>
+                    b.OwnsOne("Concertable.B2B.Tenant.Domain.TaxCompliance", "TaxCompliance", b1 =>
                         {
                             b1.Property<Guid>("TenantEntityId")
                                 .HasColumnType("uniqueidentifier");
@@ -172,9 +172,6 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                                 .HasMaxLength(20)
                                 .HasColumnType("nvarchar(20)");
 
-                            b1.Property<bool>("VatRegistered")
-                                .HasColumnType("bit");
-
                             b1.HasKey("TenantEntityId");
 
                             b1.ToTable("Tenants", "tenant");
@@ -184,7 +181,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
                             b1.OwnsOne("Concertable.B2B.Tenant.Domain.RegisteredAddress", "RegisteredAddress", b2 =>
                                 {
-                                    b2.Property<Guid>("ComplianceTenantEntityId")
+                                    b2.Property<Guid>("TaxComplianceTenantEntityId")
                                         .HasColumnType("uniqueidentifier");
 
                                     b2.Property<string>("City")
@@ -211,19 +208,19 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                                         .HasMaxLength(20)
                                         .HasColumnType("nvarchar(20)");
 
-                                    b2.HasKey("ComplianceTenantEntityId");
+                                    b2.HasKey("TaxComplianceTenantEntityId");
 
                                     b2.ToTable("Tenants", "tenant");
 
                                     b2.WithOwner()
-                                        .HasForeignKey("ComplianceTenantEntityId");
+                                        .HasForeignKey("TaxComplianceTenantEntityId");
                                 });
 
                             b1.Navigation("RegisteredAddress")
                                 .IsRequired();
                         });
 
-                    b.Navigation("Compliance");
+                    b.Navigation("TaxCompliance");
                 });
 #pragma warning restore 612, 618
         }

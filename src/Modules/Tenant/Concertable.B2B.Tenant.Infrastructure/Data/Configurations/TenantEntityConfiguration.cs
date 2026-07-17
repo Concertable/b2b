@@ -13,7 +13,7 @@ internal sealed class TenantEntityConfiguration : IEntityTypeConfiguration<Tenan
         builder.Property(o => o.Type).IsRequired();
         builder.Property(o => o.CreatedAt).IsRequired();
 
-        builder.OwnsOne(o => o.Compliance, c =>
+        builder.OwnsOne(o => o.TaxCompliance, c =>
         {
             c.Property(x => x.VatNumber).HasMaxLength(20);
             c.Property(x => x.SellerIdentifier).IsRequired().HasMaxLength(50);
