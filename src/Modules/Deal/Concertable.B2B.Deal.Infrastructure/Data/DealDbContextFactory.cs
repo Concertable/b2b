@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -7,8 +8,7 @@ internal sealed class DealDbContextFactory : IDesignTimeDbContextFactory<DealDbC
 {
     public DealDbContext CreateDbContext(string[] args)
     {
-        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__B2BDb")
-            ?? "Server=localhost,1433;Database=concertable-b2b;User Id=sa;Password=Password11!;TrustServerCertificate=True";
+        var connectionString = DesignTimeConnectionString.B2B();
         var options = new DbContextOptionsBuilder<DealDbContext>()
             .UseSqlServer(connectionString)
             .Options;
