@@ -12,7 +12,7 @@ namespace Concertable.B2B.Tenant.IntegrationTests;
 /// <summary>
 /// The round-trip gate: nested owned value objects (TaxCompliance owning RegisteredAddress) are the
 /// main EF risk, so every assertion here reads back through a fresh context — never the change tracker
-/// that wrote the row.
+/// that wrote the row. Completeness is presence: a tenant with tax data on file is complete.
 /// </summary>
 [Collection("Integration")]
 public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
@@ -61,10 +61,8 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
         var organization = await response.Content.ReadAsync<TenantDetails>();
         Assert.NotNull(organization);
         Assert.Equal(expectedTenantId, organization!.Id);
+        // No tax data yet = not complete (the nag's source of truth).
         Assert.Null(organization.TaxCompliance);
-        // The nag's source of truth: a bare tenant is not tax-complete, and the form still gets its region labels.
-        Assert.False(organization.TaxComplete);
-        Assert.Equal("National Insurance number or UTR", organization.FormLabels.SellerIdentifierLabel);
     }
 
     [Fact]
@@ -81,9 +79,8 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
         var read = await client.GetFromJsonAsync<TenantDetails>("/api/organizations");
         Assert.NotNull(read);
         Assert.Equal(request.LegalName, read!.LegalName);
+        // Same DTO shape for read and write, so it round-trips by value; presence == complete.
         Assert.Equal(request.TaxCompliance, read.TaxCompliance);
-        // Completing valid tax details flips the nag off — the same rule the payout gate consumes.
-        Assert.True(read.TaxComplete);
 
         var tenant = await fixture.Tenants.SingleOrDefaultAsync(t => t.Id == tenantId);
 

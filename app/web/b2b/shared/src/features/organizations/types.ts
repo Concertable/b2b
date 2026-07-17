@@ -1,35 +1,25 @@
 export interface RegisteredAddress {
   line1: string;
-  line2?: string | null;
+  line2?: string;
   city: string;
   postcode: string;
   country: string;
 }
 
+// One structure for both read and write. Absent VAT number = not VAT-registered (a valid, complete state);
+// every other field is required, so a present TaxCompliance is always complete.
 export interface TaxCompliance {
-  // Absent = not VAT-registered; the presence of a number is the registration status.
   vatNumber?: string;
   sellerIdentifier: string;
   registeredAddress: RegisteredAddress;
   bankReference: string;
 }
 
-export interface TaxFormLabels {
-  sellerIdentifierLabel: string;
-  sellerIdentifierHint: string;
-  vatLabel: string;
-  vatNumberPlaceholder: string;
-}
-
 export interface Organization {
   id: string;
   legalName: string;
-  // Stored tax details (form pre-fill); null until organization setup is completed.
-  taxCompliance: TaxCompliance | null;
-  // Derived nag flag — the same completeness rule the payout gate consumes.
-  taxComplete: boolean;
-  // Region field labels the form renders (region config, not per-tenant data).
-  formLabels: TaxFormLabels;
+  // Absent until setup — its presence IS completeness (the API rejects incomplete/invalid data on write).
+  taxCompliance?: TaxCompliance;
 }
 
 export interface UpdateOrganizationRequest {
