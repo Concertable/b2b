@@ -4,8 +4,8 @@ using Microsoft.Extensions.Options;
 namespace Concertable.B2B.Tenant.Application.Tax;
 
 /// <summary>
-/// UK (<see cref="Jurisdiction.Gb"/>) region tax-compliance rules — the UK's DAC7 regime. Validates VAT-number
-/// format (Tier-1 reference data read from <see cref="UkTaxComplianceOptions"/>, not hardcoded here).
+/// UK region tax-compliance rules — the UK's DAC7 regime. Validates VAT-number format (Tier-1 reference data
+/// read from <see cref="UkTaxComplianceOptions"/>, not hardcoded here).
 /// </summary>
 internal sealed class UkTaxComplianceRules : ITaxComplianceRules
 {
