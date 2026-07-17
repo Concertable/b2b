@@ -53,6 +53,7 @@ internal sealed class TenantService : ITenantService
 
         // Region-specific VAT format check + message, from the deployment's tax-compliance rules (the org-form
         // validator is region-agnostic). A null VAT number just means not VAT-registered — nothing to check.
+        // This is the write-boundary invariant that makes "stored ⇒ complete" hold, so completeness elsewhere is presence.
         if (!string.IsNullOrWhiteSpace(request.TaxCompliance.VatNumber)
             && !taxRules.IsValidVatNumber(request.TaxCompliance.VatNumber))
             throw new BadRequestException(taxRules.DescribeVatNumberRequirement());
@@ -65,10 +66,16 @@ internal sealed class TenantService : ITenantService
 
     public async Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default)
     {
+        // Presence IS completeness — the write path enforces the required fields + VAT format, so stored data
+        // is always complete. Single source of truth, shared with the org read's nag.
         var tenant = await repository.GetByIdAsync(tenantId, ct);
-        return tenant is not null && taxRules.IsComplete(tenant.TaxCompliance);
+        return tenant?.TaxCompliance is not null;
     }
 
-    private TenantDetails ToDetails(TenantEntity tenant) =>
-        tenant.ToDetails(taxRules.IsComplete(tenant.TaxCompliance), taxRules.GetFieldLabels());
+    private TenantDetails ToDetails(TenantEntity tenant) => new()
+    {
+        Id = tenant.Id,
+        LegalName = tenant.LegalName,
+        TaxCompliance = tenant.TaxCompliance?.ToDto(),
+    };
 }

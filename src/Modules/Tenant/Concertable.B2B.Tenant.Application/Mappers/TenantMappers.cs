@@ -7,15 +7,6 @@ internal static class TenantMappers
     public static TenantDto ToDto(this TenantEntity tenant) =>
         new(tenant.Id, tenant.LegalName);
 
-    public static TenantDetails ToDetails(this TenantEntity tenant, bool taxComplete, TaxFormLabels formLabels) => new()
-    {
-        Id = tenant.Id,
-        LegalName = tenant.LegalName,
-        TaxCompliance = tenant.TaxCompliance?.ToDto(),
-        TaxComplete = taxComplete,
-        FormLabels = formLabels,
-    };
-
     public static TaxComplianceDto ToDto(this TaxCompliance taxCompliance) => new()
     {
         VatNumber = taxCompliance.VatNumber,

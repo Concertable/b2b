@@ -42,7 +42,7 @@ The ticket-sale posture is a *Customer-service* question and is decided in that 
 here, because standalone B2B has no fan ticket sales.
 
 This posture anchors the tenancy model: the legal/VAT entity *is* the tenant (realized in the
-Tenant module — `TenantEntity` + the `Compliance` value object).
+Tenant module — `TenantEntity` + the `TaxCompliance` value object).
 
 ## 0.1 Door-revenue is venue-declared, not verified (DoorSplit/Versus) — SHIPPED
 
@@ -127,12 +127,15 @@ via `IDealModule` to build the snapshot.
 
 ---
 
-## 3. VAT registration status + VAT number — ABSENT
+## 3. VAT registration status + VAT number — SHIPPED (`Feature/Dac7Onboarding`)
 **Legal basis:** VAT Act 1994.
-No `VatNumber`/`VatRegistered` on `ArtistEntity`, `VenueEntity`, or `TenantEntity`.
-**Build:** capture VAT-registered (bool) + VAT number on the **tenant / legal entity** (see
-tenancy design), resolved from a venue's/artist's owning organisation — not duplicated per
-profile. Validate format. Feeds the per-type calculator in item 1.
+Captured on the **tenant / legal entity** as `VatNumber` on the `TaxCompliance` value object
+(`TenantEntity.TaxCompliance`), resolved from the owning organisation — not duplicated per profile.
+Registration status is the number's **presence** (absent = not VAT-registered), not a separate bool.
+Format is validated at the write boundary via `ITaxComplianceRules.IsValidVatNumber` (region rules).
+This is the supplier VAT status **item 1's** per-contract calculator reads — so **item 1 is now unblocked**.
+(The same capture also backs the DAC7 fail-closed payout gate; the annual DAC7 *export* to HMRC is a
+separate unbuilt item — see `UkTaxComplianceOptions.ReportingAuthority`/`ReportableFromMinorUnits`.)
 
 ## 4. VAT-compliant invoice / self-billing — ABSENT
 **Legal basis:** HMRC VAT invoice rules; self-billing rules.
@@ -202,7 +205,7 @@ two together are the full evidential record.
 
 1. **Item 0** (posture) — done; accountant sign-off before launch.
 2. **Tenancy / legal-entity model** (shipped — Tenant module) +
-   **item 3** (VAT status) — unblocks the rest.
+   **item 3** (VAT status — shipped `Feature/Dac7Onboarding`) — unblocks the rest.
 3. **Item 2** (signed contract + e-signature) — backbone for items 4/6/7/9; ship the
    click-wrap tier early (it also gives you item 9's terms record for free).
 4. **Items 7, 8** (consent, retention) — launch-blocking, money-model-independent.
