@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
 using Concertable.DataAccess.Application;
 using FluentResults;
@@ -24,10 +25,10 @@ public sealed class ConcertCompletionRunnerTests
         logger = new Mock<ILogger<ConcertCompletionRunner>>();
         sut = new ConcertCompletionRunner(concertRepository.Object, completion.Object, logger.Object);
 
-        completionDispatcher.Setup(p => p.FinishAsync(It.IsAny<int>())).ReturnsAsync(Result.Ok());
+        completionDispatcher.Setup(p => p.FinishAsync(It.IsAny<int>())).ReturnsAsync(Result.Ok(SettlementOutcome.Settled));
         completion
-            .Setup(s => s.RunAsync(It.IsAny<Func<ICompletionDispatcher, Task<Result>>>()))
-            .Returns<Func<ICompletionDispatcher, Task<Result>>>(action => action(completionDispatcher.Object));
+            .Setup(s => s.RunAsync(It.IsAny<Func<ICompletionDispatcher, Task<Result<SettlementOutcome>>>>()))
+            .Returns<Func<ICompletionDispatcher, Task<Result<SettlementOutcome>>>>(action => action(completionDispatcher.Object));
     }
 
     [Fact]
@@ -50,7 +51,7 @@ public sealed class ConcertCompletionRunnerTests
     {
         // Arrange
         concertRepository.Setup(r => r.GetEndedConfirmedIdsAsync()).ReturnsAsync([1, 2, 3]);
-        completionDispatcher.Setup(p => p.FinishAsync(2)).ReturnsAsync(Result.Fail("Payment failed"));
+        completionDispatcher.Setup(p => p.FinishAsync(2)).ReturnsAsync(Result.Fail<SettlementOutcome>("Payment failed"));
 
         // Act
         await sut.RunAsync();

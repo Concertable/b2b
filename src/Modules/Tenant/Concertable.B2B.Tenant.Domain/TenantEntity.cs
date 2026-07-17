@@ -17,10 +17,10 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     public DateTime CreatedAt { get; private set; }
 
     /// <summary>
-    /// The legal/tax identity backing settlement and DAC7 reporting (<c>LEGAL_REQUIREMENTS.md</c> item 3).
+    /// The legal/tax identity backing settlement and tax reporting (<c>LEGAL_REQUIREMENTS.md</c> item 3).
     /// Null until the operator completes organization setup — provisioning creates the tenant bare.
     /// </summary>
-    public Compliance? Compliance { get; private set; }
+    public TaxCompliance? TaxCompliance { get; private set; }
 
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
@@ -59,13 +59,13 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
 
     /// <summary>
     /// Organization setup: replaces the provisioning placeholder legal name (the registration email)
-    /// and the compliance details in one transition — the <c>/organizations</c> form submits them together.
+    /// and the tax-compliance details in one transition — the <c>/organizations</c> form submits them together.
     /// </summary>
-    public void UpdateLegalDetails(string legalName, Compliance compliance)
+    public void UpdateLegalDetails(string legalName, TaxCompliance taxCompliance)
     {
         DomainException.ThrowIfNullOrWhiteSpace(legalName, "Legal name");
-        DomainException.ThrowIfNull(compliance, "Compliance");
+        DomainException.ThrowIfNull(taxCompliance, "Tax compliance");
         LegalName = legalName;
-        Compliance = compliance;
+        TaxCompliance = taxCompliance;
     }
 }

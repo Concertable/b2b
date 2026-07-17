@@ -1,6 +1,8 @@
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Application;
+using Concertable.B2B.Tenant.Application.Tax;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Validators;
 using FluentValidation;
@@ -17,6 +19,7 @@ using Concertable.Seed.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel.Identity;
 
@@ -34,6 +37,19 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<TenantConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<TenantConfigurationProvider>());
+
+        services.Configure<TenantProvisioningOptions>(configuration.GetSection("Tenant"));
+        services.Configure<UkTaxComplianceOptions>(configuration.GetSection("TaxCompliance:Gb"));
+
+        // Region is fixed per deployment: the configured DefaultJurisdiction selects the one matching rules
+        // impl at startup — no per-request dispatch. A second region adds its impl + a case here.
+        services.AddSingleton<ITaxComplianceRules>(sp =>
+            sp.GetRequiredService<IOptions<TenantProvisioningOptions>>().Value.DefaultJurisdiction switch
+            {
+                Jurisdiction.Gb => ActivatorUtilities.CreateInstance<UkTaxComplianceRules>(sp),
+                var jurisdiction => throw new NotSupportedException(
+                    $"No tax-compliance rules registered for jurisdiction {jurisdiction}."),
+            });
 
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<ITenantService, TenantService>();

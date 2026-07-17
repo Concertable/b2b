@@ -294,9 +294,13 @@ public sealed class SeedState
         FreshVenueHireOpportunity = opps[62];
 
         // Artists get a tenant too (they own no Bucket-A rows) so Payment provisions their Connect account off TenantCreatedEvent.
+        // The "no venue"/"no artist" operators registered but never set up their organization, so their tenants stay
+        // tax-incomplete (no tax details captured) — the pre-org-setup state the organization read + gate tests rely on.
+        var bareTenantUserIds = new HashSet<Guid> { VenueManagerNoVenue.Id, ArtistManagerNoArtist.Id };
         Tenants = SeedUsers.Managers
             .Select(m => TenantFactory.Create(
-                m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantType.Venue : TenantType.Artist, now))
+                m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantType.Venue : TenantType.Artist, now,
+                taxComplianceComplete: !bareTenantUserIds.Contains(m.Id)))
             .ToList();
         Memberships = SeedUsers.Managers
             .Select(m => MembershipFactory.FoundingOwner(m.TenantId, m.Id, now))

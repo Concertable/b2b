@@ -12,31 +12,22 @@ internal sealed class UpdateTenantRequestValidator : AbstractValidator<UpdateTen
             .NotEmpty()
             .MaximumLength(200);
 
-        RuleFor(x => x.Compliance)
+        RuleFor(x => x.TaxCompliance)
             .NotNull()
-            .SetValidator(new ComplianceDtoValidator());
+            .SetValidator(new TaxComplianceDtoValidator());
     }
 }
 
-internal sealed class ComplianceDtoValidator : AbstractValidator<ComplianceDto>
+// Region-agnostic shape only. The region-specific check (VAT-number format) is applied by
+// TenantService via ITaxComplianceRules (the deployment's region rules) — a validator can't see it.
+internal sealed class TaxComplianceDtoValidator : AbstractValidator<TaxComplianceDto>
 {
-    public ComplianceDtoValidator()
+    public TaxComplianceDtoValidator()
     {
-        When(x => x.VatRegistered, () =>
-        {
-            RuleFor(x => x.VatNumber)
-                .NotEmpty()
-                .MaximumLength(20)
-                .Matches(@"^(GB)?(\d{9}|\d{12})$")
-                .WithMessage("VAT number must be 9 or 12 digits, optionally prefixed with GB.");
-        });
-
-        When(x => !x.VatRegistered, () =>
-        {
-            RuleFor(x => x.VatNumber)
-                .Empty()
-                .WithMessage("VAT number must be empty when not VAT-registered.");
-        });
+        // VatNumber is optional (null/absent = not VAT-registered); only its length is region-agnostic.
+        // Format validity is region-specific and applied by TenantService via ITaxComplianceRules.
+        RuleFor(x => x.VatNumber)
+            .MaximumLength(20);
 
         RuleFor(x => x.SellerIdentifier)
             .NotEmpty()

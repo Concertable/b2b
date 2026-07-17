@@ -12,5 +12,5 @@ internal sealed class CompletionDispatcher : ICompletionDispatcher
         this.executor = executor;
     }
 
-    public Task<Result> FinishAsync(int concertId) => executor.ExecuteAsync(concertId);
+    public Task<Result<SettlementOutcome>> FinishAsync(int concertId) => executor.ExecuteAsync(concertId);
 }
