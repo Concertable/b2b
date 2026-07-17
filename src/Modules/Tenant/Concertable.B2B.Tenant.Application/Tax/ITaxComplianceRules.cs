@@ -2,9 +2,9 @@ namespace Concertable.B2B.Tenant.Application.Tax;
 
 /// <summary>
 /// The deployment's region tax-compliance rules: what a valid VAT number looks like for the region this
-/// deployment serves (the UK regime is DAC7). Region is fixed at startup (the configured
-/// <see cref="Jurisdiction"/>), so the single matching implementation is registered directly. The org-form
-/// write path is the consumer (VAT validation + its error message); display copy is owned by the frontend.
+/// deployment serves (the UK regime is DAC7). One region per deployment (UK today), so the single
+/// implementation is registered directly. The org-form write path is the consumer (VAT validation + its
+/// error message); display copy is owned by the frontend.
 /// </summary>
 internal interface ITaxComplianceRules
 {

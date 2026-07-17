@@ -1,11 +1,9 @@
 namespace Concertable.B2B.Tenant.Application.Tax;
 
 /// <summary>
-/// Tier-1 per-region tax-compliance reference data for the UK (<see cref="Jurisdiction.Gb"/>), whose regime is
-/// DAC7, bound from the <c>TaxCompliance:Gb</c> config section. Pure values that vary by region but drive no
-/// logic — the VAT-number format the rules validate against, the VAT label its error message quotes, the
-/// reporting authority. Adding a region's <em>data</em> is a new config section + options class; the
-/// <em>behaviour</em> that reads it lives in that region's <see cref="ITaxComplianceRules"/>. Ships with UK
+/// Tier-1 tax-compliance reference data for the UK's DAC7 regime, bound from the <c>TaxCompliance</c> config
+/// section. Pure values that drive no logic — the VAT-number format the rules validate against, the VAT label
+/// its error message quotes, the reporting authority. Read by <see cref="ITaxComplianceRules"/>. Ships with UK
 /// defaults so the module runs without config; a host overrides them via the config section.
 /// </summary>
 public sealed class UkTaxComplianceOptions
