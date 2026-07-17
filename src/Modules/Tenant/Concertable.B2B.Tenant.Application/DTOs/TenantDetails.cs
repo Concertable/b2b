@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Concertable.B2B.Tenant.Application.DTOs;
 
 public sealed record TenantDetails
@@ -5,12 +7,9 @@ public sealed record TenantDetails
     public required Guid Id { get; init; }
     public required string LegalName { get; init; }
 
-    /// <summary>The stored tax-compliance data (form pre-fill); null until organization setup is completed.</summary>
+    /// <summary>The tenant's tax data — absent until organization setup. Its presence IS completeness: the write
+    /// path enforces the required fields + VAT-number format, so anything stored is already complete. Omitted from
+    /// the wire when absent (not serialized as null), so the client sees an optional field, not a null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public TaxComplianceDto? TaxCompliance { get; init; }
-
-    /// <summary>The derived nag flag — the same completeness rule the fail-closed payout gate consumes.</summary>
-    public required bool TaxComplete { get; init; }
-
-    /// <summary>The region's field labels the org form renders (region config, not per-tenant data).</summary>
-    public required TaxFormLabels FormLabels { get; init; }
 }

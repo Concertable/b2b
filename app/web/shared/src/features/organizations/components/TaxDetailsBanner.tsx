@@ -5,7 +5,8 @@ import { useOrganizationQuery } from "../hooks/useOrganizationQuery";
 export function TaxDetailsBanner() {
   const { data: organization, isLoading } = useOrganizationQuery();
 
-  if (isLoading || !organization || organization.taxComplete) return null;
+  // Presence is completeness — nag only when the tenant has no tax data yet.
+  if (isLoading || !organization || organization.taxCompliance) return null;
 
   return (
     <div className="border-border bg-card flex items-center justify-between gap-4 rounded-xl border p-4">

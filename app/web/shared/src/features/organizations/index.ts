@@ -5,7 +5,6 @@ export { useUpdateOrganizationMutation } from "./hooks/useUpdateOrganizationMuta
 export type {
   Organization,
   TaxCompliance,
-  TaxFormLabels,
   RegisteredAddress,
   UpdateOrganizationRequest,
 } from "./types";

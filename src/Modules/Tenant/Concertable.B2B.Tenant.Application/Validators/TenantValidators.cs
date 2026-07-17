@@ -18,6 +18,8 @@ internal sealed class UpdateTenantRequestValidator : AbstractValidator<UpdateTen
     }
 }
 
+// Region-agnostic shape only. The region-specific check (VAT-number format) is applied by
+// TenantService via ITaxComplianceRules (the deployment's region rules) — a validator can't see it.
 internal sealed class TaxComplianceDtoValidator : AbstractValidator<TaxComplianceDto>
 {
     public TaxComplianceDtoValidator()
