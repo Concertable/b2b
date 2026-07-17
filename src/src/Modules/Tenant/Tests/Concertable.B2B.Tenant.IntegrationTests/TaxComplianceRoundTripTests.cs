@@ -10,16 +10,16 @@ using Xunit.Abstractions;
 namespace Concertable.B2B.Tenant.IntegrationTests;
 
 /// <summary>
-/// The Phase 5 round-trip gate: nested owned value objects (Compliance owning RegisteredAddress) are the
+/// The round-trip gate: nested owned value objects (TaxCompliance owning RegisteredAddress) are the
 /// main EF risk, so every assertion here reads back through a fresh context — never the change tracker
-/// that wrote the row.
+/// that wrote the row. Completeness is presence: a tenant with tax data on file is complete.
 /// </summary>
 [Collection("Integration")]
-public sealed class ComplianceRoundTripTests : IAsyncLifetime
+public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
 {
     private readonly TenantApiFixture fixture;
 
-    public ComplianceRoundTripTests(TenantApiFixture fixture, ITestOutputHelper output)
+    public TaxComplianceRoundTripTests(TenantApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -31,9 +31,8 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
     private static UpdateTenantRequest BuildRequest() => new()
     {
         LegalName = "The Grand Venue Ltd",
-        Compliance = new ComplianceDto
+        TaxCompliance = new TaxComplianceDto
         {
-            VatRegistered = true,
             VatNumber = "GB123456789",
             SellerIdentifier = "12345678",
             RegisteredAddress = new RegisteredAddressDto
@@ -49,9 +48,10 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
     };
 
     [Fact]
-    public async Task Get_BeforeSetup_ReturnsOrganizationWithoutCompliance()
+    public async Task Get_BeforeSetup_ReturnsOrganizationWithoutTaxCompliance()
     {
-        var manager = fixture.SeedState.VenueManager1;
+        // A registered operator who hasn't completed organization setup — the only seeded tenant left without tax details.
+        var manager = fixture.SeedState.VenueManagerNoVenue;
         var expectedTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == manager.Id).Id;
 
         var client = fixture.CreateClient(manager);
@@ -61,11 +61,12 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
         var organization = await response.Content.ReadAsync<TenantDetails>();
         Assert.NotNull(organization);
         Assert.Equal(expectedTenantId, organization!.Id);
-        Assert.Null(organization.Compliance);
+        // No tax data yet = not complete (the nag's source of truth).
+        Assert.Null(organization.TaxCompliance);
     }
 
     [Fact]
-    public async Task Update_RoundTripsNestedComplianceThroughAFreshContext()
+    public async Task Update_RoundTripsNestedTaxComplianceThroughAFreshContext()
     {
         var manager = fixture.SeedState.VenueManager1;
         var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == manager.Id).Id;
@@ -78,22 +79,22 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
         var read = await client.GetFromJsonAsync<TenantDetails>("/api/organizations");
         Assert.NotNull(read);
         Assert.Equal(request.LegalName, read!.LegalName);
-        Assert.Equal(request.Compliance, read.Compliance);
+        // Same DTO shape for read and write, so it round-trips by value; presence == complete.
+        Assert.Equal(request.TaxCompliance, read.TaxCompliance);
 
         var tenant = await fixture.Tenants.SingleOrDefaultAsync(t => t.Id == tenantId);
 
-        var expected = new Compliance(
-            vatRegistered: true,
+        var expected = new TaxCompliance(
             vatNumber: "GB123456789",
             sellerIdentifier: "12345678",
             registeredAddress: new RegisteredAddress("1 High Street", "Floor 2", "Manchester", "M1 1AA", "United Kingdom"),
             bankReference: "GB29NWBK60161331926819");
         Assert.NotNull(tenant);
-        Assert.Equal(expected, tenant!.Compliance);
+        Assert.Equal(expected, tenant!.TaxCompliance);
     }
 
     [Fact]
-    public async Task Update_ReplacesExistingCompliance()
+    public async Task Update_ReplacesExistingTaxCompliance()
     {
         var manager = fixture.SeedState.VenueManager1;
         var client = fixture.CreateClient(manager);
@@ -103,9 +104,8 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
         var replacement = new UpdateTenantRequest
         {
             LegalName = "Grand Venue Holdings Ltd",
-            Compliance = new ComplianceDto
+            TaxCompliance = new TaxComplianceDto
             {
-                VatRegistered = false,
                 VatNumber = null,
                 SellerIdentifier = "87654321",
                 RegisteredAddress = new RegisteredAddressDto
@@ -124,16 +124,16 @@ public sealed class ComplianceRoundTripTests : IAsyncLifetime
         var read = await client.GetFromJsonAsync<TenantDetails>("/api/organizations");
         Assert.NotNull(read);
         Assert.Equal(replacement.LegalName, read!.LegalName);
-        Assert.Equal(replacement.Compliance, read.Compliance);
+        Assert.Equal(replacement.TaxCompliance, read.TaxCompliance);
     }
 
     [Fact]
-    public async Task Update_VatRegisteredWithoutNumber_ReturnsBadRequest()
+    public async Task Update_InvalidVatNumberFormat_ReturnsBadRequest()
     {
         var manager = fixture.SeedState.VenueManager1;
         var request = BuildRequest() with
         {
-            Compliance = BuildRequest().Compliance with { VatNumber = null },
+            TaxCompliance = BuildRequest().TaxCompliance with { VatNumber = "NOTAVATNUMBER" },
         };
 
         var client = fixture.CreateClient(manager);

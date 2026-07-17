@@ -1,7 +1,9 @@
+using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
 using FluentResults;
 using Microsoft.Extensions.Logging;
@@ -14,6 +16,8 @@ internal sealed class FinishExecutor : IFinishExecutor
     private readonly IConcertWorkflowFactory workflows;
     private readonly IDealResolver dealResolver;
     private readonly IConcertRepository concertRepository;
+    private readonly ISettlementPayeeResolver settlementPayeeResolver;
+    private readonly ITenantModule tenantModule;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<FinishExecutor> logger;
 
@@ -22,6 +26,8 @@ internal sealed class FinishExecutor : IFinishExecutor
         IConcertWorkflowFactory workflows,
         IDealResolver dealResolver,
         IConcertRepository concertRepository,
+        ISettlementPayeeResolver settlementPayeeResolver,
+        ITenantModule tenantModule,
         TimeProvider timeProvider,
         ILogger<FinishExecutor> logger)
     {
@@ -29,11 +35,13 @@ internal sealed class FinishExecutor : IFinishExecutor
         this.workflows = workflows;
         this.dealResolver = dealResolver;
         this.concertRepository = concertRepository;
+        this.settlementPayeeResolver = settlementPayeeResolver;
+        this.tenantModule = tenantModule;
         this.timeProvider = timeProvider;
         this.logger = logger;
     }
 
-    public async Task<Result> ExecuteAsync(int concertId)
+    public async Task<Result<SettlementOutcome>> ExecuteAsync(int concertId)
     {
         try
         {
@@ -42,18 +50,27 @@ internal sealed class FinishExecutor : IFinishExecutor
             if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
                 throw new BadRequestException("Concert cannot be finished before it has ended");
 
+            // Fail-closed payout gate: the settlement payee's tax identity isn't complete for its jurisdiction →
+            // don't transition, don't pay; leave it for the hourly sweep to retry (self-heals once details land).
+            var payeeTenantId = settlementPayeeResolver.ResolveTenantId(concert);
+            if (!await tenantModule.IsTaxComplianceCompleteAsync(payeeTenantId))
+            {
+                logger.SettlementDeferredPendingTaxCompliance(concertId, payeeTenantId);
+                return Result.Ok(SettlementOutcome.DeferredPendingTaxCompliance);
+            }
+
             await transitioner.TransitionAsync(concert.Booking.ApplicationId, Trigger.Finish, async app =>
             {
                 await dealResolver.ResolveByConcertIdAsync(concertId);
                 var workflow = workflows.Create(app.DealType);
                 await workflow.Finish.ExecuteAsync(concertId);
             });
-            return Result.Ok();
+            return Result.Ok(SettlementOutcome.Settled);
         }
         catch (Exception ex)
         {
             logger.FailedToFinishConcert(concertId, ex);
-            return Result.Fail(ex.Message);
+            return Result.Fail<SettlementOutcome>(ex.Message);
         }
     }
 }

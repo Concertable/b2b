@@ -263,13 +263,18 @@ consumed by `PayoutFinishStep`. Payment webhooks return as integration events
 (`PaymentSucceeded/FailedEvent`) handled by the `*Processor` classes, which route by
 `Metadata["type"]` and drive the matching `IConcertWorkflowModule` method; idempotency via the inbox.
 
-### 2.8 Ticket payee
+### 2.8 Ticket payee vs settlement payee
 
-`PayeeResolver` (`Application/Resolvers/PayeeResolver.cs`, `IPayeeResolver`) decides who receives a
-concert's **ticket revenue**, via a `FrozenDictionary<DealType, IPayeeResolver>` (keyed strategy):
-FlatFee/DoorSplit/Versus → `VenuePayeeResolver` (the venue is the box office); VenueHire →
-`ArtistPayeeResolver` (the artist rents the room and keeps the gate). Consumers never branch on deal
-type themselves.
+`TicketPayeeResolver` (`Application/Resolvers/TicketPayeeResolver.cs`, `ITicketPayeeResolver`) decides
+who receives a concert's **ticket revenue**, via a `FrozenDictionary<DealType, IPayeeResolver>` (keyed
+strategy): FlatFee/DoorSplit/Versus → `VenuePayeeResolver` (the venue is the box office); VenueHire →
+`ArtistPayeeResolver` (the artist rents the room and keeps the gate).
+
+`SettlementPayeeResolver` (`ISettlementPayeeResolver`) is its **exact inverse** — who receives the
+*settlement/escrow release* (the DAC7 "seller"): FlatFee/DoorSplit/Versus → the artist, VenueHire →
+the venue. The `FinishExecutor` DAC7 gate resolves the payee through it. Both facades reuse the same
+`IPayeeResolver` leaves (the generic venue/artist party extractors); only the deal→party map differs.
+Consumers never branch on deal type themselves.
 
 ---
 
@@ -326,7 +331,7 @@ block. The executors, dispatchers, transitioner, factory, and registries are all
    add the `services.AddConcertWorkflow(registryBuilder, DealType.X, p => p.WithApply<…>()…
    .WithFinish<…>(state).WithWorkflow<XWorkflow>())` block. This wires the state-machine edges, the
    keyed workflow, and the steps.
-7. **Revenue/payee, only if new** — add a key to `PayeeResolver`; if the deal pays a revenue share at
+7. **Revenue/payee, only if new** — add a key to `TicketPayeeResolver` **and** `SettlementPayeeResolver`; if the deal pays a revenue share at
    Finish, add an `IArtistShareCalculator` strategy + key; add the matching
    `PaymentAmountMapper`/`TermsRenderer`/`TermsSerializer` variant (each a per-deal-type keyed family).
 8. **Payment** — if the deal needs onboarding verification, register an `IStripeValidationStrategy`
@@ -351,13 +356,13 @@ blocker is the *data* side (a closed `DealType`, typed TPH columns, typed step r
 | TPH schema per subtype | `Deal.Domain/Entities/*DealEntity.cs` + EF configs | Each deal type gets its own columns; a user-defined deal has unknown shape at migration time (needs a JSON blob or rule list). |
 | Step impls read typed properties | `Concert.Infrastructure/.../Steps/*Step.cs` | `PayoutFinishStep` reads `ArtistDoorPercent` via the calculator; a custom deal has no typed property — you'd need a rule interpreter or a finite set of rule kinds. |
 | Stripe primitives are rigid | Payment | Connect exposes a small finite set of operations; custom deals still map onto that set. |
-| `PayeeResolver` hard-codes direction | `Concert.Application/Resolvers/PayeeResolver.cs` | Who keeps ticket revenue is a table keyed by `DealType`; a custom deal must declare its payee. |
+| `TicketPayeeResolver`/`SettlementPayeeResolver` hard-code direction | `Concert.Application/Resolvers/` | Who keeps ticket revenue and who receives settlement are tables keyed by `DealType`; a custom deal must declare both. |
 
 ### 5.2 Realistic options
 
 - **Option A — keep the closed shape, make adding types cheaper.** Adding a developer-defined type is
   already largely mechanical (§4). QoL wins: move the share formula to a single home (§6.1), generate
-  the `PayeeResolver` map from workflow metadata.
+  the `TicketPayeeResolver`/`SettlementPayeeResolver` maps from workflow metadata.
 - **Option B (recommended if drag-and-drop is the goal) — one `Composite` deal type.** Add a single
   `DealType.Composite` whose `CompositeDealEntity` stores a JSON *template* (a list of `Rule`s: kind,
   amount expression, payer/payee, trigger state); a `CompositeWorkflow` whose steps **interpret** the

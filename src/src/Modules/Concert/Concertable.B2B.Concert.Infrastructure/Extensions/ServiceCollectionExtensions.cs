@@ -158,7 +158,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<VersusPaymentAmountMapper>();
         services.AddSingleton<VenueHirePaymentAmountMapper>();
 
-        services.AddSingleton<IPayeeResolver, PayeeResolver>();
+        services.AddSingleton<ITicketPayeeResolver, TicketPayeeResolver>();
+        services.AddSingleton<ISettlementPayeeResolver, SettlementPayeeResolver>();
         services.AddSingleton<VenuePayeeResolver>();
         services.AddSingleton<ArtistPayeeResolver>();
 
