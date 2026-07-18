@@ -11,13 +11,13 @@ internal sealed class TenantService : ITenantService
 {
     private readonly ITenantRepository repository;
     private readonly ITenantContext tenantContext;
-    private readonly ITaxComplianceRules taxRules;
+    private readonly IVatPolicy vatPolicy;
 
-    public TenantService(ITenantRepository repository, ITenantContext tenantContext, ITaxComplianceRules taxRules)
+    public TenantService(ITenantRepository repository, ITenantContext tenantContext, IVatPolicy vatPolicy)
     {
         this.repository = repository;
         this.tenantContext = tenantContext;
-        this.taxRules = taxRules;
+        this.vatPolicy = vatPolicy;
     }
 
     public async Task<TenantDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -51,13 +51,7 @@ internal sealed class TenantService : ITenantService
         var tenant = await repository.GetByIdAsync(tenantId, ct)
             ?? throw new NotFoundException($"Tenant {tenantId} not found.");
 
-        // Region-specific VAT format check + message, from the deployment's tax-compliance rules (the org-form
-        // validator is region-agnostic). A null VAT number just means not VAT-registered — nothing to check.
-        // This is the write-boundary invariant that makes "stored ⇒ complete" hold, so completeness elsewhere is presence.
-        if (!string.IsNullOrWhiteSpace(request.TaxCompliance.VatNumber)
-            && !taxRules.IsValidVatNumber(request.TaxCompliance.VatNumber))
-            throw new BadRequestException(taxRules.DescribeVatNumberRequirement());
-
+        // VAT-number format is enforced by UpdateTenantRequestValidator in the write pipeline, so the request is valid here.
         tenant.UpdateLegalDetails(request.LegalName, request.TaxCompliance.ToTaxCompliance());
         await repository.SaveChangesAsync(ct);
 
@@ -70,6 +64,24 @@ internal sealed class TenantService : ITenantService
         // is always complete. Single source of truth, shared with the org read's nag.
         var tenant = await repository.GetByIdAsync(tenantId, ct);
         return tenant?.TaxCompliance is not null;
+    }
+
+    public async Task<TaxComplianceDto?> GetTaxComplianceAsync(Guid tenantId, CancellationToken ct = default)
+    {
+        var tenant = await repository.GetByIdAsync(tenantId, ct);
+        return tenant?.TaxCompliance?.ToDto();
+    }
+
+    public async Task<VatCalculation> GetVatCalculationAsync(Guid tenantId, decimal gross, CancellationToken ct = default)
+    {
+        // Fail-closed: settlement's tax-gate guarantees tenant + compliance by invoice time; a null VatNumber (unregistered) is the only valid absence.
+        var tenant = await repository.GetByIdAsync(tenantId, ct)
+            ?? throw new NotFoundException($"Tenant {tenantId} not found.");
+        var compliance = tenant.TaxCompliance
+            ?? throw new InvalidOperationException(
+                $"Tenant {tenantId} has no tax compliance; the settlement tax-gate should guarantee it by invoice time.");
+
+        return vatPolicy.Apply(gross, compliance.VatNumber);
     }
 
     private TenantDetails ToDetails(TenantEntity tenant) => new()
