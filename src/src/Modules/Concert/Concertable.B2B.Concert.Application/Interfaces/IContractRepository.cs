@@ -18,12 +18,6 @@ internal interface IContractRepository : IVenueArtistTenantScopedRepository<Cont
     /// </summary>
     Task<ContractEntity?> GetByConcertIdAsync(int concertId, CancellationToken ct = default);
 
-    /// <summary>
-    /// Unfiltered: the background PDF generator runs with no tenant context, so it must bypass the
-    /// two-party filter to find the just-created contract by its booking.
-    /// </summary>
-    Task<ContractEntity?> GetByBookingIdIgnoringTenantAsync(int bookingId, CancellationToken ct = default);
-
     Task<int?> GetIdByApplicationIdAsync(int applicationId, CancellationToken ct = default);
 
     Task<IReadOnlyDictionary<int, int>> GetContractIdsByApplicationIdsAsync(

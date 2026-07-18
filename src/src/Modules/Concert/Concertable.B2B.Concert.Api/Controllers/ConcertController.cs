@@ -61,6 +61,13 @@ internal sealed class ConcertController : ControllerBase
         return Ok(await invoiceService.GetByConcertIdAsync(id));
     }
 
+    [HttpGet("{id}/invoice/pdf")]
+    public async Task<IActionResult> GetInvoicePdf(int id)
+    {
+        var pdf = await invoiceService.GetPdfByConcertIdAsync(id);
+        return File(pdf.Content, pdf.ContentType, pdf.FileName);
+    }
+
     [HttpGet("application/{applicationId}")]
     public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsByApplicationId(int applicationId)
     {

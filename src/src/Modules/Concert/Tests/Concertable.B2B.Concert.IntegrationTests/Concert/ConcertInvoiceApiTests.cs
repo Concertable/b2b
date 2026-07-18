@@ -1,7 +1,10 @@
 using System.Net;
+using System.Text;
+using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Deal.Contracts;
+using Concertable.B2B.User.Domain;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -212,6 +215,111 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         var stranger = fixture.CreateClient(strangerUser);
         await (await stranger.GetAsync($"/api/Concert/{concert.Id}/invoice")).ShouldBe(HttpStatusCode.NotFound);
     }
+
+    // --- PDF download: two-party scoped, lazy render, self-billing legends ---
+
+    [Fact]
+    public async Task GetInvoicePdf_IsDownloadableByBothParties()
+    {
+        var booking = fixture.SeedState.PastFlatFeeBooking;
+        var concert = booking.Concert!;
+        await fixture.FinishConcertAsync(concert.Id);
+
+        foreach (var tenantId in new[] { concert.VenueTenantId, concert.ArtistTenantId })
+        {
+            var party = fixture.CreateClient(UserOfTenant(tenantId));
+            var response = await party.GetAsync($"/api/Concert/{concert.Id}/invoice/pdf");
+
+            await response.ShouldBe(HttpStatusCode.OK);
+            Assert.Equal("application/pdf", response.Content.Headers.ContentType?.MediaType);
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            Assert.NotEmpty(bytes);
+            Assert.Equal("%PDF", Encoding.ASCII.GetString(bytes, 0, 4)); // the PDF magic number
+        }
+    }
+
+    [Fact]
+    public async Task GetInvoicePdf_Returns404ForStranger()
+    {
+        var booking = fixture.SeedState.PastFlatFeeBooking;
+        var concert = booking.Concert!;
+        await fixture.FinishConcertAsync(concert.Id);
+
+        var venueUser = UserOfTenant(concert.VenueTenantId);
+        var strangerUser = venueUser.Id == fixture.SeedState.VenueManager1.Id
+            ? fixture.SeedState.VenueManager2
+            : fixture.SeedState.VenueManager1;
+
+        var response = await fixture.CreateClient(strangerUser).GetAsync($"/api/Concert/{concert.Id}/invoice/pdf");
+
+        // The two-party filter hides the deal document — 404, never a probe-able 403.
+        await response.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetInvoicePdf_LazyRendersMissingBlob_UnderInvoicesPrefix()
+    {
+        var booking = fixture.SeedState.PastFlatFeeBooking;
+        var concert = booking.Concert!;
+        await fixture.FinishConcertAsync(concert.Id);
+
+        // The blob location is assigned at mint (in the finish transaction) under the invoices/ prefix,
+        // before any bytes exist. FakeBlobStorageService reports it absent, so the download exercises the
+        // lazy render-on-download path and still returns the PDF.
+        var invoice = await InvoiceForBookingAsync(booking.Id);
+        Assert.NotNull(invoice);
+        Assert.StartsWith("invoices/", invoice!.PdfBlobName);
+
+        var response = await fixture.CreateClient(UserOfTenant(concert.VenueTenantId))
+            .GetAsync($"/api/Concert/{concert.Id}/invoice/pdf");
+        await response.ShouldBe(HttpStatusCode.OK);
+        Assert.Equal("%PDF", Encoding.ASCII.GetString(await response.Content.ReadAsByteArrayAsync(), 0, 4));
+    }
+
+    [Fact]
+    public async Task GetInvoicePdf_RendersSelfBillingLegends_AndBothPartyVatNumbers()
+    {
+        var booking = fixture.SeedState.PastFlatFeeBooking;
+        var concert = booking.Concert!;
+        await SetVatNumberAsync(concert.ArtistTenantId, "GB111111111");   // supplier registered
+        await SetVatNumberAsync(concert.VenueTenantId, "GB222222222");    // customer registered
+        await fixture.FinishConcertAsync(concert.Id);
+
+        var response = await fixture.CreateClient(UserOfTenant(concert.VenueTenantId))
+            .GetAsync($"/api/Concert/{concert.Id}/invoice/pdf");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var text = Pdf.ExtractText(await response.Content.ReadAsByteArrayAsync());
+
+        Assert.Contains("SELF-BILLING", text);                                 // the HMRC self-billing mark
+        Assert.Contains("self-billed invoice", text);                          // raised by the customer on the supplier's behalf
+        Assert.Contains("output tax due to HMRC", text);                       // VAT legend (supplier is registered)
+        Assert.Contains("GB111111111", text);                                  // supplier VAT number
+        Assert.Contains("GB222222222", text);                                  // customer VAT number
+    }
+
+    // --- HATEOAS: the invoice link surfaces on the owner read only once the invoice exists ---
+
+    [Fact]
+    public async Task ConcertUserRead_ExposesInvoiceLink_OnlyAfterSettlement()
+    {
+        var booking = fixture.SeedState.PastFlatFeeBooking;
+        var concert = booking.Concert!;
+        var party = fixture.CreateClient(UserOfTenant(concert.VenueTenantId));
+
+        // Before settlement: the party reads its concert, but no invoice exists yet -> no link.
+        var before = await (await party.GetAsync($"/api/Concert/user/{concert.Id}")).Content.ReadAsync<ConcertDetailsResponse>();
+        Assert.NotNull(before!.Actions);
+        Assert.Null(before.Actions!.Invoice);
+
+        await fixture.FinishConcertAsync(concert.Id);
+
+        // After settlement: the minted invoice surfaces its download link.
+        var after = await (await party.GetAsync($"/api/Concert/user/{concert.Id}")).Content.ReadAsync<ConcertDetailsResponse>();
+        Assert.Equal($"/api/Concert/{concert.Id}/invoice/pdf", after!.Actions!.Invoice!.Href);
+    }
+
+    private UserEntity UserOfTenant(Guid tenantId) =>
+        fixture.SeedState.Users.Single(u => u.Id == TenantUserOf(tenantId));
 
     private Guid TenantUserOf(Guid tenantId) =>
         fixture.SeedState.Tenants.Single(t => t.Id == tenantId).CreatedByUserId;
