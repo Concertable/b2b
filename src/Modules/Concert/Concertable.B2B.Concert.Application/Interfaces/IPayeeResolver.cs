@@ -3,9 +3,9 @@ using Concertable.B2B.Concert.Domain.Entities;
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
 /// <summary>
-/// Resolves one party (user + tenant) of a concert — the generic leaf the payee facades are built from, blind to
+/// Resolves one side (user + tenant) of a concert — the generic leaf the payee facades are built from, blind to
 /// which payment is in play. The two concrete leaves are <c>VenuePayeeResolver</c> / <c>ArtistPayeeResolver</c>;
-/// the deal→party mapping lives in the facades — <see cref="ITicketPayeeResolver"/> (who collects ticket revenue)
+/// the deal→side mapping lives in the facades — <see cref="ITicketPayeeResolver"/> (who collects ticket revenue)
 /// and <see cref="ISettlementPayeeResolver"/> (who receives the settlement) — each a keyed strategy resolver over
 /// these leaves. Consumers never branch on deal type.
 /// </summary>

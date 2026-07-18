@@ -9,6 +9,30 @@ cargo-culting this doc exists to stop.
 Read [`../../../docs/CODE_PATTERNS.md`](../../docs/CODE_PATTERNS.md) too — the keyed-strategy resolver
 and the dependency-holder (`IConcertWorkflow` impls) patterns live there and are assumed here.
 
+## Vocabulary — the two tenants of a booking sit on TWO axes, not one
+
+A booking has two tenants, and the codebase names them on **two independent axes**. They look like
+redundant synonyms; they aren't, and you **cannot** collapse them — a *fixed* field can't hold a
+*flipping* value, so unifying the words would make the code wrong (the tenancy filter would point at
+the wrong tenant half the time). Which axis a word belongs to:
+
+- **IDENTITY (fixed — *who* the tenant is)** → **`venue`** / **`artist`**. A venue is always the venue.
+  This is the tenancy/visibility axis: `IVenueArtistTenantScoped`, `VenueTenantId` / `ArtistTenantId`,
+  the `venue == me || artist == me` query filter.
+- **ROLE (flips per `DealType` — *what* the tenant does)** — resolved from identity, never stored fixed:
+  - **money flow** → **`payee`** (receives the settlement) vs the counterparty. See
+    `SettlementPayeeResolver` / `TicketPayeeResolver` (inverse maps).
+  - **VAT invoice** → **`supplier`** (made the supply) / **`customer`** (billed). HMRC's legally-required
+    words — you can't put "payee" on an invoice. Mapping: `supplier` = settlement payee, `customer` =
+    ticket payee.
+
+**`Party`** is the abstract "one side," and is **reserved for the invoice snapshot VO** (`InvoiceParty`:
+a side's legal identity frozen at settlement). It is **not** a synonym for `tenant` — don't use the bare
+word "party" as generic glue for "a venue/artist tenant" elsewhere.
+
+The flip is the whole point: on `VenueHire` the venue is the supplier/settlement-payee; on every other
+deal the artist is. That's why identity and role must stay separate words.
+
 ## The pieces
 
 - **`LifecycleState` / `Trigger`** (`Domain/Lifecycle`) — the states an `ApplicationEntity` moves
