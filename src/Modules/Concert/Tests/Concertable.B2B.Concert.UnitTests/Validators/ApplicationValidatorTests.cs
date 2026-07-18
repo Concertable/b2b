@@ -1,7 +1,7 @@
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Validators;
-using Concertable.Kernel;
+using Concertable.Kernel.ValueObjects;
 using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Time.Testing;
 using Moq;

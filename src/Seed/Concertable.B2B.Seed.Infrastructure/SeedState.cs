@@ -8,7 +8,7 @@ using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.User.Domain;
 using Concertable.Contracts;
 using Concertable.B2B.Venue.Domain;
-using Concertable.Kernel;
+using Concertable.Kernel.ValueObjects;
 using Concertable.Kernel.Identity;
 using Concertable.Seed.Identity;
 using Concertable.Seed.Identity.Extensions;

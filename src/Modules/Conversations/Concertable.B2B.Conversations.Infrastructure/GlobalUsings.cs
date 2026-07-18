@@ -9,4 +9,6 @@ global using Concertable.Kernel.Identity;
 global using Concertable.B2B.User.Contracts;
 global using Concertable.Kernel.Notifications;
 global using Concertable.Kernel;
+global using Concertable.Kernel.ValueObjects;
 global using Concertable.Contracts;
+global using Concertable.Contracts.Enums;

@@ -6,6 +6,7 @@ using Xunit;
 using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
+using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
 

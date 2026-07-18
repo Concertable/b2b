@@ -5,7 +5,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services;
-using Concertable.Kernel;
+using Concertable.Kernel.ValueObjects;
 using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;

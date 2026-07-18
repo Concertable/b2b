@@ -1,5 +1,5 @@
-using Concertable.Contracts;
-using Concertable.Kernel;
+using Concertable.Contracts.Enums;
+using Concertable.Kernel.ValueObjects;
 using Concertable.Messaging.Contracts;
 
 namespace Concertable.B2B.Concert.Contracts.Events;
