@@ -1,4 +1,4 @@
-using Concertable.Contracts;
+using Concertable.Contracts.Enums;
 
 namespace Concertable.B2B.Artist.Contracts;
 

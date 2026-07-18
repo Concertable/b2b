@@ -1,5 +1,5 @@
-using Concertable.Contracts;
-using Concertable.Kernel;
+using Concertable.Contracts.Enums;
+using Concertable.Kernel.ValueObjects;
 using Concertable.Seed.Identity;
 
 namespace Concertable.B2B.Seed.Contracts.Specs;
