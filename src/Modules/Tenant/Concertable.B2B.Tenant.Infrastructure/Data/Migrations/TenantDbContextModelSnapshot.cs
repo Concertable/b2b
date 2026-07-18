@@ -23,7 +23,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.TenantEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -48,7 +48,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.ToTable("Tenants", "tenant");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.TenantMembershipEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantMembershipEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -148,9 +148,9 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.TenantEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantEntity", b =>
                 {
-                    b.OwnsOne("Concertable.B2B.Tenant.Domain.TaxCompliance", "TaxCompliance", b1 =>
+                    b.OwnsOne("Concertable.B2B.Tenant.Domain.ValueObjects.TaxCompliance", "TaxCompliance", b1 =>
                         {
                             b1.Property<Guid>("TenantEntityId")
                                 .HasColumnType("uniqueidentifier");
@@ -176,7 +176,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("TenantEntityId");
 
-                            b1.OwnsOne("Concertable.B2B.Tenant.Domain.RegisteredAddress", "RegisteredAddress", b2 =>
+                            b1.OwnsOne("Concertable.B2B.Tenant.Domain.ValueObjects.RegisteredAddress", "RegisteredAddress", b2 =>
                                 {
                                     b2.Property<Guid>("TaxComplianceTenantEntityId")
                                         .HasColumnType("uniqueidentifier");

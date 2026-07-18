@@ -1,4 +1,4 @@
-using Concertable.B2B.Artist.Domain;
+using Concertable.B2B.Artist.Domain.Entities;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel.ValueObjects;
 using NetTopologySuite.Geometries;

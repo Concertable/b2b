@@ -1,4 +1,4 @@
-using Concertable.B2B.Venue.Domain;
+using Concertable.B2B.Venue.Domain.ReadModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

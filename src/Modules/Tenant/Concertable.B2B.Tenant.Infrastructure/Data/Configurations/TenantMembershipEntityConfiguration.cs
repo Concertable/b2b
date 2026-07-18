@@ -1,4 +1,3 @@
-using Concertable.B2B.Tenant.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

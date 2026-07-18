@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Domain;
+using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.Seed.Identity.Extensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;

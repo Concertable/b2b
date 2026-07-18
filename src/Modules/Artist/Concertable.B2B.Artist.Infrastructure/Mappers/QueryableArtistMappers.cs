@@ -1,4 +1,3 @@
-using Concertable.B2B.Artist.Domain;
 
 namespace Concertable.B2B.Artist.Infrastructure.Mappers;
 

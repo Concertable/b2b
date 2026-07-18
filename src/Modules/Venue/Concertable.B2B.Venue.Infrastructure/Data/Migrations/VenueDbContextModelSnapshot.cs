@@ -24,7 +24,7 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Concertable.B2B.Venue.Domain.VenueEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Venue.Domain.Entities.VenueEntity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -70,7 +70,7 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                     b.ToTable("Venues", "venue");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Venue.Domain.VenueImageEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Venue.Domain.Entities.VenueImageEntity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -95,7 +95,7 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                     b.ToTable("VenueImages", "venue");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Venue.Domain.VenueRatingProjection", b =>
+            modelBuilder.Entity("Concertable.B2B.Venue.Domain.ReadModels.VenueRatingProjection", b =>
                 {
                     b.Property<int>("VenueId")
                         .HasColumnType("int");
@@ -111,7 +111,7 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                     b.ToTable("VenueRatingProjections", "venue");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Venue.Domain.VenueReview", b =>
+            modelBuilder.Entity("Concertable.B2B.Venue.Domain.ReadModels.VenueReview", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -209,7 +209,7 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Venue.Domain.VenueEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Venue.Domain.Entities.VenueEntity", b =>
                 {
                     b.OwnsOne("Concertable.Kernel.ValueObjects.Address", "Address", b1 =>
                         {
@@ -238,9 +238,9 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Venue.Domain.VenueImageEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Venue.Domain.Entities.VenueImageEntity", b =>
                 {
-                    b.HasOne("Concertable.B2B.Venue.Domain.VenueEntity", "Venue")
+                    b.HasOne("Concertable.B2B.Venue.Domain.Entities.VenueEntity", "Venue")
                         .WithMany()
                         .HasForeignKey("VenueId")
                         .OnDelete(DeleteBehavior.Cascade)

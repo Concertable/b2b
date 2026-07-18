@@ -1,4 +1,4 @@
-using Concertable.B2B.User.Domain;
+using Concertable.B2B.User.Domain.Entities;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Kernel.Identity;
 using NetTopologySuite.Geometries;

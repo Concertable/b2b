@@ -23,7 +23,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.MessageEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.MessageEntity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

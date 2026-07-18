@@ -1,13 +1,13 @@
-﻿using Concertable.B2B.Artist.Domain;
+﻿using Concertable.B2B.Artist.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure.Factories;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Domain;
-using Concertable.B2B.User.Domain;
+using Concertable.B2B.Tenant.Domain.Entities;
+using Concertable.B2B.User.Domain.Entities;
 using Concertable.Contracts;
-using Concertable.B2B.Venue.Domain;
+using Concertable.B2B.Venue.Domain.Entities;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Kernel.Identity;
 using Concertable.Seed.Identity;

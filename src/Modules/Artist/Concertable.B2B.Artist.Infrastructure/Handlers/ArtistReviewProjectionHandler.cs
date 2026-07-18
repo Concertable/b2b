@@ -1,5 +1,4 @@
 using Concertable.B2B.Artist.Contracts.Events;
-using Concertable.B2B.Artist.Domain;
 using Concertable.B2B.Artist.Infrastructure.Data;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Messaging.Contracts;

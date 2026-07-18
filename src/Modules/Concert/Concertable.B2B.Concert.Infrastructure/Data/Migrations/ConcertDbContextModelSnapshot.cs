@@ -25,7 +25,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Concertable.B2B.Artist.Domain.ArtistRatingProjection", b =>
+            modelBuilder.Entity("Concertable.B2B.Artist.Domain.ReadModels.ArtistRatingProjection", b =>
                 {
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
@@ -656,7 +656,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.ToTable("VenueReadModels", "concert");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Venue.Domain.VenueRatingProjection", b =>
+            modelBuilder.Entity("Concertable.B2B.Venue.Domain.ReadModels.VenueRatingProjection", b =>
                 {
                     b.Property<int>("VenueId")
                         .HasColumnType("int");

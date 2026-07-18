@@ -24,7 +24,7 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Concertable.B2B.User.Domain.UserEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.User.Domain.Entities.UserEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -157,7 +157,7 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Concertable.B2B.User.Domain.UserEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.User.Domain.Entities.UserEntity", b =>
                 {
                     b.OwnsOne("Concertable.Kernel.ValueObjects.Address", "Address", b1 =>
                         {

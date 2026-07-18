@@ -1,4 +1,3 @@
-using Concertable.B2B.Artist.Domain;
 using Concertable.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
