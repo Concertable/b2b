@@ -1,5 +1,6 @@
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Domain;
+using Concertable.B2B.Tenant.Domain.Entities;
+using Concertable.B2B.Tenant.Domain.ValueObjects;
 using Concertable.Seed.Identity;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;

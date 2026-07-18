@@ -1,8 +1,8 @@
-using Concertable.B2B.Artist.Domain;
+using Concertable.B2B.Artist.Domain.ReadModels;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.B2B.Venue.Domain;
+using Concertable.B2B.Venue.Domain.ReadModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;

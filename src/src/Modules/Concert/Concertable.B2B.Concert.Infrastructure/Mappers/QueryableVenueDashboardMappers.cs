@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
-using Concertable.B2B.Venue.Domain;
 
 namespace Concertable.B2B.Concert.Infrastructure.Mappers;
 

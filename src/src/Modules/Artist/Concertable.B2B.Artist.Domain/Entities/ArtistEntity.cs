@@ -1,0 +1,125 @@
+using System.ComponentModel;
+using Concertable.B2B.Artist.Contracts;
+using Concertable.B2B.Artist.Domain.Events;
+using Concertable.Contracts;
+using Concertable.Kernel;
+using NetTopologySuite.Geometries;
+
+namespace Concertable.B2B.Artist.Domain.Entities;
+
+[DisplayName(DisplayNames.Artist)]
+public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantScoped
+{
+    private readonly EventRaiser events = new();
+
+    private ArtistEntity() { }
+
+    public int Id { get; private set; }
+
+    /// <summary>
+    /// The artist's own legal entity (VAT/payout). Tenant-owned but never read-filtered —
+    /// supply must stay cross-tenant discoverable.
+    /// </summary>
+    public Guid TenantId { get; set; }
+    public Guid UserId { get; private set; }
+    public string Name { get; private set; } = null!;
+    public string About { get; private set; } = null!;
+    public string BannerUrl { get; private set; } = null!;
+    public Point Location { get; private set; } = null!;
+    public Address Address { get; private set; } = null!;
+    public string Avatar { get; private set; } = null!;
+    public string Email { get; private set; } = null!;
+
+    public List<Genre> Genres { get; private set; } = [];
+
+    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
+    public void ClearDomainEvents() => events.Clear();
+
+    public static ArtistEntity Create(
+        Guid userId,
+        string name,
+        string about,
+        string bannerUrl,
+        string avatar,
+        Point location,
+        Address address,
+        string email,
+        IEnumerable<Genre> genres)
+    {
+        Validate(name, about, bannerUrl, avatar, location, address, email);
+
+        var artist = new ArtistEntity
+        {
+            UserId = userId,
+            Name = name,
+            About = about,
+            BannerUrl = bannerUrl,
+            Avatar = avatar,
+            Location = location,
+            Address = address,
+            Email = email
+        };
+
+        artist.SyncGenresInternal(genres);
+        artist.events.Raise(new ArtistChangedDomainEvent(artist));
+
+        return artist;
+    }
+
+    public void Update(string name, string about, string bannerUrl, IEnumerable<Genre> genres)
+    {
+        Validate(name, about, bannerUrl, Avatar, Location, Address, Email);
+
+        Name = name;
+        About = about;
+        BannerUrl = bannerUrl;
+
+        SyncGenresInternal(genres);
+        events.Raise(new ArtistChangedDomainEvent(this));
+    }
+
+    public void SyncGenres(IEnumerable<Genre> genres)
+    {
+        SyncGenresInternal(genres);
+        events.Raise(new ArtistChangedDomainEvent(this));
+    }
+
+    public void UpdateAvatar(string avatar)
+    {
+        DomainException.ThrowIfNullOrWhiteSpace(avatar, "Avatar");
+        Avatar = avatar;
+        events.Raise(new ArtistChangedDomainEvent(this));
+    }
+
+    public void UpdateLocation(Point location, Address address)
+    {
+        DomainException.ThrowIfNull(location, "Location");
+        if (address is null || string.IsNullOrWhiteSpace(address.County) || string.IsNullOrWhiteSpace(address.Town))
+            throw new DomainException("County and Town are required.");
+        Location = location;
+        Address = address;
+        events.Raise(new ArtistChangedDomainEvent(this));
+    }
+
+    public void UpdateEmail(string email)
+    {
+        DomainException.ThrowIfNullOrWhiteSpace(email, "Email");
+        Email = email;
+        events.Raise(new ArtistChangedDomainEvent(this));
+    }
+
+    private void SyncGenresInternal(IEnumerable<Genre> genres) =>
+        Genres = genres.ToList();
+
+    private static void Validate(string name, string about, string bannerUrl, string avatar, Point location, Address address, string email)
+    {
+        DomainException.ThrowIfNullOrWhiteSpace(name, "Name");
+        DomainException.ThrowIfNullOrWhiteSpace(about, "About");
+        DomainException.ThrowIfNullOrWhiteSpace(bannerUrl, "Banner URL");
+        DomainException.ThrowIfNullOrWhiteSpace(avatar, "Avatar");
+        DomainException.ThrowIfNull(location, "Location");
+        if (address is null || string.IsNullOrWhiteSpace(address.County) || string.IsNullOrWhiteSpace(address.Town))
+            throw new DomainException("County and Town are required.");
+        DomainException.ThrowIfNullOrWhiteSpace(email, "Email");
+    }
+}

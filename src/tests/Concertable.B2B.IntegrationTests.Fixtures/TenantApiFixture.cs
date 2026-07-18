@@ -1,5 +1,5 @@
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Domain;
+using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

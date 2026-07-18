@@ -4,7 +4,7 @@ using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Domain;
+using Concertable.B2B.Tenant.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
 

@@ -1,5 +1,6 @@
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Domain;
+using Concertable.B2B.Tenant.Domain.Entities;
+using Concertable.B2B.Tenant.Domain.ValueObjects;
 using Concertable.B2B.Tenant.Domain.Events;
 using Concertable.Kernel;
 

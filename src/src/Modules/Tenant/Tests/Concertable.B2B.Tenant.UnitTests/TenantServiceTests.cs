@@ -1,7 +1,8 @@
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Tax;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Domain;
+using Concertable.B2B.Tenant.Domain.Entities;
+using Concertable.B2B.Tenant.Domain.ValueObjects;
 using Concertable.B2B.Tenant.Infrastructure.Services;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;

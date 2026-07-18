@@ -2,7 +2,6 @@ using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Messaging.Contracts;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.B2B.Venue.Contracts.Events;
-using Concertable.B2B.Venue.Domain;
 using Concertable.B2B.Venue.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 

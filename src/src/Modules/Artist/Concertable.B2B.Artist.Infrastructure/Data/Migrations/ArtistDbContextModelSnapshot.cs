@@ -24,7 +24,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Concertable.B2B.Artist.Domain.ArtistEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Artist.Domain.Entities.ArtistEntity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -71,7 +71,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
                     b.ToTable("Artists", "artist");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Artist.Domain.ArtistRatingProjection", b =>
+            modelBuilder.Entity("Concertable.B2B.Artist.Domain.ReadModels.ArtistRatingProjection", b =>
                 {
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
@@ -87,7 +87,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
                     b.ToTable("ArtistRatingProjections", "artist");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Artist.Domain.ArtistReview", b =>
+            modelBuilder.Entity("Concertable.B2B.Artist.Domain.ReadModels.ArtistReview", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -185,7 +185,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Artist.Domain.ArtistEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Artist.Domain.Entities.ArtistEntity", b =>
                 {
                     b.OwnsOne("Concertable.Kernel.ValueObjects.Address", "Address", b1 =>
                         {

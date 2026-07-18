@@ -4,7 +4,7 @@ using Concertable.Payment.Contracts.Events;
 using Concertable.Payment.Client;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
-using Concertable.B2B.User.Domain;
+using Concertable.B2B.User.Domain.Entities;
 using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Logging;
 using Concertable.Testing.Integration.Mocks;

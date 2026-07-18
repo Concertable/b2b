@@ -1,5 +1,4 @@
 using Concertable.Contracts;
-using Concertable.B2B.Venue.Domain;
 
 namespace Concertable.B2B.Venue.Infrastructure.Mappers;
 

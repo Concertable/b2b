@@ -1,4 +1,4 @@
-using Concertable.B2B.Tenant.Domain;
+using Concertable.B2B.Tenant.Domain.ValueObjects;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Tenant.UnitTests;

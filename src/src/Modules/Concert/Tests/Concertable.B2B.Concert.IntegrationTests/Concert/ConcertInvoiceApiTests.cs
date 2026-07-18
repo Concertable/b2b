@@ -4,7 +4,7 @@ using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.User.Domain;
+using Concertable.B2B.User.Domain.Entities;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

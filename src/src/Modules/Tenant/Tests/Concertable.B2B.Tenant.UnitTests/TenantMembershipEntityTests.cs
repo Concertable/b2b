@@ -1,5 +1,5 @@
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Domain;
+using Concertable.B2B.Tenant.Domain.Entities;
 
 namespace Concertable.B2B.Tenant.UnitTests;
 

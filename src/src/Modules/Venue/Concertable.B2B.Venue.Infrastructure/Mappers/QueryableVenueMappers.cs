@@ -1,6 +1,5 @@
 using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Contracts;
-using Concertable.B2B.Venue.Domain;
 
 namespace Concertable.B2B.Venue.Infrastructure.Mappers;
 
