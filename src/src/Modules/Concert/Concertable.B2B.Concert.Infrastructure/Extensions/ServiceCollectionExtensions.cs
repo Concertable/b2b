@@ -148,7 +148,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-        services.AddScoped<IInvoiceSequenceRepository, InvoiceSequenceRepository>();
+        services.AddScoped<ISequenceRepository, SequenceRepository>();
 
         // Query specifications
         services.AddScoped<IEndedAndBookedSpecification, EndedAndBookedSpecification>();

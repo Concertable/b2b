@@ -12,7 +12,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
     private readonly IDealAccessor dealAccessor;
     private readonly ITenantModule tenantModule;
     private readonly IInvoiceRepository invoiceRepository;
-    private readonly IInvoiceSequenceRepository invoiceSequenceRepository;
+    private readonly ISequenceRepository sequenceRepository;
     private readonly TimeProvider timeProvider;
 
     public InvoiceIssuer(
@@ -22,7 +22,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
         IDealAccessor dealAccessor,
         ITenantModule tenantModule,
         IInvoiceRepository invoiceRepository,
-        IInvoiceSequenceRepository invoiceSequenceRepository,
+        ISequenceRepository sequenceRepository,
         TimeProvider timeProvider)
     {
         this.settlementAmountResolver = settlementAmountResolver;
@@ -31,7 +31,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
         this.dealAccessor = dealAccessor;
         this.tenantModule = tenantModule;
         this.invoiceRepository = invoiceRepository;
-        this.invoiceSequenceRepository = invoiceSequenceRepository;
+        this.sequenceRepository = sequenceRepository;
         this.timeProvider = timeProvider;
     }
 
@@ -54,7 +54,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
 
         var vat = await tenantModule.GetVatCalculationAsync(supplierTenantId, gross, ct);
 
-        var sequenceNumber = await invoiceSequenceRepository.AllocateNextAsync(supplierTenantId, ct);
+        var sequenceNumber = await sequenceRepository.AllocateNextAsync(supplierTenantId, ct);
         var invoiceNumber = $"INV-{supplierTax.SellerIdentifier}-{sequenceNumber:D6}";
 
         var invoice = InvoiceEntity.Create(
