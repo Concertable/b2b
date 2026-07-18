@@ -22,10 +22,4 @@ public sealed class UkTaxComplianceRulesTests
     [InlineData("FR123456789")]
     public void IsValidVatNumber_RejectsMalformed(string vatNumber) =>
         Assert.False(Rules().IsValidVatNumber(vatNumber));
-
-    [Fact]
-    public void DescribeVatNumberRequirement_ComposesLabelAndHint() =>
-        Assert.Equal(
-            "VAT number must be 9 or 12 digits, optionally prefixed with GB.",
-            Rules().DescribeVatNumberRequirement());
 }

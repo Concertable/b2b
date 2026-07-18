@@ -1,12 +1,14 @@
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Requests;
+using Concertable.B2B.Tenant.Application.Tax;
 using FluentValidation;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Tenant.Application.Validators;
 
 internal sealed class UpdateTenantRequestValidator : AbstractValidator<UpdateTenantRequest>
 {
-    public UpdateTenantRequestValidator()
+    public UpdateTenantRequestValidator(ITaxComplianceRules taxRules, IOptions<UkTaxComplianceOptions> taxOptions)
     {
         RuleFor(x => x.LegalName)
             .NotEmpty()
@@ -14,20 +16,21 @@ internal sealed class UpdateTenantRequestValidator : AbstractValidator<UpdateTen
 
         RuleFor(x => x.TaxCompliance)
             .NotNull()
-            .SetValidator(new TaxComplianceDtoValidator());
+            .SetValidator(new TaxComplianceDtoValidator(taxRules, taxOptions));
     }
 }
 
-// Region-agnostic shape only. The region-specific check (VAT-number format) is applied by
-// TenantService via ITaxComplianceRules (the deployment's region rules) — a validator can't see it.
 internal sealed class TaxComplianceDtoValidator : AbstractValidator<TaxComplianceDto>
 {
-    public TaxComplianceDtoValidator()
+    public TaxComplianceDtoValidator(ITaxComplianceRules taxRules, IOptions<UkTaxComplianceOptions> taxOptions)
     {
-        // VatNumber is optional (null/absent = not VAT-registered); only its length is region-agnostic.
-        // Format validity is region-specific and applied by TenantService via ITaxComplianceRules.
+        var options = taxOptions.Value;
+
+        // VatNumber optional (blank = unregistered); when present it must match the region format — message composed here, not in the domain rules.
         RuleFor(x => x.VatNumber)
-            .MaximumLength(20);
+            .MaximumLength(20)
+            .Must(v => string.IsNullOrWhiteSpace(v) || taxRules.IsValidVatNumber(v))
+            .WithMessage($"{options.VatLabel} must be {options.VatNumberFormatHint}.");
 
         RuleFor(x => x.SellerIdentifier)
             .NotEmpty()

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Concertable.B2B.Tenant.Application.DTOs;
+namespace Concertable.B2B.Tenant.Contracts;
 
 public sealed record RegisteredAddressDto
 {
