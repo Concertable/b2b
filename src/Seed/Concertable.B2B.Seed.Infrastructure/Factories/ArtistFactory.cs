@@ -1,6 +1,6 @@
 using Concertable.B2B.Artist.Domain;
-using Concertable.Contracts;
-using Concertable.Kernel;
+using Concertable.Contracts.Enums;
+using Concertable.Kernel.ValueObjects;
 using NetTopologySuite.Geometries;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 

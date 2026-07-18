@@ -1,5 +1,5 @@
 using Concertable.B2B.Seed.Contracts.Specs;
-using Concertable.Contracts;
+using Concertable.Contracts.Enums;
 
 namespace Concertable.B2B.Seed.Contracts;
 

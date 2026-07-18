@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.Contracts;
+using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
 
