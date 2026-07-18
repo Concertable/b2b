@@ -1,11 +1,12 @@
 using System.Text.Json.Serialization;
 
-namespace Concertable.B2B.Tenant.Application.DTOs;
+namespace Concertable.B2B.Tenant.Contracts;
 
 /// <summary>
-/// A tenant's tax-compliance data — one shape for both the org read and the update write. All-or-nothing:
-/// on the read it is absent until organization setup, then fully populated. <see cref="VatNumber"/> is the only
-/// optional field (absent = not VAT-registered, a valid complete state).
+/// A tenant's tax-compliance data — the shape for the org read, the update write, and the cross-module read
+/// Concert uses to snapshot a supplier/customer onto a self-billed invoice. All-or-nothing: absent until
+/// organization setup, then fully populated. <see cref="VatNumber"/> is the only optional field (absent = not
+/// VAT-registered, a valid complete state).
 /// </summary>
 public sealed record TaxComplianceDto
 {

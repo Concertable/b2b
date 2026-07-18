@@ -15,4 +15,8 @@ internal interface ITenantService
     Task<TenantDetails> UpdateAsync(UpdateTenantRequest request, CancellationToken ct = default);
 
     Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default);
+
+    Task<TaxComplianceDto?> GetTaxComplianceAsync(Guid tenantId, CancellationToken ct = default);
+
+    Task<VatCalculation> GetVatCalculationAsync(Guid tenantId, decimal gross, CancellationToken ct = default);
 }
