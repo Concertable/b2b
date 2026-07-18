@@ -5,21 +5,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class InvoiceSequenceRepository : IInvoiceSequenceRepository
+internal sealed class SequenceRepository : ISequenceRepository
 {
     private readonly ConcertDbContext context;
 
-    public InvoiceSequenceRepository(ConcertDbContext context)
+    public SequenceRepository(ConcertDbContext context)
     {
         this.context = context;
     }
 
-    public async Task<long> AllocateNextAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<long> AllocateNextAsync(Guid ownerId, CancellationToken ct = default)
     {
-        var sequence = await context.InvoiceSequences.FirstOrDefaultAsync(s => s.TenantId == tenantId, ct);
+        var sequence = await context.InvoiceSequences.FirstOrDefaultAsync(s => s.TenantId == ownerId, ct);
         if (sequence is null)
         {
-            sequence = InvoiceSequenceEntity.Start(tenantId);
+            sequence = InvoiceSequenceEntity.Start(ownerId);
             await context.InvoiceSequences.AddAsync(sequence, ct);
         }
 
