@@ -58,12 +58,6 @@ internal sealed class AcceptExecutor : IAcceptExecutor
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
-
-            /* Render + store the contract PDF off the request thread once the transition commits;
-               the download endpoint lazily regenerates if the blob is ever missing, so a blob
-               outage here is non-fatal. */
-            await taskRunner.RunAsync<IContractPdfService>(
-                (pdf, runCt) => pdf.GenerateForBookingAsync(booking.Id, runCt));
         });
 
     /* Must run BEFORE the accept step: the step captures/charges real money, and only the DB

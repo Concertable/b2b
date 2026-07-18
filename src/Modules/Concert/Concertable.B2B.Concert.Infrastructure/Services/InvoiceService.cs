@@ -8,10 +8,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class InvoiceService : IInvoiceService
 {
     private readonly IInvoiceRepository repository;
+    private readonly IInvoicePdfService pdfService;
 
-    public InvoiceService(IInvoiceRepository repository)
+    public InvoiceService(IInvoiceRepository repository, IInvoicePdfService pdfService)
     {
         this.repository = repository;
+        this.pdfService = pdfService;
     }
 
     public async Task<InvoiceDto> GetByConcertIdAsync(int concertId)
@@ -19,5 +21,12 @@ internal sealed class InvoiceService : IInvoiceService
         var invoice = await repository.GetByConcertIdAsync(concertId)
             .OrNotFound();
         return invoice.ToDto();
+    }
+
+    public async Task<FileDownload> GetPdfByConcertIdAsync(int concertId)
+    {
+        var invoice = await repository.GetByConcertIdAsync(concertId)
+            .OrNotFound();
+        return invoice.ToFileDownload(await pdfService.GetOrCreateAsync(invoice));
     }
 }

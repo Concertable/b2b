@@ -17,11 +17,6 @@ internal sealed class ContractRepository : VenueArtistTenantScopedRepository<Con
         context.Contracts
             .FirstOrDefaultAsync(a => context.Concerts.Any(c => c.Id == concertId && c.BookingId == a.BookingId), ct);
 
-    public Task<ContractEntity?> GetByBookingIdIgnoringTenantAsync(int bookingId, CancellationToken ct = default) =>
-        context.Contracts
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(a => a.BookingId == bookingId, ct);
-
     public Task<int?> GetIdByApplicationIdAsync(int applicationId, CancellationToken ct = default) =>
         context.Contracts
             .Where(a => a.Booking.ApplicationId == applicationId)

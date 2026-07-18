@@ -89,6 +89,9 @@ internal static class ConcertResponseMappers
                 DeclareDoorRevenue: dto.State == LifecycleState.Booked
                     && dto.IsRevenueShare && dto.DoorRevenue is null && dto.EndDate < utcNow
                     ? new ActionLink($"/api/Concert/{dto.Id}/door-revenue", HttpMethods.Post)
+                    : null,
+                Invoice: dto.InvoiceId is not null
+                    ? new ActionLink($"/api/Concert/{dto.Id}/invoice/pdf", HttpMethods.Get)
                     : null)
         };
 }
