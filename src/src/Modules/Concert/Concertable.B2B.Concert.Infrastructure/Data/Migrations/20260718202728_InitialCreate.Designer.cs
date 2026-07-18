@@ -14,7 +14,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260718122443_InitialCreate")]
+    [Migration("20260718202728_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -833,7 +833,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.OwnsOne("Concertable.Kernel.DateRange", "Period", b1 =>
+                    b.OwnsOne("Concertable.Kernel.ValueObjects.DateRange", "Period", b1 =>
                         {
                             b1.Property<int>("ConcertEntityId")
                                 .HasColumnType("int");
@@ -883,7 +883,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.OwnsOne("Concertable.Kernel.DateRange", "Period", b1 =>
+                    b.OwnsOne("Concertable.Kernel.ValueObjects.DateRange", "Period", b1 =>
                         {
                             b1.Property<int>("ContractEntityId")
                                 .HasColumnType("int");
@@ -929,7 +929,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.OwnsOne("Concertable.Kernel.DateRange", "Period", b1 =>
+                    b.OwnsOne("Concertable.Kernel.ValueObjects.DateRange", "Period", b1 =>
                         {
                             b1.Property<int>("OpportunityEntityId")
                                 .HasColumnType("int");
@@ -958,7 +958,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.ReadModels.ArtistReadModel", b =>
                 {
-                    b.OwnsOne("Concertable.Kernel.Address", "Address", b1 =>
+                    b.OwnsOne("Concertable.Kernel.ValueObjects.Address", "Address", b1 =>
                         {
                             b1.Property<int>("ArtistReadModelId")
                                 .HasColumnType("int");
@@ -998,7 +998,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.ReadModels.VenueReadModel", b =>
                 {
-                    b.OwnsOne("Concertable.Kernel.Address", "Address", b1 =>
+                    b.OwnsOne("Concertable.Kernel.ValueObjects.Address", "Address", b1 =>
                         {
                             b1.Property<int>("VenueReadModelId")
                                 .HasColumnType("int");
