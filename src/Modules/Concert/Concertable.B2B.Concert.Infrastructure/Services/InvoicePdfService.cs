@@ -3,11 +3,10 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.Shared.Blob.Application;
 using Concertable.Shared.Pdf.Application;
-using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class ContractPdfService : IContractPdfService
+internal sealed class InvoicePdfService : IInvoicePdfService
 {
     // QuestPDF's GeneratePdf is not thread-safe: two downloads racing the first render would corrupt the
     // embedded font subset. Serialize every render in this process.
@@ -15,22 +14,17 @@ internal sealed class ContractPdfService : IContractPdfService
 
     private readonly IPdfService pdfService;
     private readonly IBlobStorageService blobStorage;
-    private readonly ILogger<ContractPdfService> logger;
 
-    public ContractPdfService(
-        IPdfService pdfService,
-        IBlobStorageService blobStorage,
-        ILogger<ContractPdfService> logger)
+    public InvoicePdfService(IPdfService pdfService, IBlobStorageService blobStorage)
     {
         this.pdfService = pdfService;
         this.blobStorage = blobStorage;
-        this.logger = logger;
     }
 
-    public async Task<byte[]> GetOrCreateAsync(ContractEntity contract, CancellationToken ct = default)
+    public async Task<byte[]> GetOrCreateAsync(InvoiceEntity invoice, CancellationToken ct = default)
     {
-        var blobName = contract.PdfBlobName
-            ?? throw new InvalidOperationException("Contract has no assigned PDF blob name");
+        var blobName = invoice.PdfBlobName
+            ?? throw new InvalidOperationException("Invoice has no assigned PDF blob name");
 
         if (await blobStorage.ExistsAsync(blobName))
         {
@@ -40,12 +34,12 @@ internal sealed class ContractPdfService : IContractPdfService
             return buffer.ToArray();
         }
 
-        /* First download renders + stores, then reuses the blob thereafter. The contract is a pure
-           deterministic function of the immutable snapshot, so rendering on demand is byte-identical to
-           rendering at accept — no reason to pre-generate off a tenant-less background thread. */
+        /* First download renders + stores, then reuses the blob thereafter. The invoice is a pure
+           deterministic function of the immutable snapshot, so a render now is byte-identical to one at
+           settlement — no reason to pre-generate, and nothing here reads live tenant data. */
         await renderLock.WaitAsync(ct);
         byte[] bytes;
-        try { bytes = pdfService.Render(new ContractDocument(contract, logger)); }
+        try { bytes = pdfService.Render(new InvoiceDocument(invoice)); }
         finally { renderLock.Release(); }
 
         using var upload = new MemoryStream(bytes, writable: false);

@@ -1,3 +1,4 @@
+using System.Net.Mime;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Domain.Entities;
 
@@ -5,6 +6,9 @@ namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal static class InvoiceMappers
 {
+    public static FileDownload ToFileDownload(this InvoiceEntity i, byte[] content) =>
+        new(content, $"{i.InvoiceNumber}.pdf", MediaTypeNames.Application.Pdf);
+
     public static InvoiceDto ToDto(this InvoiceEntity i) =>
         new(i.Id,
             i.InvoiceNumber,
