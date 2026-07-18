@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -14,17 +15,20 @@ internal sealed class ConcertController : ControllerBase
     private readonly IConcertService concertService;
     private readonly IConcertWorkflowModule concertWorkflowModule;
     private readonly IContractService contractService;
+    private readonly IInvoiceService invoiceService;
     private readonly TimeProvider timeProvider;
 
     public ConcertController(
         IConcertService concertService,
         IConcertWorkflowModule concertWorkflowModule,
         IContractService contractService,
+        IInvoiceService invoiceService,
         TimeProvider timeProvider)
     {
         this.concertService = concertService;
         this.concertWorkflowModule = concertWorkflowModule;
         this.contractService = contractService;
+        this.invoiceService = invoiceService;
         this.timeProvider = timeProvider;
     }
 
@@ -49,6 +53,12 @@ internal sealed class ConcertController : ControllerBase
     {
         var pdf = await contractService.GetPdfByConcertIdAsync(id);
         return File(pdf.Content, pdf.ContentType, pdf.FileName);
+    }
+
+    [HttpGet("{id}/invoice")]
+    public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
+    {
+        return Ok(await invoiceService.GetByConcertIdAsync(id));
     }
 
     [HttpGet("application/{applicationId}")]
