@@ -25,6 +25,7 @@ using Concertable.B2B.Concert.Infrastructure.Handlers;
 using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow;
+using Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
 using Concertable.B2B.Concert.Infrastructure.Services.Payment;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
@@ -85,6 +86,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IContractIssuer, ContractIssuer>();
         services.AddScoped<IContractService, ContractService>();
         services.AddScoped<IContractPdfService, ContractPdfService>();
+        services.AddScoped<IInvoiceIssuer, InvoiceIssuer>();
+        services.AddScoped<IInvoiceService, InvoiceService>();
+        services.AddScoped<IInvoicePdfService, InvoicePdfService>();
         services.AddScoped<IClientContext, ClientContextAccessor>();
         services.AddSingleton<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
         services.AddSingleton<IDealTermsSerializer, DealTermsSerializer>();
@@ -143,6 +147,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
+        services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        services.AddScoped<ISequenceRepository, SequenceRepository>();
 
         // Query specifications
         services.AddScoped<IEndedAndBookedSpecification, EndedAndBookedSpecification>();
@@ -172,6 +178,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IArtistShareCalculator, ArtistShareCalculator>();
         services.AddSingleton<DoorSplitCalculator>();
         services.AddSingleton<VersusCalculator>();
+
+        // Single source of truth for the settlement gross — shared by the payout step and the invoice issuer
+        services.AddScoped<ISettlementAmountResolver, SettlementAmountResolver>();
+        services.AddSingleton<FlatFeeSettlementAmount>();
+        services.AddSingleton<VenueHireSettlementAmount>();
+        services.AddScoped<RevenueShareSettlementAmount>();
 
         // Module facades
         services.AddScoped<IConcertModule, ConcertModule>();

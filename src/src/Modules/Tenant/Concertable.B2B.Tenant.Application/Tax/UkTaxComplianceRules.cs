@@ -9,18 +9,11 @@ namespace Concertable.B2B.Tenant.Application.Tax;
 /// </summary>
 internal sealed class UkTaxComplianceRules : ITaxComplianceRules
 {
-    private readonly UkTaxComplianceOptions options;
     private readonly Regex vatNumberPattern;
 
-    public UkTaxComplianceRules(IOptions<UkTaxComplianceOptions> options)
-    {
-        this.options = options.Value;
-        vatNumberPattern = new Regex(this.options.VatNumberPattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
-    }
+    public UkTaxComplianceRules(IOptions<UkTaxComplianceOptions> options) =>
+        vatNumberPattern = new Regex(options.Value.VatNumberPattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public bool IsValidVatNumber(string vatNumber) =>
         !string.IsNullOrWhiteSpace(vatNumber) && vatNumberPattern.IsMatch(vatNumber);
-
-    public string DescribeVatNumberRequirement() =>
-        $"{options.VatLabel} must be {options.VatNumberFormatHint}.";
 }

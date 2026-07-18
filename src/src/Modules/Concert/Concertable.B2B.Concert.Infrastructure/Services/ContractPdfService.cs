@@ -9,24 +9,21 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class ContractPdfService : IContractPdfService
 {
-    // QuestPDF's GeneratePdf is not thread-safe: concurrent renders (e.g. the background render-at-accept
-    // racing a render-on-download) corrupt the embedded font subset. Serialize every render in this process.
+    // QuestPDF's GeneratePdf is not thread-safe: two downloads racing the first render would corrupt the
+    // embedded font subset. Serialize every render in this process.
     private static readonly SemaphoreSlim renderLock = new(1, 1);
 
     private readonly IPdfService pdfService;
     private readonly IBlobStorageService blobStorage;
-    private readonly IContractRepository repository;
     private readonly ILogger<ContractPdfService> logger;
 
     public ContractPdfService(
         IPdfService pdfService,
         IBlobStorageService blobStorage,
-        IContractRepository repository,
         ILogger<ContractPdfService> logger)
     {
         this.pdfService = pdfService;
         this.blobStorage = blobStorage;
-        this.repository = repository;
         this.logger = logger;
     }
 
@@ -43,24 +40,10 @@ internal sealed class ContractPdfService : IContractPdfService
             return buffer.ToArray();
         }
 
-        return await RenderUploadAsync(contract, blobName);
-    }
-
-    public async Task GenerateForBookingAsync(int bookingId, CancellationToken ct = default)
-    {
-        var contract = await repository.GetByBookingIdIgnoringTenantAsync(bookingId, ct);
-        if (contract?.PdfBlobName is null || await blobStorage.ExistsAsync(contract.PdfBlobName))
-            return;
-
-        await RenderUploadAsync(contract, contract.PdfBlobName);
-    }
-
-    /* Fills the location the accept transaction already assigned — never mints a name, never writes
-       the DB. Idempotent: overwriting the same blob with the same rendered bytes is a no-op in effect,
-       so a background render racing a lazy render can't orphan anything. */
-    private async Task<byte[]> RenderUploadAsync(ContractEntity contract, string blobName)
-    {
-        await renderLock.WaitAsync();
+        /* First download renders + stores, then reuses the blob thereafter. The contract is a pure
+           deterministic function of the immutable snapshot, so rendering on demand is byte-identical to
+           rendering at accept — no reason to pre-generate off a tenant-less background thread. */
+        await renderLock.WaitAsync(ct);
         byte[] bytes;
         try { bytes = pdfService.Render(new ContractDocument(contract, logger)); }
         finally { renderLock.Release(); }

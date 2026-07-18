@@ -38,8 +38,8 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "Accepting application {ApplicationId} (booking {BookingId}): charging {Amount} GBP from {PayerId} on behalf of {PayeeId}")]
     internal static partial void AcceptingVenueHireApplication(this ILogger logger, int applicationId, int bookingId, decimal amount, Guid payerId, Guid payeeId);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Calculated artist share for concert {ConcertId}: {Revenue} revenue = {Share}")]
-    internal static partial void ArtistShareCalculated(this ILogger logger, int concertId, decimal revenue, decimal share);
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Calculated artist share for concert {ConcertId}: {Share}")]
+    internal static partial void ArtistShareCalculated(this ILogger logger, int concertId, decimal share);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Settling concert {ConcertId} (booking {BookingId}): paying {Amount} GBP from {PayerId} to {PayeeId}")]
     internal static partial void SettlingConcert(this ILogger logger, int concertId, int bookingId, decimal amount, Guid payerId, Guid payeeId);
@@ -47,8 +47,8 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to finish concert {ConcertId}")]
     internal static partial void FailedToFinishConcert(this ILogger logger, int concertId, Exception ex);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Settlement of concert {ConcertId} deferred: payee tenant {PayeeTenantId} tax identity is not complete for its jurisdiction; will retry on the next completion sweep once details are provided")]
-    internal static partial void SettlementDeferredPendingTaxCompliance(this ILogger logger, int concertId, Guid payeeTenantId);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Settlement of concert {ConcertId} deferred: party tenant {IncompleteTenantId} tax identity is not complete for its jurisdiction; will retry on the next completion sweep once details are provided")]
+    internal static partial void SettlementDeferredPendingTaxCompliance(this ILogger logger, int concertId, Guid incompleteTenantId);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to cancel concert {ConcertId}")]
     internal static partial void FailedToCancelConcert(this ILogger logger, int concertId, Exception ex);

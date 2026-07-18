@@ -50,6 +50,20 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "InvoiceSequences",
+                schema: "concert",
+                columns: table => new
+                {
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    NextNumber = table.Column<long>(type: "bigint", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InvoiceSequences", x => x.TenantId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "VenueReadModels",
                 schema: "concert",
                 columns: table => new
@@ -273,6 +287,54 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Invoices",
+                schema: "concert",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BookingId = table.Column<int>(type: "int", nullable: false),
+                    SequenceNumber = table.Column<long>(type: "bigint", nullable: false),
+                    InvoiceNumber = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
+                    TaxPointUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DealType = table.Column<int>(type: "int", nullable: false),
+                    PdfBlobName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Amounts_Gross = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    Amounts_Net = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    Amounts_Rate = table.Column<decimal>(type: "decimal(5,4)", precision: 5, scale: 4, nullable: false),
+                    Amounts_Vat = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    Customer_AddressLine1 = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Customer_AddressLine2 = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    Customer_City = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    Customer_Country = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    Customer_LegalName = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
+                    Customer_Postcode = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
+                    Customer_TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Customer_VatNumber = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: true),
+                    Supplier_AddressLine1 = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Supplier_AddressLine2 = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    Supplier_City = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    Supplier_Country = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    Supplier_LegalName = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
+                    Supplier_Postcode = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
+                    Supplier_TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Supplier_VatNumber = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Invoices", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Invoices_Bookings_BookingId",
+                        column: x => x.BookingId,
+                        principalSchema: "concert",
+                        principalTable: "Bookings",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ConcertImages",
                 schema: "concert",
                 columns: table => new
@@ -355,6 +417,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Invoices_BookingId",
+                schema: "concert",
+                table: "Invoices",
+                column: "BookingId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Opportunities_DealId",
                 schema: "concert",
                 table: "Opportunities",
@@ -392,6 +461,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "Contracts",
+                schema: "concert");
+
+            migrationBuilder.DropTable(
+                name: "Invoices",
+                schema: "concert");
+
+            migrationBuilder.DropTable(
+                name: "InvoiceSequences",
                 schema: "concert");
 
             migrationBuilder.DropTable(
