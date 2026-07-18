@@ -13,7 +13,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.User.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(UserDbContext))]
-    [Migration("20260716111744_InitialCreate")]
+    [Migration("20260718202638_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -162,7 +162,7 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.B2B.User.Domain.UserEntity", b =>
                 {
-                    b.OwnsOne("Concertable.Kernel.Address", "Address", b1 =>
+                    b.OwnsOne("Concertable.Kernel.ValueObjects.Address", "Address", b1 =>
                         {
                             b1.Property<Guid>("UserEntityId")
                                 .HasColumnType("uniqueidentifier");
