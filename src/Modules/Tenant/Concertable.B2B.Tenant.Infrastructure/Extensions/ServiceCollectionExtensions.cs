@@ -41,6 +41,10 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<ITaxComplianceRules, UkTaxComplianceRules>();
 
+        // VAT computation: region arithmetic + the registration policy over it; Concert consumes it only via ITenantModule.
+        services.AddSingleton<IVatCalculator, UkVatCalculator>();
+        services.AddSingleton<IVatPolicy, VatPolicy>();
+
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<ITenantModule, TenantModule>();
@@ -67,7 +71,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, TenantProvisioningHandler>();
         services.AddScoped<IDomainEventHandler<TenantCreatedDomainEvent>, TenantCreatedDomainEventHandler>();
 
-        services.AddValidatorsFromAssemblyContaining<UpdateTenantRequestValidator>();
+        // includeInternalTypes: the Tenant validators are internal — without it they're never registered and the VAT-format rule silently doesn't run (mirrors Concert).
+        services.AddValidatorsFromAssemblyContaining<UpdateTenantRequestValidator>(includeInternalTypes: true);
 
         return services;
     }

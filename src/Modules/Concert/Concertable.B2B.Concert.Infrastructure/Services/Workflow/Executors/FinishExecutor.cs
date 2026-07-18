@@ -17,6 +17,8 @@ internal sealed class FinishExecutor : IFinishExecutor
     private readonly IDealResolver dealResolver;
     private readonly IConcertRepository concertRepository;
     private readonly ISettlementPayeeResolver settlementPayeeResolver;
+    private readonly ITicketPayeeResolver ticketPayeeResolver;
+    private readonly IInvoiceIssuer invoiceIssuer;
     private readonly ITenantModule tenantModule;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<FinishExecutor> logger;
@@ -27,6 +29,8 @@ internal sealed class FinishExecutor : IFinishExecutor
         IDealResolver dealResolver,
         IConcertRepository concertRepository,
         ISettlementPayeeResolver settlementPayeeResolver,
+        ITicketPayeeResolver ticketPayeeResolver,
+        IInvoiceIssuer invoiceIssuer,
         ITenantModule tenantModule,
         TimeProvider timeProvider,
         ILogger<FinishExecutor> logger)
@@ -36,6 +40,8 @@ internal sealed class FinishExecutor : IFinishExecutor
         this.dealResolver = dealResolver;
         this.concertRepository = concertRepository;
         this.settlementPayeeResolver = settlementPayeeResolver;
+        this.ticketPayeeResolver = ticketPayeeResolver;
+        this.invoiceIssuer = invoiceIssuer;
         this.tenantModule = tenantModule;
         this.timeProvider = timeProvider;
         this.logger = logger;
@@ -50,12 +56,17 @@ internal sealed class FinishExecutor : IFinishExecutor
             if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
                 throw new BadRequestException("Concert cannot be finished before it has ended");
 
-            // Fail-closed payout gate: the settlement payee's tax identity isn't complete for its jurisdiction →
-            // don't transition, don't pay; leave it for the hourly sweep to retry (self-heals once details land).
-            var payeeTenantId = settlementPayeeResolver.ResolveTenantId(concert);
-            if (!await tenantModule.IsTaxComplianceCompleteAsync(payeeTenantId))
+            // Fail-closed tax gate: both parties' tax identities must be complete for their jurisdiction — the
+            // payee's so we can settle, and the counterparty's so the self-billed invoice minted in the same
+            // transaction carries both parties' legally-required VAT details. If either is incomplete, don't
+            // transition, don't pay, don't invoice; the hourly sweep self-heals once the missing details land.
+            var supplierTenantId = settlementPayeeResolver.ResolveTenantId(concert);
+            var customerTenantId = ticketPayeeResolver.ResolveTenantId(concert);
+            var supplierComplete = await tenantModule.IsTaxComplianceCompleteAsync(supplierTenantId);
+            var customerComplete = await tenantModule.IsTaxComplianceCompleteAsync(customerTenantId);
+            if (!supplierComplete || !customerComplete)
             {
-                logger.SettlementDeferredPendingTaxCompliance(concertId, payeeTenantId);
+                logger.SettlementDeferredPendingTaxCompliance(concertId, supplierComplete ? customerTenantId : supplierTenantId);
                 return Result.Ok(SettlementOutcome.DeferredPendingTaxCompliance);
             }
 
@@ -64,6 +75,7 @@ internal sealed class FinishExecutor : IFinishExecutor
                 await dealResolver.ResolveByConcertIdAsync(concertId);
                 var workflow = workflows.Create(app.DealType);
                 await workflow.Finish.ExecuteAsync(concertId);
+                await invoiceIssuer.IssueAsync(concert);
             });
             return Result.Ok(SettlementOutcome.Settled);
         }

@@ -60,6 +60,33 @@ See [`plans/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/SPLIT_TIME_E2E_STRATEGY.md)
 
 ## MED
 
+### `IgnoreQueryFilters` used to subtract tenancy instead of composing a stance — anti-pattern
+
+`CODE_PATTERNS.md` § "Tenancy is composed, never subtracted" bans per-query `IgnoreQueryFilters` and
+claims the codebase has **zero** — but two had leaked in (both pre-existing on `master`). The right
+alternatives were always available and are named in that doc: read cross-tenant through a composed
+**public stance** (`PublicXDbContext`), expose a cross-tenant *fact* as a **boolean/scalar named
+abstraction** on the public stance (e.g. `IConcertAvailability`), or **resolve the ids and pass them
+in** at the call site (as B2B fronts Payment). Never `.IgnoreQueryFilters()`.
+
+- **Fixed (`Feature/VatAndSelfBilledInvoicing`):** `ContractRepository.GetByBookingIdIgnoringTenantAsync`
+  existed only to feed an eager background PDF render with no tenant context. Removed with the eager
+  path entirely — contract + invoice PDFs now render lazily on download (a tenant-scoped party request),
+  so there is no context-free read to bypass a filter for. See the render-timing decision below.
+- **Outstanding:** `BookingRepository.ExistsIgnoringTenantAsync`, used by
+  `EscrowExecutor.LoadApplicationIdAsync` to word a diagnostic ("exists ignoring tenant filter: …") when
+  the tenant-filtered lookup misses in the escrow **payment-webhook** path. This is a genuine
+  cross-tenant boolean *fact*, so the composed fix is a boolean-only named abstraction on the public
+  stance (à la `IConcertAvailability`) — but it sits in money-path code whose webhook tenant-context
+  model wants understanding first, so it was left out of the invoicing PR.
+
+**Resolves when:** `BookingRepository.ExistsIgnoringTenantAsync` is replaced by a composed public-stance
+existence check (no `IgnoreQueryFilters`), the escrow diagnostic reads through it, and the
+`CODE_PATTERNS.md` "zero `IgnoreQueryFilters`" claim is true and re-affirmed with the alternatives spelled
+out (the convention discussion this entry is the placeholder for).
+
+---
+
 ### `Modules/User/` TPH not unwound
 
 Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `ArtistManagerEntity`, `AdminEntity`) each carrying the Auth `sub`, with no shared `UserEntity` base via TPH. Current state of the `User.Domain` hierarchy needs verifying and may still be TPH.
@@ -94,9 +121,9 @@ Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `Art
 
 ### PDF render thread-safety guarded in B2B, not in the shared PDF service
 
-QuestPDF's `GeneratePdf()` is **not thread-safe**: concurrent renders race on shared SkiaSharp font-subset state and emit PDFs whose embedded font subset lacks a usable glyph→Unicode map — the text renders but can't be extracted/copied/searched, and can render visually wrong. Reproduced deterministically: single-threaded rendering is always clean; ~5–10% of renders corrupt under 16-way concurrency, and a background render-at-accept racing a render-on-download corrupts too. `ContractPdfService` now serialises every render behind a process-wide `SemaphoreSlim`, which fixes B2B (its only PDF is the contract). But the real chokepoint is the shared `Concertable.Shared.Pdf` `PdfService.Render` → `document.GeneratePdf()`, consumed by every service; **Customer's ticket-receipt PDF is still unguarded**. The B2B-local guard is a stopgap because the shared library is a published package this change couldn't republish.
+QuestPDF's `GeneratePdf()` is **not thread-safe**: concurrent renders race on shared SkiaSharp font-subset state and emit PDFs whose embedded font subset lacks a usable glyph→Unicode map — the text renders but can't be extracted/copied/searched, and can render visually wrong. Reproduced deterministically: single-threaded rendering is always clean; ~5–10% of renders corrupt under 16-way concurrency. `ContractPdfService` **and** `InvoicePdfService` each serialise their renders behind their own process-wide `SemaphoreSlim` — two copies of the identical guard, and B2B now has two blob-backed PDFs (contract + invoice) carrying it. But the real chokepoint is the shared `Concertable.Shared.Pdf` `PdfService.Render` → `document.GeneratePdf()` (today unguarded: `=> document.GeneratePdf();`), consumed by every service; **Customer's ticket-receipt PDF (`TicketPdfService`) is still unguarded entirely** — proof that a per-consumer lock is a footgun, since a consumer already forgot it. The per-consumer guards are a stopgap because the shared library is a published package (`PackageReference`) this change can't republish, and the fix also touches Customer.
 
-**Resolves when:** `Concertable.Shared.Pdf.Infrastructure.PdfService` serialises `GeneratePdf` (lock/`SemaphoreSlim`) so every consumer is protected, the platform package is published and consumed, and the redundant `renderLock` guard in `ContractPdfService` is removed.
+**Resolves when:** `Concertable.Shared.Pdf.Infrastructure.PdfService` serialises `GeneratePdf` (lock/`SemaphoreSlim`) so every consumer is protected without opting in, the package is published and consumed, and the redundant `renderLock` guards in `ContractPdfService` and `InvoicePdfService` are removed.
 
 ---
 
@@ -123,7 +150,7 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 `ContractPdfService` stores contract PDFs under a `contracts/{bookingId}-{guid}.pdf` name in the **single shared `"images"` container** (the only container `Concertable.Shared.Blob` exposes). The blob *name* is fixed at creation, transactionally, at Accept (`ContractEntity.Create`), so generation can't race to mint competing names — but immutability of the *bytes* is still only app-level: `IBlobStorageService.UploadAsync` is `overwrite: true`, so nothing at the storage layer prevents a rewrite of a persisted legal document. A legal artefact ideally lives in its own container with a no-overwrite (write-once / immutability-policy) upload. Deliberately not done in the contract feature because both are **additive changes to the published `Concertable.Shared.Blob` package** (a dedicated container config + an overwrite-guarding `UploadAsync` overload), which would cross the package boundary the feature was scoped to avoid.
 
-Related: `ContractPdfService`'s render→upload→record→lazy-serve orchestration is currently the only blob-backed PDF in B2B (the Customer ticket-receipt PDF only renders + emails, no blob). If a second blob-backed PDF appears (e.g. the self-billed VAT invoice), that pattern becomes worth extracting into `Concertable.Shared.Pdf` as a shared `IPdfBlobStore`-style helper rather than duplicating.
+Related: the render→check-blob→upload→lazy-serve orchestration (`GetOrCreateAsync`) is now **duplicated** — `ContractPdfService` and `InvoicePdfService` are byte-for-byte the same shape (differing only in the entity + `IDocument` they render). This is exactly the "second blob-backed PDF" this note predicted, so the extraction into `Concertable.Shared.Pdf` as a shared `IPdfBlobStore`-style helper (take a blob name + a `Func<IDocument>`, do exists-or-render-and-cache, with the render lock living inside it — see the MED note) is now warranted rather than hypothetical. Deferred here because it's a change to the published `Concertable.Shared.Pdf` package.
 
 **Resolves when:** `Concertable.Shared.Blob` gains a dedicated-container + write-once upload path, contract PDFs move to it, and `AttachPdf`'s app-level guard is backed by a storage-level immutability guarantee.
 
@@ -134,6 +161,21 @@ Related: `ContractPdfService`'s render→upload→record→lazy-serve orchestrat
 `ContractEntity`'s terms are immutable once built (private setters + `Create` factory), but nothing binds `Create` to the Accept transition — that timing lives in `ContractIssuer`/`AcceptExecutor`, so a future caller could mint a contract outside Accept and the model wouldn't stop them. `VenueTenantId`/`ArtistTenantId` are also publicly settable (for the tenant interceptor + issuer), so the snapshot isn't fully sealed either. Not addressed in the DEAL_RENAME refactor, which was names-only.
 
 **Resolves when:** the Accept aggregate owns contract creation (e.g. `Create` becomes internal to the transition, or the booking aggregate is the only path that can produce one), and the tenant fields are stamped through a constructor/interceptor seam rather than public setters.
+
+---
+
+### Concert response family names are over-qualified
+
+The `Concert.Api.Responses` types stack redundant qualifiers — `ConcertDetailsResponse`,
+`ConcertSummaryResponse`, `ConcertArtistResponse`, `ConcertVenueSummaryResponse`, etc. — re-stating `Concert`
+(already the namespace) and vague words like `Details`. The `Response` suffix is mandated (it marks the HTTP
+wire layer); the rest is bloat. (Splitting the public vs owner reads into separate types was considered and
+**declined** — the single response with owner-only fields populated only by the owner mapper is safe and is
+the same role-shaping pattern `ApplicationResponse` already uses; not worth a one-off divergence.)
+
+**Resolves when:** the response family is de-verbosed in one pass — drop the redundant `Concert`/`Details`
+qualifiers where the namespace already carries them, keep `Response` — and the SPA's consumed/generated type
+names are updated to match.
 
 ---
 

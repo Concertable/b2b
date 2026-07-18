@@ -11,6 +11,7 @@ internal sealed class ConcertService : IConcertService
 {
     private readonly IConcertRepository repository;
     private readonly IPublicConcertRepository publicRepository;
+    private readonly IInvoiceRepository invoiceRepository;
     private readonly IConcertValidator concertValidator;
     private readonly ICurrentUser currentUser;
     private readonly IApplicationValidator applicationValidator;
@@ -22,6 +23,7 @@ internal sealed class ConcertService : IConcertService
     public ConcertService(
         IConcertRepository repository,
         IPublicConcertRepository publicRepository,
+        IInvoiceRepository invoiceRepository,
         IConcertValidator concertValidator,
         ICurrentUser currentUser,
         IApplicationValidator applicationValidator,
@@ -32,6 +34,7 @@ internal sealed class ConcertService : IConcertService
     {
         this.repository = repository;
         this.publicRepository = publicRepository;
+        this.invoiceRepository = invoiceRepository;
         this.concertValidator = concertValidator;
         this.currentUser = currentUser;
         this.applicationValidator = applicationValidator;
@@ -61,8 +64,10 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<ConcertDetails> GetDetailsForCurrentUserAsync(int id)
     {
-        return await repository.GetDetailsByIdAsync(id)
+        var details = await repository.GetDetailsByIdAsync(id)
             .OrNotFound();
+        var invoice = await invoiceRepository.GetByConcertIdAsync(id);
+        return details with { InvoiceId = invoice?.Id };
     }
 
     public Task<Result<ConcertEntity>> CreateDraftAsync(int applicationId) =>
@@ -70,8 +75,10 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<ConcertDetails> GetDetailsByApplicationIdAsync(int applicationId)
     {
-        return await repository.GetDetailsByApplicationIdAsync(applicationId)
+        var details = await repository.GetDetailsByApplicationIdAsync(applicationId)
             ?? throw new NotFoundException($"No concert found for Application ID {applicationId}");
+        var invoice = await invoiceRepository.GetByApplicationIdAsync(applicationId);
+        return details with { InvoiceId = invoice?.Id };
     }
 
     public async Task<ConcertUpdateResponse> UpdateAsync(int id, UpdateConcertRequest request)

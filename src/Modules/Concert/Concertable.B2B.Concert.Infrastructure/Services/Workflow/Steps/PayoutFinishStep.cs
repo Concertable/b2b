@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Infrastructure;
@@ -10,36 +11,31 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class PayoutFinishStep : IFinishStep
 {
     private readonly IBookingService bookingService;
-    private readonly IConcertRepository concertRepository;
+    private readonly ISettlementAmountResolver settlementAmountResolver;
     private readonly IDealAccessor dealAccessor;
     private readonly IManagerPaymentClient managerPaymentClient;
-    private readonly IArtistShareCalculator artistShareCalculator;
     private readonly ILogger<PayoutFinishStep> logger;
 
     public PayoutFinishStep(
         IBookingService bookingService,
-        IConcertRepository concertRepository,
+        ISettlementAmountResolver settlementAmountResolver,
         IDealAccessor dealAccessor,
         IManagerPaymentClient managerPaymentClient,
-        IArtistShareCalculator artistShareCalculator,
         ILogger<PayoutFinishStep> logger)
     {
         this.bookingService = bookingService;
-        this.concertRepository = concertRepository;
+        this.settlementAmountResolver = settlementAmountResolver;
         this.dealAccessor = dealAccessor;
         this.managerPaymentClient = managerPaymentClient;
-        this.artistShareCalculator = artistShareCalculator;
         this.logger = logger;
     }
 
     public async Task ExecuteAsync(int concertId)
     {
-        var totalRevenue = await concertRepository.GetTotalRevenueByConcertIdAsync(concertId)
-            ?? throw new InvalidOperationException(
-                $"Concert {concertId} reached settlement with no declared door revenue — the completion gate should make this unreachable.");
-        var artistShare = artistShareCalculator.Calculate(dealAccessor.Deal, totalRevenue);
+        // Same resolver the invoice issuer uses, so the charged share and the invoiced gross can't diverge.
+        var artistShare = await settlementAmountResolver.ResolveGrossAsync(concertId, dealAccessor.Deal);
 
-        logger.ArtistShareCalculated(concertId, totalRevenue, artistShare);
+        logger.ArtistShareCalculated(concertId, artistShare);
 
         /* DoorSplit/Versus: the venue tenant pays the artist tenant, per the booking's frozen snapshot. */
         var settlement = await bookingService.GetSettlementByConcertIdAsync(concertId);

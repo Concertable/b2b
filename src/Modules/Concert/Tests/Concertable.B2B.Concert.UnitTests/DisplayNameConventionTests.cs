@@ -19,6 +19,7 @@ public sealed class DisplayNameConventionTests
         { typeof(ApplicationEntity), "Application" },
         { typeof(BookingEntity), "Booking" },
         { typeof(ContractEntity), "Contract" },
+        { typeof(InvoiceEntity), "Invoice" },
         { typeof(OpportunityEntity), "Concert Opportunity" },
         { typeof(ConcertDetails), "Concert" },
         { typeof(ArtistSummary), "Artist" },
