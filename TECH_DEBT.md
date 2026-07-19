@@ -187,11 +187,14 @@ names are updated to match.
 
 ---
 
-### Duplicate application attempt is a 500, not a 400
+### Duplicate application attempt is a 500, not a 400 — guard landed, integration test outstanding
 
-`ApplicationValidator.CanApplyAsync` never checks for an existing application by the same artist on the same opportunity, but `concert.Applications` has a unique `(OpportunityId, ArtistId)` index — so a second apply (including re-applying after a withdraw/reject, where the opportunity legitimately shows as open) passes eligibility and then blows up as a `DbUpdateException` → 500. Surfaced while testing withdraw (`Feature/ApplicationCancel`).
+Fixed on `Fix/TechDebtSweep`: `ApplicationValidator.CanApplyAsync` now rejects an existing
+`(opportunityId, artistId)` row via `IApplicationRepository.ExistsForOpportunityAndArtistAsync`,
+returning a clean 400; a unit test covers it. Outstanding only: an **integration test** for
+apply-after-withdraw → 400 (needs Docker).
 
-**Resolves when:** `CanApplyAsync` fails with a clear message when any application row exists for `(opportunityId, artistId)`, and an integration test covers apply-after-withdraw returning 400.
+**Resolves when:** the apply-after-withdraw integration test lands green.
 
 ---
 
