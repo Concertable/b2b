@@ -20,6 +20,14 @@ internal sealed class UpdateTenantRequestValidator : AbstractValidator<UpdateTen
     }
 }
 
+internal sealed class ChangeMemberRoleRequestValidator : AbstractValidator<ChangeMemberRoleRequest>
+{
+    public ChangeMemberRoleRequestValidator()
+    {
+        RuleFor(x => x.Role).IsInEnum();
+    }
+}
+
 internal sealed class TaxComplianceDtoValidator : AbstractValidator<TaxComplianceDto>
 {
     public TaxComplianceDtoValidator(ITaxComplianceRules taxRules, IOptions<UkTaxComplianceOptions> taxOptions)

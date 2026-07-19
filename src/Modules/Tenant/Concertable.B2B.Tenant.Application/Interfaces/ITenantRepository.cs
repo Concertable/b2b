@@ -16,4 +16,19 @@ internal interface ITenantRepository : IRepository<TenantEntity, Guid>
     /// <summary>All of the caller's memberships (unordered) — feeds the single-membership default and the
     /// <c>/me</c> switcher payload.</summary>
     Task<IReadOnlyList<UserMembership>> GetMembershipsAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Every membership row of a tenant — the members-management list (mapped to emails via <c>IUserModule</c>).</summary>
+    Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default);
+
+    /// <summary>A single tracked membership row to mutate (change role) or remove; null if the user isn't a member.</summary>
+    Task<TenantMembershipEntity?> FindMembershipAsync(Guid tenantId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>Owners currently in the tenant — the last-Owner invariant reads this before a demote/remove.</summary>
+    Task<int> CountOwnersAsync(Guid tenantId, CancellationToken ct = default);
+
+    /// <summary>Whether the user already belongs to the tenant — guards duplicate invitation-accept.</summary>
+    Task<bool> IsMemberAsync(Guid tenantId, Guid userId, CancellationToken ct = default);
+
+    void AddMembership(TenantMembershipEntity membership);
+    void RemoveMembership(TenantMembershipEntity membership);
 }
