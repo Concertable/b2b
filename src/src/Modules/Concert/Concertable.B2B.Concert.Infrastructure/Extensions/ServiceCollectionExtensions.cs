@@ -22,6 +22,7 @@ using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Data.Seeders;
 using Concertable.B2B.Concert.Infrastructure.Events;
 using Concertable.B2B.Concert.Infrastructure.Handlers;
+using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow;
@@ -83,6 +84,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
         services.Configure<LegalSettings>(configuration.GetSection("Legal"));
+        services.AddScoped<IPdfBlobCache, PdfBlobCache>();
         services.AddScoped<IContractIssuer, ContractIssuer>();
         services.AddScoped<IContractService, ContractService>();
         services.AddScoped<IContractPdfService, ContractPdfService>();
