@@ -187,6 +187,21 @@ public sealed class ApplicationValidatorTests
     }
 
     [Fact]
+    public async Task CanApplyAsync_ShouldFail_WhenArtistHasAlreadyApplied()
+    {
+        // Arrange
+        artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync(ArtistId);
+        opportunityRepository.Setup(r => r.GetByIdAsync(OpportunityId)).ReturnsAsync(Opportunity(FuturePeriod));
+        applicationRepository.Setup(r => r.ExistsForOpportunityAndArtistAsync(OpportunityId, ArtistId)).ReturnsAsync(true);
+
+        // Act
+        var result = await validator.CanApplyAsync(OpportunityId);
+
+        // Assert
+        Assert.Equal("You have already applied to this concert opportunity", result.Errors.Single().Message);
+    }
+
+    [Fact]
     public async Task CanApplyAsync_ShouldSucceed_WhenUserHasArtistAndAllRulesPass()
     {
         // Arrange
