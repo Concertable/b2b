@@ -7,8 +7,8 @@ internal sealed record ConcertDetailsResponse
     public int Id { get; init; }
     public required string Name { get; init; }
     public required string About { get; init; }
-    public required string BannerUrl { get; init; }
-    public required string Avatar { get; init; }
+    public string? BannerUrl { get; init; }
+    public string? Avatar { get; init; }
     public double Rating { get; init; }
     public decimal Price { get; init; }
     public int TotalTickets { get; init; }
