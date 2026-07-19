@@ -63,6 +63,9 @@ internal sealed class MembershipService : IMembershipService
         foreach (var membership in await repository.ListMembershipsByTenantAsync(tenantId, ct))
             repository.RemoveMembership(membership);
 
+        foreach (var invitation in await repository.ListInvitationsByTenantAsync(tenantId, ct))
+            repository.RemoveInvitation(invitation);
+
         repository.Remove(tenant);
         await repository.SaveChangesAsync(ct);
     }

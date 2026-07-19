@@ -31,4 +31,9 @@ internal interface ITenantRepository : IRepository<TenantEntity, Guid>
 
     void AddMembership(TenantMembershipEntity membership);
     void RemoveMembership(TenantMembershipEntity membership);
+
+    /// <summary>Every invitation row of a tenant — the delete-org cascade removes them so no invitation outlives its tenant.</summary>
+    Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default);
+
+    void RemoveInvitation(TenantInvitationEntity invitation);
 }

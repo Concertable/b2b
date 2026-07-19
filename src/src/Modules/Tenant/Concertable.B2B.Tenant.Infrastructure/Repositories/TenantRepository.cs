@@ -29,6 +29,11 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
 
     public void RemoveMembership(TenantMembershipEntity membership) => context.Memberships.Remove(membership);
 
+    public async Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
+        await context.Invitations.Where(i => i.TenantId == tenantId).ToListAsync(ct);
+
+    public void RemoveInvitation(TenantInvitationEntity invitation) => context.Invitations.Remove(invitation);
+
     // Filter on the membership entity's own columns before projecting — a predicate over the projected
     // record doesn't translate, so any Where must sit on TenantMembershipEntity.
     private IQueryable<UserMembership> Project(IQueryable<TenantMembershipEntity> memberships) =>
