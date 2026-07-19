@@ -2,6 +2,7 @@ using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Payment.Client;
+using Concertable.Payment.Client.Enums;
 using Xunit;
 using Xunit.Abstractions;
 
