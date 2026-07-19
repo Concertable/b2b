@@ -113,7 +113,8 @@ services.AddClientCredentials(opts =>
 {
     opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services__auth__https__0"] ?? "";
     opts.ClientId = builder.Configuration["ServiceAuth:ClientId"] ?? "";
-    opts.ClientSecret = builder.Configuration["ServiceAuth:ClientSecret"] ?? "";
+    // genuine optional — secret-less local client (dev/E2E/Testing); do NOT fail-fast
+    opts.ClientSecret = builder.Configuration["ServiceAuth:ClientSecret"] ?? string.Empty;
 });
 services.AddSharedBlob(builder.Configuration);
 services.AddSharedEmail(builder.Configuration);
