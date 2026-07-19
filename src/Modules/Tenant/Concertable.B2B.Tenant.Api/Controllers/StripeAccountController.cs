@@ -1,6 +1,7 @@
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Payment.Client;
+using Concertable.Payment.Client.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Tenant.Api.Controllers;
