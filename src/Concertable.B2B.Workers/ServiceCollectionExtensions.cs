@@ -59,7 +59,8 @@ internal static class ServiceCollectionExtensions
         {
             opts.Authority = configuration["Auth:Authority"] ?? configuration["services:auth:https:0"] ?? "";
             opts.ClientId = configuration["ServiceAuth:ClientId"] ?? "";
-            opts.ClientSecret = configuration["ServiceAuth:ClientSecret"] ?? "";
+            // genuine optional — secret-less local client (dev/E2E/Testing); do NOT fail-fast
+            opts.ClientSecret = configuration["ServiceAuth:ClientSecret"] ?? string.Empty;
         });
         services.AddPaymentClient(configuration);
         services.AddNotificationClient();
