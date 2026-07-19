@@ -179,14 +179,6 @@ names are updated to match.
 
 ---
 
-### `ConcertDetailsResponse` coerces optional images to `string.Empty`
-
-`ConcertResponseMappers.ToDetailsResponse` maps `BannerUrl = dto.BannerUrl ?? string.Empty` and `Avatar = dto.Avatar ?? dto.Artist.Avatar ?? string.Empty` because `ConcertDetailsResponse` declares both as `required string` while the underlying data is legitimately optional. The mapper flattens "absent" into "present but blank", and the SPA has to re-interpret `""` as missing. Inconsistent with `ConcertArtistResponse.Avatar` in the same response family, which is honestly `string?`.
-
-**Resolves when:** `ConcertDetailsResponse.BannerUrl`/`.Avatar` become `string?` (the avatar keeping its `dto.Avatar ?? dto.Artist.Avatar` preference chain, ending in null), the `?? string.Empty` coercions are deleted, and the SPA consumes null rather than empty string.
-
----
-
 ### `UserEntity.Avatar` models "no avatar" as empty string
 
 `Modules/User/Concertable.B2B.User.Domain/UserEntity.cs` declares `public string Avatar { get; private set; } = string.Empty;` — an empty-string placeholder pretending to be a value (the pattern `docs/CODE_CONVENTIONS.md` bans for populated-later defaults). "No avatar" is modelled as `string?` elsewhere (e.g. `ConcertArtistResponse.Avatar`).
