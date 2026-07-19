@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(TenantDbContext))]
-    [Migration("20260718225650_InitialCreate")]
+    [Migration("20260719142125_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -49,6 +49,51 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Tenants", "tenant");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantInvitationEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("AcceptedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("TenantId", "Email")
+                        .IsUnique()
+                        .HasFilter("[Status] = 1");
+
+                    b.ToTable("Invitations", "tenant");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantMembershipEntity", b =>
