@@ -29,7 +29,7 @@ Rules inherited from `app/web/shared/CLAUDE.md` still apply, scoped to the two m
 - **Identity rule** — no `isVenueManager`/`isArtistManager` branching. The two apps compose the
   difference in (e.g. `OpportunitySection({ renderActions })`: venue injects View Applications,
   artist injects Apply).
-- **Backend rule** — own-site `api` (B2B), `searchAxios`, `paymentAxios`. Manager-only B2B
+- **Backend rule** — own-site `apiClient` (B2B), `searchClient`, `paymentClient`. Manager-only B2B
   endpoints are fine here — that's the point of the tier.
 
 Enforcement is the type system: both manager builds (`tsc -b`) compile this tree against their own
