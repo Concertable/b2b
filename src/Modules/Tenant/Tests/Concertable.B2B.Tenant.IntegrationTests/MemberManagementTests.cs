@@ -186,7 +186,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     // ---- DELETE api/organizations (TenantDelete: Owner only) ----
 
     [Fact]
-    public async Task DeleteOrganization_AsOwner_DeletesTenantAndMemberships()
+    public async Task DeleteTenant_AsOwner_DeletesTenantAndMemberships()
     {
         var owner = fixture.SeedState.VenueManager1;
         var tenantId = TenantOf(owner.Id);
@@ -200,7 +200,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task DeleteOrganization_AsManager_IsForbidden()
+    public async Task DeleteTenant_AsManager_IsForbidden()
     {
         var owner = fixture.SeedState.VenueManager1;
         var manager = fixture.SeedState.VenueManagerNoVenue;

@@ -7,19 +7,19 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Tenant.Api.Controllers;
 
 /// <summary>
-/// Member management for the caller's active organization — list / change-role / remove, plus deleting the
-/// organization itself. Persona-agnostic (like <see cref="StripeAccountController"/>), so the guard is a
-/// per-action <c>[HasPermission]</c> rather than a class-level one, and there is no <c>[TenantPersona]</c>.
-/// The active tenant is resolved inside <c>MembershipService</c> from <c>ITenantContext</c>.
+/// Members and invitations for the caller's active organization — list / change-role / remove members, and
+/// list / create / revoke invitations. Persona-agnostic (like <see cref="StripeAccountController"/>), so the
+/// guard is a per-action <c>[HasPermission]</c> rather than a class-level one, and there is no
+/// <c>[TenantPersona]</c>. The active tenant is resolved inside the services from <c>ITenantContext</c>.
 /// </summary>
 [ApiController]
 [Route("api/organizations")]
-internal sealed class OrganizationMembersController : ControllerBase
+internal sealed class TenantMembershipController : ControllerBase
 {
     private readonly IMembershipService membershipService;
     private readonly IInvitationService invitationService;
 
-    public OrganizationMembersController(IMembershipService membershipService, IInvitationService invitationService)
+    public TenantMembershipController(IMembershipService membershipService, IInvitationService invitationService)
     {
         this.membershipService = membershipService;
         this.invitationService = invitationService;
@@ -64,14 +64,6 @@ internal sealed class OrganizationMembersController : ControllerBase
     public async Task<IActionResult> RemoveMember(Guid userId)
     {
         await membershipService.RemoveMemberAsync(userId);
-        return NoContent();
-    }
-
-    [HttpDelete]
-    [HasPermission(SharedPermissions.TenantDelete)]
-    public async Task<IActionResult> DeleteCurrentTenant()
-    {
-        await membershipService.DeleteCurrentTenantAsync();
         return NoContent();
     }
 }

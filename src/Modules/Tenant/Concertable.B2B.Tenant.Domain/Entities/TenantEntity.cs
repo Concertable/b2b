@@ -53,12 +53,12 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     /// inserts tenants directly (deterministic ids) with their create event cleared, so registration is the
     /// single provisioning trigger: <c>Announce</c> fires once the ASB subscriptions exist, where the seeder's
     /// own startup-time publish would race subscription creation and be dropped. <see cref="LegalName"/> still
-    /// holds the registration email here (organization setup hasn't run yet), so the event carries the email.
+    /// holds the registration email here (tenant setup hasn't run yet), so the event carries the email.
     /// </summary>
     public void Announce() => events.Raise(new TenantCreatedDomainEvent(Id, CreatedByUserId, LegalName));
 
     /// <summary>
-    /// Organization setup: replaces the provisioning placeholder legal name (the registration email)
+    /// Tenant setup: replaces the provisioning placeholder legal name (the registration email)
     /// and the tax-compliance details in one transition — the <c>/organizations</c> form submits them together.
     /// </summary>
     public void UpdateLegalDetails(string legalName, TaxCompliance taxCompliance)

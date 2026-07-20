@@ -1,15 +1,16 @@
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Tenant.Api.Controllers;
 
 /// <summary>
-/// The user-facing surface of the tenant — "Organization" in UI/API vocabulary. The caller's own
-/// tenant is resolved from <c>ITenantContext</c>;
-/// a principal without a tenant gets nothing (GET) or 403 (PUT).
+/// The user-facing surface of the tenant — "Organization" in UI/API vocabulary. The caller's own tenant is
+/// resolved from <c>ITenantContext</c>; a principal without a tenant gets nothing (GET) or 403 (PUT/DELETE).
+/// Deleting the tenant is the only action gated by an explicit permission.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -34,5 +35,13 @@ internal sealed class TenantController : ControllerBase
     public async Task<ActionResult<TenantDetails>> Update(UpdateTenantRequest request)
     {
         return Ok(await tenantService.UpdateAsync(request));
+    }
+
+    [HttpDelete]
+    [HasPermission(SharedPermissions.TenantDelete)]
+    public async Task<IActionResult> DeleteCurrentTenant()
+    {
+        await tenantService.DeleteCurrentTenantAsync();
+        return NoContent();
     }
 }

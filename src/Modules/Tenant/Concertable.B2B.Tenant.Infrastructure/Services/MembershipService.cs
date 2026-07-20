@@ -54,22 +54,6 @@ internal sealed class MembershipService : IMembershipService
         await repository.SaveChangesAsync(ct);
     }
 
-    public async Task DeleteCurrentTenantAsync(CancellationToken ct = default)
-    {
-        var tenantId = tenantContext.GetTenantId();
-        var tenant = await repository.GetByIdAsync(tenantId, ct)
-            ?? throw new NotFoundException($"Tenant {tenantId} not found.");
-
-        foreach (var membership in await repository.ListMembershipsByTenantAsync(tenantId, ct))
-            repository.RemoveMembership(membership);
-
-        foreach (var invitation in await repository.ListInvitationsByTenantAsync(tenantId, ct))
-            repository.RemoveInvitation(invitation);
-
-        repository.Remove(tenant);
-        await repository.SaveChangesAsync(ct);
-    }
-
     // A tenant must always keep at least one Owner — only Owner holds manage-roles/remove/delete, so an ownerless tenant is unrecoverable.
     private async Task EnsureNotLastOwnerAsync(Guid tenantId, CancellationToken ct)
     {
