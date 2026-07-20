@@ -16,6 +16,7 @@ public sealed class TenantApiFixture : ApiFixture
 
     public IQueryable<TenantEntity> Tenants => tenantDb.Tenants.AsNoTracking();
     public IQueryable<TenantMembershipEntity> Memberships => tenantDb.Memberships.AsNoTracking();
+    public IQueryable<TenantInvitationEntity> Invitations => tenantDb.Invitations.AsNoTracking();
 
     /// <summary>Grants <paramref name="userId"/> an Owner membership in <paramref name="tenantId"/> — lets a test
     /// arrange the multi-membership case the seed graph never holds (every seeded operator owns one tenant).</summary>
@@ -29,6 +30,19 @@ public sealed class TenantApiFixture : ApiFixture
         tenantDb.Memberships.Add(
             TenantMembershipEntity.Create(tenantId, userId, role, invitedBy: null, DateTime.UtcNow));
         await tenantDb.SaveChangesAsync();
+    }
+
+    /// <summary>Inserts a pending invitation with a chosen <paramref name="expiresAt"/> — lets a test arrange an
+    /// expired or otherwise time-specific invitation the invite endpoint (fixed 7-day TTL) can't produce. The
+    /// email is stored normalized, matching the invite service + the registration-match lookup.</summary>
+    public async Task<TenantInvitationEntity> AddInvitationAsync(Guid tenantId, string email, TenantRole role, Guid createdBy, DateTime expiresAt)
+    {
+        var now = DateTime.UtcNow;
+        var invitation = TenantInvitationEntity.Create(
+            tenantId, email.Trim().ToLowerInvariant(), role, createdBy, now, expiresAt - now);
+        tenantDb.Invitations.Add(invitation);
+        await tenantDb.SaveChangesAsync();
+        return invitation;
     }
 
     protected override void OnReset(IServiceScope scope)

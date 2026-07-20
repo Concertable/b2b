@@ -17,16 +17,39 @@ namespace Concertable.B2B.Tenant.Api.Controllers;
 internal sealed class OrganizationMembersController : ControllerBase
 {
     private readonly IMembershipService membershipService;
+    private readonly IInvitationService invitationService;
 
-    public OrganizationMembersController(IMembershipService membershipService)
+    public OrganizationMembersController(IMembershipService membershipService, IInvitationService invitationService)
     {
         this.membershipService = membershipService;
+        this.invitationService = invitationService;
     }
 
     [HttpGet("members")]
     [HasPermission(SharedPermissions.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<MemberDto>>> GetMembers() =>
         Ok(await membershipService.ListMembersAsync());
+
+    [HttpGet("invitations")]
+    [HasPermission(SharedPermissions.MembersInvite)]
+    public async Task<ActionResult<IReadOnlyList<InvitationDto>>> GetInvitations() =>
+        Ok(await invitationService.ListPendingInvitationsAsync());
+
+    [HttpPost("invitations")]
+    [HasPermission(SharedPermissions.MembersInvite)]
+    public async Task<ActionResult<InvitationDto>> Invite(InviteMemberRequest request)
+    {
+        var invitation = await invitationService.InviteAsync(request);
+        return CreatedAtAction(nameof(GetInvitations), invitation);
+    }
+
+    [HttpDelete("invitations/{id:guid}")]
+    [HasPermission(SharedPermissions.MembersInvite)]
+    public async Task<IActionResult> RevokeInvitation(Guid id)
+    {
+        await invitationService.RevokeInvitationAsync(id);
+        return NoContent();
+    }
 
     [HttpPut("members/{userId:guid}/role")]
     [HasPermission(SharedPermissions.MembersManageRoles)]
