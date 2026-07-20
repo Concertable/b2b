@@ -64,8 +64,9 @@ internal static class ServiceCollectionExtensions
             opts.ClientId = configuration["ServiceAuth:ClientId"]
                 ?? (environment.IsEnvironment("Testing") ? null!
                     : throw new InvalidOperationException("ServiceAuth:ClientId is required."));
-            // genuine optional — secret-less local client (dev/E2E/Testing); do NOT fail-fast
-            opts.ClientSecret = configuration["ServiceAuth:ClientSecret"] ?? string.Empty;
+            // optional — a secret-less/public client (dev/E2E/Testing) has none; leave it null, never "" (a fake empty secret)
+            if (configuration["ServiceAuth:ClientSecret"] is string clientSecret)
+                opts.ClientSecret = clientSecret;
         });
         services.AddPaymentClient(configuration);
         services.AddNotificationClient();
