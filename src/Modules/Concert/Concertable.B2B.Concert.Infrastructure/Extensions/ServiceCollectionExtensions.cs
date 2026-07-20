@@ -150,7 +150,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-        services.AddScoped<ISequenceRepository, SequenceRepository>();
+        services.AddScoped(typeof(ISequenceRepository<>), typeof(SequenceRepository<>));
 
         // Query specifications
         services.AddScoped<IEndedAndBookedSpecification, EndedAndBookedSpecification>();
