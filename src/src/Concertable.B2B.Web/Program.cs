@@ -117,8 +117,9 @@ services.AddClientCredentials(opts =>
     opts.ClientId = builder.Configuration["ServiceAuth:ClientId"]
         ?? (builder.Environment.IsEnvironment("Testing") ? null!
             : throw new InvalidOperationException("ServiceAuth:ClientId is required."));
-    // genuine optional — secret-less local client (dev/E2E/Testing); do NOT fail-fast
-    opts.ClientSecret = builder.Configuration["ServiceAuth:ClientSecret"] ?? string.Empty;
+    // optional — a secret-less/public client (dev/E2E/Testing) has none; leave it null, never "" (a fake empty secret)
+    if (builder.Configuration["ServiceAuth:ClientSecret"] is string clientSecret)
+        opts.ClientSecret = clientSecret;
 });
 services.AddSharedBlob(builder.Configuration);
 services.AddSharedEmail(builder.Configuration);
