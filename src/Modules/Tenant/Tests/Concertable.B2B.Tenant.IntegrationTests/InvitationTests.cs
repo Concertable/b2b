@@ -7,10 +7,10 @@ using Xunit.Abstractions;
 namespace Concertable.B2B.Tenant.IntegrationTests;
 
 /// <summary>
-/// Phase 6.3 invitations — create/list/revoke on <c>api/organizations/invitations</c> and accept on
-/// <c>api/invitations/{id}/accept</c>, through the real ASP.NET pipeline. Covers the invite guards
+/// Invitations — create/list/revoke on <c>api/organizations/invitations</c> and accept on
+/// <c>api/invitation/{id}/accept</c>, through the real ASP.NET pipeline. Covers the invite guards
 /// (duplicate, already-a-member), the invitation email capture, the accept flow (membership mint,
-/// email-match gate, idempotency), the negative accept paths (expired, revoked, tenant-deleted — BUG1b),
+/// email-match gate, idempotency), the negative accept paths (expired, revoked, tenant-deleted),
 /// and the <c>MembersInvite</c> permission boundary (Owner + Manager, not Staff).
 /// </summary>
 [Collection("Integration")]
@@ -47,7 +47,7 @@ public sealed class InvitationTests : IAsyncLifetime
         return client;
     }
 
-    // ---- POST invitations (MembersInvite: Owner + Manager) ----
+    #region Invite
 
     [Fact]
     public async Task Invite_AsOwner_CreatesPendingInvitationAndSendsEmail()
@@ -131,7 +131,9 @@ public sealed class InvitationTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
 
-    // ---- GET invitations ----
+    #endregion
+
+    #region GetInvitations
 
     [Fact]
     public async Task GetInvitations_ReturnsPending()
@@ -147,7 +149,9 @@ public sealed class InvitationTests : IAsyncLifetime
         Assert.Contains(invitations!, i => i.Email == "pending@example.com");
     }
 
-    // ---- DELETE invitations/{id} (revoke) ----
+    #endregion
+
+    #region RevokeInvitation
 
     [Fact]
     public async Task Revoke_AsOwner_MarksRevoked()
@@ -175,7 +179,9 @@ public sealed class InvitationTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
-    // ---- POST api/invitations/{id}/accept ----
+    #endregion
+
+    #region Accept
 
     [Fact]
     public async Task Accept_ByExistingUser_CreatesMembership()
@@ -185,7 +191,7 @@ public sealed class InvitationTests : IAsyncLifetime
         var invitee = fixture.SeedState.VenueManagerNoVenue;
         var dto = await InviteAsync(fixture.CreateClient(owner), invitee.Email, TenantRole.Manager);
 
-        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitations/{dto.Id}/accept");
+        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept");
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         var membership = fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == invitee.Id);
@@ -201,9 +207,9 @@ public sealed class InvitationTests : IAsyncLifetime
         var tenantId = TenantOf(owner.Id);
         var invitee = fixture.SeedState.VenueManagerNoVenue;
         var dto = await InviteAsync(fixture.CreateClient(owner), invitee.Email, TenantRole.Manager);
-        await (await fixture.CreateClient(invitee).PostAsync($"/api/invitations/{dto.Id}/accept")).ShouldBe(HttpStatusCode.NoContent);
+        await (await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept")).ShouldBe(HttpStatusCode.NoContent);
 
-        var second = await fixture.CreateClient(invitee).PostAsync($"/api/invitations/{dto.Id}/accept");
+        var second = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept");
 
         await second.ShouldBe(HttpStatusCode.Conflict);
         Assert.Equal(1, fixture.Memberships.Count(m => m.TenantId == tenantId && m.UserId == invitee.Id));
@@ -216,7 +222,7 @@ public sealed class InvitationTests : IAsyncLifetime
         var dto = await InviteAsync(fixture.CreateClient(owner), "someoneelse@example.com", TenantRole.Manager);
         var wrongUser = fixture.SeedState.VenueManagerNoVenue; // a different email than the invitation
 
-        var response = await fixture.CreateClient(wrongUser).PostAsync($"/api/invitations/{dto.Id}/accept");
+        var response = await fixture.CreateClient(wrongUser).PostAsync($"/api/invitation/{dto.Id}/accept");
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -229,7 +235,7 @@ public sealed class InvitationTests : IAsyncLifetime
         var invitee = fixture.SeedState.VenueManagerNoVenue;
         var expired = await fixture.AddInvitationAsync(tenantId, invitee.Email, TenantRole.Manager, owner.Id, DateTime.UtcNow.AddDays(-1));
 
-        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitations/{expired.Id}/accept");
+        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{expired.Id}/accept");
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         Assert.DoesNotContain(fixture.Memberships, m => m.TenantId == tenantId && m.UserId == invitee.Id);
@@ -244,7 +250,7 @@ public sealed class InvitationTests : IAsyncLifetime
         var dto = await InviteAsync(ownerClient, invitee.Email, TenantRole.Manager);
         await (await ownerClient.DeleteAsync($"/api/organizations/invitations/{dto.Id}")).ShouldBe(HttpStatusCode.NoContent);
 
-        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitations/{dto.Id}/accept");
+        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept");
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -252,19 +258,20 @@ public sealed class InvitationTests : IAsyncLifetime
     [Fact]
     public async Task Accept_TenantNoLongerExists_IsRejected_WithoutMembership()
     {
-        // BUG1b — an orphan invitation whose tenant was deleted must not mint a membership for the dead tenant.
         var invitee = fixture.SeedState.VenueManagerNoVenue;
         var ghostTenantId = Guid.NewGuid();
         var orphan = await fixture.AddInvitationAsync(
             ghostTenantId, invitee.Email, TenantRole.Manager, fixture.SeedState.VenueManager1.Id, DateTime.UtcNow.AddDays(7));
 
-        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitations/{orphan.Id}/accept");
+        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{orphan.Id}/accept");
 
         await response.ShouldBe(HttpStatusCode.NotFound);
         Assert.DoesNotContain(fixture.Memberships, m => m.TenantId == ghostTenantId && m.UserId == invitee.Id);
     }
 
-    // ---- DELETE api/organizations cascade ----
+    #endregion
+
+    #region DeleteCurrentTenant
 
     [Fact]
     public async Task DeleteOrganization_RemovesTheTenantsInvitations()
@@ -279,4 +286,6 @@ public sealed class InvitationTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.NoContent);
         Assert.DoesNotContain(fixture.Invitations, i => i.TenantId == tenantId);
     }
+
+    #endregion
 }

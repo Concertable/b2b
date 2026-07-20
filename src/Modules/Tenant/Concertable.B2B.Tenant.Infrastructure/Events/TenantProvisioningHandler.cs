@@ -20,7 +20,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Events;
 /// user joins the inviting tenant(s) as an ordinary member and gets <b>no</b> personal tenant and <b>no</b>
 /// <c>Announce()</c> — the inviting tenant is already live. The two accept paths coexist: this branch auto-accepts
 /// an invited user who <i>registers</i>; an invited user who already has an account accepts via
-/// <c>POST /api/invitations/{id}/accept</c>.</para>
+/// <c>POST /api/invitation/{id}/accept</c>.</para>
 /// </summary>
 internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<CredentialRegisteredEvent>
 {
