@@ -93,6 +93,22 @@ public sealed class InvitationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Invite_WhenPriorInviteExpired_Succeeds_AndRetiresTheExpiredOne()
+    {
+        // A lapsed invite stays Pending in storage (nothing sweeps it) — re-inviting must retire it, not 409.
+        var owner = fixture.SeedState.VenueManager1;
+        var tenantId = TenantOf(owner.Id);
+        const string invitee = "relapse@example.com";
+        var expired = await fixture.AddInvitationAsync(tenantId, invitee, TenantRole.Staff, owner.Id, DateTime.UtcNow.AddDays(-1));
+
+        var dto = await InviteAsync(fixture.CreateClient(owner), invitee, TenantRole.Manager);
+
+        Assert.NotEqual(expired.Id, dto.Id);
+        Assert.Equal(InvitationStatus.Expired, fixture.Invitations.Single(i => i.Id == expired.Id).Status);
+        Assert.Equal(InvitationStatus.Pending, fixture.Invitations.Single(i => i.Id == dto.Id).Status);
+    }
+
+    [Fact]
     public async Task Invite_ExistingMemberEmail_IsConflict()
     {
         var owner = fixture.SeedState.VenueManager1;
@@ -147,6 +163,24 @@ public sealed class InvitationTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var invitations = await response.Content.ReadAsync<List<InvitationDto>>();
         Assert.Contains(invitations!, i => i.Email == "pending@example.com");
+    }
+
+    [Fact]
+    public async Task GetInvitations_ExcludesExpired()
+    {
+        // A lapsed invite stays Pending in storage, so the list must apply the expiry cut-off, not trust Status.
+        var owner = fixture.SeedState.VenueManager1;
+        var tenantId = TenantOf(owner.Id);
+        var client = fixture.CreateClient(owner);
+        await InviteAsync(client, "live@example.com", TenantRole.Manager);
+        var expired = await fixture.AddInvitationAsync(tenantId, "expired@example.com", TenantRole.Staff, owner.Id, DateTime.UtcNow.AddDays(-1));
+
+        var response = await client.GetAsync("/api/organizations/invitations");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var invitations = await response.Content.ReadAsync<List<InvitationDto>>();
+        Assert.Contains(invitations!, i => i.Email == "live@example.com");
+        Assert.DoesNotContain(invitations!, i => i.Id == expired.Id);
     }
 
     #endregion

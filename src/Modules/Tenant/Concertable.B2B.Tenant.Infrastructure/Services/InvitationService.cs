@@ -39,7 +39,8 @@ internal sealed class InvitationService : IInvitationService
     public async Task<IReadOnlyList<InvitationDto>> ListPendingInvitationsAsync(CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var invitations = await repository.ListPendingInvitationsByTenantAsync(tenantId, ct);
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var invitations = await repository.ListPendingInvitationsByTenantAsync(tenantId, now, ct);
         return invitations
             .Select(i => new InvitationDto(i.Id, i.Email, i.Role, i.CreatedAt, i.ExpiresAt))
             .ToList();
@@ -49,6 +50,7 @@ internal sealed class InvitationService : IInvitationService
     {
         var tenantId = tenantContext.GetTenantId();
         var email = request.Email.Trim().ToLowerInvariant();
+        var now = timeProvider.GetUtcNow().UtcDateTime;
 
         // "Already a member" is by email; membership stores only the user id, so resolve members' emails
         // from the User projection (same batch join as the members list) and match case-insensitively.
@@ -57,10 +59,18 @@ internal sealed class InvitationService : IInvitationService
         if (memberEmails.Values.Any(e => string.Equals(e, email, StringComparison.OrdinalIgnoreCase)))
             throw new ConflictException("This person is already a member of the organization.");
 
-        if (await repository.PendingInvitationExistsAsync(tenantId, email, ct))
-            throw new ConflictException("An invitation for this email is already pending.");
+        var existing = await repository.GetPendingInvitationByEmailAsync(tenantId, email, ct);
+        if (existing is not null)
+        {
+            if (existing.IsActive(now))
+                throw new ConflictException("An invitation for this email is already pending.");
 
-        var now = timeProvider.GetUtcNow().UtcDateTime;
+            // A lapsed invite still holds the (TenantId, Email) filtered-unique Pending slot; retire it in its
+            // own save so the new Pending row can't collide with it (the index frees only once the update lands).
+            existing.Expire();
+            await repository.SaveChangesAsync(ct);
+        }
+
         var inviterId = currentUser.Id ?? throw new ForbiddenException("No authenticated user.");
         var invitation = TenantInvitationEntity.Create(tenantId, email, request.Role, inviterId, now, InvitationTtl);
         repository.AddInvitation(invitation);
