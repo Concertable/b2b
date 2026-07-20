@@ -1,11 +1,21 @@
+using Concertable.Kernel;
+
 namespace Concertable.B2B.Concert.Domain.Entities;
 
 /// <summary>
-/// A gap-free counter you can allocate the next number from. The generic contract concrete per-subject
-/// counters implement (e.g. <see cref="InvoiceSequenceEntity"/>), so sequence machinery works against the
-/// abstraction rather than a specific counter.
+/// A gap-free counter you can allocate the next number from.
 /// </summary>
 public interface ISequence
 {
     long Allocate();
+}
+
+/// <summary>
+/// A tenant-keyed, self-creating counter. The self type lets the generic sequence repository create the
+/// per-tenant counter on first allocation without knowing the concrete type.
+/// </summary>
+public interface ISequence<TSelf> : ISequence, ITenant
+    where TSelf : class, ISequence<TSelf>
+{
+    static abstract TSelf Create(Guid id);
 }
