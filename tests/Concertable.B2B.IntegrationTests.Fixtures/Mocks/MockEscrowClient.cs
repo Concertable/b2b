@@ -1,5 +1,6 @@
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
+using Concertable.Payment.Contracts.Enums;
 using Concertable.Testing.Integration;
 using FluentResults;
 using Stripe;
