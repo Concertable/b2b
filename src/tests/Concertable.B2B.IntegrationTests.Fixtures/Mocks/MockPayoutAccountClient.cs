@@ -1,4 +1,5 @@
 using Concertable.Payment.Client;
+using Concertable.Payment.Client.Enums;
 using Concertable.Testing.Integration;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
