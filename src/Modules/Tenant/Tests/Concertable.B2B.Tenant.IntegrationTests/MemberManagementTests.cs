@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 namespace Concertable.B2B.Tenant.IntegrationTests;
 
 /// <summary>
-/// Phase 6.2 member management on <c>api/organizations</c> — list/change-role/remove + delete-org — through the
+/// Member management on <c>api/organizations</c> — list/change-role/remove + delete-org — through the
 /// real ASP.NET pipeline. Covers the permission matrix boundaries (Owner vs Manager), the service-layer
 /// last-Owner invariant (demote/remove/self-leave), and that the surface is persona-agnostic (venue + artist).
 /// A founding Owner acting in their own single tenant resolves it by default (no header). When a second operator
@@ -44,7 +44,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         return client;
     }
 
-    // ---- GET members (OperationsView: Owner + Manager) ----
+    #region GetMembers
 
     [Fact]
     public async Task GetMembers_AsOwner_ReturnsAllMembersWithEmails()
@@ -74,7 +74,9 @@ public sealed class MemberManagementTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
     }
 
-    // ---- PUT members/{id}/role (MembersManageRoles: Owner only) ----
+    #endregion
+
+    #region ChangeRole
 
     [Fact]
     public async Task ChangeRole_AsOwner_UpdatesRole()
@@ -126,7 +128,9 @@ public sealed class MemberManagementTests : IAsyncLifetime
         Assert.Equal(TenantRole.Owner, fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == owner.Id).Role);
     }
 
-    // ---- DELETE members/{id} (MembersRemove: Owner only) + last-Owner + self-leave ----
+    #endregion
+
+    #region RemoveMember
 
     [Fact]
     public async Task RemoveMember_AsOwner_RemovesMembership()
@@ -183,7 +187,9 @@ public sealed class MemberManagementTests : IAsyncLifetime
         Assert.Contains(fixture.Memberships, m => m.TenantId == tenantId && m.UserId == coOwner.Id);
     }
 
-    // ---- DELETE api/organizations (TenantDelete: Owner only) ----
+    #endregion
+
+    #region DeleteCurrentTenant
 
     [Fact]
     public async Task DeleteTenant_AsOwner_DeletesTenantAndMemberships()
@@ -212,7 +218,9 @@ public sealed class MemberManagementTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
 
-    // ---- Persona-agnostic: the same surface serves artist tenants ----
+    #endregion
+
+    #region Persona-agnostic
 
     [Fact]
     public async Task Members_ArtistOwner_CanListAndManage()
@@ -230,4 +238,6 @@ public sealed class MemberManagementTests : IAsyncLifetime
         await promote.ShouldBe(HttpStatusCode.NoContent);
         Assert.Equal(TenantRole.Manager, fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == member.Id).Role);
     }
+
+    #endregion
 }

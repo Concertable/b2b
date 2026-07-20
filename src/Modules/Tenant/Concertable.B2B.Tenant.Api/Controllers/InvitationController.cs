@@ -11,13 +11,13 @@ namespace Concertable.B2B.Tenant.Api.Controllers;
 /// check in <see cref="IInvitationService.AcceptInvitationAsync"/> is the real gate.
 /// </summary>
 [ApiController]
-[Route("api/invitations")]
+[Route("api/[controller]")]
 [Authorize]
-internal sealed class InvitationsController : ControllerBase
+internal sealed class InvitationController : ControllerBase
 {
     private readonly IInvitationService invitationService;
 
-    public InvitationsController(IInvitationService invitationService)
+    public InvitationController(IInvitationService invitationService)
     {
         this.invitationService = invitationService;
     }
