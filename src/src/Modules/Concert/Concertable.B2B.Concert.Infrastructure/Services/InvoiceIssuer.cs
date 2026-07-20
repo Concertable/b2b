@@ -12,7 +12,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
     private readonly IDealAccessor dealAccessor;
     private readonly ITenantModule tenantModule;
     private readonly IInvoiceRepository invoiceRepository;
-    private readonly ISequenceRepository sequenceRepository;
+    private readonly ISequenceRepository<InvoiceSequenceEntity> sequenceRepository;
     private readonly TimeProvider timeProvider;
 
     public InvoiceIssuer(
@@ -22,7 +22,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
         IDealAccessor dealAccessor,
         ITenantModule tenantModule,
         IInvoiceRepository invoiceRepository,
-        ISequenceRepository sequenceRepository,
+        ISequenceRepository<InvoiceSequenceEntity> sequenceRepository,
         TimeProvider timeProvider)
     {
         this.settlementAmountResolver = settlementAmountResolver;
