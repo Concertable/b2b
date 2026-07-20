@@ -35,5 +35,16 @@ internal interface ITenantRepository : IRepository<TenantEntity, Guid>
     /// <summary>Every invitation row of a tenant — the delete-org cascade removes them so no invitation outlives its tenant.</summary>
     Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default);
 
+    /// <summary>Pending invitations for a tenant — the members-management "pending invites" list.</summary>
+    Task<IReadOnlyList<TenantInvitationEntity>> ListPendingInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default);
+
+    /// <summary>A single tracked invitation to mutate (accept/revoke); null if it doesn't exist.</summary>
+    Task<TenantInvitationEntity?> GetInvitationByIdAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>Whether a live (pending) invitation already exists for <c>(tenant, email)</c> — guards a duplicate invite.</summary>
+    Task<bool> PendingInvitationExistsAsync(Guid tenantId, string email, CancellationToken ct = default);
+
+    void AddInvitation(TenantInvitationEntity invitation);
+
     void RemoveInvitation(TenantInvitationEntity invitation);
 }
