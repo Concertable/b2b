@@ -27,6 +27,11 @@ public sealed class TenantInvitationEntity : IGuidEntity
     public Guid? AcceptedByUserId { get; private set; }
     public DateTime? AcceptedAt { get; private set; }
 
+    /// <summary>Whether the invitation is still live at <paramref name="utcNow"/> — pending and unexpired. A lapsed
+    /// row stays <see cref="InvitationStatus.Pending"/> in storage (nothing sweeps it), so <c>Pending</c> alone is
+    /// not "live". Mirrors the Auth token entities' <c>IsActive</c>.</summary>
+    public bool IsActive(DateTime utcNow) => Status == InvitationStatus.Pending && utcNow < ExpiresAt;
+
     public static TenantInvitationEntity Create(Guid tenantId, string email, TenantRole role, Guid createdBy, DateTime at, TimeSpan ttl) =>
         new()
         {
@@ -45,7 +50,7 @@ public sealed class TenantInvitationEntity : IGuidEntity
     {
         if (Status != InvitationStatus.Pending)
             throw new DomainException("Invitation is not pending.");
-        if (at > ExpiresAt)
+        if (at >= ExpiresAt)
             throw new DomainException("Invitation has expired.");
         Status = InvitationStatus.Accepted;
         AcceptedByUserId = userId;
@@ -58,5 +63,15 @@ public sealed class TenantInvitationEntity : IGuidEntity
         if (Status != InvitationStatus.Pending)
             throw new DomainException("Only a pending invitation can be revoked.");
         Status = InvitationStatus.Revoked;
+    }
+
+    /// <summary>Retires a lapsed invitation. The row stays <see cref="InvitationStatus.Pending"/> once its TTL
+    /// passes (nothing sweeps it), so a re-invite calls this to free the <c>(TenantId, Email)</c> filtered-unique
+    /// slot the stale row still occupies.</summary>
+    public void Expire()
+    {
+        if (Status != InvitationStatus.Pending)
+            throw new DomainException("Only a pending invitation can expire.");
+        Status = InvitationStatus.Expired;
     }
 }
