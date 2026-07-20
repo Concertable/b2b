@@ -32,16 +32,16 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
     public async Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
         await context.Invitations.Where(i => i.TenantId == tenantId).ToListAsync(ct);
 
-    public async Task<IReadOnlyList<TenantInvitationEntity>> ListPendingInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
+    public async Task<IReadOnlyList<TenantInvitationEntity>> ListPendingInvitationsByTenantAsync(Guid tenantId, DateTime now, CancellationToken ct = default) =>
         await context.Invitations
-            .Where(i => i.TenantId == tenantId && i.Status == InvitationStatus.Pending)
+            .Where(i => i.TenantId == tenantId && i.Status == InvitationStatus.Pending && i.ExpiresAt > now)
             .ToListAsync(ct);
 
     public Task<TenantInvitationEntity?> GetInvitationByIdAsync(Guid id, CancellationToken ct = default) =>
         context.Invitations.FirstOrDefaultAsync(i => i.Id == id, ct);
 
-    public Task<bool> PendingInvitationExistsAsync(Guid tenantId, string email, CancellationToken ct = default) =>
-        context.Invitations.AnyAsync(i => i.TenantId == tenantId && i.Email == email && i.Status == InvitationStatus.Pending, ct);
+    public Task<TenantInvitationEntity?> GetPendingInvitationByEmailAsync(Guid tenantId, string email, CancellationToken ct = default) =>
+        context.Invitations.FirstOrDefaultAsync(i => i.TenantId == tenantId && i.Email == email && i.Status == InvitationStatus.Pending, ct);
 
     public void AddInvitation(TenantInvitationEntity invitation) => context.Invitations.Add(invitation);
 

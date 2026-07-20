@@ -35,14 +35,18 @@ internal interface ITenantRepository : IRepository<TenantEntity, Guid>
     /// <summary>Every invitation row of a tenant — the delete-org cascade removes them so no invitation outlives its tenant.</summary>
     Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default);
 
-    /// <summary>Pending invitations for a tenant — the members-management "pending invites" list.</summary>
-    Task<IReadOnlyList<TenantInvitationEntity>> ListPendingInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default);
+    /// <summary>Live (pending and unexpired at <paramref name="now"/>) invitations for a tenant — the
+    /// members-management "pending invites" list. Lapsed rows stay <c>Pending</c> in storage, so the expiry
+    /// cut-off is applied here rather than trusting <c>Status</c> alone.</summary>
+    Task<IReadOnlyList<TenantInvitationEntity>> ListPendingInvitationsByTenantAsync(Guid tenantId, DateTime now, CancellationToken ct = default);
 
     /// <summary>A single tracked invitation to mutate (accept/revoke); null if it doesn't exist.</summary>
     Task<TenantInvitationEntity?> GetInvitationByIdAsync(Guid id, CancellationToken ct = default);
 
-    /// <summary>Whether a live (pending) invitation already exists for <c>(tenant, email)</c> — guards a duplicate invite.</summary>
-    Task<bool> PendingInvitationExistsAsync(Guid tenantId, string email, CancellationToken ct = default);
+    /// <summary>The tracked pending invitation for <c>(tenant, email)</c> (at most one — the filtered-unique
+    /// index) or null. The caller checks its expiry: a live one blocks a duplicate invite, a lapsed one is
+    /// retired before re-inviting.</summary>
+    Task<TenantInvitationEntity?> GetPendingInvitationByEmailAsync(Guid tenantId, string email, CancellationToken ct = default);
 
     void AddInvitation(TenantInvitationEntity invitation);
 
