@@ -30,14 +30,14 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    private async Task ProvisionAsync(CredentialRegisteredEvent e)
+    private async Task ProvisionAsync(CredentialRegisteredEvent e, MessageEnvelope? envelope = null)
     {
         using var scope = fixture.Services.CreateScope();
         var handler = scope.ServiceProvider
             .GetServices<IIntegrationEventHandler<CredentialRegisteredEvent>>()
             .OfType<TenantProvisioningHandler>()
             .Single();
-        await handler.HandleAsync(e, MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow));
+        await handler.HandleAsync(e, envelope ?? MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow));
     }
 
     [Theory]
@@ -66,6 +66,66 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         await ProvisionAsync(new CredentialRegisteredEvent(userId, "customer@test.com", ClientIds.CustomerWeb));
 
         Assert.False(await fixture.Memberships.AnyAsync(m => m.UserId == userId));
+    }
+
+    [Fact]
+    public async Task Registration_InvitedEmail_JoinsInviterTenantAsMember_NoPersonalTenant()
+    {
+        var inviter = fixture.SeedState.VenueManager1;
+        var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == inviter.Id).Id;
+        var newUserId = Guid.NewGuid();
+        var newEmail = $"{Guid.NewGuid():N}@invited.test";
+        await fixture.AddInvitationAsync(tenantId, newEmail, TenantRole.Manager, inviter.Id, DateTime.UtcNow.AddDays(7));
+
+        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.VenueWeb));
+
+        var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == newUserId);
+        Assert.NotNull(membership);
+        Assert.Equal(tenantId, membership!.TenantId);
+        Assert.Equal(TenantRole.Manager, membership.Role);
+        Assert.Equal(inviter.Id, membership.InvitedByUserId);
+
+        // The invited user joins the inviter's live tenant — no personal tenant, no re-Announce.
+        Assert.False(await fixture.Tenants.AnyAsync(t => t.CreatedByUserId == newUserId));
+
+        var invitation = await fixture.Invitations.SingleAsync(i => i.TenantId == tenantId && i.Email == newEmail);
+        Assert.Equal(InvitationStatus.Accepted, invitation.Status);
+        Assert.Equal(newUserId, invitation.AcceptedByUserId);
+    }
+
+    [Fact]
+    public async Task Registration_InvitedEmail_MatchesCaseInsensitively()
+    {
+        var inviter = fixture.SeedState.VenueManager1;
+        var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == inviter.Id).Id;
+        var newUserId = Guid.NewGuid();
+        await fixture.AddInvitationAsync(tenantId, "invitee@casing.test", TenantRole.Staff, inviter.Id, DateTime.UtcNow.AddDays(7));
+
+        // Auth carries the email verbatim; the handler normalizes it before matching the stored (normalized) invite.
+        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, "  Invitee@Casing.TEST ", ClientIds.VenueWeb));
+
+        var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == newUserId);
+        Assert.NotNull(membership);
+        Assert.Equal(tenantId, membership!.TenantId);
+        Assert.Equal(TenantRole.Staff, membership.Role);
+    }
+
+    [Fact]
+    public async Task Registration_InvitedEmail_Redelivery_IsIdempotent()
+    {
+        var inviter = fixture.SeedState.VenueManager1;
+        var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == inviter.Id).Id;
+        var newUserId = Guid.NewGuid();
+        var newEmail = $"{Guid.NewGuid():N}@invited.test";
+        await fixture.AddInvitationAsync(tenantId, newEmail, TenantRole.Manager, inviter.Id, DateTime.UtcNow.AddDays(7));
+
+        // Same envelope → same MessageId → the inbox dedup swallows the redelivery.
+        var envelope = MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow);
+        var e = new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.VenueWeb);
+        await ProvisionAsync(e, envelope);
+        await ProvisionAsync(e, envelope);
+
+        Assert.Equal(1, await fixture.Memberships.CountAsync(m => m.UserId == newUserId));
     }
 
     [Fact]
