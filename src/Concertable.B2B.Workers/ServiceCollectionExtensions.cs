@@ -16,6 +16,7 @@ using Concertable.Shared.Notification.Infrastructure.Extensions;
 using Concertable.Payment.Client.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
@@ -26,7 +27,7 @@ namespace Concertable.B2B.Workers;
 
 internal static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         services.AddSeedingInfrastructure();
         services.AddSharedInfrastructure(configuration);
@@ -57,8 +58,12 @@ internal static class ServiceCollectionExtensions
         services.AddDealModule(configuration);
         services.AddClientCredentials(opts =>
         {
-            opts.Authority = configuration["Auth:Authority"] ?? configuration["services:auth:https:0"] ?? "";
-            opts.ClientId = configuration["ServiceAuth:ClientId"] ?? "";
+            opts.Authority = configuration["Auth:Authority"] ?? configuration["services:auth:https:0"]
+                ?? (environment.IsEnvironment("Testing") ? null!
+                    : throw new InvalidOperationException("Auth:Authority is required (no explicit key and no service-discovery fallback)."));
+            opts.ClientId = configuration["ServiceAuth:ClientId"]
+                ?? (environment.IsEnvironment("Testing") ? null!
+                    : throw new InvalidOperationException("ServiceAuth:ClientId is required."));
             // genuine optional — secret-less local client (dev/E2E/Testing); do NOT fail-fast
             opts.ClientSecret = configuration["ServiceAuth:ClientSecret"] ?? string.Empty;
         });
