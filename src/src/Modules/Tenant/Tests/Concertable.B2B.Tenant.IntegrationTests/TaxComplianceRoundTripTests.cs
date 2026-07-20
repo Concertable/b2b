@@ -49,9 +49,9 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
     };
 
     [Fact]
-    public async Task Get_BeforeSetup_ReturnsOrganizationWithoutTaxCompliance()
+    public async Task Get_BeforeSetup_ReturnsTenantWithoutTaxCompliance()
     {
-        // A registered operator who hasn't completed organization setup — the only seeded tenant left without tax details.
+        // A registered operator who hasn't completed tenant setup — the only seeded tenant left without tax details.
         var manager = fixture.SeedState.VenueManagerNoVenue;
         var expectedTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == manager.Id).Id;
 

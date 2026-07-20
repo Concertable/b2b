@@ -12,5 +12,4 @@ internal interface IMembershipService
     Task<IReadOnlyList<MemberDto>> ListMembersAsync(CancellationToken ct = default);
     Task ChangeRoleAsync(Guid userId, ChangeMemberRoleRequest request, CancellationToken ct = default);
     Task RemoveMemberAsync(Guid userId, CancellationToken ct = default);
-    Task DeleteCurrentTenantAsync(CancellationToken ct = default);
 }
