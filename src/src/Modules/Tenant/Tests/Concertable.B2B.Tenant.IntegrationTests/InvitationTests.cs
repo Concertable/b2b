@@ -263,4 +263,20 @@ public sealed class InvitationTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.NotFound);
         Assert.DoesNotContain(fixture.Memberships, m => m.TenantId == ghostTenantId && m.UserId == invitee.Id);
     }
+
+    // ---- DELETE api/organizations cascade ----
+
+    [Fact]
+    public async Task DeleteOrganization_RemovesTheTenantsInvitations()
+    {
+        var owner = fixture.SeedState.VenueManager1;
+        var tenantId = TenantOf(owner.Id);
+        var client = fixture.CreateClient(owner);
+        await InviteAsync(client, "cleanup@example.com", TenantRole.Manager);
+
+        var response = await client.DeleteAsync("/api/organizations");
+
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        Assert.DoesNotContain(fixture.Invitations, i => i.TenantId == tenantId);
+    }
 }
