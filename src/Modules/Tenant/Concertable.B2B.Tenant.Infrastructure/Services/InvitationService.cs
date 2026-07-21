@@ -14,7 +14,7 @@ internal sealed class InvitationService : IInvitationService
     private readonly ITenantContext tenantContext;
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
-    private readonly IEmailSender emailSender;
+    private readonly IEmailTransport emailTransport;
     private readonly IUriService uriService;
     private readonly TimeProvider timeProvider;
 
@@ -23,7 +23,7 @@ internal sealed class InvitationService : IInvitationService
         ITenantContext tenantContext,
         ICurrentUser currentUser,
         IUserModule userModule,
-        IEmailSender emailSender,
+        IEmailTransport emailTransport,
         IUriService uriService,
         TimeProvider timeProvider)
     {
@@ -31,7 +31,7 @@ internal sealed class InvitationService : IInvitationService
         this.tenantContext = tenantContext;
         this.currentUser = currentUser;
         this.userModule = userModule;
-        this.emailSender = emailSender;
+        this.emailTransport = emailTransport;
         this.uriService = uriService;
         this.timeProvider = timeProvider;
     }
@@ -129,6 +129,6 @@ internal sealed class InvitationService : IInvitationService
             $"You've been invited to join an organization on Concertable as {invitation.Role}. " +
             $"Register or sign in on the manager portal, then accept your invitation here: {acceptLink}";
 
-        await emailSender.SendEmailAsync(invitation.Email, subject, body);
+        await emailTransport.SendEmailAsync(invitation.Email, subject, body);
     }
 }

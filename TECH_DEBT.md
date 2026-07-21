@@ -60,6 +60,31 @@ See [`plans/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/SPLIT_TIME_E2E_STRATEGY.md)
 
 ## MED
 
+### B2B outbound email is still synchronous inline — not on the transactional outbox
+
+The async-email-outbox refactor put Auth (verification/reset) and Customer (ticket receipt) on the
+transactional outbox (`IEmailSender` → `OutboxEmailSender` → `SendEmailCommand`), but **B2B's two email
+producers still send synchronously** through `IEmailTransport` (the raw SMTP/fake send), so a transient
+failure still loses the mail and the send isn't atomic with the business change:
+
+- `Concert.Infrastructure/Services/Messenger` — the counterparty email on a conversation message/action.
+- `Tenant.Infrastructure/Services/InvitationService` — the org-invitation email after the invitation saves.
+
+They were left synchronous because the integration-test harness can't deliver an outbox command
+in-process (`LocalDispatchingBus` deliberately doesn't dispatch commands locally, and the fixtures'
+`MockBusTransport.SendAsync` is a no-op), so the `EmailSender.Sent` assertions in
+`ApplicationCancel`/`ApplicationWithdrawReject`/`Invitation` tests only observe a synchronous send.
+`Messenger` also has no clean transactional anchor — it fires off a conversation action, not a persisted
+lifecycle transition.
+
+**Resolves when:** the concert-lifecycle transition (and the conversation action) raise a domain event
+whose pre-commit handler stages a `SendEmailCommand` on the same transaction (the
+`TicketPurchasedDomainEventHandler` pattern), making B2B email transactional/retried like Auth and
+Customer — with the B2B email integration assertions moved to draining the outbox (or asserting the
+staged command) rather than a synchronous `Sent` list.
+
+---
+
 ### `IgnoreQueryFilters` used to subtract tenancy instead of composing a stance — anti-pattern
 
 `CODE_PATTERNS.md` § "Tenancy is composed, never subtracted" bans per-query `IgnoreQueryFilters` and

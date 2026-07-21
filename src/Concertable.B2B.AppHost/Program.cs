@@ -11,7 +11,8 @@ var asb = builder.AddServiceBus();
 asb.Topology()
    .AddB2BTopology()
    .AddSearchTopology()
-   .AddPaymentTopology();
+   .AddPaymentTopology()
+   .AddAuthTopology();
 
 var auth = builder.AddAuth<Projects.Concertable_Auth>(authDb, b2bDb, asb);
 var paymentWeb = builder.AddPaymentWeb<Projects.Concertable_Payment_Web>(auth, paymentDb, asb);
