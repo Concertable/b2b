@@ -20,6 +20,6 @@ builder.Services
 
 builder.Services
     .AddScoped<IKeyedServiceProvider>(sp => (IKeyedServiceProvider)sp)
-    .AddInfrastructure(builder.Configuration);
+    .AddInfrastructure(builder.Configuration, builder.Environment);
 
 builder.Build().Run();

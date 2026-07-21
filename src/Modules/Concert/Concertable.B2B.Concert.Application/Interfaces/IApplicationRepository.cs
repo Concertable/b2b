@@ -8,6 +8,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<ApplicationEntity>
 {
     Task<IEnumerable<ApplicationEntity>> GetByOpportunityIdAsync(int opportunityId);
+    Task<bool> ExistsForOpportunityAndArtistAsync(int opportunityId, int artistId);
     Task<IEnumerable<ApplicationEntity>> GetPendingByArtistIdAsync(int id);
     Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistIdAsync(int id);
     Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id);
