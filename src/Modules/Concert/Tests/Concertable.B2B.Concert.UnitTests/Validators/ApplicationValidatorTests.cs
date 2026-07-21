@@ -192,7 +192,7 @@ public sealed class ApplicationValidatorTests
         // Arrange
         artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync(ArtistId);
         opportunityRepository.Setup(r => r.GetByIdAsync(OpportunityId)).ReturnsAsync(Opportunity(FuturePeriod));
-        applicationRepository.Setup(r => r.ExistsForOpportunityAndArtistAsync(OpportunityId, ArtistId)).ReturnsAsync(true);
+        applicationRepository.Setup(r => r.ExistsForOpportunityAndArtistAsync(It.IsAny<int>(), ArtistId)).ReturnsAsync(true);
 
         // Act
         var result = await validator.CanApplyAsync(OpportunityId);
