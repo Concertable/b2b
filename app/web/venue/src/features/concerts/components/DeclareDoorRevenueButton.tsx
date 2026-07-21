@@ -32,20 +32,19 @@ export function DeclareDoorRevenueButton({ concert }: Readonly<Props>) {
   const concertableSales = (concert.ticketsSold ?? 0) * concert.price;
   const total = concertableSales + external;
 
-  async function handleConfirm() {
+  function handleConfirm() {
     if (!parsed.success) {
       setTouched(true);
       return;
     }
-    try {
-      await declare.mutateAsync(parsed.data);
-      toast.success("Door takings recorded. The artist's share will settle shortly.");
-      setOpen(false);
-      setValue("");
-      setTouched(false);
-    } catch {
-      toast.error("Couldn't record the door takings. Please try again.");
-    }
+    declare.mutate(parsed.data, {
+      onSuccess: () => {
+        toast.success("Door takings recorded. The artist's share will settle shortly.");
+        setOpen(false);
+        setValue("");
+        setTouched(false);
+      },
+    });
   }
 
   return (
@@ -108,7 +107,7 @@ export function DeclareDoorRevenueButton({ concert }: Readonly<Props>) {
             </Button>
             <Button
               data-testid="declare-door-revenue-confirm"
-              onClick={() => void handleConfirm()}
+              onClick={handleConfirm}
               disabled={declare.isPending}
             >
               {declare.isPending ? "Saving..." : "Record takings"}

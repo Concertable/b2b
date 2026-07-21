@@ -6,15 +6,14 @@ export function useDenyApplication(opportunityId: number) {
   const [target, setTarget] = useState<number | null>(null);
   const mutation = useRejectApplicationMutation(opportunityId);
 
-  async function confirm() {
+  function confirm() {
     if (target == null) return;
-    try {
-      await mutation.mutateAsync(target);
-      toast.success("Application denied.");
-      setTarget(null);
-    } catch {
-      toast.error("Couldn't deny this application. Please try again.");
-    }
+    mutation.mutate(target, {
+      onSuccess: () => {
+        toast.success("Application denied.");
+        setTarget(null);
+      },
+    });
   }
 
   return {
