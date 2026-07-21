@@ -27,7 +27,6 @@ export function useMyVenue(): UseMyVenueResult {
       resetOpportunities();
       toast.success("Venue saved!");
     },
-    onError: () => toast.error("Failed to save venue."),
     afterSave: () => saveOpportunities(),
     onToggleEdit: () => {
       const cached =

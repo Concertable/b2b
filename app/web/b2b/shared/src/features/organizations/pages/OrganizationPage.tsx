@@ -81,8 +81,6 @@ function OrganizationForm({ organization }: { organization: Organization }) {
       },
       {
         onSuccess: () => toast.success("Details saved"),
-        onError: () =>
-          toast.error("Couldn't save — check the details and try again"),
       },
     );
   }
