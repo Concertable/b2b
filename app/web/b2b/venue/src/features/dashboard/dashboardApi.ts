@@ -4,10 +4,10 @@ import type {
   ConcertCard,
   MessageThread,
   MonthlyRevenuePoint,
-  OpportunityWithCounts,
   ReviewExcerpt,
   Settlement,
 } from "@concertable/shared/features/dashboard";
+import type { OpportunityWithCounts } from "@b2b/features/dashboard";
 import { venueFixtures } from "./fixtures";
 import type {
   Application,
