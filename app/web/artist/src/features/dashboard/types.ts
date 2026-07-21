@@ -1,10 +1,10 @@
 import type {
   DashboardApplicationStatus,
-  OpportunitySummary,
   ProfileHealth,
   ReviewSummary,
   StripeConnectStatus,
 } from "@concertable/shared/features/dashboard";
+import type { OpportunitySummary } from "@b2b/features/dashboard";
 import type { ApplicationActions } from "./applicationActions";
 
 export interface ArtistDashboardOverview {

@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import dayjs from "dayjs";
 import { useArtistRecommendedOpportunities } from "./hooks";
-import { dealSummary } from "@concertable/shared/features/deals";
+import { dealSummary } from "@b2b/features/deals";
 import { genreLabel } from "@concertable/shared/types";
 import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 

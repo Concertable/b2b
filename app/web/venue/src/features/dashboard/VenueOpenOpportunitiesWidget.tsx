@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Inbox } from "lucide-react";
 import dayjs from "dayjs";
 import { useVenueOpenOpportunities } from "./hooks";
-import { dealSummary } from "@concertable/shared/features/deals";
+import { dealSummary } from "@b2b/features/deals";
 import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function VenueOpenOpportunitiesWidget() {

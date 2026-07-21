@@ -1,8 +1,6 @@
-import {
-  DEAL_TYPE_LABELS,
-  dealSummary,
-  type Deal,
-} from "@concertable/shared/features/deals";
+import { DEAL_TYPE_LABELS } from "../defaults";
+import { dealSummary } from "../format";
+import type { Deal } from "../types";
 
 interface Props {
   deal: Deal;
