@@ -19,7 +19,9 @@ builder.Services.AddSingleton<SeedCatalog>();
 builder.Services.AddAzureServiceBusTransport(
     opts =>
     {
-        opts.ConnectionString = builder.Configuration.GetConnectionString("asb") ?? "";
+        opts.ConnectionString = builder.Configuration.GetConnectionString("asb")
+            ?? (builder.Environment.IsEnvironment("Testing") ? null!
+                : throw new InvalidOperationException("Connection string 'asb' is required."));
         opts.ServiceName = "concertable-b2b-seeding-simulator";
     },
     reg => reg
