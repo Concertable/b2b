@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Tenant.Application\Concertable.B2B.Tenant.Application.csproj" />
+    <ProjectReference Include="..\..\User\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
   </ItemGroup>
 
@@ -31,6 +32,7 @@
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Messaging.Contracts" />
     <PackageReference Include="Concertable.Seed.Shared" />
+    <PackageReference Include="Concertable.Shared.Email.Application" />
   </ItemGroup>
 
 </Project>

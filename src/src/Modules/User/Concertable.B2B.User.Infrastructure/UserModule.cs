@@ -36,6 +36,12 @@ internal sealed class UserModule : IUserModule
         return result;
     }
 
+    public async Task<IReadOnlyDictionary<Guid, string>> GetEmailsByIdsAsync(IEnumerable<Guid> ids)
+    {
+        var users = await userRepository.GetByIdsAsync(ids);
+        return users.ToDictionary(u => u.Id, u => u.Email);
+    }
+
     public async Task<ManagerDto?> GetManagerByIdAsync(Guid userId)
     {
         var isManager = await context.VenueManagerProfiles.AnyAsync(p => p.Sub == userId)

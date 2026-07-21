@@ -1,4 +1,4 @@
-import api from "@concertable/shared/lib/axiosClient";
+import { apiClient } from "@concertable/shared/lib/apiClient";
 import type { Concert } from "@concertable/shared/features/concerts/types";
 
 // Owner (manager) read of a concert the caller is a party to: GET /concert/user/{id}.
@@ -7,7 +7,7 @@ import type { Concert } from "@concertable/shared/features/concerts/types";
 // cross-platform @concertable/shared core.
 const myConcertApi = {
   getMyConcert: async (id: number): Promise<Concert> => {
-    const { data } = await api.get<Concert>(`/concert/user/${id}`);
+    const { data } = await apiClient.get<Concert>(`/concert/user/${id}`);
     return data;
   },
 };

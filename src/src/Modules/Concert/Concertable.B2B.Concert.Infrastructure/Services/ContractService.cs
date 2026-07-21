@@ -9,14 +9,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class ContractService : IContractService
 {
     private readonly IContractRepository repository;
-    private readonly IContractPdfService pdfService;
+    private readonly IContractPdfService contractPdfService;
 
     public ContractService(
         IContractRepository repository,
-        IContractPdfService pdfService)
+        IContractPdfService contractPdfService)
     {
         this.repository = repository;
-        this.pdfService = pdfService;
+        this.contractPdfService = contractPdfService;
     }
 
     public async Task<ContractDto> GetByApplicationIdAsync(int applicationId)
@@ -30,13 +30,13 @@ internal sealed class ContractService : IContractService
     {
         var contract = await repository.GetByApplicationIdAsync(applicationId)
             .OrNotFound();
-        return contract.ToFileDownload(await pdfService.GetOrCreateAsync(contract));
+        return contract.ToFileDownload(await contractPdfService.GetOrCreateAsync(contract));
     }
 
     public async Task<FileDownload> GetPdfByConcertIdAsync(int concertId)
     {
         var contract = await repository.GetByConcertIdAsync(concertId)
             .OrNotFound();
-        return contract.ToFileDownload(await pdfService.GetOrCreateAsync(contract));
+        return contract.ToFileDownload(await contractPdfService.GetOrCreateAsync(contract));
     }
 }
