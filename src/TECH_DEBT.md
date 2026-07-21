@@ -202,14 +202,6 @@ names are updated to match.
 
 ---
 
-### `ConcertDetailsResponse` coerces optional images to `string.Empty`
-
-`ConcertResponseMappers.ToDetailsResponse` maps `BannerUrl = dto.BannerUrl ?? string.Empty` and `Avatar = dto.Avatar ?? dto.Artist.Avatar ?? string.Empty` because `ConcertDetailsResponse` declares both as `required string` while the underlying data is legitimately optional. The mapper flattens "absent" into "present but blank", and the SPA has to re-interpret `""` as missing. Inconsistent with `ConcertArtistResponse.Avatar` in the same response family, which is honestly `string?`.
-
-**Resolves when:** `ConcertDetailsResponse.BannerUrl`/`.Avatar` become `string?` (the avatar keeping its `dto.Avatar ?? dto.Artist.Avatar` preference chain, ending in null), the `?? string.Empty` coercions are deleted, and the SPA consumes null rather than empty string.
-
----
-
 ### `UserEntity.Avatar` models "no avatar" as empty string
 
 `Modules/User/Concertable.B2B.User.Domain/UserEntity.cs` declares `public string Avatar { get; private set; } = string.Empty;` — an empty-string placeholder pretending to be a value (the pattern `docs/CODE_CONVENTIONS.md` bans for populated-later defaults). "No avatar" is modelled as `string?` elsewhere (e.g. `ConcertArtistResponse.Avatar`).
@@ -218,11 +210,17 @@ names are updated to match.
 
 ---
 
-### Duplicate application attempt is a 500, not a 400
+### Duplicate application attempt is a 500, not a 400 — guard landed, integration test outstanding
 
-`ApplicationValidator.CanApplyAsync` never checks for an existing application by the same artist on the same opportunity, but `concert.Applications` has a unique `(OpportunityId, ArtistId)` index — so a second apply (including re-applying after a withdraw/reject, where the opportunity legitimately shows as open) passes eligibility and then blows up as a `DbUpdateException` → 500. Surfaced while testing withdraw (`Feature/ApplicationCancel`).
+Fixed on `Fix/TechDebtSweep`: `ApplicationService.ValidateCanApplyAsync` (the apply/insert path,
+used by both `ApplyAsync` overloads) rejects an existing `(opportunityId, artistId)` row via
+`IApplicationRepository.ExistsForOpportunityAndArtistAsync`, returning a clean 400. Deliberately
+*not* in the shared `ApplicationValidator.CanApplyAsync`: that validator is also reused by the
+VenueHire **pre-apply checkout** (`ApplyCheckoutAsync`), which legitimately runs while an
+application may already exist and must not be rejected. Outstanding only: an **integration test**
+for apply-after-withdraw → 400 (needs Docker).
 
-**Resolves when:** `CanApplyAsync` fails with a clear message when any application row exists for `(opportunityId, artistId)`, and an integration test covers apply-after-withdraw returning 400.
+**Resolves when:** the apply-after-withdraw integration test lands green.
 
 ---
 
