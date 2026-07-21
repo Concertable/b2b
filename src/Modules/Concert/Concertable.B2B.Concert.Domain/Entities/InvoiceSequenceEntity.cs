@@ -6,7 +6,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// that shared commit is what makes the sequence gap-free. <see cref="RowVersion"/> serialises concurrent
 /// allocations for the same supplier (the loser retries on the next sweep, so no number is ever skipped).
 /// </summary>
-public sealed class InvoiceSequenceEntity : ISequence
+public sealed class InvoiceSequenceEntity : ISequence<InvoiceSequenceEntity>
 {
     public Guid TenantId { get; private set; }
     public long NextNumber { get; private set; }
@@ -14,7 +14,7 @@ public sealed class InvoiceSequenceEntity : ISequence
 
     private InvoiceSequenceEntity() { }
 
-    public static InvoiceSequenceEntity Start(Guid tenantId) => new() { TenantId = tenantId, NextNumber = 1 };
+    public static InvoiceSequenceEntity Create(Guid tenantId) => new() { TenantId = tenantId, NextNumber = 1 };
 
     public long Allocate()
     {

@@ -15,6 +15,12 @@ namespace Concertable.B2B.Tenant.Infrastructure.Events;
 /// its create event suppressed at seed time, so this re-raises it via <c>Announce()</c>. Exactly one publish per
 /// tenant either way — no duplicate, orphaned Stripe accounts. The Owner membership is ensured idempotently over
 /// the seeded row, so it exists exactly once regardless of seed/handler ordering.
+///
+/// <para>Invitation-first branch: when the registering email has one or more pending, unexpired invitations, the
+/// user joins the inviting tenant(s) as an ordinary member and gets <b>no</b> personal tenant and <b>no</b>
+/// <c>Announce()</c> — the inviting tenant is already live. The two accept paths coexist: this branch auto-accepts
+/// an invited user who <i>registers</i>; an invited user who already has an account accepts via
+/// <c>POST /api/invitation/{id}/accept</c>.</para>
 /// </summary>
 internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<CredentialRegisteredEvent>
 {
@@ -46,6 +52,27 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
         context.AddInboxMessage(envelope, nameof(TenantProvisioningHandler));
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
+
+        var invitedEmail = e.Email.Trim().ToLowerInvariant();
+        var pendingInvitations = await context.Invitations
+            .Where(i => i.Email == invitedEmail && i.Status == InvitationStatus.Pending && i.ExpiresAt > now)
+            .ToListAsync(ct);
+        if (pendingInvitations.Count > 0)
+        {
+            foreach (var invitation in pendingInvitations)
+            {
+                var alreadyMember = await context.Memberships
+                    .AnyAsync(m => m.TenantId == invitation.TenantId && m.UserId == e.UserId, ct);
+                if (!alreadyMember)
+                    context.Memberships.Add(TenantMembershipEntity.Create(
+                        invitation.TenantId, e.UserId, invitation.Role, invitedBy: invitation.CreatedByUserId, now));
+                invitation.Accept(e.UserId, now);
+            }
+
+            await context.SaveChangesAsync(ct);
+            return;
+        }
+
         var tenant = await context.Tenants.FirstOrDefaultAsync(t => t.CreatedByUserId == e.UserId, ct);
         if (tenant is null)
         {
