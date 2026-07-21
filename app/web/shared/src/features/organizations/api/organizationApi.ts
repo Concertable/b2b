@@ -1,5 +1,6 @@
 import api from "@concertable/shared/lib/axiosClient";
-import type { Organization, UpdateOrganizationRequest } from "../types";
+import type { Organization } from "../types";
+import type { UpdateOrganizationRequest } from "../schemas/updateOrganizationRequestSchema";
 
 const organizationApi = {
   get: async (): Promise<Organization | null> => {
