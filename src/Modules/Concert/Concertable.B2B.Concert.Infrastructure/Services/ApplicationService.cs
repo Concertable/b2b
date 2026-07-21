@@ -108,6 +108,9 @@ internal sealed class ApplicationService : IApplicationService
         var opportunity = await opportunityRepository.GetByIdAsync(opportunityId)
             .OrNotFound();
 
+        if (await repository.ExistsForOpportunityAndArtistAsync(opportunityId, artistId))
+            throw new BadRequestException("You have already applied to this concert opportunity");
+
         var result = await applicationValidator.CanApplyAsync(opportunity, artistId);
         if (result.IsFailed)
             throw new BadRequestException(result.Errors);
