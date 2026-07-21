@@ -117,7 +117,6 @@ services.AddClientCredentials(opts =>
     opts.ClientId = builder.Configuration["ServiceAuth:ClientId"]
         ?? (builder.Environment.IsEnvironment("Testing") ? null!
             : throw new InvalidOperationException("ServiceAuth:ClientId is required."));
-    // optional — a secret-less/public client (dev/E2E/Testing) has none; leave it null, never "" (a fake empty secret)
     if (builder.Configuration["ServiceAuth:ClientSecret"] is string clientSecret)
         opts.ClientSecret = clientSecret;
 });
