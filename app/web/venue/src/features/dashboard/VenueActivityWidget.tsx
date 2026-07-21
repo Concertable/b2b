@@ -1,9 +1,9 @@
 import { Activity } from "lucide-react";
-import { useVenueActivity } from "./hooks";
+import { useVenueActivityQuery } from "./hooks";
 import { ActivityFeed, DashboardCard, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function VenueActivityWidget() {
-  const { data, isLoading, isError, refetch } = useVenueActivity();
+  const { data, isLoading, isError, refetch } = useVenueActivityQuery();
 
   return (
     <DashboardCard title="Activity" icon={Activity}>

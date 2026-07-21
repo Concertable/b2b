@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { Music } from "lucide-react";
 import dayjs from "dayjs";
-import { useVenueUpcomingConcerts } from "./hooks";
+import { useVenueUpcomingConcertsQuery } from "./hooks";
 import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function VenueUpcomingConcertsStrip() {
-  const { data, isLoading, isError, refetch } = useVenueUpcomingConcerts();
+  const { data, isLoading, isError, refetch } = useVenueUpcomingConcertsQuery();
 
   return (
     <DashboardCard

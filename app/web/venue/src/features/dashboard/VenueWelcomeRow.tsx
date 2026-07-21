@@ -1,9 +1,9 @@
-import { useVenueOverview } from "./hooks";
+import { useVenueOverviewQuery } from "./hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileHealthCard } from "@/features/dashboard";
 
 export function VenueWelcomeRow() {
-  const { data, isLoading } = useVenueOverview();
+  const { data, isLoading } = useVenueOverviewQuery();
 
   if (isLoading || !data) {
     return (

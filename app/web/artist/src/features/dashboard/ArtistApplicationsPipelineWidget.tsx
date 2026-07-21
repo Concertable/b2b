@@ -1,7 +1,7 @@
 import { FileText } from "lucide-react";
 import dayjs from "dayjs";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useArtistApplications } from "./hooks";
+import { useArtistApplicationsQuery } from "./hooks";
 import {
   APPLICATION_ACTION_LABELS,
   type ApplicationActionName,
@@ -87,7 +87,7 @@ const columns: ColumnDef<Application>[] = [
 ];
 
 export function ArtistApplicationsPipelineWidget() {
-  const { data, isLoading, isError, refetch } = useArtistApplications();
+  const { data, isLoading, isError, refetch } = useArtistApplicationsQuery();
 
   return (
     <DashboardCard

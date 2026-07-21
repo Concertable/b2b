@@ -5,7 +5,7 @@ import { EditableProvider } from "@concertable/shared/providers";
 import { DetailsPageSkeleton } from "@/components/skeletons/DetailsPageSkeleton";
 import type { Concert } from "@concertable/shared/features/concerts/types";
 import { useMyConcert } from "../hooks/useMyConcert";
-import { useDownloadContract } from "../hooks/useDownloadContract";
+import { useDownloadContractMutation } from "../hooks/useDownloadContractMutation";
 import { useConcertStore } from "../store/useConcertStore";
 import { ConcertDetails } from "@/features/concerts";
 
@@ -32,7 +32,7 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
   const draft = useConcertStore((state) => state.draft);
   const setName = useConcertStore((state) => state.setName);
   const setAbout = useConcertStore((state) => state.setAbout);
-  const downloadContract = useDownloadContract();
+  const downloadContract = useDownloadContractMutation();
 
   if (!concert) return <DetailsPageSkeleton sections={4} />;
 
