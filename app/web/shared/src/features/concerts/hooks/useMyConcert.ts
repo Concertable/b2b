@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import concertApi from "@concertable/shared/features/concerts/api/concertApi";
+import { useConcertStore } from "@concertable/shared/features/concerts/store/useConcertStore";
 import {
   updateConcertRequestSchema,
   type UpdateConcertRequest,
@@ -19,85 +19,51 @@ interface UseMyConcertResult {
   canSave: boolean;
   saveError: string | null;
   save: () => void;
-  setName: (name: string) => void;
-  setAbout: (about: string) => void;
   toggleEdit: () => void;
   resetDraft: () => void;
-}
-
-function toRequest(concert: Concert): UpdateConcertRequest {
-  return {
-    name: concert.name,
-    about: concert.about,
-    price: concert.price,
-    totalTickets: concert.totalTickets,
-  };
 }
 
 export function useMyConcert(id: number): UseMyConcertResult {
   const { data: concert, isLoading, isError } = useMyConcertQuery(id);
   const queryClient = useQueryClient();
 
-  const [editMode, setEditMode] = useState(false);
-  const [buffer, setBuffer] = useState<UpdateConcertRequest | null>(null);
+  const { toggleEdit, resetDraft, draft, isDirty, editMode } =
+    useConcertStore();
 
   const mutation = useMutation({
     mutationFn: (request: UpdateConcertRequest) =>
       concertApi.updateConcert(id, request),
     onSuccess: (saved) => {
       queryClient.setQueryData(myConcertQueryKey(id), saved);
-      setBuffer(null);
-      setEditMode(false);
+      resetDraft(saved);
     },
   });
 
-  const patch = (fields: Partial<UpdateConcertRequest>) =>
-    setBuffer((current) => (current ? { ...current, ...fields } : current));
-
-  const validation = buffer
-    ? updateConcertRequestSchema.safeParse(buffer)
+  const validation = draft
+    ? updateConcertRequestSchema.safeParse(draft)
     : undefined;
-  const isDirty =
-    !!buffer &&
-    !!concert &&
-    (buffer.name !== concert.name ||
-      buffer.about !== concert.about ||
-      buffer.price !== concert.price ||
-      buffer.totalTickets !== concert.totalTickets);
   const canSave = validation?.success ?? false;
   const saveError =
     isDirty && validation && !validation.success
       ? validation.error.issues[0].message
       : null;
 
+  const save = () => {
+    if (validation?.success) mutation.mutate(validation.data);
+  };
+
   return {
     concert,
-    draft: editMode && buffer && concert ? { ...concert, ...buffer } : undefined,
+    draft,
     isLoading,
     isError,
     editMode,
     isDirty,
     canSave,
     saveError,
+    save,
     isSaving: mutation.isPending,
-    save: () => {
-      if (validation?.success) mutation.mutate(validation.data);
-    },
-    setName: (name) => patch({ name }),
-    setAbout: (about) => patch({ about }),
-    toggleEdit: () => {
-      if (!concert) return;
-      if (editMode) {
-        setBuffer(null);
-        setEditMode(false);
-      } else {
-        setBuffer(toRequest(concert));
-        setEditMode(true);
-      }
-    },
-    resetDraft: () => {
-      setBuffer(null);
-      setEditMode(false);
-    },
+    toggleEdit: () => toggleEdit(concert!),
+    resetDraft: () => resetDraft(concert!),
   };
 }
