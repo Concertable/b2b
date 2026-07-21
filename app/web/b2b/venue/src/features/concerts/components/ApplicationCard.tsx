@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { useImageUrl } from "@concertable/shared/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import type { Application } from "@/features/concerts";
+import type { Application } from "@b2b/features/concerts";
 
 interface Props {
   application: Application;

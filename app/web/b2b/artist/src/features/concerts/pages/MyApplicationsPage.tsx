@@ -4,7 +4,7 @@ import {
   useRecentDeniedApplicationsQuery,
   ConfirmActionDialog,
 } from "@b2b/features/concerts";
-import type { Application } from "@/features/concerts";
+import type { Application } from "@b2b/features/concerts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useWithdrawApplication } from "../hooks/useWithdrawApplication";

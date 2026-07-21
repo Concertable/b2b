@@ -2,6 +2,14 @@ export { OpportunitySection } from "./components/opportunities/OpportunitySectio
 export { AcceptDealSummary } from "./components/applications/AcceptDealSummary";
 export { ESignaturePanel } from "./components/applications/ESignaturePanel";
 export type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
+export type {
+  Opportunity,
+  OpportunityDraft,
+  Application,
+  ApplicationStatus,
+  ApplicationActions,
+  OpportunityActions,
+} from "./types";
 export { useESignature } from "./hooks/useESignature";
 export { ConfirmActionDialog } from "./components/applications/ConfirmActionDialog";
 export { MyConcertPage } from "./pages/MyConcertPage";
