@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Users } from "lucide-react";
 import dayjs from "dayjs";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useVenueApplicationsToReview } from "./hooks";
+import { useVenueApplicationsToReviewQuery } from "./hooks";
 import {
   APPLICATION_ACTION_LABELS,
   type ApplicationActionName,
@@ -106,7 +106,7 @@ function sortApplications(items: Application[]) {
 }
 
 export function VenueApplicationsWidget() {
-  const { data, isLoading, isError, refetch } = useVenueApplicationsToReview();
+  const { data, isLoading, isError, refetch } = useVenueApplicationsToReviewQuery();
 
   const sorted = useMemo(() => (data ? sortApplications(data) : []), [data]);
 

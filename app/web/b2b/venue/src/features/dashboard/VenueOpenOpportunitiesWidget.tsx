@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Inbox } from "lucide-react";
 import dayjs from "dayjs";
-import { useVenueOpenOpportunities } from "./hooks";
+import { useVenueOpenOpportunitiesQuery } from "./hooks";
 import { dealSummary } from "@b2b/features/deals";
 import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function VenueOpenOpportunitiesWidget() {
-  const { data, isLoading, isError, refetch } = useVenueOpenOpportunities();
+  const { data, isLoading, isError, refetch } = useVenueOpenOpportunitiesQuery();
 
   return (
     <DashboardCard

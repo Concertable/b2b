@@ -1,6 +1,6 @@
 ﻿import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useImageUrl } from "@concertable/shared/hooks";
+import { useImageUrlQuery } from "@concertable/shared/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import type { Application } from "@b2b/features/concerts";
@@ -18,7 +18,7 @@ export function ApplicationCard({
 }: Readonly<Props>) {
   const navigate = useNavigate();
   const { artist, opportunity, status, actions } = application;
-  const { data: avatarSrc } = useImageUrl(artist.avatar);
+  const { data: avatarSrc } = useImageUrlQuery(artist.avatar);
 
   function handleAccept() {
     navigate({

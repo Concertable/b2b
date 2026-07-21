@@ -1,9 +1,9 @@
-import { useArtistOverview } from "./hooks";
+import { useArtistOverviewQuery } from "./hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileHealthCard } from "@/features/dashboard";
 
 export function ArtistWelcomeRow() {
-  const { data, isLoading } = useArtistOverview();
+  const { data, isLoading } = useArtistOverviewQuery();
 
   if (isLoading || !data) {
     return (

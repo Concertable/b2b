@@ -1,9 +1,9 @@
 import { Activity } from "lucide-react";
-import { useArtistActivity } from "./hooks";
+import { useArtistActivityQuery } from "./hooks";
 import { ActivityFeed, DashboardCard, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function ArtistActivityWidget() {
-  const { data, isLoading, isError, refetch } = useArtistActivity();
+  const { data, isLoading, isError, refetch } = useArtistActivityQuery();
 
   return (
     <DashboardCard title="Activity" icon={Activity}>

@@ -3,7 +3,7 @@ import concertApi from "@concertable/shared/features/concerts/api/concertApi";
 
 // Web-only: the object-URL + anchor download uses the DOM, so it can't live in the
 // cross-platform @concertable/shared core. Gated on the concert's actions.contract link.
-export function useDownloadContract() {
+export function useDownloadContractMutation() {
   return useMutation({
     mutationFn: async (concertId: number) => {
       const blob = await concertApi.getContractPdf(concertId);

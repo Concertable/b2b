@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { useCancelConcert } from "@concertable/shared/features/concerts/hooks/useCancelConcert";
+import { useCancelConcertMutation } from "@concertable/shared/features/concerts/hooks/useCancelConcertMutation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,7 +17,7 @@ interface Props {
 
 export function CancelBookingButton({ concertId }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
-  const cancel = useCancelConcert(concertId);
+  const cancel = useCancelConcertMutation(concertId);
 
   function handleConfirm() {
     cancel.mutate(undefined, {
