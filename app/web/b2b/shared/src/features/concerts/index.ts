@@ -28,4 +28,3 @@ export {
   useCancelApplicationMutation,
 } from "./hooks/useApplicationQuery";
 export { useDownloadContractMutation } from "./hooks/useDownloadContractMutation";
-export { useConcertStore } from "./store/useConcertStore";
