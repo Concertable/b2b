@@ -117,7 +117,7 @@ and item 9 (the audit trail of who agreed to what).
   into the existing `AcceptExecutor` / checkout step, recording identity + UTC timestamp
   (+ optionally IP / user-agent). In the UK that is a legally binding electronic signature
   for a B2B booking — no DocuSign needed.
-- Generate the contract PDF via `IPdfService` (QuestPDF, already in
+- Generate the contract PDF via `IPdfRenderer` (QuestPDF, already in
   `Concertable.Shared.Pdf`, currently unused in B2B); store immutably; expose download. Same
   plumbing the invoice (item 4) reuses.
 - **Tier 2 (later / optional):** full e-signature (drawn/typed, or DocuSign / Dropbox Sign /
@@ -139,13 +139,13 @@ separate unbuilt item — see `UkTaxComplianceOptions.ReportingAuthority`/`Repor
 
 ## 4. VAT-compliant invoice / self-billing — ABSENT
 **Legal basis:** HMRC VAT invoice rules; self-billing rules.
-`IPdfService` (QuestPDF) exists in `Concertable.Shared.Pdf` but is unused in B2B. No
+`IPdfRenderer` (QuestPDF) exists in `Concertable.Shared.Pdf` but is unused in B2B. No
 `InvoiceEntity`, no numbering.
 **Build:** per settlement, generate an invoice in the **direction item 1 dictates** with
 sequential, gap-free numbering scoped per issuing entity, tax-point date, both parties' VAT
 details, net/VAT/gross + line items. Mirror GigPig: the platform self-bills (generates the
 supplier's invoice on their behalf) — requires a self-billing clause in the artist/venue
-terms. Store immutably; expose download. Reuse `IPdfService`.
+terms. Store immutably; expose download. Reuse `IPdfRenderer`.
 
 ## 5. PRS pass-through (corrected) — ABSENT
 **Legal basis:** Copyright, Designs and Patents Act 1988; PRS for Music tariffs.

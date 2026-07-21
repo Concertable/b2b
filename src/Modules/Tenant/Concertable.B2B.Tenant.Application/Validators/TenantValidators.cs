@@ -20,6 +20,27 @@ internal sealed class UpdateTenantRequestValidator : AbstractValidator<UpdateTen
     }
 }
 
+internal sealed class ChangeMemberRoleRequestValidator : AbstractValidator<ChangeMemberRoleRequest>
+{
+    public ChangeMemberRoleRequestValidator()
+    {
+        RuleFor(x => x.Role).IsInEnum();
+    }
+}
+
+internal sealed class InviteMemberRequestValidator : AbstractValidator<InviteMemberRequest>
+{
+    public InviteMemberRequestValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty()
+            .EmailAddress()
+            .MaximumLength(256);
+
+        RuleFor(x => x.Role).IsInEnum();
+    }
+}
+
 internal sealed class TaxComplianceDtoValidator : AbstractValidator<TaxComplianceDto>
 {
     public TaxComplianceDtoValidator(ITaxComplianceRules taxRules, IOptions<UkTaxComplianceOptions> taxOptions)

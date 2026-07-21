@@ -15,6 +15,27 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 name: "tenant");
 
             migrationBuilder.CreateTable(
+                name: "Invitations",
+                schema: "tenant",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Role = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AcceptedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    AcceptedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Invitations", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Memberships",
                 schema: "tenant",
                 columns: table => new
@@ -56,6 +77,20 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Invitations_Email",
+                schema: "tenant",
+                table: "Invitations",
+                column: "Email");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Invitations_TenantId_Email",
+                schema: "tenant",
+                table: "Invitations",
+                columns: new[] { "TenantId", "Email" },
+                unique: true,
+                filter: "[Status] = 1");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Memberships_TenantId_UserId",
                 schema: "tenant",
                 table: "Memberships",
@@ -72,6 +107,10 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Invitations",
+                schema: "tenant");
+
             migrationBuilder.DropTable(
                 name: "Memberships",
                 schema: "tenant");

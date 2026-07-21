@@ -58,6 +58,22 @@ internal sealed class TenantService : ITenantService
         return ToDetails(tenant);
     }
 
+    public async Task DeleteCurrentTenantAsync(CancellationToken ct = default)
+    {
+        var tenantId = tenantContext.GetTenantId();
+        var tenant = await repository.GetByIdAsync(tenantId, ct)
+            ?? throw new NotFoundException($"Tenant {tenantId} not found.");
+
+        foreach (var membership in await repository.ListMembershipsByTenantAsync(tenantId, ct))
+            repository.RemoveMembership(membership);
+
+        foreach (var invitation in await repository.ListInvitationsByTenantAsync(tenantId, ct))
+            repository.RemoveInvitation(invitation);
+
+        repository.Remove(tenant);
+        await repository.SaveChangesAsync(ct);
+    }
+
     public async Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default)
     {
         // Presence IS completeness — the write path enforces the required fields + VAT format, so stored data
