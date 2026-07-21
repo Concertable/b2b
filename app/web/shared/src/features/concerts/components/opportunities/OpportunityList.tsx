@@ -5,7 +5,7 @@ import { defaultDeal } from "@b2b/features/deals";
 import { useOpportunities } from "../../hooks/useOpportunities";
 import { OpportunityEditCard } from "./OpportunityCard";
 import dayjs from "dayjs";
-import type { OpportunityDraft } from "@/features/concerts/types";
+import type { OpportunityDraft } from "../../types";
 
 interface Props {
   venueId: number;

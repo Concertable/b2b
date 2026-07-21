@@ -7,7 +7,7 @@ import { useOpportunities } from "@b2b/features/concerts/hooks/useOpportunities"
 import { opportunitiesQueryKey } from "@b2b/features/concerts/hooks/useOpportunitiesQuery";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { Opportunity } from "@/features/concerts/types";
+import type { Opportunity } from "@b2b/features/concerts/types";
 
 export function useMyVenue(): UseMyVenueResult {
   const queryClient = useQueryClient();

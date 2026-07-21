@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAllOpportunitiesQuery } from "../../hooks/useOpportunitiesQuery";
 import { OpportunityCard } from "./OpportunityCard";
 import { OpportunityList } from "./OpportunityList";
-import type { Opportunity } from "@/features/concerts/types";
+import type { Opportunity } from "../../types";
 
 interface Props {
   venueId: number;

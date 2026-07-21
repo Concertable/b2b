@@ -12,7 +12,8 @@ import {
   useApplicationQuery,
   useESignature,
 } from "@b2b/features/concerts";
-import type { Application, Checkout } from "@/features/concerts";
+import type { Application } from "@b2b/features/concerts";
+import type { Checkout } from "@/features/concerts";
 import { useCheckoutFlow, type CheckoutFlowState } from "@/features/concerts/hooks/useCheckoutFlow";
 import { CheckoutLayout } from "@/features/concerts/components/checkout/CheckoutLayout";
 import { CheckoutSection } from "@/features/concerts/components/checkout/CheckoutSection";
