@@ -34,9 +34,6 @@ internal sealed class ApplicationValidator : IApplicationValidator
     {
         var errors = new List<string>();
 
-        if (await applicationRepository.ExistsForOpportunityAndArtistAsync(opportunity.Id, artistId))
-            errors.Add("You have already applied to this concert opportunity");
-
         if (opportunity.Period.Start < timeProvider.GetUtcNow())
             errors.Add("This concert opportunity has already passed");
 

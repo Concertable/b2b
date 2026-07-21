@@ -187,10 +187,13 @@ names are updated to match.
 
 ### Duplicate application attempt is a 500, not a 400 — guard landed, integration test outstanding
 
-Fixed on `Fix/TechDebtSweep`: `ApplicationValidator.CanApplyAsync` now rejects an existing
-`(opportunityId, artistId)` row via `IApplicationRepository.ExistsForOpportunityAndArtistAsync`,
-returning a clean 400; a unit test covers it. Outstanding only: an **integration test** for
-apply-after-withdraw → 400 (needs Docker).
+Fixed on `Fix/TechDebtSweep`: `ApplicationService.ValidateCanApplyAsync` (the apply/insert path,
+used by both `ApplyAsync` overloads) rejects an existing `(opportunityId, artistId)` row via
+`IApplicationRepository.ExistsForOpportunityAndArtistAsync`, returning a clean 400. Deliberately
+*not* in the shared `ApplicationValidator.CanApplyAsync`: that validator is also reused by the
+VenueHire **pre-apply checkout** (`ApplyCheckoutAsync`), which legitimately runs while an
+application may already exist and must not be rejected. Outstanding only: an **integration test**
+for apply-after-withdraw → 400 (needs Docker).
 
 **Resolves when:** the apply-after-withdraw integration test lands green.
 
