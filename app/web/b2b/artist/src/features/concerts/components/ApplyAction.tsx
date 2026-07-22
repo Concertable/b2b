@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { Opportunity } from "@/features/concerts";
+import type { Opportunity } from "@b2b/features/concerts";
 import { ESignaturePanel, useESignature } from "@b2b/features/concerts";
 import { useApply } from "../hooks/useApply";
 

@@ -1,11 +1,11 @@
 import { Calendar, CircleDollarSign, Clock, FileText } from "lucide-react";
-import { useArtistKpis } from "./hooks";
+import { useArtistKpisQuery } from "./hooks";
 import { formatCurrency } from "@concertable/shared/lib";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KpiTile } from "@/features/dashboard";
 
 export function ArtistKpiStrip() {
-  const { data, isLoading } = useArtistKpis();
+  const { data, isLoading } = useArtistKpisQuery();
 
   if (isLoading || !data) {
     return (

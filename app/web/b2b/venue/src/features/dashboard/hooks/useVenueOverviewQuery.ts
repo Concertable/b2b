@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { DASHBOARD_POLLING } from "@concertable/shared/features/dashboard";
 import dashboardApi from "../dashboardApi";
 
-export function useArtistInbox() {
+export function useVenueOverviewQuery() {
   return useQuery({
-    queryKey: ["dashboard", "artist", "inbox"],
-    queryFn: dashboardApi.getInbox,
-    refetchInterval: DASHBOARD_POLLING.fast,
+    queryKey: ["dashboard", "venue", "overview"],
+    queryFn: dashboardApi.getOverview,
+    refetchInterval: DASHBOARD_POLLING.static,
   });
 }

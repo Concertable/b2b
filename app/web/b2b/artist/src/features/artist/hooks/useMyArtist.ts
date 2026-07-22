@@ -4,6 +4,5 @@ import { toast } from "sonner";
 export function useMyArtist() {
   return useMyArtistShared({
     onSuccess: () => toast.success("Artist saved!"),
-    onError: () => toast.error("Failed to save artist."),
   });
 }

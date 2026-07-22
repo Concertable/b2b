@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { toast } from "sonner";
 import type { Concert } from "@concertable/shared/features/concerts/types";
-import { doorRevenueRequestSchema } from "@concertable/shared/features/concerts/schemas/doorRevenueRequestSchema";
 import { Button } from "@/components/ui/button";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Label } from "@/components/ui/label";
@@ -23,29 +21,18 @@ export function DeclareDoorRevenueButton({ concert }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const [touched, setTouched] = useState(false);
-  const declare = useDeclareDoorRevenue(concert.id);
+  const { errorMessage, concertableSales, external, total, declare, isPending } =
+    useDeclareDoorRevenue(concert, value);
 
-  const parsed = doorRevenueRequestSchema.safeParse({ doorRevenue: Number(value) });
-  const error = touched && !parsed.success ? parsed.error.issues[0].message : null;
+  const error = touched ? errorMessage : null;
 
-  const external = Number(value) || 0;
-  const concertableSales = (concert.ticketsSold ?? 0) * concert.price;
-  const total = concertableSales + external;
-
-  async function handleConfirm() {
-    if (!parsed.success) {
-      setTouched(true);
-      return;
-    }
-    try {
-      await declare.mutateAsync(parsed.data);
-      toast.success("Door takings recorded. The artist's share will settle shortly.");
+  function handleConfirm() {
+    const parsed = declare(() => {
       setOpen(false);
       setValue("");
       setTouched(false);
-    } catch {
-      toast.error("Couldn't record the door takings. Please try again.");
-    }
+    });
+    if (!parsed.success) setTouched(true);
   }
 
   return (
@@ -102,16 +89,16 @@ export function DeclareDoorRevenueButton({ concert }: Readonly<Props>) {
             <Button
               variant="ghost"
               onClick={() => setOpen(false)}
-              disabled={declare.isPending}
+              disabled={isPending}
             >
               Cancel
             </Button>
             <Button
               data-testid="declare-door-revenue-confirm"
-              onClick={() => void handleConfirm()}
-              disabled={declare.isPending}
+              onClick={handleConfirm}
+              disabled={isPending}
             >
-              {declare.isPending ? "Saving..." : "Record takings"}
+              {isPending ? "Saving..." : "Record takings"}
             </Button>
           </DialogFooter>
         </DialogContent>

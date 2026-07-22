@@ -1,11 +1,11 @@
 import { Calendar, CircleDollarSign, Inbox, Users } from "lucide-react";
-import { useVenueKpis } from "./hooks";
+import { useVenueKpisQuery } from "./hooks";
 import { formatCurrency } from "@concertable/shared/lib";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KpiTile } from "@/features/dashboard";
 
 export function VenueKpiStrip() {
-  const { data, isLoading } = useVenueKpis();
+  const { data, isLoading } = useVenueKpisQuery();
 
   if (isLoading || !data) {
     return (

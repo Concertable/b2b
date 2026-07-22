@@ -2,14 +2,14 @@ import { useMemo } from "react";
 import { Users } from "lucide-react";
 import dayjs from "dayjs";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useVenueApplicationsToReview } from "./hooks";
+import { useVenueApplicationsToReviewQuery } from "./hooks";
 import {
   APPLICATION_ACTION_LABELS,
   type ApplicationActionName,
 } from "./applicationActions";
 import type { Application } from "./types";
 import type { DashboardApplicationStatus } from "@concertable/shared/features/dashboard";
-import { dealSummary } from "@concertable/shared/features/deals";
+import { dealSummary } from "@b2b/features/deals";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import {
@@ -106,7 +106,7 @@ function sortApplications(items: Application[]) {
 }
 
 export function VenueApplicationsWidget() {
-  const { data, isLoading, isError, refetch } = useVenueApplicationsToReview();
+  const { data, isLoading, isError, refetch } = useVenueApplicationsToReviewQuery();
 
   const sorted = useMemo(() => (data ? sortApplications(data) : []), [data]);
 
