@@ -1,21 +1,16 @@
 import { useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { notificationConnection } from "@/lib/signalr";
-import type {
-  MessageReceivedPayload,
-  ApplicationAcceptedPayload,
-} from "@/features/notifications";
+import type { Message } from "@/features/messaging";
+import type { ApplicationAcceptedPayload } from "@/features/notifications";
 
 export function useArtistNotifications() {
   const router = useRouter();
 
   useEffect(() => {
-    notificationConnection.on(
-      "MessageReceived",
-      (payload: MessageReceivedPayload) => {
-        console.log("[SignalR] MessageReceived:", payload);
-      },
-    );
+    notificationConnection.on("MessageReceived", (payload: Message) => {
+      console.log("[SignalR] MessageReceived:", payload);
+    });
 
     notificationConnection.on(
       "ApplicationAccepted",
