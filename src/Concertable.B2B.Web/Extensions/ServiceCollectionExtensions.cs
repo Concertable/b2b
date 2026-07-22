@@ -12,6 +12,7 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Web.Extensions;
 
@@ -44,6 +45,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddGeometry();
+        services.AddUris(configuration);
 
         return services;
     }
