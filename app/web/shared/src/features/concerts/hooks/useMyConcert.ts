@@ -6,7 +6,8 @@ import {
   type UpdateConcertRequest,
 } from "@concertable/shared/features/concerts/schemas/updateConcertRequestSchema";
 import type { Concert } from "@concertable/shared/features/concerts/types";
-import { useMyConcertQuery, myConcertQueryKey } from "./useMyConcertQuery";
+import { concertKeys } from "@concertable/shared/features/concerts/hooks/useConcertQuery";
+import { useMyConcertQuery } from "./useMyConcertQuery";
 
 interface UseMyConcertResult {
   concert: Concert | undefined;
@@ -34,7 +35,7 @@ export function useMyConcert(id: number): UseMyConcertResult {
     mutationFn: (request: UpdateConcertRequest) =>
       concertApi.updateConcert(id, request),
     onSuccess: (saved) => {
-      queryClient.setQueryData(myConcertQueryKey(id), saved);
+      queryClient.setQueryData(concertKeys.my(id), saved);
       resetDraft(saved);
     },
   });

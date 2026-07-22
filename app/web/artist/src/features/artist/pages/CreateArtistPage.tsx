@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { EditableProvider } from "@concertable/shared/providers";
 import artistApi from "@concertable/shared/features/artists/api/artistApi";
+import { artistKeys } from "@concertable/shared/features/artists";
 import type { Artist } from "@concertable/shared/features/artists/types";
 import { CreateBar } from "@/components/CreateBar";
 import { DetailsLayout } from "@/components/details/DetailsLayout";
@@ -51,7 +52,7 @@ export function CreateArtistPage() {
         avatar: avatar! as unknown as File,
       }),
     onSuccess: (saved) => {
-      queryClient.setQueryData(["artist", "my"], saved);
+      queryClient.setQueryData(artistKeys.my(), saved);
       navigate({ to: "/" });
     },
   });
