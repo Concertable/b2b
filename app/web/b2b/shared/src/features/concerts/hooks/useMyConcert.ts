@@ -28,15 +28,14 @@ export function useMyConcert(id: number): UseMyConcertResult {
   const { data: concert, isLoading, isError } = useMyConcertQuery(id);
   const queryClient = useQueryClient();
 
-  const { toggleEdit, resetDraft, draft, isDirty, editMode } =
-    useConcertStore();
+  const { beginEdit, endEdit, draft, isDirty, editMode } = useConcertStore();
 
   const mutation = useMutation({
     mutationFn: (request: UpdateConcertRequest) =>
       concertApi.updateConcert(id, request),
     onSuccess: (saved) => {
       queryClient.setQueryData(concertKeys.my(id), saved);
-      resetDraft(saved);
+      endEdit();
     },
   });
 
@@ -64,7 +63,7 @@ export function useMyConcert(id: number): UseMyConcertResult {
     saveError,
     save,
     isSaving: mutation.isPending,
-    toggleEdit: () => toggleEdit(concert!),
-    resetDraft: () => resetDraft(concert!),
+    toggleEdit: () => (editMode ? endEdit() : beginEdit(concert!)),
+    resetDraft: endEdit,
   };
 }

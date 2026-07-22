@@ -32,13 +32,13 @@ export function CreateArtistPage() {
   const avatar = useArtistStore((s) => s.avatar);
   const setName = useArtistStore((s) => s.setName);
   const setAbout = useArtistStore((s) => s.setAbout);
-  const resetDraft = useArtistStore((s) => s.resetDraft);
-  const toggleEdit = useArtistStore((s) => s.toggleEdit);
+  const beginEdit = useArtistStore((s) => s.beginEdit);
+  const endEdit = useArtistStore((s) => s.endEdit);
 
   useEffect(() => {
-    toggleEdit(blank);
-    return () => resetDraft(blank);
-  }, [toggleEdit, resetDraft]);
+    beginEdit(blank);
+    return endEdit;
+  }, [beginEdit, endEdit]);
 
   const mutation = useMutation({
     mutationFn: () =>

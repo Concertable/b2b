@@ -31,13 +31,13 @@ export function CreateVenuePage() {
   const avatar = useVenueStore((s) => s.avatar);
   const setName = useVenueStore((s) => s.setName);
   const setAbout = useVenueStore((s) => s.setAbout);
-  const resetDraft = useVenueStore((s) => s.resetDraft);
-  const toggleEdit = useVenueStore((s) => s.toggleEdit);
+  const beginEdit = useVenueStore((s) => s.beginEdit);
+  const endEdit = useVenueStore((s) => s.endEdit);
 
   useEffect(() => {
-    toggleEdit(blank);
-    return () => resetDraft(blank);
-  }, [toggleEdit, resetDraft]);
+    beginEdit(blank);
+    return endEdit;
+  }, [beginEdit, endEdit]);
 
   const mutation = useMutation({
     mutationFn: () =>
