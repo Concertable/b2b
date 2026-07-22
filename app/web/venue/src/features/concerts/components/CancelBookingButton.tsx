@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { useCancelConcert } from "@concertable/shared/features/concerts/hooks/useCancelConcert";
+import { useCancelConcertMutation } from "@concertable/shared/features/concerts/hooks/useCancelConcertMutation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,16 +17,15 @@ interface Props {
 
 export function CancelBookingButton({ concertId }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
-  const cancel = useCancelConcert(concertId);
+  const cancel = useCancelConcertMutation(concertId);
 
-  async function handleConfirm() {
-    try {
-      await cancel.mutateAsync();
-      toast.success("Booking cancelled. Any payment held is refunded in full.");
-      setOpen(false);
-    } catch {
-      toast.error("Couldn't cancel this booking. Please try again.");
-    }
+  function handleConfirm() {
+    cancel.mutate(undefined, {
+      onSuccess: () => {
+        toast.success("Booking cancelled. Any payment held is refunded in full.");
+        setOpen(false);
+      },
+    });
   }
 
   return (
@@ -58,7 +57,7 @@ export function CancelBookingButton({ concertId }: Readonly<Props>) {
             <Button
               variant="destructive"
               data-testid="cancel-booking-confirm"
-              onClick={() => void handleConfirm()}
+              onClick={handleConfirm}
               disabled={cancel.isPending}
             >
               {cancel.isPending ? "Cancelling..." : "Cancel booking"}

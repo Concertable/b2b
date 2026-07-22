@@ -21,8 +21,3 @@ export interface Organization {
   // Absent until setup — its presence IS completeness (the API rejects incomplete/invalid data on write).
   taxCompliance?: TaxCompliance;
 }
-
-export interface UpdateOrganizationRequest {
-  legalName: string;
-  taxCompliance: TaxCompliance;
-}

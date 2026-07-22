@@ -1,11 +1,11 @@
 import { CircleDollarSign } from "lucide-react";
 import dayjs from "dayjs";
-import { useVenueSettlements } from "./hooks";
+import { useVenueSettlementsQuery } from "./hooks";
 import { formatCurrency } from "@concertable/shared/lib";
 import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function VenueSettlementsWidget() {
-  const { data, isLoading, isError, refetch } = useVenueSettlements();
+  const { data, isLoading, isError, refetch } = useVenueSettlementsQuery();
 
   return (
     <DashboardCard title="Recent settlements" icon={CircleDollarSign}>

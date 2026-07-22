@@ -1,6 +1,7 @@
 export { StripeOnboardingBanner } from "./components/StripeOnboardingBanner";
 export { PayoutAccountSection } from "./components/PayoutAccountSection";
 export { useStripeAccount } from "./hooks/useStripeAccount";
+export { usePayoutAccount } from "./hooks/usePayoutAccount";
 export {
   usePayoutAccountStatusQuery,
   useStripeOnboardingQuery,

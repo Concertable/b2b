@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { DASHBOARD_POLLING } from "@concertable/shared/features/dashboard";
 import dashboardApi from "../dashboardApi";
 
-export function useVenueKpis() {
+export function useArtistApplicationsQuery() {
   return useQuery({
-    queryKey: ["dashboard", "venue", "kpis"],
-    queryFn: dashboardApi.getKpis,
+    queryKey: ["dashboard", "artist", "applications"],
+    queryFn: dashboardApi.getApplications,
     refetchInterval: DASHBOARD_POLLING.fast,
   });
 }

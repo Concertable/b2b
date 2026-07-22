@@ -6,7 +6,8 @@ import {
   type UpdateConcertRequest,
 } from "@concertable/shared/features/concerts/schemas/updateConcertRequestSchema";
 import type { Concert } from "@concertable/shared/features/concerts/types";
-import { useMyConcertQuery, myConcertQueryKey } from "./useMyConcertQuery";
+import { concertKeys } from "@concertable/shared/features/concerts/hooks/useConcertQuery";
+import { useMyConcertQuery } from "./useMyConcertQuery";
 
 interface UseMyConcertResult {
   concert: Concert | undefined;
@@ -27,15 +28,14 @@ export function useMyConcert(id: number): UseMyConcertResult {
   const { data: concert, isLoading, isError } = useMyConcertQuery(id);
   const queryClient = useQueryClient();
 
-  const { toggleEdit, resetDraft, draft, isDirty, editMode } =
-    useConcertStore();
+  const { beginEdit, endEdit, draft, isDirty, editMode } = useConcertStore();
 
   const mutation = useMutation({
     mutationFn: (request: UpdateConcertRequest) =>
       concertApi.updateConcert(id, request),
     onSuccess: (saved) => {
-      queryClient.setQueryData(myConcertQueryKey(id), saved);
-      resetDraft(saved);
+      queryClient.setQueryData(concertKeys.my(id), saved);
+      endEdit();
     },
   });
 
@@ -63,7 +63,7 @@ export function useMyConcert(id: number): UseMyConcertResult {
     saveError,
     save,
     isSaving: mutation.isPending,
-    toggleEdit: () => toggleEdit(concert!),
-    resetDraft: () => resetDraft(concert!),
+    toggleEdit: () => (editMode ? endEdit() : beginEdit(concert!)),
+    resetDraft: endEdit,
   };
 }

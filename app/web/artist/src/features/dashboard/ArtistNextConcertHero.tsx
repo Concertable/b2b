@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { CalendarClock, MapPin, Ticket } from "lucide-react";
 import dayjs from "dayjs";
-import { useArtistUpcomingConcerts } from "./hooks";
+import { useArtistUpcomingConcertsQuery } from "./hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function daysUntilLabel(iso: string) {
@@ -13,7 +13,7 @@ function daysUntilLabel(iso: string) {
 }
 
 export function ArtistNextConcertHero() {
-  const { data, isLoading } = useArtistUpcomingConcerts();
+  const { data, isLoading } = useArtistUpcomingConcertsQuery();
 
   if (isLoading) return <Skeleton className="h-44 w-full rounded-lg" />;
   if (!data || data.length === 0) return null;

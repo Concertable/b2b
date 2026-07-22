@@ -1,9 +1,9 @@
 import { TrendingUp } from "lucide-react";
-import { useVenueTicketRevenue } from "./hooks";
+import { useVenueTicketRevenueQuery } from "./hooks";
 import { DashboardCard, MonthlyRevenueChart, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function VenueRevenueChartWidget() {
-  const { data, isLoading, isError, refetch } = useVenueTicketRevenue();
+  const { data, isLoading, isError, refetch } = useVenueTicketRevenueQuery();
 
   return (
     <DashboardCard title="Ticket revenue" icon={TrendingUp}>
