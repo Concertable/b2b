@@ -26,6 +26,9 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .ToListAsync();
     }
 
+    public Task<bool> ExistsForOpportunityAndArtistAsync(int opportunityId, int artistId) =>
+        context.Applications.AnyAsync(a => a.OpportunityId == opportunityId && a.ArtistId == artistId);
+
     public async Task<IEnumerable<ApplicationEntity>> GetPendingByArtistIdAsync(int artistId)
     {
         return await context.Applications

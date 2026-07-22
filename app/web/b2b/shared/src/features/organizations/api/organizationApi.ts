@@ -1,15 +1,15 @@
-import api from "@concertable/shared/lib/axiosClient";
+import { apiClient } from "@concertable/shared/lib/apiClient";
 import type { Organization } from "../types";
 import type { UpdateOrganizationRequest } from "../schemas/updateOrganizationRequestSchema";
 
 const organizationApi = {
   get: async (): Promise<Organization | null> => {
-    const { data, status } = await api.get<Organization>("/organizations");
+    const { data, status } = await apiClient.get<Organization>("/organizations");
     return status === 204 ? null : data;
   },
 
   update: async (body: UpdateOrganizationRequest): Promise<Organization> => {
-    const { data } = await api.put<Organization>("/organizations", body);
+    const { data } = await apiClient.put<Organization>("/organizations", body);
     return data;
   },
 };
