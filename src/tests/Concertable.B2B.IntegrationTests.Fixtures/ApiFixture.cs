@@ -84,9 +84,8 @@ public class ApiFixture : IAsyncLifetime
                     ["ExternalServices:UseRealStripe"] = "false",
                     ["ExternalServices:UseRealBlob"] = "false",
                     ["ExternalServices:UseRealEmail"] = "false",
-                    ["Urls:Frontend"] = "https://localhost:5173",
-                    ["Urls:VenueFrontend"] = "https://localhost:5175",
-                    ["Urls:ArtistFrontend"] = "https://localhost:5176",
+                    ["Urls:Frontends:Venue"] = "https://localhost:5175",
+                    ["Urls:Frontends:Artist"] = "https://localhost:5176",
                     ["BlobStorage:ContainerName"] = "images",
                 });
             });

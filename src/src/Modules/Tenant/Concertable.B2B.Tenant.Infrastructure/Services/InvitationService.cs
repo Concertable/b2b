@@ -1,10 +1,9 @@
+using Concertable.B2B.Infrastructure.Uris;
 using Concertable.B2B.Tenant.Application.Requests;
-using Concertable.B2B.Tenant.Infrastructure.Settings;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Shared.Email.Application;
-using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
@@ -17,7 +16,7 @@ internal sealed class InvitationService : IInvitationService
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
     private readonly IEmailSender emailSender;
-    private readonly InvitationUrlSettings urls;
+    private readonly IFrontendUriGenerator uris;
     private readonly TimeProvider timeProvider;
 
     public InvitationService(
@@ -26,7 +25,7 @@ internal sealed class InvitationService : IInvitationService
         ICurrentUser currentUser,
         IUserModule userModule,
         IEmailSender emailSender,
-        IOptions<InvitationUrlSettings> urls,
+        IFrontendUriGenerator uris,
         TimeProvider timeProvider)
     {
         this.repository = repository;
@@ -34,7 +33,7 @@ internal sealed class InvitationService : IInvitationService
         this.currentUser = currentUser;
         this.userModule = userModule;
         this.emailSender = emailSender;
-        this.urls = urls.Value;
+        this.uris = uris;
         this.timeProvider = timeProvider;
     }
 
@@ -125,17 +124,7 @@ internal sealed class InvitationService : IInvitationService
 
     private async Task SendInvitationEmailAsync(TenantInvitationEntity invitation, TenantType tenantType)
     {
-        var frontend = tenantType switch
-        {
-            TenantType.Venue => urls.VenueFrontend,
-            TenantType.Artist => urls.ArtistFrontend,
-            _ => throw new ArgumentOutOfRangeException(nameof(tenantType)),
-        };
-
-        var acceptLink = new UriBuilder(frontend)
-        {
-            Path = $"/settings/members/accept/{invitation.Id}",
-        }.Uri;
+        var acceptLink = uris.Create(tenantType, $"/settings/members/accept/{invitation.Id}");
 
         const string subject = "You've been invited to join an organization on Concertable";
         var body =
