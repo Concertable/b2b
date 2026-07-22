@@ -14,7 +14,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260721144716_InitialCreate")]
+    [Migration("20260721152036_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -219,19 +219,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<Guid>("VenueTenantId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "Period", "Concertable.B2B.Concert.Domain.Entities.ConcertEntity.Period#DateRange", b1 =>
-                        {
-                            b1.IsRequired();
-
-                            b1.Property<DateTime>("End")
-                                .HasColumnType("datetime2")
-                                .HasColumnName("EndDate");
-
-                            b1.Property<DateTime>("Start")
-                                .HasColumnType("datetime2")
-                                .HasColumnName("StartDate");
-                        });
-
                     b.HasKey("Id");
 
                     b.HasIndex("ArtistId");
@@ -345,19 +332,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("uniqueidentifier");
-                        });
-
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "Period", "Concertable.B2B.Concert.Domain.Entities.ContractEntity.Period#DateRange", b1 =>
-                        {
-                            b1.IsRequired();
-
-                            b1.Property<DateTime>("End")
-                                .HasColumnType("datetime2")
-                                .HasColumnName("Period_End");
-
-                            b1.Property<DateTime>("Start")
-                                .HasColumnType("datetime2")
-                                .HasColumnName("Period_Start");
                         });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "VenueESignature", "Concertable.B2B.Concert.Domain.Entities.ContractEntity.VenueESignature#ESignature", b1 =>
@@ -582,19 +556,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Property<int>("VenueId")
                         .HasColumnType("int");
-
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "Period", "Concertable.B2B.Concert.Domain.Entities.OpportunityEntity.Period#DateRange", b1 =>
-                        {
-                            b1.IsRequired();
-
-                            b1.Property<DateTime>("End")
-                                .HasColumnType("datetime2")
-                                .HasColumnName("EndDate");
-
-                            b1.Property<DateTime>("Start")
-                                .HasColumnType("datetime2")
-                                .HasColumnName("StartDate");
-                        });
 
                     b.HasKey("Id");
 
@@ -872,9 +833,33 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.OwnsOne("Concertable.Kernel.ValueObjects.DateRange", "Period", b1 =>
+                        {
+                            b1.Property<int>("ConcertEntityId")
+                                .HasColumnType("int");
+
+                            b1.Property<DateTime>("End")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("EndDate");
+
+                            b1.Property<DateTime>("Start")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("StartDate");
+
+                            b1.HasKey("ConcertEntityId");
+
+                            b1.ToTable("Concerts", "concert");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConcertEntityId");
+                        });
+
                     b.Navigation("Artist");
 
                     b.Navigation("Booking");
+
+                    b.Navigation("Period")
+                        .IsRequired();
 
                     b.Navigation("Venue");
                 });
@@ -898,7 +883,31 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.OwnsOne("Concertable.Kernel.ValueObjects.DateRange", "Period", b1 =>
+                        {
+                            b1.Property<int>("ContractEntityId")
+                                .HasColumnType("int");
+
+                            b1.Property<DateTime>("End")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("Period_End");
+
+                            b1.Property<DateTime>("Start")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("Period_Start");
+
+                            b1.HasKey("ContractEntityId");
+
+                            b1.ToTable("Contracts", "concert");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ContractEntityId");
+                        });
+
                     b.Navigation("Booking");
+
+                    b.Navigation("Period")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.InvoiceEntity", b =>
@@ -918,6 +927,30 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("VenueId")
                         .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.OwnsOne("Concertable.Kernel.ValueObjects.DateRange", "Period", b1 =>
+                        {
+                            b1.Property<int>("OpportunityEntityId")
+                                .HasColumnType("int");
+
+                            b1.Property<DateTime>("End")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("EndDate");
+
+                            b1.Property<DateTime>("Start")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("StartDate");
+
+                            b1.HasKey("OpportunityEntityId");
+
+                            b1.ToTable("Opportunities", "concert");
+
+                            b1.WithOwner()
+                                .HasForeignKey("OpportunityEntityId");
+                        });
+
+                    b.Navigation("Period")
                         .IsRequired();
 
                     b.Navigation("Venue");
