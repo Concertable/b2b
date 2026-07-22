@@ -5,11 +5,11 @@ import {
   WidgetError,
   WidgetLoading,
 } from "@/features/dashboard";
-import { useArtistOverview, useArtistRecentReviews } from "./hooks";
+import { useArtistOverviewQuery, useArtistRecentReviewsQuery } from "./hooks";
 
 export function ArtistReviewsWidget() {
-  const overview = useArtistOverview();
-  const reviews = useArtistRecentReviews();
+  const overview = useArtistOverviewQuery();
+  const reviews = useArtistRecentReviewsQuery();
 
   return (
     <DashboardCard

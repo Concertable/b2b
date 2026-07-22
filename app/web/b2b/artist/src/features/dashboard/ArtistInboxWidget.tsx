@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import dayjs from "dayjs";
-import { useArtistInbox } from "./hooks";
+import { useArtistInboxQuery } from "./hooks";
 import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function ArtistInboxWidget() {
-  const { data, isLoading, isError, refetch } = useArtistInbox();
+  const { data, isLoading, isError, refetch } = useArtistInboxQuery();
 
   return (
     <DashboardCard

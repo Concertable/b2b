@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { EditableProvider } from "@concertable/shared/providers";
 import venueApi from "@concertable/shared/features/venues/api/venueApi";
+import { venueKeys } from "@concertable/shared/features/venues";
 import type { Venue } from "@concertable/shared/features/venues/types";
 import { CreateBar } from "@/components/CreateBar";
 import { DetailsLayout } from "@/components/details/DetailsLayout";
@@ -30,13 +31,13 @@ export function CreateVenuePage() {
   const avatar = useVenueStore((s) => s.avatar);
   const setName = useVenueStore((s) => s.setName);
   const setAbout = useVenueStore((s) => s.setAbout);
-  const resetDraft = useVenueStore((s) => s.resetDraft);
-  const toggleEdit = useVenueStore((s) => s.toggleEdit);
+  const beginEdit = useVenueStore((s) => s.beginEdit);
+  const endEdit = useVenueStore((s) => s.endEdit);
 
   useEffect(() => {
-    toggleEdit(blank);
-    return () => resetDraft(blank);
-  }, [toggleEdit, resetDraft]);
+    beginEdit(blank);
+    return endEdit;
+  }, [beginEdit, endEdit]);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -49,7 +50,7 @@ export function CreateVenuePage() {
         avatar: avatar! as unknown as File,
       }),
     onSuccess: (saved) => {
-      queryClient.setQueryData(["venue", "my"], saved);
+      queryClient.setQueryData(venueKeys.my(), saved);
       navigate({ to: "/" });
     },
   });

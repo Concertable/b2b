@@ -6,17 +6,16 @@ export function useCancelApplication(opportunityId: number) {
   const [target, setTarget] = useState<number | null>(null);
   const mutation = useCancelApplicationMutation(opportunityId);
 
-  async function confirm() {
+  function confirm() {
     if (target == null) return;
-    try {
-      await mutation.mutateAsync(target);
-      toast.success(
-        "Application cancelled. Any payment held is refunded in full.",
-      );
-      setTarget(null);
-    } catch {
-      toast.error("Couldn't cancel this application. Please try again.");
-    }
+    mutation.mutate(target, {
+      onSuccess: () => {
+        toast.success(
+          "Application cancelled. Any payment held is refunded in full.",
+        );
+        setTarget(null);
+      },
+    });
   }
 
   return {

@@ -2,10 +2,8 @@ import { useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { notificationConnection } from "@/lib/signalr";
-import type {
-  MessageReceivedPayload,
-  ConcertDraftCreatedPayload,
-} from "@/features/notifications";
+import type { Message } from "@/features/messaging";
+import type { ConcertDraftCreatedPayload } from "@/features/notifications";
 
 export function useVenueNotifications() {
   const router = useRouter();
@@ -16,12 +14,9 @@ export function useVenueNotifications() {
       notificationConnection.state,
     );
 
-    notificationConnection.on(
-      "MessageReceived",
-      (payload: MessageReceivedPayload) => {
-        console.log("[SignalR] MessageReceived:", payload);
-      },
-    );
+    notificationConnection.on("MessageReceived", (payload: Message) => {
+      console.log("[SignalR] MessageReceived:", payload);
+    });
 
     notificationConnection.on(
       "ConcertDraftCreated",
