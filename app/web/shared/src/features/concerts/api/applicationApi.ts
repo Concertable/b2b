@@ -1,4 +1,4 @@
-import api from "@concertable/shared/lib/axiosClient";
+import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
   Checkout,
   ESignatureRequest,
@@ -10,7 +10,7 @@ const applicationApi = {
     opportunityId: number,
     eSignature: ESignatureRequest,
   ): Promise<Application> => {
-    const { data } = await api.post<Application>(
+    const { data } = await apiClient.post<Application>(
       `/application/${opportunityId}`,
       { eSignature },
     );
@@ -22,7 +22,7 @@ const applicationApi = {
     paymentMethodId: string,
     eSignature: ESignatureRequest,
   ): Promise<Application> => {
-    const { data } = await api.post<Application>(
+    const { data } = await apiClient.post<Application>(
       `/application/${opportunityId}`,
       { eSignature, paymentMethodId },
     );
@@ -30,14 +30,14 @@ const applicationApi = {
   },
 
   applyCheckout: async (opportunityId: number): Promise<Checkout> => {
-    const { data } = await api.post<Checkout>(
+    const { data } = await apiClient.post<Checkout>(
       `/application/opportunity/${opportunityId}/checkout`,
     );
     return data;
   },
 
   canApply: async (opportunityId: number): Promise<boolean> => {
-    const { data } = await api.get<boolean>(
+    const { data } = await apiClient.get<boolean>(
       `/application/opportunity/${opportunityId}/eligibility`,
     );
     return data;
@@ -46,14 +46,14 @@ const applicationApi = {
   getApplicationsByOpportunityId: async (
     opportunityId: number,
   ): Promise<Application[]> => {
-    const { data } = await api.get<Application[]>(
+    const { data } = await apiClient.get<Application[]>(
       `/application/opportunity/${opportunityId}`,
     );
     return data;
   },
 
   getApplicationById: async (applicationId: number): Promise<Application> => {
-    const { data } = await api.get<Application>(
+    const { data } = await apiClient.get<Application>(
       `/application/${applicationId}`,
     );
     return data;
@@ -64,47 +64,47 @@ const applicationApi = {
     eSignature: ESignatureRequest,
     body?: { paymentMethodId: string },
   ): Promise<void> => {
-    await api.post(`/application/${applicationId}/accept`, {
+    await apiClient.post(`/application/${applicationId}/accept`, {
       eSignature,
       ...body,
     });
   },
 
   canAccept: async (applicationId: number): Promise<boolean> => {
-    const { data } = await api.get<boolean>(
+    const { data } = await apiClient.get<boolean>(
       `/application/${applicationId}/eligibility`,
     );
     return data;
   },
 
   acceptCheckout: async (applicationId: number): Promise<Checkout> => {
-    const { data } = await api.post<Checkout>(
+    const { data } = await apiClient.post<Checkout>(
       `/application/${applicationId}/checkout`,
     );
     return data;
   },
 
   withdrawApplication: async (applicationId: number): Promise<void> => {
-    await api.post(`/application/${applicationId}/withdraw`);
+    await apiClient.post(`/application/${applicationId}/withdraw`);
   },
 
   rejectApplication: async (applicationId: number): Promise<void> => {
-    await api.post(`/application/${applicationId}/reject`);
+    await apiClient.post(`/application/${applicationId}/reject`);
   },
 
   cancelApplication: async (applicationId: number): Promise<void> => {
-    await api.post(`/application/${applicationId}/cancel`);
+    await apiClient.post(`/application/${applicationId}/cancel`);
   },
 
   getPendingForArtist: async (): Promise<Application[]> => {
-    const { data } = await api.get<Application[]>(
+    const { data } = await apiClient.get<Application[]>(
       `/application/artist/pending`,
     );
     return data;
   },
 
   getRecentDeniedForArtist: async (): Promise<Application[]> => {
-    const { data } = await api.get<Application[]>(
+    const { data } = await apiClient.get<Application[]>(
       `/application/artist/recently-denied`,
     );
     return data;
