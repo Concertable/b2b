@@ -72,6 +72,18 @@ public sealed class InvitationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Invite_AsArtistOwner_SendsEmailWithArtistPortalAcceptLink()
+    {
+        var owner = fixture.SeedState.ArtistManager1; // founding Owner of an artist tenant
+        const string invitee = "artistcolleague@example.com";
+
+        var dto = await InviteAsync(fixture.CreateClient(owner), invitee, TenantRole.Manager);
+
+        var email = Assert.Single(fixture.EmailSender.Sent, e => e.To == invitee);
+        Assert.Contains($"https://localhost:5176/settings/members/accept/{dto.Id}", email.Body);
+    }
+
+    [Fact]
     public async Task Invite_NormalizesEmail()
     {
         var owner = fixture.SeedState.VenueManager1;
