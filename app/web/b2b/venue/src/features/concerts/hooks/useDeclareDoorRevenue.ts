@@ -6,7 +6,7 @@ import {
   doorRevenueRequestSchema,
   type DoorRevenueRequest,
 } from "@concertable/shared/features/concerts/schemas/doorRevenueRequestSchema";
-import { myConcertQueryKey } from "@b2b/features/concerts/hooks/useMyConcertQuery";
+import { concertKeys } from "@concertable/shared/features/concerts/hooks/useConcertQuery";
 
 export function useDeclareDoorRevenue(concert: Concert, rawValue: string) {
   const queryClient = useQueryClient();
@@ -23,9 +23,9 @@ export function useDeclareDoorRevenue(concert: Concert, rawValue: string) {
       concertApi.declareDoorRevenue(concert.id, request),
     onSuccess: () => {
       toast.success("Door takings recorded. The artist's share will settle shortly.");
-      // The owner read (["concert","mine",id]) drops the declare action once DoorRevenue is set;
-      // the dashboard KPI count of gigs awaiting a declaration drops too.
-      queryClient.invalidateQueries({ queryKey: myConcertQueryKey(concert.id) });
+      // The owner read drops the declare action once DoorRevenue is set; the dashboard
+      // KPI count of gigs awaiting a declaration drops too.
+      queryClient.invalidateQueries({ queryKey: concertKeys.my(concert.id) });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "venue", "kpis"] });
     },
   });

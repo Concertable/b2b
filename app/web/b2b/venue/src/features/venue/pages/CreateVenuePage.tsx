@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { EditableProvider } from "@concertable/shared/providers";
 import venueApi from "@concertable/shared/features/venues/api/venueApi";
+import { venueKeys } from "@concertable/shared/features/venues";
 import type { Venue } from "@concertable/shared/features/venues/types";
 import { CreateBar } from "@/components/CreateBar";
 import { DetailsLayout } from "@/components/details/DetailsLayout";
@@ -49,7 +50,7 @@ export function CreateVenuePage() {
         avatar: avatar! as unknown as File,
       }),
     onSuccess: (saved) => {
-      queryClient.setQueryData(["venue", "my"], saved);
+      queryClient.setQueryData(venueKeys.my(), saved);
       navigate({ to: "/" });
     },
   });
