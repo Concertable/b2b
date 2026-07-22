@@ -13,5 +13,5 @@ internal interface IInvitationService
     Task<IReadOnlyList<InvitationDto>> ListPendingInvitationsAsync(CancellationToken ct = default);
     Task<InvitationDto> InviteAsync(InviteMemberRequest request, CancellationToken ct = default);
     Task RevokeInvitationAsync(Guid invitationId, CancellationToken ct = default);
-    Task AcceptInvitationAsync(Guid invitationId, CancellationToken ct = default);
+    Task<MembershipDto> AcceptInvitationAsync(Guid invitationId, CancellationToken ct = default);
 }

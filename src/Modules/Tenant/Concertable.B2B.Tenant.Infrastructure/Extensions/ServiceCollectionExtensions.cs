@@ -14,6 +14,7 @@ using Concertable.B2B.Tenant.Infrastructure.Data.Seeders;
 using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.B2B.Tenant.Infrastructure.Repositories;
 using Concertable.B2B.Tenant.Infrastructure.Services;
+using Concertable.B2B.Tenant.Infrastructure.Settings;
 using Concertable.Messaging.Contracts;
 using Concertable.Seed.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<TenantConfigurationProvider>());
 
         services.Configure<UkTaxComplianceOptions>(configuration.GetSection("TaxCompliance"));
+        services.Configure<InvitationUrlSettings>(configuration.GetSection("Urls"));
 
         services.AddSingleton<ITaxComplianceRules, UkTaxComplianceRules>();
 
