@@ -67,7 +67,8 @@ public sealed class InvitationTests : IAsyncLifetime
         Assert.Equal(owner.Id, invitation.CreatedByUserId);
 
         var email = Assert.Single(fixture.EmailSender.Sent, e => e.To == invitee);
-        Assert.Contains(dto.Id.ToString(), email.Body);
+        // D9: the accept link targets the inviting tenant's persona portal (VenueManager1 → venue).
+        Assert.Contains($"https://localhost:5175/settings/members/accept/{dto.Id}", email.Body);
     }
 
     [Fact]
@@ -227,7 +228,11 @@ public sealed class InvitationTests : IAsyncLifetime
 
         var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept");
 
-        await response.ShouldBe(HttpStatusCode.NoContent);
+        await response.ShouldBe(HttpStatusCode.OK);
+        var joined = (await response.Content.ReadAsync<MembershipDto>())!;
+        Assert.Equal(tenantId, joined.TenantId);
+        Assert.Equal(TenantType.Venue, joined.Type);
+        Assert.Equal(TenantRole.Manager, joined.Role);
         var membership = fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == invitee.Id);
         Assert.Equal(TenantRole.Manager, membership.Role);
         Assert.Equal(owner.Id, membership.InvitedByUserId);
@@ -241,7 +246,7 @@ public sealed class InvitationTests : IAsyncLifetime
         var tenantId = TenantOf(owner.Id);
         var invitee = fixture.SeedState.VenueManagerNoVenue;
         var dto = await InviteAsync(fixture.CreateClient(owner), invitee.Email, TenantRole.Manager);
-        await (await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept")).ShouldBe(HttpStatusCode.NoContent);
+        await (await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept")).ShouldBe(HttpStatusCode.OK);
 
         var second = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept");
 

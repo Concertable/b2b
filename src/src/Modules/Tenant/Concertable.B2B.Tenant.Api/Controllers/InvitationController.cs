@@ -1,4 +1,5 @@
 using Concertable.B2B.Tenant.Application.Interfaces;
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,9 +24,6 @@ internal sealed class InvitationController : ControllerBase
     }
 
     [HttpPost("{id:guid}/accept")]
-    public async Task<IActionResult> Accept(Guid id)
-    {
-        await invitationService.AcceptInvitationAsync(id);
-        return NoContent();
-    }
+    public async Task<ActionResult<MembershipDto>> Accept(Guid id) =>
+        Ok(await invitationService.AcceptInvitationAsync(id));
 }
