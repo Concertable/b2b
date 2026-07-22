@@ -6,15 +6,14 @@ export function useWithdrawApplication() {
   const [target, setTarget] = useState<number | null>(null);
   const mutation = useWithdrawApplicationMutation();
 
-  async function confirm() {
+  function confirm() {
     if (target == null) return;
-    try {
-      await mutation.mutateAsync(target);
-      toast.success("Application withdrawn.");
-      setTarget(null);
-    } catch {
-      toast.error("Couldn't withdraw this application. Please try again.");
-    }
+    mutation.mutate(target, {
+      onSuccess: () => {
+        toast.success("Application withdrawn.");
+        setTarget(null);
+      },
+    });
   }
 
   return {

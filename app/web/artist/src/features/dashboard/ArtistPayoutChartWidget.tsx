@@ -1,9 +1,9 @@
 import { TrendingUp } from "lucide-react";
-import { useArtistPayouts } from "./hooks";
+import { useArtistPayoutsQuery } from "./hooks";
 import { DashboardCard, MonthlyRevenueChart, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function ArtistPayoutChartWidget() {
-  const { data, isLoading, isError, refetch } = useArtistPayouts();
+  const { data, isLoading, isError, refetch } = useArtistPayoutsQuery();
 
   return (
     <DashboardCard title="Payouts" icon={TrendingUp}>

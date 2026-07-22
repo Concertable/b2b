@@ -4,9 +4,9 @@ import type {
   ConcertCard,
   MessageThread,
   MonthlyRevenuePoint,
-  OpportunityCard,
   ReviewExcerpt,
 } from "@concertable/shared/features/dashboard";
+import type { OpportunityCard } from "@b2b/features/dashboard";
 import { artistFixtures } from "./fixtures";
 import type {
   Application,

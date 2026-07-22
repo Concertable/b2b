@@ -18,7 +18,7 @@ interface Props {
   confirmTestId: string;
   isPending: boolean;
   onDismiss: () => void;
-  onConfirm: () => Promise<void>;
+  onConfirm: () => void;
 }
 
 export function ConfirmActionDialog({
@@ -47,7 +47,7 @@ export function ConfirmActionDialog({
           <Button
             variant="destructive"
             data-testid={confirmTestId}
-            onClick={() => void onConfirm()}
+            onClick={onConfirm}
             disabled={isPending}
           >
             {isPending ? pendingLabel : confirmLabel}

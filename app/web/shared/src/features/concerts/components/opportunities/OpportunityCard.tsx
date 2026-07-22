@@ -27,7 +27,7 @@ import {
 import { useGenresQuery } from "@/features/search/hooks/useGenreQuery";
 import { X } from "lucide-react";
 import dayjs from "dayjs";
-import type { Opportunity, OpportunityDraft } from "@/features/concerts/types";
+import type { Opportunity, OpportunityDraft } from "../../types";
 import type { Deal, PaymentMethod } from "@b2b/features/deals";
 import type { Genre } from "@/types/common";
 import { genreLabel } from "@/types/common";

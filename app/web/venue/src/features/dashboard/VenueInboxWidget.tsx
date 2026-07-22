@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import dayjs from "dayjs";
-import { useVenueInbox } from "./hooks";
+import { useVenueInboxQuery } from "./hooks";
 import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
 
 export function VenueInboxWidget() {
-  const { data, isLoading, isError, refetch } = useVenueInbox();
+  const { data, isLoading, isError, refetch } = useVenueInboxQuery();
 
   return (
     <DashboardCard

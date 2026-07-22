@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { EditableProvider } from "@concertable/shared/providers";
 import artistApi from "@concertable/shared/features/artists/api/artistApi";
+import { artistKeys } from "@concertable/shared/features/artists";
 import type { Artist } from "@concertable/shared/features/artists/types";
 import { CreateBar } from "@/components/CreateBar";
 import { DetailsLayout } from "@/components/details/DetailsLayout";
@@ -31,13 +32,13 @@ export function CreateArtistPage() {
   const avatar = useArtistStore((s) => s.avatar);
   const setName = useArtistStore((s) => s.setName);
   const setAbout = useArtistStore((s) => s.setAbout);
-  const resetDraft = useArtistStore((s) => s.resetDraft);
-  const toggleEdit = useArtistStore((s) => s.toggleEdit);
+  const beginEdit = useArtistStore((s) => s.beginEdit);
+  const endEdit = useArtistStore((s) => s.endEdit);
 
   useEffect(() => {
-    toggleEdit(blank);
-    return () => resetDraft(blank);
-  }, [toggleEdit, resetDraft]);
+    beginEdit(blank);
+    return endEdit;
+  }, [beginEdit, endEdit]);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -51,7 +52,7 @@ export function CreateArtistPage() {
         avatar: avatar! as unknown as File,
       }),
     onSuccess: (saved) => {
-      queryClient.setQueryData(["artist", "my"], saved);
+      queryClient.setQueryData(artistKeys.my(), saved);
       navigate({ to: "/" });
     },
   });
