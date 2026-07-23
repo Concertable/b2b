@@ -12,10 +12,6 @@ export function useAcceptInvitation(invitationId: string) {
   useEffect(() => {
     if (fired.current) return;
     fired.current = true;
-    // Await the promise, not a mutate() onSuccess: the accept fires on mount, so StrictMode's
-    // remount disposes the mutation observer before the POST settles and a per-call callback is
-    // dropped. The promise resolves regardless. Hard-navigate so /me re-fetches with the new
-    // membership before the layout's tenant guard runs.
     mutateAsync(invitationId)
       .then((membership) => {
         setActiveTenant(membership.tenantId);
