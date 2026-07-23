@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Uris;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Exceptions;
@@ -15,7 +16,7 @@ internal sealed class InvitationService : IInvitationService
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
     private readonly IEmailSender emailSender;
-    private readonly IUriService uriService;
+    private readonly IFrontendUriGenerator uris;
     private readonly TimeProvider timeProvider;
 
     public InvitationService(
@@ -24,7 +25,7 @@ internal sealed class InvitationService : IInvitationService
         ICurrentUser currentUser,
         IUserModule userModule,
         IEmailSender emailSender,
-        IUriService uriService,
+        IFrontendUriGenerator uris,
         TimeProvider timeProvider)
     {
         this.repository = repository;
@@ -32,7 +33,7 @@ internal sealed class InvitationService : IInvitationService
         this.currentUser = currentUser;
         this.userModule = userModule;
         this.emailSender = emailSender;
-        this.uriService = uriService;
+        this.uris = uris;
         this.timeProvider = timeProvider;
     }
 
@@ -49,6 +50,8 @@ internal sealed class InvitationService : IInvitationService
     public async Task<InvitationDto> InviteAsync(InviteMemberRequest request, CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
+        var tenant = await repository.GetByIdAsync(tenantId, ct)
+            ?? throw new NotFoundException("Your organization was not found.");
         var email = request.Email.Trim().ToLowerInvariant();
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
@@ -76,7 +79,7 @@ internal sealed class InvitationService : IInvitationService
         repository.AddInvitation(invitation);
         await repository.SaveChangesAsync(ct);
 
-        await SendInvitationEmailAsync(invitation);
+        await SendInvitationEmailAsync(invitation, tenant.Type);
         return new InvitationDto(invitation.Id, invitation.Email, invitation.Role, invitation.CreatedAt, invitation.ExpiresAt);
     }
 
@@ -91,7 +94,7 @@ internal sealed class InvitationService : IInvitationService
         await repository.SaveChangesAsync(ct);
     }
 
-    public async Task AcceptInvitationAsync(Guid invitationId, CancellationToken ct = default)
+    public async Task<MembershipDto> AcceptInvitationAsync(Guid invitationId, CancellationToken ct = default)
     {
         var userId = currentUser.Id ?? throw new ForbiddenException("No authenticated user.");
 
@@ -104,8 +107,8 @@ internal sealed class InvitationService : IInvitationService
 
         // Guard on the tenant still existing — an accept can race a tenant delete (BUG1b). Delete already
         // clears pending invitations, so this is the secondary defence against the concurrent-delete race.
-        if (await repository.GetByIdAsync(invitation.TenantId, ct) is null)
-            throw new NotFoundException("The organization for this invitation no longer exists.");
+        var tenant = await repository.GetByIdAsync(invitation.TenantId, ct)
+            ?? throw new NotFoundException("The organization for this invitation no longer exists.");
 
         if (await repository.IsMemberAsync(invitation.TenantId, userId, ct))
             throw new ConflictException("You are already a member of this organization.");
@@ -115,14 +118,13 @@ internal sealed class InvitationService : IInvitationService
         repository.AddMembership(TenantMembershipEntity.Create(
             invitation.TenantId, userId, invitation.Role, invitedBy: invitation.CreatedByUserId, now));
         await repository.SaveChangesAsync(ct);
+
+        return new MembershipDto(tenant.Id, tenant.LegalName, tenant.Type, invitation.Role);
     }
 
-    private async Task SendInvitationEmailAsync(TenantInvitationEntity invitation)
+    private async Task SendInvitationEmailAsync(TenantInvitationEntity invitation, TenantType tenantType)
     {
-        var acceptLink = uriService.GetUri("/settings/members/accept", new Dictionary<string, string>
-        {
-            ["invitationId"] = invitation.Id.ToString(),
-        });
+        var acceptLink = uris.Create(tenantType, $"/settings/members/accept/{invitation.Id}");
 
         const string subject = "You've been invited to join an organization on Concertable";
         var body =
