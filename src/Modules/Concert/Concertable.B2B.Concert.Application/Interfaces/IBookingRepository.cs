@@ -10,5 +10,4 @@ internal interface IBookingRepository : IVenueArtistTenantScopedRepository<Booki
     Task<int?> GetIdByConcertIdAsync(int concertId);
     Task<int?> GetApplicationIdByIdAsync(int bookingId);
     Task<int?> GetDealIdByIdAsync(int bookingId);
-    Task<bool> ExistsIgnoringTenantAsync(int bookingId);
 }

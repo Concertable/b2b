@@ -148,6 +148,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IPublicBookingRepository, PublicBookingRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped(typeof(ISequenceRepository<>), typeof(SequenceRepository<>));
