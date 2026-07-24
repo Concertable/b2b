@@ -64,9 +64,9 @@ public sealed class VerifyCheckoutStepTests
         managerPaymentClient.Verify(
             c => c.CreateVerifySessionAsync(venueTenantId, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()),
             Times.Once);
-        Assert.Equal(TransactionTypes.Verify, capturedMetadata!["type"]);
-        Assert.Equal(ApplicationId.ToString(), capturedMetadata["applicationId"]);
-        Assert.Equal(venueManagerId.ToString(), capturedMetadata["venueManagerId"]);
+        Assert.Equal(TransactionTypes.Verify, capturedMetadata![PaymentMetadataKeys.Type]);
+        Assert.Equal(ApplicationId.ToString(), capturedMetadata[PaymentMetadataKeys.ApplicationId]);
+        Assert.Equal(venueManagerId.ToString(), capturedMetadata[PaymentMetadataKeys.VenueManagerId]);
     }
 
     [Fact]

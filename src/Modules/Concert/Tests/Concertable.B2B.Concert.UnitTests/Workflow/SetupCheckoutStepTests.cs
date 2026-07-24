@@ -5,6 +5,7 @@ using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Payment.Client;
+using Concertable.Payment.Contracts;
 using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests.Workflow;
@@ -65,8 +66,8 @@ public sealed class SetupCheckoutStepTests
         managerPaymentClient.Verify(
             c => c.CreateSetupSessionAsync(artistTenantId, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()),
             Times.Once);
-        Assert.Equal("applicationApply", capturedMetadata!["type"]);
-        Assert.Equal(OpportunityId.ToString(), capturedMetadata["opportunityId"]);
+        Assert.Equal(TransactionTypes.ApplicationApply, capturedMetadata![PaymentMetadataKeys.Type]);
+        Assert.Equal(OpportunityId.ToString(), capturedMetadata[PaymentMetadataKeys.OpportunityId]);
     }
 
     [Fact]

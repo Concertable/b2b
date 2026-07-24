@@ -84,7 +84,8 @@ public class ApiFixture : IAsyncLifetime
                     ["ExternalServices:UseRealStripe"] = "false",
                     ["ExternalServices:UseRealBlob"] = "false",
                     ["ExternalServices:UseRealEmail"] = "false",
-                    ["Urls:Frontend"] = "https://localhost:5173",
+                    ["Urls:Frontends:Venue"] = "https://localhost:5175",
+                    ["Urls:Frontends:Artist"] = "https://localhost:5176",
                     ["BlobStorage:ContainerName"] = "images",
                 });
             });
@@ -184,8 +185,8 @@ public class ApiFixture : IAsyncLifetime
         var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
         var evt = new PaymentFailedEvent($"pi_fail_{bookingId}", "card_declined", "Card was declined", new Dictionary<string, string>
         {
-            ["type"] = TransactionTypes.Escrow,
-            ["bookingId"] = bookingId.ToString()
+            [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
+            [PaymentMetadataKeys.BookingId] = bookingId.ToString()
         });
 
         foreach (var handler in handlers)

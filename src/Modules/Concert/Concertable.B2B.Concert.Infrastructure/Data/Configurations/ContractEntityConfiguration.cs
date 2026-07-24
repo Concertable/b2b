@@ -14,7 +14,7 @@ internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<Con
             .HasForeignKey<ContractEntity>(a => a.BookingId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);
-        builder.OwnsOne(a => a.Period, p =>
+        builder.ComplexProperty(a => a.Period, p =>
         {
             p.Property(x => x.Start).HasColumnName("Period_Start");
             p.Property(x => x.End).HasColumnName("Period_End");

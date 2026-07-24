@@ -25,7 +25,9 @@ import { Route as ArtistMyIndexRouteImport } from './routes/_artist/my/index'
 import { Route as ArtistFindIndexRouteImport } from './routes/_artist/find/index'
 import { Route as ArtistSettingsPaymentRouteImport } from './routes/_artist/settings/payment'
 import { Route as ArtistSettingsOrganizationRouteImport } from './routes/_artist/settings/organization'
+import { Route as ArtistSettingsMembersRouteImport } from './routes/_artist/settings/members'
 import { Route as ArtistMyApplicationsRouteImport } from './routes/_artist/my/applications'
+import { Route as SettingsMembersAcceptInvitationIdRouteImport } from './routes/settings/members/accept.$invitationId'
 import { Route as ArtistOpportunityCheckoutOpportunityIdRouteImport } from './routes/_artist/opportunity/checkout.$opportunityId'
 import { Route as ArtistFindVenueIdRouteImport } from './routes/_artist/find/venue.$id'
 import { Route as ArtistFindConcertIdRouteImport } from './routes/_artist/find/concert.$id'
@@ -112,11 +114,22 @@ const ArtistSettingsOrganizationRoute =
     path: '/organization',
     getParentRoute: () => ArtistSettingsRouteRoute,
   } as any)
+const ArtistSettingsMembersRoute = ArtistSettingsMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => ArtistSettingsRouteRoute,
+} as any)
 const ArtistMyApplicationsRoute = ArtistMyApplicationsRouteImport.update({
   id: '/my/applications',
   path: '/my/applications',
   getParentRoute: () => ArtistRouteRoute,
 } as any)
+const SettingsMembersAcceptInvitationIdRoute =
+  SettingsMembersAcceptInvitationIdRouteImport.update({
+    id: '/settings/members/accept/$invitationId',
+    path: '/settings/members/accept/$invitationId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ArtistOpportunityCheckoutOpportunityIdRoute =
   ArtistOpportunityCheckoutOpportunityIdRouteImport.update({
     id: '/opportunity/checkout/$opportunityId',
@@ -157,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/create': typeof ArtistCreateRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/my/applications': typeof ArtistMyApplicationsRoute
+  '/settings/members': typeof ArtistSettingsMembersRoute
   '/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/settings/payment': typeof ArtistSettingsPaymentRoute
   '/find/': typeof ArtistFindIndexRoute
@@ -166,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/find/concert/$id': typeof ArtistFindConcertIdRoute
   '/find/venue/$id': typeof ArtistFindVenueIdRoute
   '/opportunity/checkout/$opportunityId': typeof ArtistOpportunityCheckoutOpportunityIdRoute
+  '/settings/members/accept/$invitationId': typeof SettingsMembersAcceptInvitationIdRoute
   '/my/concerts/concert/$id': typeof ArtistMyConcertsConcertIdRoute
 }
 export interface FileRoutesByTo {
@@ -179,6 +194,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof ArtistIndexRoute
   '/my/applications': typeof ArtistMyApplicationsRoute
+  '/settings/members': typeof ArtistSettingsMembersRoute
   '/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/settings/payment': typeof ArtistSettingsPaymentRoute
   '/find': typeof ArtistFindIndexRoute
@@ -188,6 +204,7 @@ export interface FileRoutesByTo {
   '/find/concert/$id': typeof ArtistFindConcertIdRoute
   '/find/venue/$id': typeof ArtistFindVenueIdRoute
   '/opportunity/checkout/$opportunityId': typeof ArtistOpportunityCheckoutOpportunityIdRoute
+  '/settings/members/accept/$invitationId': typeof SettingsMembersAcceptInvitationIdRoute
   '/my/concerts/concert/$id': typeof ArtistMyConcertsConcertIdRoute
 }
 export interface FileRoutesById {
@@ -204,6 +221,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/_artist/': typeof ArtistIndexRoute
   '/_artist/my/applications': typeof ArtistMyApplicationsRoute
+  '/_artist/settings/members': typeof ArtistSettingsMembersRoute
   '/_artist/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/_artist/settings/payment': typeof ArtistSettingsPaymentRoute
   '/_artist/find/': typeof ArtistFindIndexRoute
@@ -213,6 +231,7 @@ export interface FileRoutesById {
   '/_artist/find/concert/$id': typeof ArtistFindConcertIdRoute
   '/_artist/find/venue/$id': typeof ArtistFindVenueIdRoute
   '/_artist/opportunity/checkout/$opportunityId': typeof ArtistOpportunityCheckoutOpportunityIdRoute
+  '/settings/members/accept/$invitationId': typeof SettingsMembersAcceptInvitationIdRoute
   '/_artist/my/concerts/concert/$id': typeof ArtistMyConcertsConcertIdRoute
 }
 export interface FileRouteTypes {
@@ -229,6 +248,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/auth/callback'
     | '/my/applications'
+    | '/settings/members'
     | '/settings/organization'
     | '/settings/payment'
     | '/find/'
@@ -238,6 +258,7 @@ export interface FileRouteTypes {
     | '/find/concert/$id'
     | '/find/venue/$id'
     | '/opportunity/checkout/$opportunityId'
+    | '/settings/members/accept/$invitationId'
     | '/my/concerts/concert/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -251,6 +272,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/'
     | '/my/applications'
+    | '/settings/members'
     | '/settings/organization'
     | '/settings/payment'
     | '/find'
@@ -260,6 +282,7 @@ export interface FileRouteTypes {
     | '/find/concert/$id'
     | '/find/venue/$id'
     | '/opportunity/checkout/$opportunityId'
+    | '/settings/members/accept/$invitationId'
     | '/my/concerts/concert/$id'
   id:
     | '__root__'
@@ -275,6 +298,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/_artist/'
     | '/_artist/my/applications'
+    | '/_artist/settings/members'
     | '/_artist/settings/organization'
     | '/_artist/settings/payment'
     | '/_artist/find/'
@@ -284,6 +308,7 @@ export interface FileRouteTypes {
     | '/_artist/find/concert/$id'
     | '/_artist/find/venue/$id'
     | '/_artist/opportunity/checkout/$opportunityId'
+    | '/settings/members/accept/$invitationId'
     | '/_artist/my/concerts/concert/$id'
   fileRoutesById: FileRoutesById
 }
@@ -296,6 +321,7 @@ export interface RootRouteChildren {
   StripeReturnRoute: typeof StripeReturnRoute
   SuccessRoute: typeof SuccessRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  SettingsMembersAcceptInvitationIdRoute: typeof SettingsMembersAcceptInvitationIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -412,12 +438,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtistSettingsOrganizationRouteImport
       parentRoute: typeof ArtistSettingsRouteRoute
     }
+    '/_artist/settings/members': {
+      id: '/_artist/settings/members'
+      path: '/members'
+      fullPath: '/settings/members'
+      preLoaderRoute: typeof ArtistSettingsMembersRouteImport
+      parentRoute: typeof ArtistSettingsRouteRoute
+    }
     '/_artist/my/applications': {
       id: '/_artist/my/applications'
       path: '/my/applications'
       fullPath: '/my/applications'
       preLoaderRoute: typeof ArtistMyApplicationsRouteImport
       parentRoute: typeof ArtistRouteRoute
+    }
+    '/settings/members/accept/$invitationId': {
+      id: '/settings/members/accept/$invitationId'
+      path: '/settings/members/accept/$invitationId'
+      fullPath: '/settings/members/accept/$invitationId'
+      preLoaderRoute: typeof SettingsMembersAcceptInvitationIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_artist/opportunity/checkout/$opportunityId': {
       id: '/_artist/opportunity/checkout/$opportunityId'
@@ -458,12 +498,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface ArtistSettingsRouteRouteChildren {
+  ArtistSettingsMembersRoute: typeof ArtistSettingsMembersRoute
   ArtistSettingsOrganizationRoute: typeof ArtistSettingsOrganizationRoute
   ArtistSettingsPaymentRoute: typeof ArtistSettingsPaymentRoute
   ArtistSettingsIndexRoute: typeof ArtistSettingsIndexRoute
 }
 
 const ArtistSettingsRouteRouteChildren: ArtistSettingsRouteRouteChildren = {
+  ArtistSettingsMembersRoute: ArtistSettingsMembersRoute,
   ArtistSettingsOrganizationRoute: ArtistSettingsOrganizationRoute,
   ArtistSettingsPaymentRoute: ArtistSettingsPaymentRoute,
   ArtistSettingsIndexRoute: ArtistSettingsIndexRoute,
@@ -514,6 +556,8 @@ const rootRouteChildren: RootRouteChildren = {
   StripeReturnRoute: StripeReturnRoute,
   SuccessRoute: SuccessRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  SettingsMembersAcceptInvitationIdRoute:
+    SettingsMembersAcceptInvitationIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

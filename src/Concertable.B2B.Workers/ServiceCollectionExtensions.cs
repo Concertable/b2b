@@ -1,5 +1,6 @@
 using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
+using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
@@ -31,6 +32,7 @@ internal static class ServiceCollectionExtensions
     {
         services.AddSeedingInfrastructure();
         services.AddSharedInfrastructure(configuration);
+        services.AddUris(configuration);
         services.AddSharedBlob(configuration);
         services.AddSharedEmail(configuration);
         services.AddSharedGeocoding();

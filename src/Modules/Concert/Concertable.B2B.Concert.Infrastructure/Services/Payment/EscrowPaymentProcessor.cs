@@ -25,13 +25,13 @@ internal sealed class EscrowPaymentProcessor : IIntegrationEventHandler<PaymentS
 
     public async Task HandleAsync(PaymentSucceededEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Escrow)
+        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Escrow)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(EscrowPaymentProcessor), ct))
             return;
 
-        var bookingId = int.Parse(@event.Metadata["bookingId"]);
+        var bookingId = @event.Metadata.GetValueAs<int>(PaymentMetadataKeys.BookingId);
         logger.EscrowWebhookReceived(@event.TransactionId, bookingId);
 
         context.AddInboxMessage(envelope, nameof(EscrowPaymentProcessor));
