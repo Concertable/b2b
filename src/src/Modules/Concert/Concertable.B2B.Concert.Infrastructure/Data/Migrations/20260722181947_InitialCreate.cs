@@ -110,10 +110,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     VenueId = table.Column<int>(type: "int", nullable: false),
-                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DealId = table.Column<int>(type: "int", nullable: false),
-                    Genres = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Genres = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -211,11 +211,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     TotalTickets = table.Column<int>(type: "int", nullable: false),
                     TicketsSold = table.Column<int>(type: "int", nullable: false),
                     DoorRevenue = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DatePosted = table.Column<DateTime>(type: "datetime2", nullable: true),
                     DealType = table.Column<int>(type: "int", nullable: false),
-                    Genres = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Genres = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -254,8 +254,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     VenueName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ArtistId = table.Column<int>(type: "int", nullable: false),
                     ArtistName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Period_Start = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Period_End = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DealType = table.Column<int>(type: "int", nullable: false),
                     PaymentMethod = table.Column<int>(type: "int", nullable: false),
                     TermsText = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -268,6 +266,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     ArtistESignature_SignatoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ArtistESignature_UserAgent = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
                     ArtistESignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Period_End = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Period_Start = table.Column<DateTime>(type: "datetime2", nullable: false),
                     VenueESignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
                     VenueESignature_DrawnSignatureImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     VenueESignature_Ip = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: false),
