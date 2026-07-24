@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="TngTech.ArchUnitNET.xUnit" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <!-- Reference the composition root so every module's compiled assembly (Contracts/Domain/
+       Application/Infrastructure/Api) lands in the output for ArchUnitNET to load and analyse. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Concertable.B2B.Web\Concertable.B2B.Web.csproj" />
+  </ItemGroup>
+
+</Project>
