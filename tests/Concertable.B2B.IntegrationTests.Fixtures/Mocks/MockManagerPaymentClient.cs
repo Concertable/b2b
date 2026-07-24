@@ -25,8 +25,8 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
             Amount = (long)(amount * 100),
             Metadata = new Dictionary<string, string>
             {
-                ["type"] = TransactionTypes.Settlement,
-                ["bookingId"] = bookingId.ToString()
+                [PaymentMetadataKeys.Type] = TransactionTypes.Settlement,
+                [PaymentMetadataKeys.BookingId] = bookingId.ToString()
             }
         });
         Payments.Add((payerId, payeeId, amount, paymentMethodId, bookingId));

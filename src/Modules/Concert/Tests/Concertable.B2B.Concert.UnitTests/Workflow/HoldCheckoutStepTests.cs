@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 using Concertable.Kernel.Exceptions;
 using Concertable.Payment.Client;
+using Concertable.Payment.Contracts;
 using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests.Workflow;
@@ -55,8 +56,8 @@ public sealed class HoldCheckoutStepTests
         managerPaymentClient.Verify(
             c => c.CreateHoldSessionAsync(venueTenantId, deal.Fee, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()),
             Times.Once);
-        Assert.Equal("applicationAccept", capturedMetadata!["type"]);
-        Assert.Equal(ApplicationId.ToString(), capturedMetadata["applicationId"]);
+        Assert.Equal(TransactionTypes.ApplicationAccept, capturedMetadata![PaymentMetadataKeys.Type]);
+        Assert.Equal(ApplicationId.ToString(), capturedMetadata[PaymentMetadataKeys.ApplicationId]);
     }
 
     [Fact]

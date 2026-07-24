@@ -37,8 +37,8 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
             Amount = (long)(amount * 100),
             Metadata = new Dictionary<string, string>
             {
-                ["type"] = TransactionTypes.Escrow,
-                ["bookingId"] = bookingId.ToString()
+                [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
+                [PaymentMetadataKeys.BookingId] = bookingId.ToString()
             }
         });
 
@@ -50,8 +50,8 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
     {
         stripeApiClient.UpdateLastMetadata(new Dictionary<string, string>
         {
-            ["type"] = TransactionTypes.Escrow,
-            ["bookingId"] = bookingId.ToString()
+            [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
+            [PaymentMetadataKeys.BookingId] = bookingId.ToString()
         });
 
         Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));

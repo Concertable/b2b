@@ -185,8 +185,8 @@ public class ApiFixture : IAsyncLifetime
         var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
         var evt = new PaymentFailedEvent($"pi_fail_{bookingId}", "card_declined", "Card was declined", new Dictionary<string, string>
         {
-            ["type"] = TransactionTypes.Escrow,
-            ["bookingId"] = bookingId.ToString()
+            [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
+            [PaymentMetadataKeys.BookingId] = bookingId.ToString()
         });
 
         foreach (var handler in handlers)

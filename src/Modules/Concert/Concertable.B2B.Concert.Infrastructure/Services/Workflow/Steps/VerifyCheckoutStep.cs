@@ -36,9 +36,9 @@ internal sealed class VerifyCheckoutStep : IAcceptCheckoutStep
 
         var metadata = new Dictionary<string, string>
         {
-            ["type"] = TransactionTypes.Verify,
-            ["applicationId"] = applicationId.ToString(),
-            ["venueManagerId"] = venueManagerId.ToString()
+            [PaymentMetadataKeys.Type] = TransactionTypes.Verify,
+            [PaymentMetadataKeys.ApplicationId] = applicationId.ToString(),
+            [PaymentMetadataKeys.VenueManagerId] = venueManagerId.ToString()
         };
 
         var session = await managerPaymentClient.CreateVerifySessionAsync(venueTenantId, metadata);
