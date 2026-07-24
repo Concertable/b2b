@@ -9,7 +9,7 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
     public void Configure(EntityTypeBuilder<ConcertEntity> builder)
     {
         builder.ToTable(Schema.Tables.Concerts, Schema.Name);
-        builder.OwnsOne(e => e.Period, p =>
+        builder.ComplexProperty(e => e.Period, p =>
         {
             p.Property(x => x.Start).HasColumnName("StartDate");
             p.Property(x => x.End).HasColumnName("EndDate");
