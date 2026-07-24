@@ -25,13 +25,13 @@ internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentS
 
     public async Task HandleAsync(PaymentSucceededEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Verify)
+        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Verify)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentProcessor), ct))
             return;
 
-        var applicationId = int.Parse(@event.Metadata["applicationId"]);
+        var applicationId = @event.Metadata.GetValueAs<int>(PaymentMetadataKeys.ApplicationId);
         logger.VerifyWebhookReceived(@event.TransactionId, applicationId);
 
         context.AddInboxMessage(envelope, nameof(VerifyPaymentProcessor));

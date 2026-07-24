@@ -25,13 +25,13 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
 
     public async Task HandleAsync(PaymentSucceededEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Settlement)
+        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Settlement)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(SettlementPaymentProcessor), ct))
             return;
 
-        var bookingId = int.Parse(@event.Metadata["bookingId"]);
+        var bookingId = @event.Metadata.GetValueAs<int>(PaymentMetadataKeys.BookingId);
         logger.SettlementWebhookReceived(@event.TransactionId, bookingId);
 
         context.AddInboxMessage(envelope, nameof(SettlementPaymentProcessor));

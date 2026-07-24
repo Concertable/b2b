@@ -39,8 +39,8 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
 
         var metadata = new Dictionary<string, string>
         {
-            ["type"] = "applicationApply",
-            ["opportunityId"] = opportunityId.ToString()
+            [PaymentMetadataKeys.Type] = TransactionTypes.ApplicationApply,
+            [PaymentMetadataKeys.OpportunityId] = opportunityId.ToString()
         };
 
         /* Apply-time checkout — no application snapshot exists yet; the acting user IS the

@@ -25,14 +25,14 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
 
     public async Task HandleAsync(PaymentFailedEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Verify)
+        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Verify)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentFailedProcessor), ct))
             return;
 
-        var applicationId = int.Parse(@event.Metadata["applicationId"]);
-        var venueManagerId = @event.Metadata["venueManagerId"];
+        var applicationId = @event.Metadata.GetValueAs<int>(PaymentMetadataKeys.ApplicationId);
+        var venueManagerId = @event.Metadata.GetValue(PaymentMetadataKeys.VenueManagerId);
         logger.VerifyPaymentFailed(applicationId, @event.FailureCode, @event.FailureMessage);
 
         context.AddInboxMessage(envelope, nameof(VerifyPaymentFailedProcessor));

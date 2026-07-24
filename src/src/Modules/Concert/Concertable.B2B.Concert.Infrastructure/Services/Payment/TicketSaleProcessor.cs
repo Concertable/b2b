@@ -20,15 +20,15 @@ internal sealed class TicketSaleProcessor : IIntegrationEventHandler<PaymentSucc
 
     public async Task HandleAsync(PaymentSucceededEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Ticket)
+        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Ticket)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(TicketSaleProcessor), ct))
             return;
 
         var meta = @event.Metadata;
-        var concertId = int.Parse(meta["concertId"]);
-        var quantity = meta.TryGetValue("quantity", out var q) ? int.Parse(q) : 1;
+        var concertId = meta.GetValueAs<int>(PaymentMetadataKeys.ConcertId);
+        var quantity = meta.TryGetValue(PaymentMetadataKeys.Quantity, out var q) ? int.Parse(q) : 1;
 
         context.AddInboxMessage(envelope, nameof(TicketSaleProcessor));
 

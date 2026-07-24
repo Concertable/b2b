@@ -31,8 +31,8 @@ internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
 
         var metadata = new Dictionary<string, string>
         {
-            ["type"] = "applicationAccept",
-            ["applicationId"] = applicationId.ToString()
+            [PaymentMetadataKeys.Type] = TransactionTypes.ApplicationAccept,
+            [PaymentMetadataKeys.ApplicationId] = applicationId.ToString()
         };
 
         var session = await managerPaymentClient.CreateHoldSessionAsync(venueTenantId, deal.Fee, metadata);
