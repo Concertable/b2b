@@ -9,7 +9,7 @@ internal sealed class OpportunityEntityConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<OpportunityEntity> builder)
     {
         builder.ToTable(Schema.Tables.Opportunities, Schema.Name);
-        builder.OwnsOne(o => o.Period, p =>
+        builder.ComplexProperty(o => o.Period, p =>
         {
             p.Property(x => x.Start).HasColumnName("StartDate");
             p.Property(x => x.End).HasColumnName("EndDate");
