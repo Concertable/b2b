@@ -81,9 +81,11 @@ in** at the call site (as B2B fronts Payment). Never `.IgnoreQueryFilters()`.
   model wants understanding first, so it was left out of the invoicing PR.
 
 **Resolves when:** `BookingRepository.ExistsIgnoringTenantAsync` is replaced by a composed public-stance
-existence check (no `IgnoreQueryFilters`), the escrow diagnostic reads through it, and the
-`CODE_PATTERNS.md` "zero `IgnoreQueryFilters`" claim is true and re-affirmed with the alternatives spelled
-out (the convention discussion this entry is the placeholder for).
+existence check (no `IgnoreQueryFilters`) and the escrow diagnostic reads through it — at which point the
+`CODE_PATTERNS.md` "zero `IgnoreQueryFilters`" claim is true again. The convention discussion this entry
+was the placeholder for has landed: see `docs/CODE_PATTERNS.md` § "Repository naming — two orthogonal
+axes" (audience vs mutability) alongside § "Tenancy is composed, never subtracted". Only the
+`ExistsIgnoringTenantAsync` code cleanup remains.
 
 ---
 
