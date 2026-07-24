@@ -25,13 +25,13 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
 
     public async Task HandleAsync(PaymentFailedEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Settlement)
+        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Settlement)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(SettlementPaymentFailedProcessor), ct))
             return;
 
-        var bookingId = int.Parse(@event.Metadata["bookingId"]);
+        var bookingId = @event.Metadata.GetValueAs<int>(PaymentMetadataKeys.BookingId);
         logger.BookingPaymentFailed(bookingId, @event.FailureCode, @event.FailureMessage);
 
         context.AddInboxMessage(envelope, nameof(SettlementPaymentFailedProcessor));
