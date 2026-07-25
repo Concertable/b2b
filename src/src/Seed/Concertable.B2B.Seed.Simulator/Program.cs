@@ -26,11 +26,12 @@ builder.Services.AddAzureServiceBusTransport(
     },
     reg => reg
         .Publishes<TenantCreatedEvent>()
+        .Publishes<PayoutOwnerRegisteredEvent>()
         .Publishes<VenueChangedEvent>()
         .Publishes<ArtistChangedEvent>()
         .Publishes<ConcertChangedEvent>());
 
-builder.Services.AddHostedService<SeedEventPublishingService>();
+builder.Services.AddHostedService<SeedEventPublisher>();
 
 var app = builder.Build();
 app.Run();
