@@ -31,9 +31,6 @@ internal sealed class SeedEventPublisher : BackgroundService
         foreach (var m in SeedUsers.Managers)
         {
             await transport.PublishAsync(
-                new TenantCreatedEvent(m.TenantId, m.Id, m.Email),
-                Envelope(typeof(TenantCreatedEvent)), stoppingToken);
-            await transport.PublishAsync(
                 new PayoutOwnerRegisteredEvent(m.TenantId, m.Email),
                 Envelope(typeof(PayoutOwnerRegisteredEvent)), stoppingToken);
         }
