@@ -29,8 +29,8 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     /// <summary>
     /// Creates a tenant from the operator's registration <paramref name="email"/> — the bare provisioning
     /// state before organization setup. The email seeds the placeholder <see cref="LegalName"/> and is carried
-    /// on <see cref="TenantCreatedDomainEvent"/> as the Stripe account email, so downstream services (Payment)
-    /// provision off the resulting <c>TenantCreatedEvent</c>. <paramref name="type"/> is the persona derived
+    /// on <see cref="TenantCreatedDomainEvent"/> as the Stripe account email, so Payment provisions off the
+    /// resulting <c>PayoutOwnerRegisteredEvent</c>. <paramref name="type"/> is the persona derived
     /// from the registration client-id. <paramref name="id"/> lets seeders supply a deterministic id (so the
     /// event carries it, not a throwaway one); production omits it for a random id.
     /// </summary>

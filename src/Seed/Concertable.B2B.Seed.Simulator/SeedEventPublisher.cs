@@ -5,18 +5,18 @@ using Concertable.Seed.Identity;
 
 namespace Concertable.B2B.Seed.Simulator;
 
-internal sealed class SeedEventPublishingService : BackgroundService
+internal sealed class SeedEventPublisher : BackgroundService
 {
     private readonly IBusTransport transport;
     private readonly SeedCatalog fixture;
     private readonly IHostApplicationLifetime lifetime;
-    private readonly ILogger<SeedEventPublishingService> logger;
+    private readonly ILogger<SeedEventPublisher> logger;
 
-    public SeedEventPublishingService(
+    public SeedEventPublisher(
         IBusTransport transport,
         SeedCatalog fixture,
         IHostApplicationLifetime lifetime,
-        ILogger<SeedEventPublishingService> logger)
+        ILogger<SeedEventPublisher> logger)
     {
         this.transport = transport;
         this.fixture = fixture;
@@ -27,11 +27,16 @@ internal sealed class SeedEventPublishingService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Stand in for B2B's TenantProvisioningHandler (absent when real B2B isn't running) so Payment
-        // provisions each operator's Connect account off the same TenantCreatedEvent the prod path emits.
+        // provisions each operator's Connect account off the same events the prod path emits.
         foreach (var m in SeedUsers.Managers)
+        {
             await transport.PublishAsync(
                 new TenantCreatedEvent(m.TenantId, m.Id, m.Email),
                 Envelope(typeof(TenantCreatedEvent)), stoppingToken);
+            await transport.PublishAsync(
+                new PayoutOwnerRegisteredEvent(m.TenantId, m.Email),
+                Envelope(typeof(PayoutOwnerRegisteredEvent)), stoppingToken);
+        }
         logger.PublishedTenantEvents(SeedUsers.Managers.Count());
 
         foreach (var v in fixture.Venues)
