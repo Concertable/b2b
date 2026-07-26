@@ -111,7 +111,7 @@ no event round-trip and no dependency on a Payment seed simulator (which no long
 divergence-from-production concern is accepted here because past-dated ticket sales are **inherently
 unreproducible** — real Payment only emits `PaymentSucceededEvent` for live Stripe webhooks, and you
 can't buy a ticket to a concert that already happened. Documented as a sanctioned exception in
-`docs/SEEDING_CONVENTIONS.md`. The settlement E2E (`ConcertFinishedTests`) reads these via
+`agents/SEEDING_CONVENTIONS.md`. The settlement E2E (`ConcertFinishedTests`) reads these via
 `TicketsSold * Price`: Past DoorSplit (id 12) and Past Versus (id 9) are seeded `ticketsSold: 1` —
 the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) omitted.
 
@@ -152,7 +152,7 @@ names are updated to match.
 
 ### `UserEntity.Avatar` models "no avatar" as empty string
 
-`Modules/User/Concertable.B2B.User.Domain/UserEntity.cs` declares `public string Avatar { get; private set; } = string.Empty;` — an empty-string placeholder pretending to be a value (the pattern `docs/CODE_CONVENTIONS.md` bans for populated-later defaults). "No avatar" is modelled as `string?` elsewhere (e.g. `ConcertArtistResponse.Avatar`).
+`Modules/User/Concertable.B2B.User.Domain/UserEntity.cs` declares `public string Avatar { get; private set; } = string.Empty;` — an empty-string placeholder pretending to be a value (the pattern `agents/CODE_CONVENTIONS.md` bans for populated-later defaults). "No avatar" is modelled as `string?` elsewhere (e.g. `ConcertArtistResponse.Avatar`).
 
 **Resolves when:** `Avatar` becomes `string?` with no default, consumers null-check instead of empty-check, and the column is re-scaffolded nullable via `./initial-migrations.ps1`.
 

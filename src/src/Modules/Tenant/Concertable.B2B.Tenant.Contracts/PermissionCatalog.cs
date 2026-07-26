@@ -3,7 +3,7 @@ using System.Collections.Frozen;
 namespace Concertable.B2B.Tenant.Contracts;
 
 /// <summary>
-/// The keyed strategy resolver (see <c>api/docs/CODE_PATTERNS.md</c>) over the persona catalogs: maps the
+/// The keyed strategy resolver (see <c>api/agents/CODE_PATTERNS.md</c>) over the persona catalogs: maps the
 /// active tenant's <see cref="TenantType"/> to its <see cref="IPermissionSet"/> and delegates. Consumers
 /// inject <see cref="IPermissionCatalog"/> and never branch on persona or touch the map. A code-defined map,
 /// not a <c>RolePermission</c> table: unit-testable, versioned with code, no admin UI, no per-tenant custom
