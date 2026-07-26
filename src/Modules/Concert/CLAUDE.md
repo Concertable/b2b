@@ -6,7 +6,7 @@ any of these families, understand what each one is *for* — they are not interc
 choice (an "executor" that isn't a transition, a "capability" that's a dead marker) is the exact
 cargo-culting this doc exists to stop.
 
-Read [`../../../docs/CODE_PATTERNS.md`](../../docs/CODE_PATTERNS.md) too — the keyed-strategy resolver
+Read [`../../../../agents/CODE_PATTERNS.md`](../../../../agents/CODE_PATTERNS.md) too — the keyed-strategy resolver
 and the dependency-holder (`IConcertWorkflow` impls) patterns live there and are assumed here.
 
 ## Vocabulary — the two tenants of a booking sit on TWO axes, not one
