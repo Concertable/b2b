@@ -33,11 +33,9 @@ internal sealed class VerifyExecutor : IVerifyExecutor
     {
         var application = await applicationRepository.GetByIdAsync(applicationId).OrNotFound();
         application.RecordPaymentVerified(transactionId);
+        await applicationRepository.SaveChangesAsync();
 
-        if (IsBookingPending(application.State))
-            await BookAsync(applicationId);
-        else
-            await applicationRepository.SaveChangesAsync();
+        await ConvergeAsync(applicationId);
     }
 
     public async Task ExecuteFailedAsync(int applicationId, string venueManagerId, string? failureMessage)
@@ -48,16 +46,17 @@ internal sealed class VerifyExecutor : IVerifyExecutor
         if (application.State != LifecycleState.Cancelled)
             await concertNotifier.VerifyPaymentFailedAsync(venueManagerId, new { applicationId = application.Id, FailureMessage = failureMessage });
 
-        if (IsBookingPending(application.State))
-            await FailAsync(applicationId);
-        else
-            await applicationRepository.SaveChangesAsync();
+        await applicationRepository.SaveChangesAsync();
+
+        await ConvergeAsync(applicationId);
     }
 
-    public async Task ConvergeAfterAcceptAsync(int applicationId)
+    public Task ConvergeAfterAcceptAsync(int applicationId) => ConvergeAsync(applicationId);
+
+    private async Task ConvergeAsync(int applicationId)
     {
         var snapshot = await applicationRepository.GetConvergenceSnapshotAsync(applicationId);
-        if (snapshot is not { } join || join.State != LifecycleState.Accepted)
+        if (snapshot is not { } join || !IsBookingPending(join.State))
             return;
 
         try
