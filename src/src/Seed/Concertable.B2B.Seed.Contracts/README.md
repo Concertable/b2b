@@ -14,4 +14,4 @@ The point: whichever path produced the events (real B2B or simulator), downstrea
 
 ## Full pattern
 
-See [`../Concertable.B2B.Seed.Simulator/CLAUDE.md`](../Concertable.B2B.Seed.Simulator/CLAUDE.md) for the design principle, what NOT to do, how to add new entities, boundary checks, and cross-repo distribution.
+See [`../Concertable.B2B.Seed.Simulator/AGENTS.md`](../Concertable.B2B.Seed.Simulator/AGENTS.md) for the design principle, what NOT to do, how to add new entities, boundary checks, and cross-repo distribution.
