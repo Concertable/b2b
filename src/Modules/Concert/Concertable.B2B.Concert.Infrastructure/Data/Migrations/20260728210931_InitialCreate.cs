@@ -136,6 +136,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     State = table.Column<int>(type: "int", nullable: false),
+                    PaymentVerification = table.Column<int>(type: "int", nullable: false),
+                    PaymentTransactionId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     OpportunityId = table.Column<int>(type: "int", nullable: false),
                     ArtistId = table.Column<int>(type: "int", nullable: false),
                     DealType = table.Column<int>(type: "int", nullable: false),
