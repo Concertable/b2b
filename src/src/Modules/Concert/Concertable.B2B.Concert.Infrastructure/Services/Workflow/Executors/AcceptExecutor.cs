@@ -16,6 +16,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private readonly IBookingRepository bookingRepository;
     private readonly IContractIssuer contractIssuer;
     private readonly ITermsFingerprintCalculator termsFingerprint;
+    private readonly IVerifyDispatcher verifyDispatcher;
     private readonly IBackgroundTaskRunner taskRunner;
 
     public AcceptExecutor(
@@ -25,6 +26,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         IBookingRepository bookingRepository,
         IContractIssuer contractIssuer,
         ITermsFingerprintCalculator termsFingerprint,
+        IVerifyDispatcher verifyDispatcher,
         IBackgroundTaskRunner taskRunner)
     {
         this.transitioner = transitioner;
@@ -33,11 +35,13 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.bookingRepository = bookingRepository;
         this.contractIssuer = contractIssuer;
         this.termsFingerprint = termsFingerprint;
+        this.verifyDispatcher = verifyDispatcher;
         this.taskRunner = taskRunner;
     }
 
-    public Task ExecuteAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
-        => transitioner.TransitionAsync(applicationId, Trigger.Accept, async app =>
+    public async Task ExecuteAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
+    {
+        await transitioner.TransitionAsync(applicationId, Trigger.Accept, async app =>
         {
             var deal = await dealResolver.ResolveByApplicationIdAsync(app.Id);
             VerifyTermsUnchanged(app, deal);
@@ -59,6 +63,9 @@ internal sealed class AcceptExecutor : IAcceptExecutor
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
         });
+
+        await verifyDispatcher.ConvergeAfterAcceptAsync(applicationId);
+    }
 
     /* Must run BEFORE the accept step: the step captures/charges real money, and only the DB
        side of this transition rolls back on a throw. */

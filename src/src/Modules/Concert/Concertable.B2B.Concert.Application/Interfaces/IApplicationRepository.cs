@@ -1,5 +1,6 @@
 ﻿using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Application;
 
@@ -7,6 +8,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<ApplicationEntity>
 {
+    Task<(LifecycleState State, PaymentVerification Verification)?> GetConvergenceSnapshotAsync(int applicationId);
     Task<IEnumerable<ApplicationEntity>> GetByOpportunityIdAsync(int opportunityId);
     Task<bool> ExistsForOpportunityAndArtistAsync(int opportunityId, int artistId);
     Task<IEnumerable<ApplicationEntity>> GetPendingByArtistIdAsync(int id);
