@@ -1,18 +1,29 @@
-using Concertable.B2B.Concert.Application.Workflow.Executors;
+using Concertable.B2B.Concert.Application.Workflow;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
 
 internal sealed class VerifyDispatcher : IVerifyDispatcher
 {
-    private readonly IVerifyExecutor executor;
+    private readonly IPaymentVerificationRecorder recorder;
+    private readonly IBookingAdvancer bookingAdvancer;
 
-    public VerifyDispatcher(IVerifyExecutor executor)
+    public VerifyDispatcher(
+        IPaymentVerificationRecorder recorder,
+        IBookingAdvancer bookingAdvancer)
     {
-        this.executor = executor;
+        this.recorder = recorder;
+        this.bookingAdvancer = bookingAdvancer;
     }
 
-    public Task VerifySucceededAsync(int applicationId) => executor.ExecuteAsync(applicationId);
+    public async Task VerifySucceededAsync(int applicationId)
+    {
+        await recorder.RecordVerifiedAsync(applicationId);
+        await bookingAdvancer.AdvanceIfReadyAsync(applicationId);
+    }
 
-    public Task VerifyFailedAsync(int applicationId, string venueManagerId, string? failureMessage)
-        => executor.ExecuteFailedAsync(applicationId, venueManagerId, failureMessage);
+    public async Task VerifyFailedAsync(int applicationId, string venueManagerId, string? failureMessage)
+    {
+        await recorder.RecordFailedAsync(applicationId, venueManagerId, failureMessage);
+        await bookingAdvancer.AdvanceIfReadyAsync(applicationId);
+    }
 }
