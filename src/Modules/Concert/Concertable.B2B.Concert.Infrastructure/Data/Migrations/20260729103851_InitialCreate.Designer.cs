@@ -14,7 +14,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260728210931_InitialCreate")]
+    [Migration("20260729103851_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -71,9 +71,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
-
-                    b.Property<string>("PaymentTransactionId")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("PaymentVerification")
                         .HasColumnType("int");

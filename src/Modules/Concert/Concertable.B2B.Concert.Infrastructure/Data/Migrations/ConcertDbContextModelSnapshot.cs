@@ -69,9 +69,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
 
-                    b.Property<string>("PaymentTransactionId")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("PaymentVerification")
                         .HasColumnType("int");
 

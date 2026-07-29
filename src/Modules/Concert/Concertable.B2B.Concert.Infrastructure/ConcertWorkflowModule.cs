@@ -26,8 +26,8 @@ internal sealed class ConcertWorkflowModule : IConcertWorkflowModule
         this.verifyDispatcher = verifyDispatcher;
     }
 
-    public Task VerifySucceededAsync(int applicationId, string transactionId, CancellationToken ct = default)
-        => verifyDispatcher.VerifySucceededAsync(applicationId, transactionId);
+    public Task VerifySucceededAsync(int applicationId, CancellationToken ct = default)
+        => verifyDispatcher.VerifySucceededAsync(applicationId);
 
     public Task EscrowSucceededAsync(int bookingId, CancellationToken ct = default)
         => escrowDispatcher.SucceededAsync(bookingId);
