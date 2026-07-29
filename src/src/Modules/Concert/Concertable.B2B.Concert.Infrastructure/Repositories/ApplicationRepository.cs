@@ -54,7 +54,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         return (query.Artist, query.Opportunity.Venue);
     }
 
-    public async Task<(LifecycleState State, PaymentVerification Verification)?> GetConvergenceSnapshotAsync(int applicationId)
+    public async Task<(LifecycleState State, PaymentVerification Verification)?> GetLifecycleAndPaymentStateAsync(int applicationId)
     {
         var row = await context.Applications
             .Where(a => a.Id == applicationId)

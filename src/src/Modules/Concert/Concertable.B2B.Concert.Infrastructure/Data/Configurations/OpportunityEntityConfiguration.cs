@@ -32,7 +32,6 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
         builder.ToTable(Schema.Tables.Applications, Schema.Name);
         builder.Property(ca => ca.State);
         builder.Property(ca => ca.PaymentVerification);
-        builder.Property(ca => ca.PaymentTransactionId);
         builder.HasIndex(ca => new { ca.OpportunityId, ca.ArtistId }).IsUnique();
         builder.HasOne(ca => ca.Opportunity)
             .WithMany(o => o.Applications)
