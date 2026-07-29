@@ -69,6 +69,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
 
+                    b.Property<int>("PaymentVerification")
+                        .HasColumnType("int");
+
                     b.Property<int>("State")
                         .HasColumnType("int");
 
