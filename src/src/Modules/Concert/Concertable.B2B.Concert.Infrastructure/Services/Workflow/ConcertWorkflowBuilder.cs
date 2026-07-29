@@ -46,13 +46,10 @@ internal sealed class ConcertWorkflowBuilder
 
     public ConcertWorkflowBuilder WithVerifiedPayment()
     {
-        Add(Applied, VerifyPaymentFailed, Applied);
         Add(Accepted, VerifyPaymentSucceeded, Booked);
         Add(Accepted, VerifyPaymentFailed, PaymentFailed);
         Add(PaymentFailed, VerifyPaymentSucceeded, Booked);
         Add(PaymentFailed, VerifyPaymentFailed, PaymentFailed);
-        Add(Cancelled, VerifyPaymentSucceeded, Cancelled);
-        Add(Cancelled, VerifyPaymentFailed, Cancelled);
         return this;
     }
 
