@@ -117,6 +117,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IApplyExecutor, ApplyExecutor>();
         services.AddScoped<IAcceptExecutor, AcceptExecutor>();
         services.AddScoped<IVerifyExecutor, VerifyExecutor>();
+        services.AddScoped<IBookingAdvancer, BookingAdvancer>();
+        services.AddScoped<IPaymentVerificationRecorder, PaymentVerificationRecorder>();
         services.AddScoped<IEscrowExecutor, EscrowExecutor>();
         services.AddScoped<ISettlementExecutor, SettlementExecutor>();
         services.AddScoped<IFinishExecutor, FinishExecutor>();
