@@ -24,8 +24,8 @@ internal sealed class TenantDevSeeder : IDevSeeder
     /* Seeds tenants with deterministic ids up front (before event processing), so seeded venues link to their
        operator tenant without a lookup. The create event is cleared before insert: publishing it here would race
        the Payment ASB subscription at startup and be dropped (most of it). Registration's Announce() is instead
-       the single reliable TenantCreatedEvent trigger (it fires after subscriptions exist), so Payment provisions
-       exactly one Stripe account per operator. */
+       the single reliable PayoutOwnerRegisteredEvent trigger (it fires after subscriptions exist), so Payment
+       provisions exactly one Stripe account per operator. */
     public async Task SeedAsync(CancellationToken ct = default) =>
         await context.Tenants.SeedIfEmptyAsync(async () =>
         {
