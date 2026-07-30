@@ -14,6 +14,7 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     public Guid VenueTenantId { get; set; }
     public Guid ArtistTenantId { get; set; }
     internal LifecycleState State { get; private set; } = LifecycleState.Applied;
+    internal PaymentVerification PaymentVerification { get; private set; } = PaymentVerification.None;
     public int OpportunityId { get; private set; }
     public int ArtistId { get; private set; }
     public DealType DealType { get; private set; }
@@ -34,6 +35,10 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     }
 
     public void Accept(BookingEntity booking) => Booking = booking;
+
+    internal void RecordPaymentVerified() => PaymentVerification = PaymentVerification.Verified;
+
+    internal void RecordPaymentFailed() => PaymentVerification = PaymentVerification.Failed;
 
     public void RecordArtistESignature(ESignature eSignature, string termsFingerprint)
     {
