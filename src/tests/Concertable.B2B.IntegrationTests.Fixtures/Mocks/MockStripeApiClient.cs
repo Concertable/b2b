@@ -35,4 +35,18 @@ public sealed class MockStripeApiClient : IResettable
             Metadata = options.Metadata ?? []
         });
     }
+
+    public Task<SetupIntent> CreateSetupIntentAsync(SetupIntentCreateOptions options)
+    {
+        LastPaymentIntentId = $"seti_test_{Guid.NewGuid():N}";
+        LastEventId = $"evt_test_{Guid.NewGuid():N}";
+        LastMetadata = options.Metadata ?? [];
+
+        return Task.FromResult(new SetupIntent
+        {
+            Id = LastPaymentIntentId,
+            Status = "succeeded",
+            Metadata = options.Metadata ?? []
+        });
+    }
 }
