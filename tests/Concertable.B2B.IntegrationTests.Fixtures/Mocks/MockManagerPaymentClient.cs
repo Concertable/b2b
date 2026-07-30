@@ -41,7 +41,7 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
 
     public async Task<CheckoutSession> CreateVerifySessionAsync(Guid payerId, IDictionary<string, string> metadata, CancellationToken ct = default)
     {
-        var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions { Metadata = new Dictionary<string, string>(metadata) });
+        var intent = await stripeApiClient.CreateSetupIntentAsync(new SetupIntentCreateOptions { Metadata = new Dictionary<string, string>(metadata) });
         return new CheckoutSession(intent.Id + "_secret", "cuss_mock_secret", "cus_mock");
     }
 
