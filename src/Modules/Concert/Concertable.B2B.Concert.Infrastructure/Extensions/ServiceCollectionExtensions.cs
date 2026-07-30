@@ -68,6 +68,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IUnitOfWork<ConcertDbContext>, UnitOfWork<ConcertDbContext>>();
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+        services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
 
         // Services
         services.AddScoped<IConcertService, ConcertService>();

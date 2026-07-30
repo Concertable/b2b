@@ -111,7 +111,7 @@ public class ApiFixture : IAsyncLifetime
                 services.AddSingleton<INotificationClient>(NotificationService);
                 services.AddSingleton(StripeApiClient);
                 services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient);
-                services.AddSingleton<IEmailSender>(EmailSender);
+                services.AddSingleton<IEmailTransport>(EmailSender);
 
                 services.AddSingleton<IManagerPaymentClient>(ManagerPaymentClient);
                 services.AddSingleton<IEscrowClient>(EscrowClient);
