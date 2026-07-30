@@ -25,12 +25,12 @@ builder.Services.AddAzureServiceBusTransport(
         opts.ServiceName = "concertable-b2b-seeding-simulator";
     },
     reg => reg
-        .Publishes<TenantCreatedEvent>()
+        .Publishes<PayoutOwnerRegisteredEvent>()
         .Publishes<VenueChangedEvent>()
         .Publishes<ArtistChangedEvent>()
         .Publishes<ConcertChangedEvent>());
 
-builder.Services.AddHostedService<SeedEventPublishingService>();
+builder.Services.AddHostedService<SeedEventPublisher>();
 
 var app = builder.Build();
 app.Run();
