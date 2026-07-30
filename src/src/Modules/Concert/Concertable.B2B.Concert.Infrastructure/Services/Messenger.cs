@@ -6,23 +6,23 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class Messenger : IMessenger
 {
     private readonly IConversationsModule conversationsModule;
-    private readonly IEmailSender emailSender;
+    private readonly IEmailTransport emailTransport;
 
-    public Messenger(IConversationsModule conversationsModule, IEmailSender emailSender)
+    public Messenger(IConversationsModule conversationsModule, IEmailTransport emailTransport)
     {
         this.conversationsModule = conversationsModule;
-        this.emailSender = emailSender;
+        this.emailTransport = emailTransport;
     }
 
     public async Task SendAsync(Guid fromUserId, Guid toUserId, string content, MessageAction action, EmailCopy email)
     {
         await conversationsModule.SendAsync(fromUserId, toUserId, content, action);
-        await emailSender.SendEmailAsync(email.To, email.Subject, email.Body);
+        await emailTransport.SendEmailAsync(email.To, email.Subject, email.Body);
     }
 
     public async Task SendAndNotifyAsync(Guid fromUserId, Guid toUserId, string content, MessageAction action, EmailCopy email)
     {
         await conversationsModule.SendAndNotifyAsync(fromUserId, toUserId, content, action);
-        await emailSender.SendEmailAsync(email.To, email.Subject, email.Body);
+        await emailTransport.SendEmailAsync(email.To, email.Subject, email.Body);
     }
 }

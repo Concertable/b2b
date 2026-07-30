@@ -60,6 +60,58 @@ See [`plans/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/SPLIT_TIME_E2E_STRATEGY.md)
 
 ## MED
 
+### B2B outbound email is still synchronous inline — not on the transactional outbox
+
+The async-email-outbox refactor put Auth (verification/reset) and Customer (ticket receipt) on the
+transactional outbox (`IEmailSender` → `OutboxEmailSender` → `SendEmailCommand`), but **B2B's two email
+producers still send synchronously** through `IEmailTransport` (the raw SMTP/fake send), so a transient
+failure still loses the mail and the send isn't atomic with the business change:
+
+- `Concert.Infrastructure/Services/Messenger` — the counterparty email on a conversation message/action.
+- `Tenant.Infrastructure/Services/InvitationService` — the org-invitation email after the invitation saves.
+
+They were left synchronous because the integration-test harness can't deliver an outbox command
+in-process (`LocalDispatchingBus` deliberately doesn't dispatch commands locally, and the fixtures'
+`MockBusTransport.SendAsync` is a no-op), so the `EmailSender.Sent` assertions in
+`ApplicationCancel`/`ApplicationWithdrawReject`/`Invitation` tests only observe a synchronous send.
+`Messenger` also has no clean transactional anchor — it fires off a conversation action, not a persisted
+lifecycle transition.
+
+**Resolves when:** the concert-lifecycle transition (and the conversation action) raise a domain event
+whose pre-commit handler stages a `SendEmailCommand` on the same transaction (the
+`TicketPurchasedDomainEventHandler` pattern), making B2B email transactional/retried like Auth and
+Customer — with the B2B email integration assertions moved to draining the outbox (or asserting the
+staged command) rather than a synchronous `Sent` list.
+
+---
+
+### `IgnoreQueryFilters` used to subtract tenancy instead of composing a stance — anti-pattern
+
+`CODE_PATTERNS.md` § "Tenancy is composed, never subtracted" bans per-query `IgnoreQueryFilters` and
+claims the codebase has **zero** — but two had leaked in (both pre-existing on `master`). The right
+alternatives were always available and are named in that doc: read cross-tenant through a composed
+**public stance** (`PublicXDbContext`), expose a cross-tenant *fact* as a **boolean/scalar named
+abstraction** on the public stance (e.g. `IConcertAvailability`), or **resolve the ids and pass them
+in** at the call site (as B2B fronts Payment). Never `.IgnoreQueryFilters()`.
+
+- **Fixed (`Feature/VatAndSelfBilledInvoicing`):** `ContractRepository.GetByBookingIdIgnoringTenantAsync`
+  existed only to feed an eager background PDF render with no tenant context. Removed with the eager
+  path entirely — contract + invoice PDFs now render lazily on download (a tenant-scoped party request),
+  so there is no context-free read to bypass a filter for. See the render-timing decision below.
+- **Outstanding:** `BookingRepository.ExistsIgnoringTenantAsync`, used by
+  `EscrowExecutor.LoadApplicationIdAsync` to word a diagnostic ("exists ignoring tenant filter: …") when
+  the tenant-filtered lookup misses in the escrow **payment-webhook** path. This is a genuine
+  cross-tenant boolean *fact*, so the composed fix is a boolean-only named abstraction on the public
+  stance (à la `IConcertAvailability`) — but it sits in money-path code whose webhook tenant-context
+  model wants understanding first, so it was left out of the invoicing PR.
+
+**Resolves when:** `BookingRepository.ExistsIgnoringTenantAsync` is replaced by a composed public-stance
+existence check (no `IgnoreQueryFilters`), the escrow diagnostic reads through it, and the
+`CODE_PATTERNS.md` "zero `IgnoreQueryFilters`" claim is true and re-affirmed with the alternatives spelled
+out (the convention discussion this entry is the placeholder for).
+
+---
+
 ### `Modules/User/` TPH not unwound
 
 Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `ArtistManagerEntity`, `AdminEntity`) each carrying the Auth `sub`, with no shared `UserEntity` base via TPH. Current state of the `User.Domain` hierarchy needs verifying and may still be TPH.
