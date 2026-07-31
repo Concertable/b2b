@@ -12,4 +12,5 @@ internal interface IPublicArtistRepository
     Task<ArtistSummary?> GetSummaryAsync(int id);
     Task<ArtistDetails?> GetDetailsByIdAsync(int id);
     Task<IReadOnlySet<Genre>> GetGenresAsync(int id);
+    Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId);
 }

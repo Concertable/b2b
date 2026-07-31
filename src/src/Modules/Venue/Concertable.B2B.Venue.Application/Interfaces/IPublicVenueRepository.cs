@@ -10,4 +10,5 @@ internal interface IPublicVenueRepository
 {
     Task<VenueSummary?> GetSummaryAsync(int id);
     Task<VenueDetails?> GetDetailsByIdAsync(int id);
+    Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId);
 }

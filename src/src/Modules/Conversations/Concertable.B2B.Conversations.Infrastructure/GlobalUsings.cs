@@ -2,7 +2,6 @@ global using Concertable.DataAccess.Infrastructure;
 global using Concertable.B2B.Conversations.Application.DTOs;
 global using Concertable.B2B.Conversations.Application.Interfaces;
 global using Concertable.B2B.Conversations.Application.Mappers;
-global using Concertable.B2B.Conversations.Application.Requests;
 global using Concertable.B2B.Conversations.Contracts;
 global using Concertable.B2B.Conversations.Contracts.Enums;
 global using Concertable.B2B.Conversations.Domain.Entities;

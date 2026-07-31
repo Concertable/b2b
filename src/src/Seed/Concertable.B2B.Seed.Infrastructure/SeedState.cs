@@ -4,6 +4,7 @@ using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure.Factories;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Contracts.Enums;
 using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.User.Domain.Entities;
 using Concertable.Contracts;
@@ -24,6 +25,7 @@ public sealed class SeedState
     public UserEntity ArtistManagerNoArtist { get; }
     public UserEntity VenueManager1 { get; }
     public UserEntity VenueManager2 { get; }
+    public UserEntity VenueManager3 { get; }
     public UserEntity VenueManagerNoVenue { get; }
     public UserEntity Admin { get; }
 
@@ -129,6 +131,8 @@ public sealed class SeedState
             SeedUsers.VenueManagerId(1), SeedUsers.VenueManagerEmail(1), Role.VenueManager);
         VenueManager2 = UserFactory.FromRegistration(
             SeedUsers.VenueManagerId(2), SeedUsers.VenueManagerEmail(2), Role.VenueManager);
+        VenueManager3 = UserFactory.FromRegistration(
+            SeedUsers.VenueManagerId(3), SeedUsers.VenueManagerEmail(3), Role.VenueManager);
         VenueManagerNoVenue = UserFactory.FromRegistration(
             SeedUsers.VenueManagerId(SeedUsers.ManagerCount),
             SeedUsers.VenueManagerEmail(SeedUsers.ManagerCount),
@@ -141,8 +145,8 @@ public sealed class SeedState
         artistManagers.Add(ArtistManagerNoArtist);
         ArtistManagers = artistManagers;
 
-        var venueManagers = new List<UserEntity> { VenueManager1, VenueManager2 };
-        for (int i = 3; i < SeedUsers.ManagerCount; i++)
+        var venueManagers = new List<UserEntity> { VenueManager1, VenueManager2, VenueManager3 };
+        for (int i = 4; i < SeedUsers.ManagerCount; i++)
             venueManagers.Add(UserFactory.FromRegistration(
                 SeedUsers.VenueManagerId(i), SeedUsers.VenueManagerEmail(i), Role.VenueManager));
         venueManagers.Add(VenueManagerNoVenue);
@@ -302,9 +306,13 @@ public sealed class SeedState
                 m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantType.Venue : TenantType.Artist, now,
                 taxComplianceComplete: !bareTenantUserIds.Contains(m.Id)))
             .ToList();
-        Memberships = SeedUsers.Managers
+        var memberships = SeedUsers.Managers
             .Select(m => MembershipFactory.FoundingOwner(m.TenantId, m.Id, now))
             .ToList();
+        // VenueManager3 is also a member of VenueManager1's tenant, giving one tenant two members for the group-inbox tests.
+        memberships.Add(MembershipFactory.Member(
+            TenantSeedIds.For(VenueManager1.Id), VenueManager3.Id, TenantRole.Manager, invitedBy: VenueManager1.Id, now));
+        Memberships = memberships;
         var tenantByVenueId = Venues.ToDictionary(v => v.Id, v => TenantSeedIds.For(v.UserId));
         foreach (var venue in Venues)
             venue.TenantId = tenantByVenueId[venue.Id];
