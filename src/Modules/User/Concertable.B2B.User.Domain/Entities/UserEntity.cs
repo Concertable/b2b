@@ -20,7 +20,7 @@ public sealed class UserEntity : IGuidEntity
     public Role Role { get; private set; }
     public Address? Address { get; private set; }
     public Point? Location { get; private set; }
-    public string Avatar { get; private set; } = string.Empty;
+    public string? Avatar { get; private set; }
 
     public static UserEntity FromRegistration(Guid id, string email, Role role) =>
         new(id, email, role);
