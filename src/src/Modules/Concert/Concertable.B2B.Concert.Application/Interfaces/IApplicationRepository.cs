@@ -14,6 +14,7 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
     Task<IEnumerable<ApplicationEntity>> GetPendingByArtistIdAsync(int id);
     Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistIdAsync(int id);
     Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id);
+    Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(int applicationId);
     Task RejectAllExceptAsync(int opportunityId, int applicationId);
     Task<int?> GetDealIdByIdAsync(int applicationId);
     Task<PayeeSummary?> GetArtistPayeeAsync(int applicationId);

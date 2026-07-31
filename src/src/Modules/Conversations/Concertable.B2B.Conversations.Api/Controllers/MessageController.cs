@@ -2,12 +2,14 @@ using Concertable.Contracts;
 using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Conversations.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[HasPermission(SharedPermissions.MessagesRead)]
 internal sealed class MessageController : ControllerBase
 {
     private readonly IMessageService messageService;
@@ -19,11 +21,11 @@ internal sealed class MessageController : ControllerBase
 
     [HttpGet("user/summary")]
     public async Task<ActionResult<MessageSummary>> GetSummaryForUser() =>
-        Ok(await messageService.GetSummaryForUser());
+        Ok(await messageService.GetInboxSummaryAsync());
 
     [HttpGet("user")]
     public async Task<ActionResult<IPagination<MessageDto>>> GetForUser([FromQuery] PageParams pageParams) =>
-        Ok(await messageService.GetForUserAsync(pageParams));
+        Ok(await messageService.GetInboxAsync(pageParams));
 
     [HttpGet("user/unread-count")]
     public async Task<ActionResult<int>> GetUnreadCountForUser() =>
@@ -34,8 +36,8 @@ internal sealed class MessageController : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest();
-        await messageService.MarkAsReadAsync(request.MessageIds);
-        var unreadCount = await messageService.GetUnreadCountForUserAsync();
-        return Ok(unreadCount);
+
+        await messageService.MarkAsReadAsync(request.CounterpartTenantId);
+        return Ok(await messageService.GetUnreadCountForUserAsync());
     }
 }

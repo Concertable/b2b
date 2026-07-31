@@ -1,4 +1,5 @@
 using Concertable.B2B.Conversations.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
@@ -9,17 +10,20 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
 {
     private readonly IApplicationRepository repository;
     private readonly IUserModule userModule;
+    private readonly ITenantModule tenantModule;
     private readonly ICurrentUser currentUser;
     private readonly IMessenger messenger;
 
     public ApplicationNotifier(
         IApplicationRepository repository,
         IUserModule userModule,
+        ITenantModule tenantModule,
         ICurrentUser currentUser,
         IMessenger messenger)
     {
         this.repository = repository;
         this.userModule = userModule;
+        this.tenantModule = tenantModule;
         this.currentUser = currentUser;
         this.messenger = messenger;
     }
@@ -57,23 +61,32 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
             emailSubject: "Concert Application Cancelled",
             emailBody: "Your accepted application has been cancelled. Any payment made towards it has been refunded.");
 
+    // Artist → Venue: the applying artist's tenant is the sender.
     private async Task NotifyVenueAsync(int applicationId, string content, MessageAction action, string emailSubject)
     {
-        var venueManagerId = await repository.GetVenueManagerIdAsync(applicationId)
+        var (venueTenantId, artistTenantId) = await repository.GetTenantPairByIdAsync(applicationId)
             .OrNotFound(DisplayNames.Application);
-        var venueManager = await userModule.GetManagerByIdAsync(venueManagerId)
-            ?? throw new NotFoundException("Venue manager not found for application");
 
-        await messenger.SendAsync(currentUser.GetId(), venueManager.Id, content, action,
-            new EmailCopy(venueManager.Email!, emailSubject, content));
+        await messenger.SendAsync(venueTenantId, artistTenantId,
+            senderTenantId: artistTenantId, sentByUserId: currentUser.GetId(), content, action,
+            await BuildEmailCopyAsync(venueTenantId, emailSubject, content));
     }
 
+    // Venue → Artist: the acting venue's tenant is the sender.
     private async Task NotifyArtistAsync(int applicationId, string content, MessageAction action, string emailSubject, string emailBody)
     {
-        var (artist, venue) = await repository.GetArtistAndVenueByIdAsync(applicationId)
+        var (venueTenantId, artistTenantId) = await repository.GetTenantPairByIdAsync(applicationId)
             .OrNotFound(DisplayNames.Application);
 
-        await messenger.SendAndNotifyAsync(venue.UserId, artist.UserId, content, action,
-            new EmailCopy(artist.Email!, emailSubject, emailBody));
+        await messenger.SendAndNotifyAsync(venueTenantId, artistTenantId,
+            senderTenantId: venueTenantId, sentByUserId: currentUser.GetId(), content, action,
+            await BuildEmailCopyAsync(artistTenantId, emailSubject, emailBody));
+    }
+
+    private async Task<EmailCopy> BuildEmailCopyAsync(Guid recipientTenantId, string subject, string body)
+    {
+        var memberIds = await tenantModule.GetMemberUserIdsAsync(recipientTenantId);
+        var emails = (await userModule.GetEmailsByIdsAsync(memberIds)).Values.ToList();
+        return new EmailCopy(emails, subject, body);
     }
 }
