@@ -7,6 +7,10 @@ public interface ITenantModule
     /// <summary>The caller's memberships — feeds the <c>/api/auth/me</c> tenant switcher payload.</summary>
     Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default);
 
+    /// <summary>Every member user id of a tenant — the inverse of <see cref="GetMembershipsAsync"/>. Drives the
+    /// group-inbox fan-out (one SignalR ping + one email copy per member of a message's recipient tenant).</summary>
+    Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
+
     /// <summary>Whether the tenant holds a complete, jurisdiction-valid seller tax identity — the single source of
     /// truth (resolved per jurisdiction inside the Tenant module) that the fail-closed payout gate and the dashboard
     /// nag both consume. Fail-closed: a missing tenant or absent/invalid compliance is not complete.</summary>

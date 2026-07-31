@@ -13,37 +13,47 @@ internal sealed class MessageRepository : IMessageRepository
         this.context = context;
     }
 
-    public Task<IPagination<MessageEntity>> GetByUserIdAsync(Guid id, IPageParams pageParams)
+    public Task<IPagination<MessageEntity>> GetByTenantIdAsync(Guid tenantId, IPageParams pageParams) =>
+        context.Messages
+            .Where(m => m.SenderTenantId != tenantId)
+            .OrderByDescending(m => m.SentDate)
+            .ToPaginationAsync(pageParams);
+
+    public Task<int> GetUnreadCountByTenantIdAsync(Guid tenantId, Guid userId) =>
+        (from m in context.Messages.Where(m => m.SenderTenantId != tenantId)
+         join p in context.ThreadReadStates.Where(p => p.UserId == userId)
+             on new { m.VenueTenantId, m.ArtistTenantId } equals new { p.VenueTenantId, p.ArtistTenantId } into pointers
+         from p in pointers.DefaultIfEmpty()
+         where p == null || m.SentDate > p.LastReadAt
+         select m.Id)
+        .CountAsync();
+
+    public async Task AdvanceReadPointerAsync(Guid tenantId, Guid counterpartTenantId, Guid userId, DateTime readAt)
     {
-        var query = context.Messages
-            .Where(m => m.ToUserId == id)
-            .OrderByDescending(m => m.SentDate);
+        var pair = await context.Messages
+            .Where(m => (m.VenueTenantId == tenantId && m.ArtistTenantId == counterpartTenantId)
+                     || (m.VenueTenantId == counterpartTenantId && m.ArtistTenantId == tenantId))
+            .Select(m => new { m.VenueTenantId, m.ArtistTenantId })
+            .FirstOrDefaultAsync();
 
-        return query.ToPaginationAsync(pageParams);
-    }
+        if (pair is null)
+            return;
 
-    public Task<int> GetUnreadCountByUserIdAsync(Guid id) =>
-        context.Messages.CountAsync(m => m.ToUserId == id && !m.Read);
+        var pointer = await context.ThreadReadStates.FirstOrDefaultAsync(p =>
+            p.VenueTenantId == pair.VenueTenantId && p.ArtistTenantId == pair.ArtistTenantId && p.UserId == userId);
 
-    public async Task MarkAsReadAsync(List<int> ids)
-    {
-        var messages = await context.Messages
-            .Where(m => ids.Contains(m.Id))
-            .ToListAsync();
-
-        foreach (var message in messages)
-            message.MarkAsRead();
+        if (pointer is null)
+            await context.ThreadReadStates.AddAsync(
+                ThreadReadStateEntity.Create(pair.VenueTenantId, pair.ArtistTenantId, userId, readAt));
+        else
+            pointer.Advance(readAt);
 
         await context.SaveChangesAsync();
     }
 
-    public async Task AddAsync(MessageEntity message)
-    {
+    public async Task AddAsync(MessageEntity message) =>
         await context.Messages.AddAsync(message);
-    }
 
-    public async Task SaveChangesAsync()
-    {
+    public async Task SaveChangesAsync() =>
         await context.SaveChangesAsync();
-    }
 }

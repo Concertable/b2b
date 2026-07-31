@@ -68,7 +68,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         Assert.Contains(booking.Id, fixture.EscrowClient.Refunds);
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
         Assert.Contains(fixture.EmailSender.Sent, e =>
-            e.To == fixture.SeedState.Artist.Email && e.Subject == "Concert Application Cancelled");
+            e.To == fixture.SeedState.ArtistManager1.Email && e.Subject == "Concert Application Cancelled");
     }
 
     [Fact]
