@@ -31,7 +31,6 @@ public sealed class MessageServiceTests
         tenantModule.Setup(t => t.GetMemberUserIdsAsync(artistTenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(recipientMembers);
 
-        // Recipients see the message as inbound, so the payload carries the sending venue's org identity.
         var venueModule = new Mock<IVenueModule>();
         venueModule.Setup(v => v.GetOrgIdentityByTenantIdAsync(venueTenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new VenueOrgIdentity("The Roundhouse", "Greater London", "London"));
