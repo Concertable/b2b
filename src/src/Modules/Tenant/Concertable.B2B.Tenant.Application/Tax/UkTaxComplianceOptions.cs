@@ -8,6 +8,8 @@ namespace Concertable.B2B.Tenant.Application.Tax;
 /// </summary>
 public sealed class UkTaxComplianceOptions
 {
+    public const string SectionName = "TaxCompliance";
+
     /// <summary>The VAT label, quoted in the VAT-number validation error message.</summary>
     public string VatLabel { get; set; } = "VAT number";
 

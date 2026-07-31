@@ -84,7 +84,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMessenger, Messenger>();
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
-        services.Configure<LegalSettings>(configuration.GetSection("Legal"));
+        services.Configure<LegalSettings>(configuration.GetSection(LegalSettings.SectionName));
         services.AddScoped<IPdfBlobCache, PdfBlobCache>();
         services.AddScoped<IContractIssuer, ContractIssuer>();
         services.AddScoped<IContractService, ContractService>();
