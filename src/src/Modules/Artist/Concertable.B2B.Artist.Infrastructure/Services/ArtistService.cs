@@ -117,4 +117,7 @@ internal sealed class ArtistService : IArtistService
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
         publicRepository.GetGenresAsync(id);
+
+    public Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
+        publicRepository.GetOrgIdentityByTenantIdAsync(tenantId);
 }

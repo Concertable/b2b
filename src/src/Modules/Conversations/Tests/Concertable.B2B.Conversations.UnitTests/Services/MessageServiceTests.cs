@@ -1,7 +1,9 @@
+using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Infrastructure.Services;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
+using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
 using Moq;
 
@@ -29,13 +31,14 @@ public sealed class MessageServiceTests
         tenantModule.Setup(t => t.GetMemberUserIdsAsync(artistTenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(recipientMembers);
 
-        var userModule = new Mock<IUserModule>();
-        userModule.Setup(u => u.GetByIdAsync(sentByUserId))
-            .ReturnsAsync(new ArtistManagerDto { Id = sentByUserId, Email = "sender@example.com" });
+        // Recipients see the message as inbound, so the payload carries the sending venue's org identity.
+        var venueModule = new Mock<IVenueModule>();
+        venueModule.Setup(v => v.GetOrgIdentityByTenantIdAsync(venueTenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new VenueOrgIdentity("The Roundhouse", "Greater London", "London"));
 
         var service = new MessageService(
             repository.Object, notifier.Object, Mock.Of<ICurrentUser>(), Mock.Of<ITenantContext>(),
-            tenantModule.Object, userModule.Object, TimeProvider.System);
+            tenantModule.Object, Mock.Of<IUserModule>(), venueModule.Object, Mock.Of<IArtistModule>(), TimeProvider.System);
 
         await service.SendAndNotifyAsync(venueTenantId, artistTenantId,
             senderTenantId: venueTenantId, sentByUserId: sentByUserId, "hello", MessageAction.ApplicationAccepted);
