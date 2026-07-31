@@ -56,8 +56,6 @@ internal sealed class MessageService : IMessageService
         await repository.SaveChangesAsync();
 
         var recipientTenantId = senderTenantId == venueTenantId ? artistTenantId : venueTenantId;
-        // The recipient receives this as inbound: it renders as the sender's org, and from the recipient's
-        // side the thread's counterpart is the sender.
         var payload = message.ToDto(await ResolveOrgSenderAsync(senderTenantId, senderTenantId == venueTenantId), senderTenantId);
 
         foreach (var memberId in await tenantModule.GetMemberUserIdsAsync(recipientTenantId))
