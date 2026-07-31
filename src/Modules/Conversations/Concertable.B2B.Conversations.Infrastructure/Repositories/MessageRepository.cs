@@ -15,7 +15,6 @@ internal sealed class MessageRepository : IMessageRepository
 
     public Task<IPagination<MessageEntity>> GetByTenantIdAsync(Guid tenantId, IPageParams pageParams) =>
         context.Messages
-            .Where(m => m.SenderTenantId != tenantId)
             .OrderByDescending(m => m.SentDate)
             .ToPaginationAsync(pageParams);
 
@@ -28,25 +27,25 @@ internal sealed class MessageRepository : IMessageRepository
          select m.Id)
         .CountAsync();
 
-    public async Task AdvanceReadPointerAsync(Guid tenantId, Guid counterpartTenantId, Guid userId, DateTime readAt)
+    public async Task AdvanceReadPointersAsync(Guid tenantId, Guid userId, DateTime readAt)
     {
-        var pair = await context.Messages
-            .Where(m => (m.VenueTenantId == tenantId && m.ArtistTenantId == counterpartTenantId)
-                     || (m.VenueTenantId == counterpartTenantId && m.ArtistTenantId == tenantId))
+        var pairs = await context.Messages
             .Select(m => new { m.VenueTenantId, m.ArtistTenantId })
-            .FirstOrDefaultAsync();
+            .Distinct()
+            .ToListAsync();
 
-        if (pair is null)
-            return;
+        var pointers = await context.ThreadReadStates
+            .Where(p => p.UserId == userId)
+            .ToDictionaryAsync(p => (p.VenueTenantId, p.ArtistTenantId));
 
-        var pointer = await context.ThreadReadStates.FirstOrDefaultAsync(p =>
-            p.VenueTenantId == pair.VenueTenantId && p.ArtistTenantId == pair.ArtistTenantId && p.UserId == userId);
-
-        if (pointer is null)
-            await context.ThreadReadStates.AddAsync(
-                ThreadReadStateEntity.Create(pair.VenueTenantId, pair.ArtistTenantId, userId, readAt));
-        else
-            pointer.Advance(readAt);
+        foreach (var pair in pairs)
+        {
+            if (pointers.TryGetValue((pair.VenueTenantId, pair.ArtistTenantId), out var pointer))
+                pointer.Advance(readAt);
+            else
+                await context.ThreadReadStates.AddAsync(
+                    ThreadReadStateEntity.Create(pair.VenueTenantId, pair.ArtistTenantId, userId, readAt));
+        }
 
         await context.SaveChangesAsync();
     }

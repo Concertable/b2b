@@ -17,4 +17,10 @@ internal sealed class PublicVenueRepository(PublicVenueDbContext context) : IPub
             .Where(v => v.Id == id)
             .ToDetails(context.VenueRatingProjections)
             .FirstOrDefaultAsync();
+
+    public async Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
+        await context.Venues
+            .Where(v => v.TenantId == tenantId)
+            .Select(v => new VenueOrgIdentity(v.Name, v.Address.County, v.Address.Town))
+            .FirstOrDefaultAsync();
 }
