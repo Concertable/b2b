@@ -125,6 +125,14 @@ Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `Art
 
 ---
 
+### Venue/Artist read-model surface is duplicated across near-identical shapes and leaks visibility
+
+The Artist and Venue modules each carry 4–5 overlapping read-shapes for one entity — `XSummary` (Contracts, genuinely cross-module → Concert), `XView` + `XViewGenre` (`Contracts/Views/`, **dead — zero references anywhere**, mutable EF-style classes abandoned when the codebase moved to `Summary` records + direct projection), `XDto` + `XDetails` (`Application/DTOs/`, differ only by a `Rating` field), and `XDetailsResponse` (`Api/Responses/`, ≈ `XDetails` field-for-field). On top of the duplication the boundary discipline in [`agents/MODULAR_MONOLITH_RULES.md`](./agents/MODULAR_MONOLITH_RULES.md) (Contracts = cross-boundary/public, Application/DTOs = module-internal) isn't applied: Artist/Venue/Tenant Application DTOs are `public` though single-module (`Artist.Application/DTOs/ArtistDtos.cs:8,22`, `ArtistDashboardKpis.cs:3`; `Venue.Application/DTOs/VenueDtos.cs:7,23`, `VenueDashboardKpis.cs:3`; `Tenant.Application/DTOs/TenantDetails.cs:5`), and Concert's `ApplicationStatus` enum is `public` (`Concert.Application/DTOs/ApplicationStatus.cs:6`) in an otherwise-`internal` set. `Tenant.Contracts/MemberDto.cs:7` and `InvitationDto.cs:7` sit in Contracts but are used only by Tenant's own Api, not on `ITenantModule`. The `User` module is the clean target — everything cross-boundary consolidated in Contracts, its `Application/DTOs/UserDtos.cs` a tombstone, no `public` leak, no duplication. `Contracts` is the correct name for the boundary surface; the problem is the discipline, not the naming.
+
+**Resolves when:** the Venue/Artist read shapes are consolidated toward the User pattern — dead `Contracts/Views/` deleted; `Summary`/`Details`/`Dto` collapsed to the minimum real variation; only genuinely cross-module types kept in Contracts — single-module Application DTOs and `ApplicationStatus` are `internal`, and `MemberDto`/`InvitationDto` move out of Contracts into Tenant's Application/Api.
+
+---
+
 ## RESOLVED
 
 ### ✅ Seed `TicketsSold` depends on the Payment seed simulator
@@ -212,3 +220,11 @@ Deliberately not done now: the launch gate is *data completeness* (hold a comple
 `FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per persona from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/DOMAINS_AND_DNS.md`](../../plans/DOMAINS_AND_DNS.md). So in any non-local environment the persona dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
 
 **Resolves when:** `Urls:Frontends:{Venue,Artist}` are supplied per environment from App Config, alongside `Auth:SpaClients` / `Cors:AllowedOrigins` (which key off the same hostnames), as part of the `DOMAINS_AND_DNS.md` config rollout.
+
+---
+
+### Venue/Artist read DTOs declare `Avatar` as `string?` despite a non-null domain guarantee
+
+The same nullability lie fixed on `VenueOrgIdentity`/`ArtistOrgIdentity`: the Venue/Artist entities store `Avatar = null!` behind `nullable: false` migration columns (and both the Customer side and the adjacent `BannerUrl` are non-null), yet B2B types `Avatar` as `string?` across the whole read surface — `Venue.Contracts/VenueSummary.cs:6`, `Artist.Contracts/ArtistSummary.cs:11`, `Venue.Application/DTOs/VenueDtos.cs:15,32`, `Artist.Application/DTOs/ArtistDtos.cs:15,30`, `Venue.Api/Responses/VenueDetailsResponse.cs:9`, `Artist.Api/Responses/ArtistResponses.cs:11`. A value that is always present is typed optional, forcing needless null-handling downstream — and it sits inconsistently beside `BannerUrl`, which is `required string` off the same guaranteed source. (The dead `Contracts/Views/XView` types carry the same lie on County/Town/Banner/Avatar but are covered by their deletion in the read-surface item above; Concert's avatar/banner and User location are genuinely nullable — leave them.)
+
+**Resolves when:** B2B Venue/Artist `Avatar` is non-null across the read surface — `required string` on the DTOs/Responses, `string` on the `Summary` records — matching the Customer side, the adjacent `BannerUrl`, and the domain.
