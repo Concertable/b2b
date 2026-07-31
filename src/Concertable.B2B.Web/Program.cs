@@ -28,6 +28,7 @@ using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
+using Concertable.Shared.Api.Exceptions;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Infrastructure;
