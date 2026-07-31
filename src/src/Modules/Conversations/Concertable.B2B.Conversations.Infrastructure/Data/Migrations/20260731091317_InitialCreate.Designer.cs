@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConversationsDbContext))]
-    [Migration("20260724223940_InitialCreate")]
+    [Migration("20260731091317_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -37,29 +37,60 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<int?>("Action")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("ArtistTenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("FromUserId")
+                    b.Property<Guid>("SenderTenantId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("Read")
-                        .HasColumnType("bit");
+                    b.Property<Guid>("SentByUserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("SentDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("ToUserId")
+                    b.Property<Guid>("VenueTenantId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FromUserId");
+                    b.HasIndex("ArtistTenantId");
 
-                    b.HasIndex("ToUserId");
+                    b.HasIndex("VenueTenantId");
 
                     b.ToTable("Messages", "conversations");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ThreadReadStateEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("ArtistTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("VenueTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VenueTenantId", "ArtistTenantId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ThreadReadStates", "conversations");
                 });
 
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>

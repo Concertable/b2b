@@ -9,9 +9,9 @@ internal sealed class ConversationsModule : IConversationsModule
         this.messageService = messageService;
     }
 
-    public Task SendAsync(Guid fromUserId, Guid toUserId, string content, MessageAction? action = null) =>
-        messageService.SendAsync(fromUserId, toUserId, content, action);
+    public Task SendAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null) =>
+        messageService.SendAsync(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, action);
 
-    public Task SendAndNotifyAsync(Guid fromUserId, Guid toUserId, string content, MessageAction? action = null) =>
-        messageService.SendAndNotifyAsync(fromUserId, toUserId, content, action);
+    public Task SendAndNotifyAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null) =>
+        messageService.SendAndNotifyAsync(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, action);
 }

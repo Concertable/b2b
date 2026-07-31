@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
             opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 

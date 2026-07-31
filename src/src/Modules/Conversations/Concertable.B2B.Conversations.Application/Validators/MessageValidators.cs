@@ -7,6 +7,6 @@ internal sealed class MarkMessagesReadRequestValidator : AbstractValidator<MarkM
 {
     public MarkMessagesReadRequestValidator()
     {
-        RuleFor(x => x.MessageIds).NotEmpty().WithMessage("Require one MessageId minimum.");
+        RuleFor(x => x.CounterpartTenantId).NotEmpty().WithMessage("A counterpart tenant is required.");
     }
 }
