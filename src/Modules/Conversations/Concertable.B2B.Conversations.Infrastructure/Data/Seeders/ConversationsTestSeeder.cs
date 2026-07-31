@@ -1,5 +1,6 @@
 using Concertable.DataAccess;
 using Concertable.B2B.Conversations.Contracts;
+using Concertable.Seed.Identity;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
@@ -29,20 +30,16 @@ internal sealed class ConversationsTestSeeder : ITestSeeder
         await context.Messages.SeedIfEmptyAsync(async () =>
         {
             var now = timeProvider.GetUtcNow().UtcDateTime;
+            var venueUserId = seedData.VenueManager1.Id;
+            var artistUserId = seedData.ArtistManager1.Id;
+            var venueTenantId = TenantSeedIds.For(venueUserId);
+            var artistTenantId = TenantSeedIds.For(artistUserId);
 
             context.Messages.AddRange(
-                MessageEntity.Create(
-                    seedData.ArtistManager1.Id,
-                    seedData.VenueManager1.Id,
-                    "Test inbox message — artist to venue.",
-                    now.AddDays(-1),
-                    MessageAction.ApplicationReceived),
-                MessageEntity.Create(
-                    seedData.VenueManager1.Id,
-                    seedData.ArtistManager1.Id,
-                    "Test inbox message — venue to artist.",
-                    now,
-                    MessageAction.ApplicationAccepted));
+                MessageEntity.Create(venueTenantId, artistTenantId, artistTenantId, artistUserId,
+                    "Test inbox message — artist to venue.", now.AddDays(-1), MessageAction.ApplicationReceived),
+                MessageEntity.Create(venueTenantId, artistTenantId, venueTenantId, venueUserId,
+                    "Test inbox message — venue to artist.", now, MessageAction.ApplicationAccepted));
 
             await context.SaveChangesAsync(ct);
         });

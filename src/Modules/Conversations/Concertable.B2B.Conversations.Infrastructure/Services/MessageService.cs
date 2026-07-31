@@ -1,4 +1,5 @@
-using Concertable.B2B.Conversations.Contracts;
+using Concertable.B2B.Conversations;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.Exceptions;
@@ -10,6 +11,8 @@ internal sealed class MessageService : IMessageService
     private readonly IMessageRepository repository;
     private readonly IConversationsNotifier notifier;
     private readonly ICurrentUser currentUser;
+    private readonly ITenantContext tenantContext;
+    private readonly ITenantModule tenantModule;
     private readonly IUserModule userModule;
     private readonly TimeProvider timeProvider;
 
@@ -17,81 +20,80 @@ internal sealed class MessageService : IMessageService
         IMessageRepository repository,
         IConversationsNotifier notifier,
         ICurrentUser currentUser,
+        ITenantContext tenantContext,
+        ITenantModule tenantModule,
         IUserModule userModule,
         TimeProvider timeProvider)
     {
         this.repository = repository;
         this.notifier = notifier;
         this.currentUser = currentUser;
+        this.tenantContext = tenantContext;
+        this.tenantModule = tenantModule;
         this.userModule = userModule;
         this.timeProvider = timeProvider;
     }
 
-    public async Task SendAsync(Guid fromUserId, Guid toUserId, string content, MessageAction? action = null)
+    public async Task SendAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null)
     {
-        var message = MessageEntity.Create(fromUserId, toUserId, content, timeProvider.GetUtcNow().DateTime, action);
+        var message = MessageEntity.Create(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, timeProvider.GetUtcNow().DateTime, action);
         await repository.AddAsync(message);
         await repository.SaveChangesAsync();
     }
 
-    public async Task SendAndNotifyAsync(Guid fromUserId, Guid toUserId, string content, MessageAction? action = null)
+    public async Task SendAndNotifyAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null)
     {
-        var message = MessageEntity.Create(fromUserId, toUserId, content, timeProvider.GetUtcNow().DateTime, action);
-
+        var message = MessageEntity.Create(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, timeProvider.GetUtcNow().DateTime, action);
         await repository.AddAsync(message);
         await repository.SaveChangesAsync();
 
-        var fromUser = await GetSenderDtoAsync(fromUserId);
-        await notifier.MessageReceivedAsync(toUserId.ToString(), message.ToDto(fromUser));
+        var recipientTenantId = senderTenantId == venueTenantId ? artistTenantId : venueTenantId;
+        var payload = message.ToDto(await GetSenderDtoAsync(sentByUserId));
+
+        foreach (var memberId in await tenantModule.GetMemberUserIdsAsync(recipientTenantId))
+            await notifier.MessageReceivedAsync(memberId.ToString(), payload);
     }
 
-    public async Task<IPagination<MessageDto>> GetForUserAsync(IPageParams pageParams)
+    public async Task<IPagination<MessageDto>> GetInboxAsync(IPageParams pageParams)
     {
-        var userId = currentUser.GetId();
-        var messages = await repository.GetByUserIdAsync(userId, pageParams);
-        var senders = await GetSenderDtosAsync(messages.Data);
-
-        return new Pagination<MessageDto>(
-            messages.Data.Select(m => m.ToDto(senders[m.FromUserId])).ToList(),
-            messages.TotalCount,
-            messages.PageNumber,
-            messages.PageSize);
+        var messages = await repository.GetByTenantIdAsync(tenantContext.GetTenantId(), pageParams);
+        return await ToPaginationAsync(messages);
     }
 
-    public async Task<MessageSummary> GetSummaryForUser()
+    public async Task<MessageSummary> GetInboxSummaryAsync()
     {
-        var pageParams = new PageParams { PageNumber = 1, PageSize = 5 };
-
-        var userId = currentUser.GetId();
-        var messages = await repository.GetByUserIdAsync(userId, pageParams);
-        var unreadCount = await repository.GetUnreadCountByUserIdAsync(userId);
-        var senders = await GetSenderDtosAsync(messages.Data);
-
-        var pagination = new Pagination<MessageDto>(
-            messages.Data.Select(m => m.ToDto(senders[m.FromUserId])).ToList(),
-            messages.TotalCount,
-            messages.PageNumber,
-            messages.PageSize);
-
-        return new MessageSummary(pagination, unreadCount);
+        var activeTenantId = tenantContext.GetTenantId();
+        var messages = await repository.GetByTenantIdAsync(activeTenantId, new PageParams { PageNumber = 1, PageSize = 5 });
+        var unreadCount = await repository.GetUnreadCountByTenantIdAsync(activeTenantId, currentUser.GetId());
+        return new MessageSummary(await ToPaginationAsync(messages), unreadCount);
     }
 
     public Task<int> GetUnreadCountForUserAsync() =>
-        repository.GetUnreadCountByUserIdAsync(currentUser.GetId());
+        repository.GetUnreadCountByTenantIdAsync(tenantContext.GetTenantId(), currentUser.GetId());
 
-    public Task MarkAsReadAsync(List<int> ids) =>
-        repository.MarkAsReadAsync(ids);
+    public Task MarkAsReadAsync(Guid counterpartTenantId) =>
+        repository.AdvanceReadPointerAsync(tenantContext.GetTenantId(), counterpartTenantId, currentUser.GetId(), timeProvider.GetUtcNow().DateTime);
 
-    private async Task<MessageUser> GetSenderDtoAsync(Guid fromUserId)
+    private async Task<Pagination<MessageDto>> ToPaginationAsync(IPagination<MessageEntity> messages)
     {
-        var sender = await userModule.GetByIdAsync(fromUserId)
+        var senders = await GetSenderDtosAsync(messages.Data);
+        return new Pagination<MessageDto>(
+            messages.Data.Select(m => m.ToDto(senders[m.SentByUserId])).ToList(),
+            messages.TotalCount,
+            messages.PageNumber,
+            messages.PageSize);
+    }
+
+    private async Task<MessageUser> GetSenderDtoAsync(Guid sentByUserId)
+    {
+        var sender = await userModule.GetByIdAsync(sentByUserId)
             .OrNotFound(DisplayNames.MessageSender);
         return sender.ToMessageUser();
     }
 
     private async Task<Dictionary<Guid, MessageUser>> GetSenderDtosAsync(IEnumerable<MessageEntity> messages)
     {
-        var senderIds = messages.Select(m => m.FromUserId).Distinct().ToList();
+        var senderIds = messages.Select(m => m.SentByUserId).Distinct().ToList();
         var senders = await userModule.GetByIdsAsync(senderIds);
         return senders.ToDictionary(s => s.Id, s => s.ToMessageUser());
     }
