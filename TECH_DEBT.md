@@ -144,14 +144,6 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ## LOW
 
-### Accept-flow steps hard-cast `IDeal` to a concrete deal type instead of resolving through the keyed abstraction
-
-Four workflow steps downcast `dealAccessor.Deal` to a specific deal type to read its fee — `HoldCheckoutStep.cs:30` `(FlatFeeDeal)`, `SetupCheckoutStep.cs:38` `(VenueHireDeal)`, `CaptureEscrowAcceptStep.cs:39` `(FlatFeeDeal)`, `DepositEscrowAcceptStep.cs:40` `(VenueHireDeal)` — assuming the deal type by convention (each step is only dispatched for that type). `VerifyCheckoutStep` already does it right, resolving through `IPaymentAmountMapper`. The cast holds only while workflow routing is correct; a mis-route is a runtime `InvalidCastException`, not a compile error. Related exhaustiveness gap: the per-`DealType` strategy dictionaries (`SettlementAmountResolver`, `PaymentAmountMapper`, `ArtistShareCalculator`, `SettlementPayeeResolver`) have no compile-time completeness check — a new `DealType` missing an entry surfaces as a runtime `KeyNotFoundException`. (The multiple `DealType`-keyed families are *not* debt — they're split by layer/concern deliberately; only the unguarded downcast and the exhaustiveness gap are.)
-
-**Resolves when:** the checkout/escrow steps read the payee amount through the keyed `IPaymentAmountMapper` / `ISettlementAmountResolver` abstraction rather than a concrete-deal downcast, consistent with `VerifyCheckoutStep`; optionally, the `DealType`-keyed dictionaries gain a startup registration-completeness check (or a covering test) so a missing entry fails fast.
-
----
-
 ### Contract PDFs share the `images` blob container and rely on app-level write-once
 
 `ContractPdfService` stores contract PDFs under a `contracts/{bookingId}-{guid}.pdf` name in the **single shared `"images"` container** (the only container `Concertable.Shared.Blob` exposes). The blob *name* is fixed at creation, transactionally, at Accept (`ContractEntity.Create`), so generation can't race to mint competing names — but immutability of the *bytes* is still only app-level: `IBlobStorageService.UploadAsync` is `overwrite: true`, so nothing at the storage layer prevents a rewrite of a persisted legal document. A legal artefact ideally lives in its own container with a no-overwrite (write-once / immutability-policy) upload. Deliberately not done in the contract feature because both are **additive changes to the published `Concertable.Shared.Blob` package** (a dedicated container config + an overwrite-guarding `UploadAsync` overload), which would cross the package boundary the feature was scoped to avoid.
