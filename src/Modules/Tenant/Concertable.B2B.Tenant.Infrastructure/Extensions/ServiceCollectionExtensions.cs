@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<TenantConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<TenantConfigurationProvider>());
 
-        services.Configure<UkTaxComplianceOptions>(configuration.GetSection("TaxCompliance"));
+        services.Configure<UkTaxComplianceOptions>(configuration.GetSection(UkTaxComplianceOptions.SectionName));
 
         services.AddSingleton<ITaxComplianceRules, UkTaxComplianceRules>();
 

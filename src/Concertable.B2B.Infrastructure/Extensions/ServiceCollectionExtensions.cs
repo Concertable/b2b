@@ -8,7 +8,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddUris(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<FrontendUrlSettings>(configuration.GetSection("Urls"));
+        services.Configure<FrontendUrlSettings>(configuration.GetSection(FrontendUrlSettings.SectionName));
         services.AddSingleton<IUriGenerator, UriGenerator>();
         services.AddSingleton<IFrontendUriGenerator, FrontendUriGenerator>();
 
