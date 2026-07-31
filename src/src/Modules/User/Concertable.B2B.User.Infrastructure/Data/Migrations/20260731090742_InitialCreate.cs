@@ -51,7 +51,7 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
                     County = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Town = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Location = table.Column<Point>(type: "geography", nullable: true),
-                    Avatar = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Avatar = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
