@@ -7,8 +7,7 @@ internal interface IMessageService
 {
     Task SendAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null);
     Task SendAndNotifyAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null);
-    Task<MessageSummary> GetInboxSummaryAsync();
     Task<IPagination<MessageDto>> GetInboxAsync(IPageParams pageParams);
     Task<int> GetUnreadCountForUserAsync();
-    Task MarkAsReadAsync(Guid counterpartTenantId);
+    Task MarkInboxReadAsync();
 }

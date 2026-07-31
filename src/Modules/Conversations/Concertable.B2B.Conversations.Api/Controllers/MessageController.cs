@@ -1,7 +1,6 @@
 using Concertable.Contracts;
 using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.B2B.Conversations.Application.Interfaces;
-using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,10 +18,6 @@ internal sealed class MessageController : ControllerBase
         this.messageService = messageService;
     }
 
-    [HttpGet("user/summary")]
-    public async Task<ActionResult<MessageSummary>> GetSummaryForUser() =>
-        Ok(await messageService.GetInboxSummaryAsync());
-
     [HttpGet("user")]
     public async Task<ActionResult<IPagination<MessageDto>>> GetForUser([FromQuery] PageParams pageParams) =>
         Ok(await messageService.GetInboxAsync(pageParams));
@@ -32,12 +27,9 @@ internal sealed class MessageController : ControllerBase
         Ok(await messageService.GetUnreadCountForUserAsync());
 
     [HttpPost("mark-read")]
-    public async Task<ActionResult<int>> MarkAsRead([FromBody] MarkMessagesReadRequest request)
+    public async Task<ActionResult<int>> MarkInboxRead()
     {
-        if (!ModelState.IsValid)
-            return BadRequest();
-
-        await messageService.MarkAsReadAsync(request.CounterpartTenantId);
+        await messageService.MarkInboxReadAsync();
         return Ok(await messageService.GetUnreadCountForUserAsync());
     }
 }

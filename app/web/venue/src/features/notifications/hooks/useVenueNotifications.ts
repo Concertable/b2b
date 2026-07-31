@@ -1,21 +1,17 @@
-import { useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
 import { notificationConnection } from "@/lib/signalr";
-import type { Message } from "@/features/messaging";
 import type { ConcertDraftCreatedPayload } from "@/features/notifications";
 
 export function useVenueNotifications() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    console.log(
-      "[SignalR] useVenueNotifications mounted, connection state:",
-      notificationConnection.state,
-    );
-
-    notificationConnection.on("MessageReceived", (payload: Message) => {
-      console.log("[SignalR] MessageReceived:", payload);
+  useMountEffect(() => {
+    notificationConnection.on("MessageReceived", () => {
+      void queryClient.invalidateQueries({ queryKey: ["messages"] });
     });
 
     notificationConnection.on(
@@ -30,9 +26,8 @@ export function useVenueNotifications() {
     );
 
     return () => {
-      console.log("[SignalR] useVenueNotifications unmounted");
       notificationConnection.off("MessageReceived");
       notificationConnection.off("ConcertDraftCreated");
     };
-  }, []);
+  });
 }
