@@ -6,6 +6,8 @@ namespace Concertable.B2B.Concert.Infrastructure;
 /// </summary>
 public sealed class LegalSettings
 {
+    public const string SectionName = "Legal";
+
     /// <summary>
     /// Identifier of the platform terms &amp; conditions in force (e.g. "2026-07"). Stamped onto each
     /// <c>ContractEntity</c> when it is signed and frozen there — the contract keeps the value
