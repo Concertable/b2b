@@ -30,11 +30,11 @@ internal sealed class CancelExecutor : ICancelExecutor
         this.logger = logger;
     }
 
-    public async Task<Result> ExecuteAsync(int concertId)
+    public async Task<Result> CancelAsync(int concertId, CancellationToken ct = default)
     {
         try
         {
-            var concert = await concertRepository.GetByIdWithBookingAsync(concertId)
+            var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct)
                 .OrNotFound();
 
             await transitioner.TransitionAsync(concert.Booking.ApplicationId, Trigger.Cancel, async app =>
@@ -43,8 +43,12 @@ internal sealed class CancelExecutor : ICancelExecutor
                 var workflow = workflows.Create(app.DealType);
                 await workflow.Cancel.ExecuteAsync(concertId);
                 concert.Cancel();
-            });
+            }, ct);
             return Result.Ok();
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

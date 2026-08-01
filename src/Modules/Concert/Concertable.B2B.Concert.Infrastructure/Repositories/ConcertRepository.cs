@@ -39,13 +39,13 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .FirstOrDefaultAsync();
     }
 
-    public async Task<ConcertEntity?> GetByIdWithBookingAsync(int id)
+    public async Task<ConcertEntity?> GetByIdWithBookingAsync(int id, CancellationToken ct = default)
     {
         return await context.Concerts
             .Where(e => e.Id == id)
             .Include(e => e.Booking)
                 .ThenInclude(b => b.Application)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
     }
 
     /* Owner read by concert id. Concert itself is public/unfiltered, so scope by requiring a

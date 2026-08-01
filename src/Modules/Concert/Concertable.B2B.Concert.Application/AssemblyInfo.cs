@@ -12,9 +12,5 @@ using System.Runtime.CompilerServices;
 // internals (IConcertRepository, IOpportunityRepository, ITicketPaymentStrategy). Retires when
 // Payment Stage 1 extracts those services into Concertable.Payment.Infrastructure.
 [assembly: InternalsVisibleTo("Concertable.Infrastructure")]
-// TEMPORARY: Concertable.B2B.Workers (ConcertFinishedFunction) injects IConcertRepository + ICompletionDispatcher.
-// Retires when the function moves into Concert.Api or its own Concert-owned worker.
 [assembly: InternalsVisibleTo("Concertable.B2B.Workers")]
-// TEMPORARY: Concertable.B2B.Web (E2EEndpointExtensions injects ICompletionDispatcher; ServiceCollectionExtensions
-// keyed-registers ITicketPaymentStrategy impls). Retires when those move into Concert.Api / Payment.Infrastructure.
 [assembly: InternalsVisibleTo("Concertable.B2B.Web")]

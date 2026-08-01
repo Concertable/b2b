@@ -9,16 +9,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
-    private readonly IConcertWorkflowModule concertWorkflowModule;
+    private readonly ISettlementExecutor settlementExecutor;
     private readonly ConcertDbContext context;
     private readonly ILogger<SettlementPaymentProcessor> logger;
 
     public SettlementPaymentProcessor(
-        IConcertWorkflowModule concertWorkflowModule,
+        ISettlementExecutor settlementExecutor,
         ConcertDbContext context,
         ILogger<SettlementPaymentProcessor> logger)
     {
-        this.concertWorkflowModule = concertWorkflowModule;
+        this.settlementExecutor = settlementExecutor;
         this.context = context;
         this.logger = logger;
     }
@@ -38,7 +38,7 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
 
         try
         {
-            await concertWorkflowModule.SettlementSucceededAsync(bookingId, ct);
+            await settlementExecutor.SucceededAsync(bookingId, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

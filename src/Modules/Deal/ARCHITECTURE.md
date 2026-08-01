@@ -79,8 +79,9 @@ JSON polymorphic discriminator assumes a finite set known at compile time.
 ## 2. The Concert workflow
 
 The lifecycle lives on **`ApplicationEntity.State`** — one state machine per deal type. A request
-enters via `controller → IApplicationService`/`IConcertWorkflowModule → *Dispatcher → *Executor →
-ILifecycleTransitioner → the deal-type's IConcertWorkflow step`. Deal *terms* are read through a
+enters via `controller → IApplicationService → *Executor → ILifecycleTransitioner → the deal-type's
+IConcertWorkflow step`; payment events enter through their `*Processor` and bind directly to the
+relevant executor or payment-outcome Application contract. Deal *terms* are read through a
 request-scoped `IDealAccessor`; money movement is delegated to Payment via `IEscrowClient` /
 `IManagerPaymentClient`.
 
@@ -163,24 +164,23 @@ application's state for a trigger, running an optional side-effect **inside** th
 Ordering matters: the guard runs first, the money effect second, the state flip + save last — so a
 throwing effect leaves the DB state unmoved.
 
-### 2.4 Executors and dispatchers (the two-layer split)
+### 2.4 Executors as the Application contracts
 
-An **executor** holds the real orchestration (calls `ILifecycleTransitioner`,
-`IConcertWorkflowFactory`, repositories, `IDealResolver`). A **dispatcher** is a razor-thin
-`internal sealed` adapter implementing an `Application/Interfaces/I*Dispatcher` contract and forwarding
-1:1 to its executor — so the Application layer / `IConcertWorkflowModule` depends on an interface while
-the orchestration stays in Infrastructure. **Dispatcher calls executor.** The one exception is
-`CheckoutDispatcher`, which contains real logic (§2.5).
+An **executor** owns one named lifecycle operation and drives it to completion, including validation,
+persistence, transition effects, IO, and per-deal behaviour. Its interface lives in
+`Application/Workflow/Executors`; its implementation stays in Infrastructure. Internal callers bind
+directly to that Application contract. `CheckoutDispatcher` remains the sole dispatcher because it
+contains real `DealType` routing without performing a lifecycle transition (§2.5).
 
 | Executor | Responsibility | Entry point |
 |---|---|---|
 | `ApplyExecutor` | Create the `ApplicationEntity` (simple or paid), snapshot both tenant ids + terms fingerprint + artist e-signature. Does **not** go through the transitioner (initial state `Applied`). | `ApplicationController.Apply` |
 | `AcceptExecutor` | The `Accept` transition: resolve deal, verify terms unchanged, run the deal's Accept step, link booking, **issue the `ContractEntity`**, background-reject other applications + render the PDF. | `ApplicationController.Accept` |
 | `RejectExecutor` / `WithdrawExecutor` / `CancelApplicationExecutor` | `Reject` / `Withdraw` / `Cancel` on an application (pre-concert). Withdraw/Cancel from `Accepted`/`PaymentFailed` run `IApplicationCancelStep` (escrow refund). | `ApplicationController.*` |
-| `VerifyExecutor` / `EscrowExecutor` | Payment-outcome callbacks (`VerifyPayment*` / `EscrowPayment*`). On success run the deal's `Book` step; late events on a `Cancelled` app are no-ops (or compensating refund). | `IConcertWorkflowModule.{Verify,Escrow}SucceededAsync` ← Stripe `*Processor`s |
-| `SettlementExecutor` | `SettlementPayment*`, state-only. | `IConcertWorkflowModule.SettlementSucceededAsync` ← `SettlementPaymentProcessor` |
-| `FinishExecutor` | `Finish`: guard concert has ended, resolve deal, run the deal's `Finish` step. | `IConcertWorkflowModule.FinishAsync` ← `ConcertCompletionRunner` (batch) |
-| `CancelExecutor` | `Cancel` a booked concert: run the deal's `Cancel` step + `concert.Cancel()`. | `IConcertWorkflowModule.CancelAsync` ← `ConcertController` |
+| `VerifyExecutor` / `EscrowExecutor` | Payment-outcome callbacks (`VerifyPayment*` / `EscrowPayment*`). On success run the deal's `Book` step; late events on a `Cancelled` app are no-ops (or compensating refund). | `VerifyPayment*Processor` / `EscrowPayment*Processor` |
+| `SettlementExecutor` | `SettlementPayment*`, state-only. | `SettlementPayment*Processor` |
+| `FinishExecutor` | `Finish`: guard concert has ended, resolve deal, run the deal's `Finish` step. | `ConcertCompletionRunner` (batch) |
+| `CancelExecutor` | `Cancel` a booked concert: run the deal's `Cancel` step + `concert.Cancel()`. | `ConcertController` |
 
 Dispatch never uses `switch(dealType)`: deal-type routing is always either keyed-DI resolution
 (`IConcertWorkflowFactory.Create(type)`) or capability-interface pattern-matching.
@@ -261,7 +261,8 @@ store card) and pay off-session **at Finish** (`Booked +Finish→AwaitingSettlem
 is computed by `IArtistShareCalculator` (keyed strategy — `DoorSplitCalculator` / `VersusCalculator`)
 consumed by `PayoutFinishStep`. Payment webhooks return as integration events
 (`PaymentSucceeded/FailedEvent`) handled by the `*Processor` classes, which route by
-`Metadata["type"]` and drive the matching `IConcertWorkflowModule` method; idempotency via the inbox.
+`Metadata["type"]` and drive the matching executor or `VerifyCoordinator`;
+idempotency is provided by the inbox.
 
 ### 2.8 Ticket payee vs settlement payee
 
@@ -384,10 +385,10 @@ blocker is the *data* side (a closed `DealType`, typed TPH columns, typed step r
 - **`PaymentMethod` ≠ `paymentMethodId`.** `PaymentMethod` is the Deal-domain enum (`Cash | Transfer`)
   used for accounting; `paymentMethodId` is a Stripe PM id (`pm_…`) flowed through the paid steps and
   the `Prepaid`/`Deferred` TPH variants. Different things.
-- **`IConcertWorkflowModule`** (in `Concert.Contracts`) is the thin cross-module facade — the
-  payment-outcome callbacks (`VerifySucceededAsync`, `EscrowSucceededAsync`, `SettlementSucceededAsync`)
-  plus `FinishAsync` / `CancelAsync`. Apply / Accept / Checkout are HTTP-only, called via dispatchers
-  from `Concert.Api` controllers.
+- **Executor interfaces are Concert-internal Application contracts.** HTTP services, controllers,
+  workers, and payment processors bind directly to the relevant interface. Payment verification
+  processors delegate to `IVerifyCoordinator`, which persists the outcome before asking
+  `IBookingAdvancer` to complete the accept/payment join.
 - **`ConcertWorkflowBuilder` runs at the composition root**, not per request; all workflows and state
   machines are wired once in `AddConcertWorkflows`.
 
