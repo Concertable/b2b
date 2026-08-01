@@ -17,7 +17,7 @@ internal sealed class CancelApplicationExecutor : ICancelApplicationExecutor
         this.cancelStep = cancelStep;
     }
 
-    public Task ExecuteAsync(int applicationId)
+    public Task CancelAsync(int applicationId)
         => transitioner.TransitionAsync(applicationId, Trigger.Cancel, async app =>
         {
             // Booked + Cancel is a valid transition, but it belongs to concert-cancel — don't bypass it here.

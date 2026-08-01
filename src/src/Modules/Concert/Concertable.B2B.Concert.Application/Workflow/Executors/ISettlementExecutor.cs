@@ -2,6 +2,6 @@ namespace Concertable.B2B.Concert.Application.Workflow.Executors;
 
 internal interface ISettlementExecutor
 {
-    Task ExecuteAsync(int bookingId);
-    Task ExecuteFailedAsync(int bookingId);
+    Task SucceededAsync(int bookingId, CancellationToken ct = default);
+    Task FailedAsync(int bookingId, CancellationToken ct = default);
 }

@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Infrastructure;
+using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -9,16 +10,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
-    private readonly IVerifyDispatcher verifyDispatcher;
+    private readonly IVerifyCoordinator coordinator;
     private readonly ConcertDbContext context;
     private readonly ILogger<VerifyPaymentFailedProcessor> logger;
 
     public VerifyPaymentFailedProcessor(
-        IVerifyDispatcher verifyDispatcher,
+        IVerifyCoordinator coordinator,
         ConcertDbContext context,
         ILogger<VerifyPaymentFailedProcessor> logger)
     {
-        this.verifyDispatcher = verifyDispatcher;
+        this.coordinator = coordinator;
         this.context = context;
         this.logger = logger;
     }
@@ -39,7 +40,7 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
 
         try
         {
-            await verifyDispatcher.VerifyFailedAsync(applicationId, venueManagerId, @event.FailureMessage);
+            await coordinator.FailedAsync(applicationId, venueManagerId, @event.FailureMessage, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

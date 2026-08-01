@@ -18,9 +18,13 @@ internal sealed class LifecycleTransitioner : ILifecycleTransitioner
         this.machines = machines;
     }
 
-    public async Task<ApplicationEntity> TransitionAsync(int applicationId, Trigger trigger, TransitionEffect? effect = null)
+    public async Task<ApplicationEntity> TransitionAsync(
+        int applicationId,
+        Trigger trigger,
+        TransitionEffect? effect = null,
+        CancellationToken ct = default)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId)
+        var application = await applicationRepository.GetByIdAsync(applicationId, ct)
             .OrNotFound();
 
         var machine = machines.Get(application.DealType);
@@ -30,7 +34,7 @@ internal sealed class LifecycleTransitioner : ILifecycleTransitioner
             await effect(application);
 
         application.Transition(trigger, machine);
-        await applicationRepository.SaveChangesAsync();
+        await applicationRepository.SaveChangesAsync(ct);
         return application;
     }
 }

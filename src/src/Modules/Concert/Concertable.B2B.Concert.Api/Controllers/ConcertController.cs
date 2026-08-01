@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.Kernel.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
@@ -13,20 +14,20 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 internal sealed class ConcertController : ControllerBase
 {
     private readonly IConcertService concertService;
-    private readonly IConcertWorkflowModule concertWorkflowModule;
+    private readonly ICancelExecutor cancelExecutor;
     private readonly IContractService contractService;
     private readonly IInvoiceService invoiceService;
     private readonly TimeProvider timeProvider;
 
     public ConcertController(
         IConcertService concertService,
-        IConcertWorkflowModule concertWorkflowModule,
+        ICancelExecutor cancelExecutor,
         IContractService contractService,
         IInvoiceService invoiceService,
         TimeProvider timeProvider)
     {
         this.concertService = concertService;
-        this.concertWorkflowModule = concertWorkflowModule;
+        this.cancelExecutor = cancelExecutor;
         this.contractService = contractService;
         this.invoiceService = invoiceService;
         this.timeProvider = timeProvider;
@@ -130,7 +131,9 @@ internal sealed class ConcertController : ControllerBase
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
     {
-        await concertWorkflowModule.CancelAsync(id, ct);
+        var result = await cancelExecutor.CancelAsync(id, ct);
+        if (result.IsFailed)
+            throw new BadRequestException(result.Errors);
         return NoContent();
     }
 

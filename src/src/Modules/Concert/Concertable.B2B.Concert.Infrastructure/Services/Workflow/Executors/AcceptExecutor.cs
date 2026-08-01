@@ -39,7 +39,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.taskRunner = taskRunner;
     }
 
-    public async Task ExecuteAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
+    public async Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
     {
         await transitioner.TransitionAsync(applicationId, Trigger.Accept, async app =>
         {

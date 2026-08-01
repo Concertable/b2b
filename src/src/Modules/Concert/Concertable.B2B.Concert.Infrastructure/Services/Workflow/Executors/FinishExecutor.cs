@@ -47,11 +47,11 @@ internal sealed class FinishExecutor : IFinishExecutor
         this.logger = logger;
     }
 
-    public async Task<Result<SettlementOutcome>> ExecuteAsync(int concertId)
+    public async Task<Result<SettlementOutcome>> FinishAsync(int concertId, CancellationToken ct = default)
     {
         try
         {
-            var concert = await concertRepository.GetByIdWithBookingAsync(concertId)
+            var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct)
                 .OrNotFound();
             if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
                 throw new BadRequestException("Concert cannot be finished before it has ended");
@@ -76,8 +76,12 @@ internal sealed class FinishExecutor : IFinishExecutor
                 var workflow = workflows.Create(app.DealType);
                 await workflow.Finish.ExecuteAsync(concertId);
                 await invoiceIssuer.IssueAsync(concert);
-            });
+            }, ct);
             return Result.Ok(SettlementOutcome.Settled);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

@@ -28,9 +28,9 @@ internal sealed class EscrowExecutor : IEscrowExecutor
         this.cancelStep = cancelStep;
     }
 
-    public async Task ExecuteAsync(int bookingId)
+    public async Task SucceededAsync(int bookingId, CancellationToken ct = default)
     {
-        var applicationId = await LoadApplicationIdAsync(bookingId);
+        var applicationId = await LoadApplicationIdAsync(bookingId, ct);
         await transitioner.TransitionAsync(applicationId, Trigger.EscrowPaymentSucceeded, async app =>
         {
             // A late capture landing after application-cancel confirms money into escrow on a dead
@@ -43,18 +43,18 @@ internal sealed class EscrowExecutor : IEscrowExecutor
 
             var workflow = workflows.Create(app.DealType);
             await workflow.Book.ExecuteAsync(bookingId);
-        });
+        }, ct);
     }
 
-    public async Task ExecuteFailedAsync(int bookingId)
+    public async Task FailedAsync(int bookingId, CancellationToken ct = default)
     {
-        var applicationId = await LoadApplicationIdAsync(bookingId);
-        await transitioner.TransitionAsync(applicationId, Trigger.EscrowPaymentFailed);
+        var applicationId = await LoadApplicationIdAsync(bookingId, ct);
+        await transitioner.TransitionAsync(applicationId, Trigger.EscrowPaymentFailed, ct: ct);
     }
 
-    private async Task<int> LoadApplicationIdAsync(int bookingId)
+    private async Task<int> LoadApplicationIdAsync(int bookingId, CancellationToken ct)
     {
-        if (await bookingRepository.GetApplicationIdByIdAsync(bookingId) is { } applicationId)
+        if (await bookingRepository.GetApplicationIdByIdAsync(bookingId, ct) is { } applicationId)
             return applicationId;
         // Distinguishes a tenant-filter-hidden row from a genuinely-absent one (commit race).
         var exists = await publicBookingRepository.ExistsAsync(bookingId);

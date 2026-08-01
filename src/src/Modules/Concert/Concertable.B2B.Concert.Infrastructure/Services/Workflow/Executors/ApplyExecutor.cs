@@ -43,7 +43,7 @@ internal sealed class ApplyExecutor : IApplyExecutor
         this.timeProvider = timeProvider;
     }
 
-    public async Task<ApplicationEntity> ExecuteAsync(int opportunityId, int artistId, string? paymentMethodId, ESignatureRequest eSignature)
+    public async Task<ApplicationEntity> ApplyAsync(int opportunityId, int artistId, string? paymentMethodId, ESignatureRequest eSignature)
     {
         var deal = await dealResolver.ResolveByOpportunityIdAsync(opportunityId);
         var workflow = workflows.Create(deal.DealType);

@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.Interfaces;
-using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Concert.Application.Workflow.Executors;
+using Concertable.Kernel.Exceptions;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,8 +11,10 @@ internal static class ConcertWorkflowExtensions
     public static async Task FinishConcertAsync(this ConcertApiFixture fixture, int concertId)
     {
         using var scope = fixture.Services.CreateScope();
-        var concertWorkflowModule = scope.ServiceProvider.GetRequiredService<IConcertWorkflowModule>();
-        await concertWorkflowModule.FinishAsync(concertId);
+        var finishExecutor = scope.ServiceProvider.GetRequiredService<IFinishExecutor>();
+        var result = await finishExecutor.FinishAsync(concertId);
+        if (result.IsFailed)
+            throw new BadRequestException(result.Errors);
     }
 
     public static async Task DeclareDoorRevenueAsync(this ConcertApiFixture fixture, int concertId, decimal doorRevenue)
