@@ -20,5 +20,5 @@ internal sealed class WithdrawExecutor : IWithdrawExecutor
         => transitioner.TransitionAsync(applicationId, Trigger.Withdraw, app =>
             app.State is LifecycleState.Accepted or LifecycleState.PaymentFailed
                 ? cancelStep.ExecuteAsync(app.Id)
-                : Task.CompletedTask);
+                : Task.CompletedTask).GetValueOrThrowAsync();
 }

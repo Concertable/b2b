@@ -25,11 +25,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         // TODO B.11: var mtdRevenueTask = paymentModule.GetVenueTicketRevenueMtdAsync(venueId, ct);
         await Task.WhenAll(countsTask);
 
-        var counts = countsTask.Result;
-        if (counts is null)
-            return Option.None<VenueDashboardKpis>();
-
-        return Option.Some(new VenueDashboardKpis(
+        return countsTask.Result.Map(counts => new VenueDashboardKpis(
             ApplicationsToReview: counts.ApplicationsToReview,
             ApplicationsToReviewDelta: null,
             OpenOpportunities: counts.OpenOpportunities,

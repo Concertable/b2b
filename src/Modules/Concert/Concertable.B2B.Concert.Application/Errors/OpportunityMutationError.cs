@@ -11,6 +11,16 @@ internal sealed record OpportunityMutationError : IError
 
     public ErrorDefinition Definition { get; }
 
+    internal static OpportunityMutationError VenueNotFound() =>
+        new(ErrorDefinition.NotFound(
+            "opportunity.venue_not_found",
+            "No venue was found for the current organization."));
+
+    internal static OpportunityMutationError Forbidden() =>
+        new(ErrorDefinition.Forbidden(
+            "opportunity.venue_forbidden",
+            "You do not own this venue."));
+
     internal static OpportunityMutationError InvalidDeal(ValidationErrors errors)
     {
         ArgumentNullException.ThrowIfNull(errors);

@@ -1,9 +1,9 @@
 using Concertable.B2B.Concert.Application.Workflow;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Workflow.Capabilities;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.DataAccess.Infrastructure.Extensions;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -43,31 +43,52 @@ internal sealed class ApplyExecutor : IApplyExecutor
         this.timeProvider = timeProvider;
     }
 
-    public async Task<ApplicationEntity> ApplyAsync(int opportunityId, int artistId, string? paymentMethodId, ESignatureRequest eSignature)
+    public async Task<Result<ApplicationEntity, ApplyApplicationError>> ApplyAsync(
+        int opportunityId,
+        int artistId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature)
     {
         var deal = await dealResolver.ResolveByOpportunityIdAsync(opportunityId);
         var workflow = workflows.Create(deal.DealType);
-        var application = workflow switch
+        ApplicationEntity application;
+        if (workflow is IAppliesPaid paid && paymentMethodId is not null)
         {
-            IAppliesPaid w when paymentMethodId is not null
-                => await w.Apply.ApplyAsync(artistId, opportunityId, deal.DealType, paymentMethodId),
-            IAppliesSimple w
-                => await w.Apply.ApplyAsync(artistId, opportunityId, deal.DealType),
-            _ => throw new BadRequestException($"Deal {workflow.Type} does not support Apply")
-        };
+            application = await paid.Apply.ApplyAsync(artistId, opportunityId, deal.DealType, paymentMethodId);
+        }
+        else if (workflow is IAppliesSimple simple)
+        {
+            application = await simple.Apply.ApplyAsync(artistId, opportunityId, deal.DealType);
+        }
+        else
+        {
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
+                ApplyApplicationError.UnsupportedDeal(workflow.Type));
+        }
 
         /* Snapshot the two parties at apply; the booking and concert inherit this pair downstream.
            The applier IS the artist side, so their own tenant comes from the ambient context. */
-        application.VenueTenantId = await opportunityRepository.GetTenantIdByIdAsync(opportunityId)
-            .OrNotFound(DisplayNames.Opportunity);
-        application.ArtistTenantId = tenantContext.TenantId
-            ?? throw new ForbiddenException("No tenant for current user");
+        var venueTenantId = await opportunityRepository.GetTenantIdByIdAsync(opportunityId);
+        if (venueTenantId is null)
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
+                ApplyApplicationError.OpportunityNotFound(opportunityId));
+        application.VenueTenantId = venueTenantId.Value;
 
-        var period = await opportunityRepository.GetPeriodByIdAsync(opportunityId)
-            .OrNotFound(DisplayNames.Opportunity);
+        if (tenantContext.TenantId is not { } artistTenantId)
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(ApplyApplicationError.MissingTenant());
+        application.ArtistTenantId = artistTenantId;
+
+        var period = await opportunityRepository.GetPeriodByIdAsync(opportunityId);
+        if (period is null)
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
+                ApplyApplicationError.OpportunityNotFound(opportunityId));
+
+        if (currentUser.Id is not { } userId)
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(ApplyApplicationError.MissingUser());
+
         application.RecordArtistESignature(
             new ESignature(
-                currentUser.Id ?? throw new ForbiddenException("No user for current request"),
+                userId,
                 timeProvider.GetUtcNow().UtcDateTime,
                 clientContext.IpAddress,
                 clientContext.UserAgent,
@@ -82,8 +103,8 @@ internal sealed class ApplyExecutor : IApplyExecutor
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
-            throw new BadRequestException("You cannot apply to the same concert opportunity twice");
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(ApplyApplicationError.AlreadyApplied());
         }
-        return application;
+        return Result.Success<ApplicationEntity, ApplyApplicationError>(application);
     }
 }

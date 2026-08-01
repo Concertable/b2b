@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Mappers;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -16,17 +15,15 @@ internal sealed class InvoiceService : IInvoiceService
         this.invoicePdfService = invoicePdfService;
     }
 
-    public async Task<InvoiceDto> GetByConcertIdAsync(int concertId)
-    {
-        var invoice = await repository.GetByConcertIdAsync(concertId)
-            .OrNotFound();
-        return invoice.ToDto();
-    }
+    public async Task<Option<InvoiceDto>> GetByConcertIdAsync(int concertId) =>
+        (await repository.GetByConcertIdAsync(concertId))
+            .ToOption()
+            .Map(invoice => invoice.ToDto());
 
-    public async Task<FileDownload> GetPdfByConcertIdAsync(int concertId)
+    public async Task<Option<FileDownload>> GetPdfByConcertIdAsync(int concertId)
     {
-        var invoice = await repository.GetByConcertIdAsync(concertId)
-            .OrNotFound();
-        return invoice.ToFileDownload(await invoicePdfService.GetOrCreateAsync(invoice));
+        var invoice = (await repository.GetByConcertIdAsync(concertId)).ToOption();
+        return await invoice.MapAsync(async value =>
+            value.ToFileDownload(await invoicePdfService.GetOrCreateAsync(value)));
     }
 }

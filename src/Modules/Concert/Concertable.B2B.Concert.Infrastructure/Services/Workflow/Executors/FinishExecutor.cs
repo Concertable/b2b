@@ -5,7 +5,6 @@ using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
-using FluentResults;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
@@ -47,7 +46,7 @@ internal sealed class FinishExecutor : IFinishExecutor
         this.logger = logger;
     }
 
-    public async Task<Result<SettlementOutcome>> FinishAsync(int concertId, CancellationToken ct = default)
+    public async Task<FluentResults.Result<SettlementOutcome>> FinishAsync(int concertId, CancellationToken ct = default)
     {
         try
         {
@@ -67,7 +66,7 @@ internal sealed class FinishExecutor : IFinishExecutor
             if (!supplierComplete || !customerComplete)
             {
                 logger.SettlementDeferredPendingTaxCompliance(concertId, supplierComplete ? customerTenantId : supplierTenantId);
-                return Result.Ok(SettlementOutcome.DeferredPendingTaxCompliance);
+                return FluentResults.Result.Ok(SettlementOutcome.DeferredPendingTaxCompliance);
             }
 
             await transitioner.TransitionAsync(concert.Booking.ApplicationId, Trigger.Finish, async app =>
@@ -76,8 +75,8 @@ internal sealed class FinishExecutor : IFinishExecutor
                 var workflow = workflows.Create(app.DealType);
                 await workflow.Finish.ExecuteAsync(concertId);
                 await invoiceIssuer.IssueAsync(concert);
-            }, ct);
-            return Result.Ok(SettlementOutcome.Settled);
+            }, ct).GetValueOrThrowAsync();
+            return FluentResults.Result.Ok(SettlementOutcome.Settled);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -86,7 +85,7 @@ internal sealed class FinishExecutor : IFinishExecutor
         catch (Exception ex)
         {
             logger.FailedToFinishConcert(concertId, ex);
-            return Result.Fail<SettlementOutcome>(ex.Message);
+            return FluentResults.Result.Fail<SettlementOutcome>(ex.Message);
         }
     }
 }

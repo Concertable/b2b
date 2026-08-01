@@ -25,11 +25,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         // TODO B.11: var mtdPayoutsTask = paymentModule.GetArtistPayoutsMtdAsync(artistId, ct);
         await Task.WhenAll(countsTask);
 
-        var counts = countsTask.Result;
-        if (counts is null)
-            return Option.None<ArtistDashboardKpis>();
-
-        return Option.Some(new ArtistDashboardKpis(
+        return countsTask.Result.Map(counts => new ArtistDashboardKpis(
             PendingApplications: counts.PendingApplications,
             AcceptedAwaitingCheckout: 0, // TODO B.11: IConcertWorkflowCapabilityRegistry / IAcceptsCheckout
             UpcomingConcerts: counts.UpcomingConcerts,

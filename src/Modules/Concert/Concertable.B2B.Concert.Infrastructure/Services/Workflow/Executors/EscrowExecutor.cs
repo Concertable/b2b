@@ -43,13 +43,14 @@ internal sealed class EscrowExecutor : IEscrowExecutor
 
             var workflow = workflows.Create(app.DealType);
             await workflow.Book.ExecuteAsync(bookingId);
-        }, ct);
+        }, ct).GetValueOrThrowAsync();
     }
 
     public async Task FailedAsync(int bookingId, CancellationToken ct = default)
     {
         var applicationId = await LoadApplicationIdAsync(bookingId, ct);
-        await transitioner.TransitionAsync(applicationId, Trigger.EscrowPaymentFailed, ct: ct);
+        await transitioner.TransitionAsync(applicationId, Trigger.EscrowPaymentFailed, ct: ct)
+            .GetValueOrThrowAsync();
     }
 
     private async Task<int> LoadApplicationIdAsync(int bookingId, CancellationToken ct)

@@ -1,4 +1,6 @@
 using Concertable.B2B.Artist.Contracts;
+using Concertable.B2B.Concert.Application.Errors;
+using Concertable.Kernel.Errors;
 using Concertable.Kernel.Functional;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Validators;
@@ -79,7 +81,7 @@ public sealed class ApplicationValidatorTests
         var result = await validator.CanAcceptAsync(ApplicationId);
 
         // Assert
-        Assert.Equal("You do not own this concert opportunity", result.Errors.Single().Message);
+        Assert.Equal("You do not own this concert opportunity", ErrorMessage(result));
     }
 
     [Fact]
@@ -92,7 +94,7 @@ public sealed class ApplicationValidatorTests
         var result = await validator.CanAcceptAsync(ApplicationId);
 
         // Assert
-        Assert.Equal("This concert opportunity has already passed", result.Errors.Single().Message);
+        Assert.Equal("This concert opportunity has already passed", ErrorMessage(result));
     }
 
     [Fact]
@@ -105,7 +107,7 @@ public sealed class ApplicationValidatorTests
         var result = await validator.CanAcceptAsync(ApplicationId);
 
         // Assert
-        Assert.Equal("This concert opportunity already has a concert booked", result.Errors.Single().Message);
+        Assert.Equal("This concert opportunity already has a concert booked", ErrorMessage(result));
     }
 
     [Fact]
@@ -118,7 +120,7 @@ public sealed class ApplicationValidatorTests
         var result = await validator.CanAcceptAsync(ApplicationId);
 
         // Assert
-        Assert.Equal("This artist already has a concert on this day", result.Errors.Single().Message);
+        Assert.Equal("This artist already has a concert on this day", ErrorMessage(result));
     }
 
     [Fact]
@@ -131,7 +133,7 @@ public sealed class ApplicationValidatorTests
         var result = await validator.CanAcceptAsync(ApplicationId);
 
         // Assert
-        Assert.Equal("You already have a concert on this day", result.Errors.Single().Message);
+        Assert.Equal("You already have a concert on this day", ErrorMessage(result));
     }
 
     [Fact]
@@ -144,7 +146,7 @@ public sealed class ApplicationValidatorTests
         var result = await validator.CanAcceptAsync(ApplicationId);
 
         // Assert
-        Assert.Equal("Concert opportunity does not exist", result.Errors.Single().Message);
+        Assert.Equal("Concert opportunity does not exist", ErrorMessage(result));
     }
 
     [Fact]
@@ -157,7 +159,7 @@ public sealed class ApplicationValidatorTests
         var result = await validator.CanAcceptAsync(ApplicationId);
 
         // Assert
-        Assert.Equal("Concert application does not exist", result.Errors.Single().Message);
+        Assert.Equal("Concert application does not exist", ErrorMessage(result));
     }
 
     [Fact]
@@ -170,7 +172,7 @@ public sealed class ApplicationValidatorTests
         var result = await validator.CanApplyAsync(OpportunityId);
 
         // Assert
-        Assert.Equal("You must have an artist account to apply for a concert opportunity", result.Errors.Single().Message);
+        Assert.Equal("You must have an artist account to apply for a concert opportunity", ErrorMessage(result));
     }
 
     [Fact]
@@ -184,7 +186,7 @@ public sealed class ApplicationValidatorTests
         var result = await validator.CanApplyAsync(OpportunityId);
 
         // Assert
-        Assert.Equal("Concert opportunity does not exist", result.Errors.Single().Message);
+        Assert.Equal("Concert opportunity does not exist", ErrorMessage(result));
     }
 
     [Fact]
@@ -199,5 +201,13 @@ public sealed class ApplicationValidatorTests
 
         // Assert
         Assert.True(result.IsSuccess);
+    }
+
+    private static string ErrorMessage(UnitResult<ApplicationEligibilityError> result)
+    {
+        Assert.True(result.TryGetError(out var error));
+        return error.Definition is ValidationErrorDefinition validation
+            ? validation.Errors.Values.SelectMany(messages => messages).Single()
+            : error.Definition.Message;
     }
 }
