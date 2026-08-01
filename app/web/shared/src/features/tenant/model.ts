@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
+import { requireBusinessAuth, redirectToBusiness } from "@/features/auth";
 import { queryClient } from "@/lib/queryClient";
 import { meQueryKey } from "@/features/user/hooks/useSyncUser";
 import identityApi from "./api/identityApi";
@@ -38,6 +39,15 @@ function choicePending(
 
 function cachedMemberships(): Membership[] {
   return queryClient.getQueryData<B2bIdentity>(meQueryKey)?.memberships ?? [];
+}
+
+// Persona gate for the business apps: authenticated and carrying at least one membership of this
+// persona, else bounced to the business hub. Replaces the retired flat-role check — persona now
+// comes from tenant memberships, not a `role` claim.
+export async function requireBusinessPersona(persona: TenantType): Promise<void> {
+  await requireBusinessAuth();
+  if (forPersona(cachedMemberships(), persona).length === 0)
+    return redirectToBusiness();
 }
 
 export function getTenantChoicePending(persona: TenantType): boolean {

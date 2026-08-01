@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { requireBusinessRole } from "@/features/auth";
 import {
   TenantChooser,
   TenantSwitcher,
   getTenantChoicePending,
   reconcileActiveTenant,
+  requireBusinessPersona,
   useTenantChoicePending,
 } from "@b2b/features/tenant";
 import { useArtistNotifications } from "../../features/notifications";
@@ -38,7 +38,7 @@ function ArtistLayout() {
 
 export const Route = createFileRoute("/_artist")({
   beforeLoad: async ({ location }) => {
-    await requireBusinessRole("ArtistManager");
+    await requireBusinessPersona("Artist");
     reconcileActiveTenant("Artist");
     if (getTenantChoicePending("Artist")) return;
     await requireArtist({ pathname: location.pathname });

@@ -25,10 +25,6 @@ internal sealed class UserTestSeeder : ITestSeeder
         await context.Users.SeedIfEmptyAsync(async () =>
         {
             context.Users.AddRange(seedData.Users);
-            context.ArtistManagerProfiles.AddRange(
-                seedData.ArtistManagers.Select(u => new ArtistManagerProfileEntity(u.Id)));
-            context.VenueManagerProfiles.AddRange(
-                seedData.VenueManagers.Select(u => new VenueManagerProfileEntity(u.Id)));
             context.AdminProfiles.Add(new AdminProfileEntity(seedData.Admin.Id));
 
             await context.SaveChangesAsync(ct);

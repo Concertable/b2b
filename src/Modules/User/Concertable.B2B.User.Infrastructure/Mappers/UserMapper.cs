@@ -1,21 +1,17 @@
-using Microsoft.Extensions.DependencyInjection;
+using Concertable.Kernel;
 
 namespace Concertable.B2B.User.Infrastructure.Mappers;
 
 internal sealed class UserMapper : IUserMapper
 {
-    private readonly IKeyedServiceProvider keyedServiceProvider;
-
-    public UserMapper(IKeyedServiceProvider keyedServiceProvider)
+    public Task<UserDto?> ToDtoAsync(UserEntity user) => Task.FromResult<UserDto?>(new UserDto
     {
-        this.keyedServiceProvider = keyedServiceProvider;
-    }
-
-    public async Task<UserBase?> ToDtoAsync(UserEntity user)
-    {
-        var mapper = keyedServiceProvider.GetKeyedService<IRoleMapper>(user.Role);
-        if (mapper is null)
-            return null;
-        return await mapper.ToDtoAsync(user);
-    }
+        Id = user.Id,
+        Email = user.Email,
+        Latitude = user.Location.ToLatitude(),
+        Longitude = user.Location.ToLongitude(),
+        County = user.Address?.County,
+        Town = user.Address?.Town,
+        IsEmailVerified = true,
+    });
 }

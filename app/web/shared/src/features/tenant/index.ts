@@ -11,6 +11,7 @@ export {
   useHasPermission,
   getTenantChoicePending,
   reconcileActiveTenant,
+  requireBusinessPersona,
 } from "./model";
 export { TenantSwitcher } from "./components/TenantSwitcher";
 export { TenantChooser } from "./components/TenantChooser";

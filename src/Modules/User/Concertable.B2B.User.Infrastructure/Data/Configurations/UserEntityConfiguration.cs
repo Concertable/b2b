@@ -10,7 +10,7 @@ internal sealed class UserEntityConfiguration : IEntityTypeConfiguration<UserEnt
     {
         builder.ToTable(Schema.Tables.Users, Schema.Name);
         builder.Property(u => u.Location).HasColumnType("geography");
-        builder.HasIndex(u => new { u.Email, u.Role }).IsUnique();
+        builder.HasIndex(u => u.Email).IsUnique();
         builder.OwnsAddress(u => u.Address, required: false);
     }
 }
