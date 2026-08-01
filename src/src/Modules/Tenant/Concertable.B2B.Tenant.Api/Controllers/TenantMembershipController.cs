@@ -3,6 +3,7 @@ using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Concertable.Shared.Api.Results;
 
 namespace Concertable.B2B.Tenant.Api.Controllers;
 
@@ -38,32 +39,21 @@ internal sealed class TenantMembershipController : ControllerBase
     [HttpPost("invitations")]
     [HasPermission(SharedPermissions.MembersInvite)]
     public async Task<ActionResult<InvitationDto>> Invite(InviteMemberRequest request)
-    {
-        var invitation = await invitationService.InviteAsync(request);
-        return CreatedAtAction(nameof(GetInvitations), invitation);
-    }
+        => (await invitationService.InviteAsync(request))
+            .ToCreatedAtActionResult(nameof(GetInvitations));
 
     [HttpDelete("invitations/{id:guid}")]
     [HasPermission(SharedPermissions.MembersInvite)]
-    public async Task<IActionResult> RevokeInvitation(Guid id)
-    {
-        await invitationService.RevokeInvitationAsync(id);
-        return NoContent();
-    }
+    public async Task<IActionResult> RevokeInvitation(Guid id) =>
+        (await invitationService.RevokeInvitationAsync(id)).ToNoContentActionResult();
 
     [HttpPut("members/{userId:guid}/role")]
     [HasPermission(SharedPermissions.MembersManageRoles)]
-    public async Task<IActionResult> ChangeRole(Guid userId, ChangeMemberRoleRequest request)
-    {
-        await membershipService.ChangeRoleAsync(userId, request);
-        return NoContent();
-    }
+    public async Task<IActionResult> ChangeRole(Guid userId, ChangeMemberRoleRequest request) =>
+        (await membershipService.ChangeRoleAsync(userId, request)).ToNoContentActionResult();
 
     [HttpDelete("members/{userId:guid}")]
     [HasPermission(SharedPermissions.MembersRemove)]
-    public async Task<IActionResult> RemoveMember(Guid userId)
-    {
-        await membershipService.RemoveMemberAsync(userId);
-        return NoContent();
-    }
+    public async Task<IActionResult> RemoveMember(Guid userId) =>
+        (await membershipService.RemoveMemberAsync(userId)).ToNoContentActionResult();
 }

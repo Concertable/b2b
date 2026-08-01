@@ -146,6 +146,8 @@ internal sealed class MessageService : IMessageService
         }
 
         var tenant = await tenantModule.GetByIdAsync(tenantId);
-        return MessageSender.Org(tenant?.LegalName ?? UnknownOrg, null, null);
+        return tenant.Match(
+            value => MessageSender.Org(value.LegalName, null, null),
+            () => MessageSender.Org(UnknownOrg, null, null));
     }
 }
