@@ -9,8 +9,6 @@ internal sealed class UserDbContext(
     : DbContextBase(options)
 {
     public DbSet<UserEntity> Users => Set<UserEntity>();
-    public DbSet<VenueManagerProfileEntity> VenueManagerProfiles => Set<VenueManagerProfileEntity>();
-    public DbSet<ArtistManagerProfileEntity> ArtistManagerProfiles => Set<ArtistManagerProfileEntity>();
     public DbSet<AdminProfileEntity> AdminProfiles => Set<AdminProfileEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -28,26 +28,12 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ArtistManagerProfiles",
-                schema: "user",
-                columns: table => new
-                {
-                    Sub = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ArtistId = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ArtistManagerProfiles", x => x.Sub);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Users",
                 schema: "user",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Email = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Role = table.Column<int>(type: "int", nullable: false),
                     County = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Town = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Location = table.Column<Point>(type: "geography", nullable: true),
@@ -58,24 +44,11 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
                     table.PrimaryKey("PK_Users", x => x.Id);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "VenueManagerProfiles",
-                schema: "user",
-                columns: table => new
-                {
-                    Sub = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    VenueId = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_VenueManagerProfiles", x => x.Sub);
-                });
-
             migrationBuilder.CreateIndex(
-                name: "IX_Users_Email_Role",
+                name: "IX_Users_Email",
                 schema: "user",
                 table: "Users",
-                columns: new[] { "Email", "Role" },
+                column: "Email",
                 unique: true);
         }
 
@@ -87,15 +60,7 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
                 schema: "user");
 
             migrationBuilder.DropTable(
-                name: "ArtistManagerProfiles",
-                schema: "user");
-
-            migrationBuilder.DropTable(
                 name: "Users",
-                schema: "user");
-
-            migrationBuilder.DropTable(
-                name: "VenueManagerProfiles",
                 schema: "user");
         }
     }

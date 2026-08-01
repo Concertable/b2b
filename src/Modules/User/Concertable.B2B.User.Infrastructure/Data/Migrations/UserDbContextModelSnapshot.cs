@@ -40,12 +40,9 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
                     b.Property<Point>("Location")
                         .HasColumnType("geography");
 
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("Email", "Role")
+                    b.HasIndex("Email")
                         .IsUnique();
 
                     b.ToTable("Users", "user");
@@ -59,32 +56,6 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
                     b.HasKey("Sub");
 
                     b.ToTable("AdminProfiles", "user");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.User.Infrastructure.Data.ArtistManagerProfileEntity", b =>
-                {
-                    b.Property<Guid>("Sub")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("ArtistId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Sub");
-
-                    b.ToTable("ArtistManagerProfiles", "user");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.User.Infrastructure.Data.VenueManagerProfileEntity", b =>
-                {
-                    b.Property<Guid>("Sub")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("VenueId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Sub");
-
-                    b.ToTable("VenueManagerProfiles", "user");
                 });
 
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>

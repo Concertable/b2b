@@ -10,6 +10,6 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "Skipped CredentialRegisteredEvent UserId={UserId}: {Reason}")]
     internal static partial void SkippedCredentialRegistered(this ILogger logger, Guid userId, string reason);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Wrote user from CredentialRegisteredEvent UserId={UserId} Role={Role}")]
-    internal static partial void WroteUserFromCredentialRegistered(this ILogger logger, Guid userId, Role role);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Wrote user from CredentialRegisteredEvent UserId={UserId}")]
+    internal static partial void WroteUserFromCredentialRegistered(this ILogger logger, Guid userId);
 }
