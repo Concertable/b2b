@@ -4,5 +4,5 @@ namespace Concertable.B2B.Concert.Application.Workflow.Executors;
 
 internal interface IAcceptExecutor
 {
-    Task ExecuteAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature);
+    Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature);
 }

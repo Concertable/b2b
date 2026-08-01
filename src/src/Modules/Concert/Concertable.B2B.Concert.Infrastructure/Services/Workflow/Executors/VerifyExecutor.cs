@@ -21,14 +21,14 @@ internal sealed class VerifyExecutor : IVerifyExecutor
         this.bookingRepository = bookingRepository;
     }
 
-    public Task ExecuteAsync(int applicationId)
+    public Task VerifiedAsync(int applicationId, CancellationToken ct = default)
         => transitioner.TransitionAsync(applicationId, Trigger.VerifyPaymentSucceeded, async app =>
         {
-            var booking = await bookingRepository.GetByApplicationIdAsync(app.Id).OrNotFound();
+            var booking = await bookingRepository.GetByApplicationIdAsync(app.Id, ct).OrNotFound();
             var workflow = workflows.Create(app.DealType);
             await workflow.Book.ExecuteAsync(booking.Id);
-        });
+        }, ct);
 
-    public Task ExecuteFailedAsync(int applicationId)
-        => transitioner.TransitionAsync(applicationId, Trigger.VerifyPaymentFailed);
+    public Task FailedAsync(int applicationId, CancellationToken ct = default)
+        => transitioner.TransitionAsync(applicationId, Trigger.VerifyPaymentFailed, ct: ct);
 }
