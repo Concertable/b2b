@@ -8,6 +8,7 @@ using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Microsoft.AspNetCore.Mvc;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
@@ -80,6 +81,59 @@ public sealed class OpportunityApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Create_InvalidDeal_ReturnsValidationProblem()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var request = BuildRequest(new VersusDeal
+        {
+            PaymentMethod = PaymentMethod.Cash,
+            Guarantee = -1,
+            ArtistDoorPercent = 101
+        });
+
+        var response = await client.PostAsync("/api/Opportunity", request);
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.True(problem.Extensions.TryGetValue("code", out var code));
+        Assert.Equal("opportunity.deal.invalid", code?.ToString());
+        Assert.Equal(["Guarantee must be zero or greater."], problem.Errors["Guarantee"]);
+        Assert.Equal(
+            ["Artist door percent must be between 0 and 100."],
+            problem.Errors["ArtistDoorPercent"]);
+    }
+
+    #endregion
+
+    #region Update
+
+    [Fact]
+    public async Task Update_InvalidDeal_ReturnsValidationProblem()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var request = BuildRequest(new VenueHireDeal
+        {
+            PaymentMethod = PaymentMethod.Cash,
+            HireFee = 0
+        }) with
+        {
+            Id = fixture.SeedState.FreshVenueHireOpportunity.Id
+        };
+
+        var response = await client.PutAsync(
+            $"/api/Venue/{fixture.SeedState.Venue.Id}/opportunities",
+            new[] { request });
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.True(problem.Extensions.TryGetValue("code", out var code));
+        Assert.Equal("opportunity.deal.invalid", code?.ToString());
+        Assert.Equal(["Hire fee must be greater than zero."], problem.Errors["HireFee"]);
     }
 
     #endregion

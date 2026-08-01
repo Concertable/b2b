@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Contracts;
+using Concertable.Shared.Api.Results;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
@@ -36,18 +37,20 @@ internal sealed class OpportunityController : ControllerBase
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] OpportunityRequest request)
+    public async Task<ActionResult<OpportunityResponse>> Create([FromBody] OpportunityRequest request)
     {
-        var opportunity = await opportunityService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = opportunity.Id }, mapper.ToResponse(opportunity));
+        var result = (await opportunityService.CreateAsync(request))
+            .Map(mapper.ToResponse);
+        return result.ToActionResult(
+            opportunity => CreatedAtAction(nameof(GetById), new { id = opportunity.Id }, opportunity));
     }
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPost("bulk")]
     public async Task<IActionResult> CreateMultiple([FromBody] IEnumerable<OpportunityRequest> requests)
     {
-        await opportunityService.CreateMultipleAsync(requests);
-        return Created();
+        var result = await opportunityService.CreateMultipleAsync(requests);
+        return result.ToActionResult(() => Created());
     }
 
     [HttpGet("/api/Venue/{venueId:int}/opportunities")]
@@ -59,10 +62,13 @@ internal sealed class OpportunityController : ControllerBase
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPut("/api/Venue/{venueId:int}/opportunities")]
-    public async Task<IActionResult> Update(int venueId, [FromBody] IEnumerable<OpportunityRequest> desired)
+    public async Task<ActionResult<List<OpportunityResponse>>> Update(
+        int venueId,
+        [FromBody] IEnumerable<OpportunityRequest> desired)
     {
-        var updated = await opportunityService.UpdateAsync(venueId, desired);
-        return Ok(mapper.ToResponses(updated));
+        var result = (await opportunityService.UpdateAsync(venueId, desired))
+            .Map(opportunities => mapper.ToResponses(opportunities).ToList());
+        return result.ToOkActionResult();
     }
 
     [HttpGet("{id}/ownership")]

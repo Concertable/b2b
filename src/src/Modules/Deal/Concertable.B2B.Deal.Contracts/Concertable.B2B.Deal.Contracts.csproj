@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Concertable.Contracts" />
     <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Dunet" />
   </ItemGroup>
 
 </Project>

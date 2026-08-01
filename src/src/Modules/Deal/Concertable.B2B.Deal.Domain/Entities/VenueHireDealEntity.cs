@@ -1,3 +1,6 @@
+using Concertable.Kernel.Errors;
+using Concertable.Kernel.Functional;
+
 namespace Concertable.B2B.Deal.Domain.Entities;
 
 public sealed class VenueHireDealEntity : DealEntity
@@ -7,23 +10,27 @@ public sealed class VenueHireDealEntity : DealEntity
     public override DealType DealType => DealType.VenueHire;
     public decimal HireFee { get; private set; }
 
-    public static VenueHireDealEntity Create(decimal hireFee, PaymentMethod paymentMethod)
+    public static Result<VenueHireDealEntity, ValidationErrors> Create(decimal hireFee, PaymentMethod paymentMethod)
     {
-        ValidateFee(hireFee);
-        return new() { HireFee = hireFee, PaymentMethod = paymentMethod };
+        var validation = ValidateFee(hireFee);
+        return validation.Bind(() => Result.Success<VenueHireDealEntity, ValidationErrors>(
+            new VenueHireDealEntity { HireFee = hireFee, PaymentMethod = paymentMethod }));
     }
 
-    public void Update(decimal hireFee, PaymentMethod paymentMethod)
+    public UnitResult<ValidationErrors> Update(decimal hireFee, PaymentMethod paymentMethod)
     {
-        ValidateFee(hireFee);
+        var validation = ValidateFee(hireFee);
+        if (validation.IsFailure)
+            return validation;
 
         HireFee = hireFee;
         PaymentMethod = paymentMethod;
+        return UnitResult.Success<ValidationErrors>();
     }
 
-    private static void ValidateFee(decimal hireFee)
-    {
-        if (hireFee <= 0)
-            throw new DomainException("Hire fee must be greater than zero.");
-    }
+    private static UnitResult<ValidationErrors> ValidateFee(decimal hireFee) =>
+        hireFee > 0
+            ? UnitResult.Success<ValidationErrors>()
+            : UnitResult.Failure(new ValidationErrors(
+                [new(nameof(HireFee), "Hire fee must be greater than zero.")]));
 }

@@ -45,7 +45,9 @@ internal sealed class DealAccessor : IDealAccessor, IDealResolver
         var dealId = await resolveDealId()
             ?? throw new NotFoundException("Deal not found for this entity");
 
-        return deal = await dealModule.GetByIdAsync(dealId)
-            ?? throw new NotFoundException($"No deal with id {dealId}");
+        var dealOption = await dealModule.GetByIdAsync(dealId);
+        return deal = dealOption.Match(
+            value => value,
+            () => throw new InvalidOperationException($"Entity references missing deal {dealId}."));
     }
 }

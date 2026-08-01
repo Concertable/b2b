@@ -1,5 +1,7 @@
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Domain.Entities;
+using Concertable.Kernel.Errors;
+using Concertable.Kernel.Functional;
 
 namespace Concertable.B2B.Deal.Application.Mappers;
 
@@ -16,9 +18,9 @@ internal sealed class FlatFeeDealMapper : IDealMapper
         };
     }
 
-    public DealEntity ToEntity(IDeal deal)
+    public Result<DealEntity, ValidationErrors> ToEntity(IDeal deal)
     {
         var c = (FlatFeeDeal)deal;
-        return FlatFeeDealEntity.Create(c.Fee, c.PaymentMethod);
+        return FlatFeeDealEntity.Create(c.Fee, c.PaymentMethod).Map<DealEntity>(entity => entity);
     }
 }

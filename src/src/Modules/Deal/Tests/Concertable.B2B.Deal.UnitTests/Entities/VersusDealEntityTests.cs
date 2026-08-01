@@ -12,7 +12,8 @@ public sealed class VersusDealEntityTests
     [InlineData(0, 0, 50, 0)]
     public void CalculateArtistShare_ShouldReturnCorrectAmount(decimal guarantee, decimal totalRevenue, decimal artistDoorPercent, decimal expected)
     {
-        var deal = VersusDealEntity.Create(guarantee, artistDoorPercent, PaymentMethod.Cash);
+        var creation = VersusDealEntity.Create(guarantee, artistDoorPercent, PaymentMethod.Cash);
+        Assert.True(creation.TryGetValue(out var deal));
 
         var result = deal.CalculateArtistShare(totalRevenue);
 
