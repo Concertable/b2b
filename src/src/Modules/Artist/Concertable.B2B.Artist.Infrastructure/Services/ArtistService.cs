@@ -1,5 +1,5 @@
 using Concertable.B2B.Artist.Application.Requests;
-using Concertable.Kernel.Exceptions;
+using Concertable.B2B.Artist.Application.Errors;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel.Geometry;
 using Concertable.Kernel.Identity;
@@ -37,17 +37,16 @@ internal sealed class ArtistService : IArtistService
         this.geometryProvider = geometryProvider;
     }
 
-    public Task<ArtistDetails?> GetDetailsForCurrentUserAsync() =>
-        repository.GetDetailsForCurrentTenantAsync();
+    public async Task<Option<ArtistDetails>> GetDetailsForCurrentUserAsync() =>
+        (await repository.GetDetailsForCurrentTenantAsync()).ToOption();
 
-    public async Task<ArtistDetails> GetDetailsByIdAsync(int id) =>
-        await publicRepository.GetDetailsByIdAsync(id)
-            .OrNotFound();
+    public async Task<Option<ArtistDetails>> GetDetailsByIdAsync(int id) =>
+        (await publicRepository.GetDetailsByIdAsync(id)).ToOption();
 
-    public async Task<ArtistDetails> CreateAsync(CreateArtistRequest request)
+    public async Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(CreateArtistRequest request)
     {
         if (!tenantContext.HasTenant)
-            throw new ForbiddenException("No active tenant");
+            return Result.Failure<ArtistDetails, CreateArtistError>(CreateArtistError.Forbidden());
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
@@ -68,14 +67,16 @@ internal sealed class ArtistService : IArtistService
         var createdArtist = await repository.AddAsync(artist);
         await repository.SaveChangesAsync();
 
-        return await publicRepository.GetDetailsByIdAsync(createdArtist.Id)
-            ?? throw new InternalServerException($"Artist {createdArtist.Id} not found after creation.");
+        var details = await publicRepository.GetDetailsByIdAsync(createdArtist.Id)
+            ?? throw new InvalidOperationException($"Artist {createdArtist.Id} not found after creation.");
+        return Result.Success<ArtistDetails, CreateArtistError>(details);
     }
 
-    public async Task<ArtistDetails> UpdateAsync(int id, UpdateArtistRequest request)
+    public async Task<Result<ArtistDetails, UpdateArtistError>> UpdateAsync(int id, UpdateArtistRequest request)
     {
-        var artist = await repository.GetByIdAsync(id)
-            .OrNotFound();
+        var artist = await repository.GetByIdAsync(id);
+        if (artist is null)
+            return Result.Failure<ArtistDetails, UpdateArtistError>(UpdateArtistError.NotFound(id));
 
         var bannerUrl = request.Banner is not null
             ? await imageService.ReplaceAsync(request.Banner, artist.BannerUrl)
@@ -93,17 +94,13 @@ internal sealed class ArtistService : IArtistService
 
         await repository.SaveChangesAsync();
 
-        return await publicRepository.GetDetailsByIdAsync(id)
-            ?? throw new InternalServerException($"Artist {id} not found after update.");
+        var details = await publicRepository.GetDetailsByIdAsync(id)
+            ?? throw new InvalidOperationException($"Artist {id} not found after update.");
+        return Result.Success<ArtistDetails, UpdateArtistError>(details);
     }
 
-    public async Task<int> GetIdForCurrentUserAsync()
-    {
-        int? id = await repository.GetIdForCurrentTenantAsync();
-        ForbiddenException.ThrowIfNull(id, "You do not own an Artist");
-
-        return id.Value;
-    }
+    public async Task<Option<int>> GetIdForCurrentUserAsync() =>
+        (await repository.GetIdForCurrentTenantAsync()).ToOption();
 
     public async Task<bool> OwnsArtistAsync(int artistId)
     {
@@ -111,13 +108,12 @@ internal sealed class ArtistService : IArtistService
         return id == artistId;
     }
 
-    public async Task<ArtistSummary> GetSummaryAsync(int id) =>
-        await publicRepository.GetSummaryAsync(id)
-            .OrNotFound();
+    public async Task<Option<ArtistSummary>> GetSummaryAsync(int id) =>
+        (await publicRepository.GetSummaryAsync(id)).ToOption();
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
         publicRepository.GetGenresAsync(id);
 
-    public Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
-        publicRepository.GetOrgIdentityByTenantIdAsync(tenantId);
+    public async Task<Option<ArtistOrgIdentity>> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
+        (await publicRepository.GetOrgIdentityByTenantIdAsync(tenantId)).ToOption();
 }

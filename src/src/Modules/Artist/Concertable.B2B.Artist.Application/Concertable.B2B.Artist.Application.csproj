@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentResults" />
+    <PackageReference Include="Dunet" />
     <PackageReference Include="FluentValidation" />
   </ItemGroup>
 

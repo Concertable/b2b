@@ -5,6 +5,7 @@ using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
+using Concertable.Kernel.Functional;
 using Moq;
 
 namespace Concertable.B2B.Conversations.UnitTests.Services;
@@ -33,7 +34,7 @@ public sealed class MessageServiceTests
 
         var venueModule = new Mock<IVenueModule>();
         venueModule.Setup(v => v.GetOrgIdentityByTenantIdAsync(venueTenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new VenueOrgIdentity("The Roundhouse", "Greater London", "London"));
+            .ReturnsAsync(Option.Some(new VenueOrgIdentity("The Roundhouse", "Greater London", "London")));
 
         var service = new MessageService(
             repository.Object, notifier.Object, Mock.Of<ICurrentUser>(), Mock.Of<ITenantContext>(),

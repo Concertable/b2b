@@ -1,4 +1,5 @@
 using Concertable.B2B.Artist.Api.Mappers;
+using Concertable.B2B.Artist.Api.Errors;
 using Concertable.B2B.Artist.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +21,10 @@ internal sealed class ArtistController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ArtistDetailsResponse>> GetDetailsById(int id)
     {
-        return Ok((await artistService.GetDetailsByIdAsync(id)).ToDetailsResponse());
+        return (await artistService.GetDetailsByIdAsync(id))
+            .Map(artist => artist.ToDetailsResponse())
+            .OrFailure(() => GetArtistError.NotFound(id))
+            .ToOkActionResult();
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
@@ -28,21 +32,23 @@ internal sealed class ArtistController : ControllerBase
     public async Task<ActionResult<ArtistDetailsResponse>> GetDetailsForCurrentUser()
     {
         var artist = await artistService.GetDetailsForCurrentUserAsync();
-        return artist is null ? NoContent() : Ok(artist.ToDetailsResponse());
+        return artist.Match<ActionResult<ArtistDetailsResponse>>(
+            value => Ok(value.ToDetailsResponse()),
+            () => NoContent());
     }
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]
-    public async Task<IActionResult> Create([FromForm] CreateArtistRequest request)
+    public async Task<ActionResult<ArtistDetails>> Create([FromForm] CreateArtistRequest request)
     {
-        var artistDto = await artistService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetDetailsById), new { Id = artistDto.Id }, artistDto);
+        return (await artistService.CreateAsync(request)).ToActionResult(
+            artist => CreatedAtAction(nameof(GetDetailsById), new { Id = artist.Id }, artist));
     }
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromForm] UpdateArtistRequest request)
+    public async Task<ActionResult<ArtistDetails>> Update(int id, [FromForm] UpdateArtistRequest request)
     {
-        return Ok(await artistService.UpdateAsync(id, request));
+        return (await artistService.UpdateAsync(id, request)).ToOkActionResult();
     }
 }

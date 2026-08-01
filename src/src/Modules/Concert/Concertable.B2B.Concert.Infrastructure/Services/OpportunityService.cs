@@ -41,8 +41,9 @@ internal sealed class OpportunityService : IOpportunityService
 
     public async Task<Result<OpportunityDto, OpportunityMutationError>> CreateAsync(OpportunityRequest request)
     {
-        var venueId = await venueModule.GetVenueIdForCurrentTenantAsync()
-            ?? throw new NotFoundException("Venue not found for current user");
+        var venueId = (await venueModule.GetVenueIdForCurrentTenantAsync()).Match(
+            value => value,
+            () => throw new NotFoundException("Venue not found for current user"));
 
         var validation = ValidateDeals([request.Deal]);
         if (validation.TryGetError(out var error))
@@ -68,8 +69,9 @@ internal sealed class OpportunityService : IOpportunityService
     public async Task<UnitResult<OpportunityMutationError>> CreateMultipleAsync(IEnumerable<OpportunityRequest> requests)
     {
         var requestList = requests.ToList();
-        var venueId = await venueModule.GetVenueIdForCurrentTenantAsync()
-            ?? throw new NotFoundException("Venue not found for current user");
+        var venueId = (await venueModule.GetVenueIdForCurrentTenantAsync()).Match(
+            value => value,
+            () => throw new NotFoundException("Venue not found for current user"));
 
         var validation = ValidateDeals(requestList.Select(request => request.Deal));
         if (validation.IsFailure)
@@ -108,8 +110,9 @@ internal sealed class OpportunityService : IOpportunityService
         int venueId,
         IEnumerable<OpportunityRequest> desired)
     {
-        var ownedVenueId = await venueModule.GetVenueIdForCurrentTenantAsync()
-            ?? throw new NotFoundException("Venue not found for current user");
+        var ownedVenueId = (await venueModule.GetVenueIdForCurrentTenantAsync()).Match(
+            value => value,
+            () => throw new NotFoundException("Venue not found for current user"));
 
         if (ownedVenueId != venueId)
             throw new ForbiddenException("You do not own this venue");

@@ -1,4 +1,5 @@
 using Concertable.B2B.Venue.Api.Mappers;
+using Concertable.B2B.Venue.Api.Errors;
 using Concertable.B2B.Venue.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Api.Authorization;
@@ -23,7 +24,10 @@ internal sealed class VenueController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<VenueDetailsResponse>> GetDetailsById(int id)
     {
-        return Ok((await venueService.GetDetailsByIdAsync(id)).ToDetailsResponse());
+        return (await venueService.GetDetailsByIdAsync(id))
+            .Map(venue => venue.ToDetailsResponse())
+            .OrFailure(() => GetVenueError.NotFound(id))
+            .ToOkActionResult();
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
@@ -31,30 +35,31 @@ internal sealed class VenueController : ControllerBase
     public async Task<ActionResult<VenueDetailsResponse>> GetDetailsForCurrentUser()
     {
         var venue = await venueService.GetDetailsForCurrentUserAsync();
-        return venue is null ? NoContent() : Ok(venue.ToDetailsResponse());
+        return venue.Match<ActionResult<VenueDetailsResponse>>(
+            value => Ok(value.ToDetailsResponse()),
+            () => NoContent());
     }
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]
-    public async Task<IActionResult> Create([FromForm] CreateVenueRequest request)
+    public async Task<ActionResult<VenueDetails>> Create([FromForm] CreateVenueRequest request)
     {
-        var venueDto = await venueService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetDetailsById), new { Id = venueDto.Id }, venueDto);
+        return (await venueService.CreateAsync(request)).ToActionResult(
+            venue => CreatedAtAction(nameof(GetDetailsById), new { Id = venue.Id }, venue));
     }
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromForm] UpdateVenueRequest request)
+    public async Task<ActionResult<VenueDetails>> Update(int id, [FromForm] UpdateVenueRequest request)
     {
-        return Ok(await venueService.UpdateAsync(id, request));
+        return (await venueService.UpdateAsync(id, request)).ToOkActionResult();
     }
 
     [Admin]
     [HttpPatch("{id}/approve")]
     public async Task<IActionResult> Approve(int id)
     {
-        await venueService.ApproveAsync(id);
-        return NoContent();
+        return (await venueService.ApproveAsync(id)).ToNoContentActionResult();
     }
 
     [HttpGet("{id}/ownership")]

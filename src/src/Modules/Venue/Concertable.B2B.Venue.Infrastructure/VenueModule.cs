@@ -11,12 +11,12 @@ internal sealed class VenueModule : IVenueModule
         this.repository = repository;
     }
 
-    public Task<VenueSummary> GetSummaryAsync(int venueId, CancellationToken ct = default) =>
+    public Task<Option<VenueSummary>> GetSummaryAsync(int venueId, CancellationToken ct = default) =>
         venueService.GetSummaryAsync(venueId);
 
-    public Task<int?> GetVenueIdForCurrentTenantAsync(CancellationToken ct = default) =>
-        repository.GetIdForCurrentTenantAsync();
+    public async Task<Option<int>> GetVenueIdForCurrentTenantAsync(CancellationToken ct = default) =>
+        (await repository.GetIdForCurrentTenantAsync()).ToOption();
 
-    public Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+    public Task<Option<VenueOrgIdentity>> GetOrgIdentityByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         venueService.GetOrgIdentityByTenantIdAsync(tenantId);
 }
