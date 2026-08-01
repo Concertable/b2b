@@ -47,11 +47,15 @@ internal sealed class InvitationService : IInvitationService
             .ToList();
     }
 
-    public async Task<InvitationDto> InviteAsync(InviteMemberRequest request, CancellationToken ct = default)
+    public async Task<Result<InvitationDto, InviteMemberError>> InviteAsync(
+        InviteMemberRequest request,
+        CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var tenant = await repository.GetByIdAsync(tenantId, ct)
-            ?? throw new NotFoundException("Your organization was not found.");
+        var tenant = await repository.GetByIdAsync(tenantId, ct);
+        if (tenant is null)
+            return Result.Failure<InvitationDto, InviteMemberError>(InviteMemberError.NotFound());
+
         var email = request.Email.Trim().ToLowerInvariant();
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
@@ -60,13 +64,13 @@ internal sealed class InvitationService : IInvitationService
         var members = await repository.ListMembershipsByTenantAsync(tenantId, ct);
         var memberEmails = await userModule.GetEmailsByIdsAsync(members.Select(m => m.UserId));
         if (memberEmails.Values.Any(e => string.Equals(e, email, StringComparison.OrdinalIgnoreCase)))
-            throw new ConflictException("This person is already a member of the organization.");
+            return Result.Failure<InvitationDto, InviteMemberError>(InviteMemberError.MemberConflict());
 
         var existing = await repository.GetPendingInvitationByEmailAsync(tenantId, email, ct);
         if (existing is not null)
         {
             if (existing.IsActive(now))
-                throw new ConflictException("An invitation for this email is already pending.");
+                return Result.Failure<InvitationDto, InviteMemberError>(InviteMemberError.PendingConflict());
 
             // A lapsed invite still holds the (TenantId, Email) filtered-unique Pending slot; retire it in its
             // own save so the new Pending row can't collide with it (the index frees only once the update lands).
@@ -80,46 +84,66 @@ internal sealed class InvitationService : IInvitationService
         await repository.SaveChangesAsync(ct);
 
         await SendInvitationEmailAsync(invitation, tenant.Type);
-        return new InvitationDto(invitation.Id, invitation.Email, invitation.Role, invitation.CreatedAt, invitation.ExpiresAt);
+        return Result.Success<InvitationDto, InviteMemberError>(
+            new InvitationDto(invitation.Id, invitation.Email, invitation.Role, invitation.CreatedAt, invitation.ExpiresAt));
     }
 
-    public async Task RevokeInvitationAsync(Guid invitationId, CancellationToken ct = default)
+    public async Task<UnitResult<RevokeInvitationError>> RevokeInvitationAsync(
+        Guid invitationId,
+        CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
         var invitation = await repository.GetInvitationByIdAsync(invitationId, ct);
         if (invitation is null || invitation.TenantId != tenantId)
-            throw new NotFoundException($"Invitation {invitationId} not found.");
+            return UnitResult.Failure(RevokeInvitationError.NotFound(invitationId));
+
+        if (invitation.Status != InvitationStatus.Pending)
+            return UnitResult.Failure(RevokeInvitationError.NotPending());
 
         invitation.Revoke();
         await repository.SaveChangesAsync(ct);
+        return UnitResult.Success<RevokeInvitationError>();
     }
 
-    public async Task<MembershipDto> AcceptInvitationAsync(Guid invitationId, CancellationToken ct = default)
+    public async Task<Result<MembershipDto, AcceptInvitationError>> AcceptInvitationAsync(
+        Guid invitationId,
+        CancellationToken ct = default)
     {
         var userId = currentUser.Id ?? throw new ForbiddenException("No authenticated user.");
 
-        var invitation = await repository.GetInvitationByIdAsync(invitationId, ct)
-            ?? throw new NotFoundException($"Invitation {invitationId} not found.");
+        var invitation = await repository.GetInvitationByIdAsync(invitationId, ct);
+        if (invitation is null)
+            return Result.Failure<MembershipDto, AcceptInvitationError>(AcceptInvitationError.NotFound(invitationId));
 
         if (string.IsNullOrWhiteSpace(currentUser.Email) ||
             !string.Equals(currentUser.Email.Trim(), invitation.Email, StringComparison.OrdinalIgnoreCase))
-            throw new ForbiddenException("This invitation was issued to a different email address.");
+        {
+            return Result.Failure<MembershipDto, AcceptInvitationError>(AcceptInvitationError.Forbidden());
+        }
 
         // Guard on the tenant still existing — an accept can race a tenant delete (BUG1b). Delete already
         // clears pending invitations, so this is the secondary defence against the concurrent-delete race.
-        var tenant = await repository.GetByIdAsync(invitation.TenantId, ct)
-            ?? throw new NotFoundException("The organization for this invitation no longer exists.");
+        var tenant = await repository.GetByIdAsync(invitation.TenantId, ct);
+        if (tenant is null)
+            return Result.Failure<MembershipDto, AcceptInvitationError>(AcceptInvitationError.MissingTenant());
 
         if (await repository.IsMemberAsync(invitation.TenantId, userId, ct))
-            throw new ConflictException("You are already a member of this organization.");
+            return Result.Failure<MembershipDto, AcceptInvitationError>(AcceptInvitationError.MemberConflict());
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
+        if (invitation.Status != InvitationStatus.Pending)
+            return Result.Failure<MembershipDto, AcceptInvitationError>(AcceptInvitationError.NotPending());
+
+        if (now >= invitation.ExpiresAt)
+            return Result.Failure<MembershipDto, AcceptInvitationError>(AcceptInvitationError.Expired());
+
         invitation.Accept(userId, now);
         repository.AddMembership(TenantMembershipEntity.Create(
             invitation.TenantId, userId, invitation.Role, invitedBy: invitation.CreatedByUserId, now));
         await repository.SaveChangesAsync(ct);
 
-        return new MembershipDto(tenant.Id, tenant.LegalName, tenant.Type, invitation.Role);
+        return Result.Success<MembershipDto, AcceptInvitationError>(
+            new MembershipDto(tenant.Id, tenant.LegalName, tenant.Type, invitation.Role));
     }
 
     private async Task SendInvitationEmailAsync(TenantInvitationEntity invitation, TenantType tenantType)
