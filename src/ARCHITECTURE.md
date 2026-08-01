@@ -66,7 +66,7 @@ All event types implement `IIntegrationEvent` from `Concertable.Messaging.Contra
 
 | Event | Source | Handler(s) |
 |---|---|---|
-| `CredentialRegisteredEvent` | Auth | `CredentialRegisteredHandler` (User module — creates manager profile) |
+| `CredentialRegisteredEvent` | Auth | `CredentialRegisteredHandler` (User module — creates the role-agnostic user projection and the surviving admin profile) |
 | `CustomerReviewSubmittedEvent` | Customer | `ArtistReviewProjectionHandler`, `VenueReviewProjectionHandler`, `ConcertReviewProjectionHandler` |
 | `PaymentSucceededEvent` | Payment | `SettlementPaymentProcessor`, `EscrowPaymentProcessor`, `VerifyPaymentProcessor`, `TicketSaleProcessor` |
 | `PaymentFailedEvent` | Payment | `BookingPaymentFailedProcessor`, `VerifyPaymentFailedProcessor` |
