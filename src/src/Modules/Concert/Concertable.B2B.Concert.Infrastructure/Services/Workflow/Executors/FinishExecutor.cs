@@ -79,6 +79,10 @@ internal sealed class FinishExecutor : IFinishExecutor
             }, ct);
             return Result.Ok(SettlementOutcome.Settled);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             logger.FailedToFinishConcert(concertId, ex);

@@ -46,6 +46,10 @@ internal sealed class CancelExecutor : ICancelExecutor
             }, ct);
             return Result.Ok();
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             logger.FailedToCancelConcert(concertId, ex);
