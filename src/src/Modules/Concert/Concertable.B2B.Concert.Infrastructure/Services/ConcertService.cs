@@ -1,8 +1,8 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.Exceptions;
-using FluentResults;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -40,57 +40,59 @@ internal sealed class ConcertService : IConcertService
         this.tenantContext = tenantContext;
     }
 
-    public Task<IEnumerable<ConcertSummary>> GetUpcomingByVenueIdAsync(int id) =>
-        publicRepository.GetUpcomingByVenueIdAsync(id);
+    public async Task<IReadOnlyList<ConcertSummary>> GetUpcomingByVenueIdAsync(int id) =>
+        (await publicRepository.GetUpcomingByVenueIdAsync(id)).ToList();
 
-    public Task<IEnumerable<ConcertSummary>> GetUpcomingByArtistIdAsync(int id) =>
-        publicRepository.GetUpcomingByArtistIdAsync(id);
+    public async Task<IReadOnlyList<ConcertSummary>> GetUpcomingByArtistIdAsync(int id) =>
+        (await publicRepository.GetUpcomingByArtistIdAsync(id)).ToList();
 
-    public Task<IEnumerable<ConcertSummary>> GetHistoryByArtistIdAsync(int id) =>
-        publicRepository.GetHistoryByArtistIdAsync(id);
+    public async Task<IReadOnlyList<ConcertSummary>> GetHistoryByArtistIdAsync(int id) =>
+        (await publicRepository.GetHistoryByArtistIdAsync(id)).ToList();
 
-    public Task<IEnumerable<ConcertSummary>> GetHistoryByVenueIdAsync(int id) =>
-        publicRepository.GetHistoryByVenueIdAsync(id);
+    public async Task<IReadOnlyList<ConcertSummary>> GetHistoryByVenueIdAsync(int id) =>
+        (await publicRepository.GetHistoryByVenueIdAsync(id)).ToList();
 
-    public async Task<ConcertDetails> GetDetailsByIdAsync(int id)
+    public async Task<Option<ConcertDetails>> GetDetailsByIdAsync(int id) =>
+        (await publicRepository.GetDetailsByIdAsync(id)).ToOption();
+
+    public async Task<Option<ConcertDetails>> GetDetailsForCurrentUserAsync(int id)
     {
-        return await publicRepository.GetDetailsByIdAsync(id)
-            .OrNotFound();
+        var details = (await repository.GetDetailsByIdAsync(id)).ToOption();
+        return await details.MapAsync(async value =>
+        {
+            var invoice = await invoiceRepository.GetByConcertIdAsync(id);
+            return value with { InvoiceId = invoice?.Id };
+        });
     }
 
-    public async Task<ConcertDetails> GetDetailsForCurrentUserAsync(int id)
-    {
-        var details = await repository.GetDetailsByIdAsync(id)
-            .OrNotFound();
-        var invoice = await invoiceRepository.GetByConcertIdAsync(id);
-        return details with { InvoiceId = invoice?.Id };
-    }
-
-    public Task<Result<ConcertEntity>> CreateDraftAsync(int applicationId) =>
+    public Task<Result<ConcertEntity, CreateConcertDraftError>> CreateDraftAsync(int applicationId) =>
         concertDraftService.CreateAsync(applicationId);
 
-    public async Task<ConcertDetails> GetDetailsByApplicationIdAsync(int applicationId)
+    public async Task<Option<ConcertDetails>> GetDetailsByApplicationIdAsync(int applicationId)
     {
-        var details = await repository.GetDetailsByApplicationIdAsync(applicationId)
-            ?? throw new NotFoundException($"No concert found for Application ID {applicationId}");
-        var invoice = await invoiceRepository.GetByApplicationIdAsync(applicationId);
-        return details with { InvoiceId = invoice?.Id };
+        var details = (await repository.GetDetailsByApplicationIdAsync(applicationId)).ToOption();
+        return await details.MapAsync(async value =>
+        {
+            var invoice = await invoiceRepository.GetByApplicationIdAsync(applicationId);
+            return value with { InvoiceId = invoice?.Id };
+        });
     }
 
-    public async Task<ConcertUpdateResponse> UpdateAsync(int id, UpdateConcertRequest request)
+    public async Task<Result<ConcertUpdateResponse, UpdateConcertError>> UpdateAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await repository.GetByIdAsync(id)
-            .OrNotFound();
+        var concertEntity = await repository.GetByIdAsync(id);
+        if (concertEntity is null)
+            return Result.Failure<ConcertUpdateResponse, UpdateConcertError>(UpdateConcertError.NotFound(id));
 
         var result = concertValidator.CanUpdate(concertEntity, request.TotalTickets);
-        if (result.IsFailed)
-            throw new BadRequestException(result.Errors);
+        if (result.TryGetError(out var errors))
+            return Result.Failure<ConcertUpdateResponse, UpdateConcertError>(UpdateConcertError.Invalid(errors));
 
         concertEntity.Update(request.Name, request.About, request.Price, request.TotalTickets);
 
         await repository.SaveChangesAsync();
 
-        return new ConcertUpdateResponse
+        return Result.Success<ConcertUpdateResponse, UpdateConcertError>(new ConcertUpdateResponse
         {
             Id = concertEntity.Id,
             Name = concertEntity.Name,
@@ -98,49 +100,53 @@ internal sealed class ConcertService : IConcertService
             Price = concertEntity.Price,
             TotalTickets = concertEntity.TotalTickets,
             AvailableTickets = 0 // moved to Customer.Concert; UI reads via Search projection in end-state
-        };
+        });
     }
 
-    public async Task PostAsync(int id, UpdateConcertRequest request)
+    public async Task<UnitResult<PostConcertError>> PostAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await repository.GetByIdWithBookingAsync(id)
-            .OrNotFound();
+        var concertEntity = await repository.GetByIdWithBookingAsync(id);
+        if (concertEntity is null)
+            return UnitResult.Failure(PostConcertError.NotFound(id));
 
         var result = concertValidator.CanPost(concertEntity);
-        if (result.IsFailed)
-            throw new BadRequestException(result.Errors);
+        if (result.TryGetError(out var errors))
+            return UnitResult.Failure(PostConcertError.Invalid(errors));
 
         concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime);
 
         await repository.SaveChangesAsync();
+        return UnitResult.Success<PostConcertError>();
     }
 
-    public async Task DeclareDoorRevenueAsync(int id, decimal doorRevenue)
+    public async Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueAsync(int id, decimal doorRevenue)
     {
-        var concert = await repository.GetByIdWithBookingAsync(id)
-            .OrNotFound();
+        var concert = await repository.GetByIdWithBookingAsync(id);
+        if (concert is null)
+            return UnitResult.Failure(DeclareDoorRevenueError.NotFound(id));
 
         /* Only the concert's own venue may declare its door take. A non-party sees a null (tenant-filtered)
            Booking; the host/worker path (no HTTP context) bypasses tenant scoping, as elsewhere. */
         if (!tenantContext.IsHost && concert.Booking?.VenueTenantId != tenantContext.TenantId)
-            throw new ForbiddenException("Only the concert's venue can declare its door revenue.");
+            return UnitResult.Failure(DeclareDoorRevenueError.Forbidden());
 
         /* Only revenue-share settlements (DeferredBooking) take a declared door figure, and only once
            the gig has ended and before it settles. Re-declarable while Booked; frozen after. */
         if (concert.Booking is not DeferredBooking)
-            throw new BadRequestException("Door revenue can only be declared for a revenue-share concert.");
+            return UnitResult.Failure(DeclareDoorRevenueError.WrongDealType());
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
-            throw new BadRequestException("Door revenue can only be declared after the concert has ended.");
+            return UnitResult.Failure(DeclareDoorRevenueError.TooEarly());
         if (concert.Booking.Application.State != LifecycleState.Booked)
-            throw new ConflictException("Door revenue can only be declared before the concert has settled.");
+            return UnitResult.Failure(DeclareDoorRevenueError.AlreadySettled());
 
         concert.DeclareDoorRevenue(doorRevenue);
         await repository.SaveChangesAsync();
+        return UnitResult.Success<DeclareDoorRevenueError>();
     }
 
-    public Task<IEnumerable<ConcertSummary>> GetUnpostedByArtistIdAsync(int id) =>
-        repository.GetUnpostedByArtistIdAsync(id);
+    public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByArtistIdAsync(int id) =>
+        (await repository.GetUnpostedByArtistIdAsync(id)).ToList();
 
-    public Task<IEnumerable<ConcertSummary>> GetUnpostedByVenueIdAsync(int id) =>
-        repository.GetUnpostedByVenueIdAsync(id);
+    public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByVenueIdAsync(int id) =>
+        (await repository.GetUnpostedByVenueIdAsync(id)).ToList();
 }

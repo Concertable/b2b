@@ -24,7 +24,7 @@ internal sealed class OpportunityMapper : IOpportunityMapper
         return opportunity.ToDto(deal);
     }
 
-    public async Task<IEnumerable<OpportunityDto>> ToDtosAsync(IEnumerable<OpportunityEntity> opportunities)
+    public async Task<IReadOnlyList<OpportunityDto>> ToDtosAsync(IEnumerable<OpportunityEntity> opportunities)
     {
         var opportunityList = opportunities.ToList();
         var dealMap = (await dealModule.GetByIdsAsync(opportunityList.Select(o => o.DealId).Distinct()))
@@ -35,7 +35,7 @@ internal sealed class OpportunityMapper : IOpportunityMapper
             if (!dealMap.TryGetValue(o.DealId, out var deal))
                 throw new InvalidOperationException($"Opportunity {o.Id} references missing deal {o.DealId}.");
             return o.ToDto(deal);
-        });
+        }).ToList();
     }
 
     public async Task<IPagination<OpportunityDto>> ToDtosAsync(IPagination<OpportunityEntity> opportunities)

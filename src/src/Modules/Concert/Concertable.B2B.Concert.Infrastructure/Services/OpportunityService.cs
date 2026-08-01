@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Functional;
 using Concertable.Kernel.Identity;
 
@@ -41,9 +40,11 @@ internal sealed class OpportunityService : IOpportunityService
 
     public async Task<Result<OpportunityDto, OpportunityMutationError>> CreateAsync(OpportunityRequest request)
     {
-        var venueId = (await venueModule.GetVenueIdForCurrentTenantAsync()).Match(
-            value => value,
-            () => throw new NotFoundException("Venue not found for current user"));
+        var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
+            .OrFailure(OpportunityMutationError.VenueNotFound);
+        if (venue.TryGetError(out var venueError))
+            return Result.Failure<OpportunityDto, OpportunityMutationError>(venueError);
+        venue.TryGetValue(out var venueId);
 
         var validation = ValidateDeals([request.Deal]);
         if (validation.TryGetError(out var error))
@@ -62,16 +63,18 @@ internal sealed class OpportunityService : IOpportunityService
         });
 
         var saved = await repository.GetByIdAsync(opportunity.Id)
-            ?? throw new NotFoundException("Opportunity not found after save");
+            ?? throw new InvalidOperationException("Opportunity was not found after it was saved.");
         return Result.Success<OpportunityDto, OpportunityMutationError>(await mapper.ToDtoAsync(saved));
     }
 
     public async Task<UnitResult<OpportunityMutationError>> CreateMultipleAsync(IEnumerable<OpportunityRequest> requests)
     {
         var requestList = requests.ToList();
-        var venueId = (await venueModule.GetVenueIdForCurrentTenantAsync()).Match(
-            value => value,
-            () => throw new NotFoundException("Venue not found for current user"));
+        var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
+            .OrFailure(OpportunityMutationError.VenueNotFound);
+        if (venue.TryGetError(out var venueError))
+            return UnitResult.Failure(venueError);
+        venue.TryGetValue(out var venueId);
 
         var validation = ValidateDeals(requestList.Select(request => request.Deal));
         if (validation.IsFailure)
@@ -100,7 +103,7 @@ internal sealed class OpportunityService : IOpportunityService
         return await mapper.ToDtosAsync(opportunities);
     }
 
-    public async Task<IEnumerable<OpportunityDto>> GetActiveByVenueIdAsync(int venueId)
+    public async Task<IReadOnlyList<OpportunityDto>> GetActiveByVenueIdAsync(int venueId)
     {
         var opportunities = await publicRepository.GetActiveByVenueIdAsync(venueId);
         return await mapper.ToDtosAsync(opportunities);
@@ -110,12 +113,15 @@ internal sealed class OpportunityService : IOpportunityService
         int venueId,
         IEnumerable<OpportunityRequest> desired)
     {
-        var ownedVenueId = (await venueModule.GetVenueIdForCurrentTenantAsync()).Match(
-            value => value,
-            () => throw new NotFoundException("Venue not found for current user"));
+        var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
+            .OrFailure(OpportunityMutationError.VenueNotFound);
+        if (venue.TryGetError(out var venueError))
+            return Result.Failure<IReadOnlyList<OpportunityDto>, OpportunityMutationError>(venueError);
+        venue.TryGetValue(out var ownedVenueId);
 
         if (ownedVenueId != venueId)
-            throw new ForbiddenException("You do not own this venue");
+            return Result.Failure<IReadOnlyList<OpportunityDto>, OpportunityMutationError>(
+                OpportunityMutationError.Forbidden());
 
         var desiredList = desired.ToList();
         var validation = ValidateDeals(desiredList.Select(request => request.Deal));
@@ -133,17 +139,14 @@ internal sealed class OpportunityService : IOpportunityService
             (await mapper.ToDtosAsync(updated)).ToList());
     }
 
-    public async Task<OpportunityDto> GetByIdAsync(int id)
+    public async Task<Option<OpportunityDto>> GetByIdAsync(int id)
     {
-        var opportunity = await repository.GetByIdAsync(id)
-            .OrNotFound();
-        return await mapper.ToDtoAsync(opportunity);
+        var opportunity = (await repository.GetByIdAsync(id)).ToOption();
+        return await opportunity.MapAsync(mapper.ToDtoAsync);
     }
 
-    public async Task<Guid?> GetOwnerByIdAsync(int id)
-    {
-        return await repository.GetOwnerByIdAsync(id);
-    }
+    public async Task<Option<Guid>> GetOwnerByIdAsync(int id) =>
+        (await repository.GetOwnerByIdAsync(id)).ToOption();
 
     public async Task<bool> OwnsOpportunityAsync(int opportunityId)
     {

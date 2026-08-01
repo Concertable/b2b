@@ -19,13 +19,15 @@ internal sealed class SettlementExecutor : ISettlementExecutor
     public async Task SucceededAsync(int bookingId, CancellationToken ct = default)
     {
         var applicationId = await LoadApplicationIdAsync(bookingId, ct);
-        await transitioner.TransitionAsync(applicationId, Trigger.SettlementPaymentSucceeded, ct: ct);
+        await transitioner.TransitionAsync(applicationId, Trigger.SettlementPaymentSucceeded, ct: ct)
+            .GetValueOrThrowAsync();
     }
 
     public async Task FailedAsync(int bookingId, CancellationToken ct = default)
     {
         var applicationId = await LoadApplicationIdAsync(bookingId, ct);
-        await transitioner.TransitionAsync(applicationId, Trigger.SettlementPaymentFailed, ct: ct);
+        await transitioner.TransitionAsync(applicationId, Trigger.SettlementPaymentFailed, ct: ct)
+            .GetValueOrThrowAsync();
     }
 
     private async Task<int> LoadApplicationIdAsync(int bookingId, CancellationToken ct)

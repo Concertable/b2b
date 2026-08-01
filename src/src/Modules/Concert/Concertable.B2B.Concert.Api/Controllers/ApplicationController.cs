@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Api.Mappers;
+using Concertable.B2B.Concert.Api.Errors;
 using Concertable.B2B.Concert.Api.Requests;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
@@ -37,12 +38,15 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpPost("{opportunityId}")]
-    public async Task<IActionResult> Apply(int opportunityId, [FromBody] ApplyRequest request)
+    public async Task<ActionResult<ApplicationResponse>> Apply(int opportunityId, [FromBody] ApplyRequest request)
     {
-        var application = request.PaymentMethodId is not null
+        var result = request.PaymentMethodId is not null
             ? await applicationService.ApplyAsync(opportunityId, request.PaymentMethodId, request.ESignature)
             : await applicationService.ApplyAsync(opportunityId, request.ESignature);
-        return CreatedAtAction(nameof(GetById), new { id = application.Id }, mapper.ToResponse(application));
+        return result
+            .Map(mapper.ToResponse)
+            .ToActionResult(application =>
+                CreatedAtAction(nameof(GetById), new { id = application.Id }, application));
     }
 
     [HttpGet("artist/pending")]
@@ -64,8 +68,10 @@ internal sealed class ApplicationController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ApplicationResponse>> GetById(int id)
     {
-        var application = await applicationService.GetByIdAsync(id);
-        return Ok(mapper.ToResponse(application));
+        return (await applicationService.GetByIdAsync(id))
+            .Map(mapper.ToResponse)
+            .OrFailure(() => ConcertLookupError.ApplicationNotFound(id))
+            .ToOkActionResult();
     }
 
     // No [HasPermission]: both parties read (venue + artist), enforced by the two-party tenant filter
@@ -73,15 +79,17 @@ internal sealed class ApplicationController : ControllerBase
     [HttpGet("{id}/contract")]
     public async Task<ActionResult<ContractDto>> GetContract(int id)
     {
-        var contract = await contractService.GetByApplicationIdAsync(id);
-        return Ok(contract);
+        return (await contractService.GetByApplicationIdAsync(id))
+            .OrFailure(() => ConcertLookupError.ContractByApplicationNotFound(id))
+            .ToOkActionResult();
     }
 
     [HttpGet("{id}/contract/pdf")]
-    public async Task<IActionResult> GetContractPdf(int id)
+    public async Task<ActionResult<FileDownload>> GetContractPdf(int id)
     {
-        var pdf = await contractService.GetPdfByApplicationIdAsync(id);
-        return File(pdf.Content, pdf.ContentType, pdf.FileName);
+        return (await contractService.GetPdfByApplicationIdAsync(id))
+            .OrFailure(() => ConcertLookupError.ContractByApplicationNotFound(id))
+            .ToActionResult(pdf => File(pdf.Content, pdf.ContentType, pdf.FileName));
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
@@ -136,8 +144,7 @@ internal sealed class ApplicationController : ControllerBase
     [HttpPost("{applicationId}/reject")]
     public async Task<IActionResult> Reject(int applicationId)
     {
-        await applicationService.RejectAsync(applicationId);
-        return NoContent();
+        return (await applicationService.RejectAsync(applicationId)).ToNoContentActionResult();
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]

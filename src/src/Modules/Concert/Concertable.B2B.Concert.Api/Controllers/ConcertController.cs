@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Api.Mappers;
+using Concertable.B2B.Concert.Api.Errors;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Contracts;
@@ -36,7 +37,10 @@ internal sealed class ConcertController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsById(int id)
     {
-        return Ok((await concertService.GetDetailsByIdAsync(id)).ToDetailsResponse());
+        return (await concertService.GetDetailsByIdAsync(id))
+            .Map(concert => concert.ToDetailsResponse())
+            .OrFailure(() => ConcertLookupError.ConcertNotFound(id))
+            .ToOkActionResult();
     }
 
     // Current-user (party) read: tenant-scoped (404 for non-parties), so it carries the party-only
@@ -45,35 +49,43 @@ internal sealed class ConcertController : ControllerBase
     [HttpGet("user/{id}")]
     public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsForCurrentUser(int id)
     {
-        return Ok((await concertService.GetDetailsForCurrentUserAsync(id))
-            .ToCurrentUserDetailsResponse(timeProvider.GetUtcNow().UtcDateTime));
+        return (await concertService.GetDetailsForCurrentUserAsync(id))
+            .Map(concert => concert.ToCurrentUserDetailsResponse(timeProvider.GetUtcNow().UtcDateTime))
+            .OrFailure(() => ConcertLookupError.ConcertNotFound(id))
+            .ToOkActionResult();
     }
 
     [HttpGet("{id}/contract/pdf")]
-    public async Task<IActionResult> GetContractPdf(int id)
+    public async Task<ActionResult<FileDownload>> GetContractPdf(int id)
     {
-        var pdf = await contractService.GetPdfByConcertIdAsync(id);
-        return File(pdf.Content, pdf.ContentType, pdf.FileName);
+        return (await contractService.GetPdfByConcertIdAsync(id))
+            .OrFailure(() => ConcertLookupError.ContractByConcertNotFound(id))
+            .ToActionResult(pdf => File(pdf.Content, pdf.ContentType, pdf.FileName));
     }
 
     [HttpGet("{id}/invoice")]
     public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
     {
-        return Ok(await invoiceService.GetByConcertIdAsync(id));
+        return (await invoiceService.GetByConcertIdAsync(id))
+            .OrFailure(() => ConcertLookupError.InvoiceByConcertNotFound(id))
+            .ToOkActionResult();
     }
 
     [HttpGet("{id}/invoice/pdf")]
-    public async Task<IActionResult> GetInvoicePdf(int id)
+    public async Task<ActionResult<FileDownload>> GetInvoicePdf(int id)
     {
-        var pdf = await invoiceService.GetPdfByConcertIdAsync(id);
-        return File(pdf.Content, pdf.ContentType, pdf.FileName);
+        return (await invoiceService.GetPdfByConcertIdAsync(id))
+            .OrFailure(() => ConcertLookupError.InvoiceByConcertNotFound(id))
+            .ToActionResult(pdf => File(pdf.Content, pdf.ContentType, pdf.FileName));
     }
 
     [HttpGet("application/{applicationId}")]
     public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsByApplicationId(int applicationId)
     {
-        return Ok((await concertService.GetDetailsByApplicationIdAsync(applicationId))
-            .ToCurrentUserDetailsResponse(timeProvider.GetUtcNow().UtcDateTime));
+        return (await concertService.GetDetailsByApplicationIdAsync(applicationId))
+            .Map(concert => concert.ToCurrentUserDetailsResponse(timeProvider.GetUtcNow().UtcDateTime))
+            .OrFailure(() => ConcertLookupError.ConcertByApplicationNotFound(applicationId))
+            .ToOkActionResult();
     }
 
     [HttpGet("upcoming/venue/{id}")]
@@ -116,15 +128,14 @@ internal sealed class ConcertController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<ConcertUpdateResponse>> Update(int id, [FromBody] UpdateConcertRequest request)
     {
-        return Ok(await concertService.UpdateAsync(id, request));
+        return (await concertService.UpdateAsync(id, request)).ToOkActionResult();
     }
 
     [HasPermission(VenuePermissions.ConcertsManage)]
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
     {
-        await concertService.PostAsync(id, request);
-        return NoContent();
+        return (await concertService.PostAsync(id, request)).ToNoContentActionResult();
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
@@ -145,7 +156,6 @@ internal sealed class ConcertController : ControllerBase
     [HttpPost("{id}/door-revenue")]
     public async Task<IActionResult> DeclareDoorRevenue(int id, [FromBody] DoorRevenueRequest request)
     {
-        await concertService.DeclareDoorRevenueAsync(id, request.DoorRevenue);
-        return NoContent();
+        return (await concertService.DeclareDoorRevenueAsync(id, request.DoorRevenue)).ToNoContentActionResult();
     }
 }

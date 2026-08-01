@@ -12,9 +12,9 @@ internal sealed class ConcertModule : IConcertModule
         this.dashboardService = dashboardService;
     }
 
-    public Task<VenueDashboardCounts?> GetVenueDashboardCountsAsync(int venueId, CancellationToken ct = default) =>
+    public Task<Option<VenueDashboardCounts>> GetVenueDashboardCountsAsync(int venueId, CancellationToken ct = default) =>
         dashboardService.GetVenueCountsAsync(venueId, ct);
 
-    public Task<ArtistDashboardCounts?> GetArtistDashboardCountsAsync(int artistId, CancellationToken ct = default) =>
+    public Task<Option<ArtistDashboardCounts>> GetArtistDashboardCountsAsync(int artistId, CancellationToken ct = default) =>
         dashboardService.GetArtistCountsAsync(artistId, ct);
 }

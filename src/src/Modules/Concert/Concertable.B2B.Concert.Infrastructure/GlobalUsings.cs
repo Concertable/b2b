@@ -1,4 +1,6 @@
 global using Concertable.Kernel;
+global using Concertable.Kernel.Errors;
+global using Concertable.Kernel.Functional;
 global using Concertable.Kernel.ValueObjects;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
@@ -19,6 +21,7 @@ global using Concertable.B2B.Concert.Domain.ReadModels;
 global using Concertable.B2B.Concert.Contracts;
 global using Concertable.B2B.Concert.Application.DTOs;
 global using Concertable.B2B.Concert.Application.Interfaces;
+global using Concertable.B2B.Concert.Application.Errors;
 global using Concertable.B2B.Concert.Application.Workflow.Executors;
 global using Concertable.B2B.Concert.Application.Mappers;
 global using Concertable.B2B.Concert.Application.Requests;

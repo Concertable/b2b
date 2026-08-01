@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
@@ -18,23 +17,29 @@ internal sealed class LifecycleTransitioner : ILifecycleTransitioner
         this.machines = machines;
     }
 
-    public async Task<ApplicationEntity> TransitionAsync(
+    public async Task<Result<ApplicationEntity, LifecycleTransitionError>> TransitionAsync(
         int applicationId,
         Trigger trigger,
         TransitionEffect? effect = null,
         CancellationToken ct = default)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId, ct)
-            .OrNotFound();
+        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
+        if (application is null)
+            return Result.Failure<ApplicationEntity, LifecycleTransitionError>(
+                LifecycleTransitionError.ApplicationNotFound(applicationId));
 
         var machine = machines.Get(application.DealType);
-        machine.Next(application.State, trigger);
+        var transition = machine.Next(application.State, trigger);
+        if (transition.TryGetError(out var error))
+            return Result.Failure<ApplicationEntity, LifecycleTransitionError>(error);
+
+        transition.TryGetValue(out var next);
 
         if (effect is not null)
             await effect(application);
 
-        application.Transition(trigger, machine);
+        application.Transition(next);
         await applicationRepository.SaveChangesAsync(ct);
-        return application;
+        return Result.Success<ApplicationEntity, LifecycleTransitionError>(application);
     }
 }

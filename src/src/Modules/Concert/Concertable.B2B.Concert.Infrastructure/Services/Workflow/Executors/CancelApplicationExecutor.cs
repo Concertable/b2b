@@ -25,5 +25,5 @@ internal sealed class CancelApplicationExecutor : ICancelApplicationExecutor
                 throw new ConflictException($"Cannot cancel an application from {app.State}");
 
             await cancelStep.ExecuteAsync(app.Id);
-        });
+        }).GetValueOrThrowAsync();
 }

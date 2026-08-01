@@ -3,7 +3,6 @@ using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.Kernel.Exceptions;
-using FluentResults;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
@@ -30,7 +29,7 @@ internal sealed class CancelExecutor : ICancelExecutor
         this.logger = logger;
     }
 
-    public async Task<Result> CancelAsync(int concertId, CancellationToken ct = default)
+    public async Task<FluentResults.Result> CancelAsync(int concertId, CancellationToken ct = default)
     {
         try
         {
@@ -43,8 +42,8 @@ internal sealed class CancelExecutor : ICancelExecutor
                 var workflow = workflows.Create(app.DealType);
                 await workflow.Cancel.ExecuteAsync(concertId);
                 concert.Cancel();
-            }, ct);
-            return Result.Ok();
+            }, ct).GetValueOrThrowAsync();
+            return FluentResults.Result.Ok();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -53,7 +52,7 @@ internal sealed class CancelExecutor : ICancelExecutor
         catch (Exception ex)
         {
             logger.FailedToCancelConcert(concertId, ex);
-            return Result.Fail(ex.Message);
+            return FluentResults.Result.Fail(ex.Message);
         }
     }
 }

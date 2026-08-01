@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Api.Mappers;
+using Concertable.B2B.Concert.Api.Errors;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Contracts;
@@ -31,8 +32,10 @@ internal sealed class OpportunityController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OpportunityResponse>> GetById(int id)
     {
-        var opportunity = await opportunityService.GetByIdAsync(id);
-        return Ok(mapper.ToResponse(opportunity));
+        return (await opportunityService.GetByIdAsync(id))
+            .Map(mapper.ToResponse)
+            .OrFailure(() => ConcertLookupError.OpportunityNotFound(id))
+            .ToOkActionResult();
     }
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]

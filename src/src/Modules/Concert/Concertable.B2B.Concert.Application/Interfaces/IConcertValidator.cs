@@ -1,10 +1,11 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using FluentResults;
+using Concertable.Kernel.Errors;
+using Concertable.Kernel.Functional;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IConcertValidator
 {
-    Result CanUpdate(ConcertEntity concert, int newTotalTickets);
-    Result CanPost(ConcertEntity concert);
+    UnitResult<ValidationErrors> CanUpdate(ConcertEntity concert, int newTotalTickets);
+    UnitResult<ValidationErrors> CanPost(ConcertEntity concert);
 }

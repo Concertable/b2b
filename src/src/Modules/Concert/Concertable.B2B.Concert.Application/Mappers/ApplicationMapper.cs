@@ -23,7 +23,7 @@ internal sealed class ApplicationMapper : IApplicationMapper
             application.State,
             await contracts.GetIdByApplicationIdAsync(application.Id));
 
-    public async Task<IEnumerable<ApplicationDto>> ToDtosAsync(IEnumerable<ApplicationEntity> applications)
+    public async Task<IReadOnlyList<ApplicationDto>> ToDtosAsync(IEnumerable<ApplicationEntity> applications)
     {
         var applicationList = applications.ToList();
         var opportunityDtos = await opportunityMapper.ToDtosAsync(applicationList.Select(a => a.Opportunity));
@@ -31,6 +31,6 @@ internal sealed class ApplicationMapper : IApplicationMapper
 
         return applicationList.Zip(opportunityDtos, (a, opp) =>
             new ApplicationDto(a.Id, a.ToArtistSummary(), opp, a.State.ToStatus(), a.State,
-                dealIds.TryGetValue(a.Id, out var id) ? id : null));
+                dealIds.TryGetValue(a.Id, out var id) ? id : null)).ToList();
     }
 }

@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// </summary>
 internal interface IContractService
 {
-    Task<ContractDto> GetByApplicationIdAsync(int applicationId);
-    Task<FileDownload> GetPdfByApplicationIdAsync(int applicationId);
-    Task<FileDownload> GetPdfByConcertIdAsync(int concertId);
+    Task<Option<ContractDto>> GetByApplicationIdAsync(int applicationId);
+    Task<Option<FileDownload>> GetPdfByApplicationIdAsync(int applicationId);
+    Task<Option<FileDownload>> GetPdfByConcertIdAsync(int concertId);
 }

@@ -62,7 +62,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
-        });
+        }).GetValueOrThrowAsync();
 
         await bookingAdvancer.AdvanceIfReadyAsync(applicationId);
     }
