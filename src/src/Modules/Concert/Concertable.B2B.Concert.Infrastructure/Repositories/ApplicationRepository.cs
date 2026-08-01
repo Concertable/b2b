@@ -64,12 +64,14 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         return row is null ? null : (row.VenueTenantId, row.ArtistTenantId);
     }
 
-    public async Task<(LifecycleState State, PaymentVerification Verification)?> GetLifecycleAndPaymentStateAsync(int applicationId)
+    public async Task<(LifecycleState State, PaymentVerification Verification)?> GetLifecycleAndPaymentStateAsync(
+        int applicationId,
+        CancellationToken ct = default)
     {
         var row = await context.Applications
             .Where(a => a.Id == applicationId)
             .Select(a => new { a.State, a.PaymentVerification })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
 
         return row is null ? null : (row.State, row.PaymentVerification);
     }

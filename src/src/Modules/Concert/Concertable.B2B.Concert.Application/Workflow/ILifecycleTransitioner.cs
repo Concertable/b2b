@@ -7,5 +7,9 @@ internal delegate Task TransitionEffect(ApplicationEntity application);
 
 internal interface ILifecycleTransitioner
 {
-    Task<ApplicationEntity> TransitionAsync(int applicationId, Trigger trigger, TransitionEffect? effect = null);
+    Task<ApplicationEntity> TransitionAsync(
+        int applicationId,
+        Trigger trigger,
+        TransitionEffect? effect = null,
+        CancellationToken ct = default);
 }
