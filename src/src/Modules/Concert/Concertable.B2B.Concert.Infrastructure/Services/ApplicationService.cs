@@ -11,12 +11,12 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IOpportunityService opportunityService;
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IArtistModule artistModule;
-    private readonly IApplyDispatcher applyDispatcher;
-    private readonly IAcceptanceDispatcher acceptanceDispatcher;
+    private readonly IApplyExecutor applyExecutor;
+    private readonly IAcceptExecutor acceptExecutor;
     private readonly ICheckoutDispatcher checkoutDispatcher;
-    private readonly IWithdrawalDispatcher withdrawalDispatcher;
-    private readonly IRejectionDispatcher rejectionDispatcher;
-    private readonly IApplicationCancellationDispatcher applicationCancellationDispatcher;
+    private readonly IWithdrawExecutor withdrawExecutor;
+    private readonly IRejectExecutor rejectExecutor;
+    private readonly ICancelApplicationExecutor cancelApplicationExecutor;
     private readonly IApplicationMapper mapper;
 
     public ApplicationService(
@@ -26,12 +26,12 @@ internal sealed class ApplicationService : IApplicationService
         IOpportunityService opportunityService,
         IOpportunityRepository opportunityRepository,
         IArtistModule artistModule,
-        IApplyDispatcher applyDispatcher,
-        IAcceptanceDispatcher acceptanceDispatcher,
+        IApplyExecutor applyExecutor,
+        IAcceptExecutor acceptExecutor,
         ICheckoutDispatcher checkoutDispatcher,
-        IWithdrawalDispatcher withdrawalDispatcher,
-        IRejectionDispatcher rejectionDispatcher,
-        IApplicationCancellationDispatcher applicationCancellationDispatcher,
+        IWithdrawExecutor withdrawExecutor,
+        IRejectExecutor rejectExecutor,
+        ICancelApplicationExecutor cancelApplicationExecutor,
         IApplicationMapper mapper)
     {
         this.repository = repository;
@@ -40,12 +40,12 @@ internal sealed class ApplicationService : IApplicationService
         this.opportunityService = opportunityService;
         this.opportunityRepository = opportunityRepository;
         this.artistModule = artistModule;
-        this.applyDispatcher = applyDispatcher;
-        this.acceptanceDispatcher = acceptanceDispatcher;
+        this.applyExecutor = applyExecutor;
+        this.acceptExecutor = acceptExecutor;
         this.checkoutDispatcher = checkoutDispatcher;
-        this.withdrawalDispatcher = withdrawalDispatcher;
-        this.rejectionDispatcher = rejectionDispatcher;
-        this.applicationCancellationDispatcher = applicationCancellationDispatcher;
+        this.withdrawExecutor = withdrawExecutor;
+        this.rejectExecutor = rejectExecutor;
+        this.cancelApplicationExecutor = cancelApplicationExecutor;
         this.mapper = mapper;
     }
 
@@ -82,7 +82,7 @@ internal sealed class ApplicationService : IApplicationService
         var artistId = await ResolveArtistIdAsync();
         await ValidateCanApplyAsync(opportunityId, artistId);
 
-        var application = await applyDispatcher.ApplyAsync(opportunityId, artistId, eSignature);
+        var application = await applyExecutor.ApplyAsync(opportunityId, artistId, null, eSignature);
         await notifier.AppliedAsync(application.Id);
 
         return await GetByIdAsync(application.Id);
@@ -93,7 +93,7 @@ internal sealed class ApplicationService : IApplicationService
         var artistId = await ResolveArtistIdAsync();
         await ValidateCanApplyAsync(opportunityId, artistId);
 
-        var application = await applyDispatcher.ApplyAsync(opportunityId, artistId, paymentMethodId, eSignature);
+        var application = await applyExecutor.ApplyAsync(opportunityId, artistId, paymentMethodId, eSignature);
         await notifier.AppliedAsync(application.Id);
 
         return await GetByIdAsync(application.Id);
@@ -141,25 +141,25 @@ internal sealed class ApplicationService : IApplicationService
         if (result.IsFailed)
             throw new BadRequestException(result.Errors);
 
-        await acceptanceDispatcher.AcceptAsync(applicationId, paymentMethodId, eSignature);
+        await acceptExecutor.AcceptAsync(applicationId, paymentMethodId, eSignature);
         await notifier.AcceptedAsync(applicationId);
     }
 
     public async Task WithdrawAsync(int applicationId)
     {
-        await withdrawalDispatcher.WithdrawAsync(applicationId);
+        await withdrawExecutor.WithdrawAsync(applicationId);
         await notifier.WithdrawnAsync(applicationId);
     }
 
     public async Task RejectAsync(int applicationId)
     {
-        await rejectionDispatcher.RejectAsync(applicationId);
+        await rejectExecutor.RejectAsync(applicationId);
         await notifier.RejectedAsync(applicationId);
     }
 
     public async Task CancelAsync(int applicationId)
     {
-        await applicationCancellationDispatcher.CancelAsync(applicationId);
+        await cancelApplicationExecutor.CancelAsync(applicationId);
         await notifier.CancelledAsync(applicationId);
     }
 
