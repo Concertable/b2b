@@ -1,3 +1,4 @@
+using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Enums;
@@ -46,6 +47,35 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
         return Result.Ok(new EscrowDeposit(0, intent.Id, EscrowStatus.Held));
     }
 
+    public async Task<Result<EscrowDeposit>> DepositBoundCommissionAsync(
+        Guid payerId,
+        Guid payeeId,
+        long grossMinor,
+        Currency currency,
+        string paymentMethodId,
+        PaymentSession session,
+        int bookingId,
+        Guid commissionBindingId,
+        string externalReference,
+        long expectedCommissionMinor,
+        long expectedPayerTotalMinor,
+        string? stripeSetupIntentId = null,
+        CancellationToken ct = default)
+    {
+        var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
+        {
+            Amount = expectedPayerTotalMinor,
+            Metadata = new Dictionary<string, string>
+            {
+                [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
+                [PaymentMetadataKeys.BookingId] = bookingId.ToString()
+            }
+        });
+
+        Holds.Add(new EscrowHold(payerId, payeeId, Money.FromMinorUnits(grossMinor, currency).Amount, bookingId));
+        return Result.Ok(new EscrowDeposit(0, intent.Id, EscrowStatus.Held));
+    }
+
     public Task<Result<EscrowDeposit>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
     {
         stripeApiClient.UpdateLastMetadata(new Dictionary<string, string>
@@ -58,6 +88,29 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
         return Task.FromResult(Result.Ok(new EscrowDeposit(0, paymentIntentId, EscrowStatus.Held)));
     }
 
+    public Task<Result<EscrowDeposit>> CaptureBoundCommissionAsync(
+        Guid payerId,
+        Guid payeeId,
+        long grossMinor,
+        Currency currency,
+        string paymentIntentId,
+        int bookingId,
+        Guid commissionBindingId,
+        string externalReference,
+        long expectedCommissionMinor,
+        long expectedPayerTotalMinor,
+        CancellationToken ct = default)
+    {
+        stripeApiClient.UpdateLastMetadata(new Dictionary<string, string>
+        {
+            [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
+            [PaymentMetadataKeys.BookingId] = bookingId.ToString()
+        });
+
+        Holds.Add(new EscrowHold(payerId, payeeId, Money.FromMinorUnits(grossMinor, currency).Amount, bookingId));
+        return Task.FromResult(Result.Ok(new EscrowDeposit(0, paymentIntentId, EscrowStatus.Held)));
+    }
+
     public Task<Result<Transfer?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
         Task.FromResult(Result.Ok<Transfer?>(new Transfer("tr_mock")));
 
@@ -66,6 +119,13 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
         Refunds.Add(bookingId);
         return Task.FromResult(Result.Ok<Refund?>(new Refund("re_mock")));
     }
+
+    public Task<Result<Refund?>> RefundBoundCommissionByBookingIdAsync(
+        int bookingId,
+        long grossMinor,
+        Currency currency,
+        CancellationToken ct = default) =>
+        RefundByBookingIdAsync(bookingId, ct);
 }
 
 public sealed record EscrowHold(Guid PayerId, Guid PayeeId, decimal Amount, int BookingId);
