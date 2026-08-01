@@ -29,11 +29,11 @@ internal sealed class UserService : IUserService
         this.userModule = userModule;
     }
 
-    public async Task<Result<UserBase, SaveLocationError>> SaveLocationAsync(double latitude, double longitude)
+    public async Task<Result<UserDto, SaveLocationError>> SaveLocationAsync(double latitude, double longitude)
     {
         var user = await userRepsitory.GetByIdAsync(currentUser.GetId());
         if (user is null)
-            return Result.Failure<UserBase, SaveLocationError>(new SaveLocationError());
+            return Result.Failure<UserDto, SaveLocationError>(new SaveLocationError());
 
         var address = await geocodingClient.GetLocationAsync(latitude, longitude);
         user.UpdateLocation(
@@ -45,7 +45,7 @@ internal sealed class UserService : IUserService
 
         var updated = await userModule.GetByIdAsync(user.Id);
         return updated.Match(
-            value => Result.Success<UserBase, SaveLocationError>(value),
+            value => Result.Success<UserDto, SaveLocationError>(value),
             () => throw new InvalidOperationException($"User {user.Id} not found after location update."));
     }
 }
