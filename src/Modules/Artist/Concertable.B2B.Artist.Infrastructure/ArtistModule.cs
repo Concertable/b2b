@@ -14,15 +14,15 @@ internal sealed class ArtistModule : IArtistModule
         this.repository = repository;
     }
 
-    public Task<int?> GetIdForCurrentTenantAsync() =>
-        repository.GetIdForCurrentTenantAsync();
+    public async Task<Option<int>> GetIdForCurrentTenantAsync() =>
+        (await repository.GetIdForCurrentTenantAsync()).ToOption();
 
-    public Task<ArtistSummary> GetSummaryAsync(int artistId) =>
+    public Task<Option<ArtistSummary>> GetSummaryAsync(int artistId) =>
         artistService.GetSummaryAsync(artistId);
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int artistId) =>
         artistService.GetGenresAsync(artistId);
 
-    public Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+    public Task<Option<ArtistOrgIdentity>> GetOrgIdentityByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         artistService.GetOrgIdentityByTenantIdAsync(tenantId);
 }

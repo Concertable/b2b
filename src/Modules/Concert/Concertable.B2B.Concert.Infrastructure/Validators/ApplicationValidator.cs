@@ -49,14 +49,14 @@ internal sealed class ApplicationValidator : IApplicationValidator
     public async Task<Result> CanApplyAsync(int opportunityId)
     {
         var artistId = await artistModule.GetIdForCurrentTenantAsync();
-        if (artistId is null)
+        if (!artistId.TryGetValue(out var value))
             return Result.Fail("You must have an artist account to apply for a concert opportunity");
 
         var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
         if (opportunity is null)
             return Result.Fail("Concert opportunity does not exist");
 
-        return await CanApplyAsync(opportunity, artistId.Value);
+        return await CanApplyAsync(opportunity, value);
     }
 
     public async Task<Result> CanAcceptAsync(OpportunityEntity opportunity, ApplicationEntity application)

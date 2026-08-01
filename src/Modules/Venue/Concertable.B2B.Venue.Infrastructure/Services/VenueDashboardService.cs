@@ -15,24 +15,27 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         this.concertModule = concertModule;
     }
 
-    public async Task<VenueDashboardKpis?> GetKpisAsync(CancellationToken ct = default)
+    public async Task<Option<VenueDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
-        var venueId = await venueService.GetIdForCurrentUserAsync();
+        var venueIdOption = await venueService.GetIdForCurrentUserAsync();
+        if (!venueIdOption.TryGetValue(out var venueId))
+            return Option.None<VenueDashboardKpis>();
 
         var countsTask = concertModule.GetVenueDashboardCountsAsync(venueId, ct);
         // TODO B.11: var mtdRevenueTask = paymentModule.GetVenueTicketRevenueMtdAsync(venueId, ct);
         await Task.WhenAll(countsTask);
 
         var counts = countsTask.Result;
-        if (counts is null) return null;
+        if (counts is null)
+            return Option.None<VenueDashboardKpis>();
 
-        return new VenueDashboardKpis(
+        return Option.Some(new VenueDashboardKpis(
             ApplicationsToReview: counts.ApplicationsToReview,
             ApplicationsToReviewDelta: null,
             OpenOpportunities: counts.OpenOpportunities,
             UpcomingConcerts: counts.UpcomingConcerts,
             AwaitingDoorRevenue: counts.AwaitingDoorRevenue,
             MtdRevenueCents: 0,
-            MtdRevenueDeltaPercent: null);
+            MtdRevenueDeltaPercent: null));
     }
 }

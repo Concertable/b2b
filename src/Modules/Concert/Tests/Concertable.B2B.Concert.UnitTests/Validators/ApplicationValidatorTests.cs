@@ -1,4 +1,5 @@
 using Concertable.B2B.Artist.Contracts;
+using Concertable.Kernel.Functional;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Validators;
 using Concertable.Kernel.ValueObjects;
@@ -163,7 +164,7 @@ public sealed class ApplicationValidatorTests
     public async Task CanApplyAsync_ShouldFail_WhenUserHasNoArtistAccount()
     {
         // Arrange
-        artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync((int?)null);
+        artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync(Option.None<int>());
 
         // Act
         var result = await validator.CanApplyAsync(OpportunityId);
@@ -176,7 +177,7 @@ public sealed class ApplicationValidatorTests
     public async Task CanApplyAsync_ShouldFail_WhenOpportunityDoesNotExist()
     {
         // Arrange
-        artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync(ArtistId);
+        artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync(Option.Some(ArtistId));
         opportunityRepository.Setup(r => r.GetByIdAsync(OpportunityId)).ReturnsAsync((OpportunityEntity?)null);
 
         // Act
@@ -190,7 +191,7 @@ public sealed class ApplicationValidatorTests
     public async Task CanApplyAsync_ShouldSucceed_WhenUserHasArtistAndAllRulesPass()
     {
         // Arrange
-        artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync(ArtistId);
+        artistModule.Setup(m => m.GetIdForCurrentTenantAsync()).ReturnsAsync(Option.Some(ArtistId));
         opportunityRepository.Setup(r => r.GetByIdAsync(OpportunityId)).ReturnsAsync(Opportunity(FuturePeriod));
 
         // Act
