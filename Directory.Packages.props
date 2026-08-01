@@ -10,6 +10,7 @@
     <PackageVersion Include="Aspire.Hosting.Azure.ServiceBus" Version="13.3.2" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.3.2" />
     <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.1.2" />
+    <PackageVersion Include="Dunet" Version="1.16.2" />
     <PackageVersion Include="FluentResults" Version="4.0.0" />
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.1" />

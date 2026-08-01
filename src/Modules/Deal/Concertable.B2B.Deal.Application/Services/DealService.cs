@@ -1,5 +1,8 @@
 using Concertable.B2B.Deal.Application.Interfaces;
-using Concertable.Kernel.Exceptions;
+using Concertable.B2B.Deal.Contracts.Errors;
+using Concertable.B2B.Deal.Domain.Entities;
+using Concertable.Kernel.Errors;
+using Concertable.Kernel.Functional;
 
 namespace Concertable.B2B.Deal.Application.Services;
 
@@ -19,42 +22,53 @@ internal sealed class DealService : IDealService
         this.updater = updater;
     }
 
-    public async Task<IDeal?> GetByIdAsync(int dealId, CancellationToken ct = default)
-    {
-        var entity = await dealRepository.GetByIdAsync(dealId);
-        return entity is null ? null : mapper.ToDeal(entity);
-    }
+    public Task<Option<IDeal>> GetByIdAsync(int dealId, CancellationToken ct = default) =>
+        dealRepository.GetByIdAsync(dealId, ct)
+            .ToOption()
+            .Map(mapper.ToDeal);
 
-    public async Task<IEnumerable<IDeal>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
+    public async Task<IReadOnlyList<IDeal>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
     {
         var entities = await dealRepository.GetByIdsAsync(dealIds, ct);
         return mapper.ToDeals(entities);
     }
 
-    public async Task<int> CreateAsync(IDeal deal, CancellationToken ct = default)
-    {
-        var entity = mapper.ToEntity(deal);
-        await dealRepository.AddAsync(entity);
-        await dealRepository.SaveChangesAsync();
-        return entity.Id;
-    }
+    public UnitResult<ValidationErrors> Validate(IDeal deal) =>
+        mapper.ToEntity(deal).Match(
+            _ => UnitResult.Success<ValidationErrors>(),
+            UnitResult.Failure);
 
-    public async Task UpdateAsync(int dealId, IDeal deal, CancellationToken ct = default)
-    {
-        var existing = await dealRepository.GetByIdAsync(dealId)
-            .OrNotFound($"Deal {dealId}");
+    public Task<Result<int, CreateDealError>> CreateAsync(IDeal deal, CancellationToken ct = default) =>
+        mapper.ToEntity(deal)
+            .MapError(CreateDealError.Validation)
+            .BindAsync(async (DealEntity entity) =>
+            {
+                await dealRepository.AddAsync(entity, ct);
+                await dealRepository.SaveChangesAsync(ct);
+                return Result.Success<int, CreateDealError>(entity.Id);
+            });
 
-        updater.Apply(existing, deal);
+    public async Task<UnitResult<UpdateDealError>> UpdateAsync(int dealId, IDeal deal, CancellationToken ct = default)
+    {
+        var existing = await dealRepository.GetByIdAsync(dealId, ct);
+        if (existing is null)
+            return UnitResult.Failure(UpdateDealError.NotFound(dealId));
+
+        var update = updater.Apply(existing, deal).MapError(UpdateDealError.Validation);
+        if (update.IsFailure)
+            return update;
+
         dealRepository.Update(existing);
-        await dealRepository.SaveChangesAsync();
+        await dealRepository.SaveChangesAsync(ct);
+        return UnitResult.Success<UpdateDealError>();
     }
 
     public async Task DeleteAsync(int dealId, CancellationToken ct = default)
     {
-        var existing = await dealRepository.GetByIdAsync(dealId);
+        var existing = await dealRepository.GetByIdAsync(dealId, ct);
         if (existing is null) return;
 
         dealRepository.Remove(existing);
-        await dealRepository.SaveChangesAsync();
+        await dealRepository.SaveChangesAsync(ct);
     }
 }

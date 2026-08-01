@@ -17,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentResults" />
     <PackageReference Include="FluentValidation" />
   </ItemGroup>
 

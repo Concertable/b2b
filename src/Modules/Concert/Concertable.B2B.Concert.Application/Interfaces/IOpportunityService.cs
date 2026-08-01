@@ -1,14 +1,18 @@
 using Concertable.B2B.Concert.Application.DTOs;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.Contracts;
+using Concertable.Kernel.Functional;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IOpportunityService
 {
-    Task<OpportunityDto> CreateAsync(OpportunityRequest request);
-    Task CreateMultipleAsync(IEnumerable<OpportunityRequest> requests);
-    Task<IEnumerable<OpportunityDto>> UpdateAsync(int venueId, IEnumerable<OpportunityRequest> desired);
+    Task<Result<OpportunityDto, OpportunityMutationError>> CreateAsync(OpportunityRequest request);
+    Task<UnitResult<OpportunityMutationError>> CreateMultipleAsync(IEnumerable<OpportunityRequest> requests);
+    Task<Result<IReadOnlyList<OpportunityDto>, OpportunityMutationError>> UpdateAsync(
+        int venueId,
+        IEnumerable<OpportunityRequest> desired);
     Task<IPagination<OpportunityDto>> GetActiveByVenueIdAsync(int id, IPageParams pageParams);
     Task<IEnumerable<OpportunityDto>> GetActiveByVenueIdAsync(int venueId);
     Task<OpportunityDto> GetByIdAsync(int id);

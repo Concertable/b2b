@@ -12,7 +12,8 @@ public sealed class DoorSplitDealEntityTests
     [InlineData(1000, 0, 0)]
     public void CalculateArtistShare_ShouldReturnCorrectAmount(decimal totalRevenue, decimal artistDoorPercent, decimal expected)
     {
-        var deal = DoorSplitDealEntity.Create(artistDoorPercent, PaymentMethod.Cash);
+        var creation = DoorSplitDealEntity.Create(artistDoorPercent, PaymentMethod.Cash);
+        Assert.True(creation.TryGetValue(out var deal));
 
         var result = deal.CalculateArtistShare(totalRevenue);
 
