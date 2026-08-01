@@ -5,5 +5,5 @@ namespace Concertable.B2B.Concert.Application.Workflow.Executors;
 
 internal interface IApplyExecutor
 {
-    Task<ApplicationEntity> ExecuteAsync(int opportunityId, int artistId, string? paymentMethodId, ESignatureRequest eSignature);
+    Task<ApplicationEntity> ApplyAsync(int opportunityId, int artistId, string? paymentMethodId, ESignatureRequest eSignature);
 }

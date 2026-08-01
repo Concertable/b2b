@@ -129,17 +129,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICancelApplicationExecutor, CancelApplicationExecutor>();
         services.AddScoped<IApplicationCancelStep, RefundEscrowByApplicationStep>();
 
-        services.AddScoped<IApplyDispatcher, ApplyDispatcher>();
-        services.AddScoped<IAcceptanceDispatcher, AcceptanceDispatcher>();
         services.AddScoped<ICheckoutDispatcher, CheckoutDispatcher>();
-        services.AddScoped<IVerifyDispatcher, VerifyDispatcher>();
-        services.AddScoped<IEscrowDispatcher, EscrowDispatcher>();
-        services.AddScoped<ISettlementDispatcher, SettlementDispatcher>();
-        services.AddScoped<ICompletionDispatcher, CompletionDispatcher>();
-        services.AddScoped<ICancellationDispatcher, CancellationDispatcher>();
-        services.AddScoped<IWithdrawalDispatcher, WithdrawalDispatcher>();
-        services.AddScoped<IRejectionDispatcher, RejectionDispatcher>();
-        services.AddScoped<IApplicationCancellationDispatcher, ApplicationCancellationDispatcher>();
 
         services.AddConcertWorkflows();
 
@@ -193,7 +183,6 @@ public static class ServiceCollectionExtensions
 
         // Module facades
         services.AddScoped<IConcertModule, ConcertModule>();
-        services.AddScoped<IConcertWorkflowModule, ConcertWorkflowModule>();
 
         // Domain event -> integration event + read-model projection handlers
         services.AddScoped<IDomainEventHandler<ConcertChangedDomainEvent>, ConcertChangedDomainEventHandler>();

@@ -20,9 +20,9 @@ internal sealed class BookingAdvancer : IBookingAdvancer
         this.verifyExecutor = verifyExecutor;
     }
 
-    public async Task AdvanceIfReadyAsync(int applicationId)
+    public async Task AdvanceIfReadyAsync(int applicationId, CancellationToken ct = default)
     {
-        var state = await applicationRepository.GetLifecycleAndPaymentStateAsync(applicationId);
+        var state = await applicationRepository.GetLifecycleAndPaymentStateAsync(applicationId, ct);
         if (state is not { } s || !IsBookingPending(s.State))
             return;
 
@@ -30,8 +30,8 @@ internal sealed class BookingAdvancer : IBookingAdvancer
         {
             await (s.Verification switch
             {
-                PaymentVerification.Verified => verifyExecutor.ExecuteAsync(applicationId),
-                PaymentVerification.Failed => verifyExecutor.ExecuteFailedAsync(applicationId),
+                PaymentVerification.Verified => verifyExecutor.VerifiedAsync(applicationId, ct),
+                PaymentVerification.Failed => verifyExecutor.FailedAsync(applicationId, ct),
                 _ => Task.CompletedTask,
             });
         }
