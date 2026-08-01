@@ -261,7 +261,7 @@ store card) and pay off-session **at Finish** (`Booked +Finish→AwaitingSettlem
 is computed by `IArtistShareCalculator` (keyed strategy — `DoorSplitCalculator` / `VersusCalculator`)
 consumed by `PayoutFinishStep`. Payment webhooks return as integration events
 (`PaymentSucceeded/FailedEvent`) handled by the `*Processor` classes, which route by
-`Metadata["type"]` and drive the matching executor or payment-verification coordinator sequence;
+`Metadata["type"]` and drive the matching executor or `VerifyCoordinator`;
 idempotency is provided by the inbox.
 
 ### 2.8 Ticket payee vs settlement payee
@@ -387,7 +387,8 @@ blocker is the *data* side (a closed `DealType`, typed TPH columns, typed step r
   the `Prepaid`/`Deferred` TPH variants. Different things.
 - **Executor interfaces are Concert-internal Application contracts.** HTTP services, controllers,
   workers, and payment processors bind directly to the relevant interface. Payment verification
-  processors persist the outcome, then ask `IBookingAdvancer` to complete the accept/payment join.
+  processors delegate to `IVerifyCoordinator`, which persists the outcome before asking
+  `IBookingAdvancer` to complete the accept/payment join.
 - **`ConcertWorkflowBuilder` runs at the composition root**, not per request; all workflows and state
   machines are wired once in `AddConcertWorkflows`.
 

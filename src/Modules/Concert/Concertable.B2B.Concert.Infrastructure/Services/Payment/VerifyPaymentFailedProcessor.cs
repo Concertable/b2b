@@ -10,19 +10,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
-    private readonly IPaymentVerificationRecorder recorder;
-    private readonly IBookingAdvancer bookingAdvancer;
+    private readonly IVerifyCoordinator coordinator;
     private readonly ConcertDbContext context;
     private readonly ILogger<VerifyPaymentFailedProcessor> logger;
 
     public VerifyPaymentFailedProcessor(
-        IPaymentVerificationRecorder recorder,
-        IBookingAdvancer bookingAdvancer,
+        IVerifyCoordinator coordinator,
         ConcertDbContext context,
         ILogger<VerifyPaymentFailedProcessor> logger)
     {
-        this.recorder = recorder;
-        this.bookingAdvancer = bookingAdvancer;
+        this.coordinator = coordinator;
         this.context = context;
         this.logger = logger;
     }
@@ -43,8 +40,7 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
 
         try
         {
-            await recorder.RecordFailedAsync(applicationId, venueManagerId, @event.FailureMessage, ct);
-            await bookingAdvancer.AdvanceIfReadyAsync(applicationId, ct);
+            await coordinator.FailedAsync(applicationId, venueManagerId, @event.FailureMessage, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
