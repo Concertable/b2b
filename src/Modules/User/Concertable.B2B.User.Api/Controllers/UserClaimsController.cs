@@ -26,14 +26,14 @@ internal sealed class UserClaimsController : ControllerBase
     public async Task<ActionResult<ClaimDto[]>> GetClaims(Guid sub)
     {
         var user = await userModule.GetByIdAsync(sub);
-        if (user is null)
+        if (!user.TryGetValue(out var value))
         {
             logger.UserClaimsUserNotFound(sub);
             return Ok(Array.Empty<ClaimDto>());
         }
 
-        logger.UserClaimsReturned(sub, user.Role);
-        return Ok(new[] { new ClaimDto("role", user.Role.ToString()) });
+        logger.UserClaimsReturned(sub, value.Role);
+        return Ok(new[] { new ClaimDto("role", value.Role.ToString()) });
     }
 
     public sealed record ClaimDto(string Type, string Value);

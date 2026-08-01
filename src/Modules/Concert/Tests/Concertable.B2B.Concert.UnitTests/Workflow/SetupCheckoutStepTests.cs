@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
+using Concertable.Kernel.Functional;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
 using Moq;
@@ -40,7 +41,7 @@ public sealed class SetupCheckoutStepTests
             .ReturnsAsync(("Venue", venueManagerId));
         userModule
             .Setup(m => m.GetManagerByIdAsync(venueManagerId))
-            .ReturnsAsync(new ManagerDto { Id = venueManagerId, Email = "venue@example.com" });
+            .ReturnsAsync(Option.Some(new ManagerDto { Id = venueManagerId, Email = "venue@example.com" }));
         dealAccessor.SetupGet(c => c.Deal).Returns(deal);
         tenantContext.SetupGet(c => c.TenantId).Returns(artistTenantId);
         managerPaymentClient

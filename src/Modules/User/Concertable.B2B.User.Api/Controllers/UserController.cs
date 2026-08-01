@@ -26,17 +26,17 @@ internal sealed class UserController : ControllerBase
     [HttpPut("location")]
     public async Task<ActionResult<UserBase>> UpdateLocation([FromBody] UpdateLocationRequest request)
     {
-        var updatedUser = await userService.SaveLocationAsync(request.Latitude, request.Longitude);
-        return Ok(updatedUser);
+        return (await userService.SaveLocationAsync(request.Latitude, request.Longitude)).ToOkActionResult();
     }
 
     [HttpGet("/api/auth/me")]
     public async Task<ActionResult<UserBase>> Me()
     {
         var user = await userModule.GetByIdAsync(currentUser.GetId());
-        if (user is null) return Unauthorized();
+        if (!user.TryGetValue(out var value))
+            return Unauthorized();
 
         var memberships = await tenantModule.GetMembershipsAsync(currentUser.GetId());
-        return Ok(user with { Memberships = memberships });
+        return Ok(value with { Memberships = memberships });
     }
 }
