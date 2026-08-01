@@ -1,3 +1,4 @@
+using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
 using FluentResults;
@@ -33,6 +34,34 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
         return Result.Ok(new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id });
     }
 
+    public async Task<Result<PaymentOutcome>> PayBoundCommissionAsync(
+        Guid payerId,
+        Guid payeeId,
+        long grossMinor,
+        Currency currency,
+        string paymentMethodId,
+        PaymentSession session,
+        int bookingId,
+        Guid commissionBindingId,
+        string externalReference,
+        long expectedCommissionMinor,
+        long expectedPayerTotalMinor,
+        string? stripeSetupIntentId = null,
+        CancellationToken ct = default)
+    {
+        var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
+        {
+            Amount = expectedPayerTotalMinor,
+            Metadata = new Dictionary<string, string>
+            {
+                [PaymentMetadataKeys.Type] = TransactionTypes.Settlement,
+                [PaymentMetadataKeys.BookingId] = bookingId.ToString()
+            }
+        });
+        Payments.Add((payerId, payeeId, Money.FromMinorUnits(grossMinor, currency).Amount, paymentMethodId, bookingId));
+        return Result.Ok(new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id });
+    }
+
     public async Task<CheckoutSession> CreateSetupSessionAsync(Guid payerId, IDictionary<string, string> metadata, CancellationToken ct = default)
     {
         var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions { Metadata = new Dictionary<string, string>(metadata) });
@@ -53,6 +82,26 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
             Metadata = new Dictionary<string, string>(metadata)
         });
         return new CheckoutSession(intent.Id + "_secret", "cuss_mock_secret", "cus_mock");
+    }
+
+    public async Task<Result<CheckoutSession>> CreateBoundCommissionHoldSessionAsync(
+        Guid payerId,
+        long grossMinor,
+        Currency currency,
+        IDictionary<string, string> metadata,
+        Guid commissionBindingId,
+        string externalReference,
+        long expectedCommissionMinor,
+        long expectedPayerTotalMinor,
+        string? stripeSetupIntentId = null,
+        CancellationToken ct = default)
+    {
+        var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
+        {
+            Amount = expectedPayerTotalMinor,
+            Metadata = new Dictionary<string, string>(metadata)
+        });
+        return Result.Ok(new CheckoutSession(intent.Id + "_secret", "cuss_mock_secret", "cus_mock"));
     }
 
     public Task<string> FindHeldIntentAsync(Guid payerId, int applicationId, CancellationToken ct = default) =>
