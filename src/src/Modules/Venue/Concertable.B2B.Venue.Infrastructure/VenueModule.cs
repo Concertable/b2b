@@ -16,4 +16,7 @@ internal sealed class VenueModule : IVenueModule
 
     public Task<int?> GetVenueIdForCurrentTenantAsync(CancellationToken ct = default) =>
         repository.GetIdForCurrentTenantAsync();
+
+    public Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        venueService.GetOrgIdentityByTenantIdAsync(tenantId);
 }

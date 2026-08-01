@@ -7,4 +7,5 @@ public interface IArtistModule
     Task<int?> GetIdForCurrentTenantAsync();
     Task<ArtistSummary> GetSummaryAsync(int artistId);
     Task<IReadOnlySet<Genre>> GetGenresAsync(int artistId);
+    Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }
