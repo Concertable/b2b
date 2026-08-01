@@ -18,7 +18,11 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {user?.role === "VenueManager" ? <VenueTabs /> : <ArtistTabs />}
+      {user?.memberships?.some((m) => m.type === "Venue") ? (
+        <VenueTabs />
+      ) : (
+        <ArtistTabs />
+      )}
     </NavigationContainer>
   );
 }

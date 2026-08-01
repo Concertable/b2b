@@ -75,8 +75,7 @@ public static class ServiceCollectionExtensions
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ClockSkew = TimeSpan.Zero,
-                    ValidateIssuer = !environment.IsDevelopment(),
-                    RoleClaimType = "role"
+                    ValidateIssuer = !environment.IsDevelopment()
                 };
                 options.Events = new JwtBearerEvents
                 {

@@ -9,13 +9,13 @@ namespace Concertable.B2B.User.Infrastructure.Events;
 
 internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<CredentialRegisteredEvent>
 {
-    private static readonly IReadOnlyDictionary<string, Role> RolesByClient = new Dictionary<string, Role>
+    private static readonly IReadOnlySet<string> ManagerClientIds = new HashSet<string>
     {
-        [ClientIds.VenueWeb] = Role.VenueManager,
-        [ClientIds.VenueMobile] = Role.VenueManager,
-        [ClientIds.ArtistWeb] = Role.ArtistManager,
-        [ClientIds.ArtistMobile] = Role.ArtistManager,
-        [ClientIds.Admin] = Role.Admin,
+        ClientIds.VenueWeb,
+        ClientIds.VenueMobile,
+        ClientIds.ArtistWeb,
+        ClientIds.ArtistMobile,
+        ClientIds.Admin,
     };
 
     private readonly UserDbContext context;
@@ -31,9 +31,9 @@ internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<Cre
     {
         logger.HandlingCredentialRegistered(e.UserId, e.ClientId);
 
-        if (!RolesByClient.TryGetValue(e.ClientId, out var role))
+        if (!ManagerClientIds.Contains(e.ClientId))
         {
-            logger.SkippedCredentialRegistered(e.UserId, $"ClientId '{e.ClientId}' is not a manager role");
+            logger.SkippedCredentialRegistered(e.UserId, $"ClientId '{e.ClientId}' is not a manager client");
             return;
         }
 
@@ -51,17 +51,13 @@ internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<Cre
 
         context.AddInboxMessage(envelope, nameof(CredentialRegisteredHandler));
 
-        var user = UserEntity.FromRegistration(e.UserId, e.Email, role);
+        var user = UserEntity.FromRegistration(e.UserId, e.Email);
         context.Users.Add(user);
 
-        if (role == Role.VenueManager)
-            context.VenueManagerProfiles.Add(new VenueManagerProfileEntity(user.Id));
-        else if (role == Role.ArtistManager)
-            context.ArtistManagerProfiles.Add(new ArtistManagerProfileEntity(user.Id));
-        else if (role == Role.Admin)
+        if (e.ClientId == ClientIds.Admin)
             context.AdminProfiles.Add(new AdminProfileEntity(user.Id));
 
         await context.SaveChangesAsync(ct);
-        logger.WroteUserFromCredentialRegistered(e.UserId, role);
+        logger.WroteUserFromCredentialRegistered(e.UserId);
     }
 }

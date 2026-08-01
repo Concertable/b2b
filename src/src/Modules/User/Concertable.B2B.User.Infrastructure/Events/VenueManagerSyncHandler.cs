@@ -35,9 +35,6 @@ internal sealed class VenueManagerSyncHandler : IIntegrationEventHandler<VenueCh
                 new Address(e.County, e.Town));
         }
 
-        var profile = await db.VenueManagerProfiles.FirstOrDefaultAsync(p => p.Sub == e.UserId, ct);
-        profile?.AssignVenue(e.VenueId);
-
         await db.SaveChangesAsync(ct);
     }
 }

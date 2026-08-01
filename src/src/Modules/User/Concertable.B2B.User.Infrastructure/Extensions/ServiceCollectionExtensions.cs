@@ -34,9 +34,6 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        services.AddKeyedScoped<IRoleMapper, VenueManagerMapper>(Role.VenueManager);
-        services.AddKeyedScoped<IRoleMapper, ArtistManagerMapper>(Role.ArtistManager);
-        services.AddKeyedScoped<IRoleMapper, AdminMapper>(Role.Admin);
         services.AddScoped<IUserMapper, UserMapper>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserRepository, UserRepository>();
