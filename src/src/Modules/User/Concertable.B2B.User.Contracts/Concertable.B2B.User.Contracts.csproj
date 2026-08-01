@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-    <Description>Concertable B2B User contracts: the cross-service user/manager contract surface — the IUserModule read port and the polymorphic UserBase/ManagerDto view shapes consumed by services downstream of B2B.</Description>
+    <Description>Concertable B2B User contracts: the cross-service user/manager contract surface — the IUserModule read port and the UserDto/ManagerDto view shapes consumed by services downstream of B2B.</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
