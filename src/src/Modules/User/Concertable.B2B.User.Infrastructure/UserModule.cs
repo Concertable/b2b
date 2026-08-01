@@ -17,13 +17,15 @@ internal sealed class UserModule : IUserModule
         this.userMapper = userMapper;
     }
 
-    public async Task<UserBase?> GetByIdAsync(Guid id)
+    public async Task<Option<UserBase>> GetByIdAsync(Guid id)
     {
         var user = await userRepository.GetByIdAsync(id);
-        return user is null ? null : await userMapper.ToDtoAsync(user);
+        return user is null
+            ? Option.None<UserBase>()
+            : (await userMapper.ToDtoAsync(user)).ToOption();
     }
 
-    public async Task<IReadOnlyCollection<UserBase>> GetByIdsAsync(IEnumerable<Guid> ids)
+    public async Task<IReadOnlyList<UserBase>> GetByIdsAsync(IEnumerable<Guid> ids)
     {
         var users = await userRepository.GetByIdsAsync(ids);
         var result = new List<UserBase>(users.Count);
@@ -42,15 +44,18 @@ internal sealed class UserModule : IUserModule
         return users.ToDictionary(u => u.Id, u => u.Email);
     }
 
-    public async Task<ManagerDto?> GetManagerByIdAsync(Guid userId)
+    public async Task<Option<ManagerDto>> GetManagerByIdAsync(Guid userId)
     {
         var isManager = await context.VenueManagerProfiles.AnyAsync(p => p.Sub == userId)
             || await context.ArtistManagerProfiles.AnyAsync(p => p.Sub == userId)
             || await context.AdminProfiles.AnyAsync(p => p.Sub == userId);
 
-        if (!isManager) return null;
+        if (!isManager)
+            return Option.None<ManagerDto>();
 
         var user = await userRepository.GetByIdAsync(userId);
-        return user is null ? null : new ManagerDto { Id = user.Id, Email = user.Email, Avatar = user.Avatar };
+        return user is null
+            ? Option.None<ManagerDto>()
+            : Option.Some(new ManagerDto { Id = user.Id, Email = user.Email, Avatar = user.Avatar });
     }
 }
