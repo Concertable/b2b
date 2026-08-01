@@ -23,25 +23,40 @@ public sealed class MessagingInboxTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Inbox_ShowsTheMessagesTheVenueTenantReceived_NotItsOwnOutbound()
+    public async Task Inbox_ShowsTheWholeThread_WithInboundAttributedToTheCounterpartyOrg()
     {
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var page = await GetInboxAsync(venue);
 
-        var message = Assert.Single(page.Data);
-        Assert.Equal("Test inbox message — artist to venue.", message.Content);
+        var inbound = page.Data.Single(m => m.Content == "Test inbox message — artist to venue.");
+        Assert.Equal("Org", inbound.Sender.Kind);
+        Assert.Equal("The Rockers", inbound.Sender.DisplayName);
+        Assert.Equal("Loughborough", inbound.Sender.Town);
     }
 
     [Fact]
-    public async Task Inbox_EachPartySeesOnlyItsOwnReceivedSideOfTheThread()
+    public async Task Inbox_AttributesTheTenantsOwnOutboundToTheMemberWhoSentIt()
+    {
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var page = await GetInboxAsync(venue);
+
+        var outbound = page.Data.Single(m => m.Content == "Test inbox message — venue to artist.");
+        Assert.Equal("Member", outbound.Sender.Kind);
+        Assert.Equal(SeedUsers.VenueManagerEmail(1), outbound.Sender.DisplayName);
+    }
+
+    [Fact]
+    public async Task Inbox_EachPartySeesTheCounterpartyOrgFromItsOwnSide()
     {
         var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         var page = await GetInboxAsync(artist);
 
-        var message = Assert.Single(page.Data);
-        Assert.Equal("Test inbox message — venue to artist.", message.Content);
+        var inbound = page.Data.Single(m => m.Content == "Test inbox message — venue to artist.");
+        Assert.Equal("Org", inbound.Sender.Kind);
+        Assert.Equal("The Grand Venue", inbound.Sender.DisplayName);
     }
 
     [Fact]
@@ -55,15 +70,14 @@ public sealed class MessagingInboxTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task UnreadCount_ReflectsThePointer_AndDropsToZeroAfterMarkingTheThreadRead()
+    public async Task UnreadCount_CountsInboundOnly_AndDropsToZeroAfterOpeningTheInbox()
     {
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var before = await GetUnreadCountAsync(venue);
         Assert.Equal(1, before);
 
-        var counterpartTenantId = TenantSeedIds.For(fixture.SeedState.ArtistManager1.Id);
-        var markResponse = await venue.PostAsync("/api/Message/mark-read", new { CounterpartTenantId = counterpartTenantId });
+        var markResponse = await venue.PostAsync("/api/Message/mark-read", new { });
         Assert.Equal(0, await markResponse.Content.ReadAsync<int>());
 
         Assert.Equal(0, await GetUnreadCountAsync(venue));
@@ -76,6 +90,6 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         await (await client.GetAsync("/api/Message/user/unread-count")).Content.ReadAsync<int>();
 
     private sealed record InboxPage(List<InboxMessage> Data, int TotalCount);
-    private sealed record InboxMessage(int Id, InboxSender FromUser, string Content);
-    private sealed record InboxSender(Guid Id, string Email);
+    private sealed record InboxMessage(int Id, InboxSender Sender, string Content);
+    private sealed record InboxSender(string Kind, string DisplayName, string? County, string? Town);
 }

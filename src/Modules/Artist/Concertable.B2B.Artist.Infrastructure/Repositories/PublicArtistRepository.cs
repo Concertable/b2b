@@ -23,4 +23,10 @@ internal sealed class PublicArtistRepository(PublicArtistDbContext context) : IP
             .Where(a => a.Id == id)
             .SelectMany(a => a.Genres)
             .ToHashSetAsync();
+
+    public async Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
+        await context.Artists
+            .Where(a => a.TenantId == tenantId)
+            .Select(a => new ArtistOrgIdentity(a.Name, a.Address.County, a.Address.Town))
+            .FirstOrDefaultAsync();
 }

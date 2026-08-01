@@ -127,4 +127,7 @@ internal sealed class VenueService : IVenueService
     public async Task<VenueSummary> GetSummaryAsync(int id) =>
         await publicRepository.GetSummaryAsync(id)
             .OrNotFound();
+
+    public Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
+        publicRepository.GetOrgIdentityByTenantIdAsync(tenantId);
 }
