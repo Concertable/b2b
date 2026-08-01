@@ -13,6 +13,6 @@ internal sealed class RejectExecutor : IRejectExecutor
         this.transitioner = transitioner;
     }
 
-    public Task ExecuteAsync(int applicationId)
+    public Task RejectAsync(int applicationId)
         => transitioner.TransitionAsync(applicationId, Trigger.Reject);
 }

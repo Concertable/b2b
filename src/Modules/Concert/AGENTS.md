@@ -44,22 +44,17 @@ deal the artist is. That's why identity and role must stay separate words.
   `(state, trigger)`, run an optional `effect`, mutate the state, persist. If the effect throws, no state
   change is saved.
 
-- **Executor** (`Workflow/Executors`, one per `Trigger` — `Apply`, `Accept`, `Verify`, `Escrow`,
-  `Settlement`, `Finish`, `Cancel`, …) — orchestrates **one lifecycle transition**. It calls
-  `transitioner.TransitionAsync(appId, Trigger.X, effect)` where the `effect` resolves the per-`DealType`
-  **workflow** (`IConcertWorkflowFactory.Create(dealType)`) and runs the matching **Step**. So an executor
-  is the junction of two things: **a state transition** *and* **polymorphic dispatch over `DealType`**.
-  `FinishExecutor` fires `Finish` and runs `workflow.Finish` — which is `PayoutFinishStep` for
-  revenue-share, `ReleaseEscrowFinishStep` for fixed-fee. One executor, N step implementations.
+- **Executor** (`Workflow/Executors` — `Apply`, `Accept`, `Verify`, `Escrow`, `Settlement`, `Finish`,
+  `Cancel`, …) — owns one named lifecycle operation and drives it to completion, including its
+  validation, persistence, transition effects, IO, and per-`DealType` behaviour. Executor interfaces
+  are the internal Application contracts; callers inside the Concert module depend on them directly.
 
 - **Step** (`Workflow/Steps`, e.g. `IFinishStep`, `IAcceptStep`) — the per-`DealType` unit of work a
   transition performs. Implementations are registered and exposed as properties on each `IConcertWorkflow`
   (`FlatFeeWorkflow`, `DoorSplitWorkflow`, …). The workflow *is* the `DealType → steps` map.
 
-- **Dispatcher** (`Workflow/Dispatchers`, interface in `Application/Interfaces`) — the Application-layer
-  seam the module facade (`IConcertWorkflowModule`) and the payment event processors call; it forwards to
-  the Infrastructure executor. It keeps callers depending on an Application interface, not a concrete
-  Infrastructure executor. Usually thin — that's fine; it's a boundary, not logic.
+- **`CheckoutDispatcher`** — the sole dispatcher. Checkout does not transition the lifecycle; it
+  selects the applicable checkout capability by `DealType` and returns the checkout value.
 
 - **Capability** (`Workflow/Capabilities`, e.g. `IAcceptsCheckout`, `IAppliesSimple`) — an interface a
   workflow *implements* to declare "this deal type supports X". Queried via
@@ -70,14 +65,12 @@ deal the artist is. That's why identity and role must stay separate words.
 
 ## The rule: when is it an Executor (and when is it just a service method)?
 
-An Executor + Trigger + Dispatcher is warranted **only** when both are true:
+An Executor is warranted when the operation is part of the application-to-concert lifecycle and owns
+the command or outcome that establishes or advances that lifecycle.
 
-1. the operation **fires a lifecycle transition** (moves the `LifecycleState` machine), **and**
-2. its work **varies by `DealType`** (so it needs a per-type Step, resolved through the workflow).
-
-**Litmus test before you add one:** *"Does this fire a `Trigger`, and does the work differ per
-`DealType`?"* If the answer to either is no, it is **not** an executor — it's a plain method on the
-relevant service (`ConcertService`, `BookingService`, …), guarded and persisted directly, exactly like
+**Litmus test before you add one:** *"Is this a named operation in the lifecycle, or merely a guarded
+mutation while the lifecycle remains unchanged?"* A non-lifecycle mutation belongs on the relevant
+service (`ConcertService`, `BookingService`, …), guarded and persisted directly, exactly like
 `ConcertService.PostAsync` / `UpdateAsync`.
 
 **Worked anti-example — declaring door revenue.** The venue declaring the night's door take:
@@ -85,9 +78,8 @@ relevant service (`ConcertService`, `BookingService`, …), guarded and persiste
 - has **one** behaviour for every revenue-share type (load concert, guard, set a field, save).
 
 So it is `ConcertService.DeclareDoorRevenueAsync` — a guarded mutation. It was first (mis)built as an
-`IDoorRevenueExecutor` + `DoorRevenueExecutor` + `IDoorRevenueDispatcher` + `DoorRevenueDispatcher`: four
-types, one implementation, no transition, no per-type dispatch. That's throwaway ceremony — the executor
-family is for transitions with polymorphic dispatch, and this was neither. Likewise, "is this a
+`IDoorRevenueExecutor` + `DoorRevenueExecutor`: two types for an operation that does not establish or
+advance the lifecycle. Likewise, "is this a
 revenue-share settlement?" is **not** a new `RequiresDoorRevenue` marker capability — it's already a real
 type, `Booking is DeferredBooking` (DoorSplit/Versus use `DeferredBooking`, fixed-fee use
 `StandardBooking`). Don't invent a marker for a question the type system already answers.

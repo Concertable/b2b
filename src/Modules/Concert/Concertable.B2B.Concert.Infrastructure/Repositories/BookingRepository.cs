@@ -24,14 +24,14 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<BookingEntity?> GetByApplicationIdAsync(int applicationId)
+    public async Task<BookingEntity?> GetByApplicationIdAsync(int applicationId, CancellationToken ct = default)
     {
         return await context.Bookings
             .Where(b => b.ApplicationId == applicationId)
             .Include(b => b.Application)
                 .ThenInclude(a => a.Opportunity)
             .Include(b => b.Concert)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<BookingEntity?> GetForSettlementByConcertIdAsync(int concertId)
@@ -54,12 +54,12 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             .FirstOrDefaultAsync();
     }
 
-    public Task<int?> GetApplicationIdByIdAsync(int bookingId)
+    public Task<int?> GetApplicationIdByIdAsync(int bookingId, CancellationToken ct = default)
     {
         return context.Bookings
             .Where(b => b.Id == bookingId)
             .Select(b => (int?)b.ApplicationId)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
     }
 
     public Task<int?> GetDealIdByIdAsync(int bookingId)

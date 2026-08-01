@@ -16,21 +16,28 @@ internal sealed class PaymentVerificationRecorder : IPaymentVerificationRecorder
         this.concertNotifier = concertNotifier;
     }
 
-    public async Task RecordVerifiedAsync(int applicationId)
+    public async Task RecordVerifiedAsync(int applicationId, CancellationToken ct = default)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId).OrNotFound();
+        var application = await applicationRepository.GetByIdAsync(applicationId, ct).OrNotFound();
         application.RecordPaymentVerified();
-        await applicationRepository.SaveChangesAsync();
+        await applicationRepository.SaveChangesAsync(ct);
     }
 
-    public async Task RecordFailedAsync(int applicationId, string venueManagerId, string? failureMessage)
+    public async Task RecordFailedAsync(
+        int applicationId,
+        string venueManagerId,
+        string? failureMessage,
+        CancellationToken ct = default)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId).OrNotFound();
+        var application = await applicationRepository.GetByIdAsync(applicationId, ct).OrNotFound();
         application.RecordPaymentFailed();
 
         if (application.State != LifecycleState.Cancelled)
-            await concertNotifier.VerifyPaymentFailedAsync(venueManagerId, new { applicationId = application.Id, FailureMessage = failureMessage });
+            await concertNotifier.VerifyPaymentFailedAsync(
+                venueManagerId,
+                new { applicationId = application.Id, FailureMessage = failureMessage },
+                ct);
 
-        await applicationRepository.SaveChangesAsync();
+        await applicationRepository.SaveChangesAsync(ct);
     }
 }
