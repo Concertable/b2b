@@ -4,8 +4,8 @@ namespace Concertable.B2B.User.Contracts;
 
 public interface IUserModule
 {
-    Task<Option<UserBase>> GetByIdAsync(Guid id);
-    Task<IReadOnlyList<UserBase>> GetByIdsAsync(IEnumerable<Guid> ids);
+    Task<Option<UserDto>> GetByIdAsync(Guid id);
+    Task<IReadOnlyList<UserDto>> GetByIdsAsync(IEnumerable<Guid> ids);
 
     /// <summary>Emails for the given user ids, keyed by id, for member-list display (D4) — the batch join
     /// that keeps email in the User projection instead of denormalizing it onto membership. Ids with no

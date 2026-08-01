@@ -35,9 +35,6 @@ internal sealed class ArtistManagerSyncHandler : IIntegrationEventHandler<Artist
                 new Address(e.County, e.Town));
         }
 
-        var profile = await db.ArtistManagerProfiles.FirstOrDefaultAsync(p => p.Sub == e.UserId, ct);
-        profile?.AssignArtist(e.ArtistId);
-
         await db.SaveChangesAsync(ct);
     }
 }

@@ -24,13 +24,13 @@ internal sealed class UserController : ControllerBase
     }
 
     [HttpPut("location")]
-    public async Task<ActionResult<UserBase>> UpdateLocation([FromBody] UpdateLocationRequest request)
+    public async Task<ActionResult<UserDto>> UpdateLocation([FromBody] UpdateLocationRequest request)
     {
         return (await userService.SaveLocationAsync(request.Latitude, request.Longitude)).ToOkActionResult();
     }
 
     [HttpGet("/api/auth/me")]
-    public async Task<ActionResult<UserBase>> Me()
+    public async Task<ActionResult<UserDto>> Me()
     {
         var user = await userModule.GetByIdAsync(currentUser.GetId());
         if (!user.TryGetValue(out var value))

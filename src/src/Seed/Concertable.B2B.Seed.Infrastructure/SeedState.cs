@@ -10,7 +10,6 @@ using Concertable.B2B.User.Domain.Entities;
 using Concertable.Contracts;
 using Concertable.B2B.Venue.Domain.Entities;
 using Concertable.Kernel.ValueObjects;
-using Concertable.Kernel.Identity;
 using Concertable.Seed.Identity;
 using Concertable.Seed.Identity.Extensions;
 using NetTopologySuite.Geometries;
@@ -122,37 +121,35 @@ public sealed class SeedState
         var now = catalog.Now;
 
         ArtistManager1 = UserFactory.FromRegistration(
-            SeedUsers.ArtistManagerId(1), SeedUsers.ArtistManagerEmail(1), Role.ArtistManager);
+            SeedUsers.ArtistManagerId(1), SeedUsers.ArtistManagerEmail(1));
         ArtistManagerNoArtist = UserFactory.FromRegistration(
             SeedUsers.ArtistManagerId(SeedUsers.ManagerCount),
-            SeedUsers.ArtistManagerEmail(SeedUsers.ManagerCount),
-            Role.ArtistManager);
+            SeedUsers.ArtistManagerEmail(SeedUsers.ManagerCount));
         VenueManager1 = UserFactory.FromRegistration(
-            SeedUsers.VenueManagerId(1), SeedUsers.VenueManagerEmail(1), Role.VenueManager);
+            SeedUsers.VenueManagerId(1), SeedUsers.VenueManagerEmail(1));
         VenueManager2 = UserFactory.FromRegistration(
-            SeedUsers.VenueManagerId(2), SeedUsers.VenueManagerEmail(2), Role.VenueManager);
+            SeedUsers.VenueManagerId(2), SeedUsers.VenueManagerEmail(2));
         VenueManager3 = UserFactory.FromRegistration(
-            SeedUsers.VenueManagerId(3), SeedUsers.VenueManagerEmail(3), Role.VenueManager);
+            SeedUsers.VenueManagerId(3), SeedUsers.VenueManagerEmail(3));
         VenueManagerNoVenue = UserFactory.FromRegistration(
             SeedUsers.VenueManagerId(SeedUsers.ManagerCount),
-            SeedUsers.VenueManagerEmail(SeedUsers.ManagerCount),
-            Role.VenueManager);
+            SeedUsers.VenueManagerEmail(SeedUsers.ManagerCount));
 
         var artistManagers = new List<UserEntity> { ArtistManager1 };
         for (int i = 2; i < SeedUsers.ManagerCount; i++)
             artistManagers.Add(UserFactory.FromRegistration(
-                SeedUsers.ArtistManagerId(i), SeedUsers.ArtistManagerEmail(i), Role.ArtistManager));
+                SeedUsers.ArtistManagerId(i), SeedUsers.ArtistManagerEmail(i)));
         artistManagers.Add(ArtistManagerNoArtist);
         ArtistManagers = artistManagers;
 
         var venueManagers = new List<UserEntity> { VenueManager1, VenueManager2, VenueManager3 };
         for (int i = 4; i < SeedUsers.ManagerCount; i++)
             venueManagers.Add(UserFactory.FromRegistration(
-                SeedUsers.VenueManagerId(i), SeedUsers.VenueManagerEmail(i), Role.VenueManager));
+                SeedUsers.VenueManagerId(i), SeedUsers.VenueManagerEmail(i)));
         venueManagers.Add(VenueManagerNoVenue);
         VenueManagers = venueManagers;
 
-        Admin = UserFactory.FromRegistration(SeedUsers.Admin, SeedUsers.AdminEmail, Role.Admin,
+        Admin = UserFactory.FromRegistration(SeedUsers.Admin, SeedUsers.AdminEmail,
             new Point(-0.5, 51.0) { SRID = 4326 },
             new Address("Leicestershire", "Loughborough"),
             "avatar.jpg");

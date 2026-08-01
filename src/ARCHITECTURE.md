@@ -66,7 +66,7 @@ All event types implement `IIntegrationEvent` from `Concertable.Messaging.Contra
 
 | Event | Source | Handler(s) |
 |---|---|---|
-| `CredentialRegisteredEvent` | Auth | `CredentialRegisteredHandler` (User module — creates manager profile) |
+| `CredentialRegisteredEvent` | Auth | `CredentialRegisteredHandler` (User module — creates the role-agnostic user projection and the surviving admin profile) |
 | `CustomerReviewSubmittedEvent` | Customer | `ArtistReviewProjectionHandler`, `VenueReviewProjectionHandler`, `ConcertReviewProjectionHandler` |
 | `PaymentSucceededEvent` | Payment | `SettlementPaymentProcessor`, `EscrowPaymentProcessor`, `VerifyPaymentProcessor`, `TicketSaleProcessor` |
 | `PaymentFailedEvent` | Payment | `BookingPaymentFailedProcessor`, `VerifyPaymentFailedProcessor` |
@@ -90,7 +90,7 @@ No sync calls to Customer or Search. B2B and Customer communicate **exclusively 
 
 - JWT Bearer, audience `concertable.b2b.api`
 - `client_credentials` client: `concertable-b2b`, scope `payment:write`
-- **No role claims in tokens.** Role derived per-controller from `ICurrentUser.Sub` ↔ User module manager/admin profile lookup.
+- **No role claims in tokens.** B2B tokens are identity-only (`sub` + `email`); acting authority is the request-scoped active tenant (`X-Tenant-Id` → membership `TenantRole`), never a token claim.
 
 ---
 

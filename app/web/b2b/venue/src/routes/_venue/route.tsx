@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { requireBusinessRole } from "@/features/auth";
 import {
   TenantChooser,
   TenantSwitcher,
   getTenantChoicePending,
   reconcileActiveTenant,
+  requireBusinessPersona,
   useTenantChoicePending,
 } from "@b2b/features/tenant";
 import { useVenueNotifications } from "../../features/notifications";
@@ -38,7 +38,7 @@ function VenueLayout() {
 
 export const Route = createFileRoute("/_venue")({
   beforeLoad: async ({ location }) => {
-    await requireBusinessRole("VenueManager");
+    await requireBusinessPersona("Venue");
     reconcileActiveTenant("Venue");
     if (getTenantChoicePending("Venue")) return;
     await requireVenue({ pathname: location.pathname });
