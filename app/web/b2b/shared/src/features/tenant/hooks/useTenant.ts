@@ -6,7 +6,7 @@ import { meQueryKey } from "@/features/user/hooks/useSyncUser";
 import identityApi from "../api/identityApi";
 import { resolveTenant } from "../memberships";
 import { permissionsForRole } from "../permissions";
-import { useTenantStore } from "../store/tenantStore";
+import { useTenantStore } from "../store/useTenantStore";
 import type { B2bIdentity, TenantType } from "../types";
 
 export function useTenantIdentity(): void {

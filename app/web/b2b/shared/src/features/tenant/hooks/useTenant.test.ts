@@ -53,7 +53,7 @@ vi.mock("../memberships", () => ({
 vi.mock("../permissions", () => ({
   permissionsForRole: vi.fn(() => ({})),
 }));
-vi.mock("../store/tenantStore", () => ({
+vi.mock("../store/useTenantStore", () => ({
   useTenantStore: (
     selector: (state: {
       activeTenantId: string;
