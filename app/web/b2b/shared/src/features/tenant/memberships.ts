@@ -10,7 +10,7 @@ export function filterMembershipsByPersona(
 export function resolveActiveMembership(
   memberships: ReadonlyArray<Membership>,
   persona: TenantType,
-  activeTenantId: string | null,
+  activeTenantId: string | undefined,
 ): Membership | undefined {
   const matchingMemberships = filterMembershipsByPersona(memberships, persona);
   return (
@@ -23,7 +23,7 @@ export function resolveActiveMembership(
 export function hasPendingTenantChoice(
   memberships: ReadonlyArray<Membership>,
   persona: TenantType,
-  activeTenantId: string | null,
+  activeTenantId: string | undefined,
 ): boolean {
   const matchingMemberships = filterMembershipsByPersona(memberships, persona);
   return (

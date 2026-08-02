@@ -5,7 +5,7 @@ import {
   resolveActiveMembership,
 } from "../memberships";
 import { permissionsForRole, type TenantPermission } from "../permissions";
-import { useActiveTenantStore } from "../store/useActiveTenantStore";
+import { useActiveTenantId } from "../activeTenant";
 import type { B2bIdentity, Membership, TenantType } from "../types";
 
 const EMPTY_MEMBERSHIPS: ReadonlyArray<Membership> = [];
@@ -24,7 +24,7 @@ export function useActiveMembership(
   persona: TenantType,
 ): Membership | undefined {
   const memberships = useMemberships(persona);
-  const activeTenantId = useActiveTenantStore((state) => state.activeTenantId);
+  const activeTenantId = useActiveTenantId();
   return resolveActiveMembership(memberships, persona, activeTenantId);
 }
 

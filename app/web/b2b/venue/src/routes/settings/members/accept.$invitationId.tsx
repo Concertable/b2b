@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { requireAuth } from "@/features/auth";
 import { AcceptInvitationPage } from "@b2b/features/members";
+import { requireB2bAuth } from "@b2b/features/tenant";
 
 export const Route = createFileRoute("/settings/members/accept/$invitationId")({
-  beforeLoad: ({ location }) => requireAuth({ location }),
+  beforeLoad: requireB2bAuth,
   component: RouteComponent,
 });
 
