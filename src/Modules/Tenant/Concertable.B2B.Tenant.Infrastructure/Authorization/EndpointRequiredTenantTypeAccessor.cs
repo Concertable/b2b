@@ -4,16 +4,16 @@ using Microsoft.AspNetCore.Http;
 namespace Concertable.B2B.Tenant.Infrastructure.Authorization;
 
 /// <summary>Provides the tenant type required by the current endpoint.</summary>
-internal interface IEndpointRequiredTenantType
+internal interface IEndpointRequiredTenantTypeAccessor
 {
     TenantType? RequiredTenantType { get; }
 }
 
-internal sealed class EndpointRequiredTenantType : IEndpointRequiredTenantType
+internal sealed class EndpointRequiredTenantTypeAccessor : IEndpointRequiredTenantTypeAccessor
 {
     private readonly IHttpContextAccessor httpContextAccessor;
 
-    public EndpointRequiredTenantType(IHttpContextAccessor httpContextAccessor)
+    public EndpointRequiredTenantTypeAccessor(IHttpContextAccessor httpContextAccessor)
     {
         this.httpContextAccessor = httpContextAccessor;
     }
