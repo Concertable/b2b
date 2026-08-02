@@ -1,4 +1,4 @@
-import { useHasPermission, type TenantType } from "@b2b/features/tenant";
+import { usePermissions, type TenantType } from "@b2b/features/tenant";
 import { Separator } from "@/components/ui/separator";
 import { MembersRoster } from "../components/MembersRoster";
 import { PendingInvitations } from "../components/PendingInvitations";
@@ -11,9 +11,10 @@ interface MembersPageProps {
 }
 
 export function MembersPage({ persona, title, description }: MembersPageProps) {
-  const canInvite = useHasPermission(persona, "MembersInvite");
-  const canManageRoles = useHasPermission(persona, "MembersManageRoles");
-  const canRemove = useHasPermission(persona, "MembersRemove");
+  const permissions = usePermissions(persona);
+  const canInvite = permissions.has("MembersInvite");
+  const canManageRoles = permissions.has("MembersManageRoles");
+  const canRemove = permissions.has("MembersRemove");
 
   return (
     <div className="max-w-2xl space-y-8">

@@ -1,12 +1,10 @@
 import type { TenantType } from "../types";
 import { Button } from "@/components/ui/button";
-import {
-  useSamePersonaMemberships,
-  useSelectTenant,
-} from "../model";
+import { useMemberships } from "../hooks/useMemberships";
+import { useSelectTenant } from "../hooks/useTenantSelection";
 
 export function TenantChooser({ persona }: Readonly<{ persona: TenantType }>) {
-  const memberships = useSamePersonaMemberships(persona);
+  const memberships = useMemberships(persona);
   const selectTenant = useSelectTenant();
 
   return (
@@ -15,8 +13,8 @@ export function TenantChooser({ persona }: Readonly<{ persona: TenantType }>) {
         <div className="space-y-1 text-center">
           <h1 className="text-lg font-semibold">Choose your organization</h1>
           <p className="text-muted-foreground text-sm">
-            You manage more than one organization. Pick which one to work in — you
-            can switch at any time.
+            You manage more than one organization. Pick which one to work in —
+            you can switch at any time.
           </p>
         </div>
         <div className="flex flex-col gap-2">

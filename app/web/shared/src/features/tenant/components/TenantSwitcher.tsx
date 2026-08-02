@@ -6,14 +6,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  useActiveMembership,
-  useSamePersonaMemberships,
-  useSelectTenant,
-} from "../model";
+import { useActiveMembership, useMemberships } from "../hooks/useMemberships";
+import { useSelectTenant } from "../hooks/useTenantSelection";
 
 export function TenantSwitcher({ persona }: Readonly<{ persona: TenantType }>) {
-  const memberships = useSamePersonaMemberships(persona);
+  const memberships = useMemberships(persona);
   const active = useActiveMembership(persona);
   const selectTenant = useSelectTenant();
 
