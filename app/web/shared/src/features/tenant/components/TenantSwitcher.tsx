@@ -6,18 +6,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useActiveMembership, useMemberships } from "../hooks/useMemberships";
-import { useSelectTenant } from "../hooks/useTenantSelection";
+import { useTenant } from "../hooks/useTenant";
 
 export function TenantSwitcher({ persona }: Readonly<{ persona: TenantType }>) {
-  const memberships = useMemberships(persona);
-  const active = useActiveMembership(persona);
-  const selectTenant = useSelectTenant();
+  const { memberships, activeMembership, selectTenant } = useTenant(persona);
 
   if (memberships.length <= 1) return null;
 
   return (
-    <Select value={active?.tenantId ?? ""} onValueChange={selectTenant}>
+    <Select
+      value={activeMembership?.tenantId ?? ""}
+      onValueChange={selectTenant}
+    >
       <SelectTrigger
         size="sm"
         data-testid="tenant-switcher"

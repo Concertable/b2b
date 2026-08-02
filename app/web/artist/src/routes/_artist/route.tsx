@@ -2,10 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   TenantChooser,
   TenantSwitcher,
-  isTenantChoicePending,
-  reconcileActiveTenant,
-  requireBusinessPersona,
-  useTenantChoicePending,
+  resolveTenantRoute,
+  useTenant,
 } from "@b2b/features/tenant";
 import { useArtistNotifications } from "../../features/notifications";
 import { requireArtist } from "../../features/artist";
@@ -26,7 +24,8 @@ const profileItems: ProfileMenuItem[] = [
 
 function ArtistLayout() {
   useArtistNotifications();
-  if (useTenantChoicePending("Artist")) return <TenantChooser persona="Artist" />;
+  const { selectionRequired } = useTenant("Artist");
+  if (selectionRequired) return <TenantChooser persona="Artist" />;
   return (
     <AppLayout
       links={links}
@@ -38,9 +37,8 @@ function ArtistLayout() {
 
 export const Route = createFileRoute("/_artist")({
   beforeLoad: async ({ location }) => {
-    await requireBusinessPersona("Artist");
-    reconcileActiveTenant("Artist");
-    if (isTenantChoicePending("Artist")) return;
+    const { selectionRequired } = await resolveTenantRoute("Artist");
+    if (selectionRequired) return;
     await requireArtist({ pathname: location.pathname });
   },
   component: ArtistLayout,

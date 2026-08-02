@@ -4,11 +4,10 @@ import {
   requireBusinessAuth,
 } from "@/features/auth";
 import identityApi from "./api/identityApi";
-import { getCachedMemberships } from "./identityCache";
-import { filterMembershipsByPersona } from "./memberships";
+import { tenantSession } from "./tenantSession";
 import type { TenantType } from "./types";
 
-export function requireB2bAuth(): Promise<void> {
+function requireB2bAuth(): Promise<void> {
   return requireBusinessAuth(identityApi.getMe);
 }
 
@@ -20,12 +19,11 @@ export function requireLocalB2bAuth({
   return requireAuth({ location, getMe: identityApi.getMe });
 }
 
-export async function requireBusinessPersona(
+export async function resolveTenantRoute(
   persona: TenantType,
-): Promise<void> {
+): Promise<{ selectionRequired: boolean }> {
   await requireB2bAuth();
-  if (
-    filterMembershipsByPersona(getCachedMemberships(), persona).length === 0
-  )
-    return redirectToBusiness();
+  const resolution = tenantSession.resolve(persona);
+  if (resolution.memberships.length === 0) return redirectToBusiness();
+  return { selectionRequired: resolution.selectionRequired };
 }

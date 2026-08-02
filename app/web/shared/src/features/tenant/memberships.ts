@@ -1,5 +1,11 @@
 import type { Membership, TenantType } from "./types";
 
+export interface TenantResolution {
+  readonly memberships: ReadonlyArray<Membership>;
+  readonly activeMembership: Membership | undefined;
+  readonly selectionRequired: boolean;
+}
+
 export function filterMembershipsByPersona(
   memberships: ReadonlyArray<Membership>,
   persona: TenantType,
@@ -32,4 +38,27 @@ export function hasPendingTenantChoice(
       (membership) => membership.tenantId === activeTenantId,
     )
   );
+}
+
+export function resolveTenant(
+  memberships: ReadonlyArray<Membership>,
+  persona: TenantType,
+  activeTenantId: string | undefined,
+): TenantResolution {
+  const matchingMemberships = filterMembershipsByPersona(memberships, persona);
+  const activeMembership = resolveActiveMembership(
+    memberships,
+    persona,
+    activeTenantId,
+  );
+
+  return {
+    memberships: matchingMemberships,
+    activeMembership,
+    selectionRequired: hasPendingTenantChoice(
+      memberships,
+      persona,
+      activeTenantId,
+    ),
+  };
 }
