@@ -1,4 +1,4 @@
-import { usePermissions, type TenantType } from "@b2b/features/tenant";
+import { useTenant, type TenantType } from "@b2b/features/tenant";
 import { Separator } from "@/components/ui/separator";
 import { MembersRoster } from "../components/MembersRoster";
 import { PendingInvitations } from "../components/PendingInvitations";
@@ -11,7 +11,7 @@ interface MembersPageProps {
 }
 
 export function MembersPage({ persona, title, description }: MembersPageProps) {
-  const permissions = usePermissions(persona);
+  const { permissions } = useTenant(persona);
   const canInvite = permissions.has("MembersInvite");
   const canManageRoles = permissions.has("MembersManageRoles");
   const canRemove = permissions.has("MembersRemove");

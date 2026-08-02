@@ -1,11 +1,9 @@
 import type { TenantType } from "../types";
 import { Button } from "@/components/ui/button";
-import { useMemberships } from "../hooks/useMemberships";
-import { useSelectTenant } from "../hooks/useTenantSelection";
+import { useTenant } from "../hooks/useTenant";
 
 export function TenantChooser({ persona }: Readonly<{ persona: TenantType }>) {
-  const memberships = useMemberships(persona);
-  const selectTenant = useSelectTenant();
+  const { memberships, selectTenant } = useTenant(persona);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6">
