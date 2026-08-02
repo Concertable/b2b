@@ -1,4 +1,4 @@
-import { createStore, type StateCreator } from "zustand/vanilla";
+import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { filterMembershipsByTenantType } from "../memberships";
 import type { Membership, TenantType } from "../types";
@@ -13,36 +13,33 @@ export interface TenantStoreState {
   ) => void;
 }
 
-const createTenantState: StateCreator<TenantStoreState> = (set) => ({
-  activeTenantId: undefined,
-  selectTenant: (activeTenantId) => set({ activeTenantId }),
-  clearTenant: () => set({ activeTenantId: undefined }),
-  synchronizeTenant: (memberships, tenantType) =>
-    set((state) => {
-      const matchingMemberships = filterMembershipsByTenantType(
-        memberships,
-        tenantType,
-      );
-      if (
-        matchingMemberships.some(
-          (membership) => membership.tenantId === state.activeTenantId,
-        )
-      )
-        return state;
+export const useTenantStore = create<TenantStoreState>()(
+  persist(
+    (set) => ({
+      activeTenantId: undefined,
+      selectTenant: (activeTenantId) => set({ activeTenantId }),
+      clearTenant: () => set({ activeTenantId: undefined }),
+      synchronizeTenant: (memberships, tenantType) =>
+        set((state) => {
+          const matchingMemberships = filterMembershipsByTenantType(
+            memberships,
+            tenantType,
+          );
+          if (
+            matchingMemberships.some(
+              (membership) => membership.tenantId === state.activeTenantId,
+            )
+          )
+            return state;
 
-      return {
-        activeTenantId:
-          matchingMemberships.length === 1
-            ? matchingMemberships[0].tenantId
-            : undefined,
-      };
+          return {
+            activeTenantId:
+              matchingMemberships.length === 1
+                ? matchingMemberships[0].tenantId
+                : undefined,
+          };
+        }),
     }),
-});
-
-export function createTenantStore() {
-  return createStore<TenantStoreState>()(createTenantState);
-}
-
-export const tenantStore = createStore<TenantStoreState>()(
-  persist(createTenantState, { name: "concertable.active-tenant" }),
+    { name: "concertable.active-tenant" },
+  ),
 );

@@ -34,14 +34,7 @@ vi.mock("@tanstack/react-query", () => ({
 vi.mock("@tanstack/react-router", () => ({
   useRouter: () => ({ invalidate: mocks.invalidateRouter }),
 }));
-vi.mock("zustand", () => ({
-  useStore: (_store: unknown, selector: (state: unknown) => unknown) =>
-    selector({
-      activeTenantId: "existing-tenant",
-      selectTenant: mocks.selectInStore,
-      synchronizeTenant: mocks.synchronizeTenant,
-    }),
-}));
+
 vi.mock("@/features/user", () => ({ useSyncUser: vi.fn() }));
 vi.mock("@/features/user/hooks/useSyncUser", () => ({
   meQueryKey: ["auth", "me"],
@@ -60,7 +53,20 @@ vi.mock("../memberships", () => ({
 vi.mock("../permissions", () => ({
   permissionsForRole: vi.fn(() => ({})),
 }));
-vi.mock("../store/tenantStore", () => ({ tenantStore: {} }));
+vi.mock("../store/tenantStore", () => ({
+  useTenantStore: (
+    selector: (state: {
+      activeTenantId: string;
+      selectTenant: typeof mocks.selectInStore;
+      synchronizeTenant: typeof mocks.synchronizeTenant;
+    }) => unknown,
+  ) =>
+    selector({
+      activeTenantId: "existing-tenant",
+      selectTenant: mocks.selectInStore,
+      synchronizeTenant: mocks.synchronizeTenant,
+    }),
+}));
 
 describe("useTenant selection", () => {
   beforeEach(() => {

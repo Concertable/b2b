@@ -3,7 +3,7 @@ import { meQueryKey } from "@/features/user/hooks/useSyncUser";
 import { queryClient } from "@/lib/queryClient";
 import { resolveTenant } from "./memberships";
 import {
-  tenantStore,
+  useTenantStore,
   type TenantStoreState,
 } from "./store/tenantStore";
 import type { B2bIdentity, Membership, TenantType } from "./types";
@@ -48,7 +48,7 @@ export function createTenantSession({
 const EMPTY_MEMBERSHIPS: ReadonlyArray<Membership> = [];
 
 export const tenantSession = createTenantSession({
-  store: tenantStore,
+  store: useTenantStore,
   memberships: () =>
     queryClient.getQueryData<B2bIdentity>(meQueryKey)?.memberships ??
     EMPTY_MEMBERSHIPS,
