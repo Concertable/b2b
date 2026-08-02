@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  filterMembershipsByPersona,
+  filterMembershipsByTenantType,
   hasPendingTenantChoice,
   resolveActiveMembership,
   resolveTenant,
@@ -29,8 +29,8 @@ const memberships: ReadonlyArray<Membership> = [
 ];
 
 describe("tenant membership resolution", () => {
-  it("filters memberships by persona", () => {
-    expect(filterMembershipsByPersona(memberships, "Venue")).toEqual(
+  it("filters memberships by tenant type", () => {
+    expect(filterMembershipsByTenantType(memberships, "Venue")).toEqual(
       memberships.slice(0, 2),
     );
   });

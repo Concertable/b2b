@@ -8,8 +8,8 @@ import {
 } from "@/components/ui/select";
 import { useTenant } from "../hooks/useTenant";
 
-export function TenantSwitcher({ persona }: Readonly<{ persona: TenantType }>) {
-  const { memberships, activeMembership, selectTenant } = useTenant(persona);
+export function TenantSwitcher({ tenantType }: Readonly<{ tenantType: TenantType }>) {
+  const { memberships, activeMembership, selectTenant } = useTenant(tenantType);
 
   if (memberships.length <= 1) return null;
 

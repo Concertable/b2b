@@ -11,12 +11,6 @@ public interface IMembershipContext
     /// <summary>The active membership's role; <see langword="null"/> when the caller has no membership in the active tenant.</summary>
     TenantRole? Role { get; }
 
-    /// <summary>
-    /// True iff the active tenant's persona catalog grants <paramref name="permission"/> to the active role
-    /// and — when <paramref name="requiredPersona"/> is supplied (a controller's surface persona) — the active
-    /// tenant's type matches it. A persona-exclusive permission is unreachable for the other persona by
-    /// construction (its catalog doesn't contain it). No active membership ⇒ always
-    /// <see langword="false"/> (fails closed).
-    /// </summary>
-    bool HasPermission(string permission, TenantType? requiredPersona = null);
+    /// <summary>Returns whether the active membership satisfies the permission and required tenant type.</summary>
+    bool HasPermission(string permission, TenantType? requiredTenantType = null);
 }

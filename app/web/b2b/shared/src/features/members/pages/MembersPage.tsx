@@ -5,13 +5,13 @@ import { PendingInvitations } from "../components/PendingInvitations";
 import { InviteForm } from "../components/InviteForm";
 
 interface MembersPageProps {
-  persona: TenantType;
+  tenantType: TenantType;
   title: string;
   description: string;
 }
 
-export function MembersPage({ persona, title, description }: MembersPageProps) {
-  const { permissions } = useTenant(persona);
+export function MembersPage({ tenantType, title, description }: MembersPageProps) {
+  const { permissions } = useTenant(tenantType);
   const canInvite = permissions.has("MembersInvite");
   const canManageRoles = permissions.has("MembersManageRoles");
   const canRemove = permissions.has("MembersRemove");

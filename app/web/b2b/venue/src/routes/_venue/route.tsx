@@ -25,12 +25,12 @@ const profileItems: ProfileMenuItem[] = [
 function VenueLayout() {
   useVenueNotifications();
   const { selectionRequired } = useTenant("Venue");
-  if (selectionRequired) return <TenantChooser persona="Venue" />;
+  if (selectionRequired) return <TenantChooser tenantType="Venue" />;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher persona="Venue" />}
+      headerSlot={<TenantSwitcher tenantType="Venue" />}
     />
   );
 }

@@ -14,7 +14,7 @@ export function useTenantIdentity(): void {
   useSyncUser(identityApi.getMe);
 }
 
-export function useTenant(persona: TenantType) {
+export function useTenant(tenantType: TenantType) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const activeTenantId = useStore(
@@ -33,13 +33,13 @@ export function useTenant(persona: TenantType) {
   });
   const resolution = resolveTenant(
     identity?.memberships ?? [],
-    persona,
+    tenantType,
     activeTenantId,
   );
 
   useEffect(() => {
-    if (identity) synchronizeTenant(identity.memberships, persona);
-  }, [identity, persona, synchronizeTenant]);
+    if (identity) synchronizeTenant(identity.memberships, tenantType);
+  }, [identity, tenantType, synchronizeTenant]);
 
   const selectTenant = useCallback(
     async (tenantId: string) => {
