@@ -2,7 +2,6 @@ using System.Collections.Frozen;
 
 namespace Concertable.B2B.Tenant.Contracts;
 
-/// <summary>Provides the shared and artist-specific role-to-permission grants.</summary>
 public sealed class ArtistPermissions : IPermissionSet
 {
     public const string ApplicationsSubmit = "applications.submit";

@@ -1,6 +1,5 @@
 namespace Concertable.B2B.Tenant.Contracts;
 
-/// <summary>Encodes and decodes permission authorization policy names.</summary>
 public static class PermissionPolicy
 {
     public const string Prefix = "perm:";

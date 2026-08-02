@@ -2,7 +2,6 @@ using System.Collections.Frozen;
 
 namespace Concertable.B2B.Tenant.Contracts;
 
-/// <summary>Resolves permission grants through the catalog for the specified tenant type.</summary>
 public sealed class PermissionCatalog : IPermissionCatalog
 {
     private readonly FrozenDictionary<TenantType, IPermissionSet> byTenantType;

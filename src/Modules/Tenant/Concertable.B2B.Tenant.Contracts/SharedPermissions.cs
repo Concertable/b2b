@@ -2,7 +2,6 @@ using System.Collections.Frozen;
 
 namespace Concertable.B2B.Tenant.Contracts;
 
-/// <summary>Provides permissions shared by venue and artist tenants.</summary>
 public sealed class SharedPermissions : IPermissionSet
 {
     public const string OperationsView = "operations.view";
