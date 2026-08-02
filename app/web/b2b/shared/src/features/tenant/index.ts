@@ -4,15 +4,18 @@ export { default as identityApi } from "./api/identityApi";
 export { useActiveTenantStore } from "./store/useActiveTenantStore";
 export {
   useMemberships,
-  useSamePersonaMemberships,
   useActiveMembership,
+  usePermissions,
+} from "./hooks/useMemberships";
+export {
   useTenantChoicePending,
   useSelectTenant,
-  useHasPermission,
+} from "./hooks/useTenantSelection";
+export {
   getTenantChoicePending,
   reconcileActiveTenant,
   requireBusinessPersona,
 } from "./model";
 export { TenantSwitcher } from "./components/TenantSwitcher";
 export { TenantChooser } from "./components/TenantChooser";
-export { hasPermission, type TenantPermission } from "./tenantPermissions";
+export type { TenantPermission } from "./permissions";
