@@ -75,7 +75,7 @@ public sealed class OutboxVerificationTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
         var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.VenueHireApp.Id}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
         var expectedType = MessageTypeAttribute.Resolve(typeof(ConcertChangedEvent));
 
         // Act

@@ -5,7 +5,7 @@ namespace Concertable.B2B.Venue.Api.Mappers;
 
 internal static class VenueResponseMappers
 {
-    public static VenueDetailsResponse ToDetailsResponse(this VenueDetails dto) => new()
+    public static DetailsResponse ToDetailsResponse(this VenueDetails dto) => new()
     {
         Id = dto.Id,
         Name = dto.Name,

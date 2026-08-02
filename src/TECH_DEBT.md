@@ -93,14 +93,6 @@ Plan §4.5 calls for flat manager/admin profile tables (`VenueManagerEntity`, `A
 
 ---
 
-### Defined-but-not-published events
-
-`ConcertSettledEvent`, `ConcertFinishedEvent`, `ConcertApplicationCreatedEvent`, `ConcertApplicationAcceptedEvent` exist in `Concertable.B2B.Concert.Contracts.Events` but are not registered as `Publishes<>` in `Program.cs` and are not raised anywhere.
-
-**Resolves when:** Either (a) each event is raised from the appropriate domain event, registered in `Program.cs`, and consumers exist in Search/Customer; or (b) the event types are deleted as dead code.
-
----
-
 ### `Modules/Notification/` pending deletion
 
 `Concertable.Shared.Email` is already wired by both B2B and Customer. The `Modules/Notification/` module (Contracts + Infrastructure) still ships and hosts the `NotificationHub` (SignalR). Email sending should already be routed through `IEmailSender` from the shared library.
@@ -168,21 +160,6 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ---
 
-### Concert response family names are over-qualified
-
-The `Concert.Api.Responses` types stack redundant qualifiers — `ConcertDetailsResponse`,
-`ConcertSummaryResponse`, `ConcertArtistResponse`, `ConcertVenueSummaryResponse`, etc. — re-stating `Concert`
-(already the namespace) and vague words like `Details`. The `Response` suffix is mandated (it marks the HTTP
-wire layer); the rest is bloat. (Splitting the public vs owner reads into separate types was considered and
-**declined** — the single response with owner-only fields populated only by the owner mapper is safe and is
-the same role-shaping pattern `ApplicationResponse` already uses; not worth a one-off divergence.)
-
-**Resolves when:** the response family is de-verbosed in one pass — drop the redundant `Concert`/`Details`
-qualifiers where the namespace already carries them, keep `Response` — and the SPA's consumed/generated type
-names are updated to match.
-
----
-
 ### Duplicate application attempt is a 500, not a 400 — guard landed, integration test outstanding
 
 Fixed on `Fix/TechDebtSweep`: `ApplicationService.ValidateCanApplyAsync` (the apply/insert path,
@@ -220,11 +197,3 @@ Deliberately not done now: the launch gate is *data completeness* (hold a comple
 `FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per tenant type from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/DOMAINS_AND_DNS.md`](../../plans/DOMAINS_AND_DNS.md). So in any non-local environment the tenant-type dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
 
 **Resolves when:** `Urls:Frontends:{Venue,Artist}` are supplied per environment from App Config, alongside `Auth:SpaClients` / `Cors:AllowedOrigins` (which key off the same hostnames), as part of the `DOMAINS_AND_DNS.md` config rollout.
-
----
-
-### Venue/Artist read DTOs declare `Avatar` as `string?` despite a non-null domain guarantee
-
-The same nullability lie fixed on `VenueOrgIdentity`/`ArtistOrgIdentity`: the Venue/Artist entities store `Avatar = null!` behind `nullable: false` migration columns (and both the Customer side and the adjacent `BannerUrl` are non-null), yet B2B types `Avatar` as `string?` across the whole read surface — `Venue.Contracts/VenueSummary.cs:6`, `Artist.Contracts/ArtistSummary.cs:11`, `Venue.Application/DTOs/VenueDtos.cs:15,32`, `Artist.Application/DTOs/ArtistDtos.cs:15,30`, `Venue.Api/Responses/VenueDetailsResponse.cs:9`, `Artist.Api/Responses/ArtistResponses.cs:11`. A value that is always present is typed optional, forcing needless null-handling downstream — and it sits inconsistently beside `BannerUrl`, which is `required string` off the same guaranteed source. (The dead `Contracts/Views/XView` types carry the same lie on County/Town/Banner/Avatar but are covered by their deletion in the read-surface item above; Concert's avatar/banner and User location are genuinely nullable — leave them.)
-
-**Resolves when:** B2B Venue/Artist `Avatar` is non-null across the read surface — `required string` on the DTOs/Responses, `string` on the `Summary` records — matching the Customer side, the adjacent `BannerUrl`, and the domain.
