@@ -17,7 +17,11 @@ export {
   useTenantChoicePending,
   useSelectTenant,
 } from "./hooks/useTenantSelection";
-export { requireB2bAuth, requireBusinessPersona } from "./guards";
+export {
+  requireB2bAuth,
+  requireBusinessPersona,
+  requireLocalB2bAuth,
+} from "./guards";
 export { TenantSwitcher } from "./components/TenantSwitcher";
 export { TenantChooser } from "./components/TenantChooser";
 export type { TenantPermission } from "./permissions";
