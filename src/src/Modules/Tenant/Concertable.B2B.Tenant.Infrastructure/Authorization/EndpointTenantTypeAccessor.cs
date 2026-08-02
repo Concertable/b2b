@@ -3,20 +3,20 @@ using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Authorization;
 
-internal interface IEndpointRequiredTenantTypeAccessor
+internal interface IEndpointTenantTypeAccessor
 {
-    TenantType? RequiredTenantType { get; }
+    TenantType? TenantType { get; }
 }
 
-internal sealed class EndpointRequiredTenantTypeAccessor : IEndpointRequiredTenantTypeAccessor
+internal sealed class EndpointTenantTypeAccessor : IEndpointTenantTypeAccessor
 {
     private readonly IHttpContextAccessor httpContextAccessor;
 
-    public EndpointRequiredTenantTypeAccessor(IHttpContextAccessor httpContextAccessor)
+    public EndpointTenantTypeAccessor(IHttpContextAccessor httpContextAccessor)
     {
         this.httpContextAccessor = httpContextAccessor;
     }
 
-    public TenantType? RequiredTenantType
+    public TenantType? TenantType
         => httpContextAccessor.HttpContext?.GetEndpoint()?.Metadata.GetMetadata<RequiredTenantTypeAttribute>()?.TenantType;
 }
