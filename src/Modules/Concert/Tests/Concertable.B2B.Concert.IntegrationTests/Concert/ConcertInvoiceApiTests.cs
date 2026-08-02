@@ -307,14 +307,14 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         var party = fixture.CreateClient(UserOfTenant(concert.VenueTenantId));
 
         // Before settlement: the party reads its concert, but no invoice exists yet -> no link.
-        var before = await (await party.GetAsync($"/api/Concert/user/{concert.Id}")).Content.ReadAsync<ConcertDetailsResponse>();
+        var before = await (await party.GetAsync($"/api/Concert/user/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(before!.Actions);
         Assert.Null(before.Actions!.Invoice);
 
         await fixture.FinishConcertAsync(concert.Id);
 
         // After settlement: the minted invoice surfaces its download link.
-        var after = await (await party.GetAsync($"/api/Concert/user/{concert.Id}")).Content.ReadAsync<ConcertDetailsResponse>();
+        var after = await (await party.GetAsync($"/api/Concert/user/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.Equal($"/api/Concert/{concert.Id}/invoice/pdf", after!.Actions!.Invoice!.Href);
     }
 

@@ -21,14 +21,14 @@ internal sealed class VenueController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<VenueDetailsResponse>> GetDetailsById(int id)
+    public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
         return Ok((await venueService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("user")]
-    public async Task<ActionResult<VenueDetailsResponse>> GetDetailsForCurrentUser()
+    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser()
     {
         var venue = await venueService.GetDetailsForCurrentUserAsync();
         return venue is null ? NoContent() : Ok(venue.ToDetailsResponse());
