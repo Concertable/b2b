@@ -168,21 +168,6 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ---
 
-### Concert response family names are over-qualified
-
-The `Concert.Api.Responses` types stack redundant qualifiers — `ConcertDetailsResponse`,
-`ConcertSummaryResponse`, `ConcertArtistResponse`, `ConcertVenueSummaryResponse`, etc. — re-stating `Concert`
-(already the namespace) and vague words like `Details`. The `Response` suffix is mandated (it marks the HTTP
-wire layer); the rest is bloat. (Splitting the public vs owner reads into separate types was considered and
-**declined** — the single response with owner-only fields populated only by the owner mapper is safe and is
-the same role-shaping pattern `ApplicationResponse` already uses; not worth a one-off divergence.)
-
-**Resolves when:** the response family is de-verbosed in one pass — drop the redundant `Concert`/`Details`
-qualifiers where the namespace already carries them, keep `Response` — and the SPA's consumed/generated type
-names are updated to match.
-
----
-
 ### Duplicate application attempt is a 500, not a 400 — guard landed, integration test outstanding
 
 Fixed on `Fix/TechDebtSweep`: `ApplicationService.ValidateCanApplyAsync` (the apply/insert path,
