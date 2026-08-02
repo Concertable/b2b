@@ -8,9 +8,9 @@ const Spinner = () => (
 
 export function AcceptInvitationPage({
   invitationId,
-  persona,
-}: Readonly<{ invitationId: string; persona: TenantType }>) {
-  const { isError } = useAcceptInvitation(invitationId, persona);
+  tenantType,
+}: Readonly<{ invitationId: string; tenantType: TenantType }>) {
+  const { isError } = useAcceptInvitation(invitationId, tenantType);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">

@@ -5,9 +5,9 @@ import invitationApi from "../api/invitationApi";
 
 export function useAcceptInvitation(
   invitationId: string,
-  persona: TenantType,
+  tenantType: TenantType,
 ) {
-  const { selectTenant } = useTenant(persona);
+  const { selectTenant } = useTenant(tenantType);
   const { isError } = useQuery({
     queryKey: ["accept-invitation", invitationId],
     queryFn: () =>

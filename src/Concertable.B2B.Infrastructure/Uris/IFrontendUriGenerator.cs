@@ -4,5 +4,5 @@ namespace Concertable.B2B.Infrastructure.Uris;
 
 public interface IFrontendUriGenerator
 {
-    Uri Create(TenantType persona, string path, IDictionary<string, string>? query = null);
+    Uri Create(TenantType tenantType, string path, IDictionary<string, string>? query = null);
 }

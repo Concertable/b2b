@@ -6,19 +6,19 @@ export interface TenantResolution {
   readonly selectionRequired: boolean;
 }
 
-export function filterMembershipsByPersona(
+export function filterMembershipsByTenantType(
   memberships: ReadonlyArray<Membership>,
-  persona: TenantType,
+  tenantType: TenantType,
 ): ReadonlyArray<Membership> {
-  return memberships.filter((membership) => membership.type === persona);
+  return memberships.filter((membership) => membership.type === tenantType);
 }
 
 export function resolveActiveMembership(
   memberships: ReadonlyArray<Membership>,
-  persona: TenantType,
+  tenantType: TenantType,
   activeTenantId: string | undefined,
 ): Membership | undefined {
-  const matchingMemberships = filterMembershipsByPersona(memberships, persona);
+  const matchingMemberships = filterMembershipsByTenantType(memberships, tenantType);
   return (
     matchingMemberships.find(
       (membership) => membership.tenantId === activeTenantId,
@@ -28,10 +28,10 @@ export function resolveActiveMembership(
 
 export function hasPendingTenantChoice(
   memberships: ReadonlyArray<Membership>,
-  persona: TenantType,
+  tenantType: TenantType,
   activeTenantId: string | undefined,
 ): boolean {
-  const matchingMemberships = filterMembershipsByPersona(memberships, persona);
+  const matchingMemberships = filterMembershipsByTenantType(memberships, tenantType);
   return (
     matchingMemberships.length > 1 &&
     !matchingMemberships.some(
@@ -42,13 +42,13 @@ export function hasPendingTenantChoice(
 
 export function resolveTenant(
   memberships: ReadonlyArray<Membership>,
-  persona: TenantType,
+  tenantType: TenantType,
   activeTenantId: string | undefined,
 ): TenantResolution {
-  const matchingMemberships = filterMembershipsByPersona(memberships, persona);
+  const matchingMemberships = filterMembershipsByTenantType(memberships, tenantType);
   const activeMembership = resolveActiveMembership(
     memberships,
-    persona,
+    tenantType,
     activeTenantId,
   );
 
@@ -57,7 +57,7 @@ export function resolveTenant(
     activeMembership,
     selectionRequired: hasPendingTenantChoice(
       memberships,
-      persona,
+      tenantType,
       activeTenantId,
     ),
   };

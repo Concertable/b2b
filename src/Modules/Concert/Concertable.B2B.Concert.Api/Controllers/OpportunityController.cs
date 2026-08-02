@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[TenantPersona(TenantType.Venue)]
+[RequiredTenantType(TenantType.Venue)]
 internal sealed class OpportunityController : ControllerBase
 {
     private readonly IOpportunityService opportunityService;

@@ -33,12 +33,12 @@ export function createTenantSession({
       store.getState().clearTenant();
       clearMemberships();
     },
-    resolve: (persona: TenantType) => {
+    resolve: (tenantType: TenantType) => {
       const currentMemberships = memberships();
-      store.getState().synchronizeTenant(currentMemberships, persona);
+      store.getState().synchronizeTenant(currentMemberships, tenantType);
       return resolveTenant(
         currentMemberships,
-        persona,
+        tenantType,
         store.getState().activeTenantId,
       );
     },

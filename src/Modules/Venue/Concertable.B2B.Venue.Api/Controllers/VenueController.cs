@@ -10,7 +10,7 @@ namespace Concertable.B2B.Venue.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[TenantPersona(TenantType.Venue)]
+[RequiredTenantType(TenantType.Venue)]
 internal sealed class VenueController : ControllerBase
 {
     private readonly IVenueService venueService;

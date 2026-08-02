@@ -1,6 +1,6 @@
 import { createStore, type StateCreator } from "zustand/vanilla";
 import { persist } from "zustand/middleware";
-import { filterMembershipsByPersona } from "../memberships";
+import { filterMembershipsByTenantType } from "../memberships";
 import type { Membership, TenantType } from "../types";
 
 export interface TenantStoreState {
@@ -9,7 +9,7 @@ export interface TenantStoreState {
   readonly clearTenant: () => void;
   readonly synchronizeTenant: (
     memberships: ReadonlyArray<Membership>,
-    persona: TenantType,
+    tenantType: TenantType,
   ) => void;
 }
 
@@ -17,11 +17,11 @@ const createTenantState: StateCreator<TenantStoreState> = (set) => ({
   activeTenantId: undefined,
   selectTenant: (activeTenantId) => set({ activeTenantId }),
   clearTenant: () => set({ activeTenantId: undefined }),
-  synchronizeTenant: (memberships, persona) =>
+  synchronizeTenant: (memberships, tenantType) =>
     set((state) => {
-      const matchingMemberships = filterMembershipsByPersona(
+      const matchingMemberships = filterMembershipsByTenantType(
         memberships,
-        persona,
+        tenantType,
       );
       if (
         matchingMemberships.some(

@@ -20,10 +20,10 @@ export function requireLocalB2bAuth({
 }
 
 export async function resolveTenantRoute(
-  persona: TenantType,
+  tenantType: TenantType,
 ): Promise<{ selectionRequired: boolean }> {
   await requireB2bAuth();
-  const resolution = tenantSession.resolve(persona);
+  const resolution = tenantSession.resolve(tenantType);
   if (resolution.memberships.length === 0) return redirectToBusiness();
   return { selectionRequired: resolution.selectionRequired };
 }

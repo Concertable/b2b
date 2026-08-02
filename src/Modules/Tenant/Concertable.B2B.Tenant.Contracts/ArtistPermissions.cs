@@ -2,11 +2,7 @@ using System.Collections.Frozen;
 
 namespace Concertable.B2B.Tenant.Contracts;
 
-/// <summary>
-/// The artist persona's catalog: the <see cref="SharedPermissions"/> base plus the permissions only an artist
-/// tenant can hold (design §1.3, marked (A)). <see cref="ApplicationsSubmit"/> lives here, not in a
-/// persona-blind bag, so a venue tenant can never be granted it — its catalog doesn't contain it.
-/// </summary>
+/// <summary>Provides the shared and artist-specific role-to-permission grants.</summary>
 public sealed class ArtistPermissions : IPermissionSet
 {
     public const string ApplicationsSubmit = "applications.submit";
