@@ -7,7 +7,7 @@ vi.mock("@/lib/queryClient", () => ({
   queryClient: { getQueryData: vi.fn() },
 }));
 
-import { useTenantStore } from "./store/tenantStore";
+import { useTenantStore } from "./store/useTenantStore";
 import { createTenantSession } from "./tenantSession";
 import type { Membership } from "./types";
 

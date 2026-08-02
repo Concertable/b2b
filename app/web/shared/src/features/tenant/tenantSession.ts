@@ -5,7 +5,7 @@ import { resolveTenant } from "./memberships";
 import {
   useTenantStore,
   type TenantStoreState,
-} from "./store/tenantStore";
+} from "./store/useTenantStore";
 import type { B2bIdentity, Membership, TenantType } from "./types";
 
 interface TenantSessionDependencies {
