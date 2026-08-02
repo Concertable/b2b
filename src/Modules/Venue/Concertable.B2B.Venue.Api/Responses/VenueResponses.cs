@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Venue.Api.Responses;
 
-public sealed record VenueDetailsResponse
+public sealed record DetailsResponse
 {
     public int Id { get; init; }
     public required string Name { get; init; }
