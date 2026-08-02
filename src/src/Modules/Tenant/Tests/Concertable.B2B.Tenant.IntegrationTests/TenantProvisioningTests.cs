@@ -10,12 +10,6 @@ using Xunit.Abstractions;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
 
-/// <summary>
-/// Registration provisions a tenant + its founding Owner membership and fixes the persona from the
-/// registration client-id. Drives the production trigger directly — the <see cref="TenantProvisioningHandler"/>
-/// reacting to a <see cref="CredentialRegisteredEvent"/> — since integration tests have no Auth service to
-/// publish it. The seeded operators exercise the idempotent existing-tenant branch.
-/// </summary>
 [Collection("Integration")]
 public sealed class TenantProvisioningTests : IAsyncLifetime
 {
@@ -43,7 +37,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
     [Theory]
     [InlineData(ClientIds.VenueWeb, TenantType.Venue)]
     [InlineData(ClientIds.ArtistWeb, TenantType.Artist)]
-    public async Task Registration_NewManager_ProvisionsTenantWithPersonaAndFoundingOwner(string clientId, TenantType expected)
+    public async Task Registration_NewManager_ProvisionsTenantWithTypeAndFoundingOwner(string clientId, TenantType expected)
     {
         var userId = Guid.NewGuid();
         await ProvisionAsync(new CredentialRegisteredEvent(userId, $"{Guid.NewGuid():N}@test.com", clientId));

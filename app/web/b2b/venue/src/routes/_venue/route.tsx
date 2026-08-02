@@ -2,10 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   TenantChooser,
   TenantSwitcher,
-  getTenantChoicePending,
-  reconcileActiveTenant,
-  requireBusinessPersona,
-  useTenantChoicePending,
+  resolveTenantRoute,
+  useTenant,
 } from "@b2b/features/tenant";
 import { useVenueNotifications } from "../../features/notifications";
 import { requireVenue } from "../../features/venue";
@@ -26,21 +24,21 @@ const profileItems: ProfileMenuItem[] = [
 
 function VenueLayout() {
   useVenueNotifications();
-  if (useTenantChoicePending("Venue")) return <TenantChooser persona="Venue" />;
+  const { selectionRequired } = useTenant("Venue");
+  if (selectionRequired) return <TenantChooser tenantType="Venue" />;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher persona="Venue" />}
+      headerSlot={<TenantSwitcher tenantType="Venue" />}
     />
   );
 }
 
 export const Route = createFileRoute("/_venue")({
   beforeLoad: async ({ location }) => {
-    await requireBusinessPersona("Venue");
-    reconcileActiveTenant("Venue");
-    if (getTenantChoicePending("Venue")) return;
+    const { selectionRequired } = await resolveTenantRoute("Venue");
+    if (selectionRequired) return;
     await requireVenue({ pathname: location.pathname });
   },
   component: VenueLayout,

@@ -14,20 +14,20 @@ internal sealed class PermissionAuthorizationHandler : AuthorizationHandler<Perm
 {
     private readonly ITenantResolver resolver;
     private readonly IMembershipContext membership;
-    private readonly IEndpointPersona endpointPersona;
+    private readonly IEndpointTenantTypeAccessor endpointTenantTypeAccessor;
 
-    public PermissionAuthorizationHandler(ITenantResolver resolver, IMembershipContext membership, IEndpointPersona endpointPersona)
+    public PermissionAuthorizationHandler(ITenantResolver resolver, IMembershipContext membership, IEndpointTenantTypeAccessor endpointTenantTypeAccessor)
     {
         this.resolver = resolver;
         this.membership = membership;
-        this.endpointPersona = endpointPersona;
+        this.endpointTenantTypeAccessor = endpointTenantTypeAccessor;
     }
 
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
     {
         await resolver.ResolveAsync();
 
-        if (membership.HasPermission(requirement.Permission, endpointPersona.Value))
+        if (membership.HasPermission(requirement.Permission, endpointTenantTypeAccessor.TenantType))
             context.Succeed(requirement);
     }
 }
