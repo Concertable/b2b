@@ -87,9 +87,9 @@ staged command) rather than a synchronous `Sent` list.
 
 ### `Modules/User/` TPH not unwound
 
-Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `ArtistManagerEntity`, `AdminEntity`) each carrying the Auth `sub`, with no shared `UserEntity` base via TPH. Current state of the `User.Domain` hierarchy needs verifying and may still be TPH.
+Plan §4.5 calls for flat manager/admin profile tables (`VenueManagerEntity`, `ArtistManagerEntity`, `AdminEntity`) each carrying the Auth `sub`, with no shared `UserEntity` base via TPH. Current state of the `User.Domain` hierarchy needs verifying and may still be TPH.
 
-**Resolves when:** The User module entities are flat tables without a TPH discriminator column; the `UserEntity` base row no longer carries persona-specific fields.
+**Resolves when:** The User module entities are flat tables without a TPH discriminator column; the `UserEntity` base row no longer carries profile-type-specific fields.
 
 ---
 
@@ -194,6 +194,6 @@ Deliberately not done now: the launch gate is *data completeness* (hold a comple
 
 ### B2B portal frontend URLs have no non-local config — prod invite links would break
 
-`FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per persona from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/DOMAINS_AND_DNS.md`](../../plans/DOMAINS_AND_DNS.md). So in any non-local environment the persona dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
+`FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per tenant type from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/DOMAINS_AND_DNS.md`](../../plans/DOMAINS_AND_DNS.md). So in any non-local environment the tenant-type dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
 
 **Resolves when:** `Urls:Frontends:{Venue,Artist}` are supplied per environment from App Config, alongside `Auth:SpaClients` / `Cors:AllowedOrigins` (which key off the same hostnames), as part of the `DOMAINS_AND_DNS.md` config rollout.
