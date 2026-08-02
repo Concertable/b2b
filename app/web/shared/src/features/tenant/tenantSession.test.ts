@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/features/user/hooks/useSyncUser", () => ({
   meQueryKey: ["auth", "me"],
@@ -7,7 +7,7 @@ vi.mock("@/lib/queryClient", () => ({
   queryClient: { getQueryData: vi.fn() },
 }));
 
-import { createTenantStore } from "./store/tenantStore";
+import { useTenantStore } from "./store/tenantStore";
 import { createTenantSession } from "./tenantSession";
 import type { Membership } from "./types";
 
@@ -27,13 +27,11 @@ const venueMemberships: ReadonlyArray<Membership> = [
 ];
 
 function createSession(memberships: ReadonlyArray<Membership>) {
-  const store = createTenantStore();
   const clearMemberships = vi.fn();
   return {
-    store,
     clearMemberships,
     session: createTenantSession({
-      store,
+      store: useTenantStore,
       memberships: () => memberships,
       clearMemberships,
     }),
@@ -41,6 +39,8 @@ function createSession(memberships: ReadonlyArray<Membership>) {
 }
 
 describe("tenant session", () => {
+  beforeEach(() => useTenantStore.getState().clearTenant());
+
   it("selects a tenant for request-header resolution", () => {
     const { session } = createSession(venueMemberships);
 
@@ -69,10 +69,9 @@ describe("tenant session", () => {
   });
 
   it("selects a sole membership while resolving its route", () => {
-    const store = createTenantStore();
     const singleMembership = venueMemberships.slice(0, 1);
     const session = createTenantSession({
-      store,
+      store: useTenantStore,
       memberships: () => singleMembership,
       clearMemberships: vi.fn(),
     });

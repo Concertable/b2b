@@ -1,13 +1,12 @@
 import { useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { useStore } from "zustand";
 import { useSyncUser } from "@/features/user";
 import { meQueryKey } from "@/features/user/hooks/useSyncUser";
 import identityApi from "../api/identityApi";
 import { resolveTenant } from "../memberships";
 import { permissionsForRole } from "../permissions";
-import { tenantStore } from "../store/tenantStore";
+import { useTenantStore } from "../store/tenantStore";
 import type { B2bIdentity, TenantType } from "../types";
 
 export function useTenantIdentity(): void {
@@ -17,13 +16,9 @@ export function useTenantIdentity(): void {
 export function useTenant(tenantType: TenantType) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const activeTenantId = useStore(
-    tenantStore,
-    (state) => state.activeTenantId,
-  );
-  const selectInStore = useStore(tenantStore, (state) => state.selectTenant);
-  const synchronizeTenant = useStore(
-    tenantStore,
+  const activeTenantId = useTenantStore((state) => state.activeTenantId);
+  const selectInStore = useTenantStore((state) => state.selectTenant);
+  const synchronizeTenant = useTenantStore(
     (state) => state.synchronizeTenant,
   );
   const { data: identity } = useQuery<B2bIdentity>({
