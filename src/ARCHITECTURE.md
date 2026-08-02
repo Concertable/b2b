@@ -60,8 +60,6 @@ All event types implement `IIntegrationEvent` from `Concertable.Messaging.Contra
 | `ConcertPostedEvent` | `Concertable.B2B.Concert.Contracts.Events` | Concert moves to Posted stage |
 | `ConcertRatingUpdatedEvent` | `Concertable.B2B.Concert.Contracts.Events` | Rating projection updated |
 
-**Defined in Contracts but not yet published:** `ConcertSettledEvent`, `ConcertFinishedEvent`, `ConcertApplicationCreatedEvent`, `ConcertApplicationAcceptedEvent` — see TECH_DEBT.
-
 ### Consumed
 
 | Event | Source | Handler(s) |
