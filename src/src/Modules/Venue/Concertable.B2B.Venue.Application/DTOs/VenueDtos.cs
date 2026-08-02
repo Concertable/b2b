@@ -12,7 +12,7 @@ public sealed record VenueDto : IAddress
     public required double Latitude { get; init; }
     public required double Longitude { get; init; }
     public required string BannerUrl { get; init; }
-    public string? Avatar { get; init; }
+    public required string Avatar { get; init; }
     public required string County { get; init; }
     public required string Town { get; init; }
     public bool Approved { get; init; }
@@ -29,7 +29,7 @@ public sealed record VenueDetails : IAddress
     public required double Latitude { get; init; }
     public required double Longitude { get; init; }
     public required string BannerUrl { get; init; }
-    public string? Avatar { get; init; }
+    public required string Avatar { get; init; }
     public required string County { get; init; }
     public required string Town { get; init; }
     public bool Approved { get; init; }
