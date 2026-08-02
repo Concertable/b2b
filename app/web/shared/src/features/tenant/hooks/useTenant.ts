@@ -42,12 +42,23 @@ export function useTenant(persona: TenantType) {
   }, [identity, persona, synchronizeTenant]);
 
   const selectTenant = useCallback(
-    (tenantId: string) => {
+    async (tenantId: string) => {
+      if (
+        !identity?.memberships.some(
+          (membership) => membership.tenantId === tenantId,
+        )
+      ) {
+        await queryClient.fetchQuery({
+          queryKey: meQueryKey,
+          queryFn: identityApi.getMe,
+          staleTime: 0,
+        });
+      }
       selectInStore(tenantId);
       void router.invalidate();
       void queryClient.invalidateQueries();
     },
-    [queryClient, router, selectInStore],
+    [identity, queryClient, router, selectInStore],
   );
 
   return {

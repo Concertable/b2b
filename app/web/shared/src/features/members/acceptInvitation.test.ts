@@ -3,25 +3,34 @@ import { acceptInvitation } from "./acceptInvitation";
 import type { Membership } from "@b2b/features/tenant";
 
 describe("invitation acceptance", () => {
-  it("selects the accepted tenant before navigating to member management", async () => {
+  it("waits for tenant selection before navigating", async () => {
     const membership: Membership = {
       tenantId: "accepted-tenant",
       legalName: "Accepted Venue",
       type: "Venue",
       role: "Staff",
     };
-    const selectTenant = vi.fn();
+    let completeSelection: (() => void) | undefined;
+    const selection = new Promise<void>((resolve) => {
+      completeSelection = resolve;
+    });
+    const selectTenant = vi.fn().mockReturnValue(selection);
     const navigate = vi.fn();
 
-    await expect(
-      acceptInvitation("invitation-id", {
-        accept: vi.fn().mockResolvedValue(membership),
-        selectTenant,
-        navigate,
-      }),
-    ).resolves.toEqual(membership);
+    const acceptance = acceptInvitation("invitation-id", {
+      accept: vi.fn().mockResolvedValue(membership),
+      selectTenant,
+      navigate,
+    });
 
-    expect(selectTenant).toHaveBeenCalledWith("accepted-tenant");
+    await vi.waitFor(() =>
+      expect(selectTenant).toHaveBeenCalledWith("accepted-tenant"),
+    );
+    expect(navigate).not.toHaveBeenCalled();
+
+    completeSelection?.();
+    await expect(acceptance).resolves.toEqual(membership);
+
     expect(navigate).toHaveBeenCalledWith("/settings/members");
     expect(selectTenant.mock.invocationCallOrder[0]).toBeLessThan(
       navigate.mock.invocationCallOrder[0],
