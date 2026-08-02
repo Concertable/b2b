@@ -3,13 +3,13 @@ import {
   requireAuth,
   requireBusinessAuth,
 } from "@/features/auth";
-import { getB2bIdentity } from "./identity";
+import identityApi from "./api/identityApi";
 import { getCachedMemberships } from "./identityCache";
 import { filterMembershipsByPersona } from "./memberships";
 import type { TenantType } from "./types";
 
 export function requireB2bAuth(): Promise<void> {
-  return requireBusinessAuth(getB2bIdentity);
+  return requireBusinessAuth(identityApi.getMe);
 }
 
 export function requireLocalB2bAuth({
@@ -17,7 +17,7 @@ export function requireLocalB2bAuth({
 }: {
   location: { pathname: string };
 }) {
-  return requireAuth({ location, getMe: getB2bIdentity });
+  return requireAuth({ location, getMe: identityApi.getMe });
 }
 
 export async function requireBusinessPersona(
