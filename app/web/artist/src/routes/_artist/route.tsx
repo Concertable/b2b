@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   TenantChooser,
   TenantSwitcher,
-  getTenantChoicePending,
+  isTenantChoicePending,
   reconcileActiveTenant,
   requireBusinessPersona,
   useTenantChoicePending,
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_artist")({
   beforeLoad: async ({ location }) => {
     await requireBusinessPersona("Artist");
     reconcileActiveTenant("Artist");
-    if (getTenantChoicePending("Artist")) return;
+    if (isTenantChoicePending("Artist")) return;
     await requireArtist({ pathname: location.pathname });
   },
   component: ArtistLayout,

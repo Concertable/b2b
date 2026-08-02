@@ -1,0 +1,19 @@
+import { redirectToBusiness, requireBusinessAuth } from "@/features/auth";
+import { getB2bIdentity } from "./identity";
+import { getCachedMemberships } from "./identityCache";
+import { filterMembershipsByPersona } from "./memberships";
+import type { TenantType } from "./types";
+
+export function requireB2bAuth(): Promise<void> {
+  return requireBusinessAuth(getB2bIdentity);
+}
+
+export async function requireBusinessPersona(
+  persona: TenantType,
+): Promise<void> {
+  await requireB2bAuth();
+  if (
+    filterMembershipsByPersona(getCachedMemberships(), persona).length === 0
+  )
+    return redirectToBusiness();
+}

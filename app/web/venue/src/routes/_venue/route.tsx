@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   TenantChooser,
   TenantSwitcher,
-  getTenantChoicePending,
+  isTenantChoicePending,
   reconcileActiveTenant,
   requireBusinessPersona,
   useTenantChoicePending,
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_venue")({
   beforeLoad: async ({ location }) => {
     await requireBusinessPersona("Venue");
     reconcileActiveTenant("Venue");
-    if (getTenantChoicePending("Venue")) return;
+    if (isTenantChoicePending("Venue")) return;
     await requireVenue({ pathname: location.pathname });
   },
   component: VenueLayout,
