@@ -54,7 +54,7 @@ it's to split the tiers by *where they run*:
   `AddContainer("payment", "<registry>/payment:<version>")`). Same real Payment, pulled not compiled.
   This suite moves out of B2B's repo into a system/deployment pipeline.
 
-See [`plans/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/SPLIT_TIME_E2E_STRATEGY.md).
+Tracked by [`plans/REPOSITORY_PER_MICROSERVICE_MIGRATION.md`](../../plans/REPOSITORY_PER_MICROSERVICE_MIGRATION.md), checkpoints 2 and 4.
 
 ---
 
