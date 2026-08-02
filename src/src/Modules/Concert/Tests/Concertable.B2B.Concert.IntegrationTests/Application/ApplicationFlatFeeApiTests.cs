@@ -118,7 +118,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 
         var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.FlatFeeApp.Id}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(concert);
         Assert.Null(concert.DatePosted);
         Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);

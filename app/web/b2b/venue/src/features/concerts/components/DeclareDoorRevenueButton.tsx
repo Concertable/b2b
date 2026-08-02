@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Concert } from "@concertable/shared/features/concerts/types";
+import type { MyConcert } from "@b2b/features/concerts";
 import { Button } from "@/components/ui/button";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,7 @@ import {
 import { useDeclareDoorRevenue } from "../hooks/useDeclareDoorRevenue";
 
 interface Props {
-  concert: Concert;
+  concert: MyConcert;
 }
 
 export function DeclareDoorRevenueButton({ concert }: Readonly<Props>) {

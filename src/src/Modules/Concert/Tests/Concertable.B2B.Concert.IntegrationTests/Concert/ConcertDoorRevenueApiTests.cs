@@ -34,7 +34,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
         var deal = fixture.SeedState.PastDoorSplitAppDeal;
 
-        var before = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<ConcertDetailsResponse>();
+        var before = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(before!.Actions!.DeclareDoorRevenue); // offered while ended, Booked, undeclared
 
         // Act
@@ -42,7 +42,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
 
         // Assert — persisted; the action clears now the take is declared.
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var after = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<ConcertDetailsResponse>();
+        var after = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.Equal(DoorRevenue, after!.DoorRevenue);
         Assert.Null(after.Actions!.DeclareDoorRevenue);
 
@@ -62,7 +62,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         await client.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.StripeClient.SendWebhookAsync();
 
-        var concert = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<ConcertDetailsResponse>();
+        var concert = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.Null(concert!.Actions!.DeclareDoorRevenue);
     }
 
