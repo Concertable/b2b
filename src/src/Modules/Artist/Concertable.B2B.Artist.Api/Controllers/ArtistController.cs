@@ -18,14 +18,14 @@ internal sealed class ArtistController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ArtistDetailsResponse>> GetDetailsById(int id)
+    public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
         return Ok((await artistService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("user")]
-    public async Task<ActionResult<ArtistDetailsResponse>> GetDetailsForCurrentUser()
+    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser()
     {
         var artist = await artistService.GetDetailsForCurrentUserAsync();
         return artist is null ? NoContent() : Ok(artist.ToDetailsResponse());

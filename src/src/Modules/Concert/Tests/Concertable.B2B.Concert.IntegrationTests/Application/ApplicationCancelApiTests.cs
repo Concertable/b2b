@@ -246,7 +246,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
         var concertResponse = await client.GetAsync($"/api/Concert/application/{appId}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
 
         // Act
         var cancelResponse = await client.PostAsync($"/api/Concert/{concert!.Id}/cancel");

@@ -137,27 +137,27 @@ public sealed class TenantScopingTests : IAsyncLifetime
         // Venue party — owner read succeeds and carries the action links.
         var venueRead = await venueClient.GetAsync($"/api/Concert/user/{concertId}");
         await venueRead.ShouldBe(HttpStatusCode.OK);
-        var venueConcert = await venueRead.Content.ReadAsync<ConcertDetailsResponse>();
-        Assert.NotNull(venueConcert!.Actions);
-        Assert.Equal($"/api/Concert/{concertId}/contract/pdf", venueConcert.Actions!.Contract!.Href);
+        var venueConcert = await venueRead.Content.ReadAsync<MyDetailsResponse>();
+        Assert.Equal($"/api/Concert/{concertId}/contract/pdf", venueConcert!.Actions.Contract!.Href);
         Assert.NotNull(venueConcert.Actions.Cancel); // Booked
 
         // Artist party — the other side of the deal reads it too, with the contract link.
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var artistRead = await artistClient.GetAsync($"/api/Concert/user/{concertId}");
         await artistRead.ShouldBe(HttpStatusCode.OK);
-        var artistConcert = await artistRead.Content.ReadAsync<ConcertDetailsResponse>();
-        Assert.NotNull(artistConcert!.Actions!.Contract);
+        var artistConcert = await artistRead.Content.ReadAsync<MyDetailsResponse>();
+        Assert.NotNull(artistConcert!.Actions.Contract);
 
         // Stranger tenant — the deal document does not exist for them (404, not 403).
         var stranger = fixture.CreateClient(fixture.SeedState.VenueManager2);
         await (await stranger.GetAsync($"/api/Concert/user/{concertId}")).ShouldBe(HttpStatusCode.NotFound);
 
-        // Public marketplace read — same concert, but no owner affordances leak.
+        // Public marketplace read — same concert, but a distinct response type that structurally
+        // carries no owner affordances (DetailsResponse has no Actions/TicketsSold/DoorRevenue).
         var publicRead = await stranger.GetAsync($"/api/Concert/{concertId}");
         await publicRead.ShouldBe(HttpStatusCode.OK);
-        var publicConcert = await publicRead.Content.ReadAsync<ConcertDetailsResponse>();
-        Assert.Null(publicConcert!.Actions);
+        var publicConcert = await publicRead.Content.ReadAsync<DetailsResponse>();
+        Assert.Equal(concertId, publicConcert!.Id);
     }
 
     /// <summary>

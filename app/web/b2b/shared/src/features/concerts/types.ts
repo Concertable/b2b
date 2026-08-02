@@ -1,5 +1,6 @@
 import type { ActionLink, Genre } from "@concertable/shared/types/common";
 import type { ArtistSummary } from "@concertable/shared/features/artists/types";
+import type { Concert } from "@concertable/shared/features/concerts/types";
 import type { Deal } from "@b2b/features/deals";
 
 export type ApplicationStatus =
@@ -37,6 +38,21 @@ export interface ApplicationActions {
   reject?: ActionLink | null;
   cancel?: ActionLink | null;
   contract?: ActionLink | null;
+}
+
+export interface ConcertActions {
+  cancel?: ActionLink | null;
+  contract?: ActionLink | null;
+  declareDoorRevenue?: ActionLink | null;
+  invoice?: ActionLink | null;
+}
+
+// The party-scoped owner read (GET /concert/user/{id}): the public concert plus the venue-private
+// figures and party-only action links the anonymous marketplace read omits.
+export interface MyConcert extends Concert {
+  ticketsSold: number;
+  doorRevenue: number | null;
+  actions: ConcertActions;
 }
 
 export interface Application {
