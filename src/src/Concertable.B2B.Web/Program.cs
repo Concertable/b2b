@@ -50,7 +50,7 @@ using Concertable.Kernel.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.AddAzureBlobClient("blobs");
+builder.AddAzureBlobServiceClient("blobs");
 
 builder.Configuration.AddEnvironmentVariables();
 
