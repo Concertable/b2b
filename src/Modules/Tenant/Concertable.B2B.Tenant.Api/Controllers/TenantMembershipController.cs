@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;

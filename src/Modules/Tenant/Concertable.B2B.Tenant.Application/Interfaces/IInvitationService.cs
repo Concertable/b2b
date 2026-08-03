@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Requests;
 
 namespace Concertable.B2B.Tenant.Application.Interfaces;

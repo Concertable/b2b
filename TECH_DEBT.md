@@ -117,14 +117,6 @@ Plan §4.5 calls for flat manager/admin profile tables (`VenueManagerEntity`, `A
 
 ---
 
-### Venue/Artist read-model surface is duplicated across near-identical shapes and leaks visibility
-
-The Artist and Venue modules each carry 4–5 overlapping read-shapes for one entity — `XSummary` (Contracts, genuinely cross-module → Concert), `XView` + `XViewGenre` (`Contracts/Views/`, **dead — zero references anywhere**, mutable EF-style classes abandoned when the codebase moved to `Summary` records + direct projection), `XDto` + `XDetails` (`Application/DTOs/`, differ only by a `Rating` field), and `XDetailsResponse` (`Api/Responses/`, ≈ `XDetails` field-for-field). On top of the duplication the boundary discipline in [`agents/MODULAR_MONOLITH_RULES.md`](./agents/MODULAR_MONOLITH_RULES.md) (Contracts = cross-boundary/public, Application/DTOs = module-internal) isn't applied: Artist/Venue/Tenant Application DTOs are `public` though single-module (`Artist.Application/DTOs/ArtistDtos.cs:8,22`, `ArtistDashboardKpis.cs:3`; `Venue.Application/DTOs/VenueDtos.cs:7,23`, `VenueDashboardKpis.cs:3`; `Tenant.Application/DTOs/TenantDetails.cs:5`), and Concert's `ApplicationStatus` enum is `public` (`Concert.Application/DTOs/ApplicationStatus.cs:6`) in an otherwise-`internal` set. `Tenant.Contracts/MemberDto.cs:7` and `InvitationDto.cs:7` sit in Contracts but are used only by Tenant's own Api, not on `ITenantModule`. The `User` module is the clean target — everything cross-boundary consolidated in Contracts, its `Application/DTOs/UserDtos.cs` a tombstone, no `public` leak, no duplication. `Contracts` is the correct name for the boundary surface; the problem is the discipline, not the naming.
-
-**Resolves when:** the Venue/Artist read shapes are consolidated toward the User pattern — dead `Contracts/Views/` deleted; `Summary`/`Details`/`Dto` collapsed to the minimum real variation; only genuinely cross-module types kept in Contracts — single-module Application DTOs and `ApplicationStatus` are `internal`, and `MemberDto`/`InvitationDto` move out of Contracts into Tenant's Application/Api.
-
----
-
 ## RESOLVED
 
 ### ✅ Seed `TicketsSold` depends on the Payment seed simulator
