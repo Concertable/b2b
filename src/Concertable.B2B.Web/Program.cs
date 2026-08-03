@@ -54,6 +54,7 @@ builder.AddAzureBlobClient("blobs");
 
 builder.Configuration.AddEnvironmentVariables();
 
+builder.Services.AddProblemDetails();
 builder.Services.AddControllers()
     .AddApplicationPart(typeof(Concertable.Shared.Api.Controllers.GenreController).Assembly)
 .AddJsonOptions(options =>
@@ -189,7 +190,6 @@ services.AddAuth(builder.Configuration, builder.Environment);
 services.AddValidation();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails();
 
 builder.Services.AddScoped<TenantResolutionMiddleware>();
 
