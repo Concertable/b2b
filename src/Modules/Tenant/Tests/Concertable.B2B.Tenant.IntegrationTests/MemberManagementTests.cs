@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Domain.Entities;
 using Xunit;
