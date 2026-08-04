@@ -120,14 +120,14 @@ public sealed class SelfBillingAgreementServiceTests
     }
 
     [Fact]
-    public async Task GetCurrentAsync_MapsCurrentAgreement_OrNullWhenNone()
+    public async Task GetLatestAsync_MapsLatestAgreement_OrNullWhenNone()
     {
-        Assert.Null(await service.GetCurrentAsync());
+        Assert.Null(await service.GetLatestAsync());
 
-        repository.Setup(r => r.GetCurrentAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+        repository.Setup(r => r.GetLatestAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(BuildAgreement());
 
-        var dto = await service.GetCurrentAsync();
+        var dto = await service.GetLatestAsync();
 
         Assert.NotNull(dto);
         Assert.Equal("Sally Supplier Ltd", dto.SupplierLegalName);

@@ -16,4 +16,9 @@ internal sealed class SelfBillingAgreementRepository
             .Where(a => a.ExpiresAtUtc > nowUtc)
             .OrderByDescending(a => a.AcceptedAtUtc)
             .FirstOrDefaultAsync(ct);
+
+    public Task<SelfBillingAgreementEntity?> GetLatestAsync(CancellationToken ct = default) =>
+        base.CurrentTenant
+            .OrderByDescending(a => a.AcceptedAtUtc)
+            .FirstOrDefaultAsync(ct);
 }
