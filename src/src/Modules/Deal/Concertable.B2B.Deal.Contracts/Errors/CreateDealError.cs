@@ -8,17 +8,11 @@ public abstract partial record CreateDealError : IError
 {
     public abstract ErrorDefinition Definition { get; }
 
-    public partial record ValidationCase(ValidationErrors Errors)
+    [ErrorCode("deal.create.invalid")]
+    public partial record Invalid(ValidationErrors Errors)
     {
-        public override ErrorDefinition Definition => ErrorDefinition.Validation(
-            "deal.create.invalid",
+        public override ErrorDefinition Definition => ErrorDefinition.Validation<Invalid>(
             "The deal is invalid.",
             Errors.ToDictionary());
-    }
-
-    public static CreateDealError Validation(ValidationErrors errors)
-    {
-        ArgumentNullException.ThrowIfNull(errors);
-        return new ValidationCase(errors);
     }
 }
