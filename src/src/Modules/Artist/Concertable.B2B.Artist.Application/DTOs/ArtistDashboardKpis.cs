@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Artist.Application.DTOs;
 
-public sealed record ArtistDashboardKpis(
+internal sealed record ArtistDashboardKpis(
     int PendingApplications,
     int AcceptedAwaitingCheckout,
     int UpcomingConcerts,

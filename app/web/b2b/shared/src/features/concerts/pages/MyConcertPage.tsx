@@ -3,7 +3,7 @@ import { ConfigBar } from "@/components/ConfigBar";
 import { Button } from "@/components/ui/button";
 import { EditableProvider } from "@concertable/shared/providers";
 import { DetailsPageSkeleton } from "@/components/skeletons/DetailsPageSkeleton";
-import type { Concert } from "@concertable/shared/features/concerts/types";
+import type { MyConcert } from "../types";
 import { useMyConcert } from "../hooks/useMyConcert";
 import { useDownloadContractMutation } from "../hooks/useDownloadContractMutation";
 import { useConcertStore } from "../store/useConcertStore";
@@ -13,7 +13,7 @@ interface Props {
   id: number;
   // Slot for app-specific manager actions (e.g. the venue's cancel-booking button).
   // The artist app renders none — cancelling a booking is a venue-only decision.
-  renderActions?: (concert: Concert) => ReactNode;
+  renderActions?: (concert: MyConcert) => ReactNode;
 }
 
 export function MyConcertPage({ id, renderActions }: Readonly<Props>) {

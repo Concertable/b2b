@@ -27,6 +27,7 @@ public sealed class ModuleBoundaryTests
         var assemblies = Directory.GetFiles(dir, "Concertable.B2B.*.dll")
             .Where(p => !Path.GetFileNameWithoutExtension(p).Contains("Test", StringComparison.Ordinal))
             .Select(System.Reflection.Assembly.LoadFrom)
+            .Append(System.Reflection.Assembly.LoadFrom(Path.Combine(dir, "Concertable.Kernel.dll")))
             .ToArray();
         return new ArchLoader().LoadAssemblies(assemblies).Build();
     }
@@ -44,6 +45,13 @@ public sealed class ModuleBoundaryTests
     [Fact]
     public void Contracts_do_not_depend_on_inner_layers() =>
         Forbid("Contracts", "Domain", "Application", "Infrastructure", "Api");
+
+    [Fact]
+    public void Api_does_not_depend_on_Option() =>
+        Types().That().ResideInNamespace($@"^Concertable\.B2B\.({ModsAlt})\.Api($|\.)", useRegularExpressions: true)
+            .Should().NotDependOnAny(Types().That().AreAssignableTo("Concertable.Kernel.Functional.Option`1", useRegularExpressions: false))
+            .Because("controllers receive application-owned Results rather than deciding what absence means")
+            .Check(Architecture);
 
     // Cross-module isolation — a module talks to another only via its Contracts / integration events,
     // never reaching into its Infrastructure. (Domain is intentionally allowed: public read-model

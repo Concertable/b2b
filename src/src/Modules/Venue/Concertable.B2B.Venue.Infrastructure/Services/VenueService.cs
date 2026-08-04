@@ -40,8 +40,10 @@ internal sealed class VenueService : IVenueService
         this.geometryProvider = geometryProvider;
     }
 
-    public async Task<Option<VenueDetails>> GetDetailsByIdAsync(int id) =>
-        (await publicRepository.GetDetailsByIdAsync(id)).ToOption();
+    public Task<Result<VenueDetails, VenueError>> GetDetailsByIdAsync(int id) =>
+        publicRepository.GetDetailsByIdAsync(id)
+            .ToOption()
+            .OrFailure(() => VenueError.NotFound(id));
 
     public async Task<Result<VenueDetails, CreateVenueError>> CreateAsync(CreateVenueRequest request)
     {
@@ -98,8 +100,10 @@ internal sealed class VenueService : IVenueService
         return Result.Success<VenueDetails, UpdateVenueError>(details);
     }
 
-    public async Task<Option<VenueDetails>> GetDetailsForCurrentUserAsync() =>
-        (await repository.GetDetailsForCurrentTenantAsync()).ToOption();
+    public Task<Result<VenueDetails, VenueError>> GetDetailsForCurrentUserAsync() =>
+        repository.GetDetailsForCurrentTenantAsync()
+            .ToOption()
+            .OrFailure(VenueError.NotFoundForCurrentTenant);
 
     public async Task<Option<int>> GetIdForCurrentUserAsync() =>
         (await repository.GetIdForCurrentTenantAsync()).ToOption();

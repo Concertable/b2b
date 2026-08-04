@@ -1,7 +1,5 @@
 using Concertable.B2B.Deal.Application.Interfaces;
-using Concertable.B2B.Deal.Api.Errors;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.Kernel.Functional;
 using Concertable.Shared.Api.Results;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,10 +17,6 @@ internal sealed class DealController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<IDeal>> GetById(int id)
-    {
-        var result = (await dealService.GetByIdAsync(id))
-            .OrFailure(() => GetDealError.NotFound(id));
-        return result.ToOkActionResult();
-    }
+    public async Task<ActionResult<IDeal>> GetById(int id) =>
+        (await dealService.GetByIdAsync(id)).ToOkActionResult();
 }

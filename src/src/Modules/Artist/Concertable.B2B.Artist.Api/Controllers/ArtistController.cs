@@ -1,5 +1,4 @@
 using Concertable.B2B.Artist.Api.Mappers;
-using Concertable.B2B.Artist.Api.Errors;
 using Concertable.B2B.Artist.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +7,7 @@ namespace Concertable.B2B.Artist.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[TenantPersona(TenantType.Artist)]
+[RequiredTenantType(TenantType.Artist)]
 internal sealed class ArtistController : ControllerBase
 {
     private readonly IArtistService artistService;
@@ -19,23 +18,19 @@ internal sealed class ArtistController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ArtistDetailsResponse>> GetDetailsById(int id)
+    public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
         return (await artistService.GetDetailsByIdAsync(id))
             .Map(artist => artist.ToDetailsResponse())
-            .OrFailure(() => GetArtistError.NotFound(id))
             .ToOkActionResult();
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("user")]
-    public async Task<ActionResult<ArtistDetailsResponse>> GetDetailsForCurrentUser()
-    {
-        var artist = await artistService.GetDetailsForCurrentUserAsync();
-        return artist.Match<ActionResult<ArtistDetailsResponse>>(
-            value => Ok(value.ToDetailsResponse()),
-            () => NoContent());
-    }
+    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser() =>
+        (await artistService.GetDetailsForCurrentUserAsync())
+            .Map(artist => artist.ToDetailsResponse())
+            .ToOkActionResult();
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]

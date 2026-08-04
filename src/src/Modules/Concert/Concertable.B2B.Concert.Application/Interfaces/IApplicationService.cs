@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IApplicationService
 {
-    Task<Option<ApplicationDto>> GetByIdAsync(int id);
+    Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id);
     Task<IReadOnlyList<ApplicationDto>> GetByOpportunityIdAsync(int id);
     Task<IReadOnlyList<ApplicationDto>> GetPendingForArtistAsync();
     Task<IReadOnlyList<ApplicationDto>> GetRecentDeniedForArtistAsync();

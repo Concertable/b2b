@@ -6,8 +6,8 @@ namespace Concertable.B2B.Venue.Application.Interfaces;
 
 internal interface IVenueService
 {
-    Task<Option<VenueDetails>> GetDetailsByIdAsync(int id);
-    Task<Option<VenueDetails>> GetDetailsForCurrentUserAsync();
+    Task<Result<VenueDetails, VenueError>> GetDetailsByIdAsync(int id);
+    Task<Result<VenueDetails, VenueError>> GetDetailsForCurrentUserAsync();
     Task<Result<VenueDetails, CreateVenueError>> CreateAsync(CreateVenueRequest request);
     Task<Result<VenueDetails, UpdateVenueError>> UpdateAsync(int id, UpdateVenueRequest request);
     Task<Option<int>> GetIdForCurrentUserAsync();

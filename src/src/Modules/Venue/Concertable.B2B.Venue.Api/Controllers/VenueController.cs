@@ -1,5 +1,4 @@
 using Concertable.B2B.Venue.Api.Mappers;
-using Concertable.B2B.Venue.Api.Errors;
 using Concertable.B2B.Venue.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Api.Authorization;
@@ -11,7 +10,7 @@ namespace Concertable.B2B.Venue.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[TenantPersona(TenantType.Venue)]
+[RequiredTenantType(TenantType.Venue)]
 internal sealed class VenueController : ControllerBase
 {
     private readonly IVenueService venueService;
@@ -22,23 +21,19 @@ internal sealed class VenueController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<VenueDetailsResponse>> GetDetailsById(int id)
+    public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
         return (await venueService.GetDetailsByIdAsync(id))
             .Map(venue => venue.ToDetailsResponse())
-            .OrFailure(() => GetVenueError.NotFound(id))
             .ToOkActionResult();
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("user")]
-    public async Task<ActionResult<VenueDetailsResponse>> GetDetailsForCurrentUser()
-    {
-        var venue = await venueService.GetDetailsForCurrentUserAsync();
-        return venue.Match<ActionResult<VenueDetailsResponse>>(
-            value => Ok(value.ToDetailsResponse()),
-            () => NoContent());
-    }
+    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser() =>
+        (await venueService.GetDetailsForCurrentUserAsync())
+            .Map(venue => venue.ToDetailsResponse())
+            .ToOkActionResult();
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]

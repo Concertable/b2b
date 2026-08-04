@@ -126,7 +126,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.DoorSplitApp.Id}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(concert);
         Assert.Null(concert.DatePosted);
 

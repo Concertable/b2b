@@ -15,6 +15,6 @@ internal sealed class FrontendUriGenerator : IFrontendUriGenerator
         this.frontends = settings.Value.Frontends.ToFrozenDictionary();
     }
 
-    public Uri Create(TenantType persona, string path, IDictionary<string, string>? query = null) =>
-        uris.Create(frontends[persona], path, query);
+    public Uri Create(TenantType tenantType, string path, IDictionary<string, string>? query = null) =>
+        uris.Create(frontends[tenantType], path, query);
 }

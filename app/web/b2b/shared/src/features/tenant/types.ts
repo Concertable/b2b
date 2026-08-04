@@ -5,12 +5,12 @@ export type TenantType = "Venue" | "Artist";
 export type TenantRole = (typeof TENANT_ROLES)[number];
 
 export interface Membership {
-  tenantId: string;
-  legalName: string;
-  type: TenantType;
-  role: TenantRole;
+  readonly tenantId: string;
+  readonly legalName: string;
+  readonly type: TenantType;
+  readonly role: TenantRole;
 }
 
 export interface B2bIdentity extends User {
-  memberships: Membership[];
+  readonly memberships: ReadonlyArray<Membership>;
 }

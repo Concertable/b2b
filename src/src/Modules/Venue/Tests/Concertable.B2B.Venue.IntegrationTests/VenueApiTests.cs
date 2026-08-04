@@ -36,7 +36,7 @@ public sealed class VenueApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var venue = await response.Content.ReadAsync<VenueDetailsResponse>();
+        var venue = await response.Content.ReadAsync<DetailsResponse>();
         Assert.NotNull(venue);
         Assert.Equal(fixture.SeedState.Venue.Id, venue.Id);
         Assert.Equal("The Grand Venue", venue.Name);
@@ -96,13 +96,13 @@ public sealed class VenueApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var venue = await response.Content.ReadAsync<VenueDetailsResponse>();
+        var venue = await response.Content.ReadAsync<DetailsResponse>();
         Assert.NotNull(venue);
         Assert.Equal("The Grand Venue", venue.Name);
     }
 
     [Fact]
-    public async Task GetDetailsForCurrentUser_ShouldReturn204_WhenNoVenueExists()
+    public async Task GetDetailsForCurrentUser_ShouldReturn404_WhenNoVenueExists()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
@@ -111,7 +111,7 @@ public sealed class VenueApiTests : IAsyncLifetime
         var response = await client.GetAsync("/api/Venue/user");
 
         // Assert
-        await response.ShouldBe(HttpStatusCode.NoContent);
+        await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
     #endregion

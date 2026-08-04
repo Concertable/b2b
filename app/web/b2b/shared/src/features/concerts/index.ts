@@ -9,6 +9,8 @@ export type {
   ApplicationStatus,
   ApplicationActions,
   OpportunityActions,
+  MyConcert,
+  ConcertActions,
 } from "./types";
 export { useESignature } from "./hooks/useESignature";
 export { ConfirmActionDialog } from "./components/applications/ConfirmActionDialog";

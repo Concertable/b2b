@@ -32,7 +32,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
         var response = await client.GetAsync($"/api/Artist/{fixture.SeedState.Artist.Id}");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var artist = await response.Content.ReadAsync<ArtistDetailsResponse>();
+        var artist = await response.Content.ReadAsync<DetailsResponse>();
         Assert.NotNull(artist);
         Assert.Equal(fixture.SeedState.Artist.Id, artist.Id);
         Assert.Equal("The Rockers", artist.Name);
@@ -80,19 +80,19 @@ public sealed class ArtistApiTests : IAsyncLifetime
         var response = await client.GetAsync("/api/Artist/user");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var artist = await response.Content.ReadAsync<ArtistDetailsResponse>();
+        var artist = await response.Content.ReadAsync<DetailsResponse>();
         Assert.NotNull(artist);
         Assert.Equal("The Rockers", artist.Name);
     }
 
     [Fact]
-    public async Task GetDetailsForCurrentUser_ShouldReturn204_WhenNoArtistExists()
+    public async Task GetDetailsForCurrentUser_ShouldReturn404_WhenNoArtistExists()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
 
         var response = await client.GetAsync("/api/Artist/user");
 
-        await response.ShouldBe(HttpStatusCode.NoContent);
+        await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
     #endregion

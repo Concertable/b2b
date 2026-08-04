@@ -3,13 +3,6 @@ using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Tenant.UnitTests;
 
-/// <summary>
-/// Recovers the compile-time guarantee an enum would have given (§1.3): every declared permission constant is
-/// granted to at least one role within its catalog, and each catalog grants only its own declared constants —
-/// so a typo'd or orphaned permission string fails the build's tests, not silently 403s in production. Plus
-/// the headline guarantee of the persona split: a persona-exclusive permission is unreachable for the other
-/// persona by construction.
-/// </summary>
 public sealed class PermissionCatalogTests
 {
     private static readonly IPermissionCatalog Catalog = Build();
@@ -44,7 +37,7 @@ public sealed class PermissionCatalogTests
     }
 
     [Fact]
-    public void Owner_HoldsEveryPermissionOfItsPersona()
+    public void Owner_HoldsEveryPermissionForTenantType()
     {
         var shared = new SharedPermissions();
         var venue = new VenuePermissions(shared);
@@ -58,7 +51,7 @@ public sealed class PermissionCatalogTests
     }
 
     [Fact]
-    public void PersonaExclusivePermissions_AreUnreachableForTheOtherPersona()
+    public void TenantTypeSpecificPermissions_AreUnreachableForOtherTenantType()
     {
         var shared = new SharedPermissions();
         var venue = new VenuePermissions(shared);
@@ -90,14 +83,14 @@ public sealed class PermissionCatalogTests
     [InlineData(TenantType.Artist, TenantRole.Owner, ArtistPermissions.ApplicationsSubmit, true)]
     [InlineData(TenantType.Venue, TenantRole.Owner, ArtistPermissions.ApplicationsSubmit, false)]
     [InlineData(TenantType.Artist, TenantRole.Owner, VenuePermissions.ApplicationsDecide, false)]
-    public void Grants_MatchesMatrix(TenantType persona, TenantRole role, string permission, bool expected) =>
-        Assert.Equal(expected, Catalog.Grants(persona, role, permission));
+    public void Grants_MatchesMatrix(TenantType tenantType, TenantRole role, string permission, bool expected) =>
+        Assert.Equal(expected, Catalog.Grants(tenantType, role, permission));
 
     [Theory]
     [InlineData(TenantType.Venue, TenantRole.Door)]
     [InlineData(TenantType.Venue, TenantRole.Sound)]
     [InlineData(TenantType.Artist, TenantRole.Door)]
     [InlineData(TenantType.Artist, TenantRole.Sound)]
-    public void ReservedRoles_AlwaysHaveOperationsView(TenantType persona, TenantRole role) =>
-        Assert.True(Catalog.Grants(persona, role, SharedPermissions.OperationsView));
+    public void ReservedRoles_AlwaysHaveOperationsView(TenantType tenantType, TenantRole role) =>
+        Assert.True(Catalog.Grants(tenantType, role, SharedPermissions.OperationsView));
 }

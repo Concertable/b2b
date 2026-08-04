@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Api.Mappers;
-using Concertable.B2B.Concert.Api.Errors;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Contracts;
@@ -10,7 +9,7 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[TenantPersona(TenantType.Venue)]
+[RequiredTenantType(TenantType.Venue)]
 internal sealed class OpportunityController : ControllerBase
 {
     private readonly IOpportunityService opportunityService;
@@ -34,7 +33,6 @@ internal sealed class OpportunityController : ControllerBase
     {
         return (await opportunityService.GetByIdAsync(id))
             .Map(mapper.ToResponse)
-            .OrFailure(() => ConcertLookupError.OpportunityNotFound(id))
             .ToOkActionResult();
     }
 
