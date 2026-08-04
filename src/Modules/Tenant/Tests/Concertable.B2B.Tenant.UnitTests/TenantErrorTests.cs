@@ -17,31 +17,31 @@ public sealed class TenantErrorTests
             ErrorKind.NotFound
         },
         {
-            AcceptInvitationError.Forbidden(),
+            AcceptInvitationError.EmailMismatch,
             "tenant.accept_invitation_email_mismatch",
             "This invitation was issued to a different email address.",
             ErrorKind.Forbidden
         },
         {
-            AcceptInvitationError.MissingTenant(),
+            AcceptInvitationError.TenantNotFound,
             "tenant.accept_invitation_tenant_not_found",
             "The organization for this invitation no longer exists.",
             ErrorKind.NotFound
         },
         {
-            AcceptInvitationError.MemberConflict(),
+            AcceptInvitationError.AlreadyMember,
             "tenant.accept_invitation_already_member",
             "You are already a member of this organization.",
             ErrorKind.Conflict
         },
         {
-            AcceptInvitationError.NotPending(),
+            AcceptInvitationError.InvitationNotPending,
             "tenant.accept_invitation_not_pending",
             "This invitation is no longer pending.",
             ErrorKind.Conflict
         },
         {
-            AcceptInvitationError.Expired(),
+            AcceptInvitationError.InvitationExpired,
             "tenant.accept_invitation_expired",
             "This invitation has expired.",
             ErrorKind.Invalid
@@ -53,7 +53,7 @@ public sealed class TenantErrorTests
             ErrorKind.NotFound
         },
         {
-            ChangeMemberRoleError.LastOwnerConflict(),
+            ChangeMemberRoleError.LastOwner,
             "tenant.change_role_last_owner",
             "The last owner of an organization cannot be demoted.",
             ErrorKind.Conflict
@@ -65,19 +65,19 @@ public sealed class TenantErrorTests
             ErrorKind.NotFound
         },
         {
-            InviteMemberError.NotFound(),
+            InviteMemberError.TenantNotFound,
             "tenant.invite_tenant_not_found",
             "Your organization was not found.",
             ErrorKind.NotFound
         },
         {
-            InviteMemberError.MemberConflict(),
+            InviteMemberError.AlreadyMember,
             "tenant.invite_already_member",
             "This person is already a member of the organization.",
             ErrorKind.Conflict
         },
         {
-            InviteMemberError.PendingConflict(),
+            InviteMemberError.InvitationPending,
             "tenant.invite_already_pending",
             "An invitation for this email is already pending.",
             ErrorKind.Conflict
@@ -89,7 +89,7 @@ public sealed class TenantErrorTests
             ErrorKind.NotFound
         },
         {
-            RemoveMemberError.LastOwnerConflict(),
+            RemoveMemberError.LastOwner,
             "tenant.remove_member_last_owner",
             "The last owner of an organization cannot be removed.",
             ErrorKind.Conflict
@@ -101,13 +101,13 @@ public sealed class TenantErrorTests
             ErrorKind.NotFound
         },
         {
-            RevokeInvitationError.NotPending(),
+            RevokeInvitationError.InvitationNotPending,
             "tenant.revoke_invitation_not_pending",
             "Only a pending invitation can be revoked.",
             ErrorKind.Conflict
         },
         {
-            UpdateTenantError.Forbidden(),
+            UpdateTenantError.NoActiveTenant,
             "tenant.update_forbidden",
             "No active organization was found for the current user.",
             ErrorKind.Forbidden
@@ -119,7 +119,7 @@ public sealed class TenantErrorTests
             ErrorKind.NotFound
         },
         {
-            GetVatCalculationError.NotFound(Id),
+            VatCalculationError.NotFound(Id),
             "tenant.vat_tenant_not_found",
             $"Organization {Id} was not found.",
             ErrorKind.NotFound

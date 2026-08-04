@@ -2,15 +2,8 @@ using Concertable.Kernel.Errors;
 
 namespace Concertable.B2B.Concert.Application.Errors;
 
-internal sealed record ConcertError : IError
+internal sealed record ConcertError(ErrorDefinition Definition) : IError
 {
-    private ConcertError(ErrorDefinition definition)
-    {
-        Definition = definition;
-    }
-
-    public ErrorDefinition Definition { get; }
-
     internal static ConcertError NotFound(int concertId) =>
         new(ErrorDefinition.NotFound(
             "concert.get.not_found",

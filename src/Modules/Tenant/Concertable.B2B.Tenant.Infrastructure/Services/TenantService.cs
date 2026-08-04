@@ -49,7 +49,7 @@ internal sealed class TenantService : ITenantService
         CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
-            return Result.Failure<TenantDetails, UpdateTenantError>(UpdateTenantError.Forbidden());
+            return Result.Failure<TenantDetails, UpdateTenantError>(UpdateTenantError.NoActiveTenant);
 
         var tenant = await repository.GetByIdAsync(tenantId, ct);
         if (tenant is null)
@@ -94,7 +94,7 @@ internal sealed class TenantService : ITenantService
             .Bind(tenant => tenant.TaxCompliance.ToOption())
             .Map(compliance => compliance.ToDto());
 
-    public async Task<Result<VatCalculation, GetVatCalculationError>> GetVatCalculationAsync(
+    public async Task<Result<VatCalculation, VatCalculationError>> GetVatCalculationAsync(
         Guid tenantId,
         decimal gross,
         CancellationToken ct = default)
@@ -102,13 +102,13 @@ internal sealed class TenantService : ITenantService
         // Fail-closed: settlement's tax-gate guarantees tenant + compliance by invoice time; a null VatNumber (unregistered) is the only valid absence.
         var tenant = await repository.GetByIdAsync(tenantId, ct);
         if (tenant is null)
-            return Result.Failure<VatCalculation, GetVatCalculationError>(GetVatCalculationError.NotFound(tenantId));
+            return Result.Failure<VatCalculation, VatCalculationError>(VatCalculationError.NotFound(tenantId));
 
         var compliance = tenant.TaxCompliance
             ?? throw new InvalidOperationException(
                 $"Tenant {tenantId} has no tax compliance; the settlement tax-gate should guarantee it by invoice time.");
 
-        return Result.Success<VatCalculation, GetVatCalculationError>(vatPolicy.Apply(gross, compliance.VatNumber));
+        return Result.Success<VatCalculation, VatCalculationError>(vatPolicy.Apply(gross, compliance.VatNumber));
     }
 
     private TenantDetails ToDetails(TenantEntity tenant) => new()

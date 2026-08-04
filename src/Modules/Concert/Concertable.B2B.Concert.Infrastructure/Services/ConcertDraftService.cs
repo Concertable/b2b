@@ -43,7 +43,7 @@ internal sealed class ConcertDraftService : IConcertDraftService
         if (!matchingGenres.Any())
         {
             logger.ConcertDraftCreationFailed(bookingId, artist.Id, opportunity.Id);
-            return Result.Failure<ConcertEntity, CreateConcertDraftError>(CreateConcertDraftError.InvalidGenres());
+            return Result.Failure<ConcertEntity, CreateConcertDraftError>(CreateConcertDraftError.GenreMismatch);
         }
 
         var concert = ConcertEntity.CreateDraft(

@@ -41,7 +41,7 @@ internal sealed class MembershipService : IMembershipService
             && request.Role != TenantRole.Owner
             && await IsLastOwnerAsync(tenantId, ct))
         {
-            return UnitResult.Failure(ChangeMemberRoleError.LastOwnerConflict());
+            return UnitResult.Failure(ChangeMemberRoleError.LastOwner);
         }
 
         membership.ChangeRole(request.Role);
@@ -59,7 +59,7 @@ internal sealed class MembershipService : IMembershipService
             return UnitResult.Failure(RemoveMemberError.NotFound(userId));
 
         if (membership.Role == TenantRole.Owner && await IsLastOwnerAsync(tenantId, ct))
-            return UnitResult.Failure(RemoveMemberError.LastOwnerConflict());
+            return UnitResult.Failure(RemoveMemberError.LastOwner);
 
         repository.RemoveMembership(membership);
         await repository.SaveChangesAsync(ct);

@@ -40,7 +40,7 @@ internal sealed class ArtistService : IArtistService
     public Task<Result<ArtistDetails, ArtistError>> GetDetailsForCurrentUserAsync() =>
         repository.GetDetailsForCurrentTenantAsync()
             .ToOption()
-            .OrFailure(ArtistError.NotFoundForCurrentTenant);
+            .OrFailure(ArtistError.CurrentTenantNotFound);
 
     public Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(int id) =>
         publicRepository.GetDetailsByIdAsync(id)
@@ -50,7 +50,7 @@ internal sealed class ArtistService : IArtistService
     public async Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(CreateArtistRequest request)
     {
         if (!tenantContext.HasTenant)
-            return Result.Failure<ArtistDetails, CreateArtistError>(CreateArtistError.Forbidden());
+            return Result.Failure<ArtistDetails, CreateArtistError>(CreateArtistError.Forbidden);
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
