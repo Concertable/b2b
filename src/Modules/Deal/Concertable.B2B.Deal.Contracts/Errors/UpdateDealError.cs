@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Concertable.Kernel.Errors;
 using Dunet;
 
@@ -8,26 +9,18 @@ public abstract partial record UpdateDealError : IError
 {
     public abstract ErrorDefinition Definition { get; }
 
-    public partial record NotFoundCase(int DealId)
+    [DisplayName("Deal")]
+    [ErrorCode("deal.update.not_found")]
+    public partial record DealNotFound
     {
-        public override ErrorDefinition Definition => ErrorDefinition.NotFound(
-            "deal.update.not_found",
-            $"Deal {DealId} was not found.");
+        public override ErrorDefinition Definition => ErrorDefinition.NotFound<DealNotFound>();
     }
 
-    public partial record ValidationCase(ValidationErrors Errors)
+    [ErrorCode("deal.update.invalid")]
+    public partial record Invalid(ValidationErrors Errors)
     {
-        public override ErrorDefinition Definition => ErrorDefinition.Validation(
-            "deal.update.invalid",
+        public override ErrorDefinition Definition => ErrorDefinition.Validation<Invalid>(
             "The deal is invalid.",
             Errors.ToDictionary());
-    }
-
-    public static UpdateDealError NotFound(int dealId) => new NotFoundCase(dealId);
-
-    public static UpdateDealError Validation(ValidationErrors errors)
-    {
-        ArgumentNullException.ThrowIfNull(errors);
-        return new ValidationCase(errors);
     }
 }
