@@ -1,4 +1,5 @@
 import { TaxDetailsBanner } from "@b2b/features/organizations";
+import { SelfBillingAgreementBanner } from "@b2b/features/selfBilling";
 import { PersonaSwitcher, SectionGrid } from "@/features/dashboard";
 import { VenueActivityWidget } from "./VenueActivityWidget";
 import { VenueApplicationsWidget } from "./VenueApplicationsWidget";
@@ -26,6 +27,8 @@ export function VenueDashboardPage() {
       <VenueStripeBanner />
 
       <TaxDetailsBanner />
+
+      <SelfBillingAgreementBanner />
 
       <SectionGrid>
         <div className="col-span-12 lg:col-span-7">
