@@ -45,7 +45,7 @@ internal sealed class DealService : IDealService
 
     public Task<Result<int, CreateDealError>> CreateAsync(IDeal deal, CancellationToken ct = default) =>
         mapper.ToEntity(deal)
-            .MapError(errors => new CreateDealError.Invalid(errors))
+            .MapError<CreateDealError>(errors => new CreateDealError.Invalid(errors))
             .BindAsync(async (DealEntity entity) =>
             {
                 await dealRepository.AddAsync(entity, ct);
@@ -57,9 +57,10 @@ internal sealed class DealService : IDealService
     {
         var existing = await dealRepository.GetByIdAsync(dealId, ct);
         if (existing is null)
-            return UnitResult.Failure(new UpdateDealError.DealNotFound());
+            return UnitResult.Failure<UpdateDealError>(new UpdateDealError.DealNotFound());
 
-        var update = updater.Apply(existing, deal).MapError(errors => new UpdateDealError.Invalid(errors));
+        var update = updater.Apply(existing, deal)
+            .MapError<UpdateDealError>(errors => new UpdateDealError.Invalid(errors));
         if (update.IsFailure)
             return update;
 
