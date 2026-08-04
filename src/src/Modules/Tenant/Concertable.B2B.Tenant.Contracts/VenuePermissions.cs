@@ -2,12 +2,6 @@ using System.Collections.Frozen;
 
 namespace Concertable.B2B.Tenant.Contracts;
 
-/// <summary>
-/// The venue persona's catalog: the <see cref="SharedPermissions"/> base plus the permissions only a venue
-/// tenant can hold (design §1.3, marked (V)). These constants live here, not in a persona-blind bag, so an
-/// artist tenant can never be granted them — its catalog doesn't contain them — and a venue endpoint names
-/// <c>VenuePermissions.X</c>, which reads as "venue-only" at the call-site.
-/// </summary>
 public sealed class VenuePermissions : IPermissionSet
 {
     public const string OpportunitiesManage = "opportunities.manage";

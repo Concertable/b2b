@@ -15,9 +15,11 @@ export type TenantPermission =
   | "MessagesSend"
   | "ConcertsOpsEdit";
 
-// Mirrors the backend SharedPermissions.ByRole (the source of truth); this gate is cosmetic —
-// the server re-checks every call via [HasPermission].
-const byRole: Record<TenantRole, ReadonlySet<TenantPermission>> = {
+const EMPTY_PERMISSIONS: ReadonlySet<TenantPermission> = new Set();
+
+const PERMISSIONS_BY_ROLE: Readonly<
+  Record<TenantRole, ReadonlySet<TenantPermission>>
+> = {
   Owner: new Set<TenantPermission>([
     "OperationsView",
     "ProfileEdit",
@@ -59,9 +61,8 @@ const byRole: Record<TenantRole, ReadonlySet<TenantPermission>> = {
   Sound: new Set<TenantPermission>(["OperationsView", "ConcertsOpsEdit"]),
 };
 
-export function hasPermission(
-  role: TenantRole,
-  permission: TenantPermission,
-): boolean {
-  return byRole[role].has(permission);
+export function permissionsForRole(
+  role: TenantRole | undefined,
+): ReadonlySet<TenantPermission> {
+  return role === undefined ? EMPTY_PERMISSIONS : PERMISSIONS_BY_ROLE[role];
 }
