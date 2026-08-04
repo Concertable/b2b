@@ -21,11 +21,6 @@ internal sealed class ArtistManagerSyncHandler : IIntegrationEventHandler<Artist
 
     public async Task HandleAsync(ArtistChangedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (await db.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(ArtistManagerSyncHandler), ct))
-            return;
-
-        db.AddInboxMessage(envelope, nameof(ArtistManagerSyncHandler));
-
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == e.UserId, ct);
         if (user is not null)
         {

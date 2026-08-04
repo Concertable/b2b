@@ -18,11 +18,6 @@ internal sealed class ArtistReadModelProjectionHandler : IIntegrationEventHandle
 
     public async Task HandleAsync(ArtistChangedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(ArtistReadModelProjectionHandler), ct))
-            return;
-
-        context.AddInboxMessage(envelope, nameof(ArtistReadModelProjectionHandler));
-
         var artist = await context.ArtistReadModels
             .Include(a => a.Genres)
             .FirstOrDefaultAsync(a => a.Id == e.ArtistId, ct);
