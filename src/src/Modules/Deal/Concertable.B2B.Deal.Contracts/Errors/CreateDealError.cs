@@ -3,20 +3,22 @@ using Dunet;
 
 namespace Concertable.B2B.Deal.Contracts.Errors;
 
-[Union]
-public partial record CreateDealError : IError
+[Union(EnableImplicitConversions = false)]
+public abstract partial record CreateDealError : IError
 {
-    partial record ValidationCase(ValidationErrors Errors);
+    public abstract ErrorDefinition Definition { get; }
+
+    public partial record ValidationCase(ValidationErrors Errors)
+    {
+        public override ErrorDefinition Definition => ErrorDefinition.Validation(
+            "deal.create.invalid",
+            "The deal is invalid.",
+            Errors.ToDictionary());
+    }
 
     public static CreateDealError Validation(ValidationErrors errors)
     {
         ArgumentNullException.ThrowIfNull(errors);
         return new ValidationCase(errors);
     }
-
-    public ErrorDefinition Definition => Match<ErrorDefinition>(
-        validation => ErrorDefinition.Validation(
-            "deal.create.invalid",
-            "The deal is invalid.",
-            validation.Errors.ToDictionary()));
 }

@@ -2,15 +2,8 @@ using Concertable.Kernel.Errors;
 
 namespace Concertable.B2B.Concert.Application.Errors;
 
-internal sealed record ContractError : IError
+internal sealed record ContractError(ErrorDefinition Definition) : IError
 {
-    private ContractError(ErrorDefinition definition)
-    {
-        Definition = definition;
-    }
-
-    public ErrorDefinition Definition { get; }
-
     internal static ContractError ApplicationNotFound(int applicationId) =>
         new(ErrorDefinition.NotFound(
             "contract.get_by_application.not_found",

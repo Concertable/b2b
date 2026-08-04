@@ -3,11 +3,25 @@ using Dunet;
 
 namespace Concertable.B2B.Deal.Contracts.Errors;
 
-[Union]
-public partial record UpdateDealError : IError
+[Union(EnableImplicitConversions = false)]
+public abstract partial record UpdateDealError : IError
 {
-    partial record NotFoundCase(int DealId);
-    partial record ValidationCase(ValidationErrors Errors);
+    public abstract ErrorDefinition Definition { get; }
+
+    public partial record NotFoundCase(int DealId)
+    {
+        public override ErrorDefinition Definition => ErrorDefinition.NotFound(
+            "deal.update.not_found",
+            $"Deal {DealId} was not found.");
+    }
+
+    public partial record ValidationCase(ValidationErrors Errors)
+    {
+        public override ErrorDefinition Definition => ErrorDefinition.Validation(
+            "deal.update.invalid",
+            "The deal is invalid.",
+            Errors.ToDictionary());
+    }
 
     public static UpdateDealError NotFound(int dealId) => new NotFoundCase(dealId);
 
@@ -16,13 +30,4 @@ public partial record UpdateDealError : IError
         ArgumentNullException.ThrowIfNull(errors);
         return new ValidationCase(errors);
     }
-
-    public ErrorDefinition Definition => Match<ErrorDefinition>(
-        notFound => ErrorDefinition.NotFound(
-            "deal.update.not_found",
-            $"Deal {notFound.DealId} was not found."),
-        validation => ErrorDefinition.Validation(
-            "deal.update.invalid",
-            "The deal is invalid.",
-            validation.Errors.ToDictionary()));
 }

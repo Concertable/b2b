@@ -24,7 +24,7 @@ public interface ITenantModule
     /// tenant's VAT-registration status internally and applies the region VAT policy (registered ⇒ decompose;
     /// unregistered ⇒ <see cref="VatCalculation.None"/>). Throws if the tenant or its compliance is absent, since the
     /// settlement tax-gate guarantees both are present by invoice time.</summary>
-    Task<Result<VatCalculation, GetVatCalculationError>> GetVatCalculationAsync(
+    Task<Result<VatCalculation, VatCalculationError>> GetVatCalculationAsync(
         Guid tenantId,
         decimal gross,
         CancellationToken ct = default);

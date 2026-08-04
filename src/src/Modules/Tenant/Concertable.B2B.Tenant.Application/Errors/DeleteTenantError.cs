@@ -1,16 +1,9 @@
-using Dunet;
-
 namespace Concertable.B2B.Tenant.Application.Errors;
 
-[Union]
-internal partial record DeleteTenantError : IError
+internal sealed record DeleteTenantError(ErrorDefinition Definition) : IError
 {
-    partial record TenantNotFound(Guid TenantId);
-
-    public static DeleteTenantError NotFound(Guid tenantId) => new TenantNotFound(tenantId);
-
-    public ErrorDefinition Definition => Match<ErrorDefinition>(
-        error => ErrorDefinition.NotFound(
+    internal static DeleteTenantError NotFound(Guid tenantId) =>
+        new(ErrorDefinition.NotFound(
             "tenant.delete_not_found",
-            $"Organization {error.TenantId} was not found."));
+            $"Organization {tenantId} was not found."));
 }

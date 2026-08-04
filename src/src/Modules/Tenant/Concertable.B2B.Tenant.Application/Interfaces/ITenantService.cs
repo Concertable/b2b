@@ -22,7 +22,7 @@ internal interface ITenantService
 
     Task<Option<TaxComplianceDto>> GetTaxComplianceAsync(Guid tenantId, CancellationToken ct = default);
 
-    Task<Result<VatCalculation, GetVatCalculationError>> GetVatCalculationAsync(
+    Task<Result<VatCalculation, VatCalculationError>> GetVatCalculationAsync(
         Guid tenantId,
         decimal gross,
         CancellationToken ct = default);

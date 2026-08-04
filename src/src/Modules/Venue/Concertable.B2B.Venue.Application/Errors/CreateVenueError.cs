@@ -1,15 +1,9 @@
-using Dunet;
-
 namespace Concertable.B2B.Venue.Application.Errors;
 
-[Union]
-internal partial record CreateVenueError : IError
+internal sealed record CreateVenueError(ErrorDefinition Definition) : IError
 {
-    partial record NoActiveTenant;
-
-    public static CreateVenueError Forbidden() => new NoActiveTenant();
-
-    public ErrorDefinition Definition => ErrorDefinition.Forbidden(
-        "venue.create_forbidden",
-        "No active organization was found for the current user.");
+    internal static readonly CreateVenueError Forbidden = new(
+        ErrorDefinition.Forbidden(
+            "venue.create_forbidden",
+            "No active organization was found for the current user."));
 }

@@ -48,7 +48,7 @@ internal sealed class VenueService : IVenueService
     public async Task<Result<VenueDetails, CreateVenueError>> CreateAsync(CreateVenueRequest request)
     {
         if (!tenantContext.HasTenant)
-            return Result.Failure<VenueDetails, CreateVenueError>(CreateVenueError.Forbidden());
+            return Result.Failure<VenueDetails, CreateVenueError>(CreateVenueError.Forbidden);
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
@@ -103,7 +103,7 @@ internal sealed class VenueService : IVenueService
     public Task<Result<VenueDetails, VenueError>> GetDetailsForCurrentUserAsync() =>
         repository.GetDetailsForCurrentTenantAsync()
             .ToOption()
-            .OrFailure(VenueError.NotFoundForCurrentTenant);
+            .OrFailure(VenueError.CurrentTenantNotFound);
 
     public async Task<Option<int>> GetIdForCurrentUserAsync() =>
         (await repository.GetIdForCurrentTenantAsync()).ToOption();
