@@ -12,6 +12,7 @@ export function SelfBillingAgreementBanner() {
   if (!needsAction) return null;
 
   const isRenewal = agreement.status !== "None";
+  const isInForce = agreement.status === "Active";
 
   return (
     <div className="border-border bg-card flex items-center justify-between gap-4 rounded-xl border p-4">
@@ -22,9 +23,11 @@ export function SelfBillingAgreementBanner() {
             : "Set up self-billing so we can invoice you"}
         </p>
         <p className="text-muted-foreground text-sm">
-          {isRenewal
-            ? "Yours is expiring — renew it so your settlements keep issuing invoices and paying out."
-            : "We raise VAT invoices on your behalf under a self-billing agreement. Sign it so your settlements can be invoiced and paid out."}
+          {isInForce
+            ? "Yours is expiring soon — renew it now so your completed gigs keep being invoiced and paid out."
+            : isRenewal
+              ? "Yours has expired, so your completed gigs can't be invoiced or paid out until you renew it."
+              : "We raise VAT invoices on your behalf under a self-billing agreement. Until you sign it, your completed gigs can't be invoiced or paid out."}
         </p>
       </div>
       <Button size="sm" asChild>
