@@ -5,12 +5,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class ContractPdfService : IContractPdfService
+internal sealed class ContractPdfRenderer : IContractPdfRenderer
 {
     private readonly IPdfBlobCache pdfCache;
-    private readonly ILogger<ContractPdfService> logger;
+    private readonly ILogger<ContractPdfRenderer> logger;
 
-    public ContractPdfService(IPdfBlobCache pdfCache, ILogger<ContractPdfService> logger)
+    public ContractPdfRenderer(IPdfBlobCache pdfCache, ILogger<ContractPdfRenderer> logger)
     {
         this.pdfCache = pdfCache;
         this.logger = logger;

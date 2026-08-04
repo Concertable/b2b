@@ -9,7 +9,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// Accept and needs no tenant-less background read); a missing blob is always re-rendered, so a blob outage
 /// is never fatal.
 /// </summary>
-internal interface IContractPdfService
+internal interface IContractPdfRenderer
 {
     /// <summary>Download path: returns the stored PDF bytes, rendering + storing on first access.</summary>
     Task<byte[]> GetOrCreateAsync(ContractEntity contract, CancellationToken ct = default);

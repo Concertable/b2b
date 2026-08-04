@@ -88,10 +88,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPdfBlobCache, PdfBlobCache>();
         services.AddScoped<IContractIssuer, ContractIssuer>();
         services.AddScoped<IContractService, ContractService>();
-        services.AddScoped<IContractPdfService, ContractPdfService>();
+        services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
         services.AddScoped<IInvoiceIssuer, InvoiceIssuer>();
         services.AddScoped<IInvoiceService, InvoiceService>();
-        services.AddScoped<IInvoicePdfService, InvoicePdfService>();
+        services.AddScoped<IInvoicePdfRenderer, InvoicePdfRenderer>();
         services.AddScoped<IClientContext, ClientContextAccessor>();
         services.AddSingleton<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
         services.AddSingleton<IDealTermsSerializer, DealTermsSerializer>();
