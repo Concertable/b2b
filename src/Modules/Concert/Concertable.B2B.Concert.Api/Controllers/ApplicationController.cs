@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Api.Mappers;
-using Concertable.B2B.Concert.Api.Errors;
 using Concertable.B2B.Concert.Api.Requests;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
@@ -70,7 +69,6 @@ internal sealed class ApplicationController : ControllerBase
     {
         return (await applicationService.GetByIdAsync(id))
             .Map(mapper.ToResponse)
-            .OrFailure(() => ConcertLookupError.ApplicationNotFound(id))
             .ToOkActionResult();
     }
 
@@ -80,7 +78,6 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<ContractDto>> GetContract(int id)
     {
         return (await contractService.GetByApplicationIdAsync(id))
-            .OrFailure(() => ConcertLookupError.ContractByApplicationNotFound(id))
             .ToOkActionResult();
     }
 
@@ -88,7 +85,6 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<FileDownload>> GetContractPdf(int id)
     {
         return (await contractService.GetPdfByApplicationIdAsync(id))
-            .OrFailure(() => ConcertLookupError.ContractByApplicationNotFound(id))
             .ToActionResult(pdf => File(pdf.Content, pdf.ContentType, pdf.FileName));
     }
 

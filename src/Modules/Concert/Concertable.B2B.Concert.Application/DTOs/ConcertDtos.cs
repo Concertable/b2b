@@ -20,13 +20,12 @@ internal sealed record ConcertDetails
     public DateTime EndDate { get; init; }
     public DateTime? DatePosted { get; init; }
     public LifecycleState State { get; init; }
-    // Revenue-share (DoorSplit/Versus) settlement facts. TicketsSold/DoorRevenue are venue-private —
-    // surfaced on the owner read only, never on the public marketplace Response.
     public bool IsRevenueShare { get; init; }
     public int TicketsSold { get; init; }
     public decimal? DoorRevenue { get; init; }
-    /// <summary>The settled-invoice id, or null before settlement — gates the owner read's invoice link.</summary>
     public int? InvoiceId { get; init; }
+    public bool CanCancel { get; init; }
+    public bool CanDeclareDoorRevenue { get; init; }
     public required ConcertVenue Venue { get; init; }
     public required ConcertArtist Artist { get; init; }
     public IEnumerable<Genre> Genres { get; init; } = [];

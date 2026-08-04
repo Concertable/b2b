@@ -110,7 +110,7 @@ internal sealed class ApplicationService : IApplicationService
 
         var saved = (await GetByIdAsync(application.Id)).Match(
             value => value,
-            () => throw new InvalidOperationException($"Application {application.Id} not found after creation."));
+            _ => throw new InvalidOperationException($"Application {application.Id} not found after creation."));
         return Result.Success<ApplicationDto, ApplyApplicationError>(saved);
     }
 
@@ -188,9 +188,9 @@ internal sealed class ApplicationService : IApplicationService
     public async Task<Option<(ArtistReadModel, VenueReadModel)>> GetArtistAndVenueByIdAsync(int id) =>
         (await repository.GetArtistAndVenueByIdAsync(id)).ToOption();
 
-    public async Task<Option<ApplicationDto>> GetByIdAsync(int id)
-    {
-        var application = (await repository.GetByIdAsync(id)).ToOption();
-        return await application.MapAsync(mapper.ToDtoAsync);
-    }
+    public Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id) =>
+        repository.GetByIdAsync(id)
+            .ToOption()
+            .OrFailure(() => ApplicationError.NotFound(id))
+            .MapAsync(mapper.ToDtoAsync);
 }

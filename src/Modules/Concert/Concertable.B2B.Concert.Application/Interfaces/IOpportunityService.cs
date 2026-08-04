@@ -15,7 +15,7 @@ internal interface IOpportunityService
         IEnumerable<OpportunityRequest> desired);
     Task<IPagination<OpportunityDto>> GetActiveByVenueIdAsync(int id, IPageParams pageParams);
     Task<IReadOnlyList<OpportunityDto>> GetActiveByVenueIdAsync(int venueId);
-    Task<Option<OpportunityDto>> GetByIdAsync(int id);
+    Task<Result<OpportunityDto, OpportunityError>> GetByIdAsync(int id);
     Task<Option<Guid>> GetOwnerByIdAsync(int id);
     Task<bool> OwnsOpportunityAsync(int opportunityId);
     Task<bool> OwnsOpportunityByApplicationIdAsync(int applicationId);

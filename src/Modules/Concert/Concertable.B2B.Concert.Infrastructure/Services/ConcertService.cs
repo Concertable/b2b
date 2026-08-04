@@ -52,30 +52,36 @@ internal sealed class ConcertService : IConcertService
     public async Task<IReadOnlyList<ConcertSummary>> GetHistoryByVenueIdAsync(int id) =>
         (await publicRepository.GetHistoryByVenueIdAsync(id)).ToList();
 
-    public async Task<Option<ConcertDetails>> GetDetailsByIdAsync(int id) =>
-        (await publicRepository.GetDetailsByIdAsync(id)).ToOption();
+    public Task<Result<ConcertDetails, ConcertError>> GetDetailsByIdAsync(int id) =>
+        publicRepository.GetDetailsByIdAsync(id)
+            .ToOption()
+            .OrFailure(() => ConcertError.NotFound(id));
 
-    public async Task<Option<ConcertDetails>> GetDetailsForCurrentUserAsync(int id)
+    public async Task<Result<ConcertDetails, ConcertError>> GetDetailsForCurrentUserAsync(int id)
     {
-        var details = (await repository.GetDetailsByIdAsync(id)).ToOption();
-        return await details.MapAsync(async value =>
-        {
-            var invoice = await invoiceRepository.GetByConcertIdAsync(id);
-            return value with { InvoiceId = invoice?.Id };
-        });
+        return await repository.GetDetailsByIdAsync(id)
+            .ToOption()
+            .OrFailure(() => ConcertError.NotFound(id))
+            .MapAsync(async details =>
+            {
+                var invoice = await invoiceRepository.GetByConcertIdAsync(id);
+                return WithActions(details with { InvoiceId = invoice?.Id });
+            });
     }
 
     public Task<Result<ConcertEntity, CreateConcertDraftError>> CreateDraftAsync(int applicationId) =>
         concertDraftService.CreateAsync(applicationId);
 
-    public async Task<Option<ConcertDetails>> GetDetailsByApplicationIdAsync(int applicationId)
+    public async Task<Result<ConcertDetails, ConcertError>> GetDetailsByApplicationIdAsync(int applicationId)
     {
-        var details = (await repository.GetDetailsByApplicationIdAsync(applicationId)).ToOption();
-        return await details.MapAsync(async value =>
-        {
-            var invoice = await invoiceRepository.GetByApplicationIdAsync(applicationId);
-            return value with { InvoiceId = invoice?.Id };
-        });
+        return await repository.GetDetailsByApplicationIdAsync(applicationId)
+            .ToOption()
+            .OrFailure(() => ConcertError.ApplicationNotFound(applicationId))
+            .MapAsync(async details =>
+            {
+                var invoice = await invoiceRepository.GetByApplicationIdAsync(applicationId);
+                return WithActions(details with { InvoiceId = invoice?.Id });
+            });
     }
 
     public async Task<Result<ConcertUpdateResponse, UpdateConcertError>> UpdateAsync(int id, UpdateConcertRequest request)
@@ -149,4 +155,13 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByVenueIdAsync(int id) =>
         (await repository.GetUnpostedByVenueIdAsync(id)).ToList();
+
+    private ConcertDetails WithActions(ConcertDetails details) => details with
+    {
+        CanCancel = details.State == LifecycleState.Booked,
+        CanDeclareDoorRevenue = details.State == LifecycleState.Booked
+            && details.IsRevenueShare
+            && details.DoorRevenue is null
+            && details.EndDate < timeProvider.GetUtcNow().UtcDateTime
+    };
 }

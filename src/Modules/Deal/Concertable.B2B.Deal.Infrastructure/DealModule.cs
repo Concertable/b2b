@@ -15,7 +15,7 @@ internal sealed class DealModule : IDealModule
     }
 
     public Task<Option<IDeal>> GetByIdAsync(int dealId, CancellationToken ct = default)
-        => dealService.GetByIdAsync(dealId, ct);
+        => dealService.FindByIdAsync(dealId, ct);
 
     public Task<IReadOnlyList<IDeal>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
         => dealService.GetByIdsAsync(dealIds, ct);

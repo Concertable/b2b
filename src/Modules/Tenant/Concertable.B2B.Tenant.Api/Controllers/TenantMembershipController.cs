@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
@@ -7,12 +8,6 @@ using Concertable.Shared.Api.Results;
 
 namespace Concertable.B2B.Tenant.Api.Controllers;
 
-/// <summary>
-/// Members and invitations for the caller's active organization — list / change-role / remove members, and
-/// list / create / revoke invitations. Persona-agnostic (like <see cref="StripeAccountController"/>), so the
-/// guard is a per-action <c>[HasPermission]</c> rather than a class-level one, and there is no
-/// <c>[TenantPersona]</c>. The active tenant is resolved inside the services from <c>ITenantContext</c>.
-/// </summary>
 [ApiController]
 [Route("api/organizations")]
 internal sealed class TenantMembershipController : ControllerBase

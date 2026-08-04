@@ -37,11 +37,15 @@ internal sealed class ArtistService : IArtistService
         this.geometryProvider = geometryProvider;
     }
 
-    public async Task<Option<ArtistDetails>> GetDetailsForCurrentUserAsync() =>
-        (await repository.GetDetailsForCurrentTenantAsync()).ToOption();
+    public Task<Result<ArtistDetails, ArtistError>> GetDetailsForCurrentUserAsync() =>
+        repository.GetDetailsForCurrentTenantAsync()
+            .ToOption()
+            .OrFailure(ArtistError.NotFoundForCurrentTenant);
 
-    public async Task<Option<ArtistDetails>> GetDetailsByIdAsync(int id) =>
-        (await publicRepository.GetDetailsByIdAsync(id)).ToOption();
+    public Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(int id) =>
+        publicRepository.GetDetailsByIdAsync(id)
+            .ToOption()
+            .OrFailure(() => ArtistError.NotFound(id));
 
     public async Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(CreateArtistRequest request)
     {

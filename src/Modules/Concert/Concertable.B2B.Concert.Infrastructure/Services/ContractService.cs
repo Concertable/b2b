@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Application.DTOs;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Mappers;
 using Concertable.B2B.Concert.Domain.Entities;
@@ -18,22 +19,27 @@ internal sealed class ContractService : IContractService
         this.contractPdfService = contractPdfService;
     }
 
-    public async Task<Option<ContractDto>> GetByApplicationIdAsync(int applicationId) =>
-        (await repository.GetByApplicationIdAsync(applicationId))
+    public Task<Result<ContractDto, ContractError>> GetByApplicationIdAsync(int applicationId) =>
+        repository.GetByApplicationIdAsync(applicationId)
             .ToOption()
+            .OrFailure(() => ContractError.ApplicationNotFound(applicationId))
             .Map(contract => contract.ToDto());
 
-    public async Task<Option<FileDownload>> GetPdfByApplicationIdAsync(int applicationId)
+    public async Task<Result<FileDownload, ContractError>> GetPdfByApplicationIdAsync(int applicationId)
     {
-        var contract = (await repository.GetByApplicationIdAsync(applicationId)).ToOption();
-        return await contract.MapAsync(async value =>
-            value.ToFileDownload(await contractPdfService.GetOrCreateAsync(value)));
+        return await repository.GetByApplicationIdAsync(applicationId)
+            .ToOption()
+            .OrFailure(() => ContractError.ApplicationNotFound(applicationId))
+            .MapAsync(async contract =>
+                contract.ToFileDownload(await contractPdfService.GetOrCreateAsync(contract)));
     }
 
-    public async Task<Option<FileDownload>> GetPdfByConcertIdAsync(int concertId)
+    public async Task<Result<FileDownload, ContractError>> GetPdfByConcertIdAsync(int concertId)
     {
-        var contract = (await repository.GetByConcertIdAsync(concertId)).ToOption();
-        return await contract.MapAsync(async value =>
-            value.ToFileDownload(await contractPdfService.GetOrCreateAsync(value)));
+        return await repository.GetByConcertIdAsync(concertId)
+            .ToOption()
+            .OrFailure(() => ContractError.ConcertNotFound(concertId))
+            .MapAsync(async contract =>
+                contract.ToFileDownload(await contractPdfService.GetOrCreateAsync(contract)));
     }
 }

@@ -139,11 +139,11 @@ internal sealed class OpportunityService : IOpportunityService
             (await mapper.ToDtosAsync(updated)).ToList());
     }
 
-    public async Task<Option<OpportunityDto>> GetByIdAsync(int id)
-    {
-        var opportunity = (await repository.GetByIdAsync(id)).ToOption();
-        return await opportunity.MapAsync(mapper.ToDtoAsync);
-    }
+    public Task<Result<OpportunityDto, OpportunityError>> GetByIdAsync(int id) =>
+        repository.GetByIdAsync(id)
+            .ToOption()
+            .OrFailure(() => OpportunityError.NotFound(id))
+            .MapAsync(mapper.ToDtoAsync);
 
     public async Task<Option<Guid>> GetOwnerByIdAsync(int id) =>
         (await repository.GetOwnerByIdAsync(id)).ToOption();

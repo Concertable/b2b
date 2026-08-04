@@ -1,3 +1,4 @@
+using Concertable.B2B.Deal.Application.Errors;
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Contracts.Errors;
 using Concertable.B2B.Deal.Domain.Entities;
@@ -22,10 +23,14 @@ internal sealed class DealService : IDealService
         this.updater = updater;
     }
 
-    public Task<Option<IDeal>> GetByIdAsync(int dealId, CancellationToken ct = default) =>
+    public Task<Option<IDeal>> FindByIdAsync(int dealId, CancellationToken ct = default) =>
         dealRepository.GetByIdAsync(dealId, ct)
             .ToOption()
             .Map(mapper.ToDeal);
+
+    public Task<Result<IDeal, DealError>> GetByIdAsync(int dealId, CancellationToken ct = default) =>
+        FindByIdAsync(dealId, ct)
+            .OrFailure(() => DealError.NotFound(dealId));
 
     public async Task<IReadOnlyList<IDeal>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
     {

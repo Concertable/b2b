@@ -6,8 +6,8 @@ namespace Concertable.B2B.Artist.Application.Interfaces;
 
 internal interface IArtistService
 {
-    Task<Option<ArtistDetails>> GetDetailsByIdAsync(int id);
-    Task<Option<ArtistDetails>> GetDetailsForCurrentUserAsync();
+    Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(int id);
+    Task<Result<ArtistDetails, ArtistError>> GetDetailsForCurrentUserAsync();
     Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(CreateArtistRequest request);
     Task<Result<ArtistDetails, UpdateArtistError>> UpdateAsync(int id, UpdateArtistRequest request);
     Task<Option<int>> GetIdForCurrentUserAsync();

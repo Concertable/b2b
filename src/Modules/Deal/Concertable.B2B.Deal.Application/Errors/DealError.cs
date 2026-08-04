@@ -1,17 +1,17 @@
 using Concertable.Kernel.Errors;
 
-namespace Concertable.B2B.Deal.Api.Errors;
+namespace Concertable.B2B.Deal.Application.Errors;
 
-internal sealed record GetDealError : IError
+internal sealed record DealError : IError
 {
-    private GetDealError(ErrorDefinition definition)
+    private DealError(ErrorDefinition definition)
     {
         Definition = definition;
     }
 
     public ErrorDefinition Definition { get; }
 
-    internal static GetDealError NotFound(int dealId) =>
+    internal static DealError NotFound(int dealId) =>
         new(ErrorDefinition.NotFound(
             "deal.get.not_found",
             $"Deal {dealId} was not found."));

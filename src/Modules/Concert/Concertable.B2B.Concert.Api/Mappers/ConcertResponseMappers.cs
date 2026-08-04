@@ -1,12 +1,11 @@
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
 
 internal static class ConcertResponseMappers
 {
-    public static ConcertSummaryResponse ToSummaryResponse(this ConcertSummary dto) => new()
+    public static SummaryResponse ToSummaryResponse(this ConcertSummary dto) => new()
     {
         Id = dto.Id,
         Name = dto.Name,
@@ -17,13 +16,13 @@ internal static class ConcertResponseMappers
         StartDate = dto.StartDate,
         EndDate = dto.EndDate,
         DatePosted = dto.DatePosted,
-        Venue = new ConcertVenueSummaryResponse
+        Venue = new VenueSummaryResponse
         {
             Id = dto.Venue.Id,
             Name = dto.Venue.Name,
             Rating = dto.Venue.Rating
         },
-        Artist = new ConcertArtistSummaryResponse
+        Artist = new ArtistSummaryResponse
         {
             Id = dto.Artist.Id,
             Name = dto.Artist.Name,
@@ -32,10 +31,10 @@ internal static class ConcertResponseMappers
         }
     };
 
-    public static IEnumerable<ConcertSummaryResponse> ToSummaryResponses(this IEnumerable<ConcertSummary> dtos) =>
+    public static IEnumerable<SummaryResponse> ToSummaryResponses(this IEnumerable<ConcertSummary> dtos) =>
         dtos.Select(d => d.ToSummaryResponse());
 
-    public static ConcertDetailsResponse ToDetailsResponse(this ConcertDetails dto) => new()
+    public static DetailsResponse ToDetailsResponse(this ConcertDetails dto) => new()
     {
         Id = dto.Id,
         Name = dto.Name,
@@ -50,48 +49,60 @@ internal static class ConcertResponseMappers
         EndDate = dto.EndDate,
         DatePosted = dto.DatePosted,
         Genres = dto.Genres.ToList(),
-        Artist = new ConcertArtistResponse
-        {
-            Id = dto.Artist.Id,
-            Name = dto.Artist.Name,
-            Avatar = dto.Artist.Avatar,
-            Rating = dto.Artist.Rating,
-            County = dto.Artist.County,
-            Town = dto.Artist.Town,
-            Genres = dto.Artist.Genres.ToList()
-        },
-        Venue = new ConcertVenueResponse
-        {
-            Id = dto.Venue.Id,
-            Name = dto.Venue.Name,
-            County = dto.Venue.County,
-            Town = dto.Venue.Town,
-            Latitude = dto.Venue.Latitude,
-            Longitude = dto.Venue.Longitude
-        }
+        Artist = dto.Artist.ToArtistResponse(),
+        Venue = dto.Venue.ToVenueResponse()
     };
 
-    /// <summary>
-    /// The owner (party-scoped) read: adds the party-only action links and venue-private figures the
-    /// anonymous read omits. Cancel is offered only while Booked; the contract is frozen at accept so it
-    /// always exists; DeclareDoorRevenue shows only for an ended, still-Booked, undeclared revenue-share gig.
-    /// </summary>
-    public static ConcertDetailsResponse ToCurrentUserDetailsResponse(this ConcertDetails dto, DateTime utcNow) =>
-        dto.ToDetailsResponse() with
-        {
-            TicketsSold = dto.TicketsSold,
-            DoorRevenue = dto.DoorRevenue,
-            Actions = new ConcertActions(
-                Cancel: dto.State == LifecycleState.Booked
-                    ? new ActionLink($"/api/Concert/{dto.Id}/cancel", HttpMethods.Post)
-                    : null,
-                Contract: new ActionLink($"/api/Concert/{dto.Id}/contract/pdf", HttpMethods.Get),
-                DeclareDoorRevenue: dto.State == LifecycleState.Booked
-                    && dto.IsRevenueShare && dto.DoorRevenue is null && dto.EndDate < utcNow
-                    ? new ActionLink($"/api/Concert/{dto.Id}/door-revenue", HttpMethods.Post)
-                    : null,
-                Invoice: dto.InvoiceId is not null
-                    ? new ActionLink($"/api/Concert/{dto.Id}/invoice/pdf", HttpMethods.Get)
-                    : null)
-        };
+    public static MyDetailsResponse ToMyDetailsResponse(this ConcertDetails dto) => new()
+    {
+        Id = dto.Id,
+        Name = dto.Name,
+        About = dto.About,
+        BannerUrl = dto.BannerUrl,
+        Avatar = dto.Avatar ?? dto.Artist.Avatar,
+        Rating = dto.Rating,
+        Price = dto.Price,
+        TotalTickets = dto.TotalTickets,
+        AvailableTickets = dto.AvailableTickets,
+        StartDate = dto.StartDate,
+        EndDate = dto.EndDate,
+        DatePosted = dto.DatePosted,
+        Genres = dto.Genres.ToList(),
+        Artist = dto.Artist.ToArtistResponse(),
+        Venue = dto.Venue.ToVenueResponse(),
+        TicketsSold = dto.TicketsSold,
+        DoorRevenue = dto.DoorRevenue,
+        Actions = new ConcertActions(
+            Cancel: dto.CanCancel
+                ? new ActionLink($"/api/Concert/{dto.Id}/cancel", HttpMethods.Post)
+                : null,
+            Contract: new ActionLink($"/api/Concert/{dto.Id}/contract/pdf", HttpMethods.Get),
+            DeclareDoorRevenue: dto.CanDeclareDoorRevenue
+                ? new ActionLink($"/api/Concert/{dto.Id}/door-revenue", HttpMethods.Post)
+                : null,
+            Invoice: dto.InvoiceId is not null
+                ? new ActionLink($"/api/Concert/{dto.Id}/invoice/pdf", HttpMethods.Get)
+                : null)
+    };
+
+    private static ArtistResponse ToArtistResponse(this ConcertArtist artist) => new()
+    {
+        Id = artist.Id,
+        Name = artist.Name,
+        Avatar = artist.Avatar,
+        Rating = artist.Rating,
+        County = artist.County,
+        Town = artist.Town,
+        Genres = artist.Genres.ToList()
+    };
+
+    private static VenueResponse ToVenueResponse(this ConcertVenue venue) => new()
+    {
+        Id = venue.Id,
+        Name = venue.Name,
+        County = venue.County,
+        Town = venue.Town,
+        Latitude = venue.Latitude,
+        Longitude = venue.Longitude
+    };
 }
