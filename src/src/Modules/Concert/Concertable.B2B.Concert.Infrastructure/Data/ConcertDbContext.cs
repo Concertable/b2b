@@ -19,6 +19,7 @@ internal sealed class ConcertDbContext(
     public DbSet<ContractEntity> Contracts => Set<ContractEntity>();
     public DbSet<InvoiceEntity> Invoices => Set<InvoiceEntity>();
     public DbSet<InvoiceSequenceEntity> InvoiceSequences => Set<InvoiceSequenceEntity>();
+    public DbSet<SelfBillingAgreementEntity> SelfBillingAgreements => Set<SelfBillingAgreementEntity>();
     public DbSet<ConcertImageEntity> ConcertImages => Set<ConcertImageEntity>();
     public DbSet<OpportunityEntity> Opportunities => Set<OpportunityEntity>();
     public DbSet<ApplicationEntity> Applications => Set<ApplicationEntity>();
@@ -37,5 +38,6 @@ internal sealed class ConcertDbContext(
         modelBuilder.ApplyVenueArtist<BookingEntity>(this);
         modelBuilder.ApplyVenueArtist<ContractEntity>(this);
         modelBuilder.ApplyVenueArtist<InvoiceEntity>(this);
+        modelBuilder.ApplySingleOwner<SelfBillingAgreementEntity>(this);
     }
 }
