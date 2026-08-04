@@ -24,7 +24,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Events;
 /// </summary>
 internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<CredentialRegisteredEvent>
 {
-    private static readonly IReadOnlyDictionary<string, TenantType> PersonaByClientId = new Dictionary<string, TenantType>
+    private static readonly IReadOnlyDictionary<string, TenantType> TenantTypeByClientId = new Dictionary<string, TenantType>
     {
         [ClientIds.VenueWeb] = TenantType.Venue,
         [ClientIds.VenueMobile] = TenantType.Venue,
@@ -43,7 +43,7 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
 
     public async Task HandleAsync(CredentialRegisteredEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (!PersonaByClientId.TryGetValue(e.ClientId, out var type))
+        if (!TenantTypeByClientId.TryGetValue(e.ClientId, out var type))
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(TenantProvisioningHandler), ct))

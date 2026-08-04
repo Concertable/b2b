@@ -35,9 +35,8 @@ All modules live under `Modules/`. Each follows the `Concertable.B2B.<Module>.*`
 | **Concert** | `ConcertEntity` (workflow: stage, BookingId, DealType), `OpportunityEntity`, `ApplicationEntity`, `BookingEntity`, `SettlementTransactionEntity`, `TicketTransactionEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
 | **Contract** | `DealEntity` (TPH: `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity`), `EscrowEntity` | Api, Application, Contracts, Domain, Infrastructure, UnitTests |
 | **Conversations** | `MessageEntity` | Api, Application, Contracts, Domain, Infrastructure |
-| **Notification** | SignalR hub (`NotificationHub` at `/hub/notifications`) | Contracts, Infrastructure — slim, no Domain/Application. Pending deletion after Phase 8 Step 24 (see TECH_DEBT). |
 | **Tenant** | `TenantEntity` (org legal/VAT/Stripe identity; owns venues; settlement payee — the renamed `OrganizationEntity`) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
-| **User** | `UserEntity` + manager/admin profile subtypes (`VenueManagerEntity`, `ArtistManagerEntity`, `AdminEntity`). TPH unwind pending — see TECH_DEBT. | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
+| **User** | `UserEntity` (flat) + standalone `AdminProfileEntity` — no TPH, no manager-profile subtypes | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
 | **Venue** | `VenueEntity`, `VenueImageEntity`, `PayoutAccountEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
 
 Cross-module calls go through `IXModule` facades in `Concertable.B2B.<Module>.Contracts` only. No direct entity reach-in between modules.
@@ -59,8 +58,6 @@ All event types implement `IIntegrationEvent` from `Concertable.Messaging.Contra
 | `ConcertChangedEvent` | `Concertable.B2B.Concert.Contracts.Events` | Concert edited / stage changed |
 | `ConcertPostedEvent` | `Concertable.B2B.Concert.Contracts.Events` | Concert moves to Posted stage |
 | `ConcertRatingUpdatedEvent` | `Concertable.B2B.Concert.Contracts.Events` | Rating projection updated |
-
-**Defined in Contracts but not yet published:** `ConcertSettledEvent`, `ConcertFinishedEvent`, `ConcertApplicationCreatedEvent`, `ConcertApplicationAcceptedEvent` — see TECH_DEBT.
 
 ### Consumed
 

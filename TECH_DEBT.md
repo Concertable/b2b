@@ -85,30 +85,6 @@ staged command) rather than a synchronous `Sent` list.
 
 ---
 
-### `Modules/User/` TPH not unwound
-
-Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `ArtistManagerEntity`, `AdminEntity`) each carrying the Auth `sub`, with no shared `UserEntity` base via TPH. Current state of the `User.Domain` hierarchy needs verifying and may still be TPH.
-
-**Resolves when:** The User module entities are flat tables without a TPH discriminator column; the `UserEntity` base row no longer carries persona-specific fields.
-
----
-
-### Defined-but-not-published events
-
-`ConcertSettledEvent`, `ConcertFinishedEvent`, `ConcertApplicationCreatedEvent`, `ConcertApplicationAcceptedEvent` exist in `Concertable.B2B.Concert.Contracts.Events` but are not registered as `Publishes<>` in `Program.cs` and are not raised anywhere.
-
-**Resolves when:** Either (a) each event is raised from the appropriate domain event, registered in `Program.cs`, and consumers exist in Search/Customer; or (b) the event types are deleted as dead code.
-
----
-
-### `Modules/Notification/` pending deletion
-
-`Concertable.Shared.Email` is already wired by both B2B and Customer. The `Modules/Notification/` module (Contracts + Infrastructure) still ships and hosts the `NotificationHub` (SignalR). Email sending should already be routed through `IEmailSender` from the shared library.
-
-**Resolves when:** Phase 8 Step 24 — SignalR hub moved to its own home; remaining email-only surface in `Modules/Notification/` removed; all callers use `IEmailSender` directly.
-
----
-
 ### B2B integration fixture boots Payment in-process on a shared DB
 
 `Concertable.B2B.IntegrationTests.Fixtures/ApiFixture.cs` registers `AddPaymentInfrastructure`, a `PaymentDbContext` bound to the same connection string as `B2BDb`, and `AddPaymentTestSeeder`. `MockEscrowClient` writes `EscrowEntity` rows straight into `PaymentDbContext`, and `MockWebhookSimulator` resolves and fires Payment's own `IIntegrationEventHandler<PaymentSucceededEvent>` (`PaymentTransactionHandler`) in-process. The B2B integration suite therefore runs B2B + Payment as a mini-monolith over one database — a microservice-isolation violation confined to the test harness. (Production B2B no longer touches Payment internals: after the Payment-agnostic refactor, `ReadDbContext` exposes no Payment entities and escrow reads go through the fixture's `PaymentDbContext`, not B2B's read context.)
@@ -122,14 +98,6 @@ Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `Art
 `TenantService.DeleteCurrentTenantAsync` deletes the tenant row and cascades only the Tenant module's own children (memberships, invitations). It emits **no `TenantDeletedEvent`** and touches nothing outside the `tenant` schema, so deleting an organization silently **orphans** everything provisioned off it: the Payment Stripe payout account (provisioned by `CredentialRegisteredHandler`), the venues/artists/concerts owned by the tenant (separate modules/contexts, no cross-schema FK — so no error, just dangling rows), and downstream Search projections. The create path deliberately re-raises `TenantCreatedEvent` via `Announce()` for exactly this cross-service reason; delete has no symmetric path. Landed as a simple synchronous endpoint in the member-management phase (Phase 6.2); the full teardown is its own design (a new integration event + a Payment consumer that deactivates the connected account + module-owned cleanup of venue/artist/concert data).
 
 **Resolves when:** tenant deletion publishes a `TenantDeletedEvent` (registered `Publishes<>`), Payment deactivates/closes the connected Stripe account on it, the Venue/Artist/Concert modules clean up (or soft-delete) their tenant-owned rows via their own handlers, and Search drops the corresponding projections — no owned data outlives the tenant.
-
----
-
-### Venue/Artist read-model surface is duplicated across near-identical shapes and leaks visibility
-
-The Artist and Venue modules each carry 4–5 overlapping read-shapes for one entity — `XSummary` (Contracts, genuinely cross-module → Concert), `XView` + `XViewGenre` (`Contracts/Views/`, **dead — zero references anywhere**, mutable EF-style classes abandoned when the codebase moved to `Summary` records + direct projection), `XDto` + `XDetails` (`Application/DTOs/`, differ only by a `Rating` field), and `XDetailsResponse` (`Api/Responses/`, ≈ `XDetails` field-for-field). On top of the duplication the boundary discipline in [`agents/MODULAR_MONOLITH_RULES.md`](./agents/MODULAR_MONOLITH_RULES.md) (Contracts = cross-boundary/public, Application/DTOs = module-internal) isn't applied: Artist/Venue/Tenant Application DTOs are `public` though single-module (`Artist.Application/DTOs/ArtistDtos.cs:8,22`, `ArtistDashboardKpis.cs:3`; `Venue.Application/DTOs/VenueDtos.cs:7,23`, `VenueDashboardKpis.cs:3`; `Tenant.Application/DTOs/TenantDetails.cs:5`), and Concert's `ApplicationStatus` enum is `public` (`Concert.Application/DTOs/ApplicationStatus.cs:6`) in an otherwise-`internal` set. `Tenant.Contracts/MemberDto.cs:7` and `InvitationDto.cs:7` sit in Contracts but are used only by Tenant's own Api, not on `ITenantModule`. The `User` module is the clean target — everything cross-boundary consolidated in Contracts, its `Application/DTOs/UserDtos.cs` a tombstone, no `public` leak, no duplication. `Contracts` is the correct name for the boundary surface; the problem is the discipline, not the naming.
-
-**Resolves when:** the Venue/Artist read shapes are consolidated toward the User pattern — dead `Contracts/Views/` deleted; `Summary`/`Details`/`Dto` collapsed to the minimum real variation; only genuinely cross-module types kept in Contracts — single-module Application DTOs and `ApplicationStatus` are `internal`, and `MemberDto`/`InvitationDto` move out of Contracts into Tenant's Application/Api.
 
 ---
 
@@ -168,21 +136,6 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ---
 
-### Concert response family names are over-qualified
-
-The `Concert.Api.Responses` types stack redundant qualifiers — `ConcertDetailsResponse`,
-`ConcertSummaryResponse`, `ConcertArtistResponse`, `ConcertVenueSummaryResponse`, etc. — re-stating `Concert`
-(already the namespace) and vague words like `Details`. The `Response` suffix is mandated (it marks the HTTP
-wire layer); the rest is bloat. (Splitting the public vs owner reads into separate types was considered and
-**declined** — the single response with owner-only fields populated only by the owner mapper is safe and is
-the same role-shaping pattern `ApplicationResponse` already uses; not worth a one-off divergence.)
-
-**Resolves when:** the response family is de-verbosed in one pass — drop the redundant `Concert`/`Details`
-qualifiers where the namespace already carries them, keep `Response` — and the SPA's consumed/generated type
-names are updated to match.
-
----
-
 ### Duplicate application attempt is a 500, not a 400 — guard landed, integration test outstanding
 
 Fixed on `Fix/TechDebtSweep`: `ApplicationService.ValidateCanApplyAsync` (the apply/insert path,
@@ -217,14 +170,6 @@ Deliberately not done now: the launch gate is *data completeness* (hold a comple
 
 ### B2B portal frontend URLs have no non-local config — prod invite links would break
 
-`FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per persona from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/DOMAINS_AND_DNS.md`](../../plans/DOMAINS_AND_DNS.md). So in any non-local environment the persona dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
+`FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per tenant type from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/platform/DOMAINS_AND_DNS.md`](../../plans/platform/DOMAINS_AND_DNS.md). So in any non-local environment the tenant-type dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
 
 **Resolves when:** `Urls:Frontends:{Venue,Artist}` are supplied per environment from App Config, alongside `Auth:SpaClients` / `Cors:AllowedOrigins` (which key off the same hostnames), as part of the `DOMAINS_AND_DNS.md` config rollout.
-
----
-
-### Venue/Artist read DTOs declare `Avatar` as `string?` despite a non-null domain guarantee
-
-The same nullability lie fixed on `VenueOrgIdentity`/`ArtistOrgIdentity`: the Venue/Artist entities store `Avatar = null!` behind `nullable: false` migration columns (and both the Customer side and the adjacent `BannerUrl` are non-null), yet B2B types `Avatar` as `string?` across the whole read surface — `Venue.Contracts/VenueSummary.cs:6`, `Artist.Contracts/ArtistSummary.cs:11`, `Venue.Application/DTOs/VenueDtos.cs:15,32`, `Artist.Application/DTOs/ArtistDtos.cs:15,30`, `Venue.Api/Responses/VenueDetailsResponse.cs:9`, `Artist.Api/Responses/ArtistResponses.cs:11`. A value that is always present is typed optional, forcing needless null-handling downstream — and it sits inconsistently beside `BannerUrl`, which is `required string` off the same guaranteed source. (The dead `Contracts/Views/XView` types carry the same lie on County/Town/Banner/Avatar but are covered by their deletion in the read-surface item above; Concert's avatar/banner and User location are genuinely nullable — leave them.)
-
-**Resolves when:** B2B Venue/Artist `Avatar` is non-null across the read surface — `required string` on the DTOs/Responses, `string` on the `Summary` records — matching the Customer side, the adjacent `BannerUrl`, and the domain.

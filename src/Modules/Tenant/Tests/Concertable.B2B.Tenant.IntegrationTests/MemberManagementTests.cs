@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Domain.Entities;
 using Xunit;
@@ -8,15 +9,6 @@ using Xunit.Abstractions;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
 
-/// <summary>
-/// Member management on <c>api/organizations</c> — list/change-role/remove + delete-org — through the
-/// real ASP.NET pipeline. Covers the permission matrix boundaries (Owner vs Manager), the service-layer
-/// last-Owner invariant (demote/remove/self-leave), and that the surface is persona-agnostic (venue + artist).
-/// A founding Owner acting in their own single tenant resolves it by default (no header). When a second operator
-/// is added as a member, that operator already owns a tenant too, so it must name the acting tenant via the
-/// <c>X-Tenant-Id</c> header — otherwise resolution fails closed (403) and a permission test would pass for the
-/// wrong reason.
-/// </summary>
 [Collection("Integration")]
 public sealed class MemberManagementTests : IAsyncLifetime
 {
@@ -220,7 +212,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
 
     #endregion
 
-    #region Persona-agnostic
+    #region Tenant-type-independent
 
     [Fact]
     public async Task Members_ArtistOwner_CanListAndManage()
