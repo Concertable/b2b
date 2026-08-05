@@ -1,6 +1,6 @@
 import { useArtistOverviewQuery } from "./hooks";
-import { Skeleton } from "@concertable/web/shared/components/ui/skeleton";
-import { ProfileHealthCard } from "@concertable/web/shared/features/dashboard";
+import { Skeleton } from "@concertable/web/components/ui/skeleton";
+import { ProfileHealthCard } from "@concertable/web/features/dashboard";
 
 export function ArtistWelcomeRow() {
   const { data, isLoading } = useArtistOverviewQuery();

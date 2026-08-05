@@ -1,8 +1,8 @@
-import { ProfileScreen } from "@concertable/mobile/shared/features/user/screens/ProfileScreen";
-import { EditProfileScreen } from "@concertable/mobile/shared/features/user/screens/EditProfileScreen";
-import { LocationScreen } from "@concertable/mobile/shared/features/user/screens/LocationScreen";
-import { createAppStack } from "@concertable/mobile/shared/navigation/createAppStack";
-import type { ProfileStackParamList } from "@concertable/mobile/shared/navigation/types";
+import { ProfileScreen } from "@concertable/mobile/features/user/screens/ProfileScreen";
+import { EditProfileScreen } from "@concertable/mobile/features/user/screens/EditProfileScreen";
+import { LocationScreen } from "@concertable/mobile/features/user/screens/LocationScreen";
+import { createAppStack } from "@concertable/mobile/navigation/createAppStack";
+import type { ProfileStackParamList } from "@concertable/mobile/navigation/types";
 
 const Stack = createAppStack<ProfileStackParamList>();
 

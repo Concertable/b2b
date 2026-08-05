@@ -5,9 +5,9 @@ import { EditableProvider } from "@concertable/shared/providers";
 import venueApi from "@concertable/shared/features/venues/api/venueApi";
 import { venueKeys } from "@concertable/shared/features/venues";
 import type { Venue } from "@concertable/shared/features/venues/types";
-import { CreateBar } from "@concertable/web/shared/components/CreateBar";
-import { DetailsLayout } from "@concertable/web/shared/components/details/DetailsLayout";
-import { useVenueStore, VenueHero, venueSections } from "@concertable/web/shared/features/venues";
+import { CreateBar } from "@concertable/web/components/CreateBar";
+import { DetailsLayout } from "@concertable/web/components/details/DetailsLayout";
+import { useVenueStore, VenueHero, venueSections } from "@concertable/web/features/venues";
 
 const blank: Venue = {
   id: 0,

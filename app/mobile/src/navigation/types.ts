@@ -1,5 +1,5 @@
 import type { NavigatorScreenParams } from "@react-navigation/native";
-import type { ProfileStackParamList } from "@concertable/mobile/shared/navigation/types";
+import type { ProfileStackParamList } from "@concertable/mobile/navigation/types";
 
 export type MyArtistStackParamList = {
   MyArtistMain: undefined;
