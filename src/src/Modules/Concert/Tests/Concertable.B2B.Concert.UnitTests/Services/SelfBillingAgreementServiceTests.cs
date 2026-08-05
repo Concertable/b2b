@@ -43,6 +43,7 @@ public sealed class SelfBillingAgreementServiceTests
                 VatNumber = "GB123456789",
                 SellerIdentifier = "SELL-1",
                 BankReference = "BR-1",
+                HoldsMusicLicence = true,
                 RegisteredAddress = new RegisteredAddressDto
                 {
                     Line1 = "1 Road", City = "Town", Postcode = "AB1 2CD", Country = "United Kingdom",

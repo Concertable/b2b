@@ -14,6 +14,7 @@ export interface OrganizationBuffer {
   postcode: string;
   country: string;
   bankReference: string;
+  holdsMusicLicence: boolean;
 }
 
 export function useOrganization() {
@@ -34,6 +35,7 @@ export function useOrganization() {
           country: buffer.country,
         },
         bankReference: buffer.bankReference,
+        holdsMusicLicence: buffer.holdsMusicLicence,
       },
     });
     if (parsed.success)

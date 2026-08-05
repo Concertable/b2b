@@ -13,6 +13,7 @@ internal static class TenantMappers
         SellerIdentifier = taxCompliance.SellerIdentifier,
         RegisteredAddress = taxCompliance.RegisteredAddress.ToDto(),
         BankReference = taxCompliance.BankReference,
+        HoldsMusicLicence = taxCompliance.HoldsMusicLicence,
     };
 
     public static RegisteredAddressDto ToDto(this RegisteredAddress address) => new()
@@ -33,5 +34,6 @@ internal static class TenantMappers
             dto.RegisteredAddress.City,
             dto.RegisteredAddress.Postcode,
             dto.RegisteredAddress.Country),
-        dto.BankReference);
+        dto.BankReference,
+        dto.HoldsMusicLicence);
 }
