@@ -1,5 +1,5 @@
-import { NumberInput } from "@/components/ui/NumberInput";
-import { Label } from "@/components/ui/label";
+import { NumberInput } from "@concertable/web/shared/components/ui/NumberInput";
+import { Label } from "@concertable/web/shared/components/ui/label";
 import type {
   Deal,
   FlatFeeDeal,

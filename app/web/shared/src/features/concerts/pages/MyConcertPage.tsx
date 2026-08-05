@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
-import { ConfigBar } from "@/components/ConfigBar";
-import { Button } from "@/components/ui/button";
+import { ConfigBar } from "@concertable/web/shared/components/ConfigBar";
+import { Button } from "@concertable/web/shared/components/ui/button";
 import { EditableProvider } from "@concertable/shared/providers";
-import { DetailsPageSkeleton } from "@/components/skeletons/DetailsPageSkeleton";
+import { DetailsPageSkeleton } from "@concertable/web/shared/components/skeletons/DetailsPageSkeleton";
 import type { MyConcert } from "../types";
 import { useMyConcert } from "../hooks/useMyConcert";
 import { useDownloadContractMutation } from "../hooks/useDownloadContractMutation";
 import { useConcertStore } from "../store/useConcertStore";
-import { ConcertDetails } from "@/features/concerts";
+import { ConcertDetails } from "@concertable/web/shared/features/concerts";
 
 interface Props {
   id: number;
