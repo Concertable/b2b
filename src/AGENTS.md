@@ -12,4 +12,4 @@ VAT/invoice direction branches on contract type **and** the supplier's VAT-regis
 
 ## Deal ≠ Contract
 
-Deal = the editable economic offer (Deal module, keyed by `DealType`); `ContractEntity` = the frozen snapshot minted at Accept (Concert module). Keep `DealType` variation in the keyed resolver / workflow capability, never a branch in agnostic code (→ [`api/docs/CODE_PATTERNS.md`](../docs/CODE_PATTERNS.md)).
+Deal = the editable economic offer (Deal module, keyed by `DealType`); `ContractEntity` = the frozen snapshot minted at Accept (Concert module). Keep `DealType` variation in the keyed resolver / workflow capability, never a branch in agnostic code (→ [`api/agents/CODE_PATTERNS.md`](../agents/CODE_PATTERNS.md)).
