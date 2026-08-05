@@ -3,7 +3,7 @@ import { Home, MessageCircle, Music2, Search, User } from "lucide-react-native";
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { MyArtistStack } from "./MyArtistStack";
 import { ProfileStack } from "./ProfileStack";
-import { theme } from "shared/lib/theme";
+import { theme } from "@concertable/mobile/shared/lib/theme";
 import type { ArtistTabParamList } from "./types";
 
 const Tab = createBottomTabNavigator<ArtistTabParamList>();

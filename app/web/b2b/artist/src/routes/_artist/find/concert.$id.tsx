@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ConcertDetailsPage } from "@/features/concerts";
+import { ConcertDetailsPage } from "@concertable/web/shared/features/concerts";
 
 export const Route = createFileRoute("/_artist/find/concert/$id")({
   params: {

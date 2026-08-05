@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MembersPage } from "@b2b/features/members";
+import { MembersPage } from "@concertable/b2b/web/shared/features/members";
 
 export const Route = createFileRoute("/_venue/settings/members")({
   component: () => (

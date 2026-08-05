@@ -1,6 +1,6 @@
 import { TrendingUp } from "lucide-react";
 import { useVenueTicketRevenueQuery } from "./hooks";
-import { DashboardCard, MonthlyRevenueChart, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
+import { DashboardCard, MonthlyRevenueChart, WidgetEmpty, WidgetError, WidgetLoading } from "@concertable/web/shared/features/dashboard";
 
 export function VenueRevenueChartWidget() {
   const { data, isLoading, isError, refetch } = useVenueTicketRevenueQuery();

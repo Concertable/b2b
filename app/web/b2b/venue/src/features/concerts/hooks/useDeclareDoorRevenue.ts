@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import concertApi from "@concertable/shared/features/concerts/api/concertApi";
-import type { MyConcert } from "@b2b/features/concerts";
+import type { MyConcert } from "@concertable/b2b/web/shared/features/concerts";
 import {
   doorRevenueRequestSchema,
   type DoorRevenueRequest,

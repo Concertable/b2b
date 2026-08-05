@@ -1,7 +1,7 @@
-import { DetailsLayout, type DetailsSection } from "@/components/details/DetailsLayout";
-import { DetailsPageSkeleton } from "@/components/skeletons/DetailsPageSkeleton";
-import { useVenue, VenueHero, venueSections } from "@/features/venues";
-import { OpportunitySection } from "@b2b/features/concerts";
+import { DetailsLayout, type DetailsSection } from "@concertable/web/shared/components/details/DetailsLayout";
+import { DetailsPageSkeleton } from "@concertable/web/shared/components/skeletons/DetailsPageSkeleton";
+import { useVenue, VenueHero, venueSections } from "@concertable/web/shared/features/venues";
+import { OpportunitySection } from "@concertable/b2b/web/shared/features/concerts";
 
 interface Props {
   id: number;
