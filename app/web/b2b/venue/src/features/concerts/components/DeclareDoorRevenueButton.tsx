@@ -1,8 +1,8 @@
 import { useState } from "react";
-import type { MyConcert } from "@concertable/b2b/web/shared/features/concerts";
-import { Button } from "@concertable/web/shared/components/ui/button";
-import { NumberInput } from "@concertable/web/shared/components/ui/NumberInput";
-import { Label } from "@concertable/web/shared/components/ui/label";
+import type { MyConcert } from "@concertable/b2b/features/concerts";
+import { Button } from "@concertable/web/components/ui/button";
+import { NumberInput } from "@concertable/web/components/ui/NumberInput";
+import { Label } from "@concertable/web/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@concertable/web/shared/components/ui/dialog";
+} from "@concertable/web/components/ui/dialog";
 import { useDeclareDoorRevenue } from "../hooks/useDeclareDoorRevenue";
 
 interface Props {

@@ -1,9 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { ConsentProvider } from "@concertable/web/shared/providers/ConsentProvider";
-import { CookieConsentBanner } from "@concertable/web/shared/components/CookieConsentBanner";
-import { ManageCookiesButton } from "@concertable/web/shared/components/ManageCookiesButton";
-import "@concertable/web/shared/index.css";
+import { ConsentProvider } from "@concertable/web/providers/ConsentProvider";
+import { CookieConsentBanner } from "@concertable/web/components/CookieConsentBanner";
+import { ManageCookiesButton } from "@concertable/web/components/ManageCookiesButton";
+import "@concertable/web/index.css";
 
 function BuildingIcon() {
   return (

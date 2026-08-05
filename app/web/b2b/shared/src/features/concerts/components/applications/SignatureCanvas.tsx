@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@concertable/web/shared/components/ui/button";
+import { Button } from "@concertable/web/components/ui/button";
 
 interface Props {
   onChange: (dataUrl: string | undefined) => void;

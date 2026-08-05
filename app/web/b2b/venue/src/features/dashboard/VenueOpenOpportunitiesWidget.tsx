@@ -2,8 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { Inbox } from "lucide-react";
 import dayjs from "dayjs";
 import { useVenueOpenOpportunitiesQuery } from "./hooks";
-import { dealSummary } from "@concertable/b2b/web/shared/features/deals";
-import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@concertable/web/shared/features/dashboard";
+import { dealSummary } from "@concertable/b2b/features/deals";
+import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@concertable/web/features/dashboard";
 
 export function VenueOpenOpportunitiesWidget() {
   const { data, isLoading, isError, refetch } = useVenueOpenOpportunitiesQuery();

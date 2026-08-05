@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MyConcertPage } from "@concertable/b2b/web/shared/features/concerts";
+import { MyConcertPage } from "@concertable/b2b/features/concerts";
 import {
   CancelBookingButton,
   DeclareDoorRevenueButton,

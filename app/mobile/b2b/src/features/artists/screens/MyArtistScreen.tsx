@@ -1,17 +1,17 @@
 import { useLayoutEffect } from "react";
 import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { notify } from "@concertable/mobile/shared/lib/toast";
+import { notify } from "@concertable/mobile/lib/toast";
 import {
   useMyArtist,
   useArtistStore,
 } from "@concertable/shared/features/artists";
 import { EditableProvider } from "@concertable/shared/providers";
-import { Screen } from "@concertable/mobile/shared/components/ui/Screen";
-import { Skeleton } from "@concertable/mobile/shared/components/ui/skeleton";
-import { ErrorState } from "@concertable/mobile/shared/components/ui/ErrorState";
-import { ConfigBar } from "@concertable/mobile/shared/components/ConfigBar";
-import { ArtistDetails } from "@concertable/mobile/shared/features/artists/components/ArtistDetails";
+import { Screen } from "@concertable/mobile/components/ui/Screen";
+import { Skeleton } from "@concertable/mobile/components/ui/skeleton";
+import { ErrorState } from "@concertable/mobile/components/ui/ErrorState";
+import { ConfigBar } from "@concertable/mobile/components/ConfigBar";
+import { ArtistDetails } from "@concertable/mobile/features/artists/components/ArtistDetails";
 
 export function MyArtistScreen() {
   const nav = useNavigation();

@@ -6,7 +6,7 @@ import type {
   MonthlyRevenuePoint,
   ReviewExcerpt,
 } from "@concertable/shared/features/dashboard";
-import type { OpportunityCard } from "@concertable/b2b/web/shared/features/dashboard";
+import type { OpportunityCard } from "@concertable/b2b/features/dashboard";
 import { artistFixtures } from "./fixtures";
 import type {
   Application,

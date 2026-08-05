@@ -3,10 +3,10 @@ import {
   usePendingApplicationsQuery,
   useRecentDeniedApplicationsQuery,
   ConfirmActionDialog,
-} from "@concertable/b2b/web/shared/features/concerts";
-import type { Application } from "@concertable/b2b/web/shared/features/concerts";
-import { Badge } from "@concertable/web/shared/components/ui/badge";
-import { Button } from "@concertable/web/shared/components/ui/button";
+} from "@concertable/b2b/features/concerts";
+import type { Application } from "@concertable/b2b/features/concerts";
+import { Badge } from "@concertable/web/components/ui/badge";
+import { Button } from "@concertable/web/components/ui/button";
 import { useWithdrawApplication } from "../hooks/useWithdrawApplication";
 
 interface RowProps {

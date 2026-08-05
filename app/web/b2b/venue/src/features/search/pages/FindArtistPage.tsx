@@ -1,4 +1,4 @@
-import { FindPage } from "@concertable/web/shared/features/search";
+import { FindPage } from "@concertable/web/features/search";
 
 export function FindArtistPage() {
   return <FindPage />;
