@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// pre-generation: an invoice is downloaded rarely, so the one-time first-download render isn't worth a
 /// context-free read); a missing blob is always re-rendered from the snapshot, so a blob outage is never fatal.
 /// </summary>
-internal interface IInvoicePdfService
+internal interface IInvoicePdfRenderer
 {
     /// <summary>Download path: returns the stored PDF bytes, rendering + storing on first access.</summary>
     Task<byte[]> GetOrCreateAsync(InvoiceEntity invoice, CancellationToken ct = default);
