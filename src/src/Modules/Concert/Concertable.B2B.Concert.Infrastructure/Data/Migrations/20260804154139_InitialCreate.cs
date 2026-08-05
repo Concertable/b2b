@@ -64,6 +64,40 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "SelfBillingAgreements",
+                schema: "concert",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AcceptedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ExpiresAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    PlatformTermsVersion = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
+                    ClauseText = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PdfBlobName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Supplier_AddressLine1 = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Supplier_AddressLine2 = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    Supplier_City = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    Supplier_Country = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    Supplier_LegalName = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
+                    Supplier_Postcode = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
+                    Supplier_TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Supplier_VatNumber = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: true),
+                    SupplierESignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SupplierESignature_DrawnSignatureImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SupplierESignature_Ip = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: false),
+                    SupplierESignature_SignatoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SupplierESignature_UserAgent = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
+                    SupplierESignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SelfBillingAgreements", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "VenueReadModels",
                 schema: "concert",
                 columns: table => new
@@ -470,6 +504,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "InvoiceSequences",
+                schema: "concert");
+
+            migrationBuilder.DropTable(
+                name: "SelfBillingAgreements",
                 schema: "concert");
 
             migrationBuilder.DropTable(

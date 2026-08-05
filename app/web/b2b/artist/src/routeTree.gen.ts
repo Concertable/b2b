@@ -23,6 +23,7 @@ import { Route as ArtistSettingsRouteRouteImport } from './routes/_artist/settin
 import { Route as ArtistSettingsIndexRouteImport } from './routes/_artist/settings/index'
 import { Route as ArtistMyIndexRouteImport } from './routes/_artist/my/index'
 import { Route as ArtistFindIndexRouteImport } from './routes/_artist/find/index'
+import { Route as ArtistSettingsSelfBillingAgreementRouteImport } from './routes/_artist/settings/self-billing-agreement'
 import { Route as ArtistSettingsPaymentRouteImport } from './routes/_artist/settings/payment'
 import { Route as ArtistSettingsOrganizationRouteImport } from './routes/_artist/settings/organization'
 import { Route as ArtistSettingsMembersRouteImport } from './routes/_artist/settings/members'
@@ -103,6 +104,12 @@ const ArtistFindIndexRoute = ArtistFindIndexRouteImport.update({
   path: '/find/',
   getParentRoute: () => ArtistRouteRoute,
 } as any)
+const ArtistSettingsSelfBillingAgreementRoute =
+  ArtistSettingsSelfBillingAgreementRouteImport.update({
+    id: '/self-billing-agreement',
+    path: '/self-billing-agreement',
+    getParentRoute: () => ArtistSettingsRouteRoute,
+  } as any)
 const ArtistSettingsPaymentRoute = ArtistSettingsPaymentRouteImport.update({
   id: '/payment',
   path: '/payment',
@@ -173,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/settings/members': typeof ArtistSettingsMembersRoute
   '/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/settings/payment': typeof ArtistSettingsPaymentRoute
+  '/settings/self-billing-agreement': typeof ArtistSettingsSelfBillingAgreementRoute
   '/find/': typeof ArtistFindIndexRoute
   '/my/': typeof ArtistMyIndexRoute
   '/settings/': typeof ArtistSettingsIndexRoute
@@ -197,6 +205,7 @@ export interface FileRoutesByTo {
   '/settings/members': typeof ArtistSettingsMembersRoute
   '/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/settings/payment': typeof ArtistSettingsPaymentRoute
+  '/settings/self-billing-agreement': typeof ArtistSettingsSelfBillingAgreementRoute
   '/find': typeof ArtistFindIndexRoute
   '/my': typeof ArtistMyIndexRoute
   '/settings': typeof ArtistSettingsIndexRoute
@@ -224,6 +233,7 @@ export interface FileRoutesById {
   '/_artist/settings/members': typeof ArtistSettingsMembersRoute
   '/_artist/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/_artist/settings/payment': typeof ArtistSettingsPaymentRoute
+  '/_artist/settings/self-billing-agreement': typeof ArtistSettingsSelfBillingAgreementRoute
   '/_artist/find/': typeof ArtistFindIndexRoute
   '/_artist/my/': typeof ArtistMyIndexRoute
   '/_artist/settings/': typeof ArtistSettingsIndexRoute
@@ -251,6 +261,7 @@ export interface FileRouteTypes {
     | '/settings/members'
     | '/settings/organization'
     | '/settings/payment'
+    | '/settings/self-billing-agreement'
     | '/find/'
     | '/my/'
     | '/settings/'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/settings/members'
     | '/settings/organization'
     | '/settings/payment'
+    | '/settings/self-billing-agreement'
     | '/find'
     | '/my'
     | '/settings'
@@ -301,6 +313,7 @@ export interface FileRouteTypes {
     | '/_artist/settings/members'
     | '/_artist/settings/organization'
     | '/_artist/settings/payment'
+    | '/_artist/settings/self-billing-agreement'
     | '/_artist/find/'
     | '/_artist/my/'
     | '/_artist/settings/'
@@ -424,6 +437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtistFindIndexRouteImport
       parentRoute: typeof ArtistRouteRoute
     }
+    '/_artist/settings/self-billing-agreement': {
+      id: '/_artist/settings/self-billing-agreement'
+      path: '/self-billing-agreement'
+      fullPath: '/settings/self-billing-agreement'
+      preLoaderRoute: typeof ArtistSettingsSelfBillingAgreementRouteImport
+      parentRoute: typeof ArtistSettingsRouteRoute
+    }
     '/_artist/settings/payment': {
       id: '/_artist/settings/payment'
       path: '/payment'
@@ -501,6 +521,7 @@ interface ArtistSettingsRouteRouteChildren {
   ArtistSettingsMembersRoute: typeof ArtistSettingsMembersRoute
   ArtistSettingsOrganizationRoute: typeof ArtistSettingsOrganizationRoute
   ArtistSettingsPaymentRoute: typeof ArtistSettingsPaymentRoute
+  ArtistSettingsSelfBillingAgreementRoute: typeof ArtistSettingsSelfBillingAgreementRoute
   ArtistSettingsIndexRoute: typeof ArtistSettingsIndexRoute
 }
 
@@ -508,6 +529,8 @@ const ArtistSettingsRouteRouteChildren: ArtistSettingsRouteRouteChildren = {
   ArtistSettingsMembersRoute: ArtistSettingsMembersRoute,
   ArtistSettingsOrganizationRoute: ArtistSettingsOrganizationRoute,
   ArtistSettingsPaymentRoute: ArtistSettingsPaymentRoute,
+  ArtistSettingsSelfBillingAgreementRoute:
+    ArtistSettingsSelfBillingAgreementRoute,
   ArtistSettingsIndexRoute: ArtistSettingsIndexRoute,
 }
 
