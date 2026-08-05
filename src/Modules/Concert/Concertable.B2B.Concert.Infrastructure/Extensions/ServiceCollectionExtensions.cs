@@ -92,6 +92,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IInvoiceIssuer, InvoiceIssuer>();
         services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IInvoicePdfService, InvoicePdfService>();
+        services.AddScoped<ISelfBillingAgreementService, SelfBillingAgreementService>();
+        services.AddScoped<ISelfBillingAgreementGate, SelfBillingAgreementGate>();
         services.AddScoped<IClientContext, ClientContextAccessor>();
         services.AddSingleton<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
         services.AddSingleton<IDealTermsSerializer, DealTermsSerializer>();
@@ -145,6 +147,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPublicBookingRepository, PublicBookingRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        services.AddScoped<ISelfBillingAgreementRepository, SelfBillingAgreementRepository>();
         services.AddScoped(typeof(ISequenceRepository<>), typeof(SequenceRepository<>));
 
         // Query specifications
