@@ -9,14 +9,14 @@ import {
 } from "./applicationActions";
 import type { Application } from "./types";
 import type { DashboardApplicationStatus } from "@concertable/shared/features/dashboard";
-import { dealSummary } from "@concertable/b2b/web/shared/features/deals";
-import { Button } from "@concertable/web/shared/components/ui/button";
-import { DataTable } from "@concertable/web/shared/components/ui/data-table";
+import { dealSummary } from "@concertable/b2b/features/deals";
+import { Button } from "@concertable/web/components/ui/button";
+import { DataTable } from "@concertable/web/components/ui/data-table";
 import {
   DashboardCard,
   WidgetError,
   WidgetLoading,
-} from "@concertable/web/shared/features/dashboard";
+} from "@concertable/web/features/dashboard";
 
 const statusPriority: Record<DashboardApplicationStatus, number> = {
   AwaitingPayment: 0,

@@ -1,5 +1,5 @@
-import type { PaymentAmount } from "@concertable/web/shared/features/concerts/types";
-import type { SummaryLine } from "@concertable/web/shared/features/concerts/components/checkout/OrderSummaryCard";
+import type { PaymentAmount } from "@concertable/web/features/concerts/types";
+import type { SummaryLine } from "@concertable/web/features/concerts/components/checkout/OrderSummaryCard";
 
 export function summaryFor(amount: PaymentAmount): {
   lines: SummaryLine[];

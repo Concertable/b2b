@@ -1,14 +1,14 @@
 import { useState, type FormEvent } from "react";
-import { Button } from "@concertable/web/shared/components/ui/button";
-import { Input } from "@concertable/web/shared/components/ui/input";
-import { Label } from "@concertable/web/shared/components/ui/label";
+import { Button } from "@concertable/web/components/ui/button";
+import { Input } from "@concertable/web/components/ui/input";
+import { Label } from "@concertable/web/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@concertable/web/shared/components/ui/select";
+} from "@concertable/web/components/ui/select";
 import {
   useInviteMember,
   type InviteBuffer,

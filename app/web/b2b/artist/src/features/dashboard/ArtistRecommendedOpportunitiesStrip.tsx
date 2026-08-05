@@ -2,9 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import dayjs from "dayjs";
 import { useArtistRecommendedOpportunitiesQuery } from "./hooks";
-import { dealSummary } from "@concertable/b2b/web/shared/features/deals";
+import { dealSummary } from "@concertable/b2b/features/deals";
 import { genreLabel } from "@concertable/shared/types";
-import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@concertable/web/shared/features/dashboard";
+import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@concertable/web/features/dashboard";
 
 export function ArtistRecommendedOpportunitiesStrip() {
   const { data, isLoading, isError, refetch } = useArtistRecommendedOpportunitiesQuery();

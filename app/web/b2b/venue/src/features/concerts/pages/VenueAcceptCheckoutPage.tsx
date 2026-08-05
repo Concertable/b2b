@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { Button } from "@concertable/web/shared/components/ui/button";
-import { Skeleton } from "@concertable/web/shared/components/ui/skeleton";
-import type { ConcertDraftCreatedPayload } from "@concertable/web/shared/features/notifications";
+import { Button } from "@concertable/web/components/ui/button";
+import { Skeleton } from "@concertable/web/components/ui/skeleton";
+import type { ConcertDraftCreatedPayload } from "@concertable/web/features/notifications";
 import {
   AcceptDealSummary,
   ESignaturePanel,
@@ -11,18 +11,18 @@ import {
   useAcceptCheckoutQuery,
   useApplicationQuery,
   useESignature,
-} from "@concertable/b2b/web/shared/features/concerts";
-import type { Application } from "@concertable/b2b/web/shared/features/concerts";
-import type { Checkout } from "@concertable/web/shared/features/concerts";
-import { useCheckoutFlow, type CheckoutFlowState } from "@concertable/web/shared/features/concerts/hooks/useCheckoutFlow";
-import { CheckoutLayout } from "@concertable/web/shared/features/concerts/components/checkout/CheckoutLayout";
-import { CheckoutSection } from "@concertable/web/shared/features/concerts/components/checkout/CheckoutSection";
-import { CheckoutEventBanner } from "@concertable/web/shared/features/concerts/components/checkout/CheckoutEventBanner";
-import { OrderSummaryCard } from "@concertable/web/shared/features/concerts/components/checkout/OrderSummaryCard";
-import { CheckoutSuccess } from "@concertable/web/shared/features/concerts/components/checkout/CheckoutSuccess";
-import { CheckoutFlow } from "@concertable/web/shared/features/concerts/components/checkout/CheckoutFlow";
-import { StripePaymentForm } from "@concertable/web/shared/features/concerts/components/checkout/StripePaymentForm";
-import { summaryFor } from "@concertable/b2b/web/shared/features/concerts/utils/acceptCheckoutFormat";
+} from "@concertable/b2b/features/concerts";
+import type { Application } from "@concertable/b2b/features/concerts";
+import type { Checkout } from "@concertable/web/features/concerts";
+import { useCheckoutFlow, type CheckoutFlowState } from "@concertable/web/features/concerts/hooks/useCheckoutFlow";
+import { CheckoutLayout } from "@concertable/web/features/concerts/components/checkout/CheckoutLayout";
+import { CheckoutSection } from "@concertable/web/features/concerts/components/checkout/CheckoutSection";
+import { CheckoutEventBanner } from "@concertable/web/features/concerts/components/checkout/CheckoutEventBanner";
+import { OrderSummaryCard } from "@concertable/web/features/concerts/components/checkout/OrderSummaryCard";
+import { CheckoutSuccess } from "@concertable/web/features/concerts/components/checkout/CheckoutSuccess";
+import { CheckoutFlow } from "@concertable/web/features/concerts/components/checkout/CheckoutFlow";
+import { StripePaymentForm } from "@concertable/web/features/concerts/components/checkout/StripePaymentForm";
+import { summaryFor } from "@concertable/b2b/features/concerts/utils/acceptCheckoutFormat";
 
 export function VenueAcceptCheckoutPage() {
   const { applicationId } = useParams({ strict: false }) as {

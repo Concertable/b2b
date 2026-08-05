@@ -1,8 +1,8 @@
 import { Calendar, CircleDollarSign, Inbox, Users } from "lucide-react";
 import { useVenueKpisQuery } from "./hooks";
 import { formatCurrency } from "@concertable/shared/lib";
-import { Skeleton } from "@concertable/web/shared/components/ui/skeleton";
-import { KpiTile } from "@concertable/web/shared/features/dashboard";
+import { Skeleton } from "@concertable/web/components/ui/skeleton";
+import { KpiTile } from "@concertable/web/features/dashboard";
 
 export function VenueKpiStrip() {
   const { data, isLoading } = useVenueKpisQuery();

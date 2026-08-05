@@ -1,6 +1,6 @@
 import { Activity } from "lucide-react";
 import { useVenueActivityQuery } from "./hooks";
-import { ActivityFeed, DashboardCard, WidgetError, WidgetLoading } from "@concertable/web/shared/features/dashboard";
+import { ActivityFeed, DashboardCard, WidgetError, WidgetLoading } from "@concertable/web/features/dashboard";
 
 export function VenueActivityWidget() {
   const { data, isLoading, isError, refetch } = useVenueActivityQuery();
