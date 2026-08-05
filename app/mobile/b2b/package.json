@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@concertable/shared": "*",
+    "@concertable/mobile": "*",
     "@expo-google-fonts/geist": "^0.4.2",
     "@gorhom/bottom-sheet": "^5.2.14",
     "@react-navigation/bottom-tabs": "^7.3.10",
