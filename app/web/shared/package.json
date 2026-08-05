@@ -17,57 +17,57 @@
     "prepack": "npm run build"
   },
   "exports": {
-    "./web/shared/features/concerts": {
+    "./features/concerts": {
       "types": "./dist/features/concerts/index.d.ts",
       "import": "./dist/features/concerts/index.js",
       "default": "./dist/features/concerts/index.js"
     },
-    "./web/shared/features/dashboard": {
+    "./features/dashboard": {
       "types": "./dist/features/dashboard/index.d.ts",
       "import": "./dist/features/dashboard/index.js",
       "default": "./dist/features/dashboard/index.js"
     },
-    "./web/shared/features/deals": {
+    "./features/deals": {
       "types": "./dist/features/deals/index.d.ts",
       "import": "./dist/features/deals/index.js",
       "default": "./dist/features/deals/index.js"
     },
-    "./web/shared/features/members": {
+    "./features/members": {
       "types": "./dist/features/members/index.d.ts",
       "import": "./dist/features/members/index.js",
       "default": "./dist/features/members/index.js"
     },
-    "./web/shared/features/organizations": {
+    "./features/organizations": {
       "types": "./dist/features/organizations/index.d.ts",
       "import": "./dist/features/organizations/index.js",
       "default": "./dist/features/organizations/index.js"
     },
-    "./web/shared/features/payments": {
+    "./features/payments": {
       "types": "./dist/features/payments/index.d.ts",
       "import": "./dist/features/payments/index.js",
       "default": "./dist/features/payments/index.js"
     },
-    "./web/shared/features/selfBilling": {
+    "./features/selfBilling": {
       "types": "./dist/features/selfBilling/index.d.ts",
       "import": "./dist/features/selfBilling/index.js",
       "default": "./dist/features/selfBilling/index.js"
     },
-    "./web/shared/features/tenant": {
+    "./features/tenant": {
       "types": "./dist/features/tenant/index.d.ts",
       "import": "./dist/features/tenant/index.js",
       "default": "./dist/features/tenant/index.js"
     },
-    "./web/shared/features/*": {
+    "./features/*": {
       "types": "./dist/features/*.d.ts",
       "import": "./dist/features/*.js",
       "default": "./dist/features/*.js"
     },
-    "./web/shared/lib/*": {
+    "./lib/*": {
       "types": "./dist/lib/*.d.ts",
       "import": "./dist/lib/*.js",
       "default": "./dist/lib/*.js"
     },
-    "./web/shared/*": {
+    "./*": {
       "types": "./dist/*.d.ts",
       "import": "./dist/*.js",
       "default": "./dist/*.js"

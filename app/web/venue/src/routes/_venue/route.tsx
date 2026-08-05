@@ -4,11 +4,11 @@ import {
   TenantSwitcher,
   resolveTenantRoute,
   useTenant,
-} from "@concertable/b2b/web/shared/features/tenant";
+} from "@concertable/b2b/features/tenant";
 import { useVenueNotifications } from "../../features/notifications";
 import { requireVenue } from "../../features/venue";
-import { AppLayout } from "@concertable/web/shared/components/AppLayout";
-import type { ProfileMenuItem } from "@concertable/web/shared/components/ProfileMenu";
+import { AppLayout } from "@concertable/web/components/AppLayout";
+import type { ProfileMenuItem } from "@concertable/web/components/ProfileMenu";
 
 const links = [
   { label: "Dashboard", to: "/" },

@@ -1,4 +1,4 @@
-import { OpportunitySection } from "@concertable/b2b/web/shared/features/concerts";
+import { OpportunitySection } from "@concertable/b2b/features/concerts";
 import { ApplyAction } from "../../concerts/components/ApplyAction";
 
 interface Props {
