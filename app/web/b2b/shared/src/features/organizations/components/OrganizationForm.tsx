@@ -24,6 +24,7 @@ function initialBuffer(organization: Organization): OrganizationBuffer {
     postcode: tax?.registeredAddress.postcode ?? "",
     country: tax?.registeredAddress.country ?? "United Kingdom",
     bankReference: tax?.bankReference ?? "",
+    holdsMusicLicence: tax?.holdsMusicLicence ?? false,
   };
 }
 
@@ -175,6 +176,23 @@ export function OrganizationForm({
             placeholder="IBAN or account reference"
           />
         </div>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-4">
+        <h3 className="font-medium">Music licence</h3>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="holdsMusicLicence"
+            checked={buffer.holdsMusicLicence}
+            onCheckedChange={(checked) => set("holdsMusicLicence", checked === true)}
+          />
+          <Label htmlFor="holdsMusicLicence">{taxFormLabels.musicLicenceLabel}</Label>
+        </div>
+        <p className="text-muted-foreground text-xs">
+          {taxFormLabels.musicLicenceHint}
+        </p>
       </div>
 
       {error && (

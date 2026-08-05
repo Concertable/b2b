@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(TenantDbContext))]
-    [Migration("20260724223809_InitialCreate")]
+    [Migration("20260805105823_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -207,6 +207,9 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                                 .IsRequired()
                                 .HasMaxLength(50)
                                 .HasColumnType("nvarchar(50)");
+
+                            b1.Property<bool>("HoldsMusicLicence")
+                                .HasColumnType("bit");
 
                             b1.Property<string>("SellerIdentifier")
                                 .IsRequired()
