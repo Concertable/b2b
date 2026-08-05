@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
-import { OpportunitySection } from "@b2b/features/concerts";
+import { Button } from "@concertable/web/shared/components/ui/button";
+import { OpportunitySection } from "@concertable/b2b/web/shared/features/concerts";
 
 interface Props {
   venueId: number;

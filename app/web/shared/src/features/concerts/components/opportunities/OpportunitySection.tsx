@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Editable } from "@/components/editable/Editable";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Editable } from "@concertable/web/shared/components/editable/Editable";
+import { Skeleton } from "@concertable/web/shared/components/ui/skeleton";
 import { useAllOpportunitiesQuery } from "../../hooks/useOpportunitiesQuery";
 import { OpportunityCard } from "./OpportunityCard";
 import { OpportunityList } from "./OpportunityList";

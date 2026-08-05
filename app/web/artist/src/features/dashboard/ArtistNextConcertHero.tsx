@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { CalendarClock, MapPin, Ticket } from "lucide-react";
 import dayjs from "dayjs";
 import { useArtistUpcomingConcertsQuery } from "./hooks";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@concertable/web/shared/components/ui/skeleton";
 
 function daysUntilLabel(iso: string) {
   const diff = dayjs(iso).startOf("day").diff(dayjs().startOf("day"), "day");

@@ -1,6 +1,6 @@
 import type { StoreApi } from "zustand/vanilla";
-import { meQueryKey } from "@/features/user/hooks/useSyncUser";
-import { queryClient } from "@/lib/queryClient";
+import { meQueryKey } from "@concertable/web/shared/features/user/hooks/useSyncUser";
+import { queryClient } from "@concertable/web/shared/lib/queryClient";
 import { resolveTenant } from "./memberships";
 import {
   useTenantStore,

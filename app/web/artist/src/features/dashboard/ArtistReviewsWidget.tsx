@@ -4,7 +4,7 @@ import {
   RecentReviewsList,
   WidgetError,
   WidgetLoading,
-} from "@/features/dashboard";
+} from "@concertable/web/shared/features/dashboard";
 import { useArtistOverviewQuery, useArtistRecentReviewsQuery } from "./hooks";
 
 export function ArtistReviewsWidget() {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { useWithdrawApplicationMutation } from "@b2b/features/concerts";
+import { useWithdrawApplicationMutation } from "@concertable/b2b/web/shared/features/concerts";
 
 export function useWithdrawApplication() {
   const [target, setTarget] = useState<number | null>(null);

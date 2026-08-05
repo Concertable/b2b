@@ -1,6 +1,6 @@
 import { ExternalLink, CheckCircle, XCircle, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@concertable/web/shared/components/ui/button";
+import { Separator } from "@concertable/web/shared/components/ui/separator";
 import { usePayoutAccount } from "../hooks/usePayoutAccount";
 
 export function PayoutAccountSection() {

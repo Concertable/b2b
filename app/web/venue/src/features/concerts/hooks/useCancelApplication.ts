@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { useCancelApplicationMutation } from "@b2b/features/concerts";
+import { useCancelApplicationMutation } from "@concertable/b2b/web/shared/features/concerts";
 
 export function useCancelApplication(opportunityId: number) {
   const [target, setTarget] = useState<number | null>(null);

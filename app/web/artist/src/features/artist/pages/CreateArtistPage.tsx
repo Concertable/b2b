@@ -5,9 +5,9 @@ import { EditableProvider } from "@concertable/shared/providers";
 import artistApi from "@concertable/shared/features/artists/api/artistApi";
 import { artistKeys } from "@concertable/shared/features/artists";
 import type { Artist } from "@concertable/shared/features/artists/types";
-import { CreateBar } from "@/components/CreateBar";
-import { DetailsLayout } from "@/components/details/DetailsLayout";
-import { useArtistStore, ArtistHero, artistSections } from "@/features/artists";
+import { CreateBar } from "@concertable/web/shared/components/CreateBar";
+import { DetailsLayout } from "@concertable/web/shared/components/details/DetailsLayout";
+import { useArtistStore, ArtistHero, artistSections } from "@concertable/web/shared/features/artists";
 
 const blank: Artist = {
   id: 0,

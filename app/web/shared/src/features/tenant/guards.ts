@@ -2,7 +2,7 @@ import {
   redirectToBusiness,
   requireAuth,
   requireBusinessAuth,
-} from "@/features/auth";
+} from "@concertable/web/shared/features/auth";
 import identityApi from "./api/identityApi";
 import { tenantSession } from "./tenantSession";
 import type { TenantType } from "./types";

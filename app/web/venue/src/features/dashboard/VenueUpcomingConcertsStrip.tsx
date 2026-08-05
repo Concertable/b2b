@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Music } from "lucide-react";
 import dayjs from "dayjs";
 import { useVenueUpcomingConcertsQuery } from "./hooks";
-import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
+import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@concertable/web/shared/features/dashboard";
 
 export function VenueUpcomingConcertsStrip() {
   const { data, isLoading, isError, refetch } = useVenueUpcomingConcertsQuery();
