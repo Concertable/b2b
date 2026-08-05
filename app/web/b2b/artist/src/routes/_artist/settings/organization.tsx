@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { OrganizationPage } from "@concertable/b2b/web/shared/features/organizations";
+import { OrganizationPage } from "@concertable/b2b/features/organizations";
 
 export const Route = createFileRoute("/_artist/settings/organization")({
   component: () => (

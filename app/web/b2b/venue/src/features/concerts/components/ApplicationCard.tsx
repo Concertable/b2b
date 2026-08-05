@@ -1,9 +1,9 @@
-﻿import { Button } from "@concertable/web/shared/components/ui/button";
-import { Badge } from "@concertable/web/shared/components/ui/badge";
+﻿import { Button } from "@concertable/web/components/ui/button";
+import { Badge } from "@concertable/web/components/ui/badge";
 import { useImageUrlQuery } from "@concertable/shared/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import type { Application } from "@concertable/b2b/web/shared/features/concerts";
+import type { Application } from "@concertable/b2b/features/concerts";
 
 interface Props {
   application: Application;

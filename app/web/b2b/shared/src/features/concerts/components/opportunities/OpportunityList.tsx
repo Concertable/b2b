@@ -1,6 +1,6 @@
-import { Button } from "@concertable/web/shared/components/ui/button";
+import { Button } from "@concertable/web/components/ui/button";
 import { Plus } from "lucide-react";
-import { Skeleton } from "@concertable/web/shared/components/ui/skeleton";
+import { Skeleton } from "@concertable/web/components/ui/skeleton";
 import { defaultDeal } from "@b2b/features/deals";
 import { useOpportunities } from "../../hooks/useOpportunities";
 import { OpportunityEditCard } from "./OpportunityCard";

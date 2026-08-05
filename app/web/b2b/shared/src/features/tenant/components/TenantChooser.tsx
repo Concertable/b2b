@@ -1,5 +1,5 @@
 import type { TenantType } from "../types";
-import { Button } from "@concertable/web/shared/components/ui/button";
+import { Button } from "@concertable/web/components/ui/button";
 import { useTenant } from "../hooks/useTenant";
 
 export function TenantChooser({ tenantType }: Readonly<{ tenantType: TenantType }>) {
