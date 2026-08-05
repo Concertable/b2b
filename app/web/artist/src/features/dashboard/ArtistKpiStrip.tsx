@@ -1,8 +1,8 @@
 import { Calendar, CircleDollarSign, Clock, FileText } from "lucide-react";
 import { useArtistKpisQuery } from "./hooks";
 import { formatCurrency } from "@concertable/shared/lib";
-import { Skeleton } from "@concertable/web/shared/components/ui/skeleton";
-import { KpiTile } from "@concertable/web/shared/features/dashboard";
+import { Skeleton } from "@concertable/web/components/ui/skeleton";
+import { KpiTile } from "@concertable/web/features/dashboard";
 
 export function ArtistKpiStrip() {
   const { data, isLoading } = useArtistKpisQuery();

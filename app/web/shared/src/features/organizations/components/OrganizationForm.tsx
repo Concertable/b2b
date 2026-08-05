@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from "react";
-import { Button } from "@concertable/web/shared/components/ui/button";
-import { Checkbox } from "@concertable/web/shared/components/ui/checkbox";
-import { Input } from "@concertable/web/shared/components/ui/input";
-import { Label } from "@concertable/web/shared/components/ui/label";
-import { Separator } from "@concertable/web/shared/components/ui/separator";
+import { Button } from "@concertable/web/components/ui/button";
+import { Checkbox } from "@concertable/web/components/ui/checkbox";
+import { Input } from "@concertable/web/components/ui/input";
+import { Label } from "@concertable/web/components/ui/label";
+import { Separator } from "@concertable/web/components/ui/separator";
 import {
   useOrganization,
   type OrganizationBuffer,

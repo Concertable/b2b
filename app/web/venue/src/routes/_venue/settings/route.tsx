@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SettingsLayout } from "@concertable/web/shared/components/SettingsLayout";
+import { SettingsLayout } from "@concertable/web/components/SettingsLayout";
 
 const extraLinks = [
   { label: "Organization", to: "/settings/organization" },

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
-import { Input } from "@concertable/web/shared/components/ui/input";
-import { Label } from "@concertable/web/shared/components/ui/label";
-import { Separator } from "@concertable/web/shared/components/ui/separator";
+import { Input } from "@concertable/web/components/ui/input";
+import { Label } from "@concertable/web/components/ui/label";
+import { Separator } from "@concertable/web/components/ui/separator";
 import type { Deal } from "@b2b/features/deals";
 import { eSignatureRequestSchema } from "@concertable/shared/features/concerts";
 import type { ESignatureRequest } from "@concertable/shared/features/concerts/types";

@@ -1,4 +1,4 @@
-import { Button } from "@concertable/web/shared/components/ui/button";
+import { Button } from "@concertable/web/components/ui/button";
 import { usePendingInvitations } from "../hooks/usePendingInvitations";
 import { Spinner } from "./Spinner";
 

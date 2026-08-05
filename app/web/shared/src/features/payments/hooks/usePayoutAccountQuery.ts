@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import stripeAccountApi from "@concertable/web/shared/features/payments/api/stripeAccountApi";
+import stripeAccountApi from "@concertable/web/features/payments/api/stripeAccountApi";
 
 export function usePayoutAccountStatusQuery(enabled: boolean) {
   return useQuery({

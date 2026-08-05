@@ -1,8 +1,8 @@
-import { ConfigBar } from "@concertable/web/shared/components/ConfigBar";
+import { ConfigBar } from "@concertable/web/components/ConfigBar";
 import { EditableProvider } from "@concertable/shared/providers";
-import { DetailsLayout, type DetailsSection } from "@concertable/web/shared/components/details/DetailsLayout";
-import { DetailsPageSkeleton } from "@concertable/web/shared/components/skeletons/DetailsPageSkeleton";
-import { useVenueStore, VenueHero, venueSections } from "@concertable/web/shared/features/venues";
+import { DetailsLayout, type DetailsSection } from "@concertable/web/components/details/DetailsLayout";
+import { DetailsPageSkeleton } from "@concertable/web/components/skeletons/DetailsPageSkeleton";
+import { useVenueStore, VenueHero, venueSections } from "@concertable/web/features/venues";
 import { useMyVenue } from "../hooks/useMyVenue";
 import { MyOpportunitiesSection } from "../components/MyOpportunitiesSection";
 
