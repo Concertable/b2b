@@ -1,6 +1,6 @@
 import { useVenueOverviewQuery } from "./hooks";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ProfileHealthCard } from "@/features/dashboard";
+import { Skeleton } from "@concertable/web/shared/components/ui/skeleton";
+import { ProfileHealthCard } from "@concertable/web/shared/features/dashboard";
 
 export function VenueWelcomeRow() {
   const { data, isLoading } = useVenueOverviewQuery();

@@ -1,6 +1,6 @@
 import { Activity } from "lucide-react";
 import { useArtistActivityQuery } from "./hooks";
-import { ActivityFeed, DashboardCard, WidgetError, WidgetLoading } from "@/features/dashboard";
+import { ActivityFeed, DashboardCard, WidgetError, WidgetLoading } from "@concertable/web/shared/features/dashboard";
 
 export function ArtistActivityWidget() {
   const { data, isLoading, isError, refetch } = useArtistActivityQuery();

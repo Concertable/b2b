@@ -7,7 +7,7 @@ import type {
   ReviewExcerpt,
   Settlement,
 } from "@concertable/shared/features/dashboard";
-import type { OpportunityWithCounts } from "@b2b/features/dashboard";
+import type { OpportunityWithCounts } from "@concertable/b2b/web/shared/features/dashboard";
 import { venueFixtures } from "./fixtures";
 import type {
   Application,

@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@concertable/web/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,7 +6,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@concertable/web/shared/components/ui/dialog";
 
 interface Props {
   open: boolean;

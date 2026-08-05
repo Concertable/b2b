@@ -1,0 +1,104 @@
+{
+  "name": "@concertable/b2b",
+  "version": "0.1.0",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Concertable/concertable.git",
+    "directory": "app/web/b2b/shared"
+  },
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json --resolve-full-paths --resolve-full-extension .js",
+    "prepack": "npm run build"
+  },
+  "exports": {
+    "./web/shared/features/concerts": {
+      "types": "./dist/features/concerts/index.d.ts",
+      "import": "./dist/features/concerts/index.js",
+      "default": "./dist/features/concerts/index.js"
+    },
+    "./web/shared/features/dashboard": {
+      "types": "./dist/features/dashboard/index.d.ts",
+      "import": "./dist/features/dashboard/index.js",
+      "default": "./dist/features/dashboard/index.js"
+    },
+    "./web/shared/features/deals": {
+      "types": "./dist/features/deals/index.d.ts",
+      "import": "./dist/features/deals/index.js",
+      "default": "./dist/features/deals/index.js"
+    },
+    "./web/shared/features/members": {
+      "types": "./dist/features/members/index.d.ts",
+      "import": "./dist/features/members/index.js",
+      "default": "./dist/features/members/index.js"
+    },
+    "./web/shared/features/organizations": {
+      "types": "./dist/features/organizations/index.d.ts",
+      "import": "./dist/features/organizations/index.js",
+      "default": "./dist/features/organizations/index.js"
+    },
+    "./web/shared/features/payments": {
+      "types": "./dist/features/payments/index.d.ts",
+      "import": "./dist/features/payments/index.js",
+      "default": "./dist/features/payments/index.js"
+    },
+    "./web/shared/features/selfBilling": {
+      "types": "./dist/features/selfBilling/index.d.ts",
+      "import": "./dist/features/selfBilling/index.js",
+      "default": "./dist/features/selfBilling/index.js"
+    },
+    "./web/shared/features/tenant": {
+      "types": "./dist/features/tenant/index.d.ts",
+      "import": "./dist/features/tenant/index.js",
+      "default": "./dist/features/tenant/index.js"
+    },
+    "./web/shared/features/*": {
+      "types": "./dist/features/*.d.ts",
+      "import": "./dist/features/*.js",
+      "default": "./dist/features/*.js"
+    },
+    "./web/shared/lib/*": {
+      "types": "./dist/lib/*.d.ts",
+      "import": "./dist/lib/*.js",
+      "default": "./dist/lib/*.js"
+    },
+    "./web/shared/*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "default": "./dist/*.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "dependencies": {
+    "@concertable/shared": "*",
+    "@concertable/web": "*",
+    "@tanstack/react-query": "^5.90.21",
+    "@tanstack/react-router": "^1",
+    "axios": "^1.13.6",
+    "dayjs": "^1.11.20",
+    "lucide-react": "^0.468",
+    "sonner": "^2",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.12"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.2.14",
+    "tsc-alias": "^1.9.1",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.16",
+    "vitest": "^3"
+  }
+}

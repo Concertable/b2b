@@ -1,4 +1,4 @@
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@concertable/web/shared/components/ui/separator";
 import { useOrganization } from "../hooks/useOrganization";
 import { OrganizationForm } from "../components/OrganizationForm";
 

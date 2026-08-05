@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { ESignaturePanel, useESignature } from "@b2b/features/concerts";
-import { Button } from "@/components/ui/button";
+import { Button } from "@concertable/web/shared/components/ui/button";
 import { useSelfBillingAgreementQuery } from "../hooks/useSelfBillingAgreementQuery";
 import { useGrantSelfBillingAgreementMutation } from "../hooks/useGrantSelfBillingAgreementMutation";
 import { useDownloadSelfBillingAgreementMutation } from "../hooks/useDownloadSelfBillingAgreementMutation";

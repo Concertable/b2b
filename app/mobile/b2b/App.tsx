@@ -7,7 +7,7 @@ import {
   Geist_700Bold,
 } from "@expo-google-fonts/geist";
 import { PortalHost } from "@rn-primitives/portal";
-import { AppProviders } from "shared/providers/AppProviders";
+import { AppProviders } from "@concertable/mobile/shared/providers/AppProviders";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 
 export default function App() {

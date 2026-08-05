@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
+import { Button } from "@concertable/web/shared/components/ui/button";
 import { useSelfBillingAgreementQuery } from "../hooks/useSelfBillingAgreementQuery";
 
 export function SelfBillingAgreementBanner() {

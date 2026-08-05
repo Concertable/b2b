@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@concertable/web/shared/components/ui/button";
 import { useAcceptInvitation } from "../hooks/useAcceptInvitation";
 import type { TenantType } from "@b2b/features/tenant";
 
