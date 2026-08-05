@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "shared/index.css";
+import "@concertable/web/shared/index.css";
 
 function BuildingIcon() {
   return (

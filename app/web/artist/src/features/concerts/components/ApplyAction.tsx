@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button } from "@concertable/web/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import type { Opportunity } from "@b2b/features/concerts";
-import { ESignaturePanel, useESignature } from "@b2b/features/concerts";
+} from "@concertable/web/shared/components/ui/dialog";
+import type { Opportunity } from "@concertable/b2b/web/shared/features/concerts";
+import { ESignaturePanel, useESignature } from "@concertable/b2b/web/shared/features/concerts";
 import { useApply } from "../hooks/useApply";
 
 interface Props {

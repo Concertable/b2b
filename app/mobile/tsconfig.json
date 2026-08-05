@@ -4,18 +4,14 @@
     "strict": true,
     "paths": {
       "@/*": [
-        "../shared/src/*"
-      ],
-      "shared/*": [
-        "../shared/src/*"
+        "./*"
       ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    "../shared/nativewind-env.d.ts",
-    "../shared/src/**/*",
-    "nativewind-env.d.ts"
+    "nativewind-env.d.ts",
+    "lucide-env.d.ts"
   ]
 }

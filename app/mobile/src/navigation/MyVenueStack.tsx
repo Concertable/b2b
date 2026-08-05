@@ -1,5 +1,5 @@
 import { MyVenueScreen } from "../features/venues/screens/MyVenueScreen";
-import { createAppStack } from "shared/navigation/createAppStack";
+import { createAppStack } from "@concertable/mobile/shared/navigation/createAppStack";
 import type { MyVenueStackParamList } from "./types";
 
 const Stack = createAppStack<MyVenueStackParamList>();

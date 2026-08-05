@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SelfBillingAgreementPage } from "@b2b/features/selfBilling";
+import { SelfBillingAgreementPage } from "@concertable/b2b/web/shared/features/selfBilling";
 
 export const Route = createFileRoute("/_venue/settings/self-billing-agreement")({
   component: SelfBillingAgreementPage,

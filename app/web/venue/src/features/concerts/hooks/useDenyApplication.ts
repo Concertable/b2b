@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { useRejectApplicationMutation } from "@b2b/features/concerts";
+import { useRejectApplicationMutation } from "@concertable/b2b/web/shared/features/concerts";
 
 export function useDenyApplication(opportunityId: number) {
   const [target, setTarget] = useState<number | null>(null);

@@ -1,6 +1,6 @@
 import { TrendingUp } from "lucide-react";
 import { useArtistPayoutsQuery } from "./hooks";
-import { DashboardCard, MonthlyRevenueChart, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
+import { DashboardCard, MonthlyRevenueChart, WidgetEmpty, WidgetError, WidgetLoading } from "@concertable/web/shared/features/dashboard";
 
 export function ArtistPayoutChartWidget() {
   const { data, isLoading, isError, refetch } = useArtistPayoutsQuery();

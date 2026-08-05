@@ -1,5 +1,5 @@
 import { useArtistOverviewQuery } from "./hooks";
-import { StripeConnectBanner } from "@/features/dashboard";
+import { StripeConnectBanner } from "@concertable/web/shared/features/dashboard";
 
 export function ArtistStripeBanner() {
   const { data } = useArtistOverviewQuery();
