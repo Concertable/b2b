@@ -13,6 +13,8 @@ import { queryClient } from "@concertable/web/shared/lib/queryClient";
 import { routeTree } from "./routeTree.gen";
 import { ThemeProvider } from "@concertable/web/shared/providers/ThemeProvider";
 import { TooltipProvider } from "@concertable/web/shared/components/ui/tooltip";
+import { ConsentProvider } from "@concertable/web/shared/providers/ConsentProvider";
+import { CookieConsentBanner } from "@concertable/web/shared/components/CookieConsentBanner";
 import "@concertable/b2b/web/shared/lib/b2bClient";
 import "@concertable/web/shared/lib/searchClient";
 import "@concertable/web/shared/lib/geocoding";
@@ -40,9 +42,12 @@ createRoot(document.getElementById("root")!).render(
           libraries={["places"]}
         >
           <ThemeProvider>
-            <TooltipProvider>
-              <RouterProvider router={router} />
-            </TooltipProvider>
+            <ConsentProvider>
+              <TooltipProvider>
+                <RouterProvider router={router} />
+              </TooltipProvider>
+              <CookieConsentBanner />
+            </ConsentProvider>
           </ThemeProvider>
         </MapsProvider>
       </QueryClientProvider>
