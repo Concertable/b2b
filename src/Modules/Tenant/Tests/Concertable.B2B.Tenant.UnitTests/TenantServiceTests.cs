@@ -31,7 +31,8 @@ public sealed class TenantServiceTests
             vatNumber,
             "SID000001",
             new RegisteredAddress("1 Main St", "Floor 2", "London", "EC1A 1AA", "United Kingdom"),
-            "GB00BANK00000000000001"));
+            "GB00BANK00000000000001",
+            false));
         return tenant;
     }
 

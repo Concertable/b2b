@@ -45,6 +45,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
                 Country = "United Kingdom",
             },
             BankReference = "GB29NWBK60161331926819",
+            HoldsMusicLicence = true,
         },
     };
 
@@ -89,7 +90,8 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
             vatNumber: "GB123456789",
             sellerIdentifier: "12345678",
             registeredAddress: new RegisteredAddress("1 High Street", "Floor 2", "Manchester", "M1 1AA", "United Kingdom"),
-            bankReference: "GB29NWBK60161331926819");
+            bankReference: "GB29NWBK60161331926819",
+            holdsMusicLicence: true);
         Assert.NotNull(tenant);
         Assert.Equal(expected, tenant!.TaxCompliance);
     }
@@ -118,6 +120,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
                     Country = "United Kingdom",
                 },
                 BankReference = "GB94BARC10201530093459",
+                HoldsMusicLicence = false,
             },
         };
         await (await client.PutAsJsonAsync("/api/organizations", replacement)).ShouldBe(HttpStatusCode.OK);

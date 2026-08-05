@@ -22,5 +22,6 @@ public static class TenantFactory
         vatNumber: null,
         sellerIdentifier: "SEED000001",
         registeredAddress: new RegisteredAddress("1 Seed Way", null, "London", "EC1A 1AA", "United Kingdom"),
-        bankReference: "GB00SEED00000000000001");
+        bankReference: "GB00SEED00000000000001",
+        holdsMusicLicence: true);
 }
