@@ -18,4 +18,8 @@ public sealed record TaxComplianceDto
     public required string SellerIdentifier { get; init; }
     public required RegisteredAddressDto RegisteredAddress { get; init; }
     public required string BankReference { get; init; }
+
+    /// <summary>Whether the tenant declares it holds the live-music licence it is legally required to hold.
+    /// Always present when the DTO exists (unlike <see cref="VatNumber"/>); recorded, never verified.</summary>
+    public required bool HoldsMusicLicence { get; init; }
 }

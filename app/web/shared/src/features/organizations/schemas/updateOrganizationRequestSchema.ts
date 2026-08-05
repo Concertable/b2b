@@ -34,6 +34,7 @@ const taxComplianceSchema = z.object({
     .trim()
     .min(1, "Bank reference is required")
     .max(50, "Bank reference must be 50 characters or fewer"),
+  holdsMusicLicence: z.boolean(),
 });
 
 export const updateOrganizationRequestSchema = z.object({

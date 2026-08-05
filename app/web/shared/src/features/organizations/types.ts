@@ -13,6 +13,7 @@ export interface TaxCompliance {
   sellerIdentifier: string;
   registeredAddress: RegisteredAddress;
   bankReference: string;
+  holdsMusicLicence: boolean;
 }
 
 export interface Organization {
