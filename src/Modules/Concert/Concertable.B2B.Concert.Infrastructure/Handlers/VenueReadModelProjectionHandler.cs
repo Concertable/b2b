@@ -23,11 +23,6 @@ internal sealed class VenueReadModelProjectionHandler : IIntegrationEventHandler
 
     public async Task HandleAsync(VenueChangedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VenueReadModelProjectionHandler), ct))
-            return;
-
-        context.AddInboxMessage(envelope, nameof(VenueReadModelProjectionHandler));
-
         var venue = await context.VenueReadModels.FirstOrDefaultAsync(v => v.Id == e.VenueId, ct);
         var location = GeometryFactory.CreatePoint(new Coordinate(e.Longitude, e.Latitude));
 
