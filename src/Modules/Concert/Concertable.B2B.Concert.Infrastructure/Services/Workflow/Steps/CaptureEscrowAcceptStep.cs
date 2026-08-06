@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Kernel.Exceptions;
+using Concertable.Kernel.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
@@ -43,7 +44,7 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
 
         logger.AcceptingFlatFeeApplication(applicationId, booking.Id, paymentIntentId, deal.Fee, "GBP", venueTenantId, artistTenantId);
 
-        var bind = await escrowClient.CaptureAsync(venueTenantId, artistTenantId, deal.Fee, paymentIntentId, booking.Id);
+        var bind = await escrowClient.CaptureAsync(venueTenantId, artistTenantId, Money.Gbp(deal.Fee), paymentIntentId, booking.Id);
         if (bind.IsFailed)
             throw new BadRequestException(bind.Errors);
     }

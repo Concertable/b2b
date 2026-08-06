@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Deal.Contracts;
+using Concertable.Kernel.ValueObjects;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 
@@ -17,11 +18,11 @@ internal sealed class RevenueShareSettlementAmount : ISettlementAmountResolver
         this.artistShareCalculator = artistShareCalculator;
     }
 
-    public async Task<decimal> ResolveGrossAsync(int concertId, IDeal deal, CancellationToken ct = default)
+    public async Task<Money> ResolveGrossAsync(int concertId, IDeal deal, CancellationToken ct = default)
     {
         var totalRevenue = await concertRepository.GetTotalRevenueByConcertIdAsync(concertId)
             ?? throw new InvalidOperationException(
                 $"Concert {concertId} reached settlement with no declared door revenue — the completion gate should make this unreachable.");
-        return artistShareCalculator.Calculate(deal, totalRevenue);
+        return Money.Gbp(artistShareCalculator.Calculate(deal, totalRevenue));
     }
 }

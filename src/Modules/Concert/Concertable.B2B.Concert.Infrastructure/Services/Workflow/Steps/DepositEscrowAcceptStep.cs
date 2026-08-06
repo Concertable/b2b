@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Kernel.Enums;
 using Concertable.Kernel.Exceptions;
+using Concertable.Kernel.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
@@ -44,7 +45,7 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
            both read off the application's frozen snapshot. */
         logger.AcceptingVenueHireApplication(applicationId, booking.Id, deal.HireFee, prepaid.ArtistTenantId, prepaid.VenueTenantId);
 
-        var hold = await escrowClient.DepositAsync(prepaid.ArtistTenantId, prepaid.VenueTenantId, deal.HireFee, prepaid.PaymentMethodId, PaymentSession.OffSession, booking.Id);
+        var hold = await escrowClient.DepositAsync(prepaid.ArtistTenantId, prepaid.VenueTenantId, Money.Gbp(deal.HireFee), prepaid.PaymentMethodId, PaymentSession.OffSession, booking.Id);
         if (hold.IsFailed)
             throw new BadRequestException(hold.Errors);
     }

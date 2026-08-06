@@ -19,18 +19,18 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
 
     public void Reset() => Payments.Clear();
 
-    public async Task<Result<PaymentOutcome>> PayAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
+    public async Task<Result<PaymentOutcome>> PayAsync(Guid payerId, Guid payeeId, Money amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
     {
         var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
         {
-            Amount = (long)(amount * 100),
+            Amount = amount.ToMinorUnits(),
             Metadata = new Dictionary<string, string>
             {
                 [PaymentMetadataKeys.Type] = TransactionTypes.Settlement,
                 [PaymentMetadataKeys.BookingId] = bookingId.ToString()
             }
         });
-        Payments.Add((payerId, payeeId, amount, paymentMethodId, bookingId));
+        Payments.Add((payerId, payeeId, amount.Amount, paymentMethodId, bookingId));
         return Result.Ok(new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id });
     }
 
@@ -74,11 +74,11 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
         return new CheckoutSession(intent.Id + "_secret", "cuss_mock_secret", "cus_mock");
     }
 
-    public async Task<CheckoutSession> CreateHoldSessionAsync(Guid payerId, decimal amount, IDictionary<string, string> metadata, CancellationToken ct = default)
+    public async Task<CheckoutSession> CreateHoldSessionAsync(Guid payerId, Money amount, IDictionary<string, string> metadata, CancellationToken ct = default)
     {
         var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
         {
-            Amount = (long)(amount * 100),
+            Amount = amount.ToMinorUnits(),
             Metadata = new Dictionary<string, string>(metadata)
         });
         return new CheckoutSession(intent.Id + "_secret", "cuss_mock_secret", "cus_mock");
