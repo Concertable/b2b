@@ -8,3 +8,13 @@ export function useMyConcertQuery(id: number) {
     queryFn: () => myConcertApi.getMyConcert(id),
   });
 }
+
+export function useMyConcertByApplicationQuery(
+  applicationId: number,
+) {
+  return useQuery({
+    queryKey: ["concert", "my", "application", applicationId],
+    queryFn: () => myConcertApi.getMyConcertByApplication(applicationId),
+    refetchInterval: (query) => (query.state.data ? false : 1_000),
+  });
+}
