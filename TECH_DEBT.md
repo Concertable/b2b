@@ -152,7 +152,7 @@ for apply-after-withdraw → 400 (needs Docker).
 
 ### `deal.Fee`/`HireFee` are `decimal` domain fields lifted to `Money` at the payment boundary
 
-The money value-type migration (`plans/launch/MONEY_VALUE_TYPE_PLAN.md`, PR1 #390 → sync #393) made every
+The money value-type migration (PR1 #390 → sync #393) made every
 payment-client + `ISettlementAmountResolver` signature `Money`-typed, but `FlatFeeDeal.Fee` /
 `VenueHireDeal.HireFee` (contracts + `*DealEntity`) stayed `decimal`. The workflow steps (`HoldCheckoutStep`,
 `Capture`/`DepositEscrowAcceptStep`) lift them with `Money.Gbp(deal.Fee)` at the call sites — a legitimate
