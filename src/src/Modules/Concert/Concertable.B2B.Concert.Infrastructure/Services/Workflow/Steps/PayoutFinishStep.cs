@@ -35,12 +35,12 @@ internal sealed class PayoutFinishStep : IFinishStep
         // Same resolver the invoice issuer uses, so the charged share and the invoiced gross can't diverge.
         var artistShare = await settlementAmountResolver.ResolveGrossAsync(concertId, dealAccessor.Deal);
 
-        logger.ArtistShareCalculated(concertId, artistShare);
+        logger.ArtistShareCalculated(concertId, artistShare.Amount);
 
         /* DoorSplit/Versus: the venue tenant pays the artist tenant, per the booking's frozen snapshot. */
         var settlement = await bookingService.GetSettlementByConcertIdAsync(concertId);
 
-        logger.SettlingConcert(concertId, settlement.BookingId, artistShare, settlement.VenueTenantId, settlement.ArtistTenantId);
+        logger.SettlingConcert(concertId, settlement.BookingId, artistShare.Amount, settlement.VenueTenantId, settlement.ArtistTenantId);
 
         var payment = await managerPaymentClient.PayAsync(
             settlement.VenueTenantId,

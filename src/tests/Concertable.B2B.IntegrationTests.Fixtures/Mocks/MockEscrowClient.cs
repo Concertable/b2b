@@ -31,11 +31,11 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
         Refunds.Clear();
     }
 
-    public async Task<Result<EscrowDeposit>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
+    public async Task<Result<EscrowDeposit>> DepositAsync(Guid payerId, Guid payeeId, Money amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
     {
         var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
         {
-            Amount = (long)(amount * 100),
+            Amount = amount.ToMinorUnits(),
             Metadata = new Dictionary<string, string>
             {
                 [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
@@ -43,7 +43,7 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
             }
         });
 
-        Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));
+        Holds.Add(new EscrowHold(payerId, payeeId, amount.Amount, bookingId));
         return Result.Ok(new EscrowDeposit(0, intent.Id, EscrowStatus.Held));
     }
 
@@ -76,7 +76,7 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
         return Result.Ok(new EscrowDeposit(0, intent.Id, EscrowStatus.Held));
     }
 
-    public Task<Result<EscrowDeposit>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
+    public Task<Result<EscrowDeposit>> CaptureAsync(Guid payerId, Guid payeeId, Money amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
     {
         stripeApiClient.UpdateLastMetadata(new Dictionary<string, string>
         {
@@ -84,7 +84,7 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
             [PaymentMetadataKeys.BookingId] = bookingId.ToString()
         });
 
-        Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));
+        Holds.Add(new EscrowHold(payerId, payeeId, amount.Amount, bookingId));
         return Task.FromResult(Result.Ok(new EscrowDeposit(0, paymentIntentId, EscrowStatus.Held)));
     }
 

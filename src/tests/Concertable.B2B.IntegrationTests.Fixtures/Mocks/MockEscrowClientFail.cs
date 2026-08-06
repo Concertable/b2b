@@ -7,7 +7,7 @@ namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
 internal sealed class MockEscrowClientFail : IEscrowClient
 {
-    public Task<Result<EscrowDeposit>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default) =>
+    public Task<Result<EscrowDeposit>> DepositAsync(Guid payerId, Guid payeeId, Money amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default) =>
         Task.FromResult(Result.Fail<EscrowDeposit>("Mock escrow deposit failure"));
 
     public Task<Result<EscrowDeposit>> DepositBoundCommissionAsync(
@@ -26,7 +26,7 @@ internal sealed class MockEscrowClientFail : IEscrowClient
         CancellationToken ct = default) =>
         Task.FromResult(Result.Fail<EscrowDeposit>("Mock escrow deposit failure"));
 
-    public Task<Result<EscrowDeposit>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default) =>
+    public Task<Result<EscrowDeposit>> CaptureAsync(Guid payerId, Guid payeeId, Money amount, string paymentIntentId, int bookingId, CancellationToken ct = default) =>
         Task.FromResult(Result.Fail<EscrowDeposit>("Mock escrow capture failure"));
 
     public Task<Result<EscrowDeposit>> CaptureBoundCommissionAsync(

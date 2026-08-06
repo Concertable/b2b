@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 using Concertable.Kernel.Exceptions;
+using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
 using Moq;
@@ -35,8 +36,8 @@ public sealed class HoldCheckoutStepTests
             .ReturnsAsync(venueTenantId);
         dealAccessor.SetupGet(c => c.Deal).Returns(deal);
         managerPaymentClient
-            .Setup(c => c.CreateHoldSessionAsync(It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
-            .Callback<Guid, decimal, IDictionary<string, string>, CancellationToken>((_, _, m, _) => capturedMetadata = m)
+            .Setup(c => c.CreateHoldSessionAsync(It.IsAny<Guid>(), It.IsAny<Money>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .Callback<Guid, Money, IDictionary<string, string>, CancellationToken>((_, _, m, _) => capturedMetadata = m)
             .ReturnsAsync(session);
 
         this.step = new HoldCheckoutStep(applicationRepository.Object, dealAccessor.Object, managerPaymentClient.Object);
@@ -54,7 +55,7 @@ public sealed class HoldCheckoutStepTests
         Assert.Equal(artist, checkout.Payee);
         Assert.Equal(session, checkout.Session);
         managerPaymentClient.Verify(
-            c => c.CreateHoldSessionAsync(venueTenantId, deal.Fee, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()),
+            c => c.CreateHoldSessionAsync(venueTenantId, Money.Gbp(deal.Fee), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()),
             Times.Once);
         Assert.Equal(TransactionTypes.ApplicationAccept, capturedMetadata![PaymentMetadataKeys.Type]);
         Assert.Equal(ApplicationId.ToString(), capturedMetadata[PaymentMetadataKeys.ApplicationId]);
