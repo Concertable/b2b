@@ -1,16 +1,23 @@
 using Concertable.Kernel.Errors;
+using Dunet;
 
 namespace Concertable.B2B.Artist.Application.Errors;
 
-internal sealed record ArtistError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record ArtistError : IError
 {
-    internal static ArtistError NotFound(int artistId) =>
-        new(ErrorDefinition.NotFound(
-            "artist.get.not_found",
-            $"Artist {artistId} was not found."));
+    public ErrorDefinition Definition => this switch
+    {
+        NotFound(var artistId) =>
+            ErrorDefinition.NotFound<NotFound>($"Artist {artistId} was not found."),
+        CurrentTenantNotFound =>
+            ErrorDefinition.NotFound<CurrentTenantNotFound>(
+                "No artist was found for the current tenant.")
+    };
 
-    internal static readonly ArtistError CurrentTenantNotFound = new(
-        ErrorDefinition.NotFound(
-            "artist.get.current_tenant_not_found",
-            "No artist was found for the current tenant."));
+    [ErrorCode("artist.get.not_found")]
+    public partial record NotFound(int ArtistId);
+
+    [ErrorCode("artist.get.current_tenant_not_found")]
+    public partial record CurrentTenantNotFound;
 }

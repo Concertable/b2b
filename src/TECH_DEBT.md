@@ -150,6 +150,23 @@ for apply-after-withdraw → 400 (needs Docker).
 
 ---
 
+### `deal.Fee`/`HireFee` are `decimal` domain fields lifted to `Money` at the payment boundary
+
+The money value-type migration (PR1 #390 → sync #393) made every
+payment-client + `ISettlementAmountResolver` signature `Money`-typed, but `FlatFeeDeal.Fee` /
+`VenueHireDeal.HireFee` (contracts + `*DealEntity`) stayed `decimal`. The workflow steps (`HoldCheckoutStep`,
+`Capture`/`DepositEscrowAcceptStep`) lift them with `Money.Gbp(deal.Fee)` at the call sites — a legitimate
+boundary conversion (same pattern as Customer's `Money.Gbp(concert.Price * qty)`), but it assumes GBP and keeps
+a money value untyped in the domain, inconsistent with `EscrowEntity.Amount` which is a `Money` EF
+ComplexProperty. Deferred from the sync PR because the field-type change needs an EF ComplexProperty mapping +
+a DB re-scaffold that couldn't be verified in the disk/MAX_PATH-constrained environment at the time.
+
+**Resolves when:** `Fee`/`HireFee` become `Money` (contracts + entities), mapped as a ComplexProperty like
+`EscrowEntity.Amount`, the deal mappers + read sites cascade, migrations are re-scaffolded, and the
+`Money.Gbp(deal.Fee)` boundary lifts collapse to plain `deal.Fee`.
+
+---
+
 ### VAT / seller-id validation is format-only (regex), not verified against an authority
 
 `UkDac7Strategy.IsValidVatNumber` checks only the *shape* of a VAT number (a regex from `UkDac7Options.VatNumberPattern`) — it proves the value looks like a UK VAT number, not that it's a real, active registration. DAC7's obligation is to *collect and verify* seller tax identity; format-only is the weak end of "verify". Stronger options, all pluggable behind the existing per-region `IDac7Strategy` seam without touching the gate / nag / form: (1) an offline **checksum** — UK VAT numbers carry a mod-97 check digit — to catch typos a regex passes; (2) **live verification** — HMRC's "Check a UK VAT number" API (returns a consultation reference number, itself useful audit evidence for the 2028 export) or, for EU sellers, VIES. Before building our own, check what **Stripe Connect** already collects/verifies on connected accounts — we may be about to re-solve tax-ID verification Stripe already does.

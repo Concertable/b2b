@@ -55,13 +55,13 @@ internal sealed class ConcertService : IConcertService
     public Task<Result<ConcertDetails, ConcertError>> GetDetailsByIdAsync(int id) =>
         publicRepository.GetDetailsByIdAsync(id)
             .ToOption()
-            .OrFailure(() => ConcertError.NotFound(id));
+            .OrFailure(() => (ConcertError)new ConcertError.NotFound(id));
 
     public async Task<Result<ConcertDetails, ConcertError>> GetDetailsForCurrentUserAsync(int id)
     {
         return await repository.GetDetailsByIdAsync(id)
             .ToOption()
-            .OrFailure(() => ConcertError.NotFound(id))
+            .OrFailure(() => (ConcertError)new ConcertError.NotFound(id))
             .MapAsync(async details =>
             {
                 var invoice = await invoiceRepository.GetByConcertIdAsync(id);
@@ -76,7 +76,7 @@ internal sealed class ConcertService : IConcertService
     {
         return await repository.GetDetailsByApplicationIdAsync(applicationId)
             .ToOption()
-            .OrFailure(() => ConcertError.ApplicationNotFound(applicationId))
+            .OrFailure(() => (ConcertError)new ConcertError.ApplicationNotFound(applicationId))
             .MapAsync(async details =>
             {
                 var invoice = await invoiceRepository.GetByApplicationIdAsync(applicationId);
@@ -88,11 +88,13 @@ internal sealed class ConcertService : IConcertService
     {
         var concertEntity = await repository.GetByIdAsync(id);
         if (concertEntity is null)
-            return Result.Failure<ConcertUpdateResponse, UpdateConcertError>(UpdateConcertError.NotFound(id));
+            return Result.Failure<ConcertUpdateResponse, UpdateConcertError>(
+                new UpdateConcertError.ConcertNotFound(id));
 
         var result = concertValidator.CanUpdate(concertEntity, request.TotalTickets);
         if (result.TryGetError(out var errors))
-            return Result.Failure<ConcertUpdateResponse, UpdateConcertError>(UpdateConcertError.Invalid(errors));
+            return Result.Failure<ConcertUpdateResponse, UpdateConcertError>(
+                new UpdateConcertError.Invalid(errors));
 
         concertEntity.Update(request.Name, request.About, request.Price, request.TotalTickets);
 
@@ -113,11 +115,13 @@ internal sealed class ConcertService : IConcertService
     {
         var concertEntity = await repository.GetByIdWithBookingAsync(id);
         if (concertEntity is null)
-            return UnitResult.Failure(PostConcertError.NotFound(id));
+            return UnitResult.Failure<PostConcertError>(
+                new PostConcertError.ConcertNotFound(id));
 
         var result = concertValidator.CanPost(concertEntity);
         if (result.TryGetError(out var errors))
-            return UnitResult.Failure(PostConcertError.Invalid(errors));
+            return UnitResult.Failure<PostConcertError>(
+                new PostConcertError.Invalid(errors));
 
         concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime);
 
@@ -129,21 +133,26 @@ internal sealed class ConcertService : IConcertService
     {
         var concert = await repository.GetByIdWithBookingAsync(id);
         if (concert is null)
-            return UnitResult.Failure(DeclareDoorRevenueError.NotFound(id));
+            return UnitResult.Failure<DeclareDoorRevenueError>(
+                new DeclareDoorRevenueError.ConcertNotFound(id));
 
         /* Only the concert's own venue may declare its door take. A non-party sees a null (tenant-filtered)
            Booking; the host/worker path (no HTTP context) bypasses tenant scoping, as elsewhere. */
         if (!tenantContext.IsHost && concert.Booking?.VenueTenantId != tenantContext.TenantId)
-            return UnitResult.Failure(DeclareDoorRevenueError.Forbidden());
+            return UnitResult.Failure<DeclareDoorRevenueError>(
+                new DeclareDoorRevenueError.VenueForbidden());
 
         /* Only revenue-share settlements (DeferredBooking) take a declared door figure, and only once
            the gig has ended and before it settles. Re-declarable while Booked; frozen after. */
         if (concert.Booking is not DeferredBooking)
-            return UnitResult.Failure(DeclareDoorRevenueError.WrongDealType());
+            return UnitResult.Failure<DeclareDoorRevenueError>(
+                new DeclareDoorRevenueError.WrongDealType());
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
-            return UnitResult.Failure(DeclareDoorRevenueError.TooEarly());
+            return UnitResult.Failure<DeclareDoorRevenueError>(
+                new DeclareDoorRevenueError.TooEarly());
         if (concert.Booking.Application.State != LifecycleState.Booked)
-            return UnitResult.Failure(DeclareDoorRevenueError.AlreadySettled());
+            return UnitResult.Failure<DeclareDoorRevenueError>(
+                new DeclareDoorRevenueError.AlreadySettled());
 
         concert.DeclareDoorRevenue(doorRevenue);
         await repository.SaveChangesAsync();

@@ -4,11 +4,11 @@ using Concertable.B2B.Concert.Infrastructure.Pdf;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class InvoicePdfService : IInvoicePdfService
+internal sealed class InvoicePdfRenderer : IInvoicePdfRenderer
 {
     private readonly IPdfBlobCache pdfCache;
 
-    public InvoicePdfService(IPdfBlobCache pdfCache)
+    public InvoicePdfRenderer(IPdfBlobCache pdfCache)
     {
         this.pdfCache = pdfCache;
     }

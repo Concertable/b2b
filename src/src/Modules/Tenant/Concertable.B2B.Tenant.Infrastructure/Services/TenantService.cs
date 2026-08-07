@@ -49,11 +49,11 @@ internal sealed class TenantService : ITenantService
         CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
-            return Result.Failure<TenantDetails, UpdateTenantError>(UpdateTenantError.NoActiveTenant);
+            return Result.Failure<TenantDetails, UpdateTenantError>(new UpdateTenantError.NoActiveTenant());
 
         var tenant = await repository.GetByIdAsync(tenantId, ct);
         if (tenant is null)
-            return Result.Failure<TenantDetails, UpdateTenantError>(UpdateTenantError.NotFound(tenantId));
+            return Result.Failure<TenantDetails, UpdateTenantError>(new UpdateTenantError.TenantNotFound(tenantId));
 
         // VAT-number format is enforced by UpdateTenantRequestValidator in the write pipeline, so the request is valid here.
         tenant.UpdateLegalDetails(request.LegalName, request.TaxCompliance.ToTaxCompliance());
@@ -67,7 +67,8 @@ internal sealed class TenantService : ITenantService
         var tenantId = tenantContext.GetTenantId();
         var tenant = await repository.GetByIdAsync(tenantId, ct);
         if (tenant is null)
-            return UnitResult.Failure(DeleteTenantError.NotFound(tenantId));
+            return UnitResult.Failure<DeleteTenantError>(
+                new DeleteTenantError.TenantNotFound(tenantId));
 
         foreach (var membership in await repository.ListMembershipsByTenantAsync(tenantId, ct))
             repository.RemoveMembership(membership);
@@ -102,7 +103,7 @@ internal sealed class TenantService : ITenantService
         // Fail-closed: settlement's tax-gate guarantees tenant + compliance by invoice time; a null VatNumber (unregistered) is the only valid absence.
         var tenant = await repository.GetByIdAsync(tenantId, ct);
         if (tenant is null)
-            return Result.Failure<VatCalculation, VatCalculationError>(VatCalculationError.NotFound(tenantId));
+            return Result.Failure<VatCalculation, VatCalculationError>(new VatCalculationError.TenantNotFound(tenantId));
 
         var compliance = tenant.TaxCompliance
             ?? throw new InvalidOperationException(

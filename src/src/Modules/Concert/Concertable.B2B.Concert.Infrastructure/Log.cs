@@ -49,6 +49,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "Settlement of concert {ConcertId} deferred: party tenant {IncompleteTenantId} tax identity is not complete for its jurisdiction; will retry on the next completion sweep once details are provided")]
     internal static partial void SettlementDeferredPendingTaxCompliance(this ILogger logger, int concertId, Guid incompleteTenantId);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Settlement of concert {ConcertId} deferred: supplier tenant {SupplierTenantId} holds no current self-billing agreement, so no self-billed invoice may be raised in their name; will retry on the next completion sweep once the supplier grants or renews consent")]
+    internal static partial void SettlementDeferredPendingSelfBillingAgreement(this ILogger logger, int concertId, Guid supplierTenantId);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to cancel concert {ConcertId}")]
     internal static partial void FailedToCancelConcert(this ILogger logger, int concertId, Exception ex);
 

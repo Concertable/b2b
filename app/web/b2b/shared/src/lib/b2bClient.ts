@@ -1,7 +1,7 @@
-import { userManager } from "@/features/auth";
+import { userManager } from "@concertable/web/features/auth";
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import { paymentClient } from "@concertable/shared/lib/paymentClient";
-import { configureWebClient } from "shared/lib/configureWebClient";
+import { configureWebClient } from "@concertable/web/lib/configureWebClient";
 import { TENANT_HEADER } from "../features/tenant";
 import { tenantSession } from "../features/tenant/tenantSession";
 

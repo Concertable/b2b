@@ -1,4 +1,5 @@
 using Concertable.B2B.Deal.Contracts;
+using Concertable.Kernel.ValueObjects;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
@@ -10,5 +11,5 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// </summary>
 internal interface ISettlementAmountResolver
 {
-    Task<decimal> ResolveGrossAsync(int concertId, IDeal deal, CancellationToken ct = default);
+    Task<Money> ResolveGrossAsync(int concertId, IDeal deal, CancellationToken ct = default);
 }

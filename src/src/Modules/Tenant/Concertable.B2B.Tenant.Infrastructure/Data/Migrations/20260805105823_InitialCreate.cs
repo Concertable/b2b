@@ -69,7 +69,8 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     TaxCompliance_RegisteredAddress_City = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     TaxCompliance_RegisteredAddress_Postcode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     TaxCompliance_RegisteredAddress_Country = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    TaxCompliance_BankReference = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
+                    TaxCompliance_BankReference = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    TaxCompliance_HoldsMusicLicence = table.Column<bool>(type: "bit", nullable: true)
                 },
                 constraints: table =>
                 {

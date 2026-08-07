@@ -1,52 +1,60 @@
+using Dunet;
+
 namespace Concertable.B2B.Concert.Application.Errors;
 
-internal sealed record ApplyApplicationError : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record ApplyApplicationError : IError
 {
-    private ApplyApplicationError(ErrorDefinition definition)
+    public ErrorDefinition Definition => this switch
     {
-        Definition = definition;
-    }
+        MissingArtist =>
+            ErrorDefinition.Forbidden<MissingArtist>(
+                "You must create an artist account before applying for a concert opportunity."),
+        OpportunityNotFound(var opportunityId) =>
+            ErrorDefinition.NotFound<OpportunityNotFound>(
+                $"Concert opportunity {opportunityId} was not found."),
+        AlreadyApplied =>
+            ErrorDefinition.Invalid<AlreadyApplied>(
+                "You have already applied to this concert opportunity."),
+        Invalid(var errors) =>
+            ErrorDefinition.Validation<Invalid>(
+                "The application is not eligible.",
+                errors.ToDictionary()),
+        GenreMismatch =>
+            ErrorDefinition.Invalid<GenreMismatch>(
+                "Your artist must share a genre with this concert opportunity."),
+        UnsupportedDeal(var dealType) =>
+            ErrorDefinition.Invalid<UnsupportedDeal>(
+                $"Deal {dealType} does not support applications."),
+        MissingTenant =>
+            ErrorDefinition.Forbidden<MissingTenant>(
+                "No active organization was found for the current user."),
+        MissingUser =>
+            ErrorDefinition.Forbidden<MissingUser>(
+                "No user was found for the current request.")
+    };
 
-    public ErrorDefinition Definition { get; }
+    [ErrorCode("application.apply.missing_artist")]
+    public partial record MissingArtist;
 
-    internal static ApplyApplicationError MissingArtist() =>
-        new(ErrorDefinition.Forbidden(
-            "application.apply.missing_artist",
-            "You must create an artist account before applying for a concert opportunity."));
+    [ErrorCode("application.apply.opportunity_not_found")]
+    public partial record OpportunityNotFound(int OpportunityId);
 
-    internal static ApplyApplicationError OpportunityNotFound(int opportunityId) =>
-        new(ErrorDefinition.NotFound(
-            "application.apply.opportunity_not_found",
-            $"Concert opportunity {opportunityId} was not found."));
+    [ErrorCode("application.apply.duplicate")]
+    public partial record AlreadyApplied;
 
-    internal static ApplyApplicationError AlreadyApplied() =>
-        new(ErrorDefinition.Invalid(
-            "application.apply.duplicate",
-            "You have already applied to this concert opportunity."));
+    [ErrorCode("application.apply.invalid")]
+    public partial record Invalid(ValidationErrors Errors);
 
-    internal static ApplyApplicationError Invalid(ValidationErrors errors) =>
-        new(ErrorDefinition.Validation(
-            "application.apply.invalid",
-            "The application is not eligible.",
-            errors.ToDictionary()));
+    [ErrorCode("application.apply.genre_mismatch")]
+    public partial record GenreMismatch;
 
-    internal static ApplyApplicationError GenreMismatch() =>
-        new(ErrorDefinition.Invalid(
-            "application.apply.genre_mismatch",
-            "Your artist must share a genre with this concert opportunity."));
+    [ErrorCode("application.apply.unsupported_deal")]
+    public partial record UnsupportedDeal(DealType DealType);
 
-    internal static ApplyApplicationError UnsupportedDeal(DealType dealType) =>
-        new(ErrorDefinition.Invalid(
-            "application.apply.unsupported_deal",
-            $"Deal {dealType} does not support applications."));
+    [ErrorCode("application.apply.missing_tenant")]
+    public partial record MissingTenant;
 
-    internal static ApplyApplicationError MissingTenant() =>
-        new(ErrorDefinition.Forbidden(
-            "application.apply.missing_tenant",
-            "No active organization was found for the current user."));
-
-    internal static ApplyApplicationError MissingUser() =>
-        new(ErrorDefinition.Forbidden(
-            "application.apply.missing_user",
-            "No user was found for the current request."));
+    [ErrorCode("application.apply.missing_user")]
+    public partial record MissingUser;
 }

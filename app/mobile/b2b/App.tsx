@@ -1,4 +1,4 @@
-import "../shared/global.css";
+import "@concertable/mobile/global.css";
 import {
   useFonts,
   Geist_400Regular,
@@ -7,7 +7,7 @@ import {
   Geist_700Bold,
 } from "@expo-google-fonts/geist";
 import { PortalHost } from "@rn-primitives/portal";
-import { AppProviders } from "shared/providers/AppProviders";
+import { AppProviders } from "@concertable/mobile/providers/AppProviders";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 
 export default function App() {

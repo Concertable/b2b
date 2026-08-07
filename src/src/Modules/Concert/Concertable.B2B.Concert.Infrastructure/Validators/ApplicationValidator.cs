@@ -50,14 +50,17 @@ internal sealed class ApplicationValidator : IApplicationValidator
     {
         var artistId = await artistModule.GetIdForCurrentTenantAsync();
         if (!artistId.TryGetValue(out var value))
-            return UnitResult.Failure(ApplicationEligibilityError.MissingArtist());
+            return UnitResult.Failure<ApplicationEligibilityError>(
+                new ApplicationEligibilityError.MissingArtist());
 
         var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
         if (opportunity is null)
-            return UnitResult.Failure(ApplicationEligibilityError.OpportunityNotFound());
+            return UnitResult.Failure<ApplicationEligibilityError>(
+                new ApplicationEligibilityError.OpportunityNotFound());
 
         return (await CanApplyAsync(opportunity, value))
-            .MapError(ApplicationEligibilityError.Invalid);
+            .MapError<ApplicationEligibilityError>(
+                errors => new ApplicationEligibilityError.Invalid(errors));
     }
 
     public async Task<UnitResult<ValidationErrors>> CanAcceptAsync(OpportunityEntity opportunity, ApplicationEntity application)
@@ -88,13 +91,16 @@ internal sealed class ApplicationValidator : IApplicationValidator
         var application = await applicationRepository.GetByIdAsync(applicationId);
 
         if (opportunity is null)
-            return UnitResult.Failure(ApplicationEligibilityError.OpportunityNotFound());
+            return UnitResult.Failure<ApplicationEligibilityError>(
+                new ApplicationEligibilityError.OpportunityNotFound());
 
         if (application is null)
-            return UnitResult.Failure(ApplicationEligibilityError.ApplicationNotFound());
+            return UnitResult.Failure<ApplicationEligibilityError>(
+                new ApplicationEligibilityError.ApplicationNotFound());
 
         return (await CanAcceptAsync(opportunity, application))
-            .MapError(ApplicationEligibilityError.Invalid);
+            .MapError<ApplicationEligibilityError>(
+                errors => new ApplicationEligibilityError.Invalid(errors));
     }
 
     private static UnitResult<ValidationErrors> ToValidationResult(IEnumerable<string> messages)

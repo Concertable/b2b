@@ -2,6 +2,7 @@ using System.Collections.Frozen;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
+using Concertable.Kernel.ValueObjects;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 
@@ -23,6 +24,6 @@ internal sealed class SettlementAmountResolver : ISettlementAmountResolver
         }.ToFrozenDictionary();
     }
 
-    public Task<decimal> ResolveGrossAsync(int concertId, IDeal deal, CancellationToken ct = default) =>
+    public Task<Money> ResolveGrossAsync(int concertId, IDeal deal, CancellationToken ct = default) =>
         resolvers[deal.DealType].ResolveGrossAsync(concertId, deal, ct);
 }

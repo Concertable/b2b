@@ -1,34 +1,46 @@
+using Dunet;
+
 namespace Concertable.B2B.Tenant.Application.Errors;
 
-internal sealed record AcceptInvitationError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record AcceptInvitationError : IError
 {
-    internal static AcceptInvitationError NotFound(Guid invitationId) =>
-        new(ErrorDefinition.NotFound(
-            "tenant.accept_invitation_not_found",
-            $"Invitation {invitationId} was not found."));
+    public ErrorDefinition Definition => this switch
+    {
+        InvitationNotFound(var invitationId) =>
+            ErrorDefinition.NotFound<InvitationNotFound>(
+                $"Invitation {invitationId} was not found."),
+        EmailMismatch =>
+            ErrorDefinition.Forbidden<EmailMismatch>(
+                "This invitation was issued to a different email address."),
+        TenantNotFound =>
+            ErrorDefinition.NotFound<TenantNotFound>(
+                "The organization for this invitation no longer exists."),
+        AlreadyMember =>
+            ErrorDefinition.Conflict<AlreadyMember>(
+                "You are already a member of this organization."),
+        InvitationNotPending =>
+            ErrorDefinition.Conflict<InvitationNotPending>(
+                "This invitation is no longer pending."),
+        InvitationExpired =>
+            ErrorDefinition.Invalid<InvitationExpired>("This invitation has expired.")
+    };
 
-    internal static readonly AcceptInvitationError EmailMismatch = new(
-        ErrorDefinition.Forbidden(
-            "tenant.accept_invitation_email_mismatch",
-            "This invitation was issued to a different email address."));
+    [ErrorCode("tenant.accept_invitation_not_found")]
+    public partial record InvitationNotFound(Guid InvitationId);
 
-    internal static readonly AcceptInvitationError TenantNotFound = new(
-        ErrorDefinition.NotFound(
-            "tenant.accept_invitation_tenant_not_found",
-            "The organization for this invitation no longer exists."));
+    [ErrorCode("tenant.accept_invitation_email_mismatch")]
+    public partial record EmailMismatch;
 
-    internal static readonly AcceptInvitationError AlreadyMember = new(
-        ErrorDefinition.Conflict(
-            "tenant.accept_invitation_already_member",
-            "You are already a member of this organization."));
+    [ErrorCode("tenant.accept_invitation_tenant_not_found")]
+    public partial record TenantNotFound;
 
-    internal static readonly AcceptInvitationError InvitationNotPending = new(
-        ErrorDefinition.Conflict(
-            "tenant.accept_invitation_not_pending",
-            "This invitation is no longer pending."));
+    [ErrorCode("tenant.accept_invitation_already_member")]
+    public partial record AlreadyMember;
 
-    internal static readonly AcceptInvitationError InvitationExpired = new(
-        ErrorDefinition.Invalid(
-            "tenant.accept_invitation_expired",
-            "This invitation has expired."));
+    [ErrorCode("tenant.accept_invitation_not_pending")]
+    public partial record InvitationNotPending;
+
+    [ErrorCode("tenant.accept_invitation_expired")]
+    public partial record InvitationExpired;
 }

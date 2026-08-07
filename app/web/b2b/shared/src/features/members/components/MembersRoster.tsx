@@ -1,12 +1,12 @@
 import { TENANT_ROLES, type TenantRole } from "@b2b/features/tenant";
-import { Button } from "@/components/ui/button";
+import { Button } from "@concertable/web/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@concertable/web/components/ui/select";
 import {
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@concertable/web/components/ui/table";
 import { useMembersRoster } from "../hooks/useMembersRoster";
 import { Spinner } from "./Spinner";
 

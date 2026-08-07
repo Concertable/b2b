@@ -1,9 +1,17 @@
+using Dunet;
+
 namespace Concertable.B2B.Venue.Application.Errors;
 
-internal sealed record ApproveVenueError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record ApproveVenueError : IError
 {
-    internal static ApproveVenueError NotFound(int venueId) =>
-        new(ErrorDefinition.NotFound(
-            "venue.approve_not_found",
-            $"Venue {venueId} was not found."));
+    public ErrorDefinition Definition => this switch
+    {
+        VenueNotFound(var venueId) =>
+            ErrorDefinition.NotFound<VenueNotFound>(
+                $"Venue {venueId} was not found.")
+    };
+
+    [ErrorCode("venue.approve_not_found")]
+    public partial record VenueNotFound(int VenueId);
 }

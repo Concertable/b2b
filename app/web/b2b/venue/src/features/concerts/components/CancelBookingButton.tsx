@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCancelConcertMutation } from "@concertable/shared/features/concerts/hooks/useCancelConcertMutation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@concertable/web/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@concertable/web/components/ui/dialog";
 
 interface Props {
   concertId: number;

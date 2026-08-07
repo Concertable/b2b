@@ -1,16 +1,24 @@
 using Concertable.Kernel.Errors;
+using Dunet;
 
 namespace Concertable.B2B.Concert.Application.Errors;
 
-internal sealed record ContractError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record ContractError : IError
 {
-    internal static ContractError ApplicationNotFound(int applicationId) =>
-        new(ErrorDefinition.NotFound(
-            "contract.get_by_application.not_found",
-            $"No contract was found for application {applicationId}."));
+    public ErrorDefinition Definition => this switch
+    {
+        ApplicationNotFound(var applicationId) =>
+            ErrorDefinition.NotFound<ApplicationNotFound>(
+                $"No contract was found for application {applicationId}."),
+        ConcertNotFound(var concertId) =>
+            ErrorDefinition.NotFound<ConcertNotFound>(
+                $"No contract was found for concert {concertId}.")
+    };
 
-    internal static ContractError ConcertNotFound(int concertId) =>
-        new(ErrorDefinition.NotFound(
-            "contract.get_by_concert.not_found",
-            $"No contract was found for concert {concertId}."));
+    [ErrorCode("contract.get_by_application.not_found")]
+    public partial record ApplicationNotFound(int ApplicationId);
+
+    [ErrorCode("contract.get_by_concert.not_found")]
+    public partial record ConcertNotFound(int ConcertId);
 }

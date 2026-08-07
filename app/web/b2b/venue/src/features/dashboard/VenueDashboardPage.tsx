@@ -1,5 +1,6 @@
-import { TaxDetailsBanner } from "@b2b/features/organizations";
-import { PersonaSwitcher, SectionGrid } from "@/features/dashboard";
+import { TaxDetailsBanner } from "@concertable/b2b/features/organizations";
+import { SelfBillingAgreementBanner } from "@concertable/b2b/features/selfBilling";
+import { PersonaSwitcher, SectionGrid } from "@concertable/web/features/dashboard";
 import { VenueActivityWidget } from "./VenueActivityWidget";
 import { VenueApplicationsWidget } from "./VenueApplicationsWidget";
 import { VenueInboxWidget } from "./VenueInboxWidget";
@@ -26,6 +27,8 @@ export function VenueDashboardPage() {
       <VenueStripeBanner />
 
       <TaxDetailsBanner />
+
+      <SelfBillingAgreementBanner />
 
       <SectionGrid>
         <div className="col-span-12 lg:col-span-7">

@@ -3,7 +3,7 @@ import { Building2, Home, MessageCircle, User } from "lucide-react-native";
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { MyVenueStack } from "./MyVenueStack";
 import { ProfileStack } from "./ProfileStack";
-import { theme } from "shared/lib/theme";
+import { theme } from "@concertable/mobile/lib/theme";
 import type { VenueTabParamList } from "./types";
 
 const Tab = createBottomTabNavigator<VenueTabParamList>();

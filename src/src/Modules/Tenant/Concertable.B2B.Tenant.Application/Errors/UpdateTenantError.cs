@@ -1,14 +1,23 @@
+using Dunet;
+
 namespace Concertable.B2B.Tenant.Application.Errors;
 
-internal sealed record UpdateTenantError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record UpdateTenantError : IError
 {
-    internal static readonly UpdateTenantError NoActiveTenant = new(
-        ErrorDefinition.Forbidden(
-            "tenant.update_forbidden",
-            "No active organization was found for the current user."));
+    public ErrorDefinition Definition => this switch
+    {
+        NoActiveTenant =>
+            ErrorDefinition.Forbidden<NoActiveTenant>(
+                "No active organization was found for the current user."),
+        TenantNotFound(var tenantId) =>
+            ErrorDefinition.NotFound<TenantNotFound>(
+                $"Organization {tenantId} was not found.")
+    };
 
-    internal static UpdateTenantError NotFound(Guid tenantId) =>
-        new(ErrorDefinition.NotFound(
-            "tenant.update_not_found",
-            $"Organization {tenantId} was not found."));
+    [ErrorCode("tenant.update_forbidden")]
+    public partial record NoActiveTenant;
+
+    [ErrorCode("tenant.update_not_found")]
+    public partial record TenantNotFound(Guid TenantId);
 }

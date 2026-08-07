@@ -33,7 +33,7 @@ internal sealed class UserService : IUserService
     {
         var user = await userRepsitory.GetByIdAsync(currentUser.GetId());
         if (user is null)
-            return Result.Failure<UserDto, SaveLocationError>(new SaveLocationError());
+            return Result.Failure<UserDto, SaveLocationError>(new SaveLocationError.UserNotFound());
 
         var address = await geocodingClient.GetLocationAsync(latitude, longitude);
         user.UpdateLocation(

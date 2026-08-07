@@ -1,32 +1,30 @@
 using Concertable.Kernel.Errors;
+using Dunet;
 
 namespace Concertable.B2B.Concert.Application.Errors;
 
-internal sealed record OpportunityMutationError : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record OpportunityMutationError : IError
 {
-    private OpportunityMutationError(ErrorDefinition definition)
+    public ErrorDefinition Definition => this switch
     {
-        this.Definition = definition;
-    }
+        VenueNotFound =>
+            ErrorDefinition.NotFound<VenueNotFound>(
+                "No venue was found for the current organization."),
+        VenueForbidden =>
+            ErrorDefinition.Forbidden<VenueForbidden>("You do not own this venue."),
+        InvalidDeal(var errors) =>
+            ErrorDefinition.Validation<InvalidDeal>(
+                "The opportunity deal is invalid.",
+                errors.ToDictionary())
+    };
 
-    public ErrorDefinition Definition { get; }
+    [ErrorCode("opportunity.venue_not_found")]
+    public partial record VenueNotFound;
 
-    internal static OpportunityMutationError VenueNotFound() =>
-        new(ErrorDefinition.NotFound(
-            "opportunity.venue_not_found",
-            "No venue was found for the current organization."));
+    [ErrorCode("opportunity.venue_forbidden")]
+    public partial record VenueForbidden;
 
-    internal static OpportunityMutationError Forbidden() =>
-        new(ErrorDefinition.Forbidden(
-            "opportunity.venue_forbidden",
-            "You do not own this venue."));
-
-    internal static OpportunityMutationError InvalidDeal(ValidationErrors errors)
-    {
-        ArgumentNullException.ThrowIfNull(errors);
-        return new OpportunityMutationError(ErrorDefinition.Validation(
-            "opportunity.deal.invalid",
-            "The opportunity deal is invalid.",
-            errors.ToDictionary()));
-    }
+    [ErrorCode("opportunity.deal.invalid")]
+    public partial record InvalidDeal(ValidationErrors Errors);
 }

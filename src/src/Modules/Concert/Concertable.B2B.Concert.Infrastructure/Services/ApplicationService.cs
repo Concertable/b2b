@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Application.Errors;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
@@ -116,26 +117,30 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<Result<int, ApplyApplicationError>> ResolveArtistIdAsync() =>
         (await artistModule.GetIdForCurrentTenantAsync())
-            .OrFailure(ApplyApplicationError.MissingArtist);
+            .OrFailure(() => (ApplyApplicationError)new ApplyApplicationError.MissingArtist());
 
     private async Task<UnitResult<ApplyApplicationError>> ValidateCanApplyAsync(int opportunityId, int artistId)
     {
         var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
         if (opportunity is null)
-            return UnitResult.Failure(ApplyApplicationError.OpportunityNotFound(opportunityId));
+            return UnitResult.Failure<ApplyApplicationError>(
+                new ApplyApplicationError.OpportunityNotFound(opportunityId));
 
         if (await repository.ExistsForOpportunityAndArtistAsync(opportunityId, artistId))
-            return UnitResult.Failure(ApplyApplicationError.AlreadyApplied());
+            return UnitResult.Failure<ApplyApplicationError>(
+                new ApplyApplicationError.AlreadyApplied());
 
         var result = await applicationValidator.CanApplyAsync(opportunity, artistId);
         if (result.TryGetError(out var errors))
-            return UnitResult.Failure(ApplyApplicationError.Invalid(errors));
+            return UnitResult.Failure<ApplyApplicationError>(
+                new ApplyApplicationError.Invalid(errors));
 
         var artistGenres = await artistModule.GetGenresAsync(artistId);
         var opportunityGenres = opportunity.Genres.ToHashSet();
 
         if (opportunityGenres.Count > 0 && !artistGenres.Overlaps(opportunityGenres))
-            return UnitResult.Failure(ApplyApplicationError.GenreMismatch());
+            return UnitResult.Failure<ApplyApplicationError>(
+                new ApplyApplicationError.GenreMismatch());
 
         return UnitResult.Success<ApplyApplicationError>();
     }
@@ -173,7 +178,16 @@ internal sealed class ApplicationService : IApplicationService
     {
         var result = await rejectExecutor.RejectAsync(applicationId);
         if (result.TryGetError(out var error))
-            return UnitResult.Failure(RejectApplicationError.FromLifecycle(error));
+        {
+            RejectApplicationError rejectionError = error switch
+            {
+                LifecycleTransitionError.ApplicationNotFound(var missingId) =>
+                    new RejectApplicationError.ApplicationNotFound(missingId),
+                LifecycleTransitionError.InvalidTransition(var current, var trigger) =>
+                    new RejectApplicationError.InvalidTransition(current, trigger)
+            };
+            return UnitResult.Failure(rejectionError);
+        }
 
         await notifier.RejectedAsync(applicationId);
         return UnitResult.Success<RejectApplicationError>();
@@ -191,6 +205,6 @@ internal sealed class ApplicationService : IApplicationService
     public Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id) =>
         repository.GetByIdAsync(id)
             .ToOption()
-            .OrFailure(() => ApplicationError.NotFound(id))
+            .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
             .MapAsync(mapper.ToDtoAsync);
 }

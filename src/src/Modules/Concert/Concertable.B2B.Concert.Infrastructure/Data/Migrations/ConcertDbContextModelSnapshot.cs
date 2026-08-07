@@ -606,6 +606,111 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.ToTable("Opportunities", "concert");
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.SelfBillingAgreementEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AcceptedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ClauseText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PdfBlobName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlatformTermsVersion")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Supplier", "Concertable.B2B.Concert.Domain.Entities.SelfBillingAgreementEntity.Supplier#InvoiceParty", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("AddressLine1")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("nvarchar(256)");
+
+                            b1.Property<string>("AddressLine2")
+                                .HasMaxLength(256)
+                                .HasColumnType("nvarchar(256)");
+
+                            b1.Property<string>("City")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("nvarchar(128)");
+
+                            b1.Property<string>("Country")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("nvarchar(128)");
+
+                            b1.Property<string>("LegalName")
+                                .IsRequired()
+                                .HasMaxLength(512)
+                                .HasColumnType("nvarchar(512)");
+
+                            b1.Property<string>("Postcode")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("nvarchar(32)");
+
+                            b1.Property<Guid>("TenantId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("VatNumber")
+                                .HasMaxLength(32)
+                                .HasColumnType("nvarchar(32)");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "SupplierESignature", "Concertable.B2B.Concert.Domain.Entities.SelfBillingAgreementEntity.SupplierESignature#ESignature", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<DateTime>("AtUtc")
+                                .HasColumnType("datetime2");
+
+                            b1.Property<string>("DrawnSignatureImage")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Ip")
+                                .IsRequired()
+                                .HasMaxLength(45)
+                                .HasColumnType("nvarchar(45)");
+
+                            b1.Property<string>("SignatoryName")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("UserAgent")
+                                .HasMaxLength(512)
+                                .HasColumnType("nvarchar(512)");
+
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uniqueidentifier");
+                        });
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SelfBillingAgreements", "concert");
+                });
+
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.ReadModels.ArtistReadModel", b =>
                 {
                     b.Property<int>("Id")

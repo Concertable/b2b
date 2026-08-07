@@ -26,7 +26,7 @@ internal sealed class LifecycleTransitioner : ILifecycleTransitioner
         var application = await applicationRepository.GetByIdAsync(applicationId, ct);
         if (application is null)
             return Result.Failure<ApplicationEntity, LifecycleTransitionError>(
-                LifecycleTransitionError.ApplicationNotFound(applicationId));
+                new LifecycleTransitionError.ApplicationNotFound(applicationId));
 
         var machine = machines.Get(application.DealType);
         var transition = machine.Next(application.State, trigger);

@@ -1,8 +1,17 @@
+using Dunet;
+
 namespace Concertable.B2B.User.Application.Errors;
 
-internal sealed record SaveLocationError : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record SaveLocationError : IError
 {
-    public ErrorDefinition Definition => ErrorDefinition.Unauthenticated(
-        "user.location_unauthenticated",
-        "The current user was not found.");
+    public ErrorDefinition Definition => this switch
+    {
+        UserNotFound =>
+            ErrorDefinition.Unauthenticated<UserNotFound>(
+                "The current user was not found.")
+    };
+
+    [ErrorCode("user.location_unauthenticated")]
+    public partial record UserNotFound;
 }

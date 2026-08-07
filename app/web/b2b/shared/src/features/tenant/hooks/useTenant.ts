@@ -1,8 +1,8 @@
 import { useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { useSyncUser } from "@/features/user";
-import { meQueryKey } from "@/features/user/hooks/useSyncUser";
+import { useSyncUser } from "@concertable/web/features/user";
+import { meQueryKey } from "@concertable/web/features/user/hooks/useSyncUser";
 import identityApi from "../api/identityApi";
 import { resolveTenant } from "../memberships";
 import { permissionsForRole } from "../permissions";

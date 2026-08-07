@@ -1,11 +1,18 @@
 using Concertable.Kernel.Errors;
+using Dunet;
 
 namespace Concertable.B2B.Concert.Application.Errors;
 
-internal sealed record InvoiceError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record InvoiceError : IError
 {
-    internal static InvoiceError ConcertNotFound(int concertId) =>
-        new(ErrorDefinition.NotFound(
-            "invoice.get_by_concert.not_found",
-            $"No invoice was found for concert {concertId}."));
+    public ErrorDefinition Definition => this switch
+    {
+        ConcertNotFound(var concertId) =>
+            ErrorDefinition.NotFound<ConcertNotFound>(
+                $"No invoice was found for concert {concertId}.")
+    };
+
+    [ErrorCode("invoice.get_by_concert.not_found")]
+    public partial record ConcertNotFound(int ConcertId);
 }

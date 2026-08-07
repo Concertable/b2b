@@ -1,22 +1,24 @@
+using Dunet;
+
 namespace Concertable.B2B.Concert.Application.Errors;
 
-internal sealed record PostConcertError : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record PostConcertError : IError
 {
-    private PostConcertError(ErrorDefinition definition)
+    public ErrorDefinition Definition => this switch
     {
-        Definition = definition;
-    }
+        ConcertNotFound(var concertId) =>
+            ErrorDefinition.NotFound<ConcertNotFound>(
+                $"Concert {concertId} was not found."),
+        Invalid(var errors) =>
+            ErrorDefinition.Validation<Invalid>(
+                "The concert cannot be posted.",
+                errors.ToDictionary())
+    };
 
-    public ErrorDefinition Definition { get; }
+    [ErrorCode("concert.post.not_found")]
+    public partial record ConcertNotFound(int ConcertId);
 
-    internal static PostConcertError NotFound(int concertId) =>
-        new(ErrorDefinition.NotFound(
-            "concert.post.not_found",
-            $"Concert {concertId} was not found."));
-
-    internal static PostConcertError Invalid(ValidationErrors errors) =>
-        new(ErrorDefinition.Validation(
-            "concert.post.invalid",
-            "The concert cannot be posted.",
-            errors.ToDictionary()));
+    [ErrorCode("concert.post.invalid")]
+    public partial record Invalid(ValidationErrors Errors);
 }
