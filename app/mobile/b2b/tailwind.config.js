@@ -1,4 +1,10 @@
 const { hairlineWidth } = require("nativewind/theme");
+const path = require("path");
+
+const mobileDist = path
+  .join(path.dirname(require.resolve("@concertable/mobile/package.json")), "dist")
+  .split(path.sep)
+  .join("/");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -6,7 +12,7 @@ module.exports = {
   content: [
     "./App.{tsx,jsx}",
     "./src/**/*.{tsx,jsx,ts,js}",
-    "../shared/src/**/*.{tsx,jsx,ts,js}",
+    `${mobileDist}/**/*.js`,
   ],
   presets: [require("nativewind/preset")],
   theme: {

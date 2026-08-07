@@ -2,7 +2,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var sql = builder.AddSqlServerContainer("concertable-b2b-sql-data");
 var b2bDb = sql.AddDatabase("B2BDb");
-var authDb = sql.AddDatabase("AuthDb");
+var authDb = sql.AddDatabase(AuthConstants.Database);
 var paymentDb = sql.AddDatabase("PaymentDb");
 
 var (storage, blobs) = builder.AddAzureStorage();
