@@ -9,7 +9,6 @@ import {
   useAcceptCheckoutQuery,
   useApplicationQuery,
   useESignature,
-  useMyConcertByApplicationQuery,
 } from "@concertable/b2b/features/concerts";
 import type { Application } from "@concertable/b2b/features/concerts";
 import type { Checkout } from "@concertable/web/features/concerts";
@@ -20,6 +19,7 @@ import { OrderSummaryCard } from "@concertable/web/features/concerts/components/
 import { CheckoutAwaiting } from "@concertable/web/features/concerts/components/checkout/CheckoutAwaiting";
 import { StripePaymentForm } from "@concertable/web/features/concerts/components/checkout/StripePaymentForm";
 import { summaryFor } from "@concertable/b2b/features/concerts/utils/acceptCheckoutFormat";
+import { useConcertByApplicationQuery } from "../hooks/useConcertByApplicationQuery";
 
 export function VenueAcceptCheckoutPage() {
   const { applicationId } = useParams({ strict: false }) as {
@@ -58,7 +58,7 @@ interface Props {
 }
 
 export function VenueAcceptCheckoutFlow({ applicationId }: Readonly<Props>) {
-  const { data: concert } = useMyConcertByApplicationQuery(applicationId);
+  const { data: concert } = useConcertByApplicationQuery(applicationId);
 
   if (concert)
     return (

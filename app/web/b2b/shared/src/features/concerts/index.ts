@@ -16,7 +16,6 @@ export { useESignature } from "./hooks/useESignature";
 export { ConfirmActionDialog } from "./components/applications/ConfirmActionDialog";
 export { MyConcertPage } from "./pages/MyConcertPage";
 export { useMyConcert } from "./hooks/useMyConcert";
-export { useMyConcertByApplicationQuery } from "./hooks/useMyConcertQuery";
 export { useOpportunitiesQuery } from "./hooks/useOpportunitiesQuery";
 export {
   useApplicationQuery,
