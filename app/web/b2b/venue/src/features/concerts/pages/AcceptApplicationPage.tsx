@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "@tanstack/react-router";
 import { usePayoutAccountStatusQuery, StripeOnboardingBanner } from "@concertable/b2b/features/payments";
 import { Button } from "@concertable/web/components/ui/button";
 import dayjs from "dayjs";
+import type { ConcertDraftCreatedPayload } from "@concertable/web/features/notifications";
 import {
   useApplicationQuery,
   useAcceptApplicationMutation,
@@ -10,6 +11,7 @@ import {
   ESignaturePanel,
   useESignature,
 } from "@concertable/b2b/features/concerts";
+import { useCheckoutFlow } from "@concertable/web/features/concerts/hooks/useCheckoutFlow";
 import { VenueAcceptCheckoutFlow } from "./VenueAcceptCheckoutPage";
 
 export function AcceptApplicationPage() {
@@ -22,14 +24,14 @@ export function AcceptApplicationPage() {
   const acceptMutation = useAcceptApplicationMutation(
     application?.opportunity.id ?? 0,
   );
+  const flow = useCheckoutFlow<ConcertDraftCreatedPayload>({ event: "ConcertDraftCreated" });
 
   if (isLoading || !application) return null;
 
   const { artist, opportunity, actions } = application;
   const requiresCheckout = actions.checkout != null;
 
-  if (accepted)
-    return <VenueAcceptCheckoutFlow applicationId={applicationId} />;
+  if (accepted) return <VenueAcceptCheckoutFlow artistName={artist.name} flow={flow} />;
 
   function handleConfirm() {
     if (requiresCheckout) {
