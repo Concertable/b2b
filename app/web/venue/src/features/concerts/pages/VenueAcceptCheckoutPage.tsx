@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "@tanstack/react-router";
+import { useState } from "react";
+import { Navigate, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { Button } from "@concertable/web/components/ui/button";
 import { Skeleton } from "@concertable/web/components/ui/skeleton";
-import type { ConcertDraftCreatedPayload } from "@concertable/web/features/notifications";
 import {
   AcceptDealSummary,
   ESignaturePanel,
@@ -14,15 +12,14 @@ import {
 } from "@concertable/b2b/features/concerts";
 import type { Application } from "@concertable/b2b/features/concerts";
 import type { Checkout } from "@concertable/web/features/concerts";
-import { useCheckoutFlow, type CheckoutFlowState } from "@concertable/web/features/concerts/hooks/useCheckoutFlow";
 import { CheckoutLayout } from "@concertable/web/features/concerts/components/checkout/CheckoutLayout";
 import { CheckoutSection } from "@concertable/web/features/concerts/components/checkout/CheckoutSection";
 import { CheckoutEventBanner } from "@concertable/web/features/concerts/components/checkout/CheckoutEventBanner";
 import { OrderSummaryCard } from "@concertable/web/features/concerts/components/checkout/OrderSummaryCard";
-import { CheckoutSuccess } from "@concertable/web/features/concerts/components/checkout/CheckoutSuccess";
-import { CheckoutFlow } from "@concertable/web/features/concerts/components/checkout/CheckoutFlow";
+import { CheckoutAwaiting } from "@concertable/web/features/concerts/components/checkout/CheckoutAwaiting";
 import { StripePaymentForm } from "@concertable/web/features/concerts/components/checkout/StripePaymentForm";
 import { summaryFor } from "@concertable/b2b/features/concerts/utils/acceptCheckoutFormat";
+import { useConcertByApplicationQuery } from "../hooks/useConcertByApplicationQuery";
 
 export function VenueAcceptCheckoutPage() {
   const { applicationId } = useParams({ strict: false }) as {
@@ -57,40 +54,30 @@ export function VenueAcceptCheckoutPage() {
 }
 
 interface Props {
-  artistName: string;
-  flow: CheckoutFlowState<ConcertDraftCreatedPayload>;
+  applicationId: number;
 }
 
-export function VenueAcceptCheckoutFlow({ artistName, flow }: Readonly<Props>) {
-  const router = useRouter();
+export function VenueAcceptCheckoutFlow({ applicationId }: Readonly<Props>) {
+  const { data: concert } = useConcertByApplicationQuery(applicationId);
 
-  useEffect(() => {
-    if (flow.phase === "success")
-      void router.navigate({ to: "/my/concerts/concert/$id", params: { id: flow.result } });
-  }, [flow, router]);
-
-  const config = {
-    title: "Finalising acceptance",
-    timeoutTitle: "Still finalising",
-    pendingHint: "Your concert will appear in your dashboard",
-    steps: { first: "Acceptance confirmed", final: "Creating concert draft" },
-  };
+  if (concert)
+    return (
+      <Navigate
+        to="/my/concerts/concert/$id"
+        params={{ id: concert.id }}
+        replace
+      />
+    );
 
   return (
-    <CheckoutFlow
-      flow={flow}
-      {...config}
-      renderSuccess={(concertId) => (
-        <VenueAcceptCheckoutSuccess
-          artistName={artistName}
-          onView={() =>
-            void router.navigate({
-              to: "/my/concerts/concert/$id",
-              params: { id: concertId },
-            })
-          }
-        />
-      )}
+    <CheckoutAwaiting
+      title="Finalising acceptance"
+      description="This usually takes a few seconds. Please don't close this page."
+      steps={[
+        { label: "Acceptance confirmed", status: "done" },
+        { label: "Confirming with our system", status: "active" },
+        { label: "Creating concert draft", status: "pending" },
+      ]}
     />
   );
 }
@@ -106,13 +93,11 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
   const { signature, setSignature, isValid } = useESignature();
   const [error, setError] = useState<string | null>(null);
   const acceptMutation = useAcceptApplicationMutation(application.opportunity.id);
-  const flow = useCheckoutFlow<ConcertDraftCreatedPayload>({ event: "ConcertDraftCreated" });
-
   const { artist, opportunity } = application;
   const { labels } = checkout;
 
   if (submitted)
-    return <VenueAcceptCheckoutFlow artistName={artist.name} flow={flow} />;
+    return <VenueAcceptCheckoutFlow applicationId={applicationId} />;
 
   const summary = summaryFor(checkout.amount);
 
@@ -163,31 +148,6 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
       </CheckoutSection>
       {error && <p data-testid="payment-error" className="text-destructive text-sm">{error}</p>}
     </CheckoutLayout>
-  );
-}
-
-interface VenueAcceptCheckoutSuccessProps {
-  artistName: string;
-  onView: () => void;
-}
-
-function VenueAcceptCheckoutSuccess({ artistName, onView }: Readonly<VenueAcceptCheckoutSuccessProps>) {
-  return (
-    <CheckoutSuccess
-      title="Application Accepted"
-      description={
-        <>
-          You have accepted{" "}
-          <span className="text-foreground font-medium">{artistName}</span>.
-          Your concert draft is ready.
-        </>
-      }
-      footer={
-        <Button onClick={onView} className="mt-2">
-          View concert
-        </Button>
-      }
-    />
   );
 }
 
