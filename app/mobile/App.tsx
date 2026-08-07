@@ -1,4 +1,4 @@
-import "../shared/global.css";
+import "@concertable/mobile/global.css";
 import {
   useFonts,
   Geist_400Regular,
