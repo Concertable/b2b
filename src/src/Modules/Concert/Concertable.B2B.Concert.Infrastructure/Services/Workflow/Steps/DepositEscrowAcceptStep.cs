@@ -12,14 +12,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
 {
     private readonly IBookingService bookingService;
-    private readonly IEscrowClient escrowClient;
+    private readonly IEscrowOperationsClient escrowClient;
     private readonly IDealAccessor dealAccessor;
     private readonly IApplicationRepository applicationRepository;
     private readonly ILogger<DepositEscrowAcceptStep> logger;
 
     public DepositEscrowAcceptStep(
         IBookingService bookingService,
-        IEscrowClient escrowClient,
+        IEscrowOperationsClient escrowClient,
         IDealAccessor dealAccessor,
         IApplicationRepository applicationRepository,
         ILogger<DepositEscrowAcceptStep> logger)
@@ -46,7 +46,7 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
         logger.AcceptingVenueHireApplication(applicationId, booking.Id, deal.HireFee, prepaid.ArtistTenantId, prepaid.VenueTenantId);
 
         var hold = await escrowClient.DepositAsync(prepaid.ArtistTenantId, prepaid.VenueTenantId, Money.Gbp(deal.HireFee), prepaid.PaymentMethodId, PaymentSession.OffSession, booking.Id);
-        if (hold.IsFailed)
-            throw new BadRequestException(hold.Errors);
+        if (hold.TryGetError(out var error))
+            throw new BadRequestException(error.Definition.Message);
     }
 }
