@@ -1,8 +1,8 @@
-import { ConfigBar } from "@/components/ConfigBar";
+import { ConfigBar } from "@concertable/web/components/ConfigBar";
 import { EditableProvider } from "@concertable/shared/providers";
-import { DetailsLayout } from "@/components/details/DetailsLayout";
-import { DetailsPageSkeleton } from "@/components/skeletons/DetailsPageSkeleton";
-import { useArtistStore, ArtistHero, artistSections } from "@/features/artists";
+import { DetailsLayout } from "@concertable/web/components/details/DetailsLayout";
+import { DetailsPageSkeleton } from "@concertable/web/components/skeletons/DetailsPageSkeleton";
+import { useArtistStore, ArtistHero, artistSections } from "@concertable/web/features/artists";
 import { useMyArtist } from "../hooks/useMyArtist";
 
 export function MyArtistPage() {

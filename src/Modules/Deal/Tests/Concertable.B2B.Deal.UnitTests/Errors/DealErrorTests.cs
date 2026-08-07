@@ -1,3 +1,4 @@
+using Concertable.B2B.Deal.Application.Errors;
 using Concertable.B2B.Deal.Contracts.Errors;
 using Concertable.Kernel.Errors;
 
@@ -5,6 +6,16 @@ namespace Concertable.B2B.Deal.UnitTests.Errors;
 
 public sealed class DealErrorTests
 {
+    [Fact]
+    public void Definition_DealNotFound_ReturnsStableDefinition()
+    {
+        var definition = new DealError.NotFound(42).Definition;
+
+        Assert.Equal("deal.get.not_found", definition.Code);
+        Assert.Equal("Deal 42 was not found.", definition.Message);
+        Assert.Equal(ErrorKind.NotFound, definition.Kind);
+    }
+
     [Fact]
     public void Definition_CreateValidation_ReturnsStableValidationDefinition()
     {

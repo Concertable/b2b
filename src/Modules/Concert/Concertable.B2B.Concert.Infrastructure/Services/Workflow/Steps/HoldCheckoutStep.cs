@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Kernel.Exceptions;
+using Concertable.Kernel.ValueObjects;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
@@ -35,7 +36,7 @@ internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
             [PaymentMetadataKeys.ApplicationId] = applicationId.ToString()
         };
 
-        var session = await managerPaymentClient.CreateHoldSessionAsync(venueTenantId, deal.Fee, metadata);
+        var session = await managerPaymentClient.CreateHoldSessionAsync(venueTenantId, Money.Gbp(deal.Fee), metadata);
         return new Checkout(new FlatPayment(deal.Fee), artist, session, CheckoutLabels.Charge);
     }
 }

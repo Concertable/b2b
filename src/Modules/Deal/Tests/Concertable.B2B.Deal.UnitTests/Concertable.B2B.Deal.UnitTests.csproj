@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Concertable.B2B.Deal.Application\Concertable.B2B.Deal.Application.csproj" />
     <ProjectReference Include="..\..\Concertable.B2B.Deal.Domain\Concertable.B2B.Deal.Domain.csproj" />
     <ProjectReference Include="..\..\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
     <ProjectReference Include="..\..\..\..\..\..\Concertable.Shared\tests\Concertable.Testing\Concertable.Testing.csproj" />

@@ -30,7 +30,7 @@ internal sealed class DealService : IDealService
 
     public Task<Result<IDeal, DealError>> GetByIdAsync(int dealId, CancellationToken ct = default) =>
         FindByIdAsync(dealId, ct)
-            .OrFailure(() => DealError.NotFound(dealId));
+            .OrFailure(() => (DealError)new DealError.NotFound(dealId));
 
     public async Task<IReadOnlyList<IDeal>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
     {

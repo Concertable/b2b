@@ -63,7 +63,7 @@ internal sealed class ApplyExecutor : IApplyExecutor
         else
         {
             return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                ApplyApplicationError.UnsupportedDeal(workflow.Type));
+                new ApplyApplicationError.UnsupportedDeal(workflow.Type));
         }
 
         /* Snapshot the two parties at apply; the booking and concert inherit this pair downstream.
@@ -71,20 +71,22 @@ internal sealed class ApplyExecutor : IApplyExecutor
         var venueTenantId = await opportunityRepository.GetTenantIdByIdAsync(opportunityId);
         if (venueTenantId is null)
             return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                ApplyApplicationError.OpportunityNotFound(opportunityId));
+                new ApplyApplicationError.OpportunityNotFound(opportunityId));
         application.VenueTenantId = venueTenantId.Value;
 
         if (tenantContext.TenantId is not { } artistTenantId)
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(ApplyApplicationError.MissingTenant());
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
+                new ApplyApplicationError.MissingTenant());
         application.ArtistTenantId = artistTenantId;
 
         var period = await opportunityRepository.GetPeriodByIdAsync(opportunityId);
         if (period is null)
             return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                ApplyApplicationError.OpportunityNotFound(opportunityId));
+                new ApplyApplicationError.OpportunityNotFound(opportunityId));
 
         if (currentUser.Id is not { } userId)
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(ApplyApplicationError.MissingUser());
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
+                new ApplyApplicationError.MissingUser());
 
         application.RecordArtistESignature(
             new ESignature(
@@ -103,7 +105,8 @@ internal sealed class ApplyExecutor : IApplyExecutor
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(ApplyApplicationError.AlreadyApplied());
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
+                new ApplyApplicationError.AlreadyApplied());
         }
         return Result.Success<ApplicationEntity, ApplyApplicationError>(application);
     }

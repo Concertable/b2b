@@ -1,19 +1,28 @@
+using Dunet;
+
 namespace Concertable.B2B.Tenant.Application.Errors;
 
-internal sealed record InviteMemberError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record InviteMemberError : IError
 {
-    internal static readonly InviteMemberError TenantNotFound = new(
-        ErrorDefinition.NotFound(
-            "tenant.invite_tenant_not_found",
-            "Your organization was not found."));
+    public ErrorDefinition Definition => this switch
+    {
+        TenantNotFound =>
+            ErrorDefinition.NotFound<TenantNotFound>("Your organization was not found."),
+        AlreadyMember =>
+            ErrorDefinition.Conflict<AlreadyMember>(
+                "This person is already a member of the organization."),
+        InvitationPending =>
+            ErrorDefinition.Conflict<InvitationPending>(
+                "An invitation for this email is already pending.")
+    };
 
-    internal static readonly InviteMemberError AlreadyMember = new(
-        ErrorDefinition.Conflict(
-            "tenant.invite_already_member",
-            "This person is already a member of the organization."));
+    [ErrorCode("tenant.invite_tenant_not_found")]
+    public partial record TenantNotFound;
 
-    internal static readonly InviteMemberError InvitationPending = new(
-        ErrorDefinition.Conflict(
-            "tenant.invite_already_pending",
-            "An invitation for this email is already pending."));
+    [ErrorCode("tenant.invite_already_member")]
+    public partial record AlreadyMember;
+
+    [ErrorCode("tenant.invite_already_pending")]
+    public partial record InvitationPending;
 }

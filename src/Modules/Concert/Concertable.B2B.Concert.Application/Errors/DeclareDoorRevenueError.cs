@@ -1,36 +1,41 @@
+using Dunet;
+
 namespace Concertable.B2B.Concert.Application.Errors;
 
-internal sealed record DeclareDoorRevenueError : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record DeclareDoorRevenueError : IError
 {
-    private DeclareDoorRevenueError(ErrorDefinition definition)
+    public ErrorDefinition Definition => this switch
     {
-        Definition = definition;
-    }
+        ConcertNotFound(var concertId) =>
+            ErrorDefinition.NotFound<ConcertNotFound>(
+                $"Concert {concertId} was not found."),
+        VenueForbidden =>
+            ErrorDefinition.Forbidden<VenueForbidden>(
+                "Only the concert's venue can declare its door revenue."),
+        WrongDealType =>
+            ErrorDefinition.Invalid<WrongDealType>(
+                "Door revenue can only be declared for a revenue-share concert."),
+        TooEarly =>
+            ErrorDefinition.Invalid<TooEarly>(
+                "Door revenue can only be declared after the concert has ended."),
+        AlreadySettled =>
+            ErrorDefinition.Conflict<AlreadySettled>(
+                "Door revenue can only be declared before the concert has settled.")
+    };
 
-    public ErrorDefinition Definition { get; }
+    [ErrorCode("concert.door_revenue.not_found")]
+    public partial record ConcertNotFound(int ConcertId);
 
-    internal static DeclareDoorRevenueError NotFound(int concertId) =>
-        new(ErrorDefinition.NotFound(
-            "concert.door_revenue.not_found",
-            $"Concert {concertId} was not found."));
+    [ErrorCode("concert.door_revenue.forbidden")]
+    public partial record VenueForbidden;
 
-    internal static DeclareDoorRevenueError Forbidden() =>
-        new(ErrorDefinition.Forbidden(
-            "concert.door_revenue.forbidden",
-            "Only the concert's venue can declare its door revenue."));
+    [ErrorCode("concert.door_revenue.wrong_deal_type")]
+    public partial record WrongDealType;
 
-    internal static DeclareDoorRevenueError WrongDealType() =>
-        new(ErrorDefinition.Invalid(
-            "concert.door_revenue.wrong_deal_type",
-            "Door revenue can only be declared for a revenue-share concert."));
+    [ErrorCode("concert.door_revenue.too_early")]
+    public partial record TooEarly;
 
-    internal static DeclareDoorRevenueError TooEarly() =>
-        new(ErrorDefinition.Invalid(
-            "concert.door_revenue.too_early",
-            "Door revenue can only be declared after the concert has ended."));
-
-    internal static DeclareDoorRevenueError AlreadySettled() =>
-        new(ErrorDefinition.Conflict(
-            "concert.door_revenue.already_settled",
-            "Door revenue can only be declared before the concert has settled."));
+    [ErrorCode("concert.door_revenue.already_settled")]
+    public partial record AlreadySettled;
 }

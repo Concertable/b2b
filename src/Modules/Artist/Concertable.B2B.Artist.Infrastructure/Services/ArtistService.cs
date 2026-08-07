@@ -40,17 +40,17 @@ internal sealed class ArtistService : IArtistService
     public Task<Result<ArtistDetails, ArtistError>> GetDetailsForCurrentUserAsync() =>
         repository.GetDetailsForCurrentTenantAsync()
             .ToOption()
-            .OrFailure(ArtistError.CurrentTenantNotFound);
+            .OrFailure((ArtistError)new ArtistError.CurrentTenantNotFound());
 
     public Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(int id) =>
         publicRepository.GetDetailsByIdAsync(id)
             .ToOption()
-            .OrFailure(() => ArtistError.NotFound(id));
+            .OrFailure(() => (ArtistError)new ArtistError.NotFound(id));
 
     public async Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(CreateArtistRequest request)
     {
         if (!tenantContext.HasTenant)
-            return Result.Failure<ArtistDetails, CreateArtistError>(CreateArtistError.Forbidden);
+            return Result.Failure<ArtistDetails, CreateArtistError>(new CreateArtistError.Forbidden());
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
@@ -80,7 +80,7 @@ internal sealed class ArtistService : IArtistService
     {
         var artist = await repository.GetByIdAsync(id);
         if (artist is null)
-            return Result.Failure<ArtistDetails, UpdateArtistError>(UpdateArtistError.NotFound(id));
+            return Result.Failure<ArtistDetails, UpdateArtistError>(new UpdateArtistError.NotFound(id));
 
         var bannerUrl = request.Banner is not null
             ? await imageService.ReplaceAsync(request.Banner, artist.BannerUrl)

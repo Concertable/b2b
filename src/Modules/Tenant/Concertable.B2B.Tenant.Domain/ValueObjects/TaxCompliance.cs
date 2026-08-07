@@ -11,13 +11,19 @@ public sealed record TaxCompliance
     public RegisteredAddress RegisteredAddress { get; private init; } = null!;
     public string BankReference { get; private init; } = null!;
 
+    /// <summary>A self-declared attestation that the tenant holds the live-music licence it is required to
+    /// hold; recorded, never verified — the tenant's liability. Every value is valid, so it has no validation
+    /// and gates nothing (payouts, bookings, completeness).</summary>
+    public bool HoldsMusicLicence { get; private init; }
+
     private TaxCompliance() { }
 
     public TaxCompliance(
         string? vatNumber,
         string sellerIdentifier,
         RegisteredAddress registeredAddress,
-        string bankReference)
+        string bankReference,
+        bool holdsMusicLicence)
     {
         DomainException.ThrowIfNullOrWhiteSpace(sellerIdentifier, "Seller identifier");
         DomainException.ThrowIfNull(registeredAddress, "Registered address");
@@ -27,5 +33,6 @@ public sealed record TaxCompliance
         SellerIdentifier = sellerIdentifier;
         RegisteredAddress = registeredAddress;
         BankReference = bankReference;
+        HoldsMusicLicence = holdsMusicLicence;
     }
 }

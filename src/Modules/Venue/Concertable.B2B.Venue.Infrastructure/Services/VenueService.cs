@@ -43,12 +43,12 @@ internal sealed class VenueService : IVenueService
     public Task<Result<VenueDetails, VenueError>> GetDetailsByIdAsync(int id) =>
         publicRepository.GetDetailsByIdAsync(id)
             .ToOption()
-            .OrFailure(() => VenueError.NotFound(id));
+            .OrFailure(() => (VenueError)new VenueError.NotFound(id));
 
     public async Task<Result<VenueDetails, CreateVenueError>> CreateAsync(CreateVenueRequest request)
     {
         if (!tenantContext.HasTenant)
-            return Result.Failure<VenueDetails, CreateVenueError>(CreateVenueError.Forbidden);
+            return Result.Failure<VenueDetails, CreateVenueError>(new CreateVenueError.NoActiveTenant());
 
         var bannerUrl = await imageService.UploadAsync(request.Banner);
         var avatarUrl = await imageService.UploadAsync(request.Avatar);
@@ -77,7 +77,7 @@ internal sealed class VenueService : IVenueService
     {
         var venue = await repository.GetByIdAsync(id);
         if (venue is null)
-            return Result.Failure<VenueDetails, UpdateVenueError>(UpdateVenueError.NotFound(id));
+            return Result.Failure<VenueDetails, UpdateVenueError>(new UpdateVenueError.VenueNotFound(id));
 
         var bannerUrl = request.Banner is not null
             ? await imageService.ReplaceAsync(request.Banner, venue.BannerUrl)
@@ -103,7 +103,7 @@ internal sealed class VenueService : IVenueService
     public Task<Result<VenueDetails, VenueError>> GetDetailsForCurrentUserAsync() =>
         repository.GetDetailsForCurrentTenantAsync()
             .ToOption()
-            .OrFailure(VenueError.CurrentTenantNotFound);
+            .OrFailure((VenueError)new VenueError.CurrentTenantNotFound());
 
     public async Task<Option<int>> GetIdForCurrentUserAsync() =>
         (await repository.GetIdForCurrentTenantAsync()).ToOption();
@@ -118,7 +118,8 @@ internal sealed class VenueService : IVenueService
     {
         var venue = await adminRepository.GetByIdAsync(id);
         if (venue is null)
-            return UnitResult.Failure(ApproveVenueError.NotFound(id));
+            return UnitResult.Failure<ApproveVenueError>(
+                new ApproveVenueError.VenueNotFound(id));
 
         venue.Approve();
         await adminRepository.SaveChangesAsync();

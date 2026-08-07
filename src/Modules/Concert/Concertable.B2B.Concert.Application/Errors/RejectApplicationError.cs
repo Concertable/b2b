@@ -1,22 +1,24 @@
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Dunet;
 
 namespace Concertable.B2B.Concert.Application.Errors;
 
-internal sealed record RejectApplicationError : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record RejectApplicationError : IError
 {
-    private RejectApplicationError(ErrorDefinition definition)
+    public ErrorDefinition Definition => this switch
     {
-        Definition = definition;
-    }
+        ApplicationNotFound(var applicationId) =>
+            ErrorDefinition.NotFound<ApplicationNotFound>(
+                $"Application {applicationId} was not found."),
+        InvalidTransition(var current, var trigger) =>
+            ErrorDefinition.Conflict<InvalidTransition>(
+                $"Cannot {trigger} from {current}.")
+    };
 
-    public ErrorDefinition Definition { get; }
+    [ErrorCode("application.reject.not_found")]
+    public partial record ApplicationNotFound(int ApplicationId);
 
-    internal static RejectApplicationError FromLifecycle(LifecycleTransitionError error) =>
-        error.Definition.Kind is ErrorKind.NotFound
-            ? new RejectApplicationError(ErrorDefinition.NotFound(
-                "application.reject.not_found",
-                error.Definition.Message))
-            : new RejectApplicationError(ErrorDefinition.Conflict(
-                "application.reject.invalid_transition",
-                error.Definition.Message));
+    [ErrorCode("application.reject.invalid_transition")]
+    public partial record InvalidTransition(LifecycleState Current, Trigger Trigger);
 }

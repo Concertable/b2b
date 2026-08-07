@@ -1,9 +1,18 @@
+using Concertable.Kernel.Errors;
+using Dunet;
+
 namespace Concertable.B2B.Artist.Application.Errors;
 
-internal sealed record CreateArtistError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record CreateArtistError : IError
 {
-    internal static readonly CreateArtistError Forbidden = new(
-        ErrorDefinition.Forbidden(
-            "artist.create_forbidden",
-            "No active organization was found for the current user."));
+    public ErrorDefinition Definition => this switch
+    {
+        Forbidden =>
+            ErrorDefinition.Forbidden<Forbidden>(
+                "No active organization was found for the current user.")
+    };
+
+    [ErrorCode("artist.create_forbidden")]
+    public partial record Forbidden;
 }

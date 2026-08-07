@@ -41,7 +41,7 @@ internal sealed class OpportunityService : IOpportunityService
     public async Task<Result<OpportunityDto, OpportunityMutationError>> CreateAsync(OpportunityRequest request)
     {
         var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
-            .OrFailure(OpportunityMutationError.VenueNotFound);
+            .OrFailure(() => (OpportunityMutationError)new OpportunityMutationError.VenueNotFound());
         if (venue.TryGetError(out var venueError))
             return Result.Failure<OpportunityDto, OpportunityMutationError>(venueError);
         venue.TryGetValue(out var venueId);
@@ -71,7 +71,7 @@ internal sealed class OpportunityService : IOpportunityService
     {
         var requestList = requests.ToList();
         var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
-            .OrFailure(OpportunityMutationError.VenueNotFound);
+            .OrFailure(() => (OpportunityMutationError)new OpportunityMutationError.VenueNotFound());
         if (venue.TryGetError(out var venueError))
             return UnitResult.Failure(venueError);
         venue.TryGetValue(out var venueId);
@@ -114,14 +114,14 @@ internal sealed class OpportunityService : IOpportunityService
         IEnumerable<OpportunityRequest> desired)
     {
         var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
-            .OrFailure(OpportunityMutationError.VenueNotFound);
+            .OrFailure(() => (OpportunityMutationError)new OpportunityMutationError.VenueNotFound());
         if (venue.TryGetError(out var venueError))
             return Result.Failure<IReadOnlyList<OpportunityDto>, OpportunityMutationError>(venueError);
         venue.TryGetValue(out var ownedVenueId);
 
         if (ownedVenueId != venueId)
             return Result.Failure<IReadOnlyList<OpportunityDto>, OpportunityMutationError>(
-                OpportunityMutationError.Forbidden());
+                new OpportunityMutationError.VenueForbidden());
 
         var desiredList = desired.ToList();
         var validation = ValidateDeals(desiredList.Select(request => request.Deal));
@@ -142,7 +142,7 @@ internal sealed class OpportunityService : IOpportunityService
     public Task<Result<OpportunityDto, OpportunityError>> GetByIdAsync(int id) =>
         repository.GetByIdAsync(id)
             .ToOption()
-            .OrFailure(() => OpportunityError.NotFound(id))
+            .OrFailure(() => (OpportunityError)new OpportunityError.NotFound(id))
             .MapAsync(mapper.ToDtoAsync);
 
     public async Task<Option<Guid>> GetOwnerByIdAsync(int id) =>
@@ -171,7 +171,8 @@ internal sealed class OpportunityService : IOpportunityService
         foreach (var deal in deals)
         {
             var validation = dealModule.Validate(deal)
-                .MapError(OpportunityMutationError.InvalidDeal);
+                .MapError<OpportunityMutationError>(
+                    errors => new OpportunityMutationError.InvalidDeal(errors));
             if (validation.IsFailure)
                 return validation;
         }

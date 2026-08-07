@@ -1,7 +1,7 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
-import { Toaster } from "@/components/ui/sonner";
-import { useTenantIdentity } from "@b2b/features/tenant";
+import { Toaster } from "@concertable/web/components/ui/sonner";
+import { useTenantIdentity } from "@concertable/b2b/features/tenant";
 
 function RootLayout() {
   useTenantIdentity();

@@ -54,7 +54,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
         var supplier = await BuildPartyAsync(supplierTenantId, supplierTax, ct);
         var customer = await BuildPartyAsync(customerTenantId, customerTax, ct);
 
-        var vat = (await tenantModule.GetVatCalculationAsync(supplierTenantId, gross, ct)).Match(
+        var vat = (await tenantModule.GetVatCalculationAsync(supplierTenantId, gross.Amount, ct)).Match(
             value => value,
             _ => throw new InvalidOperationException($"Supplier tenant {supplierTenantId} not found at invoice time."));
 
@@ -65,7 +65,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
             concert.BookingId,
             supplier,
             customer,
-            new VatBreakdown(vat.Net, vat.Vat, gross, vat.Rate),
+            new VatBreakdown(vat.Net, vat.Vat, gross.Amount, vat.Rate),
             sequenceNumber,
             invoiceNumber,
             concert.Period.End,

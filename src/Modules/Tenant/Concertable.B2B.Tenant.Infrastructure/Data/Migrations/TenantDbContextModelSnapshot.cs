@@ -205,6 +205,9 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                                 .HasMaxLength(50)
                                 .HasColumnType("nvarchar(50)");
 
+                            b1.Property<bool>("HoldsMusicLicence")
+                                .HasColumnType("bit");
+
                             b1.Property<string>("SellerIdentifier")
                                 .IsRequired()
                                 .HasMaxLength(50)

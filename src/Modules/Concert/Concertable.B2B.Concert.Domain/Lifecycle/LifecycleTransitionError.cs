@@ -1,21 +1,23 @@
+using Dunet;
+
 namespace Concertable.B2B.Concert.Domain.Lifecycle;
 
-internal sealed record LifecycleTransitionError : IError
+[Union(EnableImplicitConversions = false)]
+internal abstract partial record LifecycleTransitionError : IError
 {
-    private LifecycleTransitionError(ErrorDefinition definition)
+    public ErrorDefinition Definition => this switch
     {
-        Definition = definition;
-    }
+        ApplicationNotFound(var applicationId) =>
+            ErrorDefinition.NotFound<ApplicationNotFound>(
+                $"Application {applicationId} was not found."),
+        InvalidTransition(var current, var trigger) =>
+            ErrorDefinition.Conflict<InvalidTransition>(
+                $"Cannot {trigger} from {current}.")
+    };
 
-    public ErrorDefinition Definition { get; }
+    [ErrorCode("concert.lifecycle.application_not_found")]
+    public partial record ApplicationNotFound(int ApplicationId);
 
-    internal static LifecycleTransitionError ApplicationNotFound(int applicationId) =>
-        new(ErrorDefinition.NotFound(
-            "concert.lifecycle.application_not_found",
-            $"Application {applicationId} was not found."));
-
-    internal static LifecycleTransitionError Invalid(LifecycleState current, Trigger trigger) =>
-        new(ErrorDefinition.Conflict(
-            "concert.lifecycle.invalid_transition",
-            $"Cannot {trigger} from {current}."));
+    [ErrorCode("concert.lifecycle.invalid_transition")]
+    public partial record InvalidTransition(LifecycleState Current, Trigger Trigger);
 }

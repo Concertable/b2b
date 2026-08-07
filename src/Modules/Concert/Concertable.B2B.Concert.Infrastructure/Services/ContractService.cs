@@ -9,37 +9,37 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class ContractService : IContractService
 {
     private readonly IContractRepository repository;
-    private readonly IContractPdfService contractPdfService;
+    private readonly IContractPdfRenderer contractPdfRenderer;
 
     public ContractService(
         IContractRepository repository,
-        IContractPdfService contractPdfService)
+        IContractPdfRenderer contractPdfRenderer)
     {
         this.repository = repository;
-        this.contractPdfService = contractPdfService;
+        this.contractPdfRenderer = contractPdfRenderer;
     }
 
     public Task<Result<ContractDto, ContractError>> GetByApplicationIdAsync(int applicationId) =>
         repository.GetByApplicationIdAsync(applicationId)
             .ToOption()
-            .OrFailure(() => ContractError.ApplicationNotFound(applicationId))
+            .OrFailure(() => (ContractError)new ContractError.ApplicationNotFound(applicationId))
             .Map(contract => contract.ToDto());
 
     public async Task<Result<FileDownload, ContractError>> GetPdfByApplicationIdAsync(int applicationId)
     {
         return await repository.GetByApplicationIdAsync(applicationId)
             .ToOption()
-            .OrFailure(() => ContractError.ApplicationNotFound(applicationId))
+            .OrFailure(() => (ContractError)new ContractError.ApplicationNotFound(applicationId))
             .MapAsync(async contract =>
-                contract.ToFileDownload(await contractPdfService.GetOrCreateAsync(contract)));
+                contract.ToFileDownload(await contractPdfRenderer.GetOrCreateAsync(contract)));
     }
 
     public async Task<Result<FileDownload, ContractError>> GetPdfByConcertIdAsync(int concertId)
     {
         return await repository.GetByConcertIdAsync(concertId)
             .ToOption()
-            .OrFailure(() => ContractError.ConcertNotFound(concertId))
+            .OrFailure(() => (ContractError)new ContractError.ConcertNotFound(concertId))
             .MapAsync(async contract =>
-                contract.ToFileDownload(await contractPdfService.GetOrCreateAsync(contract)));
+                contract.ToFileDownload(await contractPdfRenderer.GetOrCreateAsync(contract)));
     }
 }

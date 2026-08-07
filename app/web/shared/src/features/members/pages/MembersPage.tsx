@@ -1,5 +1,5 @@
 import { useTenant, type TenantType } from "@b2b/features/tenant";
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@concertable/web/components/ui/separator";
 import { MembersRoster } from "../components/MembersRoster";
 import { PendingInvitations } from "../components/PendingInvitations";
 import { InviteForm } from "../components/InviteForm";

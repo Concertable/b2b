@@ -303,7 +303,7 @@ public sealed class InvitationTests : IAsyncLifetime
 
         var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept");
 
-        await response.ShouldBe(HttpStatusCode.BadRequest);
+        await response.ShouldBe(HttpStatusCode.Conflict);
     }
 
     [Fact]

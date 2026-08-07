@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
+import { Button } from "@concertable/web/components/ui/button";
 import { useOrganizationQuery } from "../hooks/useOrganizationQuery";
 
 export function TaxDetailsBanner() {

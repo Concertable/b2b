@@ -2,8 +2,8 @@ import { useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
-import { notificationConnection } from "@/lib/signalr";
-import type { ConcertDraftCreatedPayload } from "@/features/notifications";
+import { notificationConnection } from "@concertable/web/lib/signalr";
+import type { ConcertDraftCreatedPayload } from "@concertable/web/features/notifications";
 
 export function useVenueNotifications() {
   const router = useRouter();
