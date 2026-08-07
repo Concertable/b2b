@@ -1,3 +1,5 @@
+using Concertable.B2B.Concert.Application.Workflow;
+using Concertable.B2B.Concert.Application.Workflow.Capabilities;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
@@ -18,19 +20,22 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
     private readonly IUpcomingSpecification<ConcertEntity> concertUpcoming;
     private readonly IEndedAndBookedSpecification endedAndBooked;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
+    private readonly IConcertWorkflowCapabilityRegistry capabilityRegistry;
 
     public ConcertDashboardRepository(
         ConcertDbContext context,
         IUpcomingSpecification<OpportunityEntity> opportunityUpcoming,
         IUpcomingSpecification<ConcertEntity> concertUpcoming,
         IEndedAndBookedSpecification endedAndBooked,
-        IDoorRevenueOutstandingSpecification doorRevenueOutstanding)
+        IDoorRevenueOutstandingSpecification doorRevenueOutstanding,
+        IConcertWorkflowCapabilityRegistry capabilityRegistry)
     {
         this.context = context;
         this.opportunityUpcoming = opportunityUpcoming;
         this.concertUpcoming = concertUpcoming;
         this.endedAndBooked = endedAndBooked;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
+        this.capabilityRegistry = capabilityRegistry;
     }
 
     public Task<VenueDashboardCounts?> GetVenueCountsAsync(int venueId, CancellationToken ct = default)
@@ -65,12 +70,21 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
                 .Where(a => a.State == LifecycleState.Applied && a.ArtistId == artistId),
             a => a.Opportunity);
 
+        var checkoutCapableDealTypes = capabilityRegistry.DealTypesWith<IAcceptsCheckout>();
+
+        var acceptedAwaitingCheckout = opportunityUpcoming.ApplyVia(
+            context.Applications
+                .Where(a => a.State == LifecycleState.Accepted
+                    && a.ArtistId == artistId
+                    && checkoutCapableDealTypes.Contains(a.DealType)),
+            a => a.Opportunity);
+
         var upcomingConcerts = concertUpcoming.Apply(
             context.Concerts.Where(c => c.ArtistId == artistId));
 
         return context.ArtistReadModels
             .Where(a => a.Id == artistId)
-            .ToArtistCounts(applications, upcomingConcerts)
+            .ToArtistCounts(applications, acceptedAwaitingCheckout, upcomingConcerts)
             .FirstOrDefaultAsync(ct);
     }
 }
