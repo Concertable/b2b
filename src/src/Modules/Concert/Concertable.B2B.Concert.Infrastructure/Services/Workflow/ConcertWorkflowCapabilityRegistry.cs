@@ -11,4 +11,10 @@ internal sealed class ConcertWorkflowCapabilityRegistry : IConcertWorkflowCapabi
 
     public bool Has<TCapability>(DealType dealType) where TCapability : class
         => strategyTypes[dealType].IsAssignableTo(typeof(TCapability));
+
+    public IReadOnlyList<DealType> DealTypesWith<TCapability>() where TCapability : class
+        => strategyTypes
+            .Where(entry => entry.Value.IsAssignableTo(typeof(TCapability)))
+            .Select(entry => entry.Key)
+            .ToArray();
 }

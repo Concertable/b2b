@@ -9,8 +9,10 @@ internal static class QueryableArtistDashboardMappers
     public static IQueryable<ArtistDashboardCounts> ToArtistCounts(
         this IQueryable<ArtistReadModel> query,
         IQueryable<ApplicationEntity> applications,
+        IQueryable<ApplicationEntity> acceptedAwaitingCheckout,
         IQueryable<ConcertEntity> upcomingConcerts)
         => query.Select(a => new ArtistDashboardCounts(
             applications.Count(),
+            acceptedAwaitingCheckout.Count(),
             upcomingConcerts.Count()));
 }
