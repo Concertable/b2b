@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 using Concertable.Kernel.Exceptions;
+using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
 using Microsoft.Extensions.Logging;
@@ -43,7 +44,7 @@ public sealed class DepositEscrowAcceptStepTests
         // Act & Assert
         await Assert.ThrowsAsync<BadRequestException>(() => step.ExecuteAsync(ApplicationId));
         escrowClient.Verify(
-            c => c.DepositAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<string>(), It.IsAny<PaymentSession>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            c => c.DepositAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Money>(), It.IsAny<string>(), It.IsAny<PaymentSession>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 }

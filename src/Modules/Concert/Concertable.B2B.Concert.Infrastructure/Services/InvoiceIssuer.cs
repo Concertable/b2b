@@ -52,7 +52,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
         var supplier = await BuildPartyAsync(supplierTenantId, supplierTax, ct);
         var customer = await BuildPartyAsync(customerTenantId, customerTax, ct);
 
-        var vat = await tenantModule.GetVatCalculationAsync(supplierTenantId, gross, ct);
+        var vat = await tenantModule.GetVatCalculationAsync(supplierTenantId, gross.Amount, ct);
 
         var sequenceNumber = await sequenceRepository.AllocateNextAsync(supplierTenantId, ct);
         var invoiceNumber = $"INV-{supplierTax.SellerIdentifier}-{sequenceNumber:D6}";
@@ -61,7 +61,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
             concert.BookingId,
             supplier,
             customer,
-            new VatBreakdown(vat.Net, vat.Vat, gross, vat.Rate),
+            new VatBreakdown(vat.Net, vat.Vat, gross.Amount, vat.Rate),
             sequenceNumber,
             invoiceNumber,
             concert.Period.End,
