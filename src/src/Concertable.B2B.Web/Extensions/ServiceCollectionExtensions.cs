@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddSharedInfrastructure(configuration);
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
+        services.AddScoped<VenueArtistTenantInterceptor>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddDataAccessSpecifications();

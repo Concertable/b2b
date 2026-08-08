@@ -45,6 +45,7 @@ internal static class ServiceCollectionExtensions
             runDispatcher: false);
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
+        services.AddScoped<VenueArtistTenantInterceptor>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddDataAccessSpecifications();
