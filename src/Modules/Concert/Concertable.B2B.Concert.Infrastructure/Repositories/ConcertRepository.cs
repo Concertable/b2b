@@ -28,6 +28,8 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .Where(e => e.Id == id)
             .Include(e => e.Artist)
             .Include(e => e.Venue)
+            .Include(e => e.Booking)
+                .ThenInclude(b => b.Application)
             .FirstOrDefaultAsync();
     }
 
