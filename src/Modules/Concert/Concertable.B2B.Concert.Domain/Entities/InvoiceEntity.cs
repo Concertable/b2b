@@ -66,7 +66,7 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
             SequenceNumber = sequenceNumber,
             InvoiceNumber = invoiceNumber,
             TaxPointUtc = taxPointUtc,
-            DealType = concert.DealType,
+            DealType = concert.Booking.Application.DealType,
             CreatedAtUtc = createdAtUtc,
             PdfBlobName = $"invoices/{concert.BookingId}-{Guid.NewGuid():N}.pdf"
         };

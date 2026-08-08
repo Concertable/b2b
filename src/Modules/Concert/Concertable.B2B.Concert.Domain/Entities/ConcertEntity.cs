@@ -33,7 +33,6 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public decimal? DoorRevenue { get; private set; }
     public DateRange Period { get; private set; } = null!;
     public DateTime? DatePosted { get; private set; }
-    public DealType DealType { get; private set; }
     public BookingEntity Booking { get; private set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
     public VenueReadModel Venue { get; set; } = null!;
@@ -70,7 +69,6 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
             Period = period,
             Name = name,
             About = about,
-            DealType = booking.DealType,
             Genres = genres.ToList()
         };
     }

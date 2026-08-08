@@ -55,6 +55,7 @@ public static class ApplicationFactory
             .With(nameof(ApplicationEntity.OpportunityId), opportunityId)
             .With(nameof(ApplicationEntity.State), state);
         app.Accept(booking);
+        booking.With(nameof(BookingEntity.Application), app);
         return app;
     }
 }

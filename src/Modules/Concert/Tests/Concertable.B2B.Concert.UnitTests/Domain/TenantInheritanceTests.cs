@@ -64,6 +64,9 @@ public sealed class TenantInheritanceTests
         Assert.Same(booking, concert.Booking);
         Assert.Same(booking, contract.Booking);
         Assert.Same(booking, invoice.Booking);
+        Assert.Equal(DealType.FlatFee, application.DealType);
+        Assert.Equal(DealType.FlatFee, contract.DealType);
+        Assert.Equal(DealType.FlatFee, invoice.DealType);
     }
 
     [Theory]
