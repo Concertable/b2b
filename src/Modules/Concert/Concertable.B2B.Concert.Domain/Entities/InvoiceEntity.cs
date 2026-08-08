@@ -15,8 +15,8 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
 {
     public int Id { get; private set; }
-    public Guid VenueTenantId { get; set; }
-    public Guid ArtistTenantId { get; set; }
+    public Guid VenueTenantId { get; private set; }
+    public Guid ArtistTenantId { get; private set; }
     public int BookingId { get; private set; }
     public BookingEntity Booking { get; private set; } = null!;
 
@@ -41,25 +41,34 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
     private InvoiceEntity() { }
 
     public static InvoiceEntity Create(
-        int bookingId,
+        ConcertEntity concert,
         InvoiceParty supplier,
         InvoiceParty customer,
         VatBreakdown amounts,
         long sequenceNumber,
         string invoiceNumber,
         DateTime taxPointUtc,
-        DealType dealType,
-        DateTime createdAtUtc) => new()
+        DateTime createdAtUtc)
+    {
+        ArgumentNullException.ThrowIfNull(concert);
+        if (concert.VenueTenantId == Guid.Empty || concert.ArtistTenantId == Guid.Empty)
+            throw new InvalidOperationException("An invoice cannot inherit unresolved concert tenants.");
+
+        return new()
         {
-            BookingId = bookingId,
+            Booking = concert.Booking,
+            BookingId = concert.BookingId,
+            VenueTenantId = concert.VenueTenantId,
+            ArtistTenantId = concert.ArtistTenantId,
             Supplier = supplier,
             Customer = customer,
             Amounts = amounts,
             SequenceNumber = sequenceNumber,
             InvoiceNumber = invoiceNumber,
             TaxPointUtc = taxPointUtc,
-            DealType = dealType,
+            DealType = concert.DealType,
             CreatedAtUtc = createdAtUtc,
-            PdfBlobName = $"invoices/{bookingId}-{Guid.NewGuid():N}.pdf"
+            PdfBlobName = $"invoices/{concert.BookingId}-{Guid.NewGuid():N}.pdf"
         };
+    }
 }
