@@ -19,16 +19,16 @@ public sealed class HoldCheckoutStepTests
 
     private readonly Mock<IApplicationRepository> applicationRepository;
     private readonly Mock<IDealAccessor> dealAccessor;
-    private readonly Mock<IManagerPaymentClient> managerPaymentClient;
+    private readonly Mock<IManagerPaymentOperationsClient> managerPaymentClient;
     private readonly HoldCheckoutStep step;
 
-    private IDictionary<string, string>? capturedMetadata;
+    private IReadOnlyDictionary<string, string>? capturedMetadata;
 
     public HoldCheckoutStepTests()
     {
         this.applicationRepository = new Mock<IApplicationRepository>();
         this.dealAccessor = new Mock<IDealAccessor>();
-        this.managerPaymentClient = new Mock<IManagerPaymentClient>();
+        this.managerPaymentClient = new Mock<IManagerPaymentOperationsClient>();
 
         applicationRepository.Setup(r => r.GetArtistPayeeAsync(ApplicationId)).ReturnsAsync(artist);
         applicationRepository
@@ -36,8 +36,8 @@ public sealed class HoldCheckoutStepTests
             .ReturnsAsync(venueTenantId);
         dealAccessor.SetupGet(c => c.Deal).Returns(deal);
         managerPaymentClient
-            .Setup(c => c.CreateHoldSessionAsync(It.IsAny<Guid>(), It.IsAny<Money>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
-            .Callback<Guid, Money, IDictionary<string, string>, CancellationToken>((_, _, m, _) => capturedMetadata = m)
+            .Setup(c => c.CreateHoldSessionAsync(It.IsAny<Guid>(), It.IsAny<Money>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .Callback<Guid, Money, IReadOnlyDictionary<string, string>, CancellationToken>((_, _, m, _) => capturedMetadata = m)
             .ReturnsAsync(session);
 
         this.step = new HoldCheckoutStep(applicationRepository.Object, dealAccessor.Object, managerPaymentClient.Object);
@@ -55,7 +55,7 @@ public sealed class HoldCheckoutStepTests
         Assert.Equal(artist, checkout.Payee);
         Assert.Equal(session, checkout.Session);
         managerPaymentClient.Verify(
-            c => c.CreateHoldSessionAsync(venueTenantId, Money.Gbp(deal.Fee), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()),
+            c => c.CreateHoldSessionAsync(venueTenantId, Money.Gbp(deal.Fee), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()),
             Times.Once);
         Assert.Equal(TransactionTypes.ApplicationAccept, capturedMetadata![PaymentMetadataKeys.Type]);
         Assert.Equal(ApplicationId.ToString(), capturedMetadata[PaymentMetadataKeys.ApplicationId]);

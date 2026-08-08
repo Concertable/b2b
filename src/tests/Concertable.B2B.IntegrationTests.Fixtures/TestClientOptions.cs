@@ -22,7 +22,7 @@ public sealed class TestClientOptions
 
     public TestClientOptions UseFailingPayment()
     {
-        Services += services => services.Replace(ServiceDescriptor.Scoped<IEscrowClient, MockEscrowClientFail>());
+        Services += services => services.Replace(ServiceDescriptor.Scoped<IEscrowOperationsClient, MockEscrowClientFail>());
         return this;
     }
 

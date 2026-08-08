@@ -10,18 +10,18 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
 {
     private readonly IBookingService bookingService;
-    private readonly IEscrowClient escrowClient;
+    private readonly IEscrowOperationsClient escrowClient;
     private readonly IApplicationRepository applicationRepository;
     private readonly IDealAccessor dealAccessor;
-    private readonly IManagerPaymentClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly ILogger<CaptureEscrowAcceptStep> logger;
 
     public CaptureEscrowAcceptStep(
         IBookingService bookingService,
-        IEscrowClient escrowClient,
+        IEscrowOperationsClient escrowClient,
         IApplicationRepository applicationRepository,
         IDealAccessor dealAccessor,
-        IManagerPaymentClient managerPaymentClient,
+        IManagerPaymentOperationsClient managerPaymentClient,
         ILogger<CaptureEscrowAcceptStep> logger)
     {
         this.bookingService = bookingService;
@@ -45,7 +45,7 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
         logger.AcceptingFlatFeeApplication(applicationId, booking.Id, paymentIntentId, deal.Fee, "GBP", venueTenantId, artistTenantId);
 
         var bind = await escrowClient.CaptureAsync(venueTenantId, artistTenantId, Money.Gbp(deal.Fee), paymentIntentId, booking.Id);
-        if (bind.IsFailed)
-            throw new BadRequestException(bind.Errors);
+        if (bind.TryGetError(out var error))
+            throw new BadRequestException(error.Definition.Message);
     }
 }
