@@ -14,8 +14,8 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
 {
     public int Id { get; private set; }
-    public Guid VenueTenantId { get; set; }
-    public Guid ArtistTenantId { get; set; }
+    public Guid VenueTenantId { get; private set; }
+    public Guid ArtistTenantId { get; private set; }
     public int BookingId { get; private set; }
     public BookingEntity Booking { get; private set; } = null!;
 
@@ -40,7 +40,7 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
     private ContractEntity() { }
 
     public static ContractEntity Create(
-        int bookingId,
+        BookingEntity booking,
         int venueId,
         string venueName,
         int artistId,
@@ -51,9 +51,18 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
         string platformTermsVersion,
         ESignature artistESignature,
         ESignature venueESignature,
-        DateTime createdAtUtc) => new()
+        DateTime createdAtUtc)
+    {
+        ArgumentNullException.ThrowIfNull(booking);
+        if (booking.VenueTenantId == Guid.Empty || booking.ArtistTenantId == Guid.Empty)
+            throw new InvalidOperationException("A contract cannot inherit unresolved booking tenants.");
+
+        return new()
         {
-            BookingId = bookingId,
+            Booking = booking,
+            BookingId = booking.Id,
+            VenueTenantId = booking.VenueTenantId,
+            ArtistTenantId = booking.ArtistTenantId,
             VenueId = venueId,
             VenueName = venueName,
             ArtistId = artistId,
@@ -66,6 +75,7 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
             ArtistESignature = artistESignature,
             VenueESignature = venueESignature,
             CreatedAtUtc = createdAtUtc,
-            PdfBlobName = $"contracts/{bookingId}-{Guid.NewGuid():N}.pdf"
+            PdfBlobName = $"contracts/{booking.Id}-{Guid.NewGuid():N}.pdf"
         };
+    }
 }

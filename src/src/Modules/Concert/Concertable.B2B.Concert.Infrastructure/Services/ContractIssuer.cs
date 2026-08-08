@@ -36,14 +36,17 @@ internal sealed class ContractIssuer : IContractIssuer
         this.timeProvider = timeProvider;
     }
 
-    public async Task IssueAsync(ApplicationEntity application, int bookingId, ESignatureRequest venueESignature)
+    public async Task IssueAsync(
+        ApplicationEntity application,
+        BookingEntity booking,
+        ESignatureRequest venueESignature)
     {
         var deal = dealAccessor.Deal;
         var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(application.Id)
             .OrNotFound(DisplayNames.Application);
 
         var contract = ContractEntity.Create(
-            bookingId,
+            booking,
             venue.Id,
             venue.Name,
             artist.Id,
@@ -61,8 +64,6 @@ internal sealed class ContractIssuer : IContractIssuer
                 venueESignature.SignatoryName,
                 venueESignature.DrawnSignatureImage),
             timeProvider.GetUtcNow().UtcDateTime);
-        contract.VenueTenantId = application.VenueTenantId;
-        contract.ArtistTenantId = application.ArtistTenantId;
 
         await contractRepository.AddAsync(contract);
     }
