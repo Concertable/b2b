@@ -5,6 +5,19 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
 internal sealed class PaidApplyStep : IPaidApplyStep
 {
-    public Task<ApplicationEntity> ApplyAsync(int artistId, int opportunityId, DealType dealType, string paymentMethodId)
-        => Task.FromResult<ApplicationEntity>(PrepaidApplication.Create(artistId, opportunityId, dealType, paymentMethodId));
+    public Task<ApplicationEntity> ApplyAsync(
+        int artistId,
+        int opportunityId,
+        DealType dealType,
+        string paymentMethodId,
+        Guid venueTenantId,
+        Guid artistTenantId)
+        => Task.FromResult<ApplicationEntity>(
+            PrepaidApplication.Create(
+                artistId,
+                opportunityId,
+                dealType,
+                paymentMethodId,
+                venueTenantId,
+                artistTenantId));
 }

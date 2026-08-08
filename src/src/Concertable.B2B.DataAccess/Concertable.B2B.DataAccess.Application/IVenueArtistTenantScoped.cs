@@ -12,14 +12,12 @@ namespace Concertable.B2B.DataAccess.Application;
 public interface IVenueArtistTenantScoped
 {
     /// <summary>
-    /// The venue-side tenant. Settable so the owning workflow can stamp it at apply/accept
-    /// (mirroring <see cref="ITenantScoped"/>); domain code never sets it directly.
+    /// The venue-side tenant captured when the entity is created.
     /// </summary>
-    Guid VenueTenantId { get; set; }
+    Guid VenueTenantId { get; }
 
     /// <summary>
-    /// The artist-side tenant. Settable so the owning workflow can stamp it at apply/accept
-    /// (mirroring <see cref="ITenantScoped"/>); domain code never sets it directly.
+    /// The artist-side tenant captured when the entity is created.
     /// </summary>
-    Guid ArtistTenantId { get; set; }
+    Guid ArtistTenantId { get; }
 }
