@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
+                    sp.GetRequiredService<VenueArtistTenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
