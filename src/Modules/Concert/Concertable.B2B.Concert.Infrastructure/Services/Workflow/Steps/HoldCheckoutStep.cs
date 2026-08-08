@@ -10,12 +10,12 @@ internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
 {
     private readonly IApplicationRepository applicationRepository;
     private readonly IDealAccessor dealAccessor;
-    private readonly IManagerPaymentClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
 
     public HoldCheckoutStep(
         IApplicationRepository applicationRepository,
         IDealAccessor dealAccessor,
-        IManagerPaymentClient managerPaymentClient)
+        IManagerPaymentOperationsClient managerPaymentClient)
     {
         this.applicationRepository = applicationRepository;
         this.dealAccessor = dealAccessor;

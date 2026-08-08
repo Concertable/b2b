@@ -13,14 +13,14 @@ internal sealed class PayoutFinishStep : IFinishStep
     private readonly IBookingService bookingService;
     private readonly ISettlementAmountResolver settlementAmountResolver;
     private readonly IDealAccessor dealAccessor;
-    private readonly IManagerPaymentClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly ILogger<PayoutFinishStep> logger;
 
     public PayoutFinishStep(
         IBookingService bookingService,
         ISettlementAmountResolver settlementAmountResolver,
         IDealAccessor dealAccessor,
-        IManagerPaymentClient managerPaymentClient,
+        IManagerPaymentOperationsClient managerPaymentClient,
         ILogger<PayoutFinishStep> logger)
     {
         this.bookingService = bookingService;
@@ -49,7 +49,7 @@ internal sealed class PayoutFinishStep : IFinishStep
             settlement.PaymentMethodId,
             PaymentSession.OffSession,
             settlement.BookingId);
-        if (payment.IsFailed)
-            throw new BadRequestException(payment.Errors);
+        if (payment.TryGetError(out var error))
+            throw new BadRequestException(error.Definition.Message);
     }
 }

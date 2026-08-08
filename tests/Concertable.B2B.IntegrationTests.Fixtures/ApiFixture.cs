@@ -112,9 +112,9 @@ public class ApiFixture : IAsyncLifetime
                 services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient);
                 services.AddSingleton<IEmailTransport>(EmailSender);
 
-                services.AddSingleton<IManagerPaymentClient>(ManagerPaymentClient);
-                services.AddSingleton<IEscrowClient>(EscrowClient);
-                services.AddSingleton<IPayoutAccountClient>(PayoutAccountClient);
+                services.AddSingleton<IManagerPaymentOperationsClient>(ManagerPaymentClient);
+                services.AddSingleton<IEscrowOperationsClient>(EscrowClient);
+                services.AddSingleton<IPayoutAccountOperationsClient>(PayoutAccountClient);
 
                 services.AddSingleton<IWebhookSimulator, MockWebhookSimulator>();
                 services.Replace(ServiceDescriptor.Singleton<IHttpClientFactory>(_ => new WebApplicationHttpClientFactory(factory)));
