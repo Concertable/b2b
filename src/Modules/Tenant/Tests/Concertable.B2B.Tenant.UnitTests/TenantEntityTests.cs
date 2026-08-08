@@ -75,7 +75,8 @@ public sealed class TenantEntityTests
             "GB123456789",
             "12345678",
             new RegisteredAddress("1 High Street", null, "Manchester", "M1 1AA", "United Kingdom"),
-            "GB00BANK1234");
+            "GB00BANK1234",
+            true);
 
         tenant.UpdateLegalDetails("Acme Ltd", taxCompliance);
 
@@ -91,7 +92,8 @@ public sealed class TenantEntityTests
             null,
             "12345678",
             new RegisteredAddress("1 High Street", null, "Manchester", "M1 1AA", "United Kingdom"),
-            "GB00BANK1234");
+            "GB00BANK1234",
+            false);
 
         Assert.Throws<DomainException>(() => tenant.UpdateLegalDetails(" ", taxCompliance));
     }

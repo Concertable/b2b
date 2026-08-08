@@ -112,7 +112,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         // Assert
         var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.VersusApp.Id}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(concert);
         Assert.Null(concert.DatePosted);
         Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
@@ -176,5 +176,30 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         Assert.Empty(fixture.NotificationService.DraftCreated);
         var notification = Assert.Single(fixture.NotificationService.Other, n => n.EventName == "VerifyPaymentFailed");
         Assert.Equal(fixture.SeedState.VenueManager1.Id.ToString(), notification.UserId);
+    }
+
+    [Fact]
+    public async Task Accept_ShouldCreateDraftConcert_WhenVerifyWebhookArrivesBeforeAccept()
+    {
+        // Arrange — the webhook wins the race and lands while the application is still Applied.
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/checkout");
+        await fixture.StripeClient.SendWebhookAsync();
+
+        var beforeAccept = await fixture.ConcertReads.Set<ConcertEntity>()
+            .FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.VersusApp.Id);
+        Assert.Null(beforeAccept);
+        Assert.Empty(fixture.NotificationService.DraftCreated);
+
+        // Act
+        var acceptResponse = await client.PostAsync(
+            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+
+        // Assert
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        var concert = await fixture.ConcertReads.Set<ConcertEntity>()
+            .FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.VersusApp.Id);
+        Assert.NotNull(concert);
+        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
     }
 }

@@ -9,36 +9,36 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class EscrowPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
-    private readonly IConcertWorkflowModule concertWorkflowModule;
+    private readonly IEscrowExecutor escrowExecutor;
     private readonly ConcertDbContext context;
     private readonly ILogger<EscrowPaymentProcessor> logger;
 
     public EscrowPaymentProcessor(
-        IConcertWorkflowModule concertWorkflowModule,
+        IEscrowExecutor escrowExecutor,
         ConcertDbContext context,
         ILogger<EscrowPaymentProcessor> logger)
     {
-        this.concertWorkflowModule = concertWorkflowModule;
+        this.escrowExecutor = escrowExecutor;
         this.context = context;
         this.logger = logger;
     }
 
     public async Task HandleAsync(PaymentSucceededEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Escrow)
+        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Escrow)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(EscrowPaymentProcessor), ct))
             return;
 
-        var bookingId = int.Parse(@event.Metadata["bookingId"]);
+        var bookingId = @event.Metadata.GetValueAs<int>(PaymentMetadataKeys.BookingId);
         logger.EscrowWebhookReceived(@event.TransactionId, bookingId);
 
         context.AddInboxMessage(envelope, nameof(EscrowPaymentProcessor));
 
         try
         {
-            await concertWorkflowModule.EscrowSucceededAsync(bookingId, ct);
+            await escrowExecutor.SucceededAsync(bookingId, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

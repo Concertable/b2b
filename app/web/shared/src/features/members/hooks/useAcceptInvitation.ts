@@ -1,17 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { useActiveTenantStore } from "@b2b/features/tenant";
+import { useTenant, type TenantType } from "@b2b/features/tenant";
+import { acceptInvitation } from "../acceptInvitation";
 import invitationApi from "../api/invitationApi";
 
-export function useAcceptInvitation(invitationId: string) {
-  const setActiveTenant = useActiveTenantStore((s) => s.setActiveTenant);
+export function useAcceptInvitation(
+  invitationId: string,
+  tenantType: TenantType,
+) {
+  const { selectTenant } = useTenant(tenantType);
   const { isError } = useQuery({
     queryKey: ["accept-invitation", invitationId],
-    queryFn: async () => {
-      const membership = await invitationApi.accept(invitationId);
-      setActiveTenant(membership.tenantId);
-      window.location.assign("/settings/members");
-      return membership;
-    },
+    queryFn: () =>
+      acceptInvitation(invitationId, {
+        accept: invitationApi.accept,
+        selectTenant,
+        navigate: (path) => window.location.assign(path),
+      }),
     retry: false,
     staleTime: Infinity,
     gcTime: Infinity,

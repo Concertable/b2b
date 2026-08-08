@@ -2,9 +2,9 @@ using Concertable.B2B.Artist.Api.Responses;
 
 namespace Concertable.B2B.Artist.Api.Mappers;
 
-public static class ArtistResponseMappers
+internal static class ArtistResponseMappers
 {
-    public static ArtistDetailsResponse ToDetailsResponse(this ArtistDetails dto) => new()
+    public static DetailsResponse ToDetailsResponse(this ArtistDetails dto) => new()
     {
         Id = dto.Id,
         Name = dto.Name,

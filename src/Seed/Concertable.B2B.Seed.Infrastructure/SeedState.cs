@@ -4,12 +4,12 @@ using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure.Factories;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Contracts.Enums;
 using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.User.Domain.Entities;
 using Concertable.Contracts;
 using Concertable.B2B.Venue.Domain.Entities;
 using Concertable.Kernel.ValueObjects;
-using Concertable.Kernel.Identity;
 using Concertable.Seed.Identity;
 using Concertable.Seed.Identity.Extensions;
 using NetTopologySuite.Geometries;
@@ -24,6 +24,7 @@ public sealed class SeedState
     public UserEntity ArtistManagerNoArtist { get; }
     public UserEntity VenueManager1 { get; }
     public UserEntity VenueManager2 { get; }
+    public UserEntity VenueManager3 { get; }
     public UserEntity VenueManagerNoVenue { get; }
     public UserEntity Admin { get; }
 
@@ -120,35 +121,35 @@ public sealed class SeedState
         var now = catalog.Now;
 
         ArtistManager1 = UserFactory.FromRegistration(
-            SeedUsers.ArtistManagerId(1), SeedUsers.ArtistManagerEmail(1), Role.ArtistManager);
+            SeedUsers.ArtistManagerId(1), SeedUsers.ArtistManagerEmail(1));
         ArtistManagerNoArtist = UserFactory.FromRegistration(
             SeedUsers.ArtistManagerId(SeedUsers.ManagerCount),
-            SeedUsers.ArtistManagerEmail(SeedUsers.ManagerCount),
-            Role.ArtistManager);
+            SeedUsers.ArtistManagerEmail(SeedUsers.ManagerCount));
         VenueManager1 = UserFactory.FromRegistration(
-            SeedUsers.VenueManagerId(1), SeedUsers.VenueManagerEmail(1), Role.VenueManager);
+            SeedUsers.VenueManagerId(1), SeedUsers.VenueManagerEmail(1));
         VenueManager2 = UserFactory.FromRegistration(
-            SeedUsers.VenueManagerId(2), SeedUsers.VenueManagerEmail(2), Role.VenueManager);
+            SeedUsers.VenueManagerId(2), SeedUsers.VenueManagerEmail(2));
+        VenueManager3 = UserFactory.FromRegistration(
+            SeedUsers.VenueManagerId(3), SeedUsers.VenueManagerEmail(3));
         VenueManagerNoVenue = UserFactory.FromRegistration(
             SeedUsers.VenueManagerId(SeedUsers.ManagerCount),
-            SeedUsers.VenueManagerEmail(SeedUsers.ManagerCount),
-            Role.VenueManager);
+            SeedUsers.VenueManagerEmail(SeedUsers.ManagerCount));
 
         var artistManagers = new List<UserEntity> { ArtistManager1 };
         for (int i = 2; i < SeedUsers.ManagerCount; i++)
             artistManagers.Add(UserFactory.FromRegistration(
-                SeedUsers.ArtistManagerId(i), SeedUsers.ArtistManagerEmail(i), Role.ArtistManager));
+                SeedUsers.ArtistManagerId(i), SeedUsers.ArtistManagerEmail(i)));
         artistManagers.Add(ArtistManagerNoArtist);
         ArtistManagers = artistManagers;
 
-        var venueManagers = new List<UserEntity> { VenueManager1, VenueManager2 };
-        for (int i = 3; i < SeedUsers.ManagerCount; i++)
+        var venueManagers = new List<UserEntity> { VenueManager1, VenueManager2, VenueManager3 };
+        for (int i = 4; i < SeedUsers.ManagerCount; i++)
             venueManagers.Add(UserFactory.FromRegistration(
-                SeedUsers.VenueManagerId(i), SeedUsers.VenueManagerEmail(i), Role.VenueManager));
+                SeedUsers.VenueManagerId(i), SeedUsers.VenueManagerEmail(i)));
         venueManagers.Add(VenueManagerNoVenue);
         VenueManagers = venueManagers;
 
-        Admin = UserFactory.FromRegistration(SeedUsers.Admin, SeedUsers.AdminEmail, Role.Admin,
+        Admin = UserFactory.FromRegistration(SeedUsers.Admin, SeedUsers.AdminEmail,
             new Point(-0.5, 51.0) { SRID = 4326 },
             new Address("Leicestershire", "Loughborough"),
             "avatar.jpg");
@@ -293,7 +294,7 @@ public sealed class SeedState
         Opportunities = opps;
         FreshVenueHireOpportunity = opps[62];
 
-        // Artists get a tenant too (they own no Bucket-A rows) so Payment provisions their Connect account off TenantCreatedEvent.
+        // Artists get a tenant too (they own no Bucket-A rows) so Payment provisions their Connect account off PayoutOwnerRegisteredEvent.
         // The "no venue"/"no artist" operators registered but never set up their organization, so their tenants stay
         // tax-incomplete (no tax details captured) — the pre-org-setup state the organization read + gate tests rely on.
         var bareTenantUserIds = new HashSet<Guid> { VenueManagerNoVenue.Id, ArtistManagerNoArtist.Id };
@@ -302,9 +303,13 @@ public sealed class SeedState
                 m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantType.Venue : TenantType.Artist, now,
                 taxComplianceComplete: !bareTenantUserIds.Contains(m.Id)))
             .ToList();
-        Memberships = SeedUsers.Managers
+        var memberships = SeedUsers.Managers
             .Select(m => MembershipFactory.FoundingOwner(m.TenantId, m.Id, now))
             .ToList();
+        // VenueManager3 is also a member of VenueManager1's tenant, giving one tenant two members for the group-inbox tests.
+        memberships.Add(MembershipFactory.Member(
+            TenantSeedIds.For(VenueManager1.Id), VenueManager3.Id, TenantRole.Manager, invitedBy: VenueManager1.Id, now));
+        Memberships = memberships;
         var tenantByVenueId = Venues.ToDictionary(v => v.Id, v => TenantSeedIds.For(v.UserId));
         foreach (var venue in Venues)
             venue.TenantId = tenantByVenueId[venue.Id];
@@ -487,22 +492,18 @@ public sealed class SeedState
         {
             var dealType = Deals[Opportunities[application.OpportunityId - 1].DealId - 1].DealType;
             application.With(nameof(ApplicationEntity.DealType), dealType);
-            application.Booking?.With(nameof(BookingEntity.DealType), dealType);
 
-            application.VenueTenantId = Opportunities[application.OpportunityId - 1].TenantId;
-            application.ArtistTenantId = artistTenantById[application.ArtistId];
+            application.With(
+                nameof(ApplicationEntity.VenueTenantId),
+                Opportunities[application.OpportunityId - 1].TenantId);
+            application.With(nameof(ApplicationEntity.ArtistTenantId), artistTenantById[application.ArtistId]);
             if (application.Booking is { } booking)
             {
-                booking.VenueTenantId = application.VenueTenantId;
-                booking.ArtistTenantId = application.ArtistTenantId;
+                booking.With(nameof(BookingEntity.VenueTenantId), application.VenueTenantId);
+                booking.With(nameof(BookingEntity.ArtistTenantId), application.ArtistTenantId);
             }
         }
 
         Concerts = catalog.Concerts.Select(s => ConcertFactory.Create(s, Bookings[s.ConcertId - 1])).ToList();
-        foreach (var concert in Concerts)
-        {
-            concert.VenueTenantId = tenantByVenueId[concert.VenueId];
-            concert.ArtistTenantId = artistTenantById[concert.ArtistId];
-        }
     }
 }

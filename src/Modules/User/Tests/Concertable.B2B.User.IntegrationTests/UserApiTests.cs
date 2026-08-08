@@ -47,7 +47,7 @@ public sealed class UserApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var user = await response.Content.ReadAsync<VenueManagerDto>();
+        var user = await response.Content.ReadAsync<UserDto>();
         Assert.NotNull(user);
         Assert.Equal(fixture.SeedState.VenueManager1.Id, user.Id);
     }
@@ -65,7 +65,7 @@ public sealed class UserApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var user = await response.Content.ReadAsync<VenueManagerDto>();
+        var user = await response.Content.ReadAsync<UserDto>();
         Assert.NotNull(user);
         Assert.NotNull(user.Latitude);
         Assert.NotNull(user.Longitude);

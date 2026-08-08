@@ -13,18 +13,29 @@ public sealed class TaxComplianceTests
     {
         var address = Address();
 
-        var taxCompliance = new TaxCompliance("GB123456789", "12345678", address, "GB00BANK1234");
+        var taxCompliance = new TaxCompliance("GB123456789", "12345678", address, "GB00BANK1234", true);
 
         Assert.Equal("GB123456789", taxCompliance.VatNumber);
         Assert.Equal("12345678", taxCompliance.SellerIdentifier);
         Assert.Equal(address, taxCompliance.RegisteredAddress);
         Assert.Equal("GB00BANK1234", taxCompliance.BankReference);
+        Assert.True(taxCompliance.HoldsMusicLicence);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Constructor_StoresMusicLicenceAttestation(bool holdsMusicLicence)
+    {
+        var taxCompliance = new TaxCompliance("GB123456789", "12345678", Address(), "GB00BANK1234", holdsMusicLicence);
+
+        Assert.Equal(holdsMusicLicence, taxCompliance.HoldsMusicLicence);
     }
 
     [Fact]
     public void Constructor_NullVatNumber_MeansNotRegistered()
     {
-        var taxCompliance = new TaxCompliance(null, "12345678", Address(), "GB00BANK1234");
+        var taxCompliance = new TaxCompliance(null, "12345678", Address(), "GB00BANK1234", false);
 
         Assert.Null(taxCompliance.VatNumber);
     }
@@ -34,7 +45,7 @@ public sealed class TaxComplianceTests
     [InlineData("  ")]
     public void Constructor_BlankVatNumber_NormalizesToNull(string vatNumber)
     {
-        var taxCompliance = new TaxCompliance(vatNumber, "12345678", Address(), "GB00BANK1234");
+        var taxCompliance = new TaxCompliance(vatNumber, "12345678", Address(), "GB00BANK1234", false);
 
         Assert.Null(taxCompliance.VatNumber);
     }
@@ -45,7 +56,7 @@ public sealed class TaxComplianceTests
     public void Constructor_MissingSellerIdentifier_Throws(string sellerIdentifier)
     {
         Assert.Throws<DomainException>(() =>
-            new TaxCompliance(null, sellerIdentifier, Address(), "GB00BANK1234"));
+            new TaxCompliance(null, sellerIdentifier, Address(), "GB00BANK1234", false));
     }
 
     [Theory]
@@ -54,14 +65,14 @@ public sealed class TaxComplianceTests
     public void Constructor_MissingBankReference_Throws(string bankReference)
     {
         Assert.Throws<DomainException>(() =>
-            new TaxCompliance(null, "12345678", Address(), bankReference));
+            new TaxCompliance(null, "12345678", Address(), bankReference, false));
     }
 
     [Fact]
     public void Constructor_MissingAddress_Throws()
     {
         Assert.Throws<DomainException>(() =>
-            new TaxCompliance(null, "12345678", null!, "GB00BANK1234"));
+            new TaxCompliance(null, "12345678", null!, "GB00BANK1234", false));
     }
 
     [Fact]

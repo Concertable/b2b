@@ -3,7 +3,6 @@ using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Events;
 using Concertable.Payment.Client;
 using Concertable.B2B.User.Contracts;
-using Concertable.Kernel.Identity;
 using Concertable.B2B.User.Domain.Entities;
 using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Logging;
@@ -111,11 +110,11 @@ public class ApiFixture : IAsyncLifetime
                 services.AddSingleton<INotificationClient>(NotificationService);
                 services.AddSingleton(StripeApiClient);
                 services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient);
-                services.AddSingleton<IEmailSender>(EmailSender);
+                services.AddSingleton<IEmailTransport>(EmailSender);
 
-                services.AddSingleton<IManagerPaymentClient>(ManagerPaymentClient);
-                services.AddSingleton<IEscrowClient>(EscrowClient);
-                services.AddSingleton<IPayoutAccountClient>(PayoutAccountClient);
+                services.AddSingleton<IManagerPaymentOperationsClient>(ManagerPaymentClient);
+                services.AddSingleton<IEscrowOperationsClient>(EscrowClient);
+                services.AddSingleton<IPayoutAccountOperationsClient>(PayoutAccountClient);
 
                 services.AddSingleton<IWebhookSimulator, MockWebhookSimulator>();
                 services.Replace(ServiceDescriptor.Singleton<IHttpClientFactory>(_ => new WebApplicationHttpClientFactory(factory)));
@@ -185,8 +184,8 @@ public class ApiFixture : IAsyncLifetime
         var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
         var evt = new PaymentFailedEvent($"pi_fail_{bookingId}", "card_declined", "Card was declined", new Dictionary<string, string>
         {
-            ["type"] = TransactionTypes.Escrow,
-            ["bookingId"] = bookingId.ToString()
+            [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
+            [PaymentMetadataKeys.BookingId] = bookingId.ToString()
         });
 
         foreach (var handler in handlers)
@@ -199,7 +198,6 @@ public class ApiFixture : IAsyncLifetime
     {
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
-        client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, user.Role.ToString());
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
         return client;
     }
@@ -221,37 +219,7 @@ public class ApiFixture : IAsyncLifetime
 
         var client = customFactory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
-        client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, user.Role.ToString());
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
-        return client;
-    }
-
-    public HttpClient CreateClient(Guid userId, Role role)
-    {
-        var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
-        client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, role.ToString());
-        return client;
-    }
-
-    public HttpClient CreateClient(Guid userId, Role role, Action<TestClientOptions> configure)
-    {
-        var options = new TestClientOptions();
-        configure(options);
-
-        var customFactory = factory.WithWebHostBuilder(b =>
-        {
-            if (options.Configure is not null)
-                b.ConfigureAppConfiguration((_, config) => options.Configure(config));
-            if (options.Services is not null)
-                b.ConfigureTestServices(options.Services);
-        });
-
-        StripeClient = customFactory.Services.GetRequiredService<IWebhookSimulator>();
-
-        var client = customFactory.CreateClient();
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
-        client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, role.ToString());
         return client;
     }
 

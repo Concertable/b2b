@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Infrastructure;
+using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -9,37 +10,37 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
-    private readonly IVerifyDispatcher verifyDispatcher;
+    private readonly IVerifyCoordinator coordinator;
     private readonly ConcertDbContext context;
     private readonly ILogger<VerifyPaymentFailedProcessor> logger;
 
     public VerifyPaymentFailedProcessor(
-        IVerifyDispatcher verifyDispatcher,
+        IVerifyCoordinator coordinator,
         ConcertDbContext context,
         ILogger<VerifyPaymentFailedProcessor> logger)
     {
-        this.verifyDispatcher = verifyDispatcher;
+        this.coordinator = coordinator;
         this.context = context;
         this.logger = logger;
     }
 
     public async Task HandleAsync(PaymentFailedEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault("type") != TransactionTypes.Verify)
+        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Verify)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentFailedProcessor), ct))
             return;
 
-        var applicationId = int.Parse(@event.Metadata["applicationId"]);
-        var venueManagerId = @event.Metadata["venueManagerId"];
+        var applicationId = @event.Metadata.GetValueAs<int>(PaymentMetadataKeys.ApplicationId);
+        var venueManagerId = @event.Metadata.GetValue(PaymentMetadataKeys.VenueManagerId);
         logger.VerifyPaymentFailed(applicationId, @event.FailureCode, @event.FailureMessage);
 
         context.AddInboxMessage(envelope, nameof(VerifyPaymentFailedProcessor));
 
         try
         {
-            await verifyDispatcher.VerifyFailedAsync(applicationId, venueManagerId, @event.FailureMessage);
+            await coordinator.FailedAsync(applicationId, venueManagerId, @event.FailureMessage, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

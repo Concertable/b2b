@@ -34,9 +34,6 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        services.AddKeyedScoped<IRoleMapper, VenueManagerMapper>(Role.VenueManager);
-        services.AddKeyedScoped<IRoleMapper, ArtistManagerMapper>(Role.ArtistManager);
-        services.AddKeyedScoped<IRoleMapper, AdminMapper>(Role.Admin);
         services.AddScoped<IUserMapper, UserMapper>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserRepository, UserRepository>();
@@ -53,9 +50,6 @@ public static class ServiceCollectionExtensions
 
         services.AddValidatorsFromAssemblyContaining<UpdateLocationRequestValidator>();
 
-        /* Admin alone survives the permission sweep — it gates platform endpoints orthogonal to tenancy
-           (it checks the AdminProfile row by sub, not a tenant membership). Venue/artist authorization is now
-           permission + persona via the Tenant module's PermissionPolicyProvider. */
         services.AddAuthorization(options =>
         {
             options.AddPolicy("Admin", p => p.AddRequirements(new AdminProfileRequirement()));

@@ -6,9 +6,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class ReleaseEscrowFinishStep : IFinishStep
 {
     private readonly IBookingRepository bookingRepository;
-    private readonly IEscrowClient escrowClient;
+    private readonly IEscrowOperationsClient escrowClient;
 
-    public ReleaseEscrowFinishStep(IBookingRepository bookingRepository, IEscrowClient escrowClient)
+    public ReleaseEscrowFinishStep(IBookingRepository bookingRepository, IEscrowOperationsClient escrowClient)
     {
         this.bookingRepository = bookingRepository;
         this.escrowClient = escrowClient;
@@ -20,7 +20,7 @@ internal sealed class ReleaseEscrowFinishStep : IFinishStep
             .OrNotFound(DisplayNames.Booking);
 
         var release = await escrowClient.ReleaseByBookingIdAsync(bookingId);
-        if (release.IsFailed)
-            throw new BadRequestException(release.Errors);
+        if (release.TryGetError(out var error))
+            throw new BadRequestException(error.Definition.Message);
     }
 }

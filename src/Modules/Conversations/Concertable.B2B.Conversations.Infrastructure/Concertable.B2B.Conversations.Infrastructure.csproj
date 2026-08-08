@@ -20,6 +20,9 @@
     <ProjectReference Include="..\Concertable.B2B.Conversations.Application\Concertable.B2B.Conversations.Application.csproj" />
     <ProjectReference Include="..\..\User\Concertable.B2B.User.Domain\Concertable.B2B.User.Domain.csproj" />
     <ProjectReference Include="..\..\User\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
+    <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
+    <ProjectReference Include="..\..\Venue\Concertable.B2B.Venue.Contracts\Concertable.B2B.Venue.Contracts.csproj" />
+    <ProjectReference Include="..\..\Artist\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
   </ItemGroup>
 
@@ -32,6 +35,7 @@
     <PackageReference Include="Concertable.DataAccess.Infrastructure" />
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Seed.Shared" />
+    <PackageReference Include="Concertable.Seed.Identity" />
   </ItemGroup>
 
 </Project>

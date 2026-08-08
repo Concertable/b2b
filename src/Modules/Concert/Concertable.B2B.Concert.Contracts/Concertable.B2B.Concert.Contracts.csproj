@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-    <Description>Concertable B2B Concert contracts: the cross-service concert contract surface — integration events (ConcertChangedEvent, ConcertPostedEvent, ConcertFinishedEvent, ConcertSettledEvent, …) and view DTOs consumed by services downstream of B2B (Search, Customer).</Description>
+    <Description>Concertable B2B Concert contracts: the cross-service concert contract surface — integration events (ConcertChangedEvent, ConcertPostedEvent, ConcertRatingUpdatedEvent, …) and view DTOs consumed by services downstream of B2B (Search, Customer).</Description>
   </PropertyGroup>
 
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->

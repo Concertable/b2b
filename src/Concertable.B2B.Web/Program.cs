@@ -15,7 +15,6 @@ using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Venue.Contracts.Events;
-using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
@@ -29,6 +28,7 @@ using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
+using Concertable.Shared.Api.Exceptions;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Infrastructure;
@@ -50,10 +50,11 @@ using Concertable.Kernel.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.AddAzureBlobClient("blobs");
+builder.AddAzureBlobServiceClient("blobs");
 
 builder.Configuration.AddEnvironmentVariables();
 
+builder.Services.AddProblemDetails();
 builder.Services.AddControllers()
     .AddApplicationPart(typeof(Concertable.Shared.Api.Controllers.GenreController).Assembly)
 .AddJsonOptions(options =>
@@ -131,7 +132,9 @@ services.AddAzureServiceBusTransport(
         opts.ConnectionString = builder.Configuration.GetConnectionString("asb")
             ?? (builder.Environment.IsEnvironment("Testing") ? null!
                 : throw new InvalidOperationException("Connection string 'asb' is required."));
-        opts.ServiceName = "concertable-b2b";
+        opts.ServiceName = builder.Configuration["ServiceBus:ServiceName"]
+            ?? (builder.Environment.IsEnvironment("Testing") ? "concertable-b2b"
+                : throw new InvalidOperationException("Configuration 'ServiceBus:ServiceName' is required."));
     },
     reg =>
     {
@@ -142,7 +145,7 @@ services.AddAzureServiceBusTransport(
         reg.Publishes<ConcertChangedEvent>();
         reg.Publishes<ConcertPostedEvent>();
         reg.Publishes<ConcertRatingUpdatedEvent>();
-        reg.Publishes<TenantCreatedEvent>();
+        reg.Publishes<Concertable.B2B.Tenant.Contracts.Events.PayoutOwnerRegisteredEvent>();
 
         reg.SubscribeTo<CredentialRegisteredEvent>();
         reg.SubscribeTo<CustomerReviewSubmittedEvent>();
@@ -187,7 +190,6 @@ services.AddAuth(builder.Configuration, builder.Environment);
 services.AddValidation();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails();
 
 builder.Services.AddScoped<TenantResolutionMiddleware>();
 

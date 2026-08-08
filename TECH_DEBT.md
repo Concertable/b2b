@@ -54,62 +54,34 @@ it's to split the tiers by *where they run*:
   `AddContainer("payment", "<registry>/payment:<version>")`). Same real Payment, pulled not compiled.
   This suite moves out of B2B's repo into a system/deployment pipeline.
 
-See [`plans/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/SPLIT_TIME_E2E_STRATEGY.md).
+See [`plans/platform/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/platform/SPLIT_TIME_E2E_STRATEGY.md).
 
 ---
 
 ## MED
 
-### `IgnoreQueryFilters` used to subtract tenancy instead of composing a stance — anti-pattern
+### B2B outbound email is still synchronous inline — not on the transactional outbox
 
-`CODE_PATTERNS.md` § "Tenancy is composed, never subtracted" bans per-query `IgnoreQueryFilters` and
-claims the codebase has **zero** — but two had leaked in (both pre-existing on `master`). The right
-alternatives were always available and are named in that doc: read cross-tenant through a composed
-**public stance** (`PublicXDbContext`), expose a cross-tenant *fact* as a **boolean/scalar named
-abstraction** on the public stance (e.g. `IConcertAvailability`), or **resolve the ids and pass them
-in** at the call site (as B2B fronts Payment). Never `.IgnoreQueryFilters()`.
+The async-email-outbox refactor put Auth (verification/reset) and Customer (ticket receipt) on the
+transactional outbox (`IEmailSender` → `OutboxEmailSender` → `SendEmailCommand`), but **B2B's two email
+producers still send synchronously** through `IEmailTransport` (the raw SMTP/fake send), so a transient
+failure still loses the mail and the send isn't atomic with the business change:
 
-- **Fixed (`Feature/VatAndSelfBilledInvoicing`):** `ContractRepository.GetByBookingIdIgnoringTenantAsync`
-  existed only to feed an eager background PDF render with no tenant context. Removed with the eager
-  path entirely — contract + invoice PDFs now render lazily on download (a tenant-scoped party request),
-  so there is no context-free read to bypass a filter for. See the render-timing decision below.
-- **Outstanding:** `BookingRepository.ExistsIgnoringTenantAsync`, used by
-  `EscrowExecutor.LoadApplicationIdAsync` to word a diagnostic ("exists ignoring tenant filter: …") when
-  the tenant-filtered lookup misses in the escrow **payment-webhook** path. This is a genuine
-  cross-tenant boolean *fact*, so the composed fix is a boolean-only named abstraction on the public
-  stance (à la `IConcertAvailability`) — but it sits in money-path code whose webhook tenant-context
-  model wants understanding first, so it was left out of the invoicing PR.
+- `Concert.Infrastructure/Services/Messenger` — the counterparty email on a conversation message/action.
+- `Tenant.Infrastructure/Services/InvitationService` — the org-invitation email after the invitation saves.
 
-**Resolves when:** `BookingRepository.ExistsIgnoringTenantAsync` is replaced by a composed public-stance
-existence check (no `IgnoreQueryFilters`) and the escrow diagnostic reads through it — at which point the
-`CODE_PATTERNS.md` "zero `IgnoreQueryFilters`" claim is true again. The convention discussion this entry
-was the placeholder for has landed: see `docs/CODE_PATTERNS.md` § "Repository naming — two orthogonal
-axes" (audience vs mutability) alongside § "Tenancy is composed, never subtracted". Only the
-`ExistsIgnoringTenantAsync` code cleanup remains.
+They were left synchronous because the integration-test harness can't deliver an outbox command
+in-process (`LocalDispatchingBus` deliberately doesn't dispatch commands locally, and the fixtures'
+`MockBusTransport.SendAsync` is a no-op), so the `EmailSender.Sent` assertions in
+`ApplicationCancel`/`ApplicationWithdrawReject`/`Invitation` tests only observe a synchronous send.
+`Messenger` also has no clean transactional anchor — it fires off a conversation action, not a persisted
+lifecycle transition.
 
----
-
-### `Modules/User/` TPH not unwound
-
-Plan §4.5 calls for flat per-persona profile tables (`VenueManagerEntity`, `ArtistManagerEntity`, `AdminEntity`) each carrying the Auth `sub`, with no shared `UserEntity` base via TPH. Current state of the `User.Domain` hierarchy needs verifying and may still be TPH.
-
-**Resolves when:** The User module entities are flat tables without a TPH discriminator column; the `UserEntity` base row no longer carries persona-specific fields.
-
----
-
-### Defined-but-not-published events
-
-`ConcertSettledEvent`, `ConcertFinishedEvent`, `ConcertApplicationCreatedEvent`, `ConcertApplicationAcceptedEvent` exist in `Concertable.B2B.Concert.Contracts.Events` but are not registered as `Publishes<>` in `Program.cs` and are not raised anywhere.
-
-**Resolves when:** Either (a) each event is raised from the appropriate domain event, registered in `Program.cs`, and consumers exist in Search/Customer; or (b) the event types are deleted as dead code.
-
----
-
-### `Modules/Notification/` pending deletion
-
-`Concertable.Shared.Email` is already wired by both B2B and Customer. The `Modules/Notification/` module (Contracts + Infrastructure) still ships and hosts the `NotificationHub` (SignalR). Email sending should already be routed through `IEmailSender` from the shared library.
-
-**Resolves when:** Phase 8 Step 24 — SignalR hub moved to its own home; remaining email-only surface in `Modules/Notification/` removed; all callers use `IEmailSender` directly.
+**Resolves when:** the concert-lifecycle transition (and the conversation action) raise a domain event
+whose pre-commit handler stages a `SendEmailCommand` on the same transaction (the
+`TicketPurchasedDomainEventHandler` pattern), making B2B email transactional/retried like Auth and
+Customer — with the B2B email integration assertions moved to draining the outbox (or asserting the
+staged command) rather than a synchronous `Sent` list.
 
 ---
 
@@ -140,7 +112,7 @@ no event round-trip and no dependency on a Payment seed simulator (which no long
 divergence-from-production concern is accepted here because past-dated ticket sales are **inherently
 unreproducible** — real Payment only emits `PaymentSucceededEvent` for live Stripe webhooks, and you
 can't buy a ticket to a concert that already happened. Documented as a sanctioned exception in
-`docs/SEEDING_CONVENTIONS.md`. The settlement E2E (`ConcertFinishedTests`) reads these via
+`agents/SEEDING_CONVENTIONS.md`. The settlement E2E (`ConcertFinishedTests`) reads these via
 `TicketsSold * Price`: Past DoorSplit (id 12) and Past Versus (id 9) are seeded `ticketsSold: 1` —
 the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) omitted.
 
@@ -164,29 +136,6 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ---
 
-### Concert response family names are over-qualified
-
-The `Concert.Api.Responses` types stack redundant qualifiers — `ConcertDetailsResponse`,
-`ConcertSummaryResponse`, `ConcertArtistResponse`, `ConcertVenueSummaryResponse`, etc. — re-stating `Concert`
-(already the namespace) and vague words like `Details`. The `Response` suffix is mandated (it marks the HTTP
-wire layer); the rest is bloat. (Splitting the public vs owner reads into separate types was considered and
-**declined** — the single response with owner-only fields populated only by the owner mapper is safe and is
-the same role-shaping pattern `ApplicationResponse` already uses; not worth a one-off divergence.)
-
-**Resolves when:** the response family is de-verbosed in one pass — drop the redundant `Concert`/`Details`
-qualifiers where the namespace already carries them, keep `Response` — and the SPA's consumed/generated type
-names are updated to match.
-
----
-
-### `UserEntity.Avatar` models "no avatar" as empty string
-
-`Modules/User/Concertable.B2B.User.Domain/UserEntity.cs` declares `public string Avatar { get; private set; } = string.Empty;` — an empty-string placeholder pretending to be a value (the pattern `docs/CODE_CONVENTIONS.md` bans for populated-later defaults). "No avatar" is modelled as `string?` elsewhere (e.g. `ConcertArtistResponse.Avatar`).
-
-**Resolves when:** `Avatar` becomes `string?` with no default, consumers null-check instead of empty-check, and the column is re-scaffolded nullable via `./initial-migrations.ps1`.
-
----
-
 ### Duplicate application attempt is a 500, not a 400 — guard landed, integration test outstanding
 
 Fixed on `Fix/TechDebtSweep`: `ApplicationService.ValidateCanApplyAsync` (the apply/insert path,
@@ -201,11 +150,20 @@ for apply-after-withdraw → 400 (needs Docker).
 
 ---
 
-### Intra-service read-model sync rides the bus instead of in-process dispatch
+### `deal.Fee`/`HireFee` are `decimal` domain fields lifted to `Money` at the payment boundary
 
-Concert's read-model sync from `ArtistChangedEvent`/`VenueChangedEvent` and User's manager sync handlers consume events via the bus inbox rather than in-process domain events. Plan §8.5 says intra-service flows should stay in-process via `IEventRaiser`.
+The money value-type migration (PR1 #390 → sync #393) made every
+payment-client + `ISettlementAmountResolver` signature `Money`-typed, but `FlatFeeDeal.Fee` /
+`VenueHireDeal.HireFee` (contracts + `*DealEntity`) stayed `decimal`. The workflow steps (`HoldCheckoutStep`,
+`Capture`/`DepositEscrowAcceptStep`) lift them with `Money.Gbp(deal.Fee)` at the call sites — a legitimate
+boundary conversion (same pattern as Customer's `Money.Gbp(concert.Price * qty)`), but it assumes GBP and keeps
+a money value untyped in the domain, inconsistent with `EscrowEntity.Amount` which is a `Money` EF
+ComplexProperty. Deferred from the sync PR because the field-type change needs an EF ComplexProperty mapping +
+a DB re-scaffold that couldn't be verified in the disk/MAX_PATH-constrained environment at the time.
 
-**Resolves when:** The Concert and User module handlers for these events are wired to `IEventRaiser` in-process dispatch, and the ASB subscriptions for these intra-service uses are removed.
+**Resolves when:** `Fee`/`HireFee` become `Money` (contracts + entities), mapped as a ComplexProperty like
+`EscrowEntity.Amount`, the deal mappers + read sites cascade, migrations are re-scaffolded, and the
+`Money.Gbp(deal.Fee)` boundary lifts collapse to plain `deal.Fee`.
 
 ---
 
@@ -221,6 +179,6 @@ Deliberately not done now: the launch gate is *data completeness* (hold a comple
 
 ### B2B portal frontend URLs have no non-local config — prod invite links would break
 
-`FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per persona from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/DOMAINS_AND_DNS.md`](../../plans/DOMAINS_AND_DNS.md). So in any non-local environment the persona dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
+`FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per tenant type from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/platform/DOMAINS_AND_DNS.md`](../../plans/platform/DOMAINS_AND_DNS.md). So in any non-local environment the tenant-type dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
 
 **Resolves when:** `Urls:Frontends:{Venue,Artist}` are supplied per environment from App Config, alongside `Auth:SpaClients` / `Cors:AllowedOrigins` (which key off the same hostnames), as part of the `DOMAINS_AND_DNS.md` config rollout.

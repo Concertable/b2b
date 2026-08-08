@@ -38,15 +38,15 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
     /// </summary>
     public bool IsHost => httpContextAccessor.HttpContext is null;
 
-    public bool HasPermission(string permission, TenantType? requiredPersona = null)
+    public bool HasPermission(string permission, TenantType? requiredTenantType = null)
     {
-        if (role is not { } activeRole || tenantType is not { } persona)
+        if (role is not { } activeRole || tenantType is not { } activeTenantType)
             return false;
 
-        if (requiredPersona is { } required && persona != required)
+        if (requiredTenantType is { } required && activeTenantType != required)
             return false;
 
-        return permissionCatalog.Grants(persona, activeRole, permission);
+        return permissionCatalog.Grants(activeTenantType, activeRole, permission);
     }
 
     public async Task ResolveAsync(CancellationToken ct = default)

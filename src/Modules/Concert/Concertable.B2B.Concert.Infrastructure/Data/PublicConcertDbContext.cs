@@ -18,7 +18,9 @@ internal sealed class PublicConcertDbContext(
     : PublicDbContext(options, provider, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
+    public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
     public DbSet<OpportunityEntity> Opportunities => Set<OpportunityEntity>();
+    public DbSet<SelfBillingAgreementEntity> SelfBillingAgreements => Set<SelfBillingAgreementEntity>();
     public DbSet<ConcertRatingProjection> ConcertRatingProjections => Set<ConcertRatingProjection>();
     public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();
     public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();

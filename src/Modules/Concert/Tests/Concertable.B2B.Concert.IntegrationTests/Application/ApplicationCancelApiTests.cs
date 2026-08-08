@@ -68,7 +68,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         Assert.Contains(booking.Id, fixture.EscrowClient.Refunds);
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
         Assert.Contains(fixture.EmailSender.Sent, e =>
-            e.To == fixture.SeedState.Artist.Email && e.Subject == "Concert Application Cancelled");
+            e.To == fixture.SeedState.ArtistManager1.Email && e.Subject == "Concert Application Cancelled");
     }
 
     [Fact]
@@ -246,7 +246,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
         var concertResponse = await client.GetAsync($"/api/Concert/application/{appId}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
 
         // Act
         var cancelResponse = await client.PostAsync($"/api/Concert/{concert!.Id}/cancel");

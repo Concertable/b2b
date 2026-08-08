@@ -21,11 +21,6 @@ internal sealed class VenueManagerSyncHandler : IIntegrationEventHandler<VenueCh
 
     public async Task HandleAsync(VenueChangedEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (await db.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VenueManagerSyncHandler), ct))
-            return;
-
-        db.AddInboxMessage(envelope, nameof(VenueManagerSyncHandler));
-
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == e.UserId, ct);
         if (user is not null)
         {
@@ -34,9 +29,6 @@ internal sealed class VenueManagerSyncHandler : IIntegrationEventHandler<VenueCh
                 GeometryFactory.CreatePoint(new Coordinate(e.Longitude, e.Latitude)),
                 new Address(e.County, e.Town));
         }
-
-        var profile = await db.VenueManagerProfiles.FirstOrDefaultAsync(p => p.Sub == e.UserId, ct);
-        profile?.AssignVenue(e.VenueId);
 
         await db.SaveChangesAsync(ct);
     }

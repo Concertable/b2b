@@ -5,7 +5,9 @@ using Concertable.B2B.Deal.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Seeders;
 
@@ -17,6 +19,8 @@ internal sealed class ConcertDevSeeder : IDevSeeder
     private readonly SeedState seed;
     private readonly IDealModule deals;
     private readonly ITermsFingerprintCalculator fingerprint;
+    private readonly ITenantModule tenants;
+    private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
 
     public ConcertDevSeeder(
@@ -24,12 +28,16 @@ internal sealed class ConcertDevSeeder : IDevSeeder
         SeedState seed,
         IDealModule deals,
         ITermsFingerprintCalculator fingerprint,
+        ITenantModule tenants,
+        IOptions<LegalSettings> legal,
         TimeProvider timeProvider)
     {
         this.context = context;
         this.seed = seed;
         this.deals = deals;
         this.fingerprint = fingerprint;
+        this.tenants = tenants;
+        this.legal = legal.Value;
         this.timeProvider = timeProvider;
     }
 
@@ -82,6 +90,13 @@ internal sealed class ConcertDevSeeder : IDevSeeder
             await context.SaveChangesAsync(ct);
 
             context.Concerts.AddRange(seed.Concerts);
+            await context.SaveChangesAsync(ct);
+        });
+
+        await context.SelfBillingAgreements.SeedIfEmptyAsync(async () =>
+        {
+            await SeededSelfBillingAgreementGranter.GrantAsync(
+                context, seed, tenants, legal.PlatformTermsVersion, timeProvider.GetUtcNow().UtcDateTime, ct);
             await context.SaveChangesAsync(ct);
         });
     }

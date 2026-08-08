@@ -15,6 +15,9 @@ internal sealed class TenantModule : ITenantModule
     public Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default) =>
         service.GetMembershipsAsync(userId, ct);
 
+    public Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default) =>
+        service.GetMemberUserIdsAsync(tenantId, ct);
+
     public Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default) =>
         service.IsTaxComplianceCompleteAsync(tenantId, ct);
 

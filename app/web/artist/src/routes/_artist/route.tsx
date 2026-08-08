@@ -1,16 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { requireBusinessRole } from "@/features/auth";
 import {
   TenantChooser,
   TenantSwitcher,
-  getTenantChoicePending,
-  reconcileActiveTenant,
-  useTenantChoicePending,
-} from "@b2b/features/tenant";
+  resolveTenantRoute,
+  useTenant,
+} from "@concertable/b2b/features/tenant";
 import { useArtistNotifications } from "../../features/notifications";
 import { requireArtist } from "../../features/artist";
-import { AppLayout } from "@/components/AppLayout";
-import type { ProfileMenuItem } from "@/components/ProfileMenu";
+import { AppLayout } from "@concertable/web/components/AppLayout";
+import type { ProfileMenuItem } from "@concertable/web/components/ProfileMenu";
 
 const links = [
   { label: "Dashboard", to: "/" },
@@ -26,21 +24,21 @@ const profileItems: ProfileMenuItem[] = [
 
 function ArtistLayout() {
   useArtistNotifications();
-  if (useTenantChoicePending("Artist")) return <TenantChooser persona="Artist" />;
+  const { selectionRequired } = useTenant("Artist");
+  if (selectionRequired) return <TenantChooser tenantType="Artist" />;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher persona="Artist" />}
+      headerSlot={<TenantSwitcher tenantType="Artist" />}
     />
   );
 }
 
 export const Route = createFileRoute("/_artist")({
   beforeLoad: async ({ location }) => {
-    await requireBusinessRole("ArtistManager");
-    reconcileActiveTenant("Artist");
-    if (getTenantChoicePending("Artist")) return;
+    const { selectionRequired } = await resolveTenantRoute("Artist");
+    if (selectionRequired) return;
     await requireArtist({ pathname: location.pathname });
   },
   component: ArtistLayout,

@@ -16,6 +16,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private readonly IBookingRepository bookingRepository;
     private readonly IContractIssuer contractIssuer;
     private readonly ITermsFingerprintCalculator termsFingerprint;
+    private readonly IBookingAdvancer bookingAdvancer;
     private readonly IBackgroundTaskRunner taskRunner;
 
     public AcceptExecutor(
@@ -25,6 +26,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         IBookingRepository bookingRepository,
         IContractIssuer contractIssuer,
         ITermsFingerprintCalculator termsFingerprint,
+        IBookingAdvancer bookingAdvancer,
         IBackgroundTaskRunner taskRunner)
     {
         this.transitioner = transitioner;
@@ -33,11 +35,13 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.bookingRepository = bookingRepository;
         this.contractIssuer = contractIssuer;
         this.termsFingerprint = termsFingerprint;
+        this.bookingAdvancer = bookingAdvancer;
         this.taskRunner = taskRunner;
     }
 
-    public Task ExecuteAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
-        => transitioner.TransitionAsync(applicationId, Trigger.Accept, async app =>
+    public async Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
+    {
+        await transitioner.TransitionAsync(applicationId, Trigger.Accept, async app =>
         {
             var deal = await dealResolver.ResolveByApplicationIdAsync(app.Id);
             VerifyTermsUnchanged(app, deal);
@@ -45,20 +49,23 @@ internal sealed class AcceptExecutor : IAcceptExecutor
             var workflow = workflows.Create(app.DealType);
             await (workflow switch
             {
-                IAcceptsPaid w when paymentMethodId is not null => w.Accept.ExecuteAsync(app.Id, paymentMethodId),
+                IAcceptsPaid w when paymentMethodId is not null => w.Accept.ExecuteAsync(app, paymentMethodId),
                 IAcceptsPaid => throw new BadRequestException("This deal requires a payment method at acceptance"),
-                IAcceptsSimple w => w.Accept.ExecuteAsync(app.Id),
+                IAcceptsSimple w => w.Accept.ExecuteAsync(app),
                 _ => throw new BadRequestException($"Deal {workflow.Type} does not support Accept")
             });
 
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
                 ?? throw new NotFoundException("Booking not found for application");
             app.Accept(booking);
-            await contractIssuer.IssueAsync(app, booking.Id, eSignature);
+            await contractIssuer.IssueAsync(app, booking, eSignature);
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
         });
+
+        await bookingAdvancer.AdvanceIfReadyAsync(applicationId);
+    }
 
     /* Must run BEFORE the accept step: the step captures/charges real money, and only the DB
        side of this transition rolls back on a throw. */

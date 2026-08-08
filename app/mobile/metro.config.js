@@ -7,6 +7,11 @@ const path = require("path");
 
 const config = getDefaultConfig(__dirname);
 
-config.watchFolders = [path.resolve(__dirname, "../shared")];
+const mobilePackage = path.dirname(require.resolve("@concertable/mobile/package.json"));
 
-module.exports = withNativeWind(config, { input: "../shared/global.css", inlineRem: 16 });
+config.watchFolders = [mobilePackage];
+
+module.exports = withNativeWind(config, {
+  input: require.resolve("@concertable/mobile/global.css"),
+  inlineRem: 16,
+});

@@ -2,7 +2,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var sql = builder.AddSqlServerContainer("concertable-b2b-sql-data");
 var b2bDb = sql.AddDatabase("B2BDb");
-var authDb = sql.AddDatabase("AuthDb");
+var authDb = sql.AddDatabase(AuthConstants.Database);
 var paymentDb = sql.AddDatabase("PaymentDb");
 
 var (storage, blobs) = builder.AddAzureStorage();
@@ -11,7 +11,8 @@ var asb = builder.AddServiceBus();
 asb.Topology()
    .AddB2BTopology()
    .AddSearchTopology()
-   .AddPaymentTopology();
+   .AddPaymentTopology()
+   .AddAuthTopology();
 
 var auth = builder.AddAuth<Projects.Concertable_Auth>(authDb, b2bDb, asb);
 var paymentWeb = builder.AddPaymentWeb<Projects.Concertable_Payment_Web>(auth, paymentDb, asb);
