@@ -12,7 +12,6 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public int ApplicationId { get; private set; }
-    public DealType DealType { get; private set; }
     public ApplicationEntity Application { get; private set; } = null!;
     public ConcertEntity? Concert { get; private set; }
 
@@ -26,7 +25,6 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped
 
         Application = application;
         ApplicationId = application.Id;
-        DealType = application.DealType;
         VenueTenantId = application.VenueTenantId;
         ArtistTenantId = application.ArtistTenantId;
     }

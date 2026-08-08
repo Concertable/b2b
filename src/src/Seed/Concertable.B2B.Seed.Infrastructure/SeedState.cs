@@ -492,7 +492,6 @@ public sealed class SeedState
         {
             var dealType = Deals[Opportunities[application.OpportunityId - 1].DealId - 1].DealType;
             application.With(nameof(ApplicationEntity.DealType), dealType);
-            application.Booking?.With(nameof(BookingEntity.DealType), dealType);
 
             application.With(
                 nameof(ApplicationEntity.VenueTenantId),
