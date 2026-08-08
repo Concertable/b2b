@@ -49,16 +49,16 @@ internal sealed class AcceptExecutor : IAcceptExecutor
             var workflow = workflows.Create(app.DealType);
             await (workflow switch
             {
-                IAcceptsPaid w when paymentMethodId is not null => w.Accept.ExecuteAsync(app.Id, paymentMethodId),
+                IAcceptsPaid w when paymentMethodId is not null => w.Accept.ExecuteAsync(app, paymentMethodId),
                 IAcceptsPaid => throw new BadRequestException("This deal requires a payment method at acceptance"),
-                IAcceptsSimple w => w.Accept.ExecuteAsync(app.Id),
+                IAcceptsSimple w => w.Accept.ExecuteAsync(app),
                 _ => throw new BadRequestException($"Deal {workflow.Type} does not support Accept")
             });
 
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
                 ?? throw new NotFoundException("Booking not found for application");
             app.Accept(booking);
-            await contractIssuer.IssueAsync(app, booking.Id, eSignature);
+            await contractIssuer.IssueAsync(app, booking, eSignature);
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));

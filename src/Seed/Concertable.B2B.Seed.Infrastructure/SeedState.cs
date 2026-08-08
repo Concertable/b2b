@@ -492,22 +492,18 @@ public sealed class SeedState
         {
             var dealType = Deals[Opportunities[application.OpportunityId - 1].DealId - 1].DealType;
             application.With(nameof(ApplicationEntity.DealType), dealType);
-            application.Booking?.With(nameof(BookingEntity.DealType), dealType);
 
-            application.VenueTenantId = Opportunities[application.OpportunityId - 1].TenantId;
-            application.ArtistTenantId = artistTenantById[application.ArtistId];
+            application.With(
+                nameof(ApplicationEntity.VenueTenantId),
+                Opportunities[application.OpportunityId - 1].TenantId);
+            application.With(nameof(ApplicationEntity.ArtistTenantId), artistTenantById[application.ArtistId]);
             if (application.Booking is { } booking)
             {
-                booking.VenueTenantId = application.VenueTenantId;
-                booking.ArtistTenantId = application.ArtistTenantId;
+                booking.With(nameof(BookingEntity.VenueTenantId), application.VenueTenantId);
+                booking.With(nameof(BookingEntity.ArtistTenantId), application.ArtistTenantId);
             }
         }
 
         Concerts = catalog.Concerts.Select(s => ConcertFactory.Create(s, Bookings[s.ConcertId - 1])).ToList();
-        foreach (var concert in Concerts)
-        {
-            concert.VenueTenantId = tenantByVenueId[concert.VenueId];
-            concert.ArtistTenantId = artistTenantById[concert.ArtistId];
-        }
     }
 }

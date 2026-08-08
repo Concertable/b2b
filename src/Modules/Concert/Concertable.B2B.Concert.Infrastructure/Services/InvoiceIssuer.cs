@@ -58,17 +58,14 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
         var invoiceNumber = $"INV-{supplierTax.SellerIdentifier}-{sequenceNumber:D6}";
 
         var invoice = InvoiceEntity.Create(
-            concert.BookingId,
+            concert,
             supplier,
             customer,
             new VatBreakdown(vat.Net, vat.Vat, gross.Amount, vat.Rate),
             sequenceNumber,
             invoiceNumber,
             concert.Period.End,
-            concert.DealType,
             timeProvider.GetUtcNow().UtcDateTime);
-        invoice.VenueTenantId = concert.VenueTenantId;
-        invoice.ArtistTenantId = concert.ArtistTenantId;
 
         await invoiceRepository.AddAsync(invoice, ct);
     }
