@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Concertable.B2B.E2ETests.Ui.PageObjects;
 using Concertable.B2B.E2ETests.Ui.Support;
 
@@ -38,6 +39,36 @@ public sealed class MemberManagementSteps
         invitationId = await membersPage.InviteAsync(ColleagueEmail);
     }
 
+    [Given(@"a colleague has a pending venue invitation")]
+    public async Task ColleagueHasAPendingVenueInvitation()
+    {
+        using var client = await fixture.App.CreateAuthenticatedClientAsync(fixture.App.SeedState.VenueManager1.Email);
+        var response = await client.PostAsJsonAsync(
+            "/api/organizations/invitations",
+            new { email = ColleagueEmail, role = "Staff" });
+        response.EnsureSuccessStatusCode();
+        var invitation = await response.Content.ReadFromJsonAsync<InvitationReference>();
+        invitationId = invitation!.Id;
+    }
+
+    [When(@"the colleague opens the invitation link signed out")]
+    public async Task ColleagueOpensTheInvitationLinkSignedOut()
+    {
+        await browser.UseFreshContextAsync();
+        var acceptPage = new AcceptInvitationPage(browser.Page, VenueSpaUrl);
+        await acceptPage.GotoAsync(invitationId);
+    }
+
+    [When(@"the colleague signs in from the invitation")]
+    public async Task ColleagueSignsInFromTheInvitation()
+    {
+        var login = new LoginPage(browser.Page, VenueSpaUrl);
+        await login.SignInAsync(ColleagueEmail, SeedState.TestPassword);
+
+        membersPage = new MembersPage(browser.Page, VenueSpaUrl);
+        await membersPage.WaitForRosterAsync();
+    }
+
     [Given(@"the colleague accepts the invitation through the emailed link")]
     [When(@"the colleague accepts the invitation through the emailed link")]
     public async Task ColleagueAcceptsTheInvitation()
@@ -59,7 +90,7 @@ public sealed class MemberManagementSteps
     [When(@"the owner returns to the members page")]
     public async Task OwnerReturnsToTheMembersPage()
     {
-        await browser.UseRoleAsync(Role.VenueManager);
+        await browser.UsePersonaAsync(LoginPersona.VenueManager);
         membersPage = new MembersPage(browser.Page, VenueSpaUrl);
         await membersPage.GotoAsync();
         await membersPage.WaitForRosterAsync();
@@ -97,4 +128,6 @@ public sealed class MemberManagementSteps
         await Assertions.Expect(membersPage.MemberRow(ColleagueId)).ToBeVisibleAsync(new() { Timeout = 30_000 });
         await Assertions.Expect(membersPage.MemberRow(OwnerId)).ToBeHiddenAsync(new() { Timeout = 30_000 });
     }
+
+    private sealed record InvitationReference(Guid Id);
 }

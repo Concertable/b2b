@@ -13,14 +13,14 @@ internal sealed class PayoutFinishStep : IFinishStep
     private readonly IBookingService bookingService;
     private readonly ISettlementAmountResolver settlementAmountResolver;
     private readonly IDealAccessor dealAccessor;
-    private readonly IManagerPaymentClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly ILogger<PayoutFinishStep> logger;
 
     public PayoutFinishStep(
         IBookingService bookingService,
         ISettlementAmountResolver settlementAmountResolver,
         IDealAccessor dealAccessor,
-        IManagerPaymentClient managerPaymentClient,
+        IManagerPaymentOperationsClient managerPaymentClient,
         ILogger<PayoutFinishStep> logger)
     {
         this.bookingService = bookingService;
@@ -35,12 +35,12 @@ internal sealed class PayoutFinishStep : IFinishStep
         // Same resolver the invoice issuer uses, so the charged share and the invoiced gross can't diverge.
         var artistShare = await settlementAmountResolver.ResolveGrossAsync(concertId, dealAccessor.Deal);
 
-        logger.ArtistShareCalculated(concertId, artistShare);
+        logger.ArtistShareCalculated(concertId, artistShare.Amount);
 
         /* DoorSplit/Versus: the venue tenant pays the artist tenant, per the booking's frozen snapshot. */
         var settlement = await bookingService.GetSettlementByConcertIdAsync(concertId);
 
-        logger.SettlingConcert(concertId, settlement.BookingId, artistShare, settlement.VenueTenantId, settlement.ArtistTenantId);
+        logger.SettlingConcert(concertId, settlement.BookingId, artistShare.Amount, settlement.VenueTenantId, settlement.ArtistTenantId);
 
         var payment = await managerPaymentClient.PayAsync(
             settlement.VenueTenantId,
@@ -49,7 +49,7 @@ internal sealed class PayoutFinishStep : IFinishStep
             settlement.PaymentMethodId,
             PaymentSession.OffSession,
             settlement.BookingId);
-        if (payment.IsFailed)
-            throw new BadRequestException(payment.Errors);
+        if (payment.TryGetError(out var error))
+            throw new BadRequestException(error.Definition.Message);
     }
 }

@@ -8,7 +8,7 @@ internal sealed class MessageEntityConfiguration : IEntityTypeConfiguration<Mess
     public void Configure(EntityTypeBuilder<MessageEntity> builder)
     {
         builder.ToTable(Schema.Tables.Messages, Schema.Name);
-        builder.HasIndex(m => m.ToUserId);
-        builder.HasIndex(m => m.FromUserId);
+        builder.HasIndex(m => m.VenueTenantId);
+        builder.HasIndex(m => m.ArtistTenantId);
     }
 }

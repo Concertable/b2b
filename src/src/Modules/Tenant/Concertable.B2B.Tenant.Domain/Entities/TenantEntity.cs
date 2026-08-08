@@ -11,7 +11,7 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     public Guid Id { get; private set; }
     public string LegalName { get; private set; } = null!;
 
-    /// <summary>Persona, fixed at provisioning from the registration client-id. Drives UI and permission persona constraints.</summary>
+    /// <summary>The tenant's immutable venue-or-artist classification.</summary>
     public TenantType Type { get; private set; }
     public Guid CreatedByUserId { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -29,8 +29,8 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     /// <summary>
     /// Creates a tenant from the operator's registration <paramref name="email"/> — the bare provisioning
     /// state before organization setup. The email seeds the placeholder <see cref="LegalName"/> and is carried
-    /// on <see cref="TenantCreatedDomainEvent"/> as the Stripe account email, so downstream services (Payment)
-    /// provision off the resulting <c>TenantCreatedEvent</c>. <paramref name="type"/> is the persona derived
+    /// on <see cref="TenantCreatedDomainEvent"/> as the Stripe account email, so Payment provisions off the
+    /// resulting <c>PayoutOwnerRegisteredEvent</c>. <paramref name="type"/> is the tenant type derived
     /// from the registration client-id. <paramref name="id"/> lets seeders supply a deterministic id (so the
     /// event carries it, not a throwaway one); production omits it for a random id.
     /// </summary>

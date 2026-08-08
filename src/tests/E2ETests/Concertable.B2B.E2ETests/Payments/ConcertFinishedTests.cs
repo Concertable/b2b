@@ -60,7 +60,11 @@ public sealed class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 
         var intent = await fixture.StripePaymentIntents.GetAsync(paymentIntentId);
         Assert.Equal(StripeE2EAccountResolver.AccountIds[fixture.SeedState.ArtistManager1.Id], intent.TransferData.DestinationId);
-        Assert.Equal(21000L, intent.Amount);
+        Assert.Equal(22000L, intent.Amount);
+        Assert.Equal(21000L, intent.TransferData.Amount);
+
+        await AssertSettlementLedgerReconcilesAsync(
+            fixture.SeedState.PastDoorSplitBooking.Id, stripeCharge: intent.Amount, stripeTransfer: intent.TransferData.Amount);
     }
 
     [Fact]
@@ -83,7 +87,23 @@ public sealed class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 
         var intent = await fixture.StripePaymentIntents.GetAsync(paymentIntentId);
         Assert.Equal(StripeE2EAccountResolver.AccountIds[fixture.SeedState.ArtistManager1.Id], intent.TransferData.DestinationId);
-        Assert.Equal(11400L, intent.Amount);
+        Assert.Equal(12400L, intent.Amount);
+        Assert.Equal(11400L, intent.TransferData.Amount);
+
+        await AssertSettlementLedgerReconcilesAsync(
+            fixture.SeedState.PastVersusBooking.Id, stripeCharge: intent.Amount, stripeTransfer: intent.TransferData.Amount);
+    }
+
+    private async Task AssertSettlementLedgerReconcilesAsync(int bookingId, long stripeCharge, long stripeTransfer)
+    {
+        await fixture.Polling.UntilAsync(
+            () => fixture.DbFixture.Payment.GetLedgerTransactionCountAsync(bookingId),
+            count => count == 1,
+            timeout: TimeSpan.FromSeconds(30));
+
+        Assert.Equal(0L, await fixture.DbFixture.Payment.GetLedgerSignedSumAsync(bookingId));
+        Assert.Equal(stripeCharge - stripeTransfer, await fixture.DbFixture.Payment.GetLedgerPlatformRevenueAsync(bookingId));
+        Assert.Equal(1, await fixture.DbFixture.Payment.GetLedgerTransactionCountAsync(bookingId));
     }
 
     private Task TriggerConcertFinishedFunctionAsync() =>

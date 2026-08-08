@@ -1,17 +1,17 @@
 import { useLayoutEffect } from "react";
 import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { notify } from "@/lib/toast";
+import { notify } from "@concertable/mobile/lib/toast";
 import {
   useMyVenue,
   useVenueStore,
 } from "@concertable/shared/features/venues";
 import { EditableProvider } from "@concertable/shared/providers";
-import { Screen } from "@/components/ui/Screen";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { ConfigBar } from "@/components/ConfigBar";
-import { VenueDetails } from "shared/features/venues/components/VenueDetails";
+import { Screen } from "@concertable/mobile/components/ui/Screen";
+import { Skeleton } from "@concertable/mobile/components/ui/skeleton";
+import { ErrorState } from "@concertable/mobile/components/ui/ErrorState";
+import { ConfigBar } from "@concertable/mobile/components/ConfigBar";
+import { VenueDetails } from "@concertable/mobile/features/venues/components/VenueDetails";
 
 export function MyVenueScreen() {
   const nav = useNavigation();

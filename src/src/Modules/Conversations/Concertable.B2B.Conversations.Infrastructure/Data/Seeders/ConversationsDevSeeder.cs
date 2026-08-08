@@ -1,4 +1,5 @@
 using Concertable.B2B.Conversations.Contracts;
+using Concertable.Seed.Identity;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
@@ -30,15 +31,21 @@ internal sealed class ConversationsDevSeeder : IDevSeeder
             var artists = seedData.ArtistManagers;
             var venues = seedData.VenueManagers;
 
-            if (artists.Count == 0 || venues.Count == 0)
+            if (artists.Count < 3 || venues.Count < 3)
                 return;
 
             context.Messages.AddRange(
-                MessageEntity.Create(artists[0].Id, venues[0].Id, "Hi — looking forward to the gig.", now.AddDays(-7)),
-                MessageEntity.Create(venues[0].Id, artists[0].Id, "Your application has been accepted!", now.AddDays(-6), MessageAction.ApplicationAccepted),
-                MessageEntity.Create(artists[1].Id, venues[1].Id, "Applied to your opportunity — thanks!", now.AddDays(-5), MessageAction.ApplicationReceived),
-                MessageEntity.Create(artists[2].Id, venues[2].Id, "Setup needs an extra mic.", now.AddDays(-2)));
+                FromArtist(venues[0].Id, artists[0].Id, "Hi — looking forward to the gig.", now.AddDays(-7)),
+                FromVenue(venues[0].Id, artists[0].Id, "Your application has been accepted!", now.AddDays(-6), MessageAction.ApplicationAccepted),
+                FromArtist(venues[1].Id, artists[1].Id, "Applied to your opportunity — thanks!", now.AddDays(-5), MessageAction.ApplicationReceived),
+                FromArtist(venues[2].Id, artists[2].Id, "Setup needs an extra mic.", now.AddDays(-2)));
 
             await context.SaveChangesAsync(ct);
         });
+
+    private static MessageEntity FromArtist(Guid venueUserId, Guid artistUserId, string content, DateTime sentDate, MessageAction? action = null) =>
+        MessageEntity.Create(TenantSeedIds.For(venueUserId), TenantSeedIds.For(artistUserId), TenantSeedIds.For(artistUserId), artistUserId, content, sentDate, action);
+
+    private static MessageEntity FromVenue(Guid venueUserId, Guid artistUserId, string content, DateTime sentDate, MessageAction? action = null) =>
+        MessageEntity.Create(TenantSeedIds.For(venueUserId), TenantSeedIds.For(artistUserId), TenantSeedIds.For(venueUserId), venueUserId, content, sentDate, action);
 }

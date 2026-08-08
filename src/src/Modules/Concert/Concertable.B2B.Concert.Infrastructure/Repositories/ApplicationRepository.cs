@@ -54,6 +54,28 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         return (query.Artist, query.Opportunity.Venue);
     }
 
+    public async Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(int applicationId)
+    {
+        var row = await context.Applications
+            .Where(a => a.Id == applicationId)
+            .Select(a => new { a.VenueTenantId, a.ArtistTenantId })
+            .FirstOrDefaultAsync();
+
+        return row is null ? null : (row.VenueTenantId, row.ArtistTenantId);
+    }
+
+    public async Task<(LifecycleState State, PaymentVerification Verification)?> GetLifecycleAndPaymentStateAsync(
+        int applicationId,
+        CancellationToken ct = default)
+    {
+        var row = await context.Applications
+            .Where(a => a.Id == applicationId)
+            .Select(a => new { a.State, a.PaymentVerification })
+            .FirstOrDefaultAsync(ct);
+
+        return row is null ? null : (row.State, row.PaymentVerification);
+    }
+
     public override async Task<ApplicationEntity?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         return await context.Applications

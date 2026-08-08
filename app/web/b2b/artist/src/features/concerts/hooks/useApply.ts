@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useAuthStore } from "@/features/auth";
-import applicationApi from "@b2b/features/concerts/api/applicationApi";
+import { useAuthStore } from "@concertable/web/features/auth";
+import applicationApi from "@concertable/b2b/features/concerts/api/applicationApi";
 import type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
 
 export function useApply(opportunityId: number, options?: { onSuccess?: () => void }) {

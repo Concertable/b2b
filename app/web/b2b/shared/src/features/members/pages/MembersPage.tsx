@@ -1,19 +1,20 @@
-import { useHasPermission, type TenantType } from "@b2b/features/tenant";
-import { Separator } from "@/components/ui/separator";
+import { useTenant, type TenantType } from "@b2b/features/tenant";
+import { Separator } from "@concertable/web/components/ui/separator";
 import { MembersRoster } from "../components/MembersRoster";
 import { PendingInvitations } from "../components/PendingInvitations";
 import { InviteForm } from "../components/InviteForm";
 
 interface MembersPageProps {
-  persona: TenantType;
+  tenantType: TenantType;
   title: string;
   description: string;
 }
 
-export function MembersPage({ persona, title, description }: MembersPageProps) {
-  const canInvite = useHasPermission(persona, "MembersInvite");
-  const canManageRoles = useHasPermission(persona, "MembersManageRoles");
-  const canRemove = useHasPermission(persona, "MembersRemove");
+export function MembersPage({ tenantType, title, description }: MembersPageProps) {
+  const { permissions } = useTenant(tenantType);
+  const canInvite = permissions.has("MembersInvite");
+  const canManageRoles = permissions.has("MembersManageRoles");
+  const canRemove = permissions.has("MembersRemove");
 
   return (
     <div className="max-w-2xl space-y-8">

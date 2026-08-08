@@ -6,23 +6,29 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class Messenger : IMessenger
 {
     private readonly IConversationsModule conversationsModule;
-    private readonly IEmailSender emailSender;
+    private readonly IEmailTransport emailTransport;
 
-    public Messenger(IConversationsModule conversationsModule, IEmailSender emailSender)
+    public Messenger(IConversationsModule conversationsModule, IEmailTransport emailTransport)
     {
         this.conversationsModule = conversationsModule;
-        this.emailSender = emailSender;
+        this.emailTransport = emailTransport;
     }
 
-    public async Task SendAsync(Guid fromUserId, Guid toUserId, string content, MessageAction action, EmailCopy email)
+    public async Task SendAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction action, EmailCopy email)
     {
-        await conversationsModule.SendAsync(fromUserId, toUserId, content, action);
-        await emailSender.SendEmailAsync(email.To, email.Subject, email.Body);
+        await conversationsModule.SendAsync(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, action);
+        await SendEmailCopyAsync(email);
     }
 
-    public async Task SendAndNotifyAsync(Guid fromUserId, Guid toUserId, string content, MessageAction action, EmailCopy email)
+    public async Task SendAndNotifyAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction action, EmailCopy email)
     {
-        await conversationsModule.SendAndNotifyAsync(fromUserId, toUserId, content, action);
-        await emailSender.SendEmailAsync(email.To, email.Subject, email.Body);
+        await conversationsModule.SendAndNotifyAsync(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, action);
+        await SendEmailCopyAsync(email);
+    }
+
+    private async Task SendEmailCopyAsync(EmailCopy email)
+    {
+        foreach (var recipient in email.Recipients)
+            await emailTransport.SendEmailAsync(recipient, email.Subject, email.Body);
     }
 }

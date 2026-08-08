@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "@tanstack/react-router";
-import { usePayoutAccountStatusQuery, StripeOnboardingBanner } from "@b2b/features/payments";
-import { Button } from "@/components/ui/button";
+import { usePayoutAccountStatusQuery, StripeOnboardingBanner } from "@concertable/b2b/features/payments";
+import { Button } from "@concertable/web/components/ui/button";
 import dayjs from "dayjs";
-import type { ConcertDraftCreatedPayload } from "@/features/notifications";
+import type { ConcertDraftCreatedPayload } from "@concertable/web/features/notifications";
 import {
   useApplicationQuery,
   useAcceptApplicationMutation,
   AcceptDealSummary,
   ESignaturePanel,
   useESignature,
-} from "@b2b/features/concerts";
-import { useCheckoutFlow } from "@/features/concerts/hooks/useCheckoutFlow";
+} from "@concertable/b2b/features/concerts";
+import { useCheckoutFlow } from "@concertable/web/features/concerts/hooks/useCheckoutFlow";
 import { VenueAcceptCheckoutFlow } from "./VenueAcceptCheckoutPage";
 
 export function AcceptApplicationPage() {

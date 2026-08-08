@@ -1,20 +1,52 @@
+using Concertable.Kernel.Functional;
+using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
-using FluentResults;
+using Concertable.Payment.Contracts.Errors;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-internal sealed class MockEscrowClientFail : IEscrowClient
+internal sealed class MockEscrowClientFail : IEscrowOperationsClient
 {
-    public Task<Result<EscrowDeposit>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Fail<EscrowDeposit>("Mock escrow deposit failure"));
+    public Task<Result<EscrowDeposit, EscrowDepositError>> DepositAsync(Guid payerId, Guid payeeId, Money amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result<EscrowDeposit, EscrowDepositError>.Failure(new EscrowDepositError.PaymentFailure(new PaymentError.PaymentRejected())));
 
-    public Task<Result<EscrowDeposit>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Fail<EscrowDeposit>("Mock escrow capture failure"));
+    public Task<Result<EscrowDeposit, EscrowDepositError>> DepositBoundCommissionAsync(
+        Guid payerId,
+        Guid payeeId,
+        Money gross,
+        string paymentMethodId,
+        PaymentSession session,
+        int bookingId,
+        Guid commissionBindingId,
+        string externalReference,
+        string? stripeSetupIntentId = null,
+        CancellationToken ct = default) =>
+        Task.FromResult(Result<EscrowDeposit, EscrowDepositError>.Failure(new EscrowDepositError.PaymentFailure(new PaymentError.PaymentRejected())));
 
-    public Task<Result<Transfer?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Fail<Transfer?>("Mock escrow release failure"));
+    public Task<Result<EscrowDeposit, EscrowCaptureError>> CaptureAsync(Guid payerId, Guid payeeId, Money amount, string paymentIntentId, int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result<EscrowDeposit, EscrowCaptureError>.Failure(new EscrowCaptureError.PaymentFailure(new PaymentError.PaymentRejected())));
 
-    public Task<Result<Refund?>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Fail<Refund?>("Mock escrow refund failure"));
+    public Task<Result<EscrowDeposit, EscrowCaptureError>> CaptureBoundCommissionAsync(
+        Guid payerId,
+        Guid payeeId,
+        Money gross,
+        string paymentIntentId,
+        int bookingId,
+        Guid commissionBindingId,
+        string externalReference,
+        CancellationToken ct = default) =>
+        Task.FromResult(Result<EscrowDeposit, EscrowCaptureError>.Failure(new EscrowCaptureError.PaymentFailure(new PaymentError.PaymentRejected())));
+
+    public Task<Result<Option<Transfer>, EscrowReleaseError>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result<Option<Transfer>, EscrowReleaseError>.Failure(new EscrowReleaseError.PaymentFailure(new PaymentError.PaymentRejected())));
+
+    public Task<Result<Option<Refund>, EscrowRefundError>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result<Option<Refund>, EscrowRefundError>.Failure(new EscrowRefundError.PaymentFailure(new PaymentError.PaymentRejected())));
+
+    public Task<Result<Option<Refund>, EscrowRefundError>> RefundBoundCommissionByBookingIdAsync(
+        int bookingId,
+        Money gross,
+        CancellationToken ct = default) =>
+        Task.FromResult(Result<Option<Refund>, EscrowRefundError>.Failure(new EscrowRefundError.PaymentFailure(new PaymentError.PaymentRejected())));
 }

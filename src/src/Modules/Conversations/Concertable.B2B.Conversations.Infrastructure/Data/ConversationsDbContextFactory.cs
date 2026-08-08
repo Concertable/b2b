@@ -6,5 +6,5 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data;
 internal sealed class ConversationsDbContextFactory : B2BDesignTimeDbContextFactory<ConversationsDbContext>
 {
     protected override ConversationsDbContext Create(DbContextOptions<ConversationsDbContext> options) =>
-        new(options, new ConversationsConfigurationProvider());
+        new(options, new ConversationsConfigurationProvider(), DesignTimeTenantContext.Instance);
 }

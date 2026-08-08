@@ -10,6 +10,8 @@ internal interface ITenantService
 
     Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
+
     Task<TenantDetails?> GetDetailsForCurrentTenantAsync(CancellationToken ct = default);
 
     Task<TenantDetails> UpdateAsync(UpdateTenantRequest request, CancellationToken ct = default);

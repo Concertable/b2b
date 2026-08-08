@@ -1,15 +1,16 @@
-import { useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { notificationConnection } from "@/lib/signalr";
-import type { Message } from "@/features/messaging";
-import type { ApplicationAcceptedPayload } from "@/features/notifications";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
+import { notificationConnection } from "@concertable/web/lib/signalr";
+import type { ApplicationAcceptedPayload } from "@concertable/web/features/notifications";
 
 export function useArtistNotifications() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    notificationConnection.on("MessageReceived", (payload: Message) => {
-      console.log("[SignalR] MessageReceived:", payload);
+  useMountEffect(() => {
+    notificationConnection.on("MessageReceived", () => {
+      void queryClient.invalidateQueries({ queryKey: ["messages"] });
     });
 
     notificationConnection.on(
@@ -27,5 +28,5 @@ export function useArtistNotifications() {
       notificationConnection.off("MessageReceived");
       notificationConnection.off("ApplicationAccepted");
     };
-  }, []);
+  });
 }

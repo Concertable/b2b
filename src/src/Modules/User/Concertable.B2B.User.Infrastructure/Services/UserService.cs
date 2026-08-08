@@ -29,7 +29,7 @@ internal sealed class UserService : IUserService
         this.userModule = userModule;
     }
 
-    public async Task<UserBase> SaveLocationAsync(double latitude, double longitude)
+    public async Task<UserDto> SaveLocationAsync(double latitude, double longitude)
     {
         var user = await userRepsitory.GetByIdAsync(currentUser.GetId())
             ?? throw new UnauthorizedAccessException("User not found.");

@@ -28,7 +28,7 @@ public sealed class OutboxVerificationTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
-    public async Task PostConcert_WritesOutboxRow_AndDispatcherDrainsIt()
+    public async Task PostConcert_WritesOutboxRow_AndOutboxDrainsIt()
     {
         // Arrange — the post goes through the party-filtered booking, so act as the owning venue manager
         var concert = fixture.SeedState.ConfirmedBooking.Concert!;
@@ -50,7 +50,6 @@ public sealed class OutboxVerificationTests : IAsyncLifetime
             .AsNoTracking()
             .SingleAsync(m => m.MessageType == expectedType);
 
-        // Assert — dispatcher drains the row within 5 seconds
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
         while (row.Status != OutboxStatus.Dispatched)
         {
@@ -76,7 +75,7 @@ public sealed class OutboxVerificationTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
         var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.VenueHireApp.Id}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<ConcertDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
         var expectedType = MessageTypeAttribute.Resolve(typeof(ConcertChangedEvent));
 
         // Act

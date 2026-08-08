@@ -1,36 +1,36 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@concertable/web/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@concertable/web/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { DateRangeField } from "@/components/datetime/DateRangeField";
+} from "@concertable/web/components/ui/select";
+import { Checkbox } from "@concertable/web/components/ui/checkbox";
+import { Label } from "@concertable/web/components/ui/label";
+import { DateRangeField } from "@concertable/web/components/datetime/DateRangeField";
 import {
   DealDetails,
   DealFields,
   DealSummaryLabel,
   DEAL_TYPE_LABELS,
 } from "@b2b/features/deals";
-import { useGenresQuery } from "@/features/search/hooks/useGenreQuery";
+import { useGenresQuery } from "@concertable/web/features/search/hooks/useGenreQuery";
 import { X } from "lucide-react";
 import dayjs from "dayjs";
 import type { Opportunity, OpportunityDraft } from "../../types";
 import type { Deal, PaymentMethod } from "@b2b/features/deals";
-import type { Genre } from "@/types/common";
-import { genreLabel } from "@/types/common";
+import type { Genre } from "@concertable/web/types/common";
+import { genreLabel } from "@concertable/web/types/common";
 
 interface OpportunityCardProps {
   opportunity: Opportunity;

@@ -57,6 +57,7 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
+                    sp.GetRequiredService<VenueArtistTenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
@@ -68,6 +69,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IUnitOfWork<ConcertDbContext>, UnitOfWork<ConcertDbContext>>();
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+        services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
 
         // Services
         services.AddScoped<IConcertService, ConcertService>();
@@ -83,14 +85,16 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMessenger, Messenger>();
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
-        services.Configure<LegalSettings>(configuration.GetSection("Legal"));
+        services.Configure<LegalSettings>(configuration.GetSection(LegalSettings.SectionName));
         services.AddScoped<IPdfBlobCache, PdfBlobCache>();
         services.AddScoped<IContractIssuer, ContractIssuer>();
         services.AddScoped<IContractService, ContractService>();
-        services.AddScoped<IContractPdfService, ContractPdfService>();
+        services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
         services.AddScoped<IInvoiceIssuer, InvoiceIssuer>();
         services.AddScoped<IInvoiceService, InvoiceService>();
-        services.AddScoped<IInvoicePdfService, InvoicePdfService>();
+        services.AddScoped<IInvoicePdfRenderer, InvoicePdfRenderer>();
+        services.AddScoped<ISelfBillingAgreementService, SelfBillingAgreementService>();
+        services.AddScoped<ISelfBillingAgreementGate, SelfBillingAgreementGate>();
         services.AddScoped<IClientContext, ClientContextAccessor>();
         services.AddSingleton<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
         services.AddSingleton<IDealTermsSerializer, DealTermsSerializer>();
@@ -117,6 +121,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IApplyExecutor, ApplyExecutor>();
         services.AddScoped<IAcceptExecutor, AcceptExecutor>();
         services.AddScoped<IVerifyExecutor, VerifyExecutor>();
+        services.AddScoped<IVerifyCoordinator, VerifyCoordinator>();
+        services.AddScoped<IBookingAdvancer, BookingAdvancer>();
+        services.AddScoped<IPaymentVerificationRecorder, PaymentVerificationRecorder>();
         services.AddScoped<IEscrowExecutor, EscrowExecutor>();
         services.AddScoped<ISettlementExecutor, SettlementExecutor>();
         services.AddScoped<IFinishExecutor, FinishExecutor>();
@@ -126,17 +133,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICancelApplicationExecutor, CancelApplicationExecutor>();
         services.AddScoped<IApplicationCancelStep, RefundEscrowByApplicationStep>();
 
-        services.AddScoped<IApplyDispatcher, ApplyDispatcher>();
-        services.AddScoped<IAcceptanceDispatcher, AcceptanceDispatcher>();
         services.AddScoped<ICheckoutDispatcher, CheckoutDispatcher>();
-        services.AddScoped<IVerifyDispatcher, VerifyDispatcher>();
-        services.AddScoped<IEscrowDispatcher, EscrowDispatcher>();
-        services.AddScoped<ISettlementDispatcher, SettlementDispatcher>();
-        services.AddScoped<ICompletionDispatcher, CompletionDispatcher>();
-        services.AddScoped<ICancellationDispatcher, CancellationDispatcher>();
-        services.AddScoped<IWithdrawalDispatcher, WithdrawalDispatcher>();
-        services.AddScoped<IRejectionDispatcher, RejectionDispatcher>();
-        services.AddScoped<IApplicationCancellationDispatcher, ApplicationCancellationDispatcher>();
 
         services.AddConcertWorkflows();
 
@@ -148,8 +145,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IPublicBookingRepository, PublicBookingRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        services.AddScoped<ISelfBillingAgreementRepository, SelfBillingAgreementRepository>();
         services.AddScoped(typeof(ISequenceRepository<>), typeof(SequenceRepository<>));
 
         // Query specifications
@@ -189,7 +188,6 @@ public static class ServiceCollectionExtensions
 
         // Module facades
         services.AddScoped<IConcertModule, ConcertModule>();
-        services.AddScoped<IConcertWorkflowModule, ConcertWorkflowModule>();
 
         // Domain event -> integration event + read-model projection handlers
         services.AddScoped<IDomainEventHandler<ConcertChangedDomainEvent>, ConcertChangedDomainEventHandler>();

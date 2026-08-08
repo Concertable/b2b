@@ -37,7 +37,6 @@ public sealed class TenantContextTests
         Guid tenantId, TenantRole role = TenantRole.Owner, TenantType type = TenantType.Venue) =>
         new(tenantId, "Acme Ltd", type, role);
 
-    /// <summary>Resolve a context backed by a single membership of the given role + persona (no header → default).</summary>
     private async Task<IMembershipContext> ResolvedMembership(TenantRole role, TenantType type)
     {
         var userId = Guid.NewGuid();

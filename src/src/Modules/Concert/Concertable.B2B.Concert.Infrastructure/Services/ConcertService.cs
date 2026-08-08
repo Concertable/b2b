@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel.Identity;
-using Concertable.Shared.Email.Application;
 using Concertable.Kernel.Exceptions;
 using FluentResults;
 
@@ -15,7 +14,6 @@ internal sealed class ConcertService : IConcertService
     private readonly IConcertValidator concertValidator;
     private readonly ICurrentUser currentUser;
     private readonly IApplicationValidator applicationValidator;
-    private readonly IEmailSender emailSender;
     private readonly IConcertDraftService concertDraftService;
     private readonly TimeProvider timeProvider;
     private readonly ITenantContext tenantContext;
@@ -27,7 +25,6 @@ internal sealed class ConcertService : IConcertService
         IConcertValidator concertValidator,
         ICurrentUser currentUser,
         IApplicationValidator applicationValidator,
-        IEmailSender emailSender,
         IConcertDraftService concertDraftService,
         TimeProvider timeProvider,
         ITenantContext tenantContext)
@@ -38,7 +35,6 @@ internal sealed class ConcertService : IConcertService
         this.concertValidator = concertValidator;
         this.currentUser = currentUser;
         this.applicationValidator = applicationValidator;
-        this.emailSender = emailSender;
         this.concertDraftService = concertDraftService;
         this.timeProvider = timeProvider;
         this.tenantContext = tenantContext;

@@ -12,23 +12,23 @@ namespace Concertable.B2B.Workers.UnitTests.Functions;
 public sealed class ConcertCompletionRunnerTests
 {
     private readonly Mock<IConcertRepository> concertRepository;
-    private readonly Mock<ICompletionDispatcher> completionDispatcher;
-    private readonly Mock<IScoped<ICompletionDispatcher>> completion;
+    private readonly Mock<IFinishExecutor> finishExecutor;
+    private readonly Mock<IScoped<IFinishExecutor>> completion;
     private readonly Mock<ILogger<ConcertCompletionRunner>> logger;
     private readonly ConcertCompletionRunner sut;
 
     public ConcertCompletionRunnerTests()
     {
         concertRepository = new Mock<IConcertRepository>();
-        completionDispatcher = new Mock<ICompletionDispatcher>();
-        completion = new Mock<IScoped<ICompletionDispatcher>>();
+        finishExecutor = new Mock<IFinishExecutor>();
+        completion = new Mock<IScoped<IFinishExecutor>>();
         logger = new Mock<ILogger<ConcertCompletionRunner>>();
         sut = new ConcertCompletionRunner(concertRepository.Object, completion.Object, logger.Object);
 
-        completionDispatcher.Setup(p => p.FinishAsync(It.IsAny<int>())).ReturnsAsync(Result.Ok(SettlementOutcome.Settled));
+        finishExecutor.Setup(p => p.FinishAsync(It.IsAny<int>())).ReturnsAsync(Result.Ok(SettlementOutcome.Settled));
         completion
-            .Setup(s => s.RunAsync(It.IsAny<Func<ICompletionDispatcher, Task<Result<SettlementOutcome>>>>()))
-            .Returns<Func<ICompletionDispatcher, Task<Result<SettlementOutcome>>>>(action => action(completionDispatcher.Object));
+            .Setup(s => s.RunAsync(It.IsAny<Func<IFinishExecutor, Task<Result<SettlementOutcome>>>>()))
+            .Returns<Func<IFinishExecutor, Task<Result<SettlementOutcome>>>>(action => action(finishExecutor.Object));
     }
 
     [Fact]
@@ -41,9 +41,9 @@ public sealed class ConcertCompletionRunnerTests
         await sut.RunAsync();
 
         // Assert
-        completionDispatcher.Verify(p => p.FinishAsync(1), Times.Once);
-        completionDispatcher.Verify(p => p.FinishAsync(2), Times.Once);
-        completionDispatcher.Verify(p => p.FinishAsync(3), Times.Once);
+        finishExecutor.Verify(p => p.FinishAsync(1), Times.Once);
+        finishExecutor.Verify(p => p.FinishAsync(2), Times.Once);
+        finishExecutor.Verify(p => p.FinishAsync(3), Times.Once);
     }
 
     [Fact]
@@ -51,15 +51,15 @@ public sealed class ConcertCompletionRunnerTests
     {
         // Arrange
         concertRepository.Setup(r => r.GetEndedConfirmedIdsAsync()).ReturnsAsync([1, 2, 3]);
-        completionDispatcher.Setup(p => p.FinishAsync(2)).ReturnsAsync(Result.Fail<SettlementOutcome>("Payment failed"));
+        finishExecutor.Setup(p => p.FinishAsync(2)).ReturnsAsync(Result.Fail<SettlementOutcome>("Payment failed"));
 
         // Act
         await sut.RunAsync();
 
         // Assert
-        completionDispatcher.Verify(p => p.FinishAsync(1), Times.Once);
-        completionDispatcher.Verify(p => p.FinishAsync(2), Times.Once);
-        completionDispatcher.Verify(p => p.FinishAsync(3), Times.Once);
+        finishExecutor.Verify(p => p.FinishAsync(1), Times.Once);
+        finishExecutor.Verify(p => p.FinishAsync(2), Times.Once);
+        finishExecutor.Verify(p => p.FinishAsync(3), Times.Once);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed class ConcertCompletionRunnerTests
         await sut.RunAsync();
 
         // Assert
-        completionDispatcher.Verify(p => p.FinishAsync(It.IsAny<int>()), Times.Never);
+        finishExecutor.Verify(p => p.FinishAsync(It.IsAny<int>()), Times.Never);
     }
 }
 

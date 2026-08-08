@@ -7,5 +7,6 @@ internal static class Schema
     public static class Tables
     {
         public const string Messages = "Messages";
+        public const string ThreadReadStates = "ThreadReadStates";
     }
 }

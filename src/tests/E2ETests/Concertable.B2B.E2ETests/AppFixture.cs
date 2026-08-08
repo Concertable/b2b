@@ -4,6 +4,7 @@ using Aspire.Hosting.Testing;
 using Azure.Storage.Blobs;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
@@ -143,6 +144,7 @@ public sealed class AppFixture : IAsyncLifetime
                 [$"ConnectionStrings:{AppHostConstants.Databases.B2B}"] = b2bConnectionString,
                 ["BlobStorage:ContainerName"] = "images",
                 ["ExternalServices:UseRealBlob"] = "false",
+                ["Legal:PlatformTermsVersion"] = "2026-07",
             })
             .Build();
 
@@ -160,6 +162,7 @@ public sealed class AppFixture : IAsyncLifetime
                 services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
                 services.AddScoped<AuditInterceptor>();
                 services.AddScoped<TenantInterceptor>();
+                services.AddScoped<VenueArtistTenantInterceptor>();
                 services.AddScoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>();
                 services.AddGeometry();
                 services.AddOutbox(opt => opt.UseSqlServer(b2bConnectionString), runDispatcher: false);
@@ -208,6 +211,9 @@ public sealed class AppFixture : IAsyncLifetime
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;
     }
+
+    public Task WaitForTokenMintingAsync(string email, string password) =>
+        tokenMinter.WaitUntilMintableAsync(email, password, Polling);
 
     public async Task DisposeAsync()
     {

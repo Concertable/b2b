@@ -129,7 +129,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
         Assert.Equal(LifecycleState.Rejected, application.State);
         Assert.Contains(fixture.EmailSender.Sent, e =>
-            e.To == fixture.SeedState.Artist.Email && e.Subject == "Concert Application Update");
+            e.To == fixture.SeedState.ArtistManager1.Email && e.Subject == "Concert Application Update");
     }
 
     [Fact]

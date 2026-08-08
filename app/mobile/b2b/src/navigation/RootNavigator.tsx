@@ -1,7 +1,8 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { ActivityIndicator, View } from "react-native";
-import { useAuthInit } from "shared/auth/useAuthInit";
+import { useAuthInit } from "@concertable/mobile/auth/useAuthInit";
 import { useAuthStore } from "@concertable/shared/features/auth";
+import { isB2bIdentity } from "./identity";
 import { ArtistTabs } from "./ArtistTabs";
 import { VenueTabs } from "./VenueTabs";
 
@@ -18,7 +19,12 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {user?.role === "VenueManager" ? <VenueTabs /> : <ArtistTabs />}
+      {isB2bIdentity(user) &&
+      user.memberships.some((m) => m.type === "Venue") ? (
+        <VenueTabs />
+      ) : (
+        <ArtistTabs />
+      )}
     </NavigationContainer>
   );
 }

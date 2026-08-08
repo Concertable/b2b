@@ -1,5 +1,6 @@
 using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Domain.Entities;
 using Xunit.Abstractions;
@@ -67,7 +68,6 @@ public sealed class InvitationTests : IAsyncLifetime
         Assert.Equal(owner.Id, invitation.CreatedByUserId);
 
         var email = Assert.Single(fixture.EmailSender.Sent, e => e.To == invitee);
-        // D9: the accept link targets the inviting tenant's persona portal (VenueManager1 → venue).
         Assert.Contains($"https://localhost:5175/settings/members/accept/{dto.Id}", email.Body);
     }
 

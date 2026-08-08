@@ -13,7 +13,12 @@ public static class MembershipFactory
     /// <c>(TenantId, UserId)</c>, so seed-then-register produces exactly one membership whatever the ordering.
     /// </summary>
     public static TenantMembershipEntity FoundingOwner(Guid tenantId, Guid userId, DateTime createdAt) =>
-        TenantMembershipEntity.Create(tenantId, userId, TenantRole.Owner, invitedBy: null, createdAt)
+        Member(tenantId, userId, TenantRole.Owner, invitedBy: null, createdAt);
+
+    /// <summary>A seeded membership in an existing tenant with an explicit role — the invited-colleague shape. Shares
+    /// <see cref="FoundingOwner"/>'s deterministic id so seed-then-register dedups over <c>(TenantId, UserId)</c>.</summary>
+    public static TenantMembershipEntity Member(Guid tenantId, Guid userId, TenantRole role, Guid? invitedBy, DateTime createdAt) =>
+        TenantMembershipEntity.Create(tenantId, userId, role, invitedBy, createdAt)
             .With(nameof(TenantMembershipEntity.Id), DeterministicId(tenantId, userId));
 
     private static Guid DeterministicId(Guid tenantId, Guid userId) =>

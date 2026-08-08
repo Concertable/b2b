@@ -2,12 +2,6 @@ using System.Collections.Frozen;
 
 namespace Concertable.B2B.Tenant.Contracts;
 
-/// <summary>
-/// The permissions and role bundles BOTH personas share (design §1.3) — defined once and composed into
-/// <see cref="VenuePermissions"/> and <see cref="ArtistPermissions"/>, never duplicated across them. A venue
-/// edits a venue profile and an artist an artist profile, but "edit my profile" is one shared permission;
-/// the persona-specific surface is pinned at the controller, not here.
-/// </summary>
 public sealed class SharedPermissions : IPermissionSet
 {
     public const string OperationsView = "operations.view";

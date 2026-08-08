@@ -2,7 +2,7 @@ import { CircleDollarSign } from "lucide-react";
 import dayjs from "dayjs";
 import { useVenueSettlementsQuery } from "./hooks";
 import { formatCurrency } from "@concertable/shared/lib";
-import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
+import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@concertable/web/features/dashboard";
 
 export function VenueSettlementsWidget() {
   const { data, isLoading, isError, refetch } = useVenueSettlementsQuery();

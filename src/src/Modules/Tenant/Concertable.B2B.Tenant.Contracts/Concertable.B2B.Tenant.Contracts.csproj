@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-    <Description>Concertable B2B Tenant contracts: the cross-service tenant/permission contract surface and integration events (incl. TenantCreatedEvent) consumed by services downstream of B2B.</Description>
+    <Description>Concertable B2B Tenant contracts: the cross-service tenant/permission contract surface and integration events (incl. PayoutOwnerRegisteredEvent) consumed by services downstream of B2B.</Description>
   </PropertyGroup>
 
   <ItemGroup>

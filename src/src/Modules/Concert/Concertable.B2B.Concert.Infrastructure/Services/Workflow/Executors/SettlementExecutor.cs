@@ -16,19 +16,19 @@ internal sealed class SettlementExecutor : ISettlementExecutor
         this.bookingRepository = bookingRepository;
     }
 
-    public async Task ExecuteAsync(int bookingId)
+    public async Task SucceededAsync(int bookingId, CancellationToken ct = default)
     {
-        var applicationId = await LoadApplicationIdAsync(bookingId);
-        await transitioner.TransitionAsync(applicationId, Trigger.SettlementPaymentSucceeded);
+        var applicationId = await LoadApplicationIdAsync(bookingId, ct);
+        await transitioner.TransitionAsync(applicationId, Trigger.SettlementPaymentSucceeded, ct: ct);
     }
 
-    public async Task ExecuteFailedAsync(int bookingId)
+    public async Task FailedAsync(int bookingId, CancellationToken ct = default)
     {
-        var applicationId = await LoadApplicationIdAsync(bookingId);
-        await transitioner.TransitionAsync(applicationId, Trigger.SettlementPaymentFailed);
+        var applicationId = await LoadApplicationIdAsync(bookingId, ct);
+        await transitioner.TransitionAsync(applicationId, Trigger.SettlementPaymentFailed, ct: ct);
     }
 
-    private async Task<int> LoadApplicationIdAsync(int bookingId)
-        => await bookingRepository.GetApplicationIdByIdAsync(bookingId)
+    private async Task<int> LoadApplicationIdAsync(int bookingId, CancellationToken ct)
+        => await bookingRepository.GetApplicationIdByIdAsync(bookingId, ct)
             .OrNotFound(DisplayNames.Booking);
 }

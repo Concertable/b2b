@@ -9,13 +9,13 @@ internal sealed class VerifyCheckoutStep : IAcceptCheckoutStep
 {
     private readonly IApplicationRepository applicationRepository;
     private readonly IDealAccessor dealAccessor;
-    private readonly IManagerPaymentClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly IPaymentAmountMapper paymentAmountMapper;
 
     public VerifyCheckoutStep(
         IApplicationRepository applicationRepository,
         IDealAccessor dealAccessor,
-        IManagerPaymentClient managerPaymentClient,
+        IManagerPaymentOperationsClient managerPaymentClient,
         IPaymentAmountMapper paymentAmountMapper)
     {
         this.applicationRepository = applicationRepository;
@@ -36,9 +36,9 @@ internal sealed class VerifyCheckoutStep : IAcceptCheckoutStep
 
         var metadata = new Dictionary<string, string>
         {
-            ["type"] = TransactionTypes.Verify,
-            ["applicationId"] = applicationId.ToString(),
-            ["venueManagerId"] = venueManagerId.ToString()
+            [PaymentMetadataKeys.Type] = TransactionTypes.Verify,
+            [PaymentMetadataKeys.ApplicationId] = applicationId.ToString(),
+            [PaymentMetadataKeys.VenueManagerId] = venueManagerId.ToString()
         };
 
         var session = await managerPaymentClient.CreateVerifySessionAsync(venueTenantId, metadata);

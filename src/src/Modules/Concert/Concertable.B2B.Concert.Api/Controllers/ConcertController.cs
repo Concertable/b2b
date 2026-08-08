@@ -3,37 +3,38 @@ using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.Kernel.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[TenantPersona(TenantType.Venue)]
+[RequiredTenantType(TenantType.Venue)]
 internal sealed class ConcertController : ControllerBase
 {
     private readonly IConcertService concertService;
-    private readonly IConcertWorkflowModule concertWorkflowModule;
+    private readonly ICancelExecutor cancelExecutor;
     private readonly IContractService contractService;
     private readonly IInvoiceService invoiceService;
     private readonly TimeProvider timeProvider;
 
     public ConcertController(
         IConcertService concertService,
-        IConcertWorkflowModule concertWorkflowModule,
+        ICancelExecutor cancelExecutor,
         IContractService contractService,
         IInvoiceService invoiceService,
         TimeProvider timeProvider)
     {
         this.concertService = concertService;
-        this.concertWorkflowModule = concertWorkflowModule;
+        this.cancelExecutor = cancelExecutor;
         this.contractService = contractService;
         this.invoiceService = invoiceService;
         this.timeProvider = timeProvider;
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsById(int id)
+    public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
         return Ok((await concertService.GetDetailsByIdAsync(id)).ToDetailsResponse());
     }
@@ -42,10 +43,10 @@ internal sealed class ConcertController : ControllerBase
     // action links. No [HasPermission] — both parties read it; the repository stance is the gate,
     // not a role. Mirrors venue's GET /venue/user.
     [HttpGet("user/{id}")]
-    public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsForCurrentUser(int id)
+    public async Task<ActionResult<MyDetailsResponse>> GetDetailsForCurrentUser(int id)
     {
         return Ok((await concertService.GetDetailsForCurrentUserAsync(id))
-            .ToCurrentUserDetailsResponse(timeProvider.GetUtcNow().UtcDateTime));
+            .ToMyDetailsResponse(timeProvider.GetUtcNow().UtcDateTime));
     }
 
     [HttpGet("{id}/contract/pdf")]
@@ -69,44 +70,44 @@ internal sealed class ConcertController : ControllerBase
     }
 
     [HttpGet("application/{applicationId}")]
-    public async Task<ActionResult<ConcertDetailsResponse>> GetDetailsByApplicationId(int applicationId)
+    public async Task<ActionResult<MyDetailsResponse>> GetDetailsByApplicationId(int applicationId)
     {
         return Ok((await concertService.GetDetailsByApplicationIdAsync(applicationId))
-            .ToCurrentUserDetailsResponse(timeProvider.GetUtcNow().UtcDateTime));
+            .ToMyDetailsResponse(timeProvider.GetUtcNow().UtcDateTime));
     }
 
     [HttpGet("upcoming/venue/{id}")]
-    public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetUpcomingByVenueId(int id)
+    public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUpcomingByVenueId(int id)
     {
         return Ok((await concertService.GetUpcomingByVenueIdAsync(id)).ToSummaryResponses());
     }
 
     [HttpGet("upcoming/artist/{id}")]
-    public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetUpcomingByArtistId(int id)
+    public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUpcomingByArtistId(int id)
     {
         return Ok((await concertService.GetUpcomingByArtistIdAsync(id)).ToSummaryResponses());
     }
 
     [HttpGet("history/venue/{id}")]
-    public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetHistoryByVenueId(int id)
+    public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetHistoryByVenueId(int id)
     {
         return Ok((await concertService.GetHistoryByVenueIdAsync(id)).ToSummaryResponses());
     }
 
     [HttpGet("history/artist/{id}")]
-    public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetHistoryByArtistId(int id)
+    public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetHistoryByArtistId(int id)
     {
         return Ok((await concertService.GetHistoryByArtistIdAsync(id)).ToSummaryResponses());
     }
 
     [HttpGet("unposted/venue/{id}")]
-    public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetUnpostedByVenueId(int id)
+    public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUnpostedByVenueId(int id)
     {
         return Ok((await concertService.GetUnpostedByVenueIdAsync(id)).ToSummaryResponses());
     }
 
     [HttpGet("unposted/artist/{id}")]
-    public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetUnpostedByArtistId(int id)
+    public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUnpostedByArtistId(int id)
     {
         return Ok((await concertService.GetUnpostedByArtistIdAsync(id)).ToSummaryResponses());
     }
@@ -130,7 +131,9 @@ internal sealed class ConcertController : ControllerBase
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
     {
-        await concertWorkflowModule.CancelAsync(id, ct);
+        var result = await cancelExecutor.CancelAsync(id, ct);
+        if (result.IsFailed)
+            throw new BadRequestException(result.Errors);
         return NoContent();
     }
 

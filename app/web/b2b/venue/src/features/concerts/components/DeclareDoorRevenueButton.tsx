@@ -1,8 +1,8 @@
 import { useState } from "react";
-import type { Concert } from "@concertable/shared/features/concerts/types";
-import { Button } from "@/components/ui/button";
-import { NumberInput } from "@/components/ui/NumberInput";
-import { Label } from "@/components/ui/label";
+import type { MyConcert } from "@concertable/b2b/features/concerts";
+import { Button } from "@concertable/web/components/ui/button";
+import { NumberInput } from "@concertable/web/components/ui/NumberInput";
+import { Label } from "@concertable/web/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -10,11 +10,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@concertable/web/components/ui/dialog";
 import { useDeclareDoorRevenue } from "../hooks/useDeclareDoorRevenue";
 
 interface Props {
-  concert: Concert;
+  concert: MyConcert;
 }
 
 export function DeclareDoorRevenueButton({ concert }: Readonly<Props>) {
