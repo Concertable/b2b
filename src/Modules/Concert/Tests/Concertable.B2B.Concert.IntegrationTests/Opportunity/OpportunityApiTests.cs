@@ -42,7 +42,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var request = BuildRequest(deal);
+        var request = BuildRequest(deal, fixture.SeedNow);
 
         // Act
         var response = await client.PostAsync("/api/Opportunity", request);
@@ -63,7 +63,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync("/api/Opportunity", BuildDefaultRequest());
+        var response = await client.PostAsync("/api/Opportunity", BuildDefaultRequest(fixture.SeedNow));
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -76,7 +76,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         var client = fixture.CreateClient();
 
         // Act
-        var response = await client.PostAsync("/api/Opportunity", BuildDefaultRequest());
+        var response = await client.PostAsync("/api/Opportunity", BuildDefaultRequest(fixture.SeedNow));
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Unauthorized);
