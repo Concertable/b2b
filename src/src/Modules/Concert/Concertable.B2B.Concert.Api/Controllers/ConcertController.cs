@@ -35,7 +35,7 @@ internal sealed class ConcertController : ControllerBase
     {
         return (await concertService.GetDetailsByIdAsync(id))
             .Map(concert => concert.ToDetailsResponse())
-            .ToOkActionResult();
+            .ToOkOrProblem();
     }
 
     [HttpGet("user/{id}")]
@@ -43,7 +43,7 @@ internal sealed class ConcertController : ControllerBase
     {
         return (await concertService.GetDetailsForCurrentUserAsync(id))
             .Map(concert => concert.ToMyDetailsResponse())
-            .ToOkActionResult();
+            .ToOkOrProblem();
     }
 
     [HttpGet("{id}/contract/pdf")]
@@ -57,7 +57,7 @@ internal sealed class ConcertController : ControllerBase
     public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
     {
         return (await invoiceService.GetByConcertIdAsync(id))
-            .ToOkActionResult();
+            .ToOkOrProblem();
     }
 
     [HttpGet("{id}/invoice/pdf")]
@@ -72,7 +72,7 @@ internal sealed class ConcertController : ControllerBase
     {
         return (await concertService.GetDetailsByApplicationIdAsync(applicationId))
             .Map(concert => concert.ToMyDetailsResponse())
-            .ToOkActionResult();
+            .ToOkOrProblem();
     }
 
     [HttpGet("upcoming/venue/{id}")]
@@ -115,30 +115,27 @@ internal sealed class ConcertController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<ConcertUpdateResponse>> Update(int id, [FromBody] UpdateConcertRequest request)
     {
-        return (await concertService.UpdateAsync(id, request)).ToOkActionResult();
+        return (await concertService.UpdateAsync(id, request)).ToOkOrProblem();
     }
 
     [HasPermission(VenuePermissions.ConcertsManage)]
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
     {
-        return (await concertService.PostAsync(id, request)).ToNoContentActionResult();
+        return (await concertService.PostAsync(id, request)).ToNoContentOrProblem();
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
     {
-        var result = await cancelExecutor.CancelAsync(id, ct);
-        if (result.IsFailed)
-            throw new BadRequestException(result.Errors);
-        return NoContent();
+        return (await cancelExecutor.CancelAsync(id, ct)).ToNoContentOrProblem();
     }
 
     [HasPermission(VenuePermissions.ConcertsManage)]
     [HttpPost("{id}/door-revenue")]
     public async Task<IActionResult> DeclareDoorRevenue(int id, [FromBody] DoorRevenueRequest request)
     {
-        return (await concertService.DeclareDoorRevenueAsync(id, request.DoorRevenue)).ToNoContentActionResult();
+        return (await concertService.DeclareDoorRevenueAsync(id, request.DoorRevenue)).ToNoContentOrProblem();
     }
 }

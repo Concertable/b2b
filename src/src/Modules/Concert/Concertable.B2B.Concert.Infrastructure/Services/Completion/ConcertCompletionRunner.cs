@@ -20,10 +20,17 @@ internal sealed class ConcertCompletionRunner(
         {
             var result = await completion.RunAsync(executor => executor.FinishAsync(concertId, ct));
 
-            if (result.IsFailed)
-                logger.ConcertCompletionFailed(concertId, result.Errors);
-            else if (result.Value == SettlementOutcome.Settled)
-                logger.ConcertFinished(concertId);
+            if (result.TryGetError(out var error))
+                logger.ConcertCompletionRefused(
+                    concertId,
+                    error.Definition.Code,
+                    error.Definition.Message);
+            else
+            {
+                result.TryGetValue(out var outcome);
+                if (outcome == SettlementOutcome.Settled)
+                    logger.ConcertFinished(concertId);
+            }
         }
     }
 }

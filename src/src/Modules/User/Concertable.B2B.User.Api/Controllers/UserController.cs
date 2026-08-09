@@ -26,7 +26,7 @@ internal sealed class UserController : ControllerBase
     [HttpPut("location")]
     public async Task<ActionResult<UserDto>> UpdateLocation([FromBody] UpdateLocationRequest request)
     {
-        return (await userService.SaveLocationAsync(request.Latitude, request.Longitude)).ToOkActionResult();
+        return (await userService.SaveLocationAsync(request.Latitude, request.Longitude)).ToOkOrProblem();
     }
 
     [HttpGet("/api/auth/me")]

@@ -8,10 +8,10 @@ internal abstract partial record UpdateTenantError : IError
     public ErrorDefinition Definition => this switch
     {
         NoActiveTenant =>
-            ErrorDefinition.Forbidden<NoActiveTenant>(
+            ErrorDefinition.For<UpdateTenantError>().Forbidden<NoActiveTenant>(
                 "No active organization was found for the current user."),
         TenantNotFound(var tenantId) =>
-            ErrorDefinition.NotFound<TenantNotFound>(
+            ErrorDefinition.For<UpdateTenantError>().NotFound<TenantNotFound>(
                 $"Organization {tenantId} was not found.")
     };
 

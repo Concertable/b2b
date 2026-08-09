@@ -157,15 +157,23 @@ internal sealed class ApplicationService : IApplicationService
     public Task<Checkout> AcceptCheckoutAsync(int applicationId) =>
         checkoutDispatcher.AcceptCheckoutAsync(applicationId);
 
-    public async Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
+    public async Task<UnitResult<AcceptApplicationError>> AcceptAsync(
+        int applicationId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature,
+        CancellationToken ct = default)
     {
         var result = await applicationValidator.CanAcceptAsync(applicationId);
 
         if (result.TryGetError(out var error))
-            throw new BadRequestException(error.Definition.Message);
+            return UnitResult.Failure<AcceptApplicationError>(new AcceptApplicationError.Ineligible(error));
 
-        await acceptExecutor.AcceptAsync(applicationId, paymentMethodId, eSignature);
+        var acceptance = await acceptExecutor.AcceptAsync(applicationId, paymentMethodId, eSignature, ct);
+        if (acceptance.TryGetError(out var acceptanceError))
+            return UnitResult.Failure(acceptanceError);
+
         await notifier.AcceptedAsync(applicationId);
+        return UnitResult.Success<AcceptApplicationError>();
     }
 
     public async Task WithdrawAsync(int applicationId)
@@ -193,10 +201,16 @@ internal sealed class ApplicationService : IApplicationService
         return UnitResult.Success<RejectApplicationError>();
     }
 
-    public async Task CancelAsync(int applicationId)
+    public async Task<UnitResult<CancelApplicationError>> CancelAsync(
+        int applicationId,
+        CancellationToken ct = default)
     {
-        await cancelApplicationExecutor.CancelAsync(applicationId);
+        var cancellation = await cancelApplicationExecutor.CancelAsync(applicationId, ct);
+        if (cancellation.TryGetError(out var cancellationError))
+            return UnitResult.Failure(cancellationError);
+
         await notifier.CancelledAsync(applicationId);
+        return UnitResult.Success<CancelApplicationError>();
     }
 
     public async Task<Option<(ArtistReadModel, VenueReadModel)>> GetArtistAndVenueByIdAsync(int id) =>

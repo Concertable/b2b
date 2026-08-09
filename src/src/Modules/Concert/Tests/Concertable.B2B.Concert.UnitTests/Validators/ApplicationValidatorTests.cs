@@ -1,7 +1,7 @@
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Application.Errors;
-using Concertable.Kernel.Errors;
-using Concertable.Kernel.Functional;
+using Reunion.Errors;
+using Reunion;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Validators;
 using Concertable.Kernel.ValueObjects;
@@ -207,8 +207,8 @@ public sealed class ApplicationValidatorTests
     private static string ErrorMessage(UnitResult<ApplicationEligibilityError> result)
     {
         Assert.True(result.TryGetError(out var error));
-        return error.Definition is ValidationErrorDefinition validation
-            ? validation.Errors.Values.SelectMany(messages => messages).Single()
+        return error.Definition is ValidationError validation
+            ? validation.Errors.Errors.Values.SelectMany(messages => messages).Single()
             : error.Definition.Message;
     }
 }

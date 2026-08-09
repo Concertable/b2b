@@ -183,8 +183,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         // Act
         var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        // Assert — a failed hold rejects the accept, leaves it un-accepted, posts no concert, notifies nobody
-        await response.ShouldBe(HttpStatusCode.BadRequest);
+        await response.ShouldBe(HttpStatusCode.PaymentRequired);
         var application = await (await client.GetAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}")).Content.ReadAsync<ApplicationResponse>();
         Assert.NotEqual(ApplicationStatus.Accepted, application!.Status);
         var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.FlatFeeApp.Id);

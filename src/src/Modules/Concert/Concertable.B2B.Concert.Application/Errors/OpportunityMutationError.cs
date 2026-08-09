@@ -1,4 +1,4 @@
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Dunet;
 
 namespace Concertable.B2B.Concert.Application.Errors;
@@ -9,14 +9,14 @@ internal abstract partial record OpportunityMutationError : IError
     public ErrorDefinition Definition => this switch
     {
         VenueNotFound =>
-            ErrorDefinition.NotFound<VenueNotFound>(
+            ErrorDefinition.For<OpportunityMutationError>().NotFound<VenueNotFound>(
                 "No venue was found for the current organization."),
         VenueForbidden =>
-            ErrorDefinition.Forbidden<VenueForbidden>("You do not own this venue."),
+            ErrorDefinition.For<OpportunityMutationError>().Forbidden<VenueForbidden>("You do not own this venue."),
         InvalidDeal(var errors) =>
-            ErrorDefinition.Validation<InvalidDeal>(
+            ErrorDefinition.For<OpportunityMutationError>().Validation<InvalidDeal>(
                 "The opportunity deal is invalid.",
-                errors.ToDictionary())
+                new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
     };
 
     [ErrorCode("opportunity.venue_not_found")]

@@ -25,7 +25,7 @@ internal sealed class VenueController : ControllerBase
     {
         return (await venueService.GetDetailsByIdAsync(id))
             .Map(venue => venue.ToDetailsResponse())
-            .ToOkActionResult();
+            .ToOkOrProblem();
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
@@ -33,7 +33,7 @@ internal sealed class VenueController : ControllerBase
     public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser() =>
         (await venueService.GetDetailsForCurrentUserAsync())
             .Map(venue => venue.ToDetailsResponse())
-            .ToOkActionResult();
+            .ToOkOrProblem();
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]
@@ -47,14 +47,14 @@ internal sealed class VenueController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<VenueDetails>> Update(int id, [FromForm] UpdateVenueRequest request)
     {
-        return (await venueService.UpdateAsync(id, request)).ToOkActionResult();
+        return (await venueService.UpdateAsync(id, request)).ToOkOrProblem();
     }
 
     [Admin]
     [HttpPatch("{id}/approve")]
     public async Task<IActionResult> Approve(int id)
     {
-        return (await venueService.ApproveAsync(id)).ToNoContentActionResult();
+        return (await venueService.ApproveAsync(id)).ToNoContentOrProblem();
     }
 
     [HttpGet("{id}/ownership")]

@@ -1,4 +1,4 @@
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Dunet;
 
 namespace Concertable.B2B.Tenant.Contracts;
@@ -9,7 +9,7 @@ public abstract partial record VatCalculationError : IError
     public ErrorDefinition Definition => this switch
     {
         TenantNotFound(var tenantId) =>
-            ErrorDefinition.NotFound<TenantNotFound>(
+            ErrorDefinition.For<VatCalculationError>().NotFound<TenantNotFound>(
                 $"Organization {tenantId} was not found.")
     };
 

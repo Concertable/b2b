@@ -8,7 +8,7 @@ internal abstract partial record CreateVenueError : IError
     public ErrorDefinition Definition => this switch
     {
         NoActiveTenant =>
-            ErrorDefinition.Forbidden<NoActiveTenant>(
+            ErrorDefinition.For<CreateVenueError>().Forbidden<NoActiveTenant>(
                 "No active organization was found for the current user.")
     };
 

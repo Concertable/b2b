@@ -36,7 +36,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldReturn400_WhenCalledByDifferentVenueManager()
+    public async Task Accept_ShouldReturn404_WhenCalledByDifferentVenueManager()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
@@ -45,7 +45,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert
-        await response.ShouldBe(HttpStatusCode.BadRequest);
+        await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
     #endregion

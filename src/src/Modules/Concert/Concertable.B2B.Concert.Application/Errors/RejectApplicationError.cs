@@ -9,10 +9,10 @@ internal abstract partial record RejectApplicationError : IError
     public ErrorDefinition Definition => this switch
     {
         ApplicationNotFound(var applicationId) =>
-            ErrorDefinition.NotFound<ApplicationNotFound>(
+            ErrorDefinition.For<RejectApplicationError>().NotFound<ApplicationNotFound>(
                 $"Application {applicationId} was not found."),
         InvalidTransition(var current, var trigger) =>
-            ErrorDefinition.Conflict<InvalidTransition>(
+            ErrorDefinition.For<RejectApplicationError>().Conflict<InvalidTransition>(
                 $"Cannot {trigger} from {current}.")
     };
 

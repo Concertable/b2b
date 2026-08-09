@@ -1,6 +1,6 @@
 global using Concertable.Kernel;
-global using Concertable.Kernel.Functional;
-global using Concertable.Shared.Api.Results;
+global using Reunion;
+global using Reunion.AspNetCore.Mvc;
 global using Concertable.Kernel.ValueObjects;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;

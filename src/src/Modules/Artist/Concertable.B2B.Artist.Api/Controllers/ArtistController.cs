@@ -22,7 +22,7 @@ internal sealed class ArtistController : ControllerBase
     {
         return (await artistService.GetDetailsByIdAsync(id))
             .Map(artist => artist.ToDetailsResponse())
-            .ToOkActionResult();
+            .ToOkOrProblem();
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
@@ -30,7 +30,7 @@ internal sealed class ArtistController : ControllerBase
     public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser() =>
         (await artistService.GetDetailsForCurrentUserAsync())
             .Map(artist => artist.ToDetailsResponse())
-            .ToOkActionResult();
+            .ToOkOrProblem();
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]
@@ -44,6 +44,6 @@ internal sealed class ArtistController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<ArtistDetails>> Update(int id, [FromForm] UpdateArtistRequest request)
     {
-        return (await artistService.UpdateAsync(id, request)).ToOkActionResult();
+        return (await artistService.UpdateAsync(id, request)).ToOkOrProblem();
     }
 }

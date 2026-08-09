@@ -3,7 +3,6 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Kernel.Enums;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.ValueObjects;
 using Microsoft.Extensions.Logging;
 
@@ -28,20 +27,26 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
         this.logger = logger;
     }
 
-    public async Task ExecuteAsync(ApplicationEntity application)
+    public async Task<UnitResult<AcceptApplicationError>> ExecuteAsync(
+        ApplicationEntity application,
+        CancellationToken ct = default)
     {
         if (application is not PrepaidApplication prepaid)
-            throw new BadRequestException("VenueHire requires a PrepaidApplication");
+            throw new InvalidOperationException("VenueHire acceptance requires a prepaid application.");
 
         var deal = (VenueHireDeal)dealAccessor.Deal;
         var booking = await bookingService.CreateStandardAsync(application);
-
-        /* VenueHire: the artist hires the venue, so the artist tenant pays the venue tenant —
-           both read off the application's frozen snapshot. */
         logger.AcceptingVenueHireApplication(application.Id, booking.Id, deal.HireFee, prepaid.ArtistTenantId, prepaid.VenueTenantId);
 
-        var hold = await escrowClient.DepositAsync(prepaid.ArtistTenantId, prepaid.VenueTenantId, Money.Gbp(deal.HireFee), prepaid.PaymentMethodId, PaymentSession.OffSession, booking.Id);
-        if (hold.TryGetError(out var error))
-            throw new BadRequestException(error.Definition.Message);
+        return (await escrowClient.DepositAsync(
+            prepaid.ArtistTenantId,
+            prepaid.VenueTenantId,
+            Money.Gbp(deal.HireFee),
+            prepaid.PaymentMethodId,
+            PaymentSession.OffSession,
+            booking.Id,
+            ct))
+            .MapError(error => (AcceptApplicationError)new AcceptApplicationError.EscrowDepositFailure(error))
+            .Bind(_ => UnitResult.Success<AcceptApplicationError>());
     }
 }

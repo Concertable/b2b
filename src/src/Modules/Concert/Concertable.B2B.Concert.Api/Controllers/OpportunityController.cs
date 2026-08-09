@@ -2,7 +2,7 @@ using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Contracts;
-using Concertable.Shared.Api.Results;
+using Reunion.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
@@ -33,7 +33,7 @@ internal sealed class OpportunityController : ControllerBase
     {
         return (await opportunityService.GetByIdAsync(id))
             .Map(mapper.ToResponse)
-            .ToOkActionResult();
+            .ToOkOrProblem();
     }
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
@@ -69,7 +69,7 @@ internal sealed class OpportunityController : ControllerBase
     {
         var result = (await opportunityService.UpdateAsync(venueId, desired))
             .Map(opportunities => mapper.ToResponses(opportunities).ToList());
-        return result.ToOkActionResult();
+        return result.ToOkOrProblem();
     }
 
     [HttpGet("{id}/ownership")]

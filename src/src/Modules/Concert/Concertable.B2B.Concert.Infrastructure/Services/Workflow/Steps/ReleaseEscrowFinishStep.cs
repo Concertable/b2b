@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
@@ -14,13 +13,13 @@ internal sealed class ReleaseEscrowFinishStep : IFinishStep
         this.escrowClient = escrowClient;
     }
 
-    public async Task ExecuteAsync(int concertId)
+    public async Task<UnitResult<FinishConcertError>> ExecuteAsync(int concertId, CancellationToken ct = default)
     {
         var bookingId = await bookingRepository.GetIdByConcertIdAsync(concertId)
-            .OrNotFound(DisplayNames.Booking);
+            ?? throw new InvalidOperationException($"Concert {concertId} has no booking.");
 
-        var release = await escrowClient.ReleaseByBookingIdAsync(bookingId);
-        if (release.TryGetError(out var error))
-            throw new BadRequestException(error.Definition.Message);
+        return (await escrowClient.ReleaseByBookingIdAsync(bookingId, ct))
+            .MapError(error => (FinishConcertError)new FinishConcertError.EscrowReleaseFailure(error))
+            .Bind(_ => UnitResult.Success<FinishConcertError>());
     }
 }

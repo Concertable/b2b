@@ -42,4 +42,32 @@ internal sealed class LifecycleTransitioner : ILifecycleTransitioner
         await applicationRepository.SaveChangesAsync(ct);
         return Result.Success<ApplicationEntity, LifecycleTransitionError>(application);
     }
+
+    public async Task<Result<ApplicationEntity, TError>> TransitionAsync<TError>(
+        int applicationId,
+        Trigger trigger,
+        Func<LifecycleTransitionError, TError> mapTransitionError,
+        TransitionEffect<TError> effect,
+        CancellationToken ct = default)
+        where TError : notnull
+    {
+        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
+        if (application is null)
+            return Result.Failure<ApplicationEntity, TError>(
+                mapTransitionError(new LifecycleTransitionError.ApplicationNotFound(applicationId)));
+
+        var machine = machines.Get(application.DealType);
+        var transition = machine.Next(application.State, trigger);
+        if (transition.TryGetError(out var transitionError))
+            return Result.Failure<ApplicationEntity, TError>(mapTransitionError(transitionError));
+
+        var effectResult = await effect(application);
+        if (effectResult.TryGetError(out var effectError))
+            return Result.Failure<ApplicationEntity, TError>(effectError);
+
+        transition.TryGetValue(out var next);
+        application.Transition(next);
+        await applicationRepository.SaveChangesAsync(ct);
+        return Result.Success<ApplicationEntity, TError>(application);
+    }
 }

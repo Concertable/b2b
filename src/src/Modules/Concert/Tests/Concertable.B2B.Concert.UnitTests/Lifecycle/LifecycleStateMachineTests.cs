@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Concert.UnitTests.Lifecycle;

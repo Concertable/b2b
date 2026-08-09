@@ -1,6 +1,6 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.Kernel.Errors;
-using Concertable.Kernel.Functional;
+using Reunion.Errors;
+using Reunion;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 

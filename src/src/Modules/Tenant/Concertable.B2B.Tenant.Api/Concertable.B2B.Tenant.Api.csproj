@@ -20,6 +20,7 @@
   <ItemGroup>
     <PackageReference Include="Concertable.Payment.Client" />
     <PackageReference Include="Concertable.Shared.Api" />
+    <PackageReference Include="Reunion.AspNetCore" />
   </ItemGroup>
 
 </Project>

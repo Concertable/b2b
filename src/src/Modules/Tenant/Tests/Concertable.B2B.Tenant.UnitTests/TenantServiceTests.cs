@@ -5,9 +5,9 @@ using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.Tenant.Domain.ValueObjects;
 using Concertable.B2B.Tenant.Infrastructure.Services;
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Concertable.Kernel.Identity;
-using Concertable.Kernel.Functional;
+using Reunion;
 using Moq;
 
 namespace Concertable.B2B.Tenant.UnitTests;

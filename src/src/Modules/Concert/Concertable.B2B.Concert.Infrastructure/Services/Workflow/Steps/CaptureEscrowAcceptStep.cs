@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.ValueObjects;
 using Microsoft.Extensions.Logging;
 
@@ -30,7 +29,9 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
         this.logger = logger;
     }
 
-    public async Task ExecuteAsync(ApplicationEntity application)
+    public async Task<UnitResult<AcceptApplicationError>> ExecuteAsync(
+        ApplicationEntity application,
+        CancellationToken ct = default)
     {
         var deal = (FlatFeeDeal)dealAccessor.Deal;
         var booking = await bookingService.CreateStandardAsync(application);
@@ -46,13 +47,14 @@ internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
             application.VenueTenantId,
             application.ArtistTenantId);
 
-        var bind = await escrowClient.CaptureAsync(
+        return (await escrowClient.CaptureAsync(
             application.VenueTenantId,
             application.ArtistTenantId,
             Money.Gbp(deal.Fee),
             paymentIntentId,
-            booking.Id);
-        if (bind.TryGetError(out var error))
-            throw new BadRequestException(error.Definition.Message);
+            booking.Id,
+            ct))
+            .MapError(error => (AcceptApplicationError)new AcceptApplicationError.EscrowCaptureFailure(error))
+            .Bind(_ => UnitResult.Success<AcceptApplicationError>());
     }
 }

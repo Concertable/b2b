@@ -1,5 +1,5 @@
-using Concertable.Kernel.Errors;
-using Concertable.Kernel.Functional;
+using Reunion.Errors;
+using Reunion;
 
 namespace Concertable.B2B.Deal.Domain.Entities;
 

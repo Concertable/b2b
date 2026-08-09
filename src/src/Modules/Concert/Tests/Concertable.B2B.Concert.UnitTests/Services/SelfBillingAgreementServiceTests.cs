@@ -8,7 +8,7 @@ using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
-using Concertable.Kernel.Functional;
+using Reunion;
 using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -47,7 +47,10 @@ public sealed class SelfBillingAgreementServiceTests
                 HoldsMusicLicence = true,
                 RegisteredAddress = new RegisteredAddressDto
                 {
-                    Line1 = "1 Road", City = "Town", Postcode = "AB1 2CD", Country = "United Kingdom",
+                    Line1 = "1 Road",
+                    City = "Town",
+                    Postcode = "AB1 2CD",
+                    Country = "United Kingdom",
                 },
             }));
 

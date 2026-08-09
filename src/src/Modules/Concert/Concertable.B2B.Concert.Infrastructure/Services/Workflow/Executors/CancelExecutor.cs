@@ -1,9 +1,6 @@
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Concert.Infrastructure;
-using Concertable.Kernel.Exceptions;
-using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
@@ -13,46 +10,41 @@ internal sealed class CancelExecutor : ICancelExecutor
     private readonly IConcertWorkflowFactory workflows;
     private readonly IDealResolver dealResolver;
     private readonly IConcertRepository concertRepository;
-    private readonly ILogger<CancelExecutor> logger;
 
     public CancelExecutor(
         ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
         IDealResolver dealResolver,
-        IConcertRepository concertRepository,
-        ILogger<CancelExecutor> logger)
+        IConcertRepository concertRepository)
     {
         this.transitioner = transitioner;
         this.workflows = workflows;
         this.dealResolver = dealResolver;
         this.concertRepository = concertRepository;
-        this.logger = logger;
     }
 
-    public async Task<FluentResults.Result> CancelAsync(int concertId, CancellationToken ct = default)
+    public async Task<UnitResult<CancelConcertError>> CancelAsync(int concertId, CancellationToken ct = default)
     {
-        try
-        {
-            var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct)
-                .OrNotFound();
+        var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct);
+        if (concert is null)
+            return UnitResult.Failure<CancelConcertError>(new CancelConcertError.ConcertNotFound(concertId));
 
-            await transitioner.TransitionAsync(concert.Booking.ApplicationId, Trigger.Cancel, async app =>
+        var transition = await transitioner.TransitionAsync<CancelConcertError>(
+            concert.Booking.ApplicationId,
+            Trigger.Cancel,
+            error => (CancelConcertError)new CancelConcertError.TransitionFailure(error),
+            async app =>
             {
                 await dealResolver.ResolveByConcertIdAsync(concertId);
                 var workflow = workflows.Create(app.DealType);
-                await workflow.Cancel.ExecuteAsync(concertId);
+                var cancellation = await workflow.Cancel.ExecuteAsync(concertId, ct);
+                if (cancellation.TryGetError(out var cancellationError))
+                    return UnitResult.Failure(cancellationError);
+
                 concert.Cancel();
-            }, ct).GetValueOrThrowAsync();
-            return FluentResults.Result.Ok();
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            logger.FailedToCancelConcert(concertId, ex);
-            return FluentResults.Result.Fail(ex.Message);
-        }
+                return UnitResult.Success<CancelConcertError>();
+            }, ct);
+
+        return transition.Bind(_ => UnitResult.Success<CancelConcertError>());
     }
 }

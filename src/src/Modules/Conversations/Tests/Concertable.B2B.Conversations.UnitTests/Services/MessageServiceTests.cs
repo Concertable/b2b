@@ -5,7 +5,7 @@ using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
-using Concertable.Kernel.Functional;
+using Reunion;
 using Moq;
 
 namespace Concertable.B2B.Conversations.UnitTests.Services;

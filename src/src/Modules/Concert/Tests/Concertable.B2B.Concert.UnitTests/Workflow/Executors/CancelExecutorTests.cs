@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests.Workflow.Executors;
@@ -18,8 +17,7 @@ public sealed class CancelExecutorTests
             Mock.Of<ILifecycleTransitioner>(),
             Mock.Of<IConcertWorkflowFactory>(),
             Mock.Of<IDealResolver>(),
-            this.concertRepository.Object,
-            Mock.Of<ILogger<CancelExecutor>>());
+            this.concertRepository.Object);
     }
 
     [Fact]

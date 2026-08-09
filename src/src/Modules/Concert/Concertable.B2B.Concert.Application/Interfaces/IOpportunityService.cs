@@ -2,7 +2,7 @@ using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.Contracts;
-using Concertable.Kernel.Functional;
+using Reunion;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 

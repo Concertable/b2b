@@ -8,10 +8,10 @@ internal abstract partial record ChangeMemberRoleError : IError
     public ErrorDefinition Definition => this switch
     {
         MemberNotFound(var userId) =>
-            ErrorDefinition.NotFound<MemberNotFound>(
+            ErrorDefinition.For<ChangeMemberRoleError>().NotFound<MemberNotFound>(
                 $"User {userId} is not a member of this organization."),
         LastOwner =>
-            ErrorDefinition.Conflict<LastOwner>(
+            ErrorDefinition.For<ChangeMemberRoleError>().Conflict<LastOwner>(
                 "The last owner of an organization cannot be demoted.")
     };
 

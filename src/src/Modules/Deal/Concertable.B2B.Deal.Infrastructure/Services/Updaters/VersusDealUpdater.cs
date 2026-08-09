@@ -1,8 +1,8 @@
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Domain.Entities;
-using Concertable.Kernel.Errors;
-using Concertable.Kernel.Functional;
+using Reunion.Errors;
+using Reunion;
 
 namespace Concertable.B2B.Deal.Infrastructure.Services.Updaters;
 

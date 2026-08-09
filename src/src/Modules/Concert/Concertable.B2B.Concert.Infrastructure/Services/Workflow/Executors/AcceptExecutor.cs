@@ -4,7 +4,6 @@ using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
@@ -39,40 +38,54 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.taskRunner = taskRunner;
     }
 
-    public async Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
+    public async Task<UnitResult<AcceptApplicationError>> AcceptAsync(
+        int applicationId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature,
+        CancellationToken ct = default)
     {
-        await transitioner.TransitionAsync(applicationId, Trigger.Accept, async app =>
+        var transition = await transitioner.TransitionAsync<AcceptApplicationError>(
+            applicationId,
+            Trigger.Accept,
+            error => (AcceptApplicationError)new AcceptApplicationError.TransitionFailure(error),
+            async app =>
         {
             var deal = await dealResolver.ResolveByApplicationIdAsync(app.Id);
-            VerifyTermsUnchanged(app, deal);
+            var terms = VerifyTermsUnchanged(app, deal);
+            if (terms.TryGetError(out var termsError))
+                return UnitResult.Failure(termsError);
 
             var workflow = workflows.Create(app.DealType);
-            await (workflow switch
+            var acceptance = workflow switch
             {
-                IAcceptsPaid w when paymentMethodId is not null => w.Accept.ExecuteAsync(app, paymentMethodId),
-                IAcceptsPaid => throw new BadRequestException("This deal requires a payment method at acceptance"),
-                IAcceptsSimple w => w.Accept.ExecuteAsync(app),
-                _ => throw new BadRequestException($"Deal {workflow.Type} does not support Accept")
-            });
+                IAcceptsPaid w when paymentMethodId is not null => await w.Accept.ExecuteAsync(app, paymentMethodId, ct),
+                IAcceptsPaid => UnitResult.Failure<AcceptApplicationError>(new AcceptApplicationError.PaymentMethodRequired()),
+                IAcceptsSimple w => await w.Accept.ExecuteAsync(app, ct),
+                _ => UnitResult.Failure<AcceptApplicationError>(new AcceptApplicationError.UnsupportedDeal(workflow.Type))
+            };
+            if (acceptance.TryGetError(out var acceptanceError))
+                return UnitResult.Failure(acceptanceError);
 
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
-                ?? throw new NotFoundException("Booking not found for application");
+                ?? throw new InvalidOperationException($"Application {app.Id} has no booking after acceptance.");
             app.Accept(booking);
             await contractIssuer.IssueAsync(app, booking, eSignature);
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
-        }).GetValueOrThrowAsync();
+            return UnitResult.Success<AcceptApplicationError>();
+        }, ct);
+
+        var result = transition.Bind(_ => UnitResult.Success<AcceptApplicationError>());
+        if (result.TryGetError(out _))
+            return result;
 
         await bookingAdvancer.AdvanceIfReadyAsync(applicationId);
+        return result;
     }
 
-    /* Must run BEFORE the accept step: the step captures/charges real money, and only the DB
-       side of this transition rolls back on a throw. */
-    private void VerifyTermsUnchanged(ApplicationEntity app, IDeal deal)
-    {
-        if (app.TermsFingerprint != termsFingerprint.Calculate(deal, app.Opportunity.Period))
-            throw new ConflictException(
-                "The deal terms have changed since the artist applied — the artist must re-apply before you can accept");
-    }
+    private UnitResult<AcceptApplicationError> VerifyTermsUnchanged(ApplicationEntity app, IDeal deal) =>
+        app.TermsFingerprint == termsFingerprint.Calculate(deal, app.Opportunity.Period)
+            ? UnitResult.Success<AcceptApplicationError>()
+            : UnitResult.Failure<AcceptApplicationError>(new AcceptApplicationError.TermsChanged());
 }

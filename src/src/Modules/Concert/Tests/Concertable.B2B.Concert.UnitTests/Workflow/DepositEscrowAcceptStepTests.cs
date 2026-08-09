@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
@@ -30,9 +29,8 @@ public sealed class DepositEscrowAcceptStepTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldThrowBadRequest_WhenApplicationIsNotPrepaid()
+    public async Task ExecuteAsync_ShouldThrowInvalidOperation_WhenApplicationIsNotPrepaid()
     {
-        // Arrange — a VenueHire accept requires a PrepaidApplication; a standard one must be rejected
         var application = StandardApplication.Create(
             1,
             1,
@@ -40,8 +38,7 @@ public sealed class DepositEscrowAcceptStepTests
             Guid.NewGuid(),
             Guid.NewGuid());
 
-        // Act & Assert
-        await Assert.ThrowsAsync<BadRequestException>(() => step.ExecuteAsync(application));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => step.ExecuteAsync(application));
         escrowClient.Verify(
             c => c.DepositAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Money>(), It.IsAny<string>(), It.IsAny<PaymentSession>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Never);

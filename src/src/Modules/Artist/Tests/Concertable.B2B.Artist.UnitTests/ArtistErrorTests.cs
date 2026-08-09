@@ -1,5 +1,5 @@
 using Concertable.B2B.Artist.Application.Errors;
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 
 namespace Concertable.B2B.Artist.UnitTests;
 

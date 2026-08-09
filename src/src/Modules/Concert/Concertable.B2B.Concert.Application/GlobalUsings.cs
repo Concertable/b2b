@@ -1,6 +1,6 @@
 global using Concertable.Kernel;
-global using Concertable.Kernel.Errors;
-global using Concertable.Kernel.Functional;
+global using Reunion.Errors;
+global using Reunion;
 global using Concertable.Kernel.ValueObjects;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
@@ -15,3 +15,5 @@ global using Concertable.B2B.Venue.Contracts;
 global using Concertable.Payment.Client;
 global using Concertable.B2B.Conversations.Contracts.Enums;
 global using Concertable.B2B.Concert.Domain.ValueObjects;
+global using Concertable.B2B.Concert.Application.Errors;
+global using ValidationErrors = Concertable.Kernel.Errors.ValidationErrors;

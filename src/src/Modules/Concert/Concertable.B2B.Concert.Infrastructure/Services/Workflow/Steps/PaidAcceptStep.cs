@@ -12,8 +12,12 @@ internal sealed class PaidAcceptStep : IPaidAcceptStep
         this.bookingService = bookingService;
     }
 
-    public async Task ExecuteAsync(ApplicationEntity application, string paymentMethodId)
+    public async Task<UnitResult<AcceptApplicationError>> ExecuteAsync(
+        ApplicationEntity application,
+        string paymentMethodId,
+        CancellationToken ct = default)
     {
         await bookingService.CreateDeferredAsync(application, paymentMethodId);
+        return UnitResult.Success<AcceptApplicationError>();
     }
 }

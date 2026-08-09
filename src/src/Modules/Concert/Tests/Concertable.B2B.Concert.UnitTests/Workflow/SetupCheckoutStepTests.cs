@@ -4,7 +4,7 @@ using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
-using Concertable.Kernel.Functional;
+using Reunion;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
 using Moq;

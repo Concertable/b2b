@@ -1,4 +1,4 @@
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Dunet;
 
 namespace Concertable.B2B.Venue.Application.Errors;
@@ -9,9 +9,9 @@ internal abstract partial record VenueError : IError
     public ErrorDefinition Definition => this switch
     {
         NotFound(var venueId) =>
-            ErrorDefinition.NotFound<NotFound>($"Venue {venueId} was not found."),
+            ErrorDefinition.For<VenueError>().NotFound<NotFound>($"Venue {venueId} was not found."),
         CurrentTenantNotFound =>
-            ErrorDefinition.NotFound<CurrentTenantNotFound>(
+            ErrorDefinition.For<VenueError>().NotFound<CurrentTenantNotFound>(
                 "No venue was found for the current tenant.")
     };
 

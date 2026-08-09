@@ -8,12 +8,12 @@ internal abstract partial record UpdateConcertError : IError
     public ErrorDefinition Definition => this switch
     {
         ConcertNotFound(var concertId) =>
-            ErrorDefinition.NotFound<ConcertNotFound>(
+            ErrorDefinition.For<UpdateConcertError>().NotFound<ConcertNotFound>(
                 $"Concert {concertId} was not found."),
         Invalid(var errors) =>
-            ErrorDefinition.Validation<Invalid>(
+            ErrorDefinition.For<UpdateConcertError>().Validation<Invalid>(
                 "The concert update is invalid.",
-                errors.ToDictionary())
+                new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
     };
 
     [ErrorCode("concert.update.not_found")]

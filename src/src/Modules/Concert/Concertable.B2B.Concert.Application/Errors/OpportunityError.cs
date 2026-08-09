@@ -1,4 +1,4 @@
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Dunet;
 
 namespace Concertable.B2B.Concert.Application.Errors;
@@ -9,7 +9,7 @@ internal abstract partial record OpportunityError : IError
     public ErrorDefinition Definition => this switch
     {
         NotFound(var opportunityId) =>
-            ErrorDefinition.NotFound<NotFound>(
+            ErrorDefinition.For<OpportunityError>().NotFound<NotFound>(
                 $"Opportunity {opportunityId} was not found.")
     };
 

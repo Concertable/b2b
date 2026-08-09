@@ -49,7 +49,7 @@ public sealed class ModuleBoundaryTests
     [Fact]
     public void Api_does_not_depend_on_Option() =>
         Types().That().ResideInNamespace($@"^Concertable\.B2B\.({ModsAlt})\.Api($|\.)", useRegularExpressions: true)
-            .Should().NotDependOnAny(Types().That().AreAssignableTo("Concertable.Kernel.Functional.Option`1", useRegularExpressions: false))
+            .Should().NotDependOnAny(Types().That().AreAssignableTo("Reunion.Option`1", useRegularExpressions: false))
             .Because("controllers receive application-owned Results rather than deciding what absence means")
             .Check(Architecture);
 

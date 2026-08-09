@@ -1,6 +1,6 @@
 using Concertable.B2B.Deal.Application.Errors;
 using Concertable.B2B.Deal.Contracts.Errors;
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 
 namespace Concertable.B2B.Deal.UnitTests.Errors;
 
@@ -21,13 +21,13 @@ public sealed class DealErrorTests
     {
         var errors = new ValidationErrors([new("Fee", "Fee must be greater than zero.")]);
 
-        var definition = Assert.IsType<ValidationErrorDefinition>(
+        var definition = Assert.IsType<ValidationError>(
             new CreateDealError.Invalid(errors).Definition);
 
         Assert.Equal("deal.create.invalid", definition.Code);
         Assert.Equal("The deal is invalid.", definition.Message);
         Assert.Equal(ErrorKind.Invalid, definition.Kind);
-        Assert.Equal(["Fee must be greater than zero."], definition.Errors["Fee"]);
+        Assert.Equal(["Fee must be greater than zero."], definition.Errors.Errors["Fee"]);
     }
 
     [Fact]
@@ -45,12 +45,12 @@ public sealed class DealErrorTests
     {
         var errors = new ValidationErrors([new("HireFee", "Hire fee must be greater than zero.")]);
 
-        var definition = Assert.IsType<ValidationErrorDefinition>(
+        var definition = Assert.IsType<ValidationError>(
             new UpdateDealError.Invalid(errors).Definition);
 
         Assert.Equal("deal.update.invalid", definition.Code);
         Assert.Equal("The deal is invalid.", definition.Message);
         Assert.Equal(ErrorKind.Invalid, definition.Kind);
-        Assert.Equal(["Hire fee must be greater than zero."], definition.Errors["HireFee"]);
+        Assert.Equal(["Hire fee must be greater than zero."], definition.Errors.Errors["HireFee"]);
     }
 }
