@@ -137,9 +137,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<Guid>("ArtistTenantId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("DealType")
-                        .HasColumnType("int");
-
                     b.Property<string>("Discriminator")
                         .IsRequired()
                         .HasMaxLength(21)
@@ -189,9 +186,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Property<DateTime?>("DatePosted")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("DealType")
-                        .HasColumnType("int");
 
                     b.Property<decimal?>("DoorRevenue")
                         .HasColumnType("decimal(18,2)");
