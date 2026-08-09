@@ -62,17 +62,26 @@ public sealed class ContractIssuerTests
             .Callback<ContractEntity, CancellationToken>((a, _) => built = a)
             .ReturnsAsync((ContractEntity a, CancellationToken _) => a);
 
-        var application = StandardApplication.Create(artistId: 1, opportunityId: 10, DealType.FlatFee);
+        var application = StandardApplication.Create(
+            artistId: 1,
+            opportunityId: 10,
+            DealType.FlatFee,
+            Guid.NewGuid(),
+            Guid.NewGuid());
         application.Opportunity = OpportunityEntity.Create(
             venueId: 2,
             new DateRange(new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc), new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc)),
             dealId: 3);
         application.RecordArtistESignature(artistESignature, "fingerprint");
 
-        await issuer.IssueAsync(application, bookingId: 42, new ESignatureRequest { SignatoryName = "Vera Venue" });
+        var booking = StandardBooking.Create(application);
+
+        await issuer.IssueAsync(application, booking, new ESignatureRequest { SignatoryName = "Vera Venue" });
 
         Assert.NotNull(built);
         Assert.Equal(application.ArtistESignature, built.ArtistESignature);
         Assert.Equal("Vera Venue", built.VenueESignature.SignatoryName);
+        Assert.Equal(application.VenueTenantId, built.VenueTenantId);
+        Assert.Equal(application.ArtistTenantId, built.ArtistTenantId);
     }
 }

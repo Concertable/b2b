@@ -8,8 +8,8 @@ public sealed class MessageEntity : IIdEntity, IVenueArtistTenantScoped
 
     public int Id { get; private set; }
     public string Content { get; private set; } = null!;
-    public Guid VenueTenantId { get; set; }
-    public Guid ArtistTenantId { get; set; }
+    public Guid VenueTenantId { get; private set; }
+    public Guid ArtistTenantId { get; private set; }
     public Guid SenderTenantId { get; private set; }
     public Guid SentByUserId { get; private set; }
     public MessageAction? Action { get; private set; }
