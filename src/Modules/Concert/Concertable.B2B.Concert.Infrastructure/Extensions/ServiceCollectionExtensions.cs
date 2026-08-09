@@ -6,6 +6,7 @@ using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Concert.Application.Mappers;
 using Concertable.B2B.Concert.Application.Renderers;
 using Concertable.B2B.Concert.Application.Resolvers;
+using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Application.Validators;
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
@@ -25,6 +26,7 @@ using Concertable.B2B.Concert.Infrastructure.Handlers;
 using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Services;
+using Concertable.B2B.Concert.Infrastructure.Services.Strategies;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 using Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
@@ -96,12 +98,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISelfBillingAgreementService, SelfBillingAgreementService>();
         services.AddScoped<ISelfBillingAgreementGate, SelfBillingAgreementGate>();
         services.AddScoped<IClientContext, ClientContextAccessor>();
-        services.AddSingleton<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
-        services.AddSingleton<IDealTermsSerializer, DealTermsSerializer>();
-        services.AddSingleton<FlatFeeTermsSerializer>();
-        services.AddSingleton<DoorSplitTermsSerializer>();
-        services.AddSingleton<VersusTermsSerializer>();
-        services.AddSingleton<VenueHireTermsSerializer>();
+        services.AddConcertDealStrategies();
 
         services.AddScoped<DealAccessor>();
         services.AddScoped<IDealAccessor>(sp => sp.GetRequiredService<DealAccessor>());
@@ -170,12 +167,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<VenuePayeeResolver>();
         services.AddSingleton<ArtistPayeeResolver>();
 
-        services.AddSingleton<IDealTermsRenderer, DealTermsRenderer>();
-        services.AddSingleton<FlatFeeTermsRenderer>();
-        services.AddSingleton<DoorSplitTermsRenderer>();
-        services.AddSingleton<VersusTermsRenderer>();
-        services.AddSingleton<VenueHireTermsRenderer>();
-
         services.AddSingleton<IArtistShareCalculator, ArtistShareCalculator>();
         services.AddSingleton<DoorSplitCalculator>();
         services.AddSingleton<VersusCalculator>();
@@ -209,6 +200,43 @@ public static class ServiceCollectionExtensions
 
         services.AddValidatorsFromAssemblyContaining<OpportunityDtoValidator>();
 
+        return services;
+    }
+
+    internal static IServiceCollection AddConcertDealStrategies(this IServiceCollection services)
+    {
+        services.AddScoped<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
+        services.AddScoped<IDealTermsRenderer, DealTermsRenderer>();
+        services.AddScoped<IDealTermsSerializer, DealTermsSerializer>();
+
+        return services.AddConcertDealStrategies(strategies =>
+        {
+            strategies.For(DealType.FlatFee)
+                .AddSingleton<IDealTerms, FlatFeeDealTerms>();
+
+            strategies.For(DealType.DoorSplit)
+                .AddSingleton<IDealTerms, DoorSplitDealTerms>();
+
+            strategies.For(DealType.Versus)
+                .AddSingleton<IDealTerms, VersusDealTerms>();
+
+            strategies.For(DealType.VenueHire)
+                .AddSingleton<IDealTerms, VenueHireDealTerms>();
+
+            strategies.RequireAll<IDealTerms>();
+        });
+    }
+
+    internal static IServiceCollection AddConcertDealStrategies(
+        this IServiceCollection services,
+        Action<ConcertDealStrategyBuilder> configure)
+    {
+        var builder = new ConcertDealStrategyBuilder(services);
+        configure(builder);
+        builder.Build();
+
+        services.TryAddScoped<IKeyedServiceProvider>(sp => (IKeyedServiceProvider)sp);
+        services.TryAddScoped(typeof(IConcertDealStrategyFactory<>), typeof(ConcertDealStrategyFactory<>));
         return services;
     }
 
