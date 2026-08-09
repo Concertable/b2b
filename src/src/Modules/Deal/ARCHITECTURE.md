@@ -51,10 +51,14 @@ api/.../Modules/Deal/
 │  ├─ PaymentMethod.cs               enum { Cash, Transfer }
 │  ├─ IDeal.cs                       interface (+ [JsonDerivedType] per subtype for the SPA wire)
 │  ├─ FlatFeeDeal.cs / DoorSplitDeal.cs / …   records implementing IDeal
-│  ├─ IDealModule.cs                 cross-module facade (Get / Create / Update / Delete)
-│  └─ IDealStrategy.cs               empty marker for keyed strategies
-└─ Concertable.B2B.Deal.Application/ (services, mappers, updaters)
-   Concertable.B2B.Deal.Infrastructure/ (EF configs, DbContext, updaters, DI)
+│  └─ IDealModule.cs                 cross-module facade (Get / Create / Update / Delete)
+├─ Concertable.B2B.Deal.Application/
+│  ├─ Mappers/                       typed leaves + named DealMapper facade
+│  └─ Strategies/IDealStrategyFactory.cs
+└─ Concertable.B2B.Deal.Infrastructure/
+   ├─ Services/Strategies/           module-local keyed factory + validated builder
+   ├─ Services/Updaters/             typed leaves + named DealUpdater facade
+   └─ EF configs, DbContext, repositories, and DI
 ```
 
 Key invariants:
@@ -65,8 +69,9 @@ Key invariants:
 - **`PaymentMethod`** (`Cash | Transfer`) is metadata for the off-platform settlement channel — it
   does **not** drive workflow timing. What decides "when money moves" is which lifecycle stage a step
   is wired to, not this field.
-- **`IDealStrategy`** is currently only a marker: the sole extender is Payment's
-  `IStripeValidationStrategy` (keyed-DI by `DealType` — Account vs Customer onboarding rules per deal).
+- **Deal strategy registration is vertical and module-local.** `DealMapper` and `DealUpdater` delegate
+  through the scoped `IDealStrategyFactory<T>`; one validated `strategies.For(DealType.X)` block owns
+  both keyed families and requires exact coverage. Payment remains deal-type-agnostic.
 - **`Concert.Opportunity.DealId`** is a satellite FK into the Deal module's DB (no nav back, no SQL FK
   across the context boundary). The Concert module reads deals through `IDealAccessor` /
   `IDealResolver` (§2.6), which delegate to `IDealModule`.
@@ -318,8 +323,9 @@ The single spot that ties a deal type to its strategies, lifecycle, steps, and w
 1. **`Deal.Contracts`** — add the case to `DealType.cs`; add an `XDeal : IDeal` record + a
    `[JsonDerivedType]` line on `IDeal.cs`.
 2. **`Deal.Domain` / `.Application` / `.Infrastructure`** — add `XDealEntity : DealEntity` (typed
-   columns + `Create`/`Update`/validator), an `XDealMapper`, an `XDealUpdater` wired into `DealUpdater`,
-   and an EF config.
+   columns + `Create`/`Update`/validator), an `XDealMapper`, an `XDealUpdater`, and an EF config. Add
+   both strategy leaves to the new deal's vertical `strategies.For(DealType.X)` block; the builder's
+   exact-coverage gate fails until both families are present.
 3. **Migrations** — re-scaffold: run `./initial-migrations.ps1` from `api/` (per `api/CLAUDE.md`; never
    an additive migration).
 4. **Concert `Infrastructure/.../Steps/`** — reuse an existing step where the money shape fits
@@ -333,8 +339,9 @@ The single spot that ties a deal type to its strategies, lifecycle, steps, and w
    `.AddWorkflow<XWorkflow>(workflow => workflow.WithApply<…>()…WithFinish<…>(state))`. This wires
    the state-machine edges, keyed workflow, workflow metadata, and steps from the same declaration. A
    revenue-share settlement leaf uses the shared revenue-loading base and owns its complete formula.
-7. **Payment** — if the deal needs onboarding verification, register an `IStripeValidationStrategy`
-   keyed by the new `DealType`.
+7. **Payment** — keep it deal-type-agnostic. Compose its existing escrow/session/payment client
+   operations from the Concert workflow steps; do not register a Payment strategy keyed by B2B's
+   `DealType`.
 8. **Frontend** — add the deal form + accept/apply checkout UI variant.
 
 Re-using existing step impls is the main win of the capability-interface design.
@@ -397,7 +404,9 @@ Its generic strategy factory selects FlatFee, DoorSplit, Versus, or VenueHire le
 registration. DoorSplit and Versus share only revenue loading; each leaf owns its complete formula.
 Deal entities carry economic inputs and validation but do not duplicate the runtime calculation.
 
-### 6.2 `IDealStrategy` is under-used
+### 6.2 Deal strategy selection is module-local
 
-It's a marker with a single extender (`IStripeValidationStrategy` in Payment). Either grow it into a
-real cross-module extension surface (per-deal calculators, projections, validators) or drop it.
+Deal and Concert each own a scoped generic strategy factory plus a validated vertical builder. Named
+facades remain the operation-specific API, and only the module factory implementation performs keyed
+lookup. There is no shared marker or cross-module runtime registry; Payment remains unaware of
+`DealType`.
