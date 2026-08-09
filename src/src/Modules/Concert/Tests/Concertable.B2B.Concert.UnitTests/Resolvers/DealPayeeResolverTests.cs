@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.Kernel.ValueObjects;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests.Resolvers;
 
@@ -23,6 +24,7 @@ public sealed class DealPayeeResolverTests
         bool venueCollectsTickets)
     {
         var services = new ServiceCollection();
+        services.AddScoped(_ => Mock.Of<IConcertRepository>());
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();

@@ -110,6 +110,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal(DealType.DoorSplit, invoice!.DealType);
         Assert.Equal(concert.ArtistTenantId, invoice.Supplier.TenantId);
         Assert.Equal(concert.VenueTenantId, invoice.Customer.TenantId);
+        Assert.Equal(280m, invoice.Amounts.Gross);
         Assert.Equal(0m, invoice.Amounts.Vat);
         Assert.Equal(invoice.Amounts.Gross, invoice.Amounts.Net);
 
@@ -131,6 +132,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.NotNull(invoice);
         Assert.Equal(DealType.Versus, invoice!.DealType);
         Assert.Equal(concert.ArtistTenantId, invoice.Supplier.TenantId);
+        Assert.Equal(254m, invoice.Amounts.Gross);
 
         var payout = fixture.ManagerPaymentClient.Payments.Single(p => p.BookingId == booking.Id);
         Assert.Equal(payout.Amount, invoice.Amounts.Gross);
