@@ -9,13 +9,13 @@ internal sealed class VerifyCheckoutStep : IAcceptCheckoutStep
 {
     private readonly IApplicationRepository applicationRepository;
     private readonly IDealAccessor dealAccessor;
-    private readonly IManagerPaymentClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly IPaymentAmountMapper paymentAmountMapper;
 
     public VerifyCheckoutStep(
         IApplicationRepository applicationRepository,
         IDealAccessor dealAccessor,
-        IManagerPaymentClient managerPaymentClient,
+        IManagerPaymentOperationsClient managerPaymentClient,
         IPaymentAmountMapper paymentAmountMapper)
     {
         this.applicationRepository = applicationRepository;

@@ -10,8 +10,8 @@ public sealed class ThreadReadStateEntity : IIdEntity, IVenueArtistTenantScoped
     private ThreadReadStateEntity() { }
 
     public int Id { get; private set; }
-    public Guid VenueTenantId { get; set; }
-    public Guid ArtistTenantId { get; set; }
+    public Guid VenueTenantId { get; private set; }
+    public Guid ArtistTenantId { get; private set; }
     public Guid UserId { get; private set; }
     public DateTime LastReadAt { get; private set; }
 

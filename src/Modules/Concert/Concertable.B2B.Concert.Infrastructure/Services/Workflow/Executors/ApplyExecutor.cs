@@ -47,21 +47,24 @@ internal sealed class ApplyExecutor : IApplyExecutor
     {
         var deal = await dealResolver.ResolveByOpportunityIdAsync(opportunityId);
         var workflow = workflows.Create(deal.DealType);
+        var venueTenantId = await opportunityRepository.GetTenantIdByIdAsync(opportunityId)
+            .OrNotFound(DisplayNames.Opportunity);
+        var artistTenantId = tenantContext.TenantId
+            ?? throw new ForbiddenException("No tenant for current user");
         var application = workflow switch
         {
             IAppliesPaid w when paymentMethodId is not null
-                => await w.Apply.ApplyAsync(artistId, opportunityId, deal.DealType, paymentMethodId),
+                => await w.Apply.ApplyAsync(
+                    artistId,
+                    opportunityId,
+                    deal.DealType,
+                    paymentMethodId,
+                    venueTenantId,
+                    artistTenantId),
             IAppliesSimple w
-                => await w.Apply.ApplyAsync(artistId, opportunityId, deal.DealType),
+                => await w.Apply.ApplyAsync(artistId, opportunityId, deal.DealType, venueTenantId, artistTenantId),
             _ => throw new BadRequestException($"Deal {workflow.Type} does not support Apply")
         };
-
-        /* Snapshot the two parties at apply; the booking and concert inherit this pair downstream.
-           The applier IS the artist side, so their own tenant comes from the ambient context. */
-        application.VenueTenantId = await opportunityRepository.GetTenantIdByIdAsync(opportunityId)
-            .OrNotFound(DisplayNames.Opportunity);
-        application.ArtistTenantId = tenantContext.TenantId
-            ?? throw new ForbiddenException("No tenant for current user");
 
         var period = await opportunityRepository.GetPeriodByIdAsync(opportunityId)
             .OrNotFound(DisplayNames.Opportunity);
