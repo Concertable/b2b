@@ -66,6 +66,7 @@ public class ApiFixture : IAsyncLifetime
     }
     public IWebhookSimulator StripeClient { get; private set; } = null!;
     public SeedState SeedState { get; private set; } = null!;
+    public DateTime SeedNow => factory.Services.GetRequiredService<SeedCatalog>().Now;
 
     public async Task InitializeAsync()
     {
