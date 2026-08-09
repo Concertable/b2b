@@ -1,5 +1,7 @@
 using Concertable.B2B.Concert.Application.Interfaces;
+using Concertable.B2B.Concert.Application.Mappers;
 using Concertable.B2B.Concert.Application.Renderers;
+using Concertable.B2B.Concert.Application.Resolvers;
 using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +29,56 @@ public sealed class ConcertDealStrategyFactoryTests
         using var scope = provider.CreateScope();
         var factory = scope.ServiceProvider
             .GetRequiredService<IConcertDealStrategyFactory<IDealTerms>>();
+
+        var strategy = factory.Create(dealType);
+
+        Assert.IsType(expectedType, strategy);
+    }
+
+    [Theory]
+    [InlineData(DealType.FlatFee, typeof(VenuePaysArtistDealPayeeResolver))]
+    [InlineData(DealType.DoorSplit, typeof(VenuePaysArtistDealPayeeResolver))]
+    [InlineData(DealType.Versus, typeof(VenuePaysArtistDealPayeeResolver))]
+    [InlineData(DealType.VenueHire, typeof(ArtistPaysVenueDealPayeeResolver))]
+    public void Create_DealPayeeType_ResolvesExpectedStrategyFromRequestScope(
+        DealType dealType,
+        Type expectedType)
+    {
+        var services = new ServiceCollection();
+        services.AddConcertDealStrategies();
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        using var scope = provider.CreateScope();
+        var factory = scope.ServiceProvider
+            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>();
+
+        var strategy = factory.Create(dealType);
+
+        Assert.IsType(expectedType, strategy);
+    }
+
+    [Theory]
+    [InlineData(DealType.FlatFee, typeof(FlatFeePaymentAmountMapper))]
+    [InlineData(DealType.DoorSplit, typeof(DoorSplitPaymentAmountMapper))]
+    [InlineData(DealType.Versus, typeof(VersusPaymentAmountMapper))]
+    [InlineData(DealType.VenueHire, typeof(VenueHirePaymentAmountMapper))]
+    public void Create_PaymentAmountType_ResolvesExpectedStrategyFromRequestScope(
+        DealType dealType,
+        Type expectedType)
+    {
+        var services = new ServiceCollection();
+        services.AddConcertDealStrategies();
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        using var scope = provider.CreateScope();
+        var factory = scope.ServiceProvider
+            .GetRequiredService<IConcertDealStrategyFactory<IPaymentAmountMapper>>();
 
         var strategy = factory.Create(dealType);
 
@@ -121,13 +173,17 @@ public sealed class ConcertDealStrategyFactoryTests
     [InlineData(typeof(IDealTermsRenderer))]
     [InlineData(typeof(IDealTermsSerializer))]
     [InlineData(typeof(ITermsFingerprintCalculator))]
+    [InlineData(typeof(IDealPayeeResolver))]
+    [InlineData(typeof(IPaymentAmountMapper))]
     public void AddConcertDealStrategies_ScopeCapturingServices_RegistersScoped(Type serviceType)
     {
         var services = new ServiceCollection();
 
         services.AddConcertDealStrategies();
 
-        var descriptor = Assert.Single(services, candidate => candidate.ServiceType == serviceType);
+        var descriptor = Assert.Single(
+            services,
+            candidate => candidate.ServiceType == serviceType && !candidate.IsKeyedService);
         Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime);
     }
 

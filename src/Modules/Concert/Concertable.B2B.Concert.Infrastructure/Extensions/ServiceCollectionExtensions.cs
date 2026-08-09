@@ -156,17 +156,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOpportunityMapper, OpportunityMapper>();
         services.AddScoped<IApplicationMapper, ApplicationMapper>();
 
-        services.AddSingleton<IPaymentAmountMapper, PaymentAmountMapper>();
-        services.AddSingleton<FlatFeePaymentAmountMapper>();
-        services.AddSingleton<DoorSplitPaymentAmountMapper>();
-        services.AddSingleton<VersusPaymentAmountMapper>();
-        services.AddSingleton<VenueHirePaymentAmountMapper>();
-
-        services.AddSingleton<ITicketPayeeResolver, TicketPayeeResolver>();
-        services.AddSingleton<ISettlementPayeeResolver, SettlementPayeeResolver>();
-        services.AddSingleton<VenuePayeeResolver>();
-        services.AddSingleton<ArtistPayeeResolver>();
-
         services.AddSingleton<IArtistShareCalculator, ArtistShareCalculator>();
         services.AddSingleton<DoorSplitCalculator>();
         services.AddSingleton<VersusCalculator>();
@@ -208,22 +197,34 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
         services.AddScoped<IDealTermsRenderer, DealTermsRenderer>();
         services.AddScoped<IDealTermsSerializer, DealTermsSerializer>();
+        services.AddScoped<IDealPayeeResolver, DealPayeeResolver>();
+        services.AddScoped<IPaymentAmountMapper, PaymentAmountMapper>();
 
         return services.AddConcertDealStrategies(strategies =>
         {
             strategies.For(DealType.FlatFee)
-                .AddSingleton<IDealTerms, FlatFeeDealTerms>();
+                .AddSingleton<IDealTerms, FlatFeeDealTerms>()
+                .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
+                .AddSingleton<IPaymentAmountMapper, FlatFeePaymentAmountMapper>();
 
             strategies.For(DealType.DoorSplit)
-                .AddSingleton<IDealTerms, DoorSplitDealTerms>();
+                .AddSingleton<IDealTerms, DoorSplitDealTerms>()
+                .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
+                .AddSingleton<IPaymentAmountMapper, DoorSplitPaymentAmountMapper>();
 
             strategies.For(DealType.Versus)
-                .AddSingleton<IDealTerms, VersusDealTerms>();
+                .AddSingleton<IDealTerms, VersusDealTerms>()
+                .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
+                .AddSingleton<IPaymentAmountMapper, VersusPaymentAmountMapper>();
 
             strategies.For(DealType.VenueHire)
-                .AddSingleton<IDealTerms, VenueHireDealTerms>();
+                .AddSingleton<IDealTerms, VenueHireDealTerms>()
+                .AddSingleton<IDealPayeeResolver, ArtistPaysVenueDealPayeeResolver>()
+                .AddSingleton<IPaymentAmountMapper, VenueHirePaymentAmountMapper>();
 
             strategies.RequireAll<IDealTerms>();
+            strategies.RequireAll<IDealPayeeResolver>();
+            strategies.RequireAll<IPaymentAmountMapper>();
         });
     }
 
