@@ -65,7 +65,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         // Arrange — venue manager creates a fresh Versus opportunity
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var oppResponse = await venueClient.PostAsync("/api/Opportunity",
-            BuildRequest(new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 }));
+            BuildRequest(new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 }, fixture.SeedNow));
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies directly with no payment method
