@@ -20,8 +20,8 @@ internal sealed class TicketPayeeResolver : ITicketPayeeResolver
     }
 
     public Guid ResolveUserId(ConcertEntity concert) =>
-        resolvers[concert.DealType].ResolveUserId(concert);
+        resolvers[concert.Booking.Application.DealType].ResolveUserId(concert);
 
     public Guid ResolveTenantId(ConcertEntity concert) =>
-        resolvers[concert.DealType].ResolveTenantId(concert);
+        resolvers[concert.Booking.Application.DealType].ResolveTenantId(concert);
 }

@@ -12,26 +12,20 @@ namespace Concertable.B2B.Concert.UnitTests.Workflow;
 
 public sealed class DepositEscrowAcceptStepTests
 {
-    private const int ApplicationId = 1;
-
     private readonly Mock<IBookingService> bookingService;
-    private readonly Mock<IEscrowClient> escrowClient;
+    private readonly Mock<IEscrowOperationsClient> escrowClient;
     private readonly Mock<IDealAccessor> dealAccessor;
-    private readonly Mock<IApplicationRepository> applicationRepository;
     private readonly DepositEscrowAcceptStep step;
 
     public DepositEscrowAcceptStepTests()
     {
         this.bookingService = new Mock<IBookingService>();
-        this.escrowClient = new Mock<IEscrowClient>();
+        this.escrowClient = new Mock<IEscrowOperationsClient>();
         this.dealAccessor = new Mock<IDealAccessor>();
-        this.applicationRepository = new Mock<IApplicationRepository>();
-
         this.step = new DepositEscrowAcceptStep(
             bookingService.Object,
             escrowClient.Object,
             dealAccessor.Object,
-            applicationRepository.Object,
             new Mock<ILogger<DepositEscrowAcceptStep>>().Object);
     }
 
@@ -39,10 +33,15 @@ public sealed class DepositEscrowAcceptStepTests
     public async Task ExecuteAsync_ShouldThrowBadRequest_WhenApplicationIsNotPrepaid()
     {
         // Arrange — a VenueHire accept requires a PrepaidApplication; a standard one must be rejected
-        applicationRepository.Setup(r => r.GetByIdAsync(ApplicationId, It.IsAny<CancellationToken>())).ReturnsAsync(StandardApplication.Create(1, 1));
+        var application = StandardApplication.Create(
+            1,
+            1,
+            DealType.VenueHire,
+            Guid.NewGuid(),
+            Guid.NewGuid());
 
         // Act & Assert
-        await Assert.ThrowsAsync<BadRequestException>(() => step.ExecuteAsync(ApplicationId));
+        await Assert.ThrowsAsync<BadRequestException>(() => step.ExecuteAsync(application));
         escrowClient.Verify(
             c => c.DepositAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Money>(), It.IsAny<string>(), It.IsAny<PaymentSession>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Never);

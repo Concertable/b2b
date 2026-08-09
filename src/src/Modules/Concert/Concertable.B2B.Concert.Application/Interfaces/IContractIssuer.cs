@@ -9,5 +9,5 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// </summary>
 internal interface IContractIssuer
 {
-    Task IssueAsync(ApplicationEntity application, int bookingId, ESignatureRequest venueESignature);
+    Task IssueAsync(ApplicationEntity application, BookingEntity booking, ESignatureRequest venueESignature);
 }
