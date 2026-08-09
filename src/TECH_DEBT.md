@@ -120,6 +120,17 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ## LOW
 
+### `BookingAdvancer` uses expanded braces for empty catch blocks
+
+`src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/Workflow/BookingAdvancer.cs`
+has two deliberately empty catches (`ConflictException` and duplicate-key `DbUpdateException`)
+formatted as three-line blocks instead of the repository's compact `{ }` empty-block convention.
+
+**Resolves when:** both catches use the one-line `catch (...) { }` form from
+[`api/agents/CODE_CONVENTIONS.md`](../agents/CODE_CONVENTIONS.md).
+
+---
+
 ### Contract PDFs share the `images` blob container and rely on app-level write-once
 
 `ContractPdfService` stores contract PDFs under a `contracts/{bookingId}-{guid}.pdf` name in the **single shared `"images"` container** (the only container `Concertable.Shared.Blob` exposes). The blob *name* is fixed at creation, transactionally, at Accept (`ContractEntity.Create`), so generation can't race to mint competing names — but immutability of the *bytes* is still only app-level: `IBlobStorageService.UploadAsync` is `overwrite: true`, so nothing at the storage layer prevents a rewrite of a persisted legal document. A legal artefact ideally lives in its own container with a no-overwrite (write-once / immutability-policy) upload. Deliberately not done in the contract feature because both are **additive changes to the published `Concertable.Shared.Blob` package** (a dedicated container config + an overwrite-guarding `UploadAsync` overload), which would cross the package boundary the feature was scoped to avoid.
