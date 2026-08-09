@@ -1,3 +1,5 @@
+using Concertable.B2B.Concert.Application.Workflow;
+using Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Strategies;
@@ -7,6 +9,7 @@ internal sealed class ConcertDealStrategyBuilder
     private readonly IServiceCollection services;
     private readonly Dictionary<(DealType DealType, Type StrategyType), StrategyRegistration> registrations = [];
     private readonly Dictionary<Type, HashSet<DealType>> requiredCoverage = [];
+    private readonly Dictionary<DealType, ConcertWorkflowRegistration> workflows = [];
 
     public ConcertDealStrategyBuilder(IServiceCollection services)
     {
@@ -51,6 +54,19 @@ internal sealed class ConcertDealStrategyBuilder
 
         foreach (var registration in registrations.Values)
             registration.Add(services);
+
+        foreach (var stepType in workflows.Values.SelectMany(workflow => workflow.StepTypes).Distinct())
+            services.AddScoped(stepType);
+
+        if (workflows.Count == 0)
+            return;
+
+        services.AddSingleton<IConcertWorkflowCapabilityRegistry>(
+            new ConcertWorkflowCapabilityRegistry(
+                workflows.ToDictionary(pair => pair.Key, pair => pair.Value.WorkflowType)));
+        services.AddSingleton<IConcertStateMachineRegistry>(
+            new ConcertStateMachineRegistry(
+                workflows.ToDictionary(pair => pair.Key, pair => pair.Value.StateMachine)));
     }
 
     internal void Add<TStrategy, TImplementation>(DealType dealType, ServiceLifetime lifetime)
@@ -80,6 +96,20 @@ internal sealed class ConcertDealStrategyBuilder
                 typeof(TImplementation),
                 lifetime,
                 add));
+    }
+
+    internal void AddWorkflow<TWorkflow>(DealType dealType, Action<ConcertWorkflowBuilder> configure)
+        where TWorkflow : class, IConcertWorkflow
+    {
+        if (workflows.ContainsKey(dealType))
+            throw new InvalidOperationException($"A workflow has already been registered for {dealType}.");
+
+        var workflowBuilder = new ConcertWorkflowBuilder(dealType);
+        configure(workflowBuilder);
+        var workflow = workflowBuilder.Build<TWorkflow>();
+
+        Add<IConcertWorkflow, TWorkflow>(dealType, ServiceLifetime.Scoped);
+        workflows.Add(dealType, workflow);
     }
 
     private void ValidateCoverage()
@@ -164,6 +194,13 @@ internal sealed class ConcertDealTypeStrategyBuilder
         where TImplementation : class, TStrategy
     {
         builder.Add<TStrategy, TImplementation>(dealType, ServiceLifetime.Scoped);
+        return this;
+    }
+
+    public ConcertDealTypeStrategyBuilder AddWorkflow<TWorkflow>(Action<ConcertWorkflowBuilder> configure)
+        where TWorkflow : class, IConcertWorkflow
+    {
+        builder.AddWorkflow<TWorkflow>(dealType, configure);
         return this;
     }
 }

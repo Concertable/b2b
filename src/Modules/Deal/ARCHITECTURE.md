@@ -126,8 +126,8 @@ plus idempotent `Cancelled +Escrow*→Cancelled` late-webhook self-loops); `With
 (`Booked +Cancel→Cancelled`); `WithApplicationCancel` (`Accepted/PaymentFailed +Withdraw/Cancel→
 Cancelled`).
 
-The graphs therefore **differ by deal type** (composed in `AddConcertWorkflows()`,
-`Infrastructure/Extensions/ServiceCollectionExtensions.cs`):
+The graphs therefore **differ by deal type** (composed in the vertical
+`AddConcertDealStrategies()` block in `Infrastructure/Extensions/ServiceCollectionExtensions.cs`):
 
 | Deal type | Accept-leg triggers | `WithFinish(to)` | Finish leg | Settlement states |
 |---|---|---|---|---|
@@ -136,7 +136,7 @@ The graphs therefore **differ by deal type** (composed in `AddConcertWorkflows()
 | **DoorSplit** | `WithVerifiedPayment` | `AwaitingSettlement` | `PayoutFinishStep`        | `WithSettlement` |
 | **Versus**    | `WithVerifiedPayment` | `AwaitingSettlement` | `PayoutFinishStep`        | `WithSettlement` |
 
-`AddConcertWorkflows` registers two singletons off the accumulated maps:
+The strategy builder registers two singletons off the accumulated workflow definitions:
 `IConcertStateMachineRegistry → ConcertStateMachineRegistry` (`FrozenDictionary<DealType,
 LifecycleStateMachine>`, `Get(type)`) and `IConcertWorkflowCapabilityRegistry →
 ConcertWorkflowCapabilityRegistry` (`DealType → workflow CLR type`; `Has<TCapability>(dealType)` tests
@@ -311,8 +311,8 @@ capture), the client-supplied `UserAgent` stays optional.
 
 ## 4. Adding a new deal type
 
-The single spot that ties a deal type to its lifecycle + steps + workflow is one `AddConcertWorkflow`
-block. The executors, dispatchers, transitioner, factory, and registries are all deal-type-agnostic
+The single spot that ties a deal type to its strategies, lifecycle, steps, and workflow is one
+`strategies.For(DealType.X)` block. The executors, dispatchers, transitioner, factory, and registries are all deal-type-agnostic
 (keyed DI + capability matching) and need no changes.
 
 1. **`Deal.Contracts`** — add the case to `DealType.cs`; add an `XDeal : IDeal` record + a
@@ -327,16 +327,15 @@ block. The executors, dispatchers, transitioner, factory, and registries are all
    concrete step only if the money movement is genuinely new.
 5. **Concert `Infrastructure/.../Workflows/`** — add `XWorkflow : IConcertWorkflow, I{Applies…},
    I{Accepts…}` picking the capability interfaces that match its apply/accept/checkout shape.
-6. **`AddConcertWorkflows()`** (`Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs`) —
-   add the `services.AddConcertWorkflow(registryBuilder, DealType.X, p => p.WithApply<…>()…
-   .WithFinish<…>(state).WithWorkflow<XWorkflow>())` block. This wires the state-machine edges, the
-   keyed workflow, and the steps.
-7. **Revenue/payee** — add the deal's `IDealPayeeResolver`, `IPaymentAmountMapper`, `IDealTerms`, and
-   `ISettlementAmountResolver` leaves to the vertical `AddConcertDealStrategies` block. A
+6. **`AddConcertDealStrategies()`** (`Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs`) —
+   add the deal's `IDealPayeeResolver`, `IPaymentAmountMapper`, `IDealTerms`, and
+   `ISettlementAmountResolver` leaves to one vertical `strategies.For(DealType.X)` block, then append
+   `.AddWorkflow<XWorkflow>(workflow => workflow.WithApply<…>()…WithFinish<…>(state))`. This wires
+   the state-machine edges, keyed workflow, workflow metadata, and steps from the same declaration. A
    revenue-share settlement leaf uses the shared revenue-loading base and owns its complete formula.
-8. **Payment** — if the deal needs onboarding verification, register an `IStripeValidationStrategy`
+7. **Payment** — if the deal needs onboarding verification, register an `IStripeValidationStrategy`
    keyed by the new `DealType`.
-9. **Frontend** — add the deal form + accept/apply checkout UI variant.
+8. **Frontend** — add the deal form + accept/apply checkout UI variant.
 
 Re-using existing step impls is the main win of the capability-interface design.
 
@@ -388,8 +387,8 @@ blocker is the *data* side (a closed `DealType`, typed TPH columns, typed step r
   workers, and payment processors bind directly to the relevant interface. Payment verification
   processors delegate to `IVerifyCoordinator`, which persists the outcome before asking
   `IBookingAdvancer` to complete the accept/payment join.
-- **`ConcertWorkflowBuilder` runs at the composition root**, not per request; all workflows and state
-  machines are wired once in `AddConcertWorkflows`.
+- **`ConcertDealStrategyBuilder` and `ConcertWorkflowBuilder` run at the composition root**, not per
+  request; all strategies, workflows, and state machines are wired once in `AddConcertDealStrategies`.
 
 ### 6.1 Settlement amount has one runtime home
 
