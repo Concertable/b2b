@@ -1,28 +1,18 @@
-using System.Collections.Frozen;
 using Concertable.B2B.Concert.Application.Responses;
+using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Deal.Contracts;
 
 namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal sealed class PaymentAmountMapper : IPaymentAmountMapper
 {
-    private readonly FrozenDictionary<DealType, IPaymentAmountMapper> mappers;
+    private readonly IConcertDealStrategyFactory<IPaymentAmountMapper> mappers;
 
-    public PaymentAmountMapper(
-        FlatFeePaymentAmountMapper flatFee,
-        DoorSplitPaymentAmountMapper doorSplit,
-        VersusPaymentAmountMapper versus,
-        VenueHirePaymentAmountMapper venueHire)
+    public PaymentAmountMapper(IConcertDealStrategyFactory<IPaymentAmountMapper> mappers)
     {
-        mappers = new Dictionary<DealType, IPaymentAmountMapper>
-        {
-            [DealType.FlatFee] = flatFee,
-            [DealType.DoorSplit] = doorSplit,
-            [DealType.Versus] = versus,
-            [DealType.VenueHire] = venueHire,
-        }.ToFrozenDictionary();
+        this.mappers = mappers;
     }
 
     public IPaymentAmount ToPaymentAmount(IDeal deal) =>
-        mappers[deal.DealType].ToPaymentAmount(deal);
+        mappers.Create(deal.DealType).ToPaymentAmount(deal);
 }

@@ -48,7 +48,8 @@ internal static class ConcertWorkflowExtensions
         if (concert is null)
             return;
 
-        var supplierTenantId = scope.ServiceProvider.GetRequiredService<ISettlementPayeeResolver>().ResolveTenantId(concert);
+        var supplierTenantId = scope.ServiceProvider.GetRequiredService<IDealPayeeResolver>()
+            .ResolveSettlementTenantId(concert);
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime;
         var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
         if (await context.SelfBillingAgreements.AnyAsync(a => a.TenantId == supplierTenantId && a.ExpiresAtUtc > now))
