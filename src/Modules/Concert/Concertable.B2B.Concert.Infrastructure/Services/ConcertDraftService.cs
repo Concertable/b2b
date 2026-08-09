@@ -49,17 +49,13 @@ internal sealed class ConcertDraftService : IConcertDraftService
         }
 
         var concert = ConcertEntity.CreateDraft(
-            bookingConcert.Id,
+            bookingConcert,
             artist.Id,
             venue.Id,
             opportunity.Period,
             $"{artist.Name} performing at {venue.Name}",
             venue.About,
-            bookingConcert.DealType,
             matchingGenres);
-
-        concert.VenueTenantId = bookingConcert.VenueTenantId;
-        concert.ArtistTenantId = bookingConcert.ArtistTenantId;
 
         bookingConcert.Confirm(concert);
         await bookingRepository.SaveChangesAsync();

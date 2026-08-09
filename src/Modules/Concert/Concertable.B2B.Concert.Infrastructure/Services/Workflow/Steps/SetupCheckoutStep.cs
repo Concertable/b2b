@@ -12,14 +12,14 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IUserModule userModule;
     private readonly IDealAccessor dealAccessor;
-    private readonly IManagerPaymentClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly ITenantContext tenantContext;
 
     public SetupCheckoutStep(
         IOpportunityRepository opportunityRepository,
         IUserModule userModule,
         IDealAccessor dealAccessor,
-        IManagerPaymentClient managerPaymentClient,
+        IManagerPaymentOperationsClient managerPaymentClient,
         ITenantContext tenantContext)
     {
         this.opportunityRepository = opportunityRepository;

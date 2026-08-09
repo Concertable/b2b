@@ -65,7 +65,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         // Arrange — venue manager creates a fresh FlatFee opportunity
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var oppResponse = await venueClient.PostAsync("/api/Opportunity",
-            BuildRequest(new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 }));
+            BuildRequest(new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 }, fixture.SeedNow));
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies directly with no payment method

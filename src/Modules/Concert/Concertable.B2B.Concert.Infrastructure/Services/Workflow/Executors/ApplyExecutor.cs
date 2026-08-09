@@ -51,33 +51,40 @@ internal sealed class ApplyExecutor : IApplyExecutor
     {
         var deal = await dealResolver.ResolveByOpportunityIdAsync(opportunityId);
         var workflow = workflows.Create(deal.DealType);
+        var venueTenantId = await opportunityRepository.GetTenantIdByIdAsync(opportunityId);
+        if (venueTenantId is null)
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
+                new ApplyApplicationError.OpportunityNotFound(opportunityId));
+
+        if (tenantContext.TenantId is not { } artistTenantId)
+            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
+                new ApplyApplicationError.MissingTenant());
+
         ApplicationEntity application;
         if (workflow is IAppliesPaid paid && paymentMethodId is not null)
         {
-            application = await paid.Apply.ApplyAsync(artistId, opportunityId, deal.DealType, paymentMethodId);
+            application = await paid.Apply.ApplyAsync(
+                artistId,
+                opportunityId,
+                deal.DealType,
+                paymentMethodId,
+                venueTenantId.Value,
+                artistTenantId);
         }
         else if (workflow is IAppliesSimple simple)
         {
-            application = await simple.Apply.ApplyAsync(artistId, opportunityId, deal.DealType);
+            application = await simple.Apply.ApplyAsync(
+                artistId,
+                opportunityId,
+                deal.DealType,
+                venueTenantId.Value,
+                artistTenantId);
         }
         else
         {
             return Result.Failure<ApplicationEntity, ApplyApplicationError>(
                 new ApplyApplicationError.UnsupportedDeal(workflow.Type));
         }
-
-        /* Snapshot the two parties at apply; the booking and concert inherit this pair downstream.
-           The applier IS the artist side, so their own tenant comes from the ambient context. */
-        var venueTenantId = await opportunityRepository.GetTenantIdByIdAsync(opportunityId);
-        if (venueTenantId is null)
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                new ApplyApplicationError.OpportunityNotFound(opportunityId));
-        application.VenueTenantId = venueTenantId.Value;
-
-        if (tenantContext.TenantId is not { } artistTenantId)
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                new ApplyApplicationError.MissingTenant());
-        application.ArtistTenantId = artistTenantId;
 
         var period = await opportunityRepository.GetPeriodByIdAsync(opportunityId);
         if (period is null)
@@ -87,7 +94,6 @@ internal sealed class ApplyExecutor : IApplyExecutor
         if (currentUser.Id is not { } userId)
             return Result.Failure<ApplicationEntity, ApplyApplicationError>(
                 new ApplyApplicationError.MissingUser());
-
         application.RecordArtistESignature(
             new ESignature(
                 userId,

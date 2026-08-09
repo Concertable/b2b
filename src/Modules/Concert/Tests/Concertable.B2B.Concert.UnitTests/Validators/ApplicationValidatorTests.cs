@@ -43,7 +43,8 @@ public sealed class ApplicationValidatorTests
 
         tenantContext.SetupGet(t => t.TenantId).Returns(venueTenantId);
         opportunityRepository.Setup(r => r.GetByApplicationIdAsync(ApplicationId)).ReturnsAsync(Opportunity(FuturePeriod));
-        applicationRepository.Setup(r => r.GetByIdAsync(ApplicationId)).ReturnsAsync(StandardApplication.Create(ArtistId, OpportunityId));
+        applicationRepository.Setup(r => r.GetByIdAsync(ApplicationId)).ReturnsAsync(
+            StandardApplication.Create(ArtistId, OpportunityId, DealType.FlatFee, venueTenantId, Guid.NewGuid()));
 
         this.validator = new ApplicationValidator(
             availability.Object,

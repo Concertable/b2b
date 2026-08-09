@@ -40,16 +40,25 @@ public sealed class ConcertValidatorTests
             errors.Errors["totalTickets"]);
     }
 
-    private static ConcertEntity CreateConcert() =>
-        ConcertEntity.CreateDraft(
+    private static ConcertEntity CreateConcert()
+    {
+        var application = StandardApplication.Create(
             1,
             2,
-            3,
+            DealType.FlatFee,
+            Guid.NewGuid(),
+            Guid.NewGuid());
+        var booking = StandardBooking.Create(application);
+
+        return ConcertEntity.CreateDraft(
+            booking,
+            1,
+            2,
             new DateRange(
                 new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc)),
             "Concert",
             "About",
-            DealType.FlatFee,
             [Genre.Rock]);
+    }
 }
