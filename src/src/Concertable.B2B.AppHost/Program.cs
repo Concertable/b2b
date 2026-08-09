@@ -10,7 +10,6 @@ var asb = builder.AddServiceBus();
 
 asb.Topology()
    .AddB2BTopology()
-   .AddCustomerTopology()
    .AddSearchTopology()
    .AddPaymentTopology()
    .AddAuthTopology();
