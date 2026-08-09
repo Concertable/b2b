@@ -8,16 +8,23 @@ namespace Concertable.B2B.Seed.Infrastructure.Factories;
 public static class ApplicationFactory
 {
     public static StandardApplication Create(int artistId, int opportunityId)
-        => StandardApplication.Create(artistId, opportunityId);
+        => New<StandardApplication>()
+            .With(nameof(ApplicationEntity.ArtistId), artistId)
+            .With(nameof(ApplicationEntity.OpportunityId), opportunityId);
 
     public static StandardApplication Create(int artistId, int opportunityId, DealType dealType)
-        => StandardApplication.Create(artistId, opportunityId, dealType);
+        => Create(artistId, opportunityId)
+            .With(nameof(ApplicationEntity.DealType), dealType);
 
     public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
-        => PrepaidApplication.Create(artistId, opportunityId, paymentMethodId);
+        => New<PrepaidApplication>()
+            .With(nameof(ApplicationEntity.ArtistId), artistId)
+            .With(nameof(ApplicationEntity.OpportunityId), opportunityId)
+            .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
 
     public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, DealType dealType, string paymentMethodId = "pm_card_visa")
-        => PrepaidApplication.Create(artistId, opportunityId, dealType, paymentMethodId);
+        => CreatePrepaid(artistId, opportunityId, paymentMethodId)
+            .With(nameof(ApplicationEntity.DealType), dealType);
 
     public static StandardApplication Accepted(int artistId, int opportunityId, BookingEntity booking)
         => InState<StandardApplication>(artistId, opportunityId, booking, LifecycleState.Accepted);
@@ -48,6 +55,7 @@ public static class ApplicationFactory
             .With(nameof(ApplicationEntity.OpportunityId), opportunityId)
             .With(nameof(ApplicationEntity.State), state);
         app.Accept(booking);
+        booking.With(nameof(BookingEntity.Application), app);
         return app;
     }
 }

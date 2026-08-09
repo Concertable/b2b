@@ -21,17 +21,17 @@ public sealed class VerifyCheckoutStepTests
 
     private readonly Mock<IApplicationRepository> applicationRepository;
     private readonly Mock<IDealAccessor> dealAccessor;
-    private readonly Mock<IManagerPaymentClient> managerPaymentClient;
+    private readonly Mock<IManagerPaymentOperationsClient> managerPaymentClient;
     private readonly Mock<IPaymentAmountMapper> paymentAmountMapper;
     private readonly VerifyCheckoutStep step;
 
-    private IDictionary<string, string>? capturedMetadata;
+    private IReadOnlyDictionary<string, string>? capturedMetadata;
 
     public VerifyCheckoutStepTests()
     {
         this.applicationRepository = new Mock<IApplicationRepository>();
         this.dealAccessor = new Mock<IDealAccessor>();
-        this.managerPaymentClient = new Mock<IManagerPaymentClient>();
+        this.managerPaymentClient = new Mock<IManagerPaymentOperationsClient>();
         this.paymentAmountMapper = new Mock<IPaymentAmountMapper>();
 
         applicationRepository.Setup(r => r.GetArtistPayeeAsync(ApplicationId)).ReturnsAsync(artist);
@@ -42,8 +42,8 @@ public sealed class VerifyCheckoutStepTests
         dealAccessor.SetupGet(c => c.Deal).Returns(deal);
         paymentAmountMapper.Setup(m => m.ToPaymentAmount(deal)).Returns(amount);
         managerPaymentClient
-            .Setup(c => c.CreateVerifySessionAsync(It.IsAny<Guid>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
-            .Callback<Guid, IDictionary<string, string>, CancellationToken>((_, m, _) => capturedMetadata = m)
+            .Setup(c => c.CreateVerifySessionAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .Callback<Guid, IReadOnlyDictionary<string, string>, CancellationToken>((_, m, _) => capturedMetadata = m)
             .ReturnsAsync(session);
 
         this.step = new VerifyCheckoutStep(applicationRepository.Object, dealAccessor.Object, managerPaymentClient.Object, paymentAmountMapper.Object);
@@ -62,7 +62,7 @@ public sealed class VerifyCheckoutStepTests
         Assert.Equal(artist, checkout.Payee);
         Assert.Equal(session, checkout.Session);
         managerPaymentClient.Verify(
-            c => c.CreateVerifySessionAsync(venueTenantId, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()),
+            c => c.CreateVerifySessionAsync(venueTenantId, It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()),
             Times.Once);
         Assert.Equal(TransactionTypes.Verify, capturedMetadata![PaymentMetadataKeys.Type]);
         Assert.Equal(ApplicationId.ToString(), capturedMetadata[PaymentMetadataKeys.ApplicationId]);

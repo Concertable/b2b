@@ -29,9 +29,9 @@ internal sealed class ConcertDbContext(
     public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();
     public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
 
-    /* Applications and bookings are private deal documents — visible to their two parties only.
-       Concert carries the same snapshot columns but is deliberately NOT filtered: its details
-       page is public marketplace browse, served by PublicConcertDbContext. */
+    /* Applications and bookings are private deal records — visible to their two parties only.
+       Concert carries the same tenant pair but is deliberately NOT filtered: its details page is
+       public marketplace browse, served by PublicConcertDbContext. */
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyVenueArtist<ApplicationEntity>(this);

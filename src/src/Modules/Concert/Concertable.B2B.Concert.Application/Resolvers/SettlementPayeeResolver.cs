@@ -20,5 +20,5 @@ internal sealed class SettlementPayeeResolver : ISettlementPayeeResolver
     }
 
     public Guid ResolveTenantId(ConcertEntity concert) =>
-        resolvers[concert.DealType].ResolveTenantId(concert);
+        resolvers[concert.Booking.Application.DealType].ResolveTenantId(concert);
 }
