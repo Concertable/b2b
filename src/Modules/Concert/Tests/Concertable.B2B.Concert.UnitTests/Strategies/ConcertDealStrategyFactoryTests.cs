@@ -4,7 +4,9 @@ using Concertable.B2B.Concert.Application.Renderers;
 using Concertable.B2B.Concert.Application.Resolvers;
 using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
+using Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests.Strategies;
 
@@ -19,7 +21,7 @@ public sealed class ConcertDealStrategyFactoryTests
         DealType dealType,
         Type expectedType)
     {
-        var services = new ServiceCollection();
+        var services = CreateServices();
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -44,7 +46,7 @@ public sealed class ConcertDealStrategyFactoryTests
         DealType dealType,
         Type expectedType)
     {
-        var services = new ServiceCollection();
+        var services = CreateServices();
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -69,7 +71,7 @@ public sealed class ConcertDealStrategyFactoryTests
         DealType dealType,
         Type expectedType)
     {
-        var services = new ServiceCollection();
+        var services = CreateServices();
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -85,10 +87,35 @@ public sealed class ConcertDealStrategyFactoryTests
         Assert.IsType(expectedType, strategy);
     }
 
+    [Theory]
+    [InlineData(DealType.FlatFee, typeof(FlatFeeSettlementAmount))]
+    [InlineData(DealType.DoorSplit, typeof(DoorSplitSettlementAmount))]
+    [InlineData(DealType.Versus, typeof(VersusSettlementAmount))]
+    [InlineData(DealType.VenueHire, typeof(VenueHireSettlementAmount))]
+    public void Create_SettlementAmountType_ResolvesExpectedStrategyFromRequestScope(
+        DealType dealType,
+        Type expectedType)
+    {
+        var services = CreateServices();
+        services.AddConcertDealStrategies();
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        using var scope = provider.CreateScope();
+        var factory = scope.ServiceProvider
+            .GetRequiredService<IConcertDealStrategyFactory<ISettlementAmountResolver>>();
+
+        var strategy = factory.Create(dealType);
+
+        Assert.IsType(expectedType, strategy);
+    }
+
     [Fact]
     public void Resolve_FactoryLifetime_IsScoped()
     {
-        var services = new ServiceCollection();
+        var services = CreateServices();
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -114,7 +141,7 @@ public sealed class ConcertDealStrategyFactoryTests
     [Fact]
     public void Create_SingletonStrategyLifetime_IsSharedAcrossScopes()
     {
-        var services = new ServiceCollection();
+        var services = CreateServices();
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -137,7 +164,7 @@ public sealed class ConcertDealStrategyFactoryTests
     [Fact]
     public void Create_ScopedStrategy_UsesCurrentScopeKeyedProvider()
     {
-        var services = new ServiceCollection();
+        var services = CreateServices();
         services.AddConcertDealStrategies(strategies =>
         {
             strategies.For(DealType.FlatFee)
@@ -175,9 +202,10 @@ public sealed class ConcertDealStrategyFactoryTests
     [InlineData(typeof(ITermsFingerprintCalculator))]
     [InlineData(typeof(IDealPayeeResolver))]
     [InlineData(typeof(IPaymentAmountMapper))]
+    [InlineData(typeof(ISettlementAmountResolver))]
     public void AddConcertDealStrategies_ScopeCapturingServices_RegistersScoped(Type serviceType)
     {
-        var services = new ServiceCollection();
+        var services = CreateServices();
 
         services.AddConcertDealStrategies();
 
@@ -185,6 +213,13 @@ public sealed class ConcertDealStrategyFactoryTests
             services,
             candidate => candidate.ServiceType == serviceType && !candidate.IsKeyedService);
         Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime);
+    }
+
+    private static ServiceCollection CreateServices()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped(_ => Mock.Of<IConcertRepository>());
+        return services;
     }
 
     private interface ITestStrategy;

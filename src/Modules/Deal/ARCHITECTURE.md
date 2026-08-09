@@ -43,9 +43,9 @@ api/.../Modules/Deal/
 ├─ Concertable.B2B.Deal.Domain/Entities/
 │  ├─ DealEntity.cs                  (abstract TPH root: Id, PaymentMethod, abstract DealType)
 │  ├─ FlatFeeDealEntity.cs           { Fee }
-│  ├─ DoorSplitDealEntity.cs         { ArtistDoorPercent, CalculateArtistShare(rev) }
+│  ├─ DoorSplitDealEntity.cs         { ArtistDoorPercent }
 │  ├─ VenueHireDealEntity.cs         { HireFee }
-│  └─ VersusDealEntity.cs            { Guarantee, ArtistDoorPercent, CalculateArtistShare(rev) }
+│  └─ VersusDealEntity.cs            { Guarantee, ArtistDoorPercent }
 ├─ Concertable.B2B.Deal.Contracts/
 │  ├─ DealType.cs                    enum { FlatFee, DoorSplit, Versus, VenueHire }
 │  ├─ PaymentMethod.cs               enum { Cash, Transfer }
@@ -257,9 +257,12 @@ tenant, sourced from the frozen tenant snapshot on the application/booking.
 Escrow deals (FlatFee, VenueHire) confirm money **at Accept** and release **at Finish**
 (`Booked +Finish→Complete`). Payout deals (DoorSplit, Versus) ring-fence nothing at Accept (verify +
 store card) and pay off-session **at Finish** (`Booked +Finish→AwaitingSettlement`, then
-`SettlementPaymentSucceeded→Complete`). Cancellation always refunds escrow. The `artistShare` figure
-is computed by `IArtistShareCalculator` (keyed strategy — `DoorSplitCalculator` / `VersusCalculator`)
-consumed by `PayoutFinishStep`. Payment webhooks return as integration events
+`SettlementPaymentSucceeded→Complete`). Cancellation always refunds escrow. Settlement gross comes
+from `ISettlementAmountResolver`, whose named facade selects one keyed strategy through
+`IConcertDealStrategyFactory`. The DoorSplit and Versus leaves share the revenue-loading base that
+reads ticket revenue plus declared door revenue, then apply their own percentage-only or
+guarantee-plus-percentage formula. `PayoutFinishStep` and `InvoiceIssuer` consume that same facade so
+charged and invoiced amounts cannot diverge. Payment webhooks return as integration events
 (`PaymentSucceeded/FailedEvent`) handled by the `*Processor` classes, which route by
 `Metadata["type"]` and drive the matching executor or `VerifyCoordinator`;
 idempotency is provided by the inbox.
@@ -328,9 +331,9 @@ block. The executors, dispatchers, transitioner, factory, and registries are all
    add the `services.AddConcertWorkflow(registryBuilder, DealType.X, p => p.WithApply<…>()…
    .WithFinish<…>(state).WithWorkflow<XWorkflow>())` block. This wires the state-machine edges, the
    keyed workflow, and the steps.
-7. **Revenue/payee, only if new** — add the deal's `IDealPayeeResolver`,
-   `IPaymentAmountMapper`, and `IDealTerms` leaves to the vertical `AddConcertDealStrategies` block;
-   if the deal pays a revenue share at Finish, add an `IArtistShareCalculator` strategy + key.
+7. **Revenue/payee** — add the deal's `IDealPayeeResolver`, `IPaymentAmountMapper`, `IDealTerms`, and
+   `ISettlementAmountResolver` leaves to the vertical `AddConcertDealStrategies` block. A
+   revenue-share settlement leaf uses the shared revenue-loading base and owns its complete formula.
 8. **Payment** — if the deal needs onboarding verification, register an `IStripeValidationStrategy`
    keyed by the new `DealType`.
 9. **Frontend** — add the deal form + accept/apply checkout UI variant.
@@ -351,7 +354,7 @@ blocker is the *data* side (a closed `DealType`, typed TPH columns, typed step r
 |---|---|---|
 | `DealType` is a closed enum | `Deal.Contracts/DealType.cs` | Every keyed-DI lookup, capability match, and JSON discriminator assumes a finite compile-time set. User-defined deals need an open identifier + runtime registration. |
 | TPH schema per subtype | `Deal.Domain/Entities/*DealEntity.cs` + EF configs | Each deal type gets its own columns; a user-defined deal has unknown shape at migration time (needs a JSON blob or rule list). |
-| Step impls read typed properties | `Concert.Infrastructure/.../Steps/*Step.cs` | `PayoutFinishStep` reads `ArtistDoorPercent` via the calculator; a custom deal has no typed property — you'd need a rule interpreter or a finite set of rule kinds. |
+| Strategy leaves read typed properties | `Concert.Infrastructure/Services/Settlement/*SettlementAmount.cs` | Revenue-share leaves read `ArtistDoorPercent` and optional `Guarantee`; a custom deal has no typed property — you'd need a rule interpreter or a finite set of rule kinds. |
 | Stripe primitives are rigid | Payment | Connect exposes a small finite set of operations; custom deals still map onto that set. |
 | `DealPayeeResolver` selects a closed directional strategy | `Concert.Application/Resolvers/` | Who keeps ticket revenue and who receives settlement are cohesive values keyed by `DealType`; a custom deal must declare both. |
 
@@ -388,14 +391,12 @@ blocker is the *data* side (a closed `DealType`, typed TPH columns, typed step r
 - **`ConcertWorkflowBuilder` runs at the composition root**, not per request; all workflows and state
   machines are wired once in `AddConcertWorkflows`.
 
-### 6.1 Artist-share formula lives in two places
+### 6.1 Settlement amount has one runtime home
 
-The share formula exists both on the domain entities (`DoorSplitDealEntity.CalculateArtistShare`,
-`VersusDealEntity.CalculateArtistShare`) and in the runtime `IArtistShareCalculator` strategies
-(`DoorSplitCalculator`, `VersusCalculator`) used by `PayoutFinishStep`. At runtime only the strategies
-are used; the entity methods survive **only as the oracle in the integration tests**
-(`ConcertDoorSplitApiTests`, `ConcertVersusApiTests`). Pick one home — or keep the entity method as the
-deliberate independent test oracle and note that intent where it's defined.
+`ISettlementAmountResolver` is the single settlement-gross contract used by payout and invoicing.
+Its generic strategy factory selects FlatFee, DoorSplit, Versus, or VenueHire leaves from the vertical
+registration. DoorSplit and Versus share only revenue loading; each leaf owns its complete formula.
+Deal entities carry economic inputs and validation but do not duplicate the runtime calculation.
 
 ### 6.2 `IDealStrategy` is under-used
 

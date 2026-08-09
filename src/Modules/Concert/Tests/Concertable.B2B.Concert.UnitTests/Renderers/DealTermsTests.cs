@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.Kernel.ValueObjects;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests.Renderers;
 
@@ -20,6 +21,7 @@ public sealed class DealTermsTests : IDisposable
     public DealTermsTests()
     {
         var services = new ServiceCollection();
+        services.AddScoped(_ => Mock.Of<IConcertRepository>());
         services.AddConcertDealStrategies();
 
         this.provider = services.BuildServiceProvider(new ServiceProviderOptions
