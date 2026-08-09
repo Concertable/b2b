@@ -1,4 +1,4 @@
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Dunet;
 
 namespace Concertable.B2B.Artist.Application.Errors;
@@ -9,7 +9,7 @@ internal abstract partial record CreateArtistError : IError
     public ErrorDefinition Definition => this switch
     {
         Forbidden =>
-            ErrorDefinition.Forbidden<Forbidden>(
+            ErrorDefinition.For<CreateArtistError>().Forbidden<Forbidden>(
                 "No active organization was found for the current user.")
     };
 

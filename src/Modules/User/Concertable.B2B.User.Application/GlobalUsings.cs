@@ -1,6 +1,6 @@
 global using Concertable.Kernel;
-global using Concertable.Kernel.Errors;
-global using Concertable.Kernel.Functional;
+global using Reunion.Errors;
+global using Reunion;
 global using Concertable.Kernel.ValueObjects;
 global using Concertable.Kernel.Identity;
 global using Concertable.Contracts;

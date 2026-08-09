@@ -1,6 +1,6 @@
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.Shared.Api.Results;
+using Reunion.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Deal.Api.Controllers;

@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Deal.Contracts.Enums;
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 
 namespace Concertable.B2B.Concert.UnitTests;
 
@@ -257,12 +257,12 @@ public sealed class ErrorDefinitionContractTests
         string expectedCode,
         string expectedMessage)
     {
-        var definition = Assert.IsType<ValidationErrorDefinition>(error.Definition);
+        var definition = Assert.IsType<ValidationError>(error.Definition);
 
         Assert.Equal(expectedCode, definition.Code);
         Assert.Equal(expectedMessage, definition.Message);
         Assert.Equal(ErrorKind.Invalid, definition.Kind);
-        Assert.Single(definition.Errors);
-        Assert.Equal(["Validation failed."], definition.Errors["Field"]);
+        Assert.Single(definition.Errors.Errors);
+        Assert.Equal(["Validation failed."], definition.Errors.Errors["Field"]);
     }
 }

@@ -1,4 +1,4 @@
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Dunet;
 
 namespace Concertable.B2B.Artist.Application.Errors;
@@ -9,7 +9,7 @@ internal abstract partial record UpdateArtistError : IError
     public ErrorDefinition Definition => this switch
     {
         NotFound(var artistId) =>
-            ErrorDefinition.NotFound<NotFound>($"Artist {artistId} was not found.")
+            ErrorDefinition.For<UpdateArtistError>().NotFound<NotFound>($"Artist {artistId} was not found.")
     };
 
     [ErrorCode("artist.update_not_found")]

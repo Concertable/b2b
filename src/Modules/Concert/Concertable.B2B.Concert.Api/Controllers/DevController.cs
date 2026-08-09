@@ -20,19 +20,19 @@ internal sealed class DevController : ControllerBase
         [FromQuery] int applicationId,
         [FromServices] IAcceptExecutor acceptExecutor)
     {
-        await acceptExecutor.AcceptAsync(applicationId, null, new ESignatureRequest { SignatoryName = "Dev Venue Manager" });
-        return NoContent();
+        return (await acceptExecutor.AcceptAsync(
+            applicationId,
+            null,
+            new ESignatureRequest { SignatoryName = "Dev Venue Manager" }))
+            .ToNoContentOrProblem();
     }
 
     [Authorize]
     [HttpPost("complete")]
-    public async Task<IActionResult> Complete(
+    public async Task<ActionResult<SettlementOutcome>> Complete(
         [FromQuery] int concertId,
         [FromServices] IFinishExecutor finishExecutor)
     {
-        var result = await finishExecutor.FinishAsync(concertId);
-        return result.IsFailed
-            ? BadRequest(result.Errors.SelectMessages())
-            : Ok();
+        return (await finishExecutor.FinishAsync(concertId)).ToOkOrProblem();
     }
 }

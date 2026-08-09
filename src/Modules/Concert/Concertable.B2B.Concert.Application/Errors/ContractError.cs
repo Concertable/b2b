@@ -1,4 +1,4 @@
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Dunet;
 
 namespace Concertable.B2B.Concert.Application.Errors;
@@ -9,10 +9,10 @@ internal abstract partial record ContractError : IError
     public ErrorDefinition Definition => this switch
     {
         ApplicationNotFound(var applicationId) =>
-            ErrorDefinition.NotFound<ApplicationNotFound>(
+            ErrorDefinition.For<ContractError>().NotFound<ApplicationNotFound>(
                 $"No contract was found for application {applicationId}."),
         ConcertNotFound(var concertId) =>
-            ErrorDefinition.NotFound<ConcertNotFound>(
+            ErrorDefinition.For<ContractError>().NotFound<ConcertNotFound>(
                 $"No contract was found for concert {concertId}.")
     };
 

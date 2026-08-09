@@ -4,7 +4,7 @@ using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Concertable.Shared.Api.Results;
+using Reunion.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Tenant.Api.Controllers;
 
@@ -35,20 +35,20 @@ internal sealed class TenantMembershipController : ControllerBase
     [HasPermission(SharedPermissions.MembersInvite)]
     public async Task<ActionResult<InvitationDto>> Invite(InviteMemberRequest request)
         => (await invitationService.InviteAsync(request))
-            .ToCreatedAtActionResult(nameof(GetInvitations));
+            .ToActionResult(value => CreatedAtAction(nameof(GetInvitations), value));
 
     [HttpDelete("invitations/{id:guid}")]
     [HasPermission(SharedPermissions.MembersInvite)]
     public async Task<IActionResult> RevokeInvitation(Guid id) =>
-        (await invitationService.RevokeInvitationAsync(id)).ToNoContentActionResult();
+        (await invitationService.RevokeInvitationAsync(id)).ToNoContentOrProblem();
 
     [HttpPut("members/{userId:guid}/role")]
     [HasPermission(SharedPermissions.MembersManageRoles)]
     public async Task<IActionResult> ChangeRole(Guid userId, ChangeMemberRoleRequest request) =>
-        (await membershipService.ChangeRoleAsync(userId, request)).ToNoContentActionResult();
+        (await membershipService.ChangeRoleAsync(userId, request)).ToNoContentOrProblem();
 
     [HttpDelete("members/{userId:guid}")]
     [HasPermission(SharedPermissions.MembersRemove)]
     public async Task<IActionResult> RemoveMember(Guid userId) =>
-        (await membershipService.RemoveMemberAsync(userId)).ToNoContentActionResult();
+        (await membershipService.RemoveMemberAsync(userId)).ToNoContentOrProblem();
 }

@@ -4,7 +4,6 @@ using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
@@ -49,55 +48,56 @@ internal sealed class FinishExecutor : IFinishExecutor
         this.logger = logger;
     }
 
-    public async Task<FluentResults.Result<SettlementOutcome>> FinishAsync(int concertId, CancellationToken ct = default)
+    public async Task<Result<SettlementOutcome, FinishConcertError>> FinishAsync(
+        int concertId,
+        CancellationToken ct = default)
     {
-        try
+        var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct);
+        if (concert is null)
+            return Result.Failure<SettlementOutcome, FinishConcertError>(
+                new FinishConcertError.ConcertNotFound(concertId));
+
+        if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
+            return Result.Failure<SettlementOutcome, FinishConcertError>(
+                new FinishConcertError.ConcertNotEnded());
+
+        var supplierTenantId = settlementPayeeResolver.ResolveTenantId(concert);
+        var customerTenantId = ticketPayeeResolver.ResolveTenantId(concert);
+        var supplierComplete = await tenantModule.IsTaxComplianceCompleteAsync(supplierTenantId);
+        var customerComplete = await tenantModule.IsTaxComplianceCompleteAsync(customerTenantId);
+        if (!supplierComplete || !customerComplete)
         {
-            var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct)
-                .OrNotFound();
-            if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
-                throw new BadRequestException("Concert cannot be finished before it has ended");
+            logger.SettlementDeferredPendingTaxCompliance(concertId, supplierComplete ? customerTenantId : supplierTenantId);
+            return Result.Success<SettlementOutcome, FinishConcertError>(
+                SettlementOutcome.DeferredPendingTaxCompliance);
+        }
 
-            // Fail-closed tax gate: both parties' tax identities must be complete for their jurisdiction — the
-            // payee's so we can settle, and the counterparty's so the self-billed invoice minted in the same
-            // transaction carries both parties' legally-required VAT details. If either is incomplete, don't
-            // transition, don't pay, don't invoice; the hourly sweep self-heals once the missing details land.
-            var supplierTenantId = settlementPayeeResolver.ResolveTenantId(concert);
-            var customerTenantId = ticketPayeeResolver.ResolveTenantId(concert);
-            var supplierComplete = await tenantModule.IsTaxComplianceCompleteAsync(supplierTenantId);
-            var customerComplete = await tenantModule.IsTaxComplianceCompleteAsync(customerTenantId);
-            if (!supplierComplete || !customerComplete)
-            {
-                logger.SettlementDeferredPendingTaxCompliance(concertId, supplierComplete ? customerTenantId : supplierTenantId);
-                return FluentResults.Result.Ok(SettlementOutcome.DeferredPendingTaxCompliance);
-            }
+        if (!await selfBillingAgreementGate.HasCurrentAsync(supplierTenantId, timeProvider.GetUtcNow().UtcDateTime, ct))
+        {
+            logger.SettlementDeferredPendingSelfBillingAgreement(concertId, supplierTenantId);
+            return Result.Success<SettlementOutcome, FinishConcertError>(
+                SettlementOutcome.DeferredPendingSelfBillingAgreement);
+        }
 
-            // Fail-closed self-billing gate: the invoice minted below prints that it is raised by Concertable on the
-            // supplier's behalf under a self-billing agreement, so that agreement must actually be in force. Without a
-            // current one, defer rather than assert a document we do not hold; the sweep self-heals once consent lands.
-            if (!await selfBillingAgreementGate.HasCurrentAsync(supplierTenantId, timeProvider.GetUtcNow().UtcDateTime, ct))
-            {
-                logger.SettlementDeferredPendingSelfBillingAgreement(concertId, supplierTenantId);
-                return FluentResults.Result.Ok(SettlementOutcome.DeferredPendingSelfBillingAgreement);
-            }
-
-            await transitioner.TransitionAsync(concert.Booking.ApplicationId, Trigger.Finish, async app =>
+        var transition = await transitioner.TransitionAsync<FinishConcertError>(
+            concert.Booking.ApplicationId,
+            Trigger.Finish,
+            error => (FinishConcertError)new FinishConcertError.TransitionFailure(error),
+            async app =>
             {
                 await dealResolver.ResolveByConcertIdAsync(concertId);
                 var workflow = workflows.Create(app.DealType);
-                await workflow.Finish.ExecuteAsync(concertId);
+                var finish = await workflow.Finish.ExecuteAsync(concertId, ct);
+                if (finish.TryGetError(out var finishError))
+                    return UnitResult.Failure(finishError);
+
                 await invoiceIssuer.IssueAsync(concert);
-            }, ct).GetValueOrThrowAsync();
-            return FluentResults.Result.Ok(SettlementOutcome.Settled);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            logger.FailedToFinishConcert(concertId, ex);
-            return FluentResults.Result.Fail<SettlementOutcome>(ex.Message);
-        }
+                return UnitResult.Success<FinishConcertError>();
+            }, ct);
+
+        if (transition.TryGetError(out var transitionError))
+            return Result.Failure<SettlementOutcome, FinishConcertError>(transitionError);
+
+        return Result.Success<SettlementOutcome, FinishConcertError>(SettlementOutcome.Settled);
     }
 }

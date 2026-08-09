@@ -1,6 +1,6 @@
 using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 
 namespace Concertable.B2B.Tenant.UnitTests;
 

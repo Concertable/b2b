@@ -8,7 +8,7 @@ internal abstract partial record ApproveVenueError : IError
     public ErrorDefinition Definition => this switch
     {
         VenueNotFound(var venueId) =>
-            ErrorDefinition.NotFound<VenueNotFound>(
+            ErrorDefinition.For<ApproveVenueError>().NotFound<VenueNotFound>(
                 $"Venue {venueId} was not found.")
     };
 

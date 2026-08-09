@@ -1,4 +1,4 @@
-using Concertable.Kernel.Functional;
+using Reunion;
 
 namespace Concertable.B2B.Venue.Contracts;
 

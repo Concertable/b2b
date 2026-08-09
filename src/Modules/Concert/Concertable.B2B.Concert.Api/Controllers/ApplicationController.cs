@@ -69,7 +69,7 @@ internal sealed class ApplicationController : ControllerBase
     {
         return (await applicationService.GetByIdAsync(id))
             .Map(mapper.ToResponse)
-            .ToOkActionResult();
+            .ToOkOrProblem();
     }
 
     // No [HasPermission]: both parties read (venue + artist), enforced by the two-party tenant filter
@@ -78,7 +78,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<ContractDto>> GetContract(int id)
     {
         return (await contractService.GetByApplicationIdAsync(id))
-            .ToOkActionResult();
+            .ToOkOrProblem();
     }
 
     [HttpGet("{id}/contract/pdf")]
@@ -122,10 +122,16 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/accept")]
-    public async Task<IActionResult> Accept(int applicationId, [FromBody] AcceptRequest request)
+    public async Task<IActionResult> Accept(
+        int applicationId,
+        [FromBody] AcceptRequest request,
+        CancellationToken ct)
     {
-        await applicationService.AcceptAsync(applicationId, request.PaymentMethodId, request.ESignature);
-        return NoContent();
+        return (await applicationService.AcceptAsync(
+            applicationId,
+            request.PaymentMethodId,
+            request.ESignature,
+            ct)).ToNoContentOrProblem();
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
@@ -140,15 +146,14 @@ internal sealed class ApplicationController : ControllerBase
     [HttpPost("{applicationId}/reject")]
     public async Task<IActionResult> Reject(int applicationId)
     {
-        return (await applicationService.RejectAsync(applicationId)).ToNoContentActionResult();
+        return (await applicationService.RejectAsync(applicationId)).ToNoContentOrProblem();
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/cancel")]
-    public async Task<IActionResult> Cancel(int applicationId)
+    public async Task<IActionResult> Cancel(int applicationId, CancellationToken ct)
     {
-        await applicationService.CancelAsync(applicationId);
-        return NoContent();
+        return (await applicationService.CancelAsync(applicationId, ct)).ToNoContentOrProblem();
     }
 
 }

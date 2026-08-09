@@ -1,7 +1,7 @@
-﻿using Concertable.B2B.Deal.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
-using Concertable.Kernel.Errors;
-using Concertable.Kernel.Functional;
+using Reunion.Errors;
+using Reunion;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;

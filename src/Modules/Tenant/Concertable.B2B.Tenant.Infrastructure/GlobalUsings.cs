@@ -9,7 +9,7 @@ global using Concertable.B2B.Tenant.Contracts;
 global using Concertable.B2B.Tenant.Contracts.Enums;
 global using Concertable.DataAccess;
 global using Concertable.Kernel;
-global using Concertable.Kernel.Functional;
+global using Reunion;
 global using Concertable.Kernel.ValueObjects;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;

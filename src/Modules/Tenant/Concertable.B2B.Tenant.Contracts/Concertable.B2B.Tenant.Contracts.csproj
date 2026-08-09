@@ -19,6 +19,8 @@
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Messaging.Contracts" />
     <PackageReference Include="Dunet" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
   </ItemGroup>
 
 </Project>

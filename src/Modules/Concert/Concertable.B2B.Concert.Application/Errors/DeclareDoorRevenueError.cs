@@ -8,19 +8,19 @@ internal abstract partial record DeclareDoorRevenueError : IError
     public ErrorDefinition Definition => this switch
     {
         ConcertNotFound(var concertId) =>
-            ErrorDefinition.NotFound<ConcertNotFound>(
+            ErrorDefinition.For<DeclareDoorRevenueError>().NotFound<ConcertNotFound>(
                 $"Concert {concertId} was not found."),
         VenueForbidden =>
-            ErrorDefinition.Forbidden<VenueForbidden>(
+            ErrorDefinition.For<DeclareDoorRevenueError>().Forbidden<VenueForbidden>(
                 "Only the concert's venue can declare its door revenue."),
         WrongDealType =>
-            ErrorDefinition.Invalid<WrongDealType>(
+            ErrorDefinition.For<DeclareDoorRevenueError>().Invalid<WrongDealType>(
                 "Door revenue can only be declared for a revenue-share concert."),
         TooEarly =>
-            ErrorDefinition.Invalid<TooEarly>(
+            ErrorDefinition.For<DeclareDoorRevenueError>().Invalid<TooEarly>(
                 "Door revenue can only be declared after the concert has ended."),
         AlreadySettled =>
-            ErrorDefinition.Conflict<AlreadySettled>(
+            ErrorDefinition.For<DeclareDoorRevenueError>().Conflict<AlreadySettled>(
                 "Door revenue can only be declared before the concert has settled.")
     };
 

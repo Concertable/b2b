@@ -1,4 +1,4 @@
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Dunet;
 
 namespace Concertable.B2B.Deal.Contracts.Errors;
@@ -9,11 +9,11 @@ public abstract partial record UpdateDealError : IError
     public ErrorDefinition Definition => this switch
     {
         DealNotFound =>
-            ErrorDefinition.NotFound<DealNotFound>(),
+            ErrorDefinition.For<UpdateDealError>().NotFound<DealNotFound>(),
         Invalid(var errors) =>
-            ErrorDefinition.Validation<Invalid>(
+            ErrorDefinition.For<UpdateDealError>().Validation<Invalid>(
                 "The deal is invalid.",
-                errors.ToDictionary())
+                new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
     };
 
     [ErrorCode("deal.update.not_found")]

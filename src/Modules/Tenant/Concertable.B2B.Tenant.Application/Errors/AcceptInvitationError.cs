@@ -8,22 +8,22 @@ internal abstract partial record AcceptInvitationError : IError
     public ErrorDefinition Definition => this switch
     {
         InvitationNotFound(var invitationId) =>
-            ErrorDefinition.NotFound<InvitationNotFound>(
+            ErrorDefinition.For<AcceptInvitationError>().NotFound<InvitationNotFound>(
                 $"Invitation {invitationId} was not found."),
         EmailMismatch =>
-            ErrorDefinition.Forbidden<EmailMismatch>(
+            ErrorDefinition.For<AcceptInvitationError>().Forbidden<EmailMismatch>(
                 "This invitation was issued to a different email address."),
         TenantNotFound =>
-            ErrorDefinition.NotFound<TenantNotFound>(
+            ErrorDefinition.For<AcceptInvitationError>().NotFound<TenantNotFound>(
                 "The organization for this invitation no longer exists."),
         AlreadyMember =>
-            ErrorDefinition.Conflict<AlreadyMember>(
+            ErrorDefinition.For<AcceptInvitationError>().Conflict<AlreadyMember>(
                 "You are already a member of this organization."),
         InvitationNotPending =>
-            ErrorDefinition.Conflict<InvitationNotPending>(
+            ErrorDefinition.For<AcceptInvitationError>().Conflict<InvitationNotPending>(
                 "This invitation is no longer pending."),
         InvitationExpired =>
-            ErrorDefinition.Invalid<InvitationExpired>("This invitation has expired.")
+            ErrorDefinition.For<AcceptInvitationError>().Invalid<InvitationExpired>("This invitation has expired.")
     };
 
     [ErrorCode("tenant.accept_invitation_not_found")]

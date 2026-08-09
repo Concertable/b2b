@@ -19,9 +19,13 @@ internal interface IApplicationService
         ESignatureRequest eSignature);
     Task<Checkout> ApplyCheckoutAsync(int opportunityId);
     Task<Checkout> AcceptCheckoutAsync(int applicationId);
-    Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature);
+    Task<UnitResult<AcceptApplicationError>> AcceptAsync(
+        int applicationId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature,
+        CancellationToken ct = default);
     Task WithdrawAsync(int applicationId);
     Task<UnitResult<RejectApplicationError>> RejectAsync(int applicationId);
-    Task CancelAsync(int applicationId);
+    Task<UnitResult<CancelApplicationError>> CancelAsync(int applicationId, CancellationToken ct = default);
     Task<Option<(ArtistReadModel, VenueReadModel)>> GetArtistAndVenueByIdAsync(int id);
 }

@@ -1,7 +1,7 @@
 using Concertable.B2B.Deal.Application.Errors;
 using Concertable.B2B.Deal.Contracts.Errors;
-using Concertable.Kernel.Errors;
-using Concertable.Kernel.Functional;
+using Reunion.Errors;
+using Reunion;
 
 namespace Concertable.B2B.Deal.Application.Interfaces;
 

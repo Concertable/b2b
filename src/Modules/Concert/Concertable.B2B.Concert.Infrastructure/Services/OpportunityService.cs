@@ -2,7 +2,7 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
-using Concertable.Kernel.Functional;
+using Reunion;
 using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
