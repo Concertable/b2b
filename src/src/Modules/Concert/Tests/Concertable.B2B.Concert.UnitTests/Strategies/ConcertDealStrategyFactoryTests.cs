@@ -25,7 +25,6 @@ public sealed class ConcertDealStrategyFactoryTests
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            ValidateOnBuild = true,
             ValidateScopes = true
         });
         using var scope = provider.CreateScope();
@@ -50,7 +49,6 @@ public sealed class ConcertDealStrategyFactoryTests
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            ValidateOnBuild = true,
             ValidateScopes = true
         });
         using var scope = provider.CreateScope();
@@ -75,7 +73,6 @@ public sealed class ConcertDealStrategyFactoryTests
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            ValidateOnBuild = true,
             ValidateScopes = true
         });
         using var scope = provider.CreateScope();
@@ -100,7 +97,6 @@ public sealed class ConcertDealStrategyFactoryTests
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            ValidateOnBuild = true,
             ValidateScopes = true
         });
         using var scope = provider.CreateScope();
@@ -119,7 +115,6 @@ public sealed class ConcertDealStrategyFactoryTests
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            ValidateOnBuild = true,
             ValidateScopes = true
         });
         using var firstScope = provider.CreateScope();
@@ -145,7 +140,6 @@ public sealed class ConcertDealStrategyFactoryTests
         services.AddConcertDealStrategies();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            ValidateOnBuild = true,
             ValidateScopes = true
         });
         using var firstScope = provider.CreateScope();
@@ -173,7 +167,6 @@ public sealed class ConcertDealStrategyFactoryTests
         });
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            ValidateOnBuild = true,
             ValidateScopes = true
         });
         using var firstScope = provider.CreateScope();

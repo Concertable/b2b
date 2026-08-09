@@ -132,8 +132,6 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<ICheckoutDispatcher, CheckoutDispatcher>();
 
-        services.AddConcertWorkflows();
-
         // Repositories
         services.AddScoped<IConcertRepository, ConcertRepository>();
         services.AddScoped<IPublicConcertRepository, PublicConcertRepository>();
@@ -197,30 +195,69 @@ public static class ServiceCollectionExtensions
                 .AddSingleton<IDealTerms, FlatFeeDealTerms>()
                 .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                 .AddSingleton<IPaymentAmountMapper, FlatFeePaymentAmountMapper>()
-                .AddSingleton<ISettlementAmountResolver, FlatFeeSettlementAmount>();
+                .AddSingleton<ISettlementAmountResolver, FlatFeeSettlementAmount>()
+                .AddWorkflow<FlatFeeWorkflow>(workflow => workflow
+                    .WithApply<SimpleApplyStep>()
+                    .WithCheckout<HoldCheckoutStep>()
+                    .WithAccept<CaptureEscrowAcceptStep>()
+                    .WithEscrowPayment()
+                    .WithBook<CreateConcertDraftStep>()
+                    .WithFinish<ReleaseEscrowFinishStep>(Complete)
+                    .WithCancel<RefundEscrowStep>()
+                    .WithApplicationCancel());
 
             strategies.For(DealType.DoorSplit)
                 .AddSingleton<IDealTerms, DoorSplitDealTerms>()
                 .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                 .AddSingleton<IPaymentAmountMapper, DoorSplitPaymentAmountMapper>()
-                .AddScoped<ISettlementAmountResolver, DoorSplitSettlementAmount>();
+                .AddScoped<ISettlementAmountResolver, DoorSplitSettlementAmount>()
+                .AddWorkflow<DoorSplitWorkflow>(workflow => workflow
+                    .WithApply<SimpleApplyStep>()
+                    .WithCheckout<VerifyCheckoutStep>()
+                    .WithAccept<PaidAcceptStep>()
+                    .WithVerifiedPayment()
+                    .WithBook<CreateConcertDraftStep>()
+                    .WithFinish<PayoutFinishStep>(AwaitingSettlement)
+                    .WithSettlement()
+                    .WithCancel<RefundEscrowStep>()
+                    .WithApplicationCancel());
 
             strategies.For(DealType.Versus)
                 .AddSingleton<IDealTerms, VersusDealTerms>()
                 .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                 .AddSingleton<IPaymentAmountMapper, VersusPaymentAmountMapper>()
-                .AddScoped<ISettlementAmountResolver, VersusSettlementAmount>();
+                .AddScoped<ISettlementAmountResolver, VersusSettlementAmount>()
+                .AddWorkflow<VersusWorkflow>(workflow => workflow
+                    .WithApply<SimpleApplyStep>()
+                    .WithCheckout<VerifyCheckoutStep>()
+                    .WithAccept<PaidAcceptStep>()
+                    .WithVerifiedPayment()
+                    .WithBook<CreateConcertDraftStep>()
+                    .WithFinish<PayoutFinishStep>(AwaitingSettlement)
+                    .WithSettlement()
+                    .WithCancel<RefundEscrowStep>()
+                    .WithApplicationCancel());
 
             strategies.For(DealType.VenueHire)
                 .AddSingleton<IDealTerms, VenueHireDealTerms>()
                 .AddSingleton<IDealPayeeResolver, ArtistPaysVenueDealPayeeResolver>()
                 .AddSingleton<IPaymentAmountMapper, VenueHirePaymentAmountMapper>()
-                .AddSingleton<ISettlementAmountResolver, VenueHireSettlementAmount>();
+                .AddSingleton<ISettlementAmountResolver, VenueHireSettlementAmount>()
+                .AddWorkflow<VenueHireWorkflow>(workflow => workflow
+                    .WithCheckout<SetupCheckoutStep>()
+                    .WithApply<PaidApplyStep>()
+                    .WithAccept<DepositEscrowAcceptStep>()
+                    .WithEscrowPayment()
+                    .WithBook<CreateConcertDraftStep>()
+                    .WithFinish<ReleaseEscrowFinishStep>(Complete)
+                    .WithCancel<RefundEscrowStep>()
+                    .WithApplicationCancel());
 
             strategies.RequireAll<IDealTerms>();
             strategies.RequireAll<IDealPayeeResolver>();
             strategies.RequireAll<IPaymentAmountMapper>();
             strategies.RequireAll<ISettlementAmountResolver>();
+            strategies.RequireAll<IConcertWorkflow>();
         });
     }
 
@@ -235,73 +272,6 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<IKeyedServiceProvider>(sp => (IKeyedServiceProvider)sp);
         services.TryAddScoped(typeof(IConcertDealStrategyFactory<>), typeof(ConcertDealStrategyFactory<>));
         return services;
-    }
-
-    public static IServiceCollection AddConcertWorkflows(this IServiceCollection services)
-    {
-        var registryBuilder = new ConcertWorkflowRegistryBuilder();
-
-        services.AddConcertWorkflow(registryBuilder, DealType.FlatFee, p => p
-            .WithApply<SimpleApplyStep>()
-            .WithCheckout<HoldCheckoutStep>()
-            .WithAccept<CaptureEscrowAcceptStep>()
-            .WithEscrowPayment()
-            .WithBook<CreateConcertDraftStep>()
-            .WithFinish<ReleaseEscrowFinishStep>(Complete)
-            .WithCancel<RefundEscrowStep>()
-            .WithApplicationCancel()
-            .WithWorkflow<FlatFeeWorkflow>());
-
-        services.AddConcertWorkflow(registryBuilder, DealType.DoorSplit, p => p
-            .WithApply<SimpleApplyStep>()
-            .WithCheckout<VerifyCheckoutStep>()
-            .WithAccept<PaidAcceptStep>()
-            .WithVerifiedPayment()
-            .WithBook<CreateConcertDraftStep>()
-            .WithFinish<PayoutFinishStep>(AwaitingSettlement)
-            .WithSettlement()
-            .WithCancel<RefundEscrowStep>()
-            .WithApplicationCancel()
-            .WithWorkflow<DoorSplitWorkflow>());
-
-        services.AddConcertWorkflow(registryBuilder, DealType.Versus, p => p
-            .WithApply<SimpleApplyStep>()
-            .WithCheckout<VerifyCheckoutStep>()
-            .WithAccept<PaidAcceptStep>()
-            .WithVerifiedPayment()
-            .WithBook<CreateConcertDraftStep>()
-            .WithFinish<PayoutFinishStep>(AwaitingSettlement)
-            .WithSettlement()
-            .WithCancel<RefundEscrowStep>()
-            .WithApplicationCancel()
-            .WithWorkflow<VersusWorkflow>());
-
-        services.AddConcertWorkflow(registryBuilder, DealType.VenueHire, p => p
-            .WithCheckout<SetupCheckoutStep>()
-            .WithApply<PaidApplyStep>()
-            .WithAccept<DepositEscrowAcceptStep>()
-            .WithEscrowPayment()
-            .WithBook<CreateConcertDraftStep>()
-            .WithFinish<ReleaseEscrowFinishStep>(Complete)
-            .WithCancel<RefundEscrowStep>()
-            .WithApplicationCancel()
-            .WithWorkflow<VenueHireWorkflow>());
-
-        services.AddSingleton<IConcertWorkflowCapabilityRegistry>(new ConcertWorkflowCapabilityRegistry(registryBuilder.WorkflowTypes));
-        services.AddSingleton<IConcertStateMachineRegistry>(new ConcertStateMachineRegistry(registryBuilder.StateMachines));
-
-        return services;
-    }
-
-    private static void AddConcertWorkflow(
-        this IServiceCollection services,
-        ConcertWorkflowRegistryBuilder registryBuilder,
-        DealType dealType,
-        Action<ConcertWorkflowBuilder> configure)
-    {
-        var builder = new ConcertWorkflowBuilder(dealType, services, registryBuilder);
-        configure(builder);
-        builder.Build();
     }
 
     public static IServiceCollection AddConcertDevSeeder(this IServiceCollection services)

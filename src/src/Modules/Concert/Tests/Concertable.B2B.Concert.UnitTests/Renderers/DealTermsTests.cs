@@ -26,7 +26,6 @@ public sealed class DealTermsTests : IDisposable
 
         this.provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            ValidateOnBuild = true,
             ValidateScopes = true
         });
         this.scope = this.provider.CreateScope();

@@ -1,4 +1,6 @@
+using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
+using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Workflows;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Concert.UnitTests.Strategies;
@@ -88,6 +90,38 @@ public sealed class ConcertDealStrategyBuilderTests
             }));
 
         Assert.Contains("TestStrategy has conflicting strategy lifetimes: Singleton, Scoped", exception.Message);
+        Assert.Empty(services);
+    }
+
+    [Fact]
+    public void AddWorkflow_DuplicateWorkflowForDealType_ThrowsBeforeRegistration()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.AddConcertDealStrategies(strategies =>
+                strategies.For(DealType.FlatFee)
+                    .AddWorkflow<FlatFeeWorkflow>(_ => { })
+                    .AddWorkflow<FlatFeeWorkflow>(_ => { })));
+
+        Assert.Contains("A workflow has already been registered for FlatFee", exception.Message);
+        Assert.Empty(services);
+    }
+
+    [Fact]
+    public void RequireAll_MissingWorkflow_ThrowsBeforeRegistration()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.AddConcertDealStrategies(strategies =>
+            {
+                strategies.For(DealType.FlatFee)
+                    .AddWorkflow<FlatFeeWorkflow>(_ => { });
+                strategies.RequireAll<IConcertWorkflow>();
+            }));
+
+        Assert.Contains("Missing: DoorSplit, Versus, VenueHire", exception.Message);
         Assert.Empty(services);
     }
 
