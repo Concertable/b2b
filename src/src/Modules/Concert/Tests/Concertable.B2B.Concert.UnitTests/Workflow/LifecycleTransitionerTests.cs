@@ -37,7 +37,7 @@ public sealed class LifecycleTransitionerTests
     [Fact]
     public async Task TransitionAsync_InvalidTransition_ReturnsConflictWithoutRunningEffect()
     {
-        var application = StandardApplication.Create(1, 2, DealType.FlatFee);
+        var application = StandardApplication.Create(1, 2, DealType.FlatFee, Guid.NewGuid(), Guid.NewGuid());
         var effectRan = false;
         this.repository
             .Setup(repository => repository.GetByIdAsync(ApplicationId, CancellationToken.None))
@@ -64,7 +64,7 @@ public sealed class LifecycleTransitionerTests
     [Fact]
     public async Task TransitionAsync_ValidTransition_RunsEffectAndSaves()
     {
-        var application = StandardApplication.Create(1, 2, DealType.FlatFee);
+        var application = StandardApplication.Create(1, 2, DealType.FlatFee, Guid.NewGuid(), Guid.NewGuid());
         var effectRan = false;
         this.repository
             .Setup(repository => repository.GetByIdAsync(ApplicationId, CancellationToken.None))

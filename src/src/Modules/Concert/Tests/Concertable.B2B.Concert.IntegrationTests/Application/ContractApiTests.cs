@@ -350,7 +350,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     private async Task<int> CreateOpportunityAsync(IDeal deal)
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var response = await venueClient.PostAsync("/api/Opportunity", BuildRequest(deal));
+        var response = await venueClient.PostAsync("/api/Opportunity", BuildRequest(deal, fixture.SeedNow));
         await response.ShouldBe(HttpStatusCode.Created);
         var opportunity = await response.Content.ReadAsync<OpportunityResponse>();
         return opportunity!.Id;
