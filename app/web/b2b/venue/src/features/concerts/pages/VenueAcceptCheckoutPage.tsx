@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Navigate, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
+import { Button } from "@concertable/web/components/ui/button";
 import { Skeleton } from "@concertable/web/components/ui/skeleton";
 import {
   AcceptDealSummary,
@@ -30,15 +31,35 @@ export function VenueAcceptCheckoutPage() {
     isLoading,
     isError,
   } = useApplicationQuery(applicationId);
+
+  if (isLoading) return <CheckoutSkeleton />;
+  if (isError || !application)
+    return <div className="text-destructive p-6">Application not found.</div>;
+  if (application.status === "Accepted")
+    return <VenueAcceptCheckoutFlow applicationId={applicationId} />;
+
+  return (
+    <VenueAcceptCheckout
+      applicationId={applicationId}
+      application={application}
+    />
+  );
+}
+
+function VenueAcceptCheckout({
+  applicationId,
+  application,
+}: Readonly<{
+  applicationId: number;
+  application: Application;
+}>) {
   const {
     data: checkout,
     isLoading: isCheckoutLoading,
     isError: isCheckoutError,
   } = useAcceptCheckoutQuery(applicationId);
 
-  if (isLoading || isCheckoutLoading) return <CheckoutSkeleton />;
-  if (isError || !application)
-    return <div className="text-destructive p-6">Application not found.</div>;
+  if (isCheckoutLoading) return <CheckoutSkeleton />;
   if (isCheckoutError || !checkout)
     return (
       <div className="text-destructive p-6">Could not start checkout.</div>
@@ -58,7 +79,12 @@ interface Props {
 }
 
 export function VenueAcceptCheckoutFlow({ applicationId }: Readonly<Props>) {
-  const { data: concert } = useConcertByApplicationQuery(applicationId);
+  const {
+    data: concert,
+    isError,
+    isFetching,
+    refetch,
+  } = useConcertByApplicationQuery(applicationId);
 
   if (concert)
     return (
@@ -67,6 +93,22 @@ export function VenueAcceptCheckoutFlow({ applicationId }: Readonly<Props>) {
         params={{ id: concert.id }}
         replace
       />
+    );
+
+  if (isError)
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="text-destructive">
+          We could not confirm the concert draft. Your acceptance is saved.
+        </p>
+        <Button
+          variant="outline"
+          disabled={isFetching}
+          onClick={() => void refetch()}
+        >
+          Try again
+        </Button>
+      </div>
     );
 
   return (
