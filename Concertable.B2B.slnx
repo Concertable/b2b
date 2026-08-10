@@ -1,7 +1,7 @@
 <Solution>
   <Project Path="src/Concertable.B2B.AppHost/Concertable.B2B.AppHost.csproj" />
   <Project Path="src/Concertable.B2B.AppHost.Extensions/Concertable.B2B.AppHost.Extensions.csproj" />
-  <Project Path="../Concertable.Search/src/Concertable.Search.AppHost.Extensions/Concertable.Search.AppHost.Extensions.csproj" />
+  <Project Path="../Concertable.Search/src/Concertable.Search.Hosting/Concertable.Search.Hosting.csproj" />
   <Project Path="../Concertable.Payment/src/Concertable.Payment.Hosting/Concertable.Payment.Hosting.csproj" />
   <Project Path="src/Concertable.B2B.Web/Concertable.B2B.Web.csproj" />
   <Project Path="src/Concertable.B2B.Workers/Concertable.B2B.Workers.csproj" />
