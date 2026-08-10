@@ -4,7 +4,7 @@ using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Errors;
 using Concertable.Payment.Contracts.Enums;
 using Concertable.Testing.Integration;
-using Concertable.Kernel.Functional;
+using Reunion;
 using Stripe;
 using Transfer = Concertable.Payment.Contracts.Transfer;
 using Refund = Concertable.Payment.Contracts.Refund;
