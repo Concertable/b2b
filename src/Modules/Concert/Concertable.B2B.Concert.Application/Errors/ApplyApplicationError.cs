@@ -8,29 +8,29 @@ internal abstract partial record ApplyApplicationError : IError
     public ErrorDefinition Definition => this switch
     {
         MissingArtist =>
-            ErrorDefinition.For<ApplyApplicationError>().Forbidden<MissingArtist>(
+            ErrorDefinition.Forbidden<MissingArtist>(
                 "You must create an artist account before applying for a concert opportunity."),
         OpportunityNotFound(var opportunityId) =>
-            ErrorDefinition.For<ApplyApplicationError>().NotFound<OpportunityNotFound>(
+            ErrorDefinition.NotFound<OpportunityNotFound>(
                 $"Concert opportunity {opportunityId} was not found."),
         AlreadyApplied =>
-            ErrorDefinition.For<ApplyApplicationError>().Invalid<AlreadyApplied>(
+            ErrorDefinition.Invalid<AlreadyApplied>(
                 "You have already applied to this concert opportunity."),
         Invalid(var errors) =>
-            ErrorDefinition.For<ApplyApplicationError>().Validation<Invalid>(
+            ErrorDefinition.Validation<Invalid>(
                 "The application is not eligible.",
                 new Reunion.Errors.ValidationErrors(errors.ToDictionary())),
         GenreMismatch =>
-            ErrorDefinition.For<ApplyApplicationError>().Invalid<GenreMismatch>(
+            ErrorDefinition.Invalid<GenreMismatch>(
                 "Your artist must share a genre with this concert opportunity."),
         UnsupportedDeal(var dealType) =>
-            ErrorDefinition.For<ApplyApplicationError>().Invalid<UnsupportedDeal>(
+            ErrorDefinition.Invalid<UnsupportedDeal>(
                 $"Deal {dealType} does not support applications."),
         MissingTenant =>
-            ErrorDefinition.For<ApplyApplicationError>().Forbidden<MissingTenant>(
+            ErrorDefinition.Forbidden<MissingTenant>(
                 "No active organization was found for the current user."),
         MissingUser =>
-            ErrorDefinition.For<ApplyApplicationError>().Forbidden<MissingUser>(
+            ErrorDefinition.Forbidden<MissingUser>(
                 "No user was found for the current request.")
     };
 

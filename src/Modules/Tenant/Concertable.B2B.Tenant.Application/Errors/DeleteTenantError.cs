@@ -8,7 +8,7 @@ internal abstract partial record DeleteTenantError : IError
     public ErrorDefinition Definition => this switch
     {
         TenantNotFound(var tenantId) =>
-            ErrorDefinition.For<DeleteTenantError>().NotFound<TenantNotFound>(
+            ErrorDefinition.NotFound<TenantNotFound>(
                 $"Organization {tenantId} was not found.")
     };
 

@@ -15,6 +15,7 @@
     <PackageReference Include="Moq" />
     <PackageReference Include="Reunion" />
     <PackageReference Include="Reunion.Errors" />
+    <PackageReference Include="Reunion.Validation" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>

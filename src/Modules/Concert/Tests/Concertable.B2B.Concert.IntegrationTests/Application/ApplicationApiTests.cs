@@ -20,6 +20,57 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
+    #region Eligibility
+
+    [Fact]
+    public async Task CanApply_EligibleArtist_ReturnsTrue()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await client.GetAsync(
+            $"/api/Application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/eligibility");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        Assert.True(await response.Content.ReadAsync<bool>());
+    }
+
+    [Fact]
+    public async Task CanApply_MissingArtist_ReturnsFalse()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
+
+        var response = await client.GetAsync(
+            $"/api/Application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/eligibility");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        Assert.False(await response.Content.ReadAsync<bool>());
+    }
+
+    [Fact]
+    public async Task CanAccept_EligibleApplication_ReturnsTrue()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync(
+            $"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/eligibility");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        Assert.True(await response.Content.ReadAsync<bool>());
+    }
+
+    [Fact]
+    public async Task CanAccept_MissingApplication_ReturnsFalse()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync("/api/Application/2147483647/eligibility");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        Assert.False(await response.Content.ReadAsync<bool>());
+    }
+
+    #endregion
+
     #region Accept
 
     [Fact]

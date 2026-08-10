@@ -9,9 +9,9 @@ internal abstract partial record FinishConcertError : IError
 {
     public ErrorDefinition Definition => this switch
     {
-        ConcertNotFound(var concertId) => ErrorDefinition.For<FinishConcertError>().NotFound<ConcertNotFound>(
+        ConcertNotFound(var concertId) => ErrorDefinition.NotFound<ConcertNotFound>(
             $"Concert {concertId} was not found."),
-        ConcertNotEnded => ErrorDefinition.For<FinishConcertError>().Invalid<ConcertNotEnded>(
+        ConcertNotEnded => ErrorDefinition.Invalid<ConcertNotEnded>(
             "The concert cannot be finished before it has ended."),
         TransitionFailure(var error) => error.Definition,
         ManagerPaymentFailure(var error) => error.Definition,

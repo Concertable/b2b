@@ -8,10 +8,10 @@ internal abstract partial record RevokeInvitationError : IError
     public ErrorDefinition Definition => this switch
     {
         InvitationNotFound(var invitationId) =>
-            ErrorDefinition.For<RevokeInvitationError>().NotFound<InvitationNotFound>(
+            ErrorDefinition.NotFound<InvitationNotFound>(
                 $"Invitation {invitationId} was not found."),
         InvitationNotPending =>
-            ErrorDefinition.For<RevokeInvitationError>().Conflict<InvitationNotPending>(
+            ErrorDefinition.Conflict<InvitationNotPending>(
                 "Only a pending invitation can be revoked.")
     };
 

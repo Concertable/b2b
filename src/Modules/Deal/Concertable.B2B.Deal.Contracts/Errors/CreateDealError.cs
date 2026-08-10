@@ -9,7 +9,7 @@ public abstract partial record CreateDealError : IError
     public ErrorDefinition Definition => this switch
     {
         Invalid(var errors) =>
-            ErrorDefinition.For<CreateDealError>().Validation<Invalid>(
+            ErrorDefinition.Validation<Invalid>(
                 "The deal is invalid.",
                 new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
     };

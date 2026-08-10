@@ -6,7 +6,7 @@ namespace Concertable.B2B.ArchitectureTests;
 public sealed class ReunionArchitectureTests
 {
     private static readonly string[] ReunionPackages =
-        ["Reunion", "Reunion.AspNetCore", "Reunion.Errors"];
+        ["Reunion", "Reunion.AspNetCore", "Reunion.Errors", "Reunion.Validation"];
 
     [Fact]
     public void B2BSource_LegacyResultIdentities_AreAbsent()
@@ -64,6 +64,7 @@ public sealed class ReunionArchitectureTests
         "Reunion" => source.Contains("using Reunion;", StringComparison.Ordinal)
             || source.Contains("Reunion.Option`1", StringComparison.Ordinal),
         "Reunion.Errors" => source.Contains("using Reunion.Errors;", StringComparison.Ordinal),
+        "Reunion.Validation" => source.Contains("using Reunion.Validation;", StringComparison.Ordinal),
         "Reunion.AspNetCore" => source.Contains("using Reunion.AspNetCore", StringComparison.Ordinal),
         _ => false
     };

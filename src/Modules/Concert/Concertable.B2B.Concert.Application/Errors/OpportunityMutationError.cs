@@ -9,12 +9,12 @@ internal abstract partial record OpportunityMutationError : IError
     public ErrorDefinition Definition => this switch
     {
         VenueNotFound =>
-            ErrorDefinition.For<OpportunityMutationError>().NotFound<VenueNotFound>(
+            ErrorDefinition.NotFound<VenueNotFound>(
                 "No venue was found for the current organization."),
         VenueForbidden =>
-            ErrorDefinition.For<OpportunityMutationError>().Forbidden<VenueForbidden>("You do not own this venue."),
+            ErrorDefinition.Forbidden<VenueForbidden>("You do not own this venue."),
         InvalidDeal(var errors) =>
-            ErrorDefinition.For<OpportunityMutationError>().Validation<InvalidDeal>(
+            ErrorDefinition.Validation<InvalidDeal>(
                 "The opportunity deal is invalid.",
                 new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
     };

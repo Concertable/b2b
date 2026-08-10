@@ -8,16 +8,16 @@ internal abstract partial record ApplicationEligibilityError : IError
     public ErrorDefinition Definition => this switch
     {
         MissingArtist =>
-            ErrorDefinition.For<ApplicationEligibilityError>().Forbidden<MissingArtist>(
+            ErrorDefinition.Forbidden<MissingArtist>(
                 "You must have an artist account to apply for a concert opportunity"),
         OpportunityNotFound =>
-            ErrorDefinition.For<ApplicationEligibilityError>().NotFound<OpportunityNotFound>(
+            ErrorDefinition.NotFound<OpportunityNotFound>(
                 "Concert opportunity does not exist"),
         ApplicationNotFound =>
-            ErrorDefinition.For<ApplicationEligibilityError>().NotFound<ApplicationNotFound>(
+            ErrorDefinition.NotFound<ApplicationNotFound>(
                 "Concert application does not exist"),
         Invalid(var errors) =>
-            ErrorDefinition.For<ApplicationEligibilityError>().Validation<Invalid>(
+            ErrorDefinition.Validation<Invalid>(
                 "The application is not eligible.",
                 new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
     };

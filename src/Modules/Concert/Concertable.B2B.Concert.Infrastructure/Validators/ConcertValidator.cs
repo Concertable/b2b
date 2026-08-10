@@ -1,18 +1,18 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Reunion.Errors;
-using Reunion;
+using Reunion.Validation;
+using ReunionValidationErrors = Reunion.Errors.ValidationErrors;
 
 namespace Concertable.B2B.Concert.Infrastructure.Validators;
 
 internal sealed class ConcertValidator : IConcertValidator
 {
-    public UnitResult<ValidationErrors> CanUpdate(ConcertEntity concert, int newTotalTickets)
+    public ValidationResult CanUpdate(ConcertEntity concert, int newTotalTickets)
     {
         return newTotalTickets >= concert.TicketsSold
-            ? UnitResult.Success<ValidationErrors>()
-            : UnitResult.Failure(
-                new ValidationErrors(
+            ? ValidationResult.Valid()
+            : ValidationResult.Invalid(
+                new ReunionValidationErrors(
                     new Dictionary<string, string[]>
                     {
                         ["totalTickets"] =
@@ -22,7 +22,7 @@ internal sealed class ConcertValidator : IConcertValidator
                     }));
     }
 
-    public UnitResult<ValidationErrors> CanPost(ConcertEntity concert)
+    public ValidationResult CanPost(ConcertEntity concert)
     {
         var errors = new List<KeyValuePair<string, string>>();
 
@@ -33,7 +33,7 @@ internal sealed class ConcertValidator : IConcertValidator
             errors.Add(new("datePosted", "Concert has already been posted"));
 
         return errors.Count == 0
-            ? UnitResult.Success<ValidationErrors>()
-            : UnitResult.Failure(new ValidationErrors(errors));
+            ? ValidationResult.Valid()
+            : ValidationResult.Invalid(new ReunionValidationErrors(errors));
     }
 }

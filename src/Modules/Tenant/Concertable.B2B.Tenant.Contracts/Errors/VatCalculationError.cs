@@ -9,7 +9,7 @@ public abstract partial record VatCalculationError : IError
     public ErrorDefinition Definition => this switch
     {
         TenantNotFound(var tenantId) =>
-            ErrorDefinition.For<VatCalculationError>().NotFound<TenantNotFound>(
+            ErrorDefinition.NotFound<TenantNotFound>(
                 $"Organization {tenantId} was not found.")
     };
 

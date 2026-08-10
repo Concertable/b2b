@@ -9,9 +9,9 @@ internal abstract partial record ConcertError : IError
     public ErrorDefinition Definition => this switch
     {
         NotFound(var concertId) =>
-            ErrorDefinition.For<ConcertError>().NotFound<NotFound>($"Concert {concertId} was not found."),
+            ErrorDefinition.NotFound<NotFound>($"Concert {concertId} was not found."),
         ApplicationNotFound(var applicationId) =>
-            ErrorDefinition.For<ConcertError>().NotFound<ApplicationNotFound>(
+            ErrorDefinition.NotFound<ApplicationNotFound>(
                 $"No concert was found for application {applicationId}.")
     };
 

@@ -9,10 +9,10 @@ internal abstract partial record ContractError : IError
     public ErrorDefinition Definition => this switch
     {
         ApplicationNotFound(var applicationId) =>
-            ErrorDefinition.For<ContractError>().NotFound<ApplicationNotFound>(
+            ErrorDefinition.NotFound<ApplicationNotFound>(
                 $"No contract was found for application {applicationId}."),
         ConcertNotFound(var concertId) =>
-            ErrorDefinition.For<ContractError>().NotFound<ConcertNotFound>(
+            ErrorDefinition.NotFound<ConcertNotFound>(
                 $"No contract was found for concert {concertId}.")
     };
 

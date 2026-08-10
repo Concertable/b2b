@@ -9,7 +9,7 @@ internal abstract partial record DealError : IError
     public ErrorDefinition Definition => this switch
     {
         NotFound(var dealId) =>
-            ErrorDefinition.For<DealError>().NotFound<NotFound>($"Deal {dealId} was not found.")
+            ErrorDefinition.NotFound<NotFound>($"Deal {dealId} was not found.")
     };
 
     [ErrorCode("deal.get.not_found")]

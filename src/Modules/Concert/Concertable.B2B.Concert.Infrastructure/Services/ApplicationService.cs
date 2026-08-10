@@ -131,9 +131,9 @@ internal sealed class ApplicationService : IApplicationService
                 new ApplyApplicationError.AlreadyApplied());
 
         var result = await applicationValidator.CanApplyAsync(opportunity, artistId);
-        if (result.TryGetError(out var errors))
+        if (result.TryGetErrors(out var errors))
             return UnitResult.Failure<ApplyApplicationError>(
-                new ApplyApplicationError.Invalid(errors));
+                new ApplyApplicationError.Invalid(new ValidationErrors(errors.ToDictionary())));
 
         var artistGenres = await artistModule.GetGenresAsync(artistId);
         var opportunityGenres = opportunity.Genres.ToHashSet();
@@ -145,9 +145,15 @@ internal sealed class ApplicationService : IApplicationService
         return UnitResult.Success<ApplyApplicationError>();
     }
 
+    public async Task<bool> CanApplyAsync(int opportunityId) =>
+        (await CheckCanApplyAsync(opportunityId)).IsSuccess;
+
+    public async Task<bool> CanAcceptAsync(int applicationId) =>
+        (await CheckCanAcceptAsync(applicationId)).IsSuccess;
+
     public async Task<Checkout> ApplyCheckoutAsync(int opportunityId)
     {
-        var result = await applicationValidator.CanApplyAsync(opportunityId);
+        var result = await CheckCanApplyAsync(opportunityId);
         if (result.TryGetError(out var error))
             throw new BadRequestException(error.Definition.Message);
 
@@ -163,7 +169,7 @@ internal sealed class ApplicationService : IApplicationService
         ESignatureRequest eSignature,
         CancellationToken ct = default)
     {
-        var result = await applicationValidator.CanAcceptAsync(applicationId);
+        var result = await CheckCanAcceptAsync(applicationId);
 
         if (result.TryGetError(out var error))
             return UnitResult.Failure<AcceptApplicationError>(new AcceptApplicationError.Ineligible(error));
@@ -174,6 +180,44 @@ internal sealed class ApplicationService : IApplicationService
 
         await notifier.AcceptedAsync(applicationId);
         return UnitResult.Success<AcceptApplicationError>();
+    }
+
+    private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
+    {
+        var artistId = await artistModule.GetIdForCurrentTenantAsync();
+        if (!artistId.TryGetValue(out var value))
+            return UnitResult.Failure<ApplicationEligibilityError>(
+                new ApplicationEligibilityError.MissingArtist());
+
+        var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
+        if (opportunity is null)
+            return UnitResult.Failure<ApplicationEligibilityError>(
+                new ApplicationEligibilityError.OpportunityNotFound());
+
+        var validation = await applicationValidator.CanApplyAsync(opportunity, value);
+        return validation.TryGetErrors(out var errors)
+            ? UnitResult.Failure<ApplicationEligibilityError>(
+                new ApplicationEligibilityError.Invalid(new ValidationErrors(errors.ToDictionary())))
+            : UnitResult.Success<ApplicationEligibilityError>();
+    }
+
+    private async Task<UnitResult<ApplicationEligibilityError>> CheckCanAcceptAsync(int applicationId)
+    {
+        var opportunity = await opportunityRepository.GetByApplicationIdAsync(applicationId);
+        if (opportunity is null)
+            return UnitResult.Failure<ApplicationEligibilityError>(
+                new ApplicationEligibilityError.OpportunityNotFound());
+
+        var application = await repository.GetByIdAsync(applicationId);
+        if (application is null)
+            return UnitResult.Failure<ApplicationEligibilityError>(
+                new ApplicationEligibilityError.ApplicationNotFound());
+
+        var validation = await applicationValidator.CanAcceptAsync(opportunity, application);
+        return validation.TryGetErrors(out var errors)
+            ? UnitResult.Failure<ApplicationEligibilityError>(
+                new ApplicationEligibilityError.Invalid(new ValidationErrors(errors.ToDictionary())))
+            : UnitResult.Success<ApplicationEligibilityError>();
     }
 
     public async Task<UnitResult<CancelApplicationError>> WithdrawAsync(

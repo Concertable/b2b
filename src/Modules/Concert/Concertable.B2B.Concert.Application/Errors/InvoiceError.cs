@@ -9,7 +9,7 @@ internal abstract partial record InvoiceError : IError
     public ErrorDefinition Definition => this switch
     {
         ConcertNotFound(var concertId) =>
-            ErrorDefinition.For<InvoiceError>().NotFound<ConcertNotFound>(
+            ErrorDefinition.NotFound<ConcertNotFound>(
                 $"No invoice was found for concert {concertId}.")
     };
 
