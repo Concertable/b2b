@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.Payment.Contracts.Errors;
 using Reunion.Errors;
 
 namespace Concertable.B2B.Concert.UnitTests;
@@ -79,6 +80,69 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.Forbidden
         },
         {
+            new AcceptApplicationError.Ineligible(new ApplicationEligibilityError.MissingArtist()),
+            "application.eligibility.missing_artist",
+            "You must have an artist account to apply for a concert opportunity",
+            ErrorKind.Forbidden
+        },
+        {
+            new AcceptApplicationError.TransitionFailure(new LifecycleTransitionError.ApplicationNotFound(42)),
+            "concert.lifecycle.application_not_found",
+            "Application 42 was not found.",
+            ErrorKind.NotFound
+        },
+        {
+            new AcceptApplicationError.TermsChanged(),
+            "application.accept.terms_changed",
+            "The deal terms have changed since the artist applied. The artist must re-apply before acceptance.",
+            ErrorKind.Conflict
+        },
+        {
+            new AcceptApplicationError.PaymentMethodRequired(),
+            "application.accept.payment_method_required",
+            "This deal requires a payment method at acceptance.",
+            ErrorKind.Invalid
+        },
+        {
+            new AcceptApplicationError.UnsupportedDeal(DealType.FlatFee),
+            "application.accept.unsupported_deal",
+            "Deal FlatFee does not support acceptance.",
+            ErrorKind.Invalid
+        },
+        {
+            new AcceptApplicationError.EscrowCaptureFailure(
+                new EscrowCaptureError.PaymentFailure(new PaymentError.PaymentRejected())),
+            "payment.rejected",
+            "The payment was rejected.",
+            ErrorKind.PaymentRequired
+        },
+        {
+            new AcceptApplicationError.EscrowDepositFailure(
+                new EscrowDepositError.CommissionFailure(new CommissionError.PricingChanged())),
+            "payment.commission_pricing_changed",
+            "The commission pricing has changed.",
+            ErrorKind.Conflict
+        },
+        {
+            new CancelApplicationError.TransitionFailure(
+                new LifecycleTransitionError.InvalidTransition(LifecycleState.Applied, Trigger.Withdraw)),
+            "concert.lifecycle.invalid_transition",
+            "Cannot Withdraw from Applied.",
+            ErrorKind.Conflict
+        },
+        {
+            new CancelApplicationError.InvalidState(LifecycleState.Accepted),
+            "application.cancel.invalid_state",
+            "Cannot cancel an application from Accepted.",
+            ErrorKind.Conflict
+        },
+        {
+            new CancelApplicationError.EscrowRefundFailure(new EscrowRefundError.EscrowNotRefundable()),
+            "escrow.refund_not_allowed",
+            "Escrow cannot be refunded in its current state.",
+            ErrorKind.Conflict
+        },
+        {
             new ConcertError.NotFound(42),
             "concert.get.not_found",
             "Concert 42 was not found.",
@@ -101,6 +165,25 @@ public sealed class ErrorDefinitionContractTests
             "contract.get_by_concert.not_found",
             "No contract was found for concert 42.",
             ErrorKind.NotFound
+        },
+        {
+            new CancelConcertError.ConcertNotFound(42),
+            "concert.cancel.not_found",
+            "Concert 42 was not found.",
+            ErrorKind.NotFound
+        },
+        {
+            new CancelConcertError.TransitionFailure(
+                new LifecycleTransitionError.InvalidTransition(LifecycleState.Accepted, Trigger.Cancel)),
+            "concert.lifecycle.invalid_transition",
+            "Cannot Cancel from Accepted.",
+            ErrorKind.Conflict
+        },
+        {
+            new CancelConcertError.EscrowRefundFailure(new EscrowRefundError.Conflict()),
+            "escrow.refund_conflict",
+            "Another refund changed the refundable amount.",
+            ErrorKind.Conflict
         },
         {
             new CreateConcertDraftError.BookingNotFound(42),
@@ -149,6 +232,38 @@ public sealed class ErrorDefinitionContractTests
             "invoice.get_by_concert.not_found",
             "No invoice was found for concert 42.",
             ErrorKind.NotFound
+        },
+        {
+            new FinishConcertError.ConcertNotFound(42),
+            "concert.finish.not_found",
+            "Concert 42 was not found.",
+            ErrorKind.NotFound
+        },
+        {
+            new FinishConcertError.ConcertNotEnded(),
+            "concert.finish.not_ended",
+            "The concert cannot be finished before it has ended.",
+            ErrorKind.Invalid
+        },
+        {
+            new FinishConcertError.TransitionFailure(
+                new LifecycleTransitionError.InvalidTransition(LifecycleState.Booked, Trigger.Finish)),
+            "concert.lifecycle.invalid_transition",
+            "Cannot Finish from Booked.",
+            ErrorKind.Conflict
+        },
+        {
+            new FinishConcertError.ManagerPaymentFailure(
+                new ManagerPaymentError.PaymentFailure(new PaymentError.PaymentRejected())),
+            "payment.rejected",
+            "The payment was rejected.",
+            ErrorKind.PaymentRequired
+        },
+        {
+            new FinishConcertError.EscrowReleaseFailure(new EscrowReleaseError.EscrowNotHeld()),
+            "escrow.release_not_held",
+            "Only held escrow can be released.",
+            ErrorKind.Conflict
         },
         {
             new OpportunityError.NotFound(42),
