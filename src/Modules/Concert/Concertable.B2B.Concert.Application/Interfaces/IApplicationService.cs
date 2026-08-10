@@ -24,7 +24,9 @@ internal interface IApplicationService
         string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default);
-    Task WithdrawAsync(int applicationId);
+    Task<UnitResult<CancelApplicationError>> WithdrawAsync(
+        int applicationId,
+        CancellationToken ct = default);
     Task<UnitResult<RejectApplicationError>> RejectAsync(int applicationId);
     Task<UnitResult<CancelApplicationError>> CancelAsync(int applicationId, CancellationToken ct = default);
     Task<Option<(ArtistReadModel, VenueReadModel)>> GetArtistAndVenueByIdAsync(int id);

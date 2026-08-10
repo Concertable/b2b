@@ -136,10 +136,9 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpPost("{applicationId}/withdraw")]
-    public async Task<IActionResult> Withdraw(int applicationId)
+    public async Task<IActionResult> Withdraw(int applicationId, CancellationToken ct)
     {
-        await applicationService.WithdrawAsync(applicationId);
-        return NoContent();
+        return (await applicationService.WithdrawAsync(applicationId, ct)).ToNoContentOrProblem();
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
