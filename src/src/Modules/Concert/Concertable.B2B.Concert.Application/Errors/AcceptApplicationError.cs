@@ -11,11 +11,11 @@ internal abstract partial record AcceptApplicationError : IError
     {
         Ineligible(var error) => error.Definition,
         TransitionFailure(var error) => error.Definition,
-        TermsChanged => ErrorDefinition.For<AcceptApplicationError>().Conflict<TermsChanged>(
+        TermsChanged => ErrorDefinition.Conflict<TermsChanged>(
             "The deal terms have changed since the artist applied. The artist must re-apply before acceptance."),
-        PaymentMethodRequired => ErrorDefinition.For<AcceptApplicationError>().Invalid<PaymentMethodRequired>(
+        PaymentMethodRequired => ErrorDefinition.Invalid<PaymentMethodRequired>(
             "This deal requires a payment method at acceptance."),
-        UnsupportedDeal(var dealType) => ErrorDefinition.For<AcceptApplicationError>().Invalid<UnsupportedDeal>(
+        UnsupportedDeal(var dealType) => ErrorDefinition.Invalid<UnsupportedDeal>(
             $"Deal {dealType} does not support acceptance."),
         EscrowCaptureFailure(var error) => error.Definition,
         EscrowDepositFailure(var error) => error.Definition

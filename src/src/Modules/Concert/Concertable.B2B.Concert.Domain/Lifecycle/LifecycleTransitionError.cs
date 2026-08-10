@@ -8,10 +8,10 @@ internal abstract partial record LifecycleTransitionError : IError
     public ErrorDefinition Definition => this switch
     {
         ApplicationNotFound(var applicationId) =>
-            ErrorDefinition.For<LifecycleTransitionError>().NotFound<ApplicationNotFound>(
+            ErrorDefinition.NotFound<ApplicationNotFound>(
                 $"Application {applicationId} was not found."),
         InvalidTransition(var current, var trigger) =>
-            ErrorDefinition.For<LifecycleTransitionError>().Conflict<InvalidTransition>(
+            ErrorDefinition.Conflict<InvalidTransition>(
                 $"Cannot {trigger} from {current}.")
     };
 

@@ -92,9 +92,9 @@ internal sealed class ConcertService : IConcertService
                 new UpdateConcertError.ConcertNotFound(id));
 
         var result = concertValidator.CanUpdate(concertEntity, request.TotalTickets);
-        if (result.TryGetError(out var errors))
+        if (result.TryGetErrors(out var errors))
             return Result.Failure<ConcertUpdateResponse, UpdateConcertError>(
-                new UpdateConcertError.Invalid(errors));
+                new UpdateConcertError.Invalid(new ValidationErrors(errors.ToDictionary())));
 
         concertEntity.Update(request.Name, request.About, request.Price, request.TotalTickets);
 
@@ -119,9 +119,9 @@ internal sealed class ConcertService : IConcertService
                 new PostConcertError.ConcertNotFound(id));
 
         var result = concertValidator.CanPost(concertEntity);
-        if (result.TryGetError(out var errors))
+        if (result.TryGetErrors(out var errors))
             return UnitResult.Failure<PostConcertError>(
-                new PostConcertError.Invalid(errors));
+                new PostConcertError.Invalid(new ValidationErrors(errors.ToDictionary())));
 
         concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime);
 

@@ -9,7 +9,7 @@ internal abstract partial record CancelConcertError : IError
 {
     public ErrorDefinition Definition => this switch
     {
-        ConcertNotFound(var concertId) => ErrorDefinition.For<CancelConcertError>().NotFound<ConcertNotFound>(
+        ConcertNotFound(var concertId) => ErrorDefinition.NotFound<ConcertNotFound>(
             $"Concert {concertId} was not found."),
         TransitionFailure(var error) => error.Definition,
         EscrowRefundFailure(var error) => error.Definition

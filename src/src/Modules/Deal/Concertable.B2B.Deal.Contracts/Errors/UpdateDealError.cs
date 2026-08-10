@@ -9,9 +9,9 @@ public abstract partial record UpdateDealError : IError
     public ErrorDefinition Definition => this switch
     {
         DealNotFound =>
-            ErrorDefinition.For<UpdateDealError>().NotFound<DealNotFound>(),
+            ErrorDefinition.NotFound<DealNotFound>(),
         Invalid(var errors) =>
-            ErrorDefinition.For<UpdateDealError>().Validation<Invalid>(
+            ErrorDefinition.Validation<Invalid>(
                 "The deal is invalid.",
                 new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
     };

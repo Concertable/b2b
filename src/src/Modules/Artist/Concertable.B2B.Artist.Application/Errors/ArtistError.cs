@@ -9,9 +9,9 @@ internal abstract partial record ArtistError : IError
     public ErrorDefinition Definition => this switch
     {
         NotFound(var artistId) =>
-            ErrorDefinition.For<ArtistError>().NotFound<NotFound>($"Artist {artistId} was not found."),
+            ErrorDefinition.NotFound<NotFound>($"Artist {artistId} was not found."),
         CurrentTenantNotFound =>
-            ErrorDefinition.For<ArtistError>().NotFound<CurrentTenantNotFound>(
+            ErrorDefinition.NotFound<CurrentTenantNotFound>(
                 "No artist was found for the current tenant.")
     };
 

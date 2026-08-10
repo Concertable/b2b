@@ -9,7 +9,7 @@ internal abstract partial record ApplicationError : IError
     public ErrorDefinition Definition => this switch
     {
         NotFound(var applicationId) =>
-            ErrorDefinition.For<ApplicationError>().NotFound<NotFound>(
+            ErrorDefinition.NotFound<NotFound>(
                 $"Application {applicationId} was not found.")
     };
 

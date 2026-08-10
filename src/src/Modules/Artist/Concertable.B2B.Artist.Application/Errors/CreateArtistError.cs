@@ -9,7 +9,7 @@ internal abstract partial record CreateArtistError : IError
     public ErrorDefinition Definition => this switch
     {
         Forbidden =>
-            ErrorDefinition.For<CreateArtistError>().Forbidden<Forbidden>(
+            ErrorDefinition.Forbidden<Forbidden>(
                 "No active organization was found for the current user.")
     };
 

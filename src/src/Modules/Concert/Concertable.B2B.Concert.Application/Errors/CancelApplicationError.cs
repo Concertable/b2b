@@ -10,7 +10,7 @@ internal abstract partial record CancelApplicationError : IError
     public ErrorDefinition Definition => this switch
     {
         TransitionFailure(var error) => error.Definition,
-        InvalidState(var state) => ErrorDefinition.For<CancelApplicationError>().Conflict<InvalidState>(
+        InvalidState(var state) => ErrorDefinition.Conflict<InvalidState>(
             $"Cannot cancel an application from {state}."),
         EscrowRefundFailure(var error) => error.Definition
     };

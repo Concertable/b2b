@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Validators;
 using Concertable.Contracts;
 using Concertable.Contracts.Enums;
@@ -23,7 +24,7 @@ public sealed class ConcertValidatorTests
 
         var result = this.validator.CanUpdate(concert, 4);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsValid);
     }
 
     [Fact]
@@ -34,10 +35,37 @@ public sealed class ConcertValidatorTests
 
         var result = this.validator.CanUpdate(concert, 3);
 
-        Assert.True(result.TryGetError(out var errors));
+        Assert.True(result.TryGetErrors(out var errors));
         Assert.Equal(
             ["Cannot reduce total tickets below the 4 already sold."],
             errors.Errors["totalTickets"]);
+    }
+
+    [Fact]
+    public void CanPost_UnconfirmedPostedConcert_AccumulatesOrderedStructuredErrors()
+    {
+        var concert = CreateConcert();
+        concert.Post("Concert", "About", 10m, 100, DateTime.UtcNow);
+
+        var result = this.validator.CanPost(concert);
+
+        Assert.True(result.TryGetErrors(out var errors));
+        Assert.Equal(
+            ["Concert cannot be posted until the booking is confirmed"],
+            errors.Errors["booking"]);
+        Assert.Equal(["Concert has already been posted"], errors.Errors["datePosted"]);
+        Assert.Equal(["booking", "datePosted"], errors.Errors.Keys);
+    }
+
+    [Fact]
+    public void CanPost_ConfirmedUnpostedConcert_ReturnsValid()
+    {
+        var concert = CreateConcert();
+        concert.Booking.Application.Transition(LifecycleState.Booked);
+
+        var result = this.validator.CanPost(concert);
+
+        Assert.True(result.IsValid);
     }
 
     private static ConcertEntity CreateConcert()

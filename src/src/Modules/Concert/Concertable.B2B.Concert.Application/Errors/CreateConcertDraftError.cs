@@ -8,10 +8,10 @@ internal abstract partial record CreateConcertDraftError : IError
     public ErrorDefinition Definition => this switch
     {
         BookingNotFound(var bookingId) =>
-            ErrorDefinition.For<CreateConcertDraftError>().NotFound<BookingNotFound>(
+            ErrorDefinition.NotFound<BookingNotFound>(
                 $"Booking {bookingId} was not found."),
         GenreMismatch =>
-            ErrorDefinition.For<CreateConcertDraftError>().Invalid<GenreMismatch>(
+            ErrorDefinition.Invalid<GenreMismatch>(
                 "The artist does not match any genres required by the concert opportunity.")
     };
 

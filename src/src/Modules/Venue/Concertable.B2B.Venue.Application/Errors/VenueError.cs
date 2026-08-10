@@ -9,9 +9,9 @@ internal abstract partial record VenueError : IError
     public ErrorDefinition Definition => this switch
     {
         NotFound(var venueId) =>
-            ErrorDefinition.For<VenueError>().NotFound<NotFound>($"Venue {venueId} was not found."),
+            ErrorDefinition.NotFound<NotFound>($"Venue {venueId} was not found."),
         CurrentTenantNotFound =>
-            ErrorDefinition.For<VenueError>().NotFound<CurrentTenantNotFound>(
+            ErrorDefinition.NotFound<CurrentTenantNotFound>(
                 "No venue was found for the current tenant.")
     };
 

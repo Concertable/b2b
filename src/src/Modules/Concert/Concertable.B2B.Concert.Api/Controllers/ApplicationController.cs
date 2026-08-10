@@ -11,18 +11,15 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
-    private readonly IApplicationValidator applicationValidator;
     private readonly IContractService contractService;
     private readonly IApplicationResponseMapper mapper;
 
     public ApplicationController(
         IApplicationService applicationService,
-        IApplicationValidator applicationValidator,
         IContractService contractService,
         IApplicationResponseMapper mapper)
     {
         this.applicationService = applicationService;
-        this.applicationValidator = applicationValidator;
         this.contractService = contractService;
         this.mapper = mapper;
     }
@@ -92,16 +89,14 @@ internal sealed class ApplicationController : ControllerBase
     [HttpGet("opportunity/{opportunityId}/eligibility")]
     public async Task<ActionResult<bool>> CanApply(int opportunityId)
     {
-        var result = await applicationValidator.CanApplyAsync(opportunityId);
-        return Ok(result.IsSuccess);
+        return Ok(await applicationService.CanApplyAsync(opportunityId));
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpGet("{applicationId}/eligibility")]
     public async Task<ActionResult<bool>> CanAccept(int applicationId)
     {
-        var result = await applicationValidator.CanAcceptAsync(applicationId);
-        return Ok(result.IsSuccess);
+        return Ok(await applicationService.CanAcceptAsync(applicationId));
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]

@@ -9,7 +9,7 @@ internal abstract partial record UpdateArtistError : IError
     public ErrorDefinition Definition => this switch
     {
         NotFound(var artistId) =>
-            ErrorDefinition.For<UpdateArtistError>().NotFound<NotFound>($"Artist {artistId} was not found.")
+            ErrorDefinition.NotFound<NotFound>($"Artist {artistId} was not found.")
     };
 
     [ErrorCode("artist.update_not_found")]

@@ -8,12 +8,12 @@ internal abstract partial record InviteMemberError : IError
     public ErrorDefinition Definition => this switch
     {
         TenantNotFound =>
-            ErrorDefinition.For<InviteMemberError>().NotFound<TenantNotFound>("Your organization was not found."),
+            ErrorDefinition.NotFound<TenantNotFound>("Your organization was not found."),
         AlreadyMember =>
-            ErrorDefinition.For<InviteMemberError>().Conflict<AlreadyMember>(
+            ErrorDefinition.Conflict<AlreadyMember>(
                 "This person is already a member of the organization."),
         InvitationPending =>
-            ErrorDefinition.For<InviteMemberError>().Conflict<InvitationPending>(
+            ErrorDefinition.Conflict<InvitationPending>(
                 "An invitation for this email is already pending.")
     };
 

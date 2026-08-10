@@ -8,7 +8,7 @@ internal abstract partial record SaveLocationError : IError
     public ErrorDefinition Definition => this switch
     {
         UserNotFound =>
-            ErrorDefinition.For<SaveLocationError>().Unauthenticated<UserNotFound>(
+            ErrorDefinition.Unauthenticated<UserNotFound>(
                 "The current user was not found.")
     };
 

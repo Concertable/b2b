@@ -19,6 +19,7 @@
     <PackageReference Include="QuestPDF" />
     <PackageReference Include="Reunion" />
     <PackageReference Include="Reunion.Errors" />
+    <PackageReference Include="Reunion.Validation" />
   </ItemGroup>
 
   <ItemGroup>

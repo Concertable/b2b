@@ -17,6 +17,8 @@ internal interface IApplicationService
         int opportunityId,
         string paymentMethodId,
         ESignatureRequest eSignature);
+    Task<bool> CanApplyAsync(int opportunityId);
+    Task<bool> CanAcceptAsync(int applicationId);
     Task<Checkout> ApplyCheckoutAsync(int opportunityId);
     Task<Checkout> AcceptCheckoutAsync(int applicationId);
     Task<UnitResult<AcceptApplicationError>> AcceptAsync(
