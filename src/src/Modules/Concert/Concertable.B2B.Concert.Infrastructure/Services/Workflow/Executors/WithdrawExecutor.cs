@@ -16,9 +16,19 @@ internal sealed class WithdrawExecutor : IWithdrawExecutor
         this.cancelStep = cancelStep;
     }
 
-    public Task WithdrawAsync(int applicationId)
-        => transitioner.TransitionAsync(applicationId, Trigger.Withdraw, app =>
-            app.State is LifecycleState.Accepted or LifecycleState.PaymentFailed
-                ? cancelStep.ExecuteAsync(app.Id)
-                : Task.CompletedTask).GetValueOrThrowAsync();
+    public async Task<UnitResult<CancelApplicationError>> WithdrawAsync(
+        int applicationId,
+        CancellationToken ct = default)
+    {
+        var transition = await transitioner.TransitionAsync<CancelApplicationError>(
+            applicationId,
+            Trigger.Withdraw,
+            error => (CancelApplicationError)new CancelApplicationError.TransitionFailure(error),
+            app => app.State is LifecycleState.Accepted or LifecycleState.PaymentFailed
+                ? cancelStep.ExecuteAsync(app.Id, ct)
+                : Task.FromResult(UnitResult.Success<CancelApplicationError>()),
+            ct);
+
+        return transition.Bind(_ => UnitResult.Success<CancelApplicationError>());
+    }
 }

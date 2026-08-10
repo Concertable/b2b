@@ -176,10 +176,16 @@ internal sealed class ApplicationService : IApplicationService
         return UnitResult.Success<AcceptApplicationError>();
     }
 
-    public async Task WithdrawAsync(int applicationId)
+    public async Task<UnitResult<CancelApplicationError>> WithdrawAsync(
+        int applicationId,
+        CancellationToken ct = default)
     {
-        await withdrawExecutor.WithdrawAsync(applicationId);
+        var withdrawal = await withdrawExecutor.WithdrawAsync(applicationId, ct);
+        if (withdrawal.TryGetError(out var withdrawalError))
+            return UnitResult.Failure(withdrawalError);
+
         await notifier.WithdrawnAsync(applicationId);
+        return UnitResult.Success<CancelApplicationError>();
     }
 
     public async Task<UnitResult<RejectApplicationError>> RejectAsync(int applicationId)
