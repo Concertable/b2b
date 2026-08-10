@@ -1,4 +1,4 @@
-using Concertable.Kernel.Functional;
+using Reunion;
 using Concertable.Payment.Client;
 using Concertable.Payment.Client.Enums;
 using Concertable.Testing.Integration;
