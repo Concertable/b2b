@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.Kernel;
 using Microsoft.AspNetCore.Authorization;
@@ -29,10 +30,12 @@ internal sealed class DevController : ControllerBase
 
     [Authorize]
     [HttpPost("complete")]
-    public async Task<ActionResult<SettlementOutcome>> Complete(
+    public async Task<IActionResult> Complete(
         [FromQuery] int concertId,
         [FromServices] IFinishExecutor finishExecutor)
     {
-        return (await finishExecutor.FinishAsync(concertId)).ToOkOrProblem();
+        return (await finishExecutor.FinishAsync(concertId))
+            .Bind(_ => UnitResult.Success<FinishConcertError>())
+            .ToNoContentOrProblem();
     }
 }
