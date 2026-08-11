@@ -5,7 +5,6 @@ import {
   serializeSearch,
   deserializeSearch,
 } from "@concertable/web/features/search";
-import { APIProvider as MapsProvider } from "@vis.gl/react-google-maps";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "react-oidc-context";
 import { userManager, onSigninCallback } from "@concertable/web/features/auth";
@@ -37,19 +36,14 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider userManager={userManager} onSigninCallback={onSigninCallback}>
       <QueryClientProvider client={queryClient}>
-        <MapsProvider
-          apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-          libraries={["places"]}
-        >
-          <ThemeProvider>
-            <ConsentProvider>
-              <TooltipProvider>
-                <RouterProvider router={router} />
-              </TooltipProvider>
-              <CookieConsentBanner />
-            </ConsentProvider>
-          </ThemeProvider>
-        </MapsProvider>
+        <ThemeProvider>
+          <ConsentProvider>
+            <TooltipProvider>
+              <RouterProvider router={router} />
+            </TooltipProvider>
+            <CookieConsentBanner />
+          </ConsentProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </AuthProvider>
   </StrictMode>,
