@@ -29,7 +29,6 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
     {
         // Arrange — the venue declares the door revenue; Versus settles guarantee + a % of it
         var concert = fixture.SeedState.PastVersusBooking.Concert!;
-        var deal = fixture.SeedState.PastVersusAppDeal;
         var deferred = (DeferredBooking)fixture.SeedState.PastVersusBooking;
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
@@ -42,7 +41,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
         Assert.Equal(venueTenantId, payment.PayerId);
         Assert.Equal(artistTenantId, payment.PayeeId);
-        Assert.Equal(deal.CalculateArtistShare(concert.TicketsSold * concert.Price + DoorRevenue), payment.Amount);
+        Assert.Equal(254m, payment.Amount);
         Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
         Assert.Equal(deferred.Id, payment.BookingId);
 

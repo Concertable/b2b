@@ -35,7 +35,4 @@ public sealed class VersusDealEntity : DealEntity
         if (artistDoorPercent < 0 || artistDoorPercent > 100)
             throw new DomainException("Artist door percent must be between 0 and 100.");
     }
-
-    public decimal CalculateArtistShare(decimal totalRevenue)
-        => Guarantee + (totalRevenue * (ArtistDoorPercent / 100));
 }
