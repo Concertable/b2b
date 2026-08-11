@@ -1,27 +1,17 @@
-using System.Collections.Frozen;
 using Concertable.B2B.Concert.Application.Interfaces;
+using Concertable.B2B.Concert.Application.Strategies;
 
 namespace Concertable.B2B.Concert.Application.Renderers;
 
 internal sealed class DealTermsSerializer : IDealTermsSerializer
 {
-    private readonly FrozenDictionary<DealType, IDealTermsSerializer> serializers;
+    private readonly IConcertDealStrategyFactory<IDealTerms> terms;
 
-    public DealTermsSerializer(
-        FlatFeeTermsSerializer flatFee,
-        DoorSplitTermsSerializer doorSplit,
-        VersusTermsSerializer versus,
-        VenueHireTermsSerializer venueHire)
+    public DealTermsSerializer(IConcertDealStrategyFactory<IDealTerms> terms)
     {
-        serializers = new Dictionary<DealType, IDealTermsSerializer>
-        {
-            [DealType.FlatFee] = flatFee,
-            [DealType.DoorSplit] = doorSplit,
-            [DealType.Versus] = versus,
-            [DealType.VenueHire] = venueHire,
-        }.ToFrozenDictionary();
+        this.terms = terms;
     }
 
     public string Serialize(IDeal deal) =>
-        serializers[deal.DealType].Serialize(deal);
+        terms.Create(deal.DealType).Serialize(deal);
 }

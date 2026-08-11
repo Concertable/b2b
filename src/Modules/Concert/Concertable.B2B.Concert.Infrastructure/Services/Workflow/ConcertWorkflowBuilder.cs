@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Microsoft.Extensions.DependencyInjection;
 using static Concertable.B2B.Concert.Domain.Lifecycle.LifecycleState;
 using static Concertable.B2B.Concert.Domain.Lifecycle.Trigger;
 
@@ -10,16 +9,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 internal sealed class ConcertWorkflowBuilder
 {
     private readonly DealType dealType;
-    private readonly IServiceCollection services;
-    private readonly ConcertWorkflowRegistryBuilder registryBuilder;
     private readonly Dictionary<(LifecycleState, Trigger), LifecycleState> transitions = [];
-    private Type workflowType = null!;
+    private readonly HashSet<Type> stepTypes = [];
 
-    public ConcertWorkflowBuilder(DealType dealType, IServiceCollection services, ConcertWorkflowRegistryBuilder registryBuilder)
+    public ConcertWorkflowBuilder(DealType dealType)
     {
         this.dealType = dealType;
-        this.services = services;
-        this.registryBuilder = registryBuilder;
     }
 
     public ConcertWorkflowBuilder WithApply<TStep>() where TStep : class, IConcertStep
@@ -84,19 +79,9 @@ internal sealed class ConcertWorkflowBuilder
         return this;
     }
 
-    public ConcertWorkflowBuilder WithWorkflow<TWorkflow>() where TWorkflow : class, IConcertWorkflow
-    {
-        services.AddKeyedScoped<IConcertWorkflow, TWorkflow>(dealType);
-        workflowType = typeof(TWorkflow);
-        return this;
-    }
-
-    public void Build()
-    {
-        if (workflowType is null)
-            throw new InvalidOperationException($"No workflow registered for {dealType}. Call WithWorkflow<T>().");
-        registryBuilder.Add(dealType, workflowType, new LifecycleStateMachine(transitions));
-    }
+    internal ConcertWorkflowRegistration Build<TWorkflow>()
+        where TWorkflow : class, IConcertWorkflow =>
+        new(typeof(TWorkflow), new LifecycleStateMachine(transitions), stepTypes.ToArray());
 
     private void Add(LifecycleState from, Trigger on, LifecycleState to)
     {
@@ -106,7 +91,12 @@ internal sealed class ConcertWorkflowBuilder
 
     private ConcertWorkflowBuilder RegisterStep<TStep>() where TStep : class, IConcertStep
     {
-        services.AddScoped<TStep>();
+        stepTypes.Add(typeof(TStep));
         return this;
     }
 }
+
+internal sealed record ConcertWorkflowRegistration(
+    Type WorkflowType,
+    LifecycleStateMachine StateMachine,
+    IReadOnlyCollection<Type> StepTypes);

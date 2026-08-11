@@ -32,7 +32,6 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.PastDoorSplitApp.Id;
         var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
-        var deal = fixture.SeedState.PastDoorSplitAppDeal;
 
         var before = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(before!.Actions!.DeclareDoorRevenue); // offered while ended, Booked, undeclared
@@ -49,8 +48,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         // ...and settlement now charges the artist's share of the declared take.
         await fixture.FinishConcertAsync(concertId);
         var payment = Assert.Single(fixture.ManagerPaymentClient.Payments);
-        var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
-        Assert.Equal(deal.CalculateArtistShare(concert.TicketsSold * concert.Price + DoorRevenue), payment.Amount);
+        Assert.Equal(280m, payment.Amount);
     }
 
     [Fact]
