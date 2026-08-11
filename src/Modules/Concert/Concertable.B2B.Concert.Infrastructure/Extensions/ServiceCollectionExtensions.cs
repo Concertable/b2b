@@ -131,6 +131,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWithdrawExecutor, WithdrawExecutor>();
         services.AddScoped<IRejectExecutor, RejectExecutor>();
         services.AddScoped<ICancelApplicationExecutor, CancelApplicationExecutor>();
+        services.AddScoped<IApplicationExecutor, ApplicationExecutor>();
         services.AddScoped<IApplicationCancelStep, RefundEscrowByApplicationStep>();
 
         services.AddScoped<ICheckoutDispatcher, CheckoutDispatcher>();
