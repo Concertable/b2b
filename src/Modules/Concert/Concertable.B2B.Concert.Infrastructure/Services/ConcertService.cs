@@ -15,6 +15,7 @@ internal sealed class ConcertService : IConcertService
     private readonly ICurrentUser currentUser;
     private readonly IApplicationValidator applicationValidator;
     private readonly IConcertDraftService concertDraftService;
+    private readonly ICancelExecutor cancelExecutor;
     private readonly TimeProvider timeProvider;
     private readonly ITenantContext tenantContext;
 
@@ -26,6 +27,7 @@ internal sealed class ConcertService : IConcertService
         ICurrentUser currentUser,
         IApplicationValidator applicationValidator,
         IConcertDraftService concertDraftService,
+        ICancelExecutor cancelExecutor,
         TimeProvider timeProvider,
         ITenantContext tenantContext)
     {
@@ -36,6 +38,7 @@ internal sealed class ConcertService : IConcertService
         this.currentUser = currentUser;
         this.applicationValidator = applicationValidator;
         this.concertDraftService = concertDraftService;
+        this.cancelExecutor = cancelExecutor;
         this.timeProvider = timeProvider;
         this.tenantContext = tenantContext;
     }
@@ -113,6 +116,13 @@ internal sealed class ConcertService : IConcertService
         concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime);
 
         await repository.SaveChangesAsync();
+    }
+
+    public async Task CancelAsync(int concertId, CancellationToken ct)
+    {
+        var result = await cancelExecutor.CancelAsync(concertId, ct);
+        if (result.IsFailed)
+            throw new BadRequestException(result.Errors);
     }
 
     public async Task DeclareDoorRevenueAsync(int id, decimal doorRevenue)
