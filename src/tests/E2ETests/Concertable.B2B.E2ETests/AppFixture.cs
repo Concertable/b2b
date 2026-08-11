@@ -3,6 +3,7 @@ using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using Azure.Storage.Blobs;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
+using Concertable.B2B.Hosting;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
@@ -21,6 +22,7 @@ using Concertable.Kernel.Identity;
 using Concertable.Messaging.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Inbox;
 using Concertable.Messaging.Infrastructure.Outbox;
+using Concertable.Payment.Hosting;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Infrastructure;
 using Concertable.Seed.Shared.Extensions;
@@ -64,6 +66,7 @@ public sealed class AppFixture : IAsyncLifetime
     public IPollingService Polling { get; private set; } = null!;
     public PaymentIntentService StripePaymentIntents { get; private set; } = null!;
     public StripeFixture Stripe { get; private set; } = null!;
+    public StripeCustomerResolver StripeCustomerResolver { get; private set; } = null!;
     public SeedState SeedState { get; private set; } = null!;
     public DbFixture DbFixture { get; private set; } = null!;
 
@@ -101,12 +104,14 @@ public sealed class AppFixture : IAsyncLifetime
         logger.InitializingE2ETestFixture();
 
         healthWaiter = new HealthWaiter(loggerFactory.CreateLogger<HealthWaiter>());
-
         var builder = await DistributedApplicationTestingBuilder
             .CreateAsync<Projects.Concertable_B2B_AppHost>();
+        var stripeSecretKey = builder.Configuration["Stripe:SecretKey"]
+            ?? throw new InvalidOperationException("Stripe:SecretKey is not configured for the B2B E2E fixture.");
+        var stripeClient = new StripeClient(stripeSecretKey);
+        StripeCustomerResolver = await Concertable.E2ETests.StripeCustomerResolver.CreateAsync(stripeClient);
 
-        builder.AddB2BE2E(B2BWebUrl, SearchWebUrl, authUrl, PaymentWebUrl);
-        var stripeClient = new StripeClient(configuration["Stripe:SecretKey"]);
+        builder.AddB2BE2E(B2BWebUrl, SearchWebUrl, authUrl, PaymentWebUrl, StripeCustomerResolver);
         StripePaymentIntents = new PaymentIntentService(stripeClient);
         Stripe = new StripeFixture(stripeClient);
 
@@ -126,14 +131,15 @@ public sealed class AppFixture : IAsyncLifetime
             [B2BWebUrl, SearchWebUrl, PaymentWebUrl],
             TimeSpan.FromMinutes(12));
 
-        var paymentConnectionString = await app.GetConnectionStringAsync(AppHostConstants.Databases.Payment);
+        var paymentConnectionString = await app.GetConnectionStringAsync(PaymentConstants.Database)
+            ?? throw new InvalidOperationException("Payment connection string is missing.");
         await healthWaiter.WaitForPayoutAccountsAsync(paymentConnectionString, 4, TimeSpan.FromMinutes(3));
 
         DbFixture = new DbFixture(app);
         await DbFixture.InitializeAsync();
         await DbFixture.ResetAsync();
 
-        var b2bConnectionString = await app.GetConnectionStringAsync(AppHostConstants.Databases.B2B);
+        var b2bConnectionString = await app.GetConnectionStringAsync(B2BConstants.Database);
         var blobConnectionString = await app.GetConnectionStringAsync("blobs");
         var asbConnectionString = await app.GetConnectionStringAsync("asb")
             ?? throw new InvalidOperationException("ASB connection string is missing.");
@@ -141,7 +147,7 @@ public sealed class AppFixture : IAsyncLifetime
         var b2bSeedConfig = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                [$"ConnectionStrings:{AppHostConstants.Databases.B2B}"] = b2bConnectionString,
+                [$"ConnectionStrings:{B2BConstants.Database}"] = b2bConnectionString,
                 ["BlobStorage:ContainerName"] = "images",
                 ["ExternalServices:UseRealBlob"] = "false",
                 ["Legal:PlatformTermsVersion"] = "2026-07",
@@ -217,18 +223,38 @@ public sealed class AppFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        B2BClient.Dispose();
-        SearchClient.Dispose();
-        PaymentClient.Dispose();
-        Workers.Dispose();
-        tokenMinter.Dispose();
-        healthWaiter.Dispose();
-        await DbFixture.DisposeAsync();
-        await host.StopAsync();
-        host.Dispose();
-        await app.DisposeAsync();
-        await resourceLogger.DisposeAsync();
-        loggerFactory.Dispose();
+        try
+        {
+            B2BClient?.Dispose();
+            SearchClient?.Dispose();
+            PaymentClient?.Dispose();
+            Workers?.Dispose();
+            tokenMinter.Dispose();
+            healthWaiter?.Dispose();
+            if (DbFixture is not null)
+                await DbFixture.DisposeAsync();
+            if (host is not null)
+            {
+                await host.StopAsync();
+                host.Dispose();
+            }
+            if (app is not null)
+                await app.DisposeAsync();
+            if (resourceLogger is not null)
+                await resourceLogger.DisposeAsync();
+        }
+        finally
+        {
+            try
+            {
+                if (StripeCustomerResolver is not null)
+                    await StripeCustomerResolver.DisposeAsync();
+            }
+            finally
+            {
+                loggerFactory.Dispose();
+            }
+        }
     }
 
     public ResourceNotificationService ResourceNotifications => app.ResourceNotifications;

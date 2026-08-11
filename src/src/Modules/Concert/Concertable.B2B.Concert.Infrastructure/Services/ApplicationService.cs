@@ -11,12 +11,8 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IOpportunityService opportunityService;
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IArtistModule artistModule;
-    private readonly IApplyExecutor applyExecutor;
-    private readonly IAcceptExecutor acceptExecutor;
+    private readonly IApplicationExecutor executor;
     private readonly ICheckoutDispatcher checkoutDispatcher;
-    private readonly IWithdrawExecutor withdrawExecutor;
-    private readonly IRejectExecutor rejectExecutor;
-    private readonly ICancelApplicationExecutor cancelApplicationExecutor;
     private readonly IApplicationMapper mapper;
 
     public ApplicationService(
@@ -26,12 +22,8 @@ internal sealed class ApplicationService : IApplicationService
         IOpportunityService opportunityService,
         IOpportunityRepository opportunityRepository,
         IArtistModule artistModule,
-        IApplyExecutor applyExecutor,
-        IAcceptExecutor acceptExecutor,
+        IApplicationExecutor executor,
         ICheckoutDispatcher checkoutDispatcher,
-        IWithdrawExecutor withdrawExecutor,
-        IRejectExecutor rejectExecutor,
-        ICancelApplicationExecutor cancelApplicationExecutor,
         IApplicationMapper mapper)
     {
         this.repository = repository;
@@ -40,12 +32,8 @@ internal sealed class ApplicationService : IApplicationService
         this.opportunityService = opportunityService;
         this.opportunityRepository = opportunityRepository;
         this.artistModule = artistModule;
-        this.applyExecutor = applyExecutor;
-        this.acceptExecutor = acceptExecutor;
+        this.executor = executor;
         this.checkoutDispatcher = checkoutDispatcher;
-        this.withdrawExecutor = withdrawExecutor;
-        this.rejectExecutor = rejectExecutor;
-        this.cancelApplicationExecutor = cancelApplicationExecutor;
         this.mapper = mapper;
     }
 
@@ -82,7 +70,7 @@ internal sealed class ApplicationService : IApplicationService
         var artistId = await ResolveArtistIdAsync();
         await ValidateCanApplyAsync(opportunityId, artistId);
 
-        var application = await applyExecutor.ApplyAsync(opportunityId, artistId, null, eSignature);
+        var application = await executor.ApplyAsync(opportunityId, artistId, null, eSignature);
         await notifier.AppliedAsync(application.Id);
 
         return await GetByIdAsync(application.Id);
@@ -93,7 +81,7 @@ internal sealed class ApplicationService : IApplicationService
         var artistId = await ResolveArtistIdAsync();
         await ValidateCanApplyAsync(opportunityId, artistId);
 
-        var application = await applyExecutor.ApplyAsync(opportunityId, artistId, paymentMethodId, eSignature);
+        var application = await executor.ApplyAsync(opportunityId, artistId, paymentMethodId, eSignature);
         await notifier.AppliedAsync(application.Id);
 
         return await GetByIdAsync(application.Id);
@@ -141,25 +129,25 @@ internal sealed class ApplicationService : IApplicationService
         if (result.IsFailed)
             throw new BadRequestException(result.Errors);
 
-        await acceptExecutor.AcceptAsync(applicationId, paymentMethodId, eSignature);
+        await executor.AcceptAsync(applicationId, paymentMethodId, eSignature);
         await notifier.AcceptedAsync(applicationId);
     }
 
     public async Task WithdrawAsync(int applicationId)
     {
-        await withdrawExecutor.WithdrawAsync(applicationId);
+        await executor.WithdrawAsync(applicationId);
         await notifier.WithdrawnAsync(applicationId);
     }
 
     public async Task RejectAsync(int applicationId)
     {
-        await rejectExecutor.RejectAsync(applicationId);
+        await executor.RejectAsync(applicationId);
         await notifier.RejectedAsync(applicationId);
     }
 
     public async Task CancelAsync(int applicationId)
     {
-        await cancelApplicationExecutor.CancelAsync(applicationId);
+        await executor.CancelAsync(applicationId);
         await notifier.CancelledAsync(applicationId);
     }
 
