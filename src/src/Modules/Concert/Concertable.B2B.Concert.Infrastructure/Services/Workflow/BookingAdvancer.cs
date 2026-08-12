@@ -35,12 +35,8 @@ internal sealed class BookingAdvancer : IBookingAdvancer
                 _ => Task.CompletedTask,
             });
         }
-        catch (ConflictException)
-        {
-        }
-        catch (DbUpdateException ex) when (ex.IsDuplicateKey())
-        {
-        }
+        catch (ConflictException) { }
+        catch (DbUpdateException ex) when (ex.IsDuplicateKey()) { }
     }
 
     private static bool IsBookingPending(LifecycleState state)
