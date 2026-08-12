@@ -5,21 +5,22 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class RefundEscrowStep : ICancelStep
 {
     private readonly IBookingRepository bookingRepository;
-    private readonly IEscrowOperationsClient escrowClient;
+    private readonly IBus bus;
 
-    public RefundEscrowStep(IBookingRepository bookingRepository, IEscrowOperationsClient escrowClient)
+    public RefundEscrowStep(IBookingRepository bookingRepository, IBus bus)
     {
         this.bookingRepository = bookingRepository;
-        this.escrowClient = escrowClient;
+        this.bus = bus;
     }
 
     public async Task<UnitResult<CancelConcertError>> ExecuteAsync(int concertId, CancellationToken ct = default)
     {
-        var bookingId = await bookingRepository.GetIdByConcertIdAsync(concertId)
+        var booking = await bookingRepository.GetByConcertIdAsync(concertId, ct)
             ?? throw new InvalidOperationException($"Concert {concertId} has no booking.");
-
-        return (await escrowClient.RefundByBookingIdAsync(bookingId, ct))
-            .MapError(error => (CancelConcertError)new CancelConcertError.EscrowRefundFailure(error))
-            .Bind(_ => UnitResult.Success<CancelConcertError>());
+        await bus.SendAsync(new RefundEscrowCommand(
+            booking.Application.BeginCancellation(),
+            booking.Id,
+            "concert-cancelled"), ct);
+        return UnitResult.Success<CancelConcertError>();
     }
 }

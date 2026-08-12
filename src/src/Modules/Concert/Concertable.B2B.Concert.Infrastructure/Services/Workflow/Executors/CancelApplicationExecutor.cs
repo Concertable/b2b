@@ -9,16 +9,31 @@ internal sealed class CancelApplicationExecutor : ICancelApplicationExecutor
 {
     private readonly ILifecycleTransitioner transitioner;
     private readonly IApplicationCancelStep cancelStep;
+    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IOutboxUnitOfWorkBehavior outbox;
 
-    public CancelApplicationExecutor(ILifecycleTransitioner transitioner, IApplicationCancelStep cancelStep)
+    public CancelApplicationExecutor(
+        ILifecycleTransitioner transitioner,
+        IApplicationCancelStep cancelStep,
+        IUnitOfWorkBehavior unitOfWork,
+        IOutboxUnitOfWorkBehavior outbox)
     {
         this.transitioner = transitioner;
         this.cancelStep = cancelStep;
+        this.unitOfWork = unitOfWork;
+        this.outbox = outbox;
     }
 
     public async Task<UnitResult<CancelApplicationError>> CancelAsync(
         int applicationId,
         CancellationToken ct = default)
+        => await unitOfWork.ExecuteAsync(
+            () => outbox.ExecuteAsync(() => CancelCoreAsync(applicationId, ct), ct),
+            ct);
+
+    private async Task<UnitResult<CancelApplicationError>> CancelCoreAsync(
+        int applicationId,
+        CancellationToken ct)
     {
         var transition = await transitioner.TransitionAsync<CancelApplicationError>(
             applicationId,

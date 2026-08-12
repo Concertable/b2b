@@ -58,6 +58,7 @@ public class ApiFixture : IAsyncLifetime
     public IMockManagerPaymentClient ManagerPaymentClient { get; }
     public MockPayoutAccountClient PayoutAccountClient { get; } = new();
     public MockEscrowClient EscrowClient { get; }
+    public MockPaymentTransport PaymentTransport { get; } = new();
 
     public ApiFixture()
     {
@@ -107,10 +108,11 @@ public class ApiFixture : IAsyncLifetime
                     services.Remove(d);
                 services.AddTransient<IStartupFilter, TestClientIpStartupFilter>();
 
-                services.Replace(ServiceDescriptor.Singleton<IBusTransport, MockBusTransport>());
+                services.AddSingleton(PaymentTransport);
+                services.Replace(ServiceDescriptor.Singleton<IBusTransport>(PaymentTransport));
                 services.AddSingleton<INotificationClient>(NotificationService);
                 services.AddSingleton(StripeApiClient);
-                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient);
+                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient, PaymentTransport);
                 services.AddSingleton<IEmailTransport>(EmailSender);
 
                 services.AddSingleton<IManagerPaymentOperationsClient>(ManagerPaymentClient);
@@ -180,6 +182,12 @@ public class ApiFixture : IAsyncLifetime
     /// <paramref name="bookingId"/> — the failure leg <see cref="IWebhookSimulator"/> cannot simulate.</summary>
     public async Task SendEscrowFailedWebhookAsync(int bookingId)
     {
+        if (PaymentTransport.Commands.Any(command => command is CaptureEscrowCommand or DepositEscrowCommand))
+        {
+            await PaymentTransport.RejectLatestAcceptanceAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
+            return;
+        }
+
         using var eventScope = factory.Services.CreateScope();
         var handlers = eventScope.ServiceProvider.GetServices<IIntegrationEventHandler<PaymentFailedEvent>>();
         var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
@@ -192,6 +200,12 @@ public class ApiFixture : IAsyncLifetime
         foreach (var handler in handlers)
             await handler.HandleAsync(evt, envelope, CancellationToken.None);
     }
+
+    public Task CompleteLatestFinancialOperationAsync() =>
+        PaymentTransport.CompleteLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+    public Task RejectLatestFinancialOperationAsync() =>
+        PaymentTransport.RejectLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
     public IServiceProvider Services => factory.Services;
 

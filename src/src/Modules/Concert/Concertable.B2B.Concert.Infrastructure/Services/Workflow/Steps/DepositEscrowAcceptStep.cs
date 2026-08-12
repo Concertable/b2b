@@ -8,25 +8,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
-internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
+internal sealed class DepositEscrowAcceptStep(
+    IBookingService bookingService,
+    IBus bus,
+    IDealAccessor dealAccessor,
+    ILogger<DepositEscrowAcceptStep> logger) : ISimpleAcceptStep
 {
-    private readonly IBookingService bookingService;
-    private readonly IEscrowOperationsClient escrowClient;
-    private readonly IDealAccessor dealAccessor;
-    private readonly ILogger<DepositEscrowAcceptStep> logger;
-
-    public DepositEscrowAcceptStep(
-        IBookingService bookingService,
-        IEscrowOperationsClient escrowClient,
-        IDealAccessor dealAccessor,
-        ILogger<DepositEscrowAcceptStep> logger)
-    {
-        this.bookingService = bookingService;
-        this.escrowClient = escrowClient;
-        this.dealAccessor = dealAccessor;
-        this.logger = logger;
-    }
-
     public async Task<UnitResult<AcceptApplicationError>> ExecuteAsync(
         ApplicationEntity application,
         CancellationToken ct = default)
@@ -34,19 +21,29 @@ internal sealed class DepositEscrowAcceptStep : ISimpleAcceptStep
         if (application is not PrepaidApplication prepaid)
             throw new InvalidOperationException("VenueHire acceptance requires a prepaid application.");
 
-        var deal = (VenueHireDeal)dealAccessor.Deal;
         var booking = await bookingService.CreateStandardAsync(application);
-        logger.AcceptingVenueHireApplication(application.Id, booking.Id, deal.HireFee, prepaid.ArtistTenantId, prepaid.VenueTenantId);
+        await StageAsync(prepaid, booking.Id, ct);
+        return UnitResult.Success<AcceptApplicationError>();
+    }
 
-        return (await escrowClient.DepositAsync(
-            prepaid.ArtistTenantId,
-            prepaid.VenueTenantId,
-            Money.Gbp(deal.HireFee),
-            prepaid.PaymentMethodId,
-            PaymentSession.OffSession,
-            booking.Id,
-            ct))
-            .MapError(error => (AcceptApplicationError)new AcceptApplicationError.EscrowDepositFailure(error))
-            .Bind(_ => UnitResult.Success<AcceptApplicationError>());
+    private async Task StageAsync(PrepaidApplication application, int bookingId, CancellationToken ct)
+    {
+        var deal = (VenueHireDeal)dealAccessor.Deal;
+        logger.AcceptingVenueHireApplication(
+            application.Id,
+            bookingId,
+            deal.HireFee,
+            application.ArtistTenantId,
+            application.VenueTenantId);
+
+        await bus.SendAsync(new DepositEscrowCommand(
+            application.BeginAcceptance(),
+            bookingId,
+            application.ArtistTenantId,
+            application.VenueTenantId,
+            Money.Gbp(deal.HireFee).ToMinorUnits(),
+            Currency.Gbp,
+            application.PaymentMethodId,
+            PaymentSession.OffSession), ct);
     }
 }

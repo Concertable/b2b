@@ -39,7 +39,7 @@ internal sealed class EscrowExecutor : IEscrowExecutor
             {
                 // A late capture landing after application-cancel confirms money into escrow on a dead
                 // application — compensate by refunding instead of booking.
-                if (app.State == LifecycleState.Cancelled)
+                if (app.State == LifecycleState.CancellationPending)
                     return await cancelStep.ExecuteAsync(app.Id, ct);
 
                 var workflow = workflows.Create(app.DealType);

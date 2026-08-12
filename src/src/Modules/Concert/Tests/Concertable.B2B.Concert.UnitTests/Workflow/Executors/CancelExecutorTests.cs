@@ -13,11 +13,14 @@ public sealed class CancelExecutorTests
 
     public CancelExecutorTests()
     {
+        var behavior = new ImmediateBehavior();
         this.executor = new CancelExecutor(
             Mock.Of<ILifecycleTransitioner>(),
             Mock.Of<IConcertWorkflowFactory>(),
             Mock.Of<IDealResolver>(),
-            this.concertRepository.Object);
+            this.concertRepository.Object,
+            behavior,
+            behavior);
     }
 
     [Fact]
@@ -32,5 +35,12 @@ public sealed class CancelExecutorTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => this.executor.CancelAsync(42, cancellationToken));
+    }
+
+    private sealed class ImmediateBehavior : IUnitOfWorkBehavior, IOutboxUnitOfWorkBehavior
+    {
+        public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default) => action();
+
+        public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken = default) => action();
     }
 }

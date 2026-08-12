@@ -9,16 +9,31 @@ internal sealed class WithdrawExecutor : IWithdrawExecutor
 {
     private readonly ILifecycleTransitioner transitioner;
     private readonly IApplicationCancelStep cancelStep;
+    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IOutboxUnitOfWorkBehavior outbox;
 
-    public WithdrawExecutor(ILifecycleTransitioner transitioner, IApplicationCancelStep cancelStep)
+    public WithdrawExecutor(
+        ILifecycleTransitioner transitioner,
+        IApplicationCancelStep cancelStep,
+        IUnitOfWorkBehavior unitOfWork,
+        IOutboxUnitOfWorkBehavior outbox)
     {
         this.transitioner = transitioner;
         this.cancelStep = cancelStep;
+        this.unitOfWork = unitOfWork;
+        this.outbox = outbox;
     }
 
     public async Task<UnitResult<CancelApplicationError>> WithdrawAsync(
         int applicationId,
         CancellationToken ct = default)
+        => await unitOfWork.ExecuteAsync(
+            () => outbox.ExecuteAsync(() => WithdrawCoreAsync(applicationId, ct), ct),
+            ct);
+
+    private async Task<UnitResult<CancelApplicationError>> WithdrawCoreAsync(
+        int applicationId,
+        CancellationToken ct)
     {
         var transition = await transitioner.TransitionAsync<CancelApplicationError>(
             applicationId,

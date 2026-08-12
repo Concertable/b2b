@@ -47,7 +47,7 @@ public sealed class EscrowExecutorTests
             DealType.FlatFee,
             Guid.NewGuid(),
             Guid.NewGuid());
-        application.Transition(LifecycleState.Cancelled);
+        application.Transition(LifecycleState.CancellationPending);
         this.bookingRepository
             .Setup(repository => repository.GetApplicationIdByIdAsync(BookingId, cancellationToken))
             .ReturnsAsync(ApplicationId);
@@ -58,7 +58,7 @@ public sealed class EscrowExecutorTests
             .Setup(registry => registry.Get(DealType.FlatFee))
             .Returns(new LifecycleStateMachine(new Dictionary<(LifecycleState, Trigger), LifecycleState>
             {
-                [(LifecycleState.Cancelled, Trigger.EscrowPaymentSucceeded)] = LifecycleState.Cancelled
+                [(LifecycleState.CancellationPending, Trigger.EscrowPaymentSucceeded)] = LifecycleState.CancellationPending
             }));
         this.cancelStep
             .Setup(step => step.ExecuteAsync(application.Id, cancellationToken))
@@ -70,7 +70,7 @@ public sealed class EscrowExecutorTests
             () => this.executor.SucceededAsync(BookingId, cancellationToken));
 
         Assert.Contains("escrow.refund_not_allowed", exception.Message);
-        Assert.Equal(LifecycleState.Cancelled, application.State);
+        Assert.Equal(LifecycleState.CancellationPending, application.State);
         this.cancelStep.Verify(
             step => step.ExecuteAsync(application.Id, cancellationToken),
             Times.Once);

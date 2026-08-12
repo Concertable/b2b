@@ -17,6 +17,8 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private readonly ITermsFingerprintCalculator termsFingerprint;
     private readonly IBookingAdvancer bookingAdvancer;
     private readonly IBackgroundTaskRunner taskRunner;
+    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IOutboxUnitOfWorkBehavior outbox;
 
     public AcceptExecutor(
         ILifecycleTransitioner transitioner,
@@ -26,7 +28,9 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         IContractIssuer contractIssuer,
         ITermsFingerprintCalculator termsFingerprint,
         IBookingAdvancer bookingAdvancer,
-        IBackgroundTaskRunner taskRunner)
+        IBackgroundTaskRunner taskRunner,
+        IUnitOfWorkBehavior unitOfWork,
+        IOutboxUnitOfWorkBehavior outbox)
     {
         this.transitioner = transitioner;
         this.workflows = workflows;
@@ -36,6 +40,8 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.termsFingerprint = termsFingerprint;
         this.bookingAdvancer = bookingAdvancer;
         this.taskRunner = taskRunner;
+        this.unitOfWork = unitOfWork;
+        this.outbox = outbox;
     }
 
     public async Task<UnitResult<AcceptApplicationError>> AcceptAsync(
@@ -43,6 +49,15 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default)
+        => await unitOfWork.ExecuteAsync(
+            () => outbox.ExecuteAsync(() => AcceptCoreAsync(applicationId, paymentMethodId, eSignature, ct), ct),
+            ct);
+
+    private async Task<UnitResult<AcceptApplicationError>> AcceptCoreAsync(
+        int applicationId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature,
+        CancellationToken ct)
     {
         var transition = await transitioner.TransitionAsync<AcceptApplicationError>(
             applicationId,
