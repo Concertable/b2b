@@ -147,6 +147,9 @@ services.AddAzureServiceBusTransport(
         reg.Publishes<ConcertPostedEvent>();
         reg.Publishes<ConcertRatingUpdatedEvent>();
         reg.Publishes<Concertable.B2B.Tenant.Contracts.Events.PayoutOwnerRegisteredEvent>();
+        reg.Sends<CaptureEscrowCommand>();
+        reg.Sends<DepositEscrowCommand>();
+        reg.Sends<RefundEscrowCommand>();
 
         reg.SubscribeTo<CredentialRegisteredEvent>();
         reg.SubscribeTo<CustomerReviewSubmittedEvent>();
