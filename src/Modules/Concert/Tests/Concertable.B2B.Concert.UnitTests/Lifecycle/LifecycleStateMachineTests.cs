@@ -15,7 +15,7 @@ public sealed class LifecycleStateMachineTests
     private static IConcertStateMachineRegistry BuildRegistry()
     {
         var services = new ServiceCollection();
-        services.AddConcertWorkflows();
+        services.AddConcertDealStrategies();
         return services.BuildServiceProvider().GetRequiredService<IConcertStateMachineRegistry>();
     }
 

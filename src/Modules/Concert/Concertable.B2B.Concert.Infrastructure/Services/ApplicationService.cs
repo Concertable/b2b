@@ -13,12 +13,8 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IOpportunityService opportunityService;
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IArtistModule artistModule;
-    private readonly IApplyExecutor applyExecutor;
-    private readonly IAcceptExecutor acceptExecutor;
+    private readonly IApplicationExecutor executor;
     private readonly ICheckoutDispatcher checkoutDispatcher;
-    private readonly IWithdrawExecutor withdrawExecutor;
-    private readonly IRejectExecutor rejectExecutor;
-    private readonly ICancelApplicationExecutor cancelApplicationExecutor;
     private readonly IApplicationMapper mapper;
 
     public ApplicationService(
@@ -28,12 +24,8 @@ internal sealed class ApplicationService : IApplicationService
         IOpportunityService opportunityService,
         IOpportunityRepository opportunityRepository,
         IArtistModule artistModule,
-        IApplyExecutor applyExecutor,
-        IAcceptExecutor acceptExecutor,
+        IApplicationExecutor executor,
         ICheckoutDispatcher checkoutDispatcher,
-        IWithdrawExecutor withdrawExecutor,
-        IRejectExecutor rejectExecutor,
-        ICancelApplicationExecutor cancelApplicationExecutor,
         IApplicationMapper mapper)
     {
         this.repository = repository;
@@ -42,12 +34,8 @@ internal sealed class ApplicationService : IApplicationService
         this.opportunityService = opportunityService;
         this.opportunityRepository = opportunityRepository;
         this.artistModule = artistModule;
-        this.applyExecutor = applyExecutor;
-        this.acceptExecutor = acceptExecutor;
+        this.executor = executor;
         this.checkoutDispatcher = checkoutDispatcher;
-        this.withdrawExecutor = withdrawExecutor;
-        this.rejectExecutor = rejectExecutor;
-        this.cancelApplicationExecutor = cancelApplicationExecutor;
         this.mapper = mapper;
     }
 
@@ -100,7 +88,7 @@ internal sealed class ApplicationService : IApplicationService
         if (validation.TryGetError(out var validationError))
             return Result.Failure<ApplicationDto, ApplyApplicationError>(validationError);
 
-        var execution = await applyExecutor.ApplyAsync(opportunityId, artistId, paymentMethodId, eSignature);
+        var execution = await executor.ApplyAsync(opportunityId, artistId, paymentMethodId, eSignature);
         if (execution.TryGetError(out var executionError))
             return Result.Failure<ApplicationDto, ApplyApplicationError>(executionError);
         var application = execution.Match(
@@ -174,7 +162,7 @@ internal sealed class ApplicationService : IApplicationService
         if (result.TryGetError(out var error))
             return UnitResult.Failure<AcceptApplicationError>(new AcceptApplicationError.Ineligible(error));
 
-        var acceptance = await acceptExecutor.AcceptAsync(applicationId, paymentMethodId, eSignature, ct);
+        var acceptance = await executor.AcceptAsync(applicationId, paymentMethodId, eSignature, ct);
         if (acceptance.TryGetError(out var acceptanceError))
             return UnitResult.Failure(acceptanceError);
 
@@ -224,7 +212,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct = default)
     {
-        var withdrawal = await withdrawExecutor.WithdrawAsync(applicationId, ct);
+        var withdrawal = await executor.WithdrawAsync(applicationId, ct);
         if (withdrawal.TryGetError(out var withdrawalError))
             return UnitResult.Failure(withdrawalError);
 
@@ -234,7 +222,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<UnitResult<RejectApplicationError>> RejectAsync(int applicationId)
     {
-        var result = await rejectExecutor.RejectAsync(applicationId);
+        var result = await executor.RejectAsync(applicationId);
         if (result.TryGetError(out var error))
         {
             RejectApplicationError rejectionError = error switch
@@ -255,7 +243,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct = default)
     {
-        var cancellation = await cancelApplicationExecutor.CancelAsync(applicationId, ct);
+        var cancellation = await executor.CancelAsync(applicationId, ct);
         if (cancellation.TryGetError(out var cancellationError))
             return UnitResult.Failure(cancellationError);
 

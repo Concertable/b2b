@@ -82,7 +82,7 @@ relevant party is not VAT-registered. VAT handling must branch on **contract typ
 
 **Build:** a per-contract VAT/settlement calculator that knows the supply direction, reads
 the supplier's VAT status (item 3), and produces net/VAT/gross + the correct invoice
-direction (item 4). `TicketPayeeResolver` already encodes the VenueHire direction flip — the
+direction (item 4). `DealPayeeResolver` already encodes the VenueHire direction flip — the
 VAT calculator needs the same awareness.
 
 ### Revenue source for DoorSplit / Versus (standalone-B2B lead)

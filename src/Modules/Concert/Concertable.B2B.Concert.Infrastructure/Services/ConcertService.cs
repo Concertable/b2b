@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel.Identity;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -15,6 +14,7 @@ internal sealed class ConcertService : IConcertService
     private readonly ICurrentUser currentUser;
     private readonly IApplicationValidator applicationValidator;
     private readonly IConcertDraftService concertDraftService;
+    private readonly ICancelExecutor cancelExecutor;
     private readonly TimeProvider timeProvider;
     private readonly ITenantContext tenantContext;
 
@@ -26,6 +26,7 @@ internal sealed class ConcertService : IConcertService
         ICurrentUser currentUser,
         IApplicationValidator applicationValidator,
         IConcertDraftService concertDraftService,
+        ICancelExecutor cancelExecutor,
         TimeProvider timeProvider,
         ITenantContext tenantContext)
     {
@@ -36,6 +37,7 @@ internal sealed class ConcertService : IConcertService
         this.currentUser = currentUser;
         this.applicationValidator = applicationValidator;
         this.concertDraftService = concertDraftService;
+        this.cancelExecutor = cancelExecutor;
         this.timeProvider = timeProvider;
         this.tenantContext = tenantContext;
     }
@@ -128,6 +130,9 @@ internal sealed class ConcertService : IConcertService
         await repository.SaveChangesAsync();
         return UnitResult.Success<PostConcertError>();
     }
+
+    public Task<UnitResult<CancelConcertError>> CancelAsync(int concertId, CancellationToken ct) =>
+        cancelExecutor.CancelAsync(concertId, ct);
 
     public async Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueAsync(int id, decimal doorRevenue)
     {

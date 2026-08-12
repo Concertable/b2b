@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
+using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Services;
@@ -47,6 +48,7 @@ public sealed class ConcertServiceTests
             Mock.Of<ICurrentUser>(),
             Mock.Of<IApplicationValidator>(),
             Mock.Of<IConcertDraftService>(),
+            Mock.Of<ICancelExecutor>(),
             new FakeTimeProvider(now),
             tenantContext.Object);
 
