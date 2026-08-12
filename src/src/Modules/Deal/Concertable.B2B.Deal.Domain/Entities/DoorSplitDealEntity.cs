@@ -33,7 +33,4 @@ public sealed class DoorSplitDealEntity : DealEntity
             ? UnitResult.Success<ValidationErrors>()
             : UnitResult.Failure(new ValidationErrors(
                 [new(nameof(ArtistDoorPercent), "Artist door percent must be between 0 and 100.")]));
-
-    public decimal CalculateArtistShare(decimal totalRevenue)
-        => totalRevenue * (ArtistDoorPercent / 100);
 }

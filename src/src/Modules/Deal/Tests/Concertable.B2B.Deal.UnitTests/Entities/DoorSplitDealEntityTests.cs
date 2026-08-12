@@ -1,22 +1,40 @@
-﻿using Concertable.B2B.Deal.Domain.Entities;
+using Concertable.B2B.Deal.Domain.Entities;
 
 namespace Concertable.B2B.Deal.UnitTests.Entities;
 
 public sealed class DoorSplitDealEntityTests
 {
     [Theory]
-    [InlineData(1000, 50, 500)]
-    [InlineData(1000, 25, 250)]
-    [InlineData(1000, 100, 1000)]
-    [InlineData(0, 50, 0)]
-    [InlineData(1000, 0, 0)]
-    public void CalculateArtistShare_ShouldReturnCorrectAmount(decimal totalRevenue, decimal artistDoorPercent, decimal expected)
+    [InlineData(-1)]
+    [InlineData(101)]
+    public void Create_ArtistDoorPercentOutsideRange_ReturnsFailure(decimal artistDoorPercent)
+    {
+        var result = DoorSplitDealEntity.Create(artistDoorPercent, PaymentMethod.Cash);
+
+        Assert.True(result.IsFailure);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(100)]
+    public void Create_ArtistDoorPercentAtBoundary_ReturnsDeal(decimal artistDoorPercent)
     {
         var creation = DoorSplitDealEntity.Create(artistDoorPercent, PaymentMethod.Cash);
         Assert.True(creation.TryGetValue(out var deal));
 
-        var result = deal.CalculateArtistShare(totalRevenue);
+        Assert.Equal(artistDoorPercent, deal.ArtistDoorPercent);
+    }
 
-        Assert.Equal(expected, result);
+    [Fact]
+    public void Update_ValidTerms_ReplacesEconomicInputs()
+    {
+        var creation = DoorSplitDealEntity.Create(25m, PaymentMethod.Cash);
+        Assert.True(creation.TryGetValue(out var deal));
+
+        var update = deal.Update(75m, PaymentMethod.Transfer);
+
+        Assert.True(update.IsSuccess);
+        Assert.Equal(75m, deal.ArtistDoorPercent);
+        Assert.Equal(PaymentMethod.Transfer, deal.PaymentMethod);
     }
 }

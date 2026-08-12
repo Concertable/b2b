@@ -72,12 +72,8 @@ public sealed class ApplicationServiceEligibilityTests
             Mock.Of<IOpportunityService>(),
             this.opportunityRepository.Object,
             this.artistModule.Object,
-            Mock.Of<IApplyExecutor>(),
-            Mock.Of<IAcceptExecutor>(),
+            Mock.Of<IApplicationExecutor>(),
             Mock.Of<ICheckoutDispatcher>(),
-            Mock.Of<IWithdrawExecutor>(),
-            Mock.Of<IRejectExecutor>(),
-            Mock.Of<ICancelApplicationExecutor>(),
             Mock.Of<IApplicationMapper>());
     }
 

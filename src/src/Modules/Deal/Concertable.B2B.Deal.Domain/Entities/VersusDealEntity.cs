@@ -49,7 +49,4 @@ public sealed class VersusDealEntity : DealEntity
             ? UnitResult.Success<ValidationErrors>()
             : UnitResult.Failure(new ValidationErrors(errors));
     }
-
-    public decimal CalculateArtistShare(decimal totalRevenue)
-        => Guarantee + (totalRevenue * (ArtistDoorPercent / 100));
 }

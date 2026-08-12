@@ -21,7 +21,8 @@ the wrong tenant half the time). Which axis a word belongs to:
   the `venue == me || artist == me` query filter.
 - **ROLE (flips per `DealType` — *what* the tenant does)** — resolved from identity, never stored fixed:
   - **money flow** → **`payee`** (receives the settlement) vs the counterparty. See
-    `SettlementPayeeResolver` / `TicketPayeeResolver` (inverse maps).
+    `DealPayeeResolver`, whose cohesive per-deal strategy resolves the ticket collector and inverse
+    settlement recipient directly.
   - **VAT invoice** → **`supplier`** (made the supply) / **`customer`** (billed). HMRC's legally-required
     words — you can't put "payee" on an invoice. Mapping: `supplier` = settlement payee, `customer` =
     ticket payee.

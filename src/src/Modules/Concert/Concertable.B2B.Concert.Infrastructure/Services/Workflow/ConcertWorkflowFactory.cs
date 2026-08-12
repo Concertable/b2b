@@ -1,17 +1,16 @@
+using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Application.Workflow;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
 internal sealed class ConcertWorkflowFactory : IConcertWorkflowFactory
 {
-    private readonly IKeyedServiceProvider serviceProvider;
+    private readonly IConcertDealStrategyFactory<IConcertWorkflow> strategies;
 
-    public ConcertWorkflowFactory(IKeyedServiceProvider serviceProvider)
+    public ConcertWorkflowFactory(IConcertDealStrategyFactory<IConcertWorkflow> strategies)
     {
-        this.serviceProvider = serviceProvider;
+        this.strategies = strategies;
     }
 
-    public IConcertWorkflow Create(DealType type) =>
-        serviceProvider.GetRequiredKeyedService<IConcertWorkflow>(type);
+    public IConcertWorkflow Create(DealType type) => strategies.Create(type);
 }
