@@ -26,9 +26,14 @@ internal sealed class MockWebhookSimulatorFail : IWebhookSimulator
     public async Task SendWebhookAsync()
     {
         if (string.IsNullOrEmpty(stripeApiClient.LastPaymentIntentId))
-            throw new InvalidOperationException("No payment intent from the last accept; cannot simulate webhook.");
+        {
+            if (paymentTransport.Commands.Count == 0 || paymentTransport.HasPendingCommand)
+                await paymentTransport.RejectLatestAcceptanceAsync(scopeFactory);
+            return;
+        }
 
-        if (stripeApiClient.LastMetadata.GetValueOrDefault(PaymentMetadataKeys.Type) == TransactionTypes.Escrow)
+        if (stripeApiClient.LastMetadata.GetValueOrDefault(PaymentMetadataKeys.Type) is
+            TransactionTypes.ApplicationAccept or TransactionTypes.ApplicationApply or TransactionTypes.Escrow)
         {
             if (paymentTransport.Commands.Count == 0 || paymentTransport.HasPendingCommand)
                 await paymentTransport.RejectLatestAcceptanceAsync(scopeFactory);

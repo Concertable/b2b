@@ -6,6 +6,7 @@ using Concertable.B2B.Concert.Api.Responses;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
@@ -189,8 +190,10 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         await fixture.RejectLatestFinancialOperationAsync();
-        var application = await (await client.GetAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}")).Content.ReadAsync<ApplicationResponse>();
-        Assert.NotEqual(ApplicationStatus.Accepted, application!.Status);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>()
+            .AsNoTracking()
+            .SingleAsync(value => value.Id == fixture.SeedState.VenueHireApp.Id);
+        Assert.Equal(LifecycleState.PaymentFailed, application.State);
         var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.VenueHireApp.Id);
         Assert.Null(draft);
         Assert.Empty(fixture.NotificationService.DraftCreated);

@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -187,8 +188,10 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         await fixture.RejectLatestFinancialOperationAsync();
-        var application = await (await client.GetAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}")).Content.ReadAsync<ApplicationResponse>();
-        Assert.NotEqual(ApplicationStatus.Accepted, application!.Status);
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>()
+            .AsNoTracking()
+            .SingleAsync(value => value.Id == fixture.SeedState.FlatFeeApp.Id);
+        Assert.Equal(LifecycleState.PaymentFailed, application.State);
         var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
         Assert.Null(draft);
         Assert.Empty(fixture.NotificationService.DraftCreated);
