@@ -9,10 +9,6 @@ internal abstract class BaseRepository<TEntity>(DealDbContext context)
     : BaseRepository<TEntity, DealDbContext>(context)
     where TEntity : class;
 
-internal abstract class ReadRepository<TEntity>(DealDbContext context)
-    : ReadRepository<TEntity, DealDbContext, int>(context)
-    where TEntity : class, IIdEntity;
-
 internal abstract class Repository<TEntity>(DealDbContext context)
     : Repository<TEntity, DealDbContext, int>(context)
     where TEntity : class, IIdEntity;
