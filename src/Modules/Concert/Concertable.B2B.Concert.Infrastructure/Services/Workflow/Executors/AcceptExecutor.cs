@@ -77,7 +77,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         }, ct);
 
         var result = transition.Bind(_ => UnitResult.Success<AcceptApplicationError>());
-        if (result.TryGetError(out _))
+        if (result.IsFailure)
             return result;
 
         await bookingAdvancer.AdvanceIfReadyAsync(applicationId);

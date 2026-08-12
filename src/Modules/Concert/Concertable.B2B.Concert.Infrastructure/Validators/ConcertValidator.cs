@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Reunion.Validation;
-using ReunionValidationErrors = Reunion.Errors.ValidationErrors;
 
 namespace Concertable.B2B.Concert.Infrastructure.Validators;
 
@@ -12,7 +11,7 @@ internal sealed class ConcertValidator : IConcertValidator
         return newTotalTickets >= concert.TicketsSold
             ? ValidationResult.Valid()
             : ValidationResult.Invalid(
-                new ReunionValidationErrors(
+                new ValidationErrors(
                     new Dictionary<string, string[]>
                     {
                         ["totalTickets"] =
@@ -34,6 +33,6 @@ internal sealed class ConcertValidator : IConcertValidator
 
         return errors.Count == 0
             ? ValidationResult.Valid()
-            : ValidationResult.Invalid(new ReunionValidationErrors(errors));
+            : ValidationResult.Invalid(new ValidationErrors(errors));
     }
 }

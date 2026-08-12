@@ -154,9 +154,9 @@ internal sealed class ConcertService : IConcertService
             return UnitResult.Failure<DeclareDoorRevenueError>(
                 new DeclareDoorRevenueError.AlreadySettled());
 
-        concert.DeclareDoorRevenue(doorRevenue);
-        await repository.SaveChangesAsync();
-        return UnitResult.Success<DeclareDoorRevenueError>();
+        return await concert.DeclareDoorRevenue(doorRevenue)
+            .MapError(error => error.ToDeclareDoorRevenueError())
+            .TapAsync(() => repository.SaveChangesAsync());
     }
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByArtistIdAsync(int id) =>

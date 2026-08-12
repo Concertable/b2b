@@ -19,7 +19,7 @@ internal abstract partial record ApplyApplicationError : IError
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The application is not eligible.",
-                new Reunion.Errors.ValidationErrors(errors.ToDictionary())),
+                errors),
         GenreMismatch =>
             ErrorDefinition.Invalid<GenreMismatch>(
                 "Your artist must share a genre with this concert opportunity."),

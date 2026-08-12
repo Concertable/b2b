@@ -31,4 +31,3 @@ global using Concertable.DataAccess;
 global using Concertable.B2B.Concert.Infrastructure.Mappers;
 global using Concertable.B2B.Conversations.Contracts.Enums;
 global using Concertable.B2B.Concert.Domain.ValueObjects;
-global using ValidationErrors = Concertable.Kernel.Errors.ValidationErrors;

@@ -21,5 +21,7 @@ public static class ArtistFactory
         IEnumerable<Genre> genres)
         => ArtistEntity
             .Create(userId, name, about, bannerUrl, avatar, location, address, email, genres)
-            .WithId(id);
+            .Match(
+                artist => artist.WithId(id),
+                _ => throw new InvalidOperationException($"Seed artist {id} is invalid."));
 }

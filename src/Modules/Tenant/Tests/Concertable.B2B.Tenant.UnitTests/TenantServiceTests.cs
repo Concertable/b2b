@@ -1,5 +1,6 @@
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Errors;
+using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Application.Tax;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Entities;
@@ -31,12 +32,20 @@ public sealed class TenantServiceTests
     private static TenantEntity Onboarded(string? vatNumber)
     {
         var tenant = Bare();
-        tenant.UpdateLegalDetails("Acme Ltd", new TaxCompliance(
-            vatNumber,
-            "SID000001",
-            new RegisteredAddress("1 Main St", "Floor 2", "London", "EC1A 1AA", "United Kingdom"),
-            "GB00BANK00000000000001",
-            false));
+        var compliance = RegisteredAddress
+            .Create("1 Main St", "Floor 2", "London", "EC1A 1AA", "United Kingdom")
+            .Bind(address => TaxCompliance.Create(
+                vatNumber,
+                "SID000001",
+                address,
+                "GB00BANK00000000000001",
+                false))
+            .Match(
+                value => value,
+                _ => throw new InvalidOperationException("Test tax compliance is invalid."));
+        tenant.UpdateLegalDetails("Acme Ltd", compliance).Match(
+            () => { },
+            _ => throw new InvalidOperationException("Test tenant is invalid."));
         return tenant;
     }
 
@@ -64,6 +73,151 @@ public sealed class TenantServiceTests
         Assert.True(result.TryGetError(out var error));
         Assert.Equal("tenant.update_not_found", error.Definition.Code);
         Assert.Equal(ErrorKind.NotFound, error.Definition.Kind);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_InvalidDomainFields_MapsStructuredFailureWithoutSaving()
+    {
+        var tenantId = Guid.NewGuid();
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
+        repository
+            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Bare());
+        var request = new UpdateTenantRequest
+        {
+            LegalName = "",
+            TaxCompliance = new TaxComplianceDto
+            {
+                SellerIdentifier = "",
+                BankReference = "",
+                HoldsMusicLicence = false,
+                RegisteredAddress = new RegisteredAddressDto
+                {
+                    Line1 = "",
+                    City = "",
+                    Postcode = "",
+                    Country = ""
+                }
+            }
+        };
+
+        var result = await service.UpdateAsync(request);
+
+        Assert.True(result.TryGetError(out var error));
+        var invalid = Assert.IsType<UpdateTenantError.Invalid>(error);
+        Assert.Equal(["Line1 is required."], invalid.Errors.Errors["Line1"]);
+        Assert.Equal(["City is required."], invalid.Errors.Errors["City"]);
+        Assert.Equal(["Postcode is required."], invalid.Errors.Errors["Postcode"]);
+        Assert.Equal(["Country is required."], invalid.Errors.Errors["Country"]);
+        repository.Verify(
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_InvalidTaxCompliance_MapsStructuredFailureWithoutSaving()
+    {
+        var tenantId = Guid.NewGuid();
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
+        repository
+            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Bare());
+        var request = new UpdateTenantRequest
+        {
+            LegalName = "Acme Ltd",
+            TaxCompliance = ValidTaxCompliance() with
+            {
+                SellerIdentifier = "",
+                BankReference = ""
+            }
+        };
+
+        var result = await service.UpdateAsync(request);
+
+        Assert.True(result.TryGetError(out var error));
+        var invalid = Assert.IsType<UpdateTenantError.Invalid>(error);
+        Assert.Equal(["SellerIdentifier is required."], invalid.Errors.Errors["SellerIdentifier"]);
+        Assert.Equal(["BankReference is required."], invalid.Errors.Errors["BankReference"]);
+        repository.Verify(
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_MissingTaxCompliance_MapsStructuredFailureWithoutSaving()
+    {
+        var tenantId = Guid.NewGuid();
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
+        repository
+            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Bare());
+        var request = new UpdateTenantRequest
+        {
+            LegalName = "Acme Ltd",
+            TaxCompliance = null!
+        };
+
+        var result = await service.UpdateAsync(request);
+
+        Assert.True(result.TryGetError(out var error));
+        var invalid = Assert.IsType<UpdateTenantError.Invalid>(error);
+        Assert.Equal(["TaxCompliance is required."], invalid.Errors.Errors["TaxCompliance"]);
+        repository.Verify(
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_MissingRegisteredAddress_MapsStructuredFailureWithoutSaving()
+    {
+        var tenantId = Guid.NewGuid();
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
+        repository
+            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Bare());
+        var request = new UpdateTenantRequest
+        {
+            LegalName = "Acme Ltd",
+            TaxCompliance = ValidTaxCompliance() with
+            {
+                RegisteredAddress = null!
+            }
+        };
+
+        var result = await service.UpdateAsync(request);
+
+        Assert.True(result.TryGetError(out var error));
+        var invalid = Assert.IsType<UpdateTenantError.Invalid>(error);
+        Assert.Equal(
+            ["RegisteredAddress is required."],
+            invalid.Errors.Errors["RegisteredAddress"]);
+        repository.Verify(
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_InvalidLegalName_MapsStructuredFailureWithoutSaving()
+    {
+        var tenantId = Guid.NewGuid();
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
+        repository
+            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Bare());
+        var request = new UpdateTenantRequest
+        {
+            LegalName = "",
+            TaxCompliance = ValidTaxCompliance()
+        };
+
+        var result = await service.UpdateAsync(request);
+
+        Assert.True(result.TryGetError(out var error));
+        var invalid = Assert.IsType<UpdateTenantError.Invalid>(error);
+        Assert.Equal(["LegalName is required."], invalid.Errors.Errors["LegalName"]);
+        repository.Verify(
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     #endregion
@@ -193,4 +347,18 @@ public sealed class TenantServiceTests
     }
 
     #endregion
+
+    private static TaxComplianceDto ValidTaxCompliance() => new()
+    {
+        SellerIdentifier = "SID000001",
+        BankReference = "GB00BANK00000000000001",
+        HoldsMusicLicence = false,
+        RegisteredAddress = new RegisteredAddressDto
+        {
+            Line1 = "1 Main St",
+            City = "London",
+            Postcode = "EC1A 1AA",
+            Country = "United Kingdom"
+        }
+    };
 }

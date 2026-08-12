@@ -55,11 +55,16 @@ internal sealed class TenantService : ITenantService
         if (tenant is null)
             return Result.Failure<TenantDetails, UpdateTenantError>(new UpdateTenantError.TenantNotFound(tenantId));
 
-        // VAT-number format is enforced by UpdateTenantRequestValidator in the write pipeline, so the request is valid here.
-        tenant.UpdateLegalDetails(request.LegalName, request.TaxCompliance.ToTaxCompliance());
-        await repository.SaveChangesAsync(ct);
-
-        return Result.Success<TenantDetails, UpdateTenantError>(ToDetails(tenant));
+        return await request.TaxCompliance.ToTaxCompliance()
+            .MapError(errors => (UpdateTenantError)new UpdateTenantError.Invalid(errors))
+            .Bind(taxCompliance => tenant
+                .UpdateLegalDetails(request.LegalName, taxCompliance)
+                .MapError(errors => (UpdateTenantError)new UpdateTenantError.Invalid(errors)))
+            .BindAsync(async () =>
+            {
+                await repository.SaveChangesAsync(ct);
+                return Result.Success<TenantDetails, UpdateTenantError>(ToDetails(tenant));
+            });
     }
 
     public async Task<UnitResult<DeleteTenantError>> DeleteCurrentTenantAsync(CancellationToken ct = default)

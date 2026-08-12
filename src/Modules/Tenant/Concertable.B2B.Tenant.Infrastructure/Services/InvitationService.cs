@@ -1,5 +1,6 @@
 using Concertable.B2B.Infrastructure.Uris;
 using Concertable.B2B.Tenant.Application.Requests;
+using Concertable.B2B.Tenant.Domain.Errors;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
@@ -98,13 +99,9 @@ internal sealed class InvitationService : IInvitationService
             return UnitResult.Failure<RevokeInvitationError>(
                 new RevokeInvitationError.InvitationNotFound(invitationId));
 
-        if (invitation.Status != InvitationStatus.Pending)
-            return UnitResult.Failure<RevokeInvitationError>(
-                new RevokeInvitationError.InvitationNotPending());
-
-        invitation.Revoke();
-        await repository.SaveChangesAsync(ct);
-        return UnitResult.Success<RevokeInvitationError>();
+        return await invitation.Revoke()
+            .MapError(error => error.ToRevokeInvitationError())
+            .TapAsync(() => repository.SaveChangesAsync(ct));
     }
 
     public async Task<Result<MembershipDto, AcceptInvitationError>> AcceptInvitationAsync(
@@ -134,20 +131,17 @@ internal sealed class InvitationService : IInvitationService
             return Result.Failure<MembershipDto, AcceptInvitationError>(new AcceptInvitationError.AlreadyMember());
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        if (invitation.Status != InvitationStatus.Pending)
-            return Result.Failure<MembershipDto, AcceptInvitationError>(
-                new AcceptInvitationError.InvitationNotPending());
+        return await invitation.Accept(userId, now)
+            .MapError(error => error.ToAcceptInvitationError())
+            .BindAsync(async () =>
+            {
+                repository.AddMembership(TenantMembershipEntity.Create(
+                    invitation.TenantId, userId, invitation.Role, invitedBy: invitation.CreatedByUserId, now));
+                await repository.SaveChangesAsync(ct);
 
-        if (now >= invitation.ExpiresAt)
-            return Result.Failure<MembershipDto, AcceptInvitationError>(new AcceptInvitationError.InvitationExpired());
-
-        invitation.Accept(userId, now);
-        repository.AddMembership(TenantMembershipEntity.Create(
-            invitation.TenantId, userId, invitation.Role, invitedBy: invitation.CreatedByUserId, now));
-        await repository.SaveChangesAsync(ct);
-
-        return Result.Success<MembershipDto, AcceptInvitationError>(
-            new MembershipDto(tenant.Id, tenant.LegalName, tenant.Type, invitation.Role));
+                return Result.Success<MembershipDto, AcceptInvitationError>(
+                    new MembershipDto(tenant.Id, tenant.LegalName, tenant.Type, invitation.Role));
+            });
     }
 
     private async Task SendInvitationEmailAsync(TenantInvitationEntity invitation, TenantType tenantType)

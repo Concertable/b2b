@@ -228,6 +228,12 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.Conflict
         },
         {
+            new DeclareDoorRevenueError.Negative(),
+            "declare.door_revenue_negative",
+            "Door revenue must be zero or greater.",
+            ErrorKind.Invalid
+        },
+        {
             new InvoiceError.ConcertNotFound(42),
             "invoice.get_by_concert.not_found",
             "No invoice was found for concert 42.",

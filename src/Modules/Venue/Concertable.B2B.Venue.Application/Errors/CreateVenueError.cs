@@ -9,9 +9,15 @@ internal abstract partial record CreateVenueError : IError
     {
         NoActiveTenant =>
             ErrorDefinition.Forbidden<NoActiveTenant>(
-                "No active organization was found for the current user.")
+                "No active organization was found for the current user."),
+        Invalid(var errors) =>
+            ErrorDefinition.Validation<Invalid>(
+                "The venue is invalid.",
+                errors)
     };
 
     [ErrorCode("venue.create_forbidden")]
     public partial record NoActiveTenant;
+
+    public partial record Invalid(ValidationErrors Errors);
 }

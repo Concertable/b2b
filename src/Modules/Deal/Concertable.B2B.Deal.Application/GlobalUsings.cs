@@ -5,4 +5,4 @@ global using Concertable.Contracts.Enums;
 global using Concertable.B2B.Deal.Contracts;
 global using Concertable.B2B.Deal.Contracts.Enums;
 global using Concertable.B2B.Deal.Domain;
-global using ValidationErrors = Concertable.Kernel.Errors.ValidationErrors;
+global using Reunion.Errors;

@@ -9,7 +9,6 @@ using Concertable.Kernel.ValueObjects;
 using Moq;
 using Reunion;
 using Reunion.Validation;
-using ReunionValidationErrors = Reunion.Errors.ValidationErrors;
 
 namespace Concertable.B2B.Concert.UnitTests.Services;
 
@@ -163,6 +162,6 @@ public sealed class ApplicationServiceEligibilityTests
     }
 
     private static ValidationResult InvalidApplication() =>
-        ValidationResult.Invalid(new ReunionValidationErrors(
+        ValidationResult.Invalid(new ValidationErrors(
             new Dictionary<string, string[]> { ["application"] = ["Validation failed."] }));
 }

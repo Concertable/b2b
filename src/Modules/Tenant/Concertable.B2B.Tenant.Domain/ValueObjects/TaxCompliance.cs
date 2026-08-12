@@ -18,21 +18,59 @@ public sealed record TaxCompliance
 
     private TaxCompliance() { }
 
-    public TaxCompliance(
+    private TaxCompliance(
         string? vatNumber,
         string sellerIdentifier,
         RegisteredAddress registeredAddress,
         string bankReference,
         bool holdsMusicLicence)
     {
-        DomainException.ThrowIfNullOrWhiteSpace(sellerIdentifier, "Seller identifier");
-        DomainException.ThrowIfNull(registeredAddress, "Registered address");
-        DomainException.ThrowIfNullOrWhiteSpace(bankReference, "Bank reference");
-
         VatNumber = string.IsNullOrWhiteSpace(vatNumber) ? null : vatNumber;
         SellerIdentifier = sellerIdentifier;
         RegisteredAddress = registeredAddress;
         BankReference = bankReference;
         HoldsMusicLicence = holdsMusicLicence;
+    }
+
+    public static Result<TaxCompliance, ValidationErrors> Create(
+        string? vatNumber,
+        string sellerIdentifier,
+        RegisteredAddress? registeredAddress,
+        string bankReference,
+        bool holdsMusicLicence)
+    {
+        var errors = new List<KeyValuePair<string, string>>();
+
+        if (vatNumber?.Length > 20)
+            errors.Add(new(nameof(VatNumber), "VatNumber must be 20 characters or fewer."));
+
+        ValidateRequired(errors, nameof(SellerIdentifier), sellerIdentifier, 50);
+
+        if (registeredAddress is null)
+            errors.Add(new(nameof(RegisteredAddress), "RegisteredAddress is required."));
+
+        ValidateRequired(errors, nameof(BankReference), bankReference, 50);
+
+        return errors.Count == 0
+            ? Result.Success<TaxCompliance, ValidationErrors>(
+                new TaxCompliance(
+                    vatNumber,
+                    sellerIdentifier,
+                    registeredAddress!,
+                    bankReference,
+                    holdsMusicLicence))
+            : Result.Failure<TaxCompliance, ValidationErrors>(new ValidationErrors(errors));
+    }
+
+    private static void ValidateRequired(
+        ICollection<KeyValuePair<string, string>> errors,
+        string field,
+        string value,
+        int maximumLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            errors.Add(new(field, $"{field} is required."));
+        else if (value.Length > maximumLength)
+            errors.Add(new(field, $"{field} must be {maximumLength} characters or fewer."));
     }
 }

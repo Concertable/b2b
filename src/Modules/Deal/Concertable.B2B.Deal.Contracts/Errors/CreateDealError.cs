@@ -11,7 +11,7 @@ public abstract partial record CreateDealError : IError
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The deal is invalid.",
-                new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
+                errors)
     };
 
     [ErrorCode("deal.create.invalid")]
