@@ -13,7 +13,7 @@ public abstract partial record UpdateDealError : IError
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The deal is invalid.",
-                new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
+                errors)
     };
 
     [ErrorCode("deal.update.not_found")]

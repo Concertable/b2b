@@ -13,7 +13,7 @@ internal abstract partial record UpdateConcertError : IError
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The concert update is invalid.",
-                new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
+                errors)
     };
 
     [ErrorCode("concert.update.not_found")]

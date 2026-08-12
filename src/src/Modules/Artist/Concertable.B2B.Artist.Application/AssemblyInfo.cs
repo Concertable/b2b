@@ -4,3 +4,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Concertable.B2B.Artist.Api")]
 [assembly: InternalsVisibleTo("Concertable.B2B.Artist.IntegrationTests")]
 [assembly: InternalsVisibleTo("Concertable.B2B.Artist.UnitTests")]
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]

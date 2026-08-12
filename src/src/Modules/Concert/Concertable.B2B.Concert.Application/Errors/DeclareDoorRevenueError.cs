@@ -21,7 +21,10 @@ internal abstract partial record DeclareDoorRevenueError : IError
                 "Door revenue can only be declared after the concert has ended."),
         AlreadySettled =>
             ErrorDefinition.Conflict<AlreadySettled>(
-                "Door revenue can only be declared before the concert has settled.")
+                "Door revenue can only be declared before the concert has settled."),
+        Negative =>
+            ErrorDefinition.Invalid<Negative>(
+                "Door revenue must be zero or greater.")
     };
 
     [ErrorCode("concert.door_revenue.not_found")]
@@ -38,4 +41,6 @@ internal abstract partial record DeclareDoorRevenueError : IError
 
     [ErrorCode("concert.door_revenue.already_settled")]
     public partial record AlreadySettled;
+
+    public partial record Negative;
 }

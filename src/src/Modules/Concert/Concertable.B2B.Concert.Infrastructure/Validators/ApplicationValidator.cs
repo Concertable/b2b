@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Kernel.Identity;
 using Reunion.Validation;
-using ReunionValidationErrors = Reunion.Errors.ValidationErrors;
 
 namespace Concertable.B2B.Concert.Infrastructure.Validators;
 
@@ -64,7 +63,7 @@ internal sealed class ApplicationValidator : IApplicationValidator
         var errors = messages.ToArray();
         return errors.Length == 0
             ? ValidationResult.Valid()
-            : ValidationResult.Invalid(new ReunionValidationErrors(
+            : ValidationResult.Invalid(new ValidationErrors(
                 new Dictionary<string, string[]> { ["application"] = errors }));
     }
 }

@@ -16,7 +16,7 @@ internal abstract partial record OpportunityMutationError : IError
         InvalidDeal(var errors) =>
             ErrorDefinition.Validation<InvalidDeal>(
                 "The opportunity deal is invalid.",
-                new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
+                errors)
     };
 
     [ErrorCode("opportunity.venue_not_found")]

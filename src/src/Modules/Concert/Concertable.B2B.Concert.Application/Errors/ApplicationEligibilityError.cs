@@ -19,7 +19,7 @@ internal abstract partial record ApplicationEligibilityError : IError
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The application is not eligible.",
-                new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
+                errors)
     };
 
     [ErrorCode("application.eligibility.missing_artist")]

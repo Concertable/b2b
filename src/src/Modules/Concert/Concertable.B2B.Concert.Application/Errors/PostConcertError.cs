@@ -13,7 +13,7 @@ internal abstract partial record PostConcertError : IError
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The concert cannot be posted.",
-                new Reunion.Errors.ValidationErrors(errors.ToDictionary()))
+                errors)
     };
 
     [ErrorCode("concert.post.not_found")]

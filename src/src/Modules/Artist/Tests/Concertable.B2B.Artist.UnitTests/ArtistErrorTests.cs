@@ -33,6 +33,22 @@ public sealed class ArtistErrorTests
         }
     };
 
+    public static TheoryData<IError, string, string> ValidationCases => new()
+    {
+        {
+            new CreateArtistError.Invalid(Errors),
+            "create.artist_invalid",
+            "The artist is invalid."
+        },
+        {
+            new UpdateArtistError.Invalid(Errors),
+            "update.artist_invalid",
+            "The artist update is invalid."
+        }
+    };
+
+    private static ValidationErrors Errors => new([new("Name", "Name is required.")]);
+
     [Theory]
     [MemberData(nameof(Cases))]
     public void Definition_ErrorCase_ReturnsStableDefinition(
@@ -46,5 +62,20 @@ public sealed class ArtistErrorTests
         Assert.Equal(expectedCode, definition.Code);
         Assert.Equal(expectedMessage, definition.Message);
         Assert.Equal(expectedKind, definition.Kind);
+    }
+
+    [Theory]
+    [MemberData(nameof(ValidationCases))]
+    public void Definition_ValidationCase_ReturnsStableStructuredDefinition(
+        IError error,
+        string expectedCode,
+        string expectedMessage)
+    {
+        var definition = Assert.IsType<ValidationError>(error.Definition);
+
+        Assert.Equal(expectedCode, definition.Code);
+        Assert.Equal(expectedMessage, definition.Message);
+        Assert.Equal(ErrorKind.Invalid, definition.Kind);
+        Assert.Equal(["Name is required."], definition.Errors.Errors["Name"]);
     }
 }

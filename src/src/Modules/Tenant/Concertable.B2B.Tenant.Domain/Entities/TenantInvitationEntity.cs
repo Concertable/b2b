@@ -1,4 +1,5 @@
 using Concertable.Kernel;
+using Concertable.B2B.Tenant.Domain.Errors;
 
 namespace Concertable.B2B.Tenant.Domain.Entities;
 
@@ -46,23 +47,25 @@ public sealed class TenantInvitationEntity : IGuidEntity
         };
 
     /// <summary>Accepts a still-pending, unexpired invitation for <paramref name="userId"/>.</summary>
-    public void Accept(Guid userId, DateTime at)
+    public UnitResult<InvitationAcceptanceError> Accept(Guid userId, DateTime at)
     {
         if (Status != InvitationStatus.Pending)
-            throw new DomainException("Invitation is not pending.");
+            return UnitResult.Failure<InvitationAcceptanceError>(new InvitationAcceptanceError.NotPending());
         if (at >= ExpiresAt)
-            throw new DomainException("Invitation has expired.");
+            return UnitResult.Failure<InvitationAcceptanceError>(new InvitationAcceptanceError.Expired());
         Status = InvitationStatus.Accepted;
         AcceptedByUserId = userId;
         AcceptedAt = at;
+        return UnitResult.Success<InvitationAcceptanceError>();
     }
 
     /// <summary>Revokes a still-pending invitation.</summary>
-    public void Revoke()
+    public UnitResult<InvitationRevocationError> Revoke()
     {
         if (Status != InvitationStatus.Pending)
-            throw new DomainException("Only a pending invitation can be revoked.");
+            return UnitResult.Failure<InvitationRevocationError>(new InvitationRevocationError.NotPending());
         Status = InvitationStatus.Revoked;
+        return UnitResult.Success<InvitationRevocationError>();
     }
 
     /// <summary>Retires a lapsed invitation. The row stays <see cref="InvitationStatus.Pending"/> once its TTL

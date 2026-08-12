@@ -9,9 +9,15 @@ internal abstract partial record UpdateVenueError : IError
     {
         VenueNotFound(var venueId) =>
             ErrorDefinition.NotFound<VenueNotFound>(
-                $"Venue {venueId} was not found.")
+                $"Venue {venueId} was not found."),
+        Invalid(var errors) =>
+            ErrorDefinition.Validation<Invalid>(
+                "The venue update is invalid.",
+                errors)
     };
 
     [ErrorCode("venue.update_not_found")]
     public partial record VenueNotFound(int VenueId);
+
+    public partial record Invalid(ValidationErrors Errors);
 }

@@ -126,6 +126,9 @@ public sealed class TenantErrorTests
         }
     };
 
+    private static ValidationErrors ValidationErrors =>
+        new([new("LegalName", "LegalName is required.")]);
+
     [Theory]
     [MemberData(nameof(Cases))]
     public void Definition_ErrorCase_ReturnsStableDefinition(
@@ -139,5 +142,17 @@ public sealed class TenantErrorTests
         Assert.Equal(expectedCode, definition.Code);
         Assert.Equal(expectedMessage, definition.Message);
         Assert.Equal(expectedKind, definition.Kind);
+    }
+
+    [Fact]
+    public void Definition_UpdateValidation_ReturnsStableStructuredDefinition()
+    {
+        var definition = Assert.IsType<ValidationError>(
+            new UpdateTenantError.Invalid(ValidationErrors).Definition);
+
+        Assert.Equal("update.tenant_invalid", definition.Code);
+        Assert.Equal("The organization update is invalid.", definition.Message);
+        Assert.Equal(ErrorKind.Invalid, definition.Kind);
+        Assert.Equal(["LegalName is required."], definition.Errors.Errors["LegalName"]);
     }
 }

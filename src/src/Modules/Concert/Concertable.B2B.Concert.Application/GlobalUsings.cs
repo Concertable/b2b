@@ -16,4 +16,3 @@ global using Concertable.Payment.Client;
 global using Concertable.B2B.Conversations.Contracts.Enums;
 global using Concertable.B2B.Concert.Domain.ValueObjects;
 global using Concertable.B2B.Concert.Application.Errors;
-global using ValidationErrors = Concertable.Kernel.Errors.ValidationErrors;
