@@ -26,7 +26,8 @@ public sealed class WithdrawExecutorTests
         var transitioner = new LifecycleTransitioner(
             this.applicationRepository.Object,
             this.registry.Object);
-        this.executor = new WithdrawExecutor(transitioner, this.cancelStep.Object);
+        var behavior = new ImmediateBehavior();
+        this.executor = new WithdrawExecutor(transitioner, this.cancelStep.Object, behavior, behavior);
     }
 
     [Fact]
@@ -68,5 +69,12 @@ public sealed class WithdrawExecutorTests
         this.applicationRepository.Verify(
             repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    private sealed class ImmediateBehavior : IUnitOfWorkBehavior, IOutboxUnitOfWorkBehavior
+    {
+        public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default) => action();
+
+        public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken = default) => action();
     }
 }

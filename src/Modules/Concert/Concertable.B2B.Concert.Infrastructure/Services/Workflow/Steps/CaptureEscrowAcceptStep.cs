@@ -7,54 +7,43 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
-internal sealed class CaptureEscrowAcceptStep : ISimpleAcceptStep
+internal sealed class CaptureEscrowAcceptStep(
+    IBookingService bookingService,
+    IBus bus,
+    IDealAccessor dealAccessor,
+    IManagerPaymentOperationsClient managerPaymentClient,
+    ILogger<CaptureEscrowAcceptStep> logger) : ISimpleAcceptStep
 {
-    private readonly IBookingService bookingService;
-    private readonly IEscrowOperationsClient escrowClient;
-    private readonly IDealAccessor dealAccessor;
-    private readonly IManagerPaymentOperationsClient managerPaymentClient;
-    private readonly ILogger<CaptureEscrowAcceptStep> logger;
-
-    public CaptureEscrowAcceptStep(
-        IBookingService bookingService,
-        IEscrowOperationsClient escrowClient,
-        IDealAccessor dealAccessor,
-        IManagerPaymentOperationsClient managerPaymentClient,
-        ILogger<CaptureEscrowAcceptStep> logger)
-    {
-        this.bookingService = bookingService;
-        this.escrowClient = escrowClient;
-        this.dealAccessor = dealAccessor;
-        this.managerPaymentClient = managerPaymentClient;
-        this.logger = logger;
-    }
-
     public async Task<UnitResult<AcceptApplicationError>> ExecuteAsync(
         ApplicationEntity application,
         CancellationToken ct = default)
     {
-        var deal = (FlatFeeDeal)dealAccessor.Deal;
         var booking = await bookingService.CreateStandardAsync(application);
+        await StageAsync(application, booking.Id, ct);
+        return UnitResult.Success<AcceptApplicationError>();
+    }
 
+    private async Task StageAsync(ApplicationEntity application, int bookingId, CancellationToken ct)
+    {
+        var deal = (FlatFeeDeal)dealAccessor.Deal;
         var paymentIntentId = await managerPaymentClient.FindHeldIntentAsync(application.VenueTenantId, application.Id);
 
         logger.AcceptingFlatFeeApplication(
             application.Id,
-            booking.Id,
+            bookingId,
             paymentIntentId,
             deal.Fee,
             "GBP",
             application.VenueTenantId,
             application.ArtistTenantId);
 
-        return (await escrowClient.CaptureAsync(
+        await bus.SendAsync(new CaptureEscrowCommand(
+            application.BeginAcceptance(),
+            bookingId,
             application.VenueTenantId,
             application.ArtistTenantId,
-            Money.Gbp(deal.Fee),
-            paymentIntentId,
-            booking.Id,
-            ct))
-            .MapError(error => (AcceptApplicationError)new AcceptApplicationError.EscrowCaptureFailure(error))
-            .Bind(_ => UnitResult.Success<AcceptApplicationError>());
+            Money.Gbp(deal.Fee).ToMinorUnits(),
+            Currency.Gbp,
+            paymentIntentId), ct);
     }
 }

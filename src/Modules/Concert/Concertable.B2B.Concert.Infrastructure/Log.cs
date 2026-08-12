@@ -92,5 +92,6 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "Finished concert {ConcertId}")]
     internal static partial void ConcertFinished(this ILogger logger, int concertId);
 
+
     #endregion
 }

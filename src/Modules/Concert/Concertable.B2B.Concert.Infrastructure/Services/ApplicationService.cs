@@ -39,6 +39,11 @@ internal sealed class ApplicationService : IApplicationService
         this.mapper = mapper;
     }
 
+    public async Task<Option<FinancialOperation>> GetFinancialOperationAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        await repository.GetFinancialOperationAsync(applicationId, ct);
+
     public async Task<IReadOnlyList<ApplicationDto>> GetByOpportunityIdAsync(int id)
     {
         var response = await opportunityService.OwnsOpportunityAsync(id);

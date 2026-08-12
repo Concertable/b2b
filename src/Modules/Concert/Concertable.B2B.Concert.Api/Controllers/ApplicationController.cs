@@ -136,6 +136,14 @@ internal sealed class ApplicationController : ControllerBase
         return (await applicationService.WithdrawAsync(applicationId, ct)).ToNoContentOrProblem();
     }
 
+    [HttpGet("{id}/financial-operation")]
+    public async Task<ActionResult<FinancialOperation>> GetFinancialOperation(
+        int id,
+        CancellationToken ct)
+    {
+        return (await applicationService.GetFinancialOperationAsync(id, ct)).ToOkOr(NotFound);
+    }
+
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/reject")]
     public async Task<IActionResult> Reject(int applicationId)

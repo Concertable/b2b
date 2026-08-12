@@ -10,20 +10,31 @@ internal sealed class CancelExecutor : ICancelExecutor
     private readonly IConcertWorkflowFactory workflows;
     private readonly IDealResolver dealResolver;
     private readonly IConcertRepository concertRepository;
+    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IOutboxUnitOfWorkBehavior outbox;
 
     public CancelExecutor(
         ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
         IDealResolver dealResolver,
-        IConcertRepository concertRepository)
+        IConcertRepository concertRepository,
+        IUnitOfWorkBehavior unitOfWork,
+        IOutboxUnitOfWorkBehavior outbox)
     {
         this.transitioner = transitioner;
         this.workflows = workflows;
         this.dealResolver = dealResolver;
         this.concertRepository = concertRepository;
+        this.unitOfWork = unitOfWork;
+        this.outbox = outbox;
     }
 
-    public async Task<UnitResult<CancelConcertError>> CancelAsync(int concertId, CancellationToken ct = default)
+    public async Task<UnitResult<CancelConcertError>> CancelAsync(int concertId, CancellationToken ct = default) =>
+        await unitOfWork.ExecuteAsync(
+            () => outbox.ExecuteAsync(() => CancelCoreAsync(concertId, ct), ct),
+            ct);
+
+    private async Task<UnitResult<CancelConcertError>> CancelCoreAsync(int concertId, CancellationToken ct)
     {
         var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct);
         if (concert is null)
@@ -41,7 +52,6 @@ internal sealed class CancelExecutor : ICancelExecutor
                 if (cancellation.TryGetError(out var cancellationError))
                     return UnitResult.Failure(cancellationError);
 
-                concert.Cancel();
                 return UnitResult.Success<CancelConcertError>();
             }, ct);
 

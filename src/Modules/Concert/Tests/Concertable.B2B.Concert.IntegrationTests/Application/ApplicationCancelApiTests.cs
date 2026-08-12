@@ -5,6 +5,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
+using Concertable.Payment.Contracts;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -65,7 +66,8 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Contains(booking.Id, fixture.EscrowClient.Refunds);
+        await fixture.CompleteLatestFinancialOperationAsync();
+        Assert.Equal(booking.Id, fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId);
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
         Assert.Contains(fixture.EmailSender.Sent, e =>
             e.To == fixture.SeedState.ArtistManager1.Email && e.Subject == "Concert Application Cancelled");
@@ -86,6 +88,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.CompleteLatestFinancialOperationAsync();
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
         Assert.Empty(fixture.EscrowClient.Holds);
     }
@@ -104,7 +107,8 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Contains(booking.Id, fixture.EscrowClient.Refunds);
+        await fixture.CompleteLatestFinancialOperationAsync();
+        Assert.Equal(booking.Id, fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId);
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
     }
 
@@ -127,6 +131,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.CompleteLatestFinancialOperationAsync();
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
     }
 
@@ -146,10 +151,12 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Act
         await fixture.StripeClient.SendWebhookAsync();
+        var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
+        await fixture.CompleteLatestFinancialOperationAsync();
 
         // Assert
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
-        Assert.Equal(2, fixture.EscrowClient.Refunds.Count(id => id == booking.Id));
+        Assert.Equal(2, refunds.Count(command => command.BookingId == booking.Id));
         var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == appId);
         Assert.Null(draft);
     }
@@ -230,6 +237,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.CompleteLatestFinancialOperationAsync();
         var reopenedResponse = await client.GetAsync($"/api/Venue/{fixture.SeedState.Venue.Id}/opportunities");
         var reopened = await reopenedResponse.Content.ReadAsync<IEnumerable<OpportunityResponse>>();
         Assert.Contains(reopened!, o => o.Id == opportunityId);
@@ -253,6 +261,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.CompleteLatestFinancialOperationAsync();
         var reopenedResponse = await client.GetAsync($"/api/Venue/{fixture.SeedState.Venue.Id}/opportunities");
         var reopened = await reopenedResponse.Content.ReadAsync<IEnumerable<OpportunityResponse>>();
         Assert.Contains(reopened!, o => o.Id == opportunityId);
@@ -282,6 +291,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.CompleteLatestFinancialOperationAsync();
         var afterResponse = await client.GetAsync($"/api/Application/{appId}");
         await afterResponse.ShouldBe(HttpStatusCode.OK);
         var after = await afterResponse.Content.ReadAsync<ApplicationResponse>();
