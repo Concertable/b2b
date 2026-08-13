@@ -136,20 +136,6 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ---
 
-### Duplicate application attempt is a 500, not a 400 — guard landed, integration test outstanding
-
-Fixed on `Fix/TechDebtSweep`: `ApplicationService.ValidateCanApplyAsync` (the apply/insert path,
-used by both `ApplyAsync` overloads) rejects an existing `(opportunityId, artistId)` row via
-`IApplicationRepository.ExistsForOpportunityAndArtistAsync`, returning a clean 400. Deliberately
-*not* in the shared `ApplicationValidator.CanApplyAsync`: that validator is also reused by the
-VenueHire **pre-apply checkout** (`ApplyCheckoutAsync`), which legitimately runs while an
-application may already exist and must not be rejected. Outstanding only: an **integration test**
-for apply-after-withdraw → 400 (needs Docker).
-
-**Resolves when:** the apply-after-withdraw integration test lands green.
-
----
-
 ### `deal.Fee`/`HireFee` are `decimal` domain fields lifted to `Money` at the payment boundary
 
 The money value-type migration (PR1 #390 → sync #393) made every
@@ -182,3 +168,18 @@ Deliberately not done now: the launch gate is *data completeness* (hold a comple
 `FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per tenant type from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/platform/DOMAINS_AND_DNS.md`](../../plans/platform/DOMAINS_AND_DNS.md). So in any non-local environment the tenant-type dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
 
 **Resolves when:** `Urls:Frontends:{Venue,Artist}` are supplied per environment from App Config, alongside `Auth:SpaClients` / `Cors:AllowedOrigins` (which key off the same hostnames), as part of the `DOMAINS_AND_DNS.md` config rollout.
+
+---
+
+### Integration tests pass `(object?)null` to bodyless `PostAsync` instead of the parameterless overload
+
+The B2B integration suites call `client.PostAsync(url, (object?)null)` for bodyless action POSTs
+(`withdraw`/`reject`/`cancel`/`accept`) — ~22 sites across `Concertable.B2B.Concert.IntegrationTests`
+(`ApplicationApiTests`, `ApplicationWithdrawRejectApiTests`, `ApplicationCancelApiTests`).
+`Concertable.Testing.HttpClientExtensions` already exposes a parameterless `PostAsync(this HttpClient,
+string url)` that posts the identical null JSON body (`PostAsJsonAsync<object?>(url, null)`), so the
+`(object?)null` cast is redundant ceremony that spread by copy-paste. Behaviour is identical — a
+readability nit, left uniform for now rather than migrating a lone call site out of step with its siblings.
+
+**Resolves when:** the `PostAsync(url, (object?)null)` sites switch to the parameterless `PostAsync(url)`
+in one mechanical sweep (no behaviour change).
