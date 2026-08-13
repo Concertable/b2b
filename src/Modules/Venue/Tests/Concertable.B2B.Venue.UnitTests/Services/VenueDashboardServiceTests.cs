@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Infrastructure.Services;
+using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
@@ -92,5 +93,14 @@ public sealed class VenueDashboardServiceTests
         reportingClient.Verify(
             r => r.GetTicketRevenueAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsForbidden()
+    {
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
+        tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => service.GetKpisAsync());
     }
 }
