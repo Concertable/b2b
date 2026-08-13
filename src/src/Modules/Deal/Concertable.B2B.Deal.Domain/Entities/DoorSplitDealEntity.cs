@@ -25,12 +25,12 @@ public sealed class DoorSplitDealEntity : DealEntity
 
         ArtistDoorPercent = artistDoorPercent;
         PaymentMethod = paymentMethod;
-        return UnitResult.Success<ValidationErrors>();
+        return new Success();
     }
 
     private static UnitResult<ValidationErrors> ValidateArtistDoorPercent(decimal artistDoorPercent) =>
         artistDoorPercent is >= 0 and <= 100
-            ? UnitResult.Success<ValidationErrors>()
-            : UnitResult.Failure(new ValidationErrors(
-                [new(nameof(ArtistDoorPercent), "Artist door percent must be between 0 and 100.")]));
+            ? new Success()
+            : new ValidationErrors(
+                [new(nameof(ArtistDoorPercent), "Artist door percent must be between 0 and 100.")]);
 }

@@ -12,9 +12,9 @@ internal interface IApplicationService
     Task<Option<FinancialOperation>> GetFinancialOperationAsync(
         int applicationId,
         CancellationToken ct = default);
-    Task<IReadOnlyList<ApplicationDto>> GetByOpportunityIdAsync(int id);
-    Task<IReadOnlyList<ApplicationDto>> GetPendingForArtistAsync();
-    Task<IReadOnlyList<ApplicationDto>> GetRecentDeniedForArtistAsync();
+    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id);
+    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForArtistAsync();
+    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetRecentDeniedForArtistAsync();
     Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(int opportunityId, ESignatureRequest eSignature);
     Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
@@ -22,7 +22,7 @@ internal interface IApplicationService
         ESignatureRequest eSignature);
     Task<bool> CanApplyAsync(int opportunityId);
     Task<bool> CanAcceptAsync(int applicationId);
-    Task<Checkout> ApplyCheckoutAsync(int opportunityId);
+    Task<Result<Checkout, ApplicationEligibilityError>> ApplyCheckoutAsync(int opportunityId);
     Task<Checkout> AcceptCheckoutAsync(int applicationId);
     Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,

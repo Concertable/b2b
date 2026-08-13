@@ -39,9 +39,8 @@ public sealed record RegisteredAddress
         ValidateRequired(errors, nameof(Country), country, 100);
 
         return errors.Count == 0
-            ? Result.Success<RegisteredAddress, ValidationErrors>(
-                new RegisteredAddress(line1, line2, city, postcode, country))
-            : Result.Failure<RegisteredAddress, ValidationErrors>(new ValidationErrors(errors));
+            ? new RegisteredAddress(line1, line2, city, postcode, country)
+            : new ValidationErrors(errors);
     }
 
     private static void ValidateRequired(

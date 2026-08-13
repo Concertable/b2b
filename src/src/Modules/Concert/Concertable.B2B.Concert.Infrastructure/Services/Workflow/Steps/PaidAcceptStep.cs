@@ -18,6 +18,6 @@ internal sealed class PaidAcceptStep : IPaidAcceptStep
         CancellationToken ct = default)
     {
         await bookingService.CreateDeferredAsync(application, paymentMethodId);
-        return UnitResult.Success<AcceptApplicationError>();
+        return new Success();
     }
 }

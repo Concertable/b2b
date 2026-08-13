@@ -47,6 +47,6 @@ internal sealed class PayoutFinishStep : IFinishStep
             settlement.BookingId,
             ct))
             .MapError(error => (FinishConcertError)new FinishConcertError.ManagerPaymentFailure(error))
-            .Bind(_ => UnitResult.Success<FinishConcertError>());
+            .Bind(_ => new Success());
     }
 }

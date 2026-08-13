@@ -21,7 +21,9 @@ public sealed class ApplicationServiceEligibilityTests
     private readonly Mock<IApplicationRepository> repository;
     private readonly Mock<IApplicationValidator> validator;
     private readonly Mock<IOpportunityRepository> opportunityRepository;
+    private readonly Mock<IOpportunityService> opportunityService;
     private readonly Mock<IArtistModule> artistModule;
+    private readonly Mock<ICheckoutDispatcher> checkoutDispatcher;
     private readonly ApplicationService service;
     private readonly OpportunityEntity opportunity;
     private readonly ApplicationEntity application;
@@ -31,7 +33,9 @@ public sealed class ApplicationServiceEligibilityTests
         this.repository = new Mock<IApplicationRepository>();
         this.validator = new Mock<IApplicationValidator>();
         this.opportunityRepository = new Mock<IOpportunityRepository>();
+        this.opportunityService = new Mock<IOpportunityService>();
         this.artistModule = new Mock<IArtistModule>();
+        this.checkoutDispatcher = new Mock<ICheckoutDispatcher>();
         this.opportunity = OpportunityEntity.Create(
             1,
             new DateRange(
@@ -69,11 +73,11 @@ public sealed class ApplicationServiceEligibilityTests
             this.repository.Object,
             this.validator.Object,
             Mock.Of<IApplicationNotifier>(),
-            Mock.Of<IOpportunityService>(),
+            this.opportunityService.Object,
             this.opportunityRepository.Object,
             this.artistModule.Object,
             Mock.Of<IApplicationExecutor>(),
-            Mock.Of<ICheckoutDispatcher>(),
+            this.checkoutDispatcher.Object,
             Mock.Of<IApplicationMapper>());
     }
 
@@ -155,6 +159,46 @@ public sealed class ApplicationServiceEligibilityTests
         var ineligible = Assert.IsType<AcceptApplicationError.Ineligible>(error);
         var invalid = Assert.IsType<ApplicationEligibilityError.Invalid>(ineligible.Error);
         Assert.Equal(["Validation failed."], invalid.Errors.Errors["application"]);
+    }
+
+    [Fact]
+    public async Task GetByOpportunityIdAsync_NotOwned_ReturnsForbidden()
+    {
+        this.opportunityService.Setup(value => value.OwnsOpportunityAsync(OpportunityId)).ReturnsAsync(false);
+
+        var result = await this.service.GetByOpportunityIdAsync(OpportunityId);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<ApplicationError.OpportunityForbidden>(error);
+    }
+
+    [Fact]
+    public async Task GetPendingForArtistAsync_MissingArtist_ReturnsForbidden()
+    {
+        this.artistModule
+            .Setup(module => module.GetIdForCurrentTenantAsync())
+            .ReturnsAsync(Option.None<int>());
+
+        var result = await this.service.GetPendingForArtistAsync();
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<ApplicationError.MissingArtist>(error);
+    }
+
+    [Fact]
+    public async Task ApplyCheckoutAsync_Ineligible_ReturnsTypedErrorWithoutDispatching()
+    {
+        this.artistModule
+            .Setup(module => module.GetIdForCurrentTenantAsync())
+            .ReturnsAsync(Option.None<int>());
+
+        var result = await this.service.ApplyCheckoutAsync(OpportunityId);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<ApplicationEligibilityError.MissingArtist>(error);
+        this.checkoutDispatcher.Verify(
+            value => value.ApplyCheckoutAsync(It.IsAny<int>()),
+            Times.Never);
     }
 
     private static ValidationResult InvalidApplication() =>

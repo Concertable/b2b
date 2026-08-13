@@ -43,12 +43,12 @@ internal sealed class OpportunityService : IOpportunityService
         var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
             .OrFailure(() => (OpportunityMutationError)new OpportunityMutationError.VenueNotFound());
         if (venue.TryGetError(out var venueError))
-            return Result.Failure<OpportunityDto, OpportunityMutationError>(venueError);
+            return venueError;
         venue.TryGetValue(out var venueId);
 
         var validation = ValidateDeals([request.Deal]);
         if (validation.TryGetError(out var error))
-            return Result.Failure<OpportunityDto, OpportunityMutationError>(error);
+            return error;
 
         var opportunity = await uowBehavior.ExecuteAsync(async () =>
         {
@@ -64,7 +64,7 @@ internal sealed class OpportunityService : IOpportunityService
 
         var saved = await repository.GetByIdAsync(opportunity.Id)
             ?? throw new InvalidOperationException("Opportunity was not found after it was saved.");
-        return Result.Success<OpportunityDto, OpportunityMutationError>(await mapper.ToDtoAsync(saved));
+        return await mapper.ToDtoAsync(saved);
     }
 
     public async Task<UnitResult<OpportunityMutationError>> CreateMultipleAsync(IEnumerable<OpportunityRequest> requests)
@@ -73,7 +73,7 @@ internal sealed class OpportunityService : IOpportunityService
         var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
             .OrFailure(() => (OpportunityMutationError)new OpportunityMutationError.VenueNotFound());
         if (venue.TryGetError(out var venueError))
-            return UnitResult.Failure(venueError);
+            return venueError;
         venue.TryGetValue(out var venueId);
 
         var validation = ValidateDeals(requestList.Select(request => request.Deal));
@@ -94,7 +94,7 @@ internal sealed class OpportunityService : IOpportunityService
             }
         });
 
-        return UnitResult.Success<OpportunityMutationError>();
+        return new Success();
     }
 
     public async Task<IPagination<OpportunityDto>> GetActiveByVenueIdAsync(int id, IPageParams pageParams)
@@ -116,17 +116,16 @@ internal sealed class OpportunityService : IOpportunityService
         var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
             .OrFailure(() => (OpportunityMutationError)new OpportunityMutationError.VenueNotFound());
         if (venue.TryGetError(out var venueError))
-            return Result.Failure<IReadOnlyList<OpportunityDto>, OpportunityMutationError>(venueError);
+            return venueError;
         venue.TryGetValue(out var ownedVenueId);
 
         if (ownedVenueId != venueId)
-            return Result.Failure<IReadOnlyList<OpportunityDto>, OpportunityMutationError>(
-                new OpportunityMutationError.VenueForbidden());
+            return new OpportunityMutationError.VenueForbidden();
 
         var desiredList = desired.ToList();
         var validation = ValidateDeals(desiredList.Select(request => request.Deal));
         if (validation.TryGetError(out var error))
-            return Result.Failure<IReadOnlyList<OpportunityDto>, OpportunityMutationError>(error);
+            return error;
 
         /* Read tracked through the writing context: the syncer mutates these entities, and the
            read-only public projection's no-tracking context would silently drop those updates. */
@@ -135,8 +134,8 @@ internal sealed class OpportunityService : IOpportunityService
         await uowBehavior.ExecuteAsync(() => syncer.SyncAsync(venueId, current, desiredList));
 
         var updated = await publicRepository.GetActiveByVenueIdAsync(venueId);
-        return Result.Success<IReadOnlyList<OpportunityDto>, OpportunityMutationError>(
-            (await mapper.ToDtosAsync(updated)).ToList());
+        return new Success<IReadOnlyList<OpportunityDto>>(
+            await mapper.ToDtosAsync(updated));
     }
 
     public Task<Result<OpportunityDto, OpportunityError>> GetByIdAsync(int id) =>
@@ -177,7 +176,7 @@ internal sealed class OpportunityService : IOpportunityService
                 return validation;
         }
 
-        return UnitResult.Success<OpportunityMutationError>();
+        return new Success();
     }
 
     private async Task<int> CreateValidatedDealAsync(IDeal deal)

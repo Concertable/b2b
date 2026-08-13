@@ -39,7 +39,7 @@ internal sealed class TenantService : ITenantService
     public async Task<Option<TenantDetails>> GetDetailsForCurrentTenantAsync(CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
-            return Option.None<TenantDetails>();
+            return null;
 
         return (await repository.GetByIdAsync(tenantId, ct)).ToOption().Map(ToDetails);
     }
@@ -49,11 +49,11 @@ internal sealed class TenantService : ITenantService
         CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
-            return Result.Failure<TenantDetails, UpdateTenantError>(new UpdateTenantError.NoActiveTenant());
+            return new UpdateTenantError.NoActiveTenant();
 
         var tenant = await repository.GetByIdAsync(tenantId, ct);
         if (tenant is null)
-            return Result.Failure<TenantDetails, UpdateTenantError>(new UpdateTenantError.TenantNotFound(tenantId));
+            return new UpdateTenantError.TenantNotFound(tenantId);
 
         return await request.TaxCompliance.ToTaxCompliance()
             .MapError(errors => (UpdateTenantError)new UpdateTenantError.Invalid(errors))
@@ -72,8 +72,7 @@ internal sealed class TenantService : ITenantService
         var tenantId = tenantContext.GetTenantId();
         var tenant = await repository.GetByIdAsync(tenantId, ct);
         if (tenant is null)
-            return UnitResult.Failure<DeleteTenantError>(
-                new DeleteTenantError.TenantNotFound(tenantId));
+            return new DeleteTenantError.TenantNotFound(tenantId);
 
         foreach (var membership in await repository.ListMembershipsByTenantAsync(tenantId, ct))
             repository.RemoveMembership(membership);
@@ -83,7 +82,7 @@ internal sealed class TenantService : ITenantService
 
         repository.Remove(tenant);
         await repository.SaveChangesAsync(ct);
-        return UnitResult.Success<DeleteTenantError>();
+        return new Success();
     }
 
     public async Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default)
@@ -108,13 +107,13 @@ internal sealed class TenantService : ITenantService
         // Fail-closed: settlement's tax-gate guarantees tenant + compliance by invoice time; a null VatNumber (unregistered) is the only valid absence.
         var tenant = await repository.GetByIdAsync(tenantId, ct);
         if (tenant is null)
-            return Result.Failure<VatCalculation, VatCalculationError>(new VatCalculationError.TenantNotFound(tenantId));
+            return new VatCalculationError.TenantNotFound(tenantId);
 
         var compliance = tenant.TaxCompliance
             ?? throw new InvalidOperationException(
                 $"Tenant {tenantId} has no tax compliance; the settlement tax-gate should guarantee it by invoice time.");
 
-        return Result.Success<VatCalculation, VatCalculationError>(vatPolicy.Apply(gross, compliance.VatNumber));
+        return vatPolicy.Apply(gross, compliance.VatNumber);
     }
 
     private TenantDetails ToDetails(TenantEntity tenant) => new()

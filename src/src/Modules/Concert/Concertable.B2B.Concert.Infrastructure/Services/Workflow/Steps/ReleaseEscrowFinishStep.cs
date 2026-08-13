@@ -20,6 +20,6 @@ internal sealed class ReleaseEscrowFinishStep : IFinishStep
 
         return (await escrowClient.ReleaseByBookingIdAsync(bookingId, ct))
             .MapError(error => (FinishConcertError)new FinishConcertError.EscrowReleaseFailure(error))
-            .Bind(_ => UnitResult.Success<FinishConcertError>());
+            .Bind(_ => new Success());
     }
 }

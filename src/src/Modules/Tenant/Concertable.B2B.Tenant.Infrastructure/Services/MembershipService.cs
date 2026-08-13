@@ -35,20 +35,18 @@ internal sealed class MembershipService : IMembershipService
         var tenantId = tenantContext.GetTenantId();
         var membership = await repository.FindMembershipAsync(tenantId, userId, ct);
         if (membership is null)
-            return UnitResult.Failure<ChangeMemberRoleError>(
-                new ChangeMemberRoleError.MemberNotFound(userId));
+            return new ChangeMemberRoleError.MemberNotFound(userId);
 
         if (membership.Role == TenantRole.Owner
             && request.Role != TenantRole.Owner
             && await IsLastOwnerAsync(tenantId, ct))
         {
-            return UnitResult.Failure<ChangeMemberRoleError>(
-                new ChangeMemberRoleError.LastOwner());
+            return new ChangeMemberRoleError.LastOwner();
         }
 
         membership.ChangeRole(request.Role);
         await repository.SaveChangesAsync(ct);
-        return UnitResult.Success<ChangeMemberRoleError>();
+        return new Success();
     }
 
     public async Task<UnitResult<RemoveMemberError>> RemoveMemberAsync(
@@ -58,16 +56,14 @@ internal sealed class MembershipService : IMembershipService
         var tenantId = tenantContext.GetTenantId();
         var membership = await repository.FindMembershipAsync(tenantId, userId, ct);
         if (membership is null)
-            return UnitResult.Failure<RemoveMemberError>(
-                new RemoveMemberError.MemberNotFound(userId));
+            return new RemoveMemberError.MemberNotFound(userId);
 
         if (membership.Role == TenantRole.Owner && await IsLastOwnerAsync(tenantId, ct))
-            return UnitResult.Failure<RemoveMemberError>(
-                new RemoveMemberError.LastOwner());
+            return new RemoveMemberError.LastOwner();
 
         repository.RemoveMembership(membership);
         await repository.SaveChangesAsync(ct);
-        return UnitResult.Success<RemoveMemberError>();
+        return new Success();
     }
 
     // A tenant must always keep at least one Owner — only Owner holds manage-roles/remove/delete, so an ownerless tenant is unrecoverable.

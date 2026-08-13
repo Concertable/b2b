@@ -48,7 +48,7 @@ internal sealed class VenueService : IVenueService
     public async Task<Result<VenueDetails, CreateVenueError>> CreateAsync(CreateVenueRequest request)
     {
         if (!tenantContext.HasTenant)
-            return Result.Failure<VenueDetails, CreateVenueError>(new CreateVenueError.NoActiveTenant());
+            return new CreateVenueError.NoActiveTenant();
 
         return await VenueEntity.ValidateProfile(request.Name, request.About)
             .MapError(errors => (CreateVenueError)new CreateVenueError.Invalid(errors))
@@ -86,7 +86,7 @@ internal sealed class VenueService : IVenueService
     {
         var venue = await repository.GetByIdAsync(id);
         if (venue is null)
-            return Result.Failure<VenueDetails, UpdateVenueError>(new UpdateVenueError.VenueNotFound(id));
+            return new UpdateVenueError.VenueNotFound(id);
 
         return await VenueEntity.ValidateProfile(request.Name, request.About)
             .MapError(errors => (UpdateVenueError)new UpdateVenueError.Invalid(errors))
@@ -136,12 +136,11 @@ internal sealed class VenueService : IVenueService
     {
         var venue = await adminRepository.GetByIdAsync(id);
         if (venue is null)
-            return UnitResult.Failure<ApproveVenueError>(
-                new ApproveVenueError.VenueNotFound(id));
+            return new ApproveVenueError.VenueNotFound(id);
 
         venue.Approve();
         await adminRepository.SaveChangesAsync();
-        return UnitResult.Success<ApproveVenueError>();
+        return new Success();
     }
 
     public async Task<Option<VenueSummary>> GetSummaryAsync(int id) =>

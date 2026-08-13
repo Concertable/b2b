@@ -14,7 +14,9 @@ internal abstract partial record InviteMemberError : IError
                 "This person is already a member of the organization."),
         InvitationPending =>
             ErrorDefinition.Conflict<InvitationPending>(
-                "An invitation for this email is already pending.")
+                "An invitation for this email is already pending."),
+        Unauthenticated =>
+            ErrorDefinition.Forbidden<Unauthenticated>("No authenticated user was found.")
     };
 
     [ErrorCode("tenant.invite_tenant_not_found")]
@@ -25,4 +27,7 @@ internal abstract partial record InviteMemberError : IError
 
     [ErrorCode("tenant.invite_already_pending")]
     public partial record InvitationPending;
+
+    [ErrorCode("tenant.invite_unauthenticated")]
+    public partial record Unauthenticated;
 }

@@ -24,6 +24,6 @@ internal sealed class RefundEscrowByApplicationStep : IApplicationCancelStep
             booking.Application.BeginCancellation(),
             booking.Id,
             "application-cancelled"), ct);
-        return UnitResult.Success<CancelApplicationError>();
+        return new Success();
     }
 }

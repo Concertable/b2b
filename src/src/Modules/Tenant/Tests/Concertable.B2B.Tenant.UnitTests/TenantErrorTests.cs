@@ -47,6 +47,12 @@ public sealed class TenantErrorTests
             ErrorKind.Invalid
         },
         {
+            new AcceptInvitationError.Unauthenticated(),
+            "tenant.accept_invitation_unauthenticated",
+            "No authenticated user was found.",
+            ErrorKind.Forbidden
+        },
+        {
             new ChangeMemberRoleError.MemberNotFound(Id),
             "tenant.change_role_member_not_found",
             $"User {Id} is not a member of this organization.",
@@ -81,6 +87,12 @@ public sealed class TenantErrorTests
             "tenant.invite_already_pending",
             "An invitation for this email is already pending.",
             ErrorKind.Conflict
+        },
+        {
+            new InviteMemberError.Unauthenticated(),
+            "tenant.invite_unauthenticated",
+            "No authenticated user was found.",
+            ErrorKind.Forbidden
         },
         {
             new RemoveMemberError.MemberNotFound(Id),

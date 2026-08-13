@@ -44,7 +44,7 @@ internal sealed class EscrowExecutor : IEscrowExecutor
 
                 var workflow = workflows.Create(app.DealType);
                 await workflow.Book.ExecuteAsync(bookingId);
-                return UnitResult.Success<CancelApplicationError>();
+                return new Success();
             }, ct);
 
         if (transition.TryGetError(out var error))

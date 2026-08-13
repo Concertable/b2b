@@ -74,10 +74,10 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
             errors.Add(new(nameof(TaxCompliance), "TaxCompliance is required."));
 
         if (errors.Count > 0)
-            return UnitResult.Failure(new ValidationErrors(errors));
+            return new ValidationErrors(errors);
 
         LegalName = legalName;
         TaxCompliance = taxCompliance;
-        return UnitResult.Success<ValidationErrors>();
+        return new Success();
     }
 }

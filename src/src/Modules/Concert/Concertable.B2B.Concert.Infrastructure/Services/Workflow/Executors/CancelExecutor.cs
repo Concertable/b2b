@@ -38,7 +38,7 @@ internal sealed class CancelExecutor : ICancelExecutor
     {
         var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct);
         if (concert is null)
-            return UnitResult.Failure<CancelConcertError>(new CancelConcertError.ConcertNotFound(concertId));
+            return new CancelConcertError.ConcertNotFound(concertId);
 
         var transition = await transitioner.TransitionAsync<CancelConcertError>(
             concert.Booking.ApplicationId,
@@ -50,11 +50,11 @@ internal sealed class CancelExecutor : ICancelExecutor
                 var workflow = workflows.Create(app.DealType);
                 var cancellation = await workflow.Cancel.ExecuteAsync(concertId, ct);
                 if (cancellation.TryGetError(out var cancellationError))
-                    return UnitResult.Failure(cancellationError);
+                    return cancellationError;
 
-                return UnitResult.Success<CancelConcertError>();
+                return new Success();
             }, ct);
 
-        return transition.Bind(_ => UnitResult.Success<CancelConcertError>());
+        return transition.Bind(_ => new Success());
     }
 }

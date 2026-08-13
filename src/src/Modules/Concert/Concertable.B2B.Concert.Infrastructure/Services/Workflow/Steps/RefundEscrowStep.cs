@@ -21,6 +21,6 @@ internal sealed class RefundEscrowStep : ICancelStep
             booking.Application.BeginCancellation(),
             booking.Id,
             "concert-cancelled"), ct);
-        return UnitResult.Success<CancelConcertError>();
+        return new Success();
     }
 }

@@ -16,9 +16,10 @@ internal sealed class UserModule : IUserModule
     public async Task<Option<UserDto>> GetByIdAsync(Guid id)
     {
         var user = await userRepository.GetByIdAsync(id);
-        return user is null
-            ? Option.None<UserDto>()
-            : (await userMapper.ToDtoAsync(user)).ToOption();
+        if (user is null)
+            return null;
+
+        return await userMapper.ToDtoAsync(user);
     }
 
     public async Task<IReadOnlyList<UserDto>> GetByIdsAsync(IEnumerable<Guid> ids)
@@ -43,8 +44,9 @@ internal sealed class UserModule : IUserModule
     public async Task<Option<ManagerDto>> GetManagerByIdAsync(Guid userId)
     {
         var user = await userRepository.GetByIdAsync(userId);
-        return user is null
-            ? Option.None<ManagerDto>()
-            : Option.Some(new ManagerDto { Id = user.Id, Email = user.Email, Avatar = user.Avatar });
+        if (user is null)
+            return null;
+
+        return new ManagerDto { Id = user.Id, Email = user.Email, Avatar = user.Avatar };
     }
 }

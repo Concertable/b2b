@@ -20,7 +20,7 @@ internal sealed class CaptureEscrowAcceptStep(
     {
         var booking = await bookingService.CreateStandardAsync(application);
         await StageAsync(application, booking.Id, ct);
-        return UnitResult.Success<AcceptApplicationError>();
+        return new Success();
     }
 
     private async Task StageAsync(ApplicationEntity application, int bookingId, CancellationToken ct)

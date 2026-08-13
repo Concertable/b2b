@@ -1,6 +1,7 @@
 using Concertable.B2B.Infrastructure.Uris;
 using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Application.Interfaces;
+using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.Tenant.Infrastructure.Services;
@@ -84,6 +85,41 @@ public sealed class InvitationServiceTests
         Assert.IsType<RevokeInvitationError.InvitationNotPending>(error);
         repository.Verify(
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task InviteAsync_UnauthenticatedUser_ReturnsForbiddenWithoutCreatingInvitation()
+    {
+        var tenantId = Guid.NewGuid();
+        var tenant = TenantEntity.Create("Acme Ltd", Guid.NewGuid(), TenantType.Venue, DateTime.UtcNow);
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
+        repository.Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
+        repository.Setup(value => value.ListMembershipsByTenantAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        userModule.Setup(value => value.GetEmailsByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync(new Dictionary<Guid, string>());
+
+        var result = await CreateService().InviteAsync(new InviteMemberRequest
+        {
+            Email = "member@example.com",
+            Role = TenantRole.Staff
+        });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<InviteMemberError.Unauthenticated>(error);
+        repository.Verify(value => value.AddInvitation(It.IsAny<TenantInvitationEntity>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AcceptInvitationAsync_UnauthenticatedUser_ReturnsForbiddenWithoutLoadingInvitation()
+    {
+        var result = await CreateService().AcceptInvitationAsync(Guid.NewGuid());
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<AcceptInvitationError.Unauthenticated>(error);
+        repository.Verify(
+            value => value.GetInvitationByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 

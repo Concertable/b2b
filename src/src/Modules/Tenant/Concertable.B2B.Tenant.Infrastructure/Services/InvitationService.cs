@@ -2,7 +2,6 @@ using Concertable.B2B.Infrastructure.Uris;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Domain.Errors;
 using Concertable.B2B.User.Contracts;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Shared.Email.Application;
 
@@ -55,7 +54,7 @@ internal sealed class InvitationService : IInvitationService
         var tenantId = tenantContext.GetTenantId();
         var tenant = await repository.GetByIdAsync(tenantId, ct);
         if (tenant is null)
-            return Result.Failure<InvitationDto, InviteMemberError>(new InviteMemberError.TenantNotFound());
+            return new InviteMemberError.TenantNotFound();
 
         var email = request.Email.Trim().ToLowerInvariant();
         var now = timeProvider.GetUtcNow().UtcDateTime;
@@ -65,13 +64,13 @@ internal sealed class InvitationService : IInvitationService
         var members = await repository.ListMembershipsByTenantAsync(tenantId, ct);
         var memberEmails = await userModule.GetEmailsByIdsAsync(members.Select(m => m.UserId));
         if (memberEmails.Values.Any(e => string.Equals(e, email, StringComparison.OrdinalIgnoreCase)))
-            return Result.Failure<InvitationDto, InviteMemberError>(new InviteMemberError.AlreadyMember());
+            return new InviteMemberError.AlreadyMember();
 
         var existing = await repository.GetPendingInvitationByEmailAsync(tenantId, email, ct);
         if (existing is not null)
         {
             if (existing.IsActive(now))
-                return Result.Failure<InvitationDto, InviteMemberError>(new InviteMemberError.InvitationPending());
+                return new InviteMemberError.InvitationPending();
 
             // A lapsed invite still holds the (TenantId, Email) filtered-unique Pending slot; retire it in its
             // own save so the new Pending row can't collide with it (the index frees only once the update lands).
@@ -79,14 +78,15 @@ internal sealed class InvitationService : IInvitationService
             await repository.SaveChangesAsync(ct);
         }
 
-        var inviterId = currentUser.Id ?? throw new ForbiddenException("No authenticated user.");
+        if (currentUser.Id is not { } inviterId)
+            return new InviteMemberError.Unauthenticated();
+
         var invitation = TenantInvitationEntity.Create(tenantId, email, request.Role, inviterId, now, InvitationTtl);
         repository.AddInvitation(invitation);
         await repository.SaveChangesAsync(ct);
 
         await SendInvitationEmailAsync(invitation, tenant.Type);
-        return Result.Success<InvitationDto, InviteMemberError>(
-            new InvitationDto(invitation.Id, invitation.Email, invitation.Role, invitation.CreatedAt, invitation.ExpiresAt));
+        return new InvitationDto(invitation.Id, invitation.Email, invitation.Role, invitation.CreatedAt, invitation.ExpiresAt);
     }
 
     public async Task<UnitResult<RevokeInvitationError>> RevokeInvitationAsync(
@@ -96,8 +96,7 @@ internal sealed class InvitationService : IInvitationService
         var tenantId = tenantContext.GetTenantId();
         var invitation = await repository.GetInvitationByIdAsync(invitationId, ct);
         if (invitation is null || invitation.TenantId != tenantId)
-            return UnitResult.Failure<RevokeInvitationError>(
-                new RevokeInvitationError.InvitationNotFound(invitationId));
+            return new RevokeInvitationError.InvitationNotFound(invitationId);
 
         return await invitation.Revoke()
             .MapError(error => error.ToRevokeInvitationError())
@@ -108,27 +107,27 @@ internal sealed class InvitationService : IInvitationService
         Guid invitationId,
         CancellationToken ct = default)
     {
-        var userId = currentUser.Id ?? throw new ForbiddenException("No authenticated user.");
+        if (currentUser.Id is not { } userId)
+            return new AcceptInvitationError.Unauthenticated();
 
         var invitation = await repository.GetInvitationByIdAsync(invitationId, ct);
         if (invitation is null)
-            return Result.Failure<MembershipDto, AcceptInvitationError>(
-                new AcceptInvitationError.InvitationNotFound(invitationId));
+            return new AcceptInvitationError.InvitationNotFound(invitationId);
 
         if (string.IsNullOrWhiteSpace(currentUser.Email) ||
             !string.Equals(currentUser.Email.Trim(), invitation.Email, StringComparison.OrdinalIgnoreCase))
         {
-            return Result.Failure<MembershipDto, AcceptInvitationError>(new AcceptInvitationError.EmailMismatch());
+            return new AcceptInvitationError.EmailMismatch();
         }
 
         // Guard on the tenant still existing — an accept can race a tenant delete (BUG1b). Delete already
         // clears pending invitations, so this is the secondary defence against the concurrent-delete race.
         var tenant = await repository.GetByIdAsync(invitation.TenantId, ct);
         if (tenant is null)
-            return Result.Failure<MembershipDto, AcceptInvitationError>(new AcceptInvitationError.TenantNotFound());
+            return new AcceptInvitationError.TenantNotFound();
 
         if (await repository.IsMemberAsync(invitation.TenantId, userId, ct))
-            return Result.Failure<MembershipDto, AcceptInvitationError>(new AcceptInvitationError.AlreadyMember());
+            return new AcceptInvitationError.AlreadyMember();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await invitation.Accept(userId, now)

@@ -68,18 +68,18 @@ internal sealed class AcceptExecutor : IAcceptExecutor
             var deal = await dealResolver.ResolveByApplicationIdAsync(app.Id);
             var terms = VerifyTermsUnchanged(app, deal);
             if (terms.TryGetError(out var termsError))
-                return UnitResult.Failure(termsError);
+                return termsError;
 
             var workflow = workflows.Create(app.DealType);
-            var acceptance = workflow switch
+            UnitResult<AcceptApplicationError> acceptance = workflow switch
             {
                 IAcceptsPaid w when paymentMethodId is not null => await w.Accept.ExecuteAsync(app, paymentMethodId, ct),
-                IAcceptsPaid => UnitResult.Failure<AcceptApplicationError>(new AcceptApplicationError.PaymentMethodRequired()),
+                IAcceptsPaid => new AcceptApplicationError.PaymentMethodRequired(),
                 IAcceptsSimple w => await w.Accept.ExecuteAsync(app, ct),
-                _ => UnitResult.Failure<AcceptApplicationError>(new AcceptApplicationError.UnsupportedDeal(workflow.Type))
+                _ => new AcceptApplicationError.UnsupportedDeal(workflow.Type)
             };
             if (acceptance.TryGetError(out var acceptanceError))
-                return UnitResult.Failure(acceptanceError);
+                return acceptanceError;
 
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
                 ?? throw new InvalidOperationException($"Application {app.Id} has no booking after acceptance.");
@@ -88,10 +88,10 @@ internal sealed class AcceptExecutor : IAcceptExecutor
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
-            return UnitResult.Success<AcceptApplicationError>();
+            return new Success();
         }, ct);
 
-        var result = transition.Bind(_ => UnitResult.Success<AcceptApplicationError>());
+        var result = transition.Bind(_ => new Success());
         if (result.IsFailure)
             return result;
 
@@ -101,6 +101,6 @@ internal sealed class AcceptExecutor : IAcceptExecutor
 
     private UnitResult<AcceptApplicationError> VerifyTermsUnchanged(ApplicationEntity app, IDeal deal) =>
         app.TermsFingerprint == termsFingerprint.Calculate(deal, app.Opportunity.Period)
-            ? UnitResult.Success<AcceptApplicationError>()
-            : UnitResult.Failure<AcceptApplicationError>(new AcceptApplicationError.TermsChanged());
+            ? new Success()
+            : new AcceptApplicationError.TermsChanged();
 }

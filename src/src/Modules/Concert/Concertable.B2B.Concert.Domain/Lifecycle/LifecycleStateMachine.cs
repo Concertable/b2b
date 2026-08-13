@@ -13,7 +13,6 @@ internal sealed class LifecycleStateMachine
 
     public Result<LifecycleState, LifecycleTransitionError> Next(LifecycleState current, Trigger trigger)
         => Transitions.TryGetValue((current, trigger), out var next)
-            ? Result.Success<LifecycleState, LifecycleTransitionError>(next)
-            : Result.Failure<LifecycleState, LifecycleTransitionError>(
-                new LifecycleTransitionError.InvalidTransition(current, trigger));
+            ? next
+            : new LifecycleTransitionError.InvalidTransition(current, trigger);
 }

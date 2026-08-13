@@ -23,7 +23,7 @@ internal sealed class DepositEscrowAcceptStep(
 
         var booking = await bookingService.CreateStandardAsync(application);
         await StageAsync(prepaid, booking.Id, ct);
-        return UnitResult.Success<AcceptApplicationError>();
+        return new Success();
     }
 
     private async Task StageAsync(PrepaidApplication application, int bookingId, CancellationToken ct)
