@@ -7,8 +7,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class InvoiceIssuer : IInvoiceIssuer
 {
     private readonly ISettlementAmountResolver settlementAmountResolver;
-    private readonly ISettlementPayeeResolver settlementPayeeResolver;
-    private readonly ITicketPayeeResolver ticketPayeeResolver;
+    private readonly IDealPayeeResolver dealPayeeResolver;
     private readonly IDealAccessor dealAccessor;
     private readonly ITenantModule tenantModule;
     private readonly IInvoiceRepository invoiceRepository;
@@ -17,8 +16,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
 
     public InvoiceIssuer(
         ISettlementAmountResolver settlementAmountResolver,
-        ISettlementPayeeResolver settlementPayeeResolver,
-        ITicketPayeeResolver ticketPayeeResolver,
+        IDealPayeeResolver dealPayeeResolver,
         IDealAccessor dealAccessor,
         ITenantModule tenantModule,
         IInvoiceRepository invoiceRepository,
@@ -26,8 +24,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
         TimeProvider timeProvider)
     {
         this.settlementAmountResolver = settlementAmountResolver;
-        this.settlementPayeeResolver = settlementPayeeResolver;
-        this.ticketPayeeResolver = ticketPayeeResolver;
+        this.dealPayeeResolver = dealPayeeResolver;
         this.dealAccessor = dealAccessor;
         this.tenantModule = tenantModule;
         this.invoiceRepository = invoiceRepository;
@@ -39,8 +36,8 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
     {
         var gross = await settlementAmountResolver.ResolveGrossAsync(concert.Id, dealAccessor.Deal, ct);
 
-        var supplierTenantId = settlementPayeeResolver.ResolveTenantId(concert);
-        var customerTenantId = ticketPayeeResolver.ResolveTenantId(concert);
+        var supplierTenantId = dealPayeeResolver.ResolveSettlementTenantId(concert);
+        var customerTenantId = dealPayeeResolver.ResolveTicketTenantId(concert);
 
         var supplierTax = await tenantModule.GetTaxComplianceAsync(supplierTenantId, ct)
             ?? throw new InvalidOperationException(

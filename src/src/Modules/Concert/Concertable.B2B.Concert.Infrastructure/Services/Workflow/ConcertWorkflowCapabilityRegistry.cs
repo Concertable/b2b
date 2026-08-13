@@ -1,19 +1,20 @@
+using System.Collections.Frozen;
 using Concertable.B2B.Concert.Application.Workflow;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 
 internal sealed class ConcertWorkflowCapabilityRegistry : IConcertWorkflowCapabilityRegistry
 {
-    private readonly IReadOnlyDictionary<DealType, Type> strategyTypes;
+    private readonly FrozenDictionary<DealType, Type> workflowTypes;
 
-    public ConcertWorkflowCapabilityRegistry(IReadOnlyDictionary<DealType, Type> strategyTypes)
-        => this.strategyTypes = strategyTypes;
+    public ConcertWorkflowCapabilityRegistry(IReadOnlyDictionary<DealType, Type> workflowTypes)
+        => this.workflowTypes = workflowTypes.ToFrozenDictionary();
 
     public bool Has<TCapability>(DealType dealType) where TCapability : class
-        => strategyTypes[dealType].IsAssignableTo(typeof(TCapability));
+        => workflowTypes[dealType].IsAssignableTo(typeof(TCapability));
 
     public IReadOnlyList<DealType> DealTypesWith<TCapability>() where TCapability : class
-        => strategyTypes
+        => workflowTypes
             .Where(entry => entry.Value.IsAssignableTo(typeof(TCapability)))
             .Select(entry => entry.Key)
             .ToArray();
