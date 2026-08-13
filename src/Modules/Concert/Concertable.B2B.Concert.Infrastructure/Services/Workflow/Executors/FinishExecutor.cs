@@ -16,8 +16,7 @@ internal sealed class FinishExecutor : IFinishExecutor
     private readonly IConcertWorkflowFactory workflows;
     private readonly IDealResolver dealResolver;
     private readonly IConcertRepository concertRepository;
-    private readonly ISettlementPayeeResolver settlementPayeeResolver;
-    private readonly ITicketPayeeResolver ticketPayeeResolver;
+    private readonly IDealPayeeResolver dealPayeeResolver;
     private readonly IInvoiceIssuer invoiceIssuer;
     private readonly ITenantModule tenantModule;
     private readonly ISelfBillingAgreementGate selfBillingAgreementGate;
@@ -29,8 +28,7 @@ internal sealed class FinishExecutor : IFinishExecutor
         IConcertWorkflowFactory workflows,
         IDealResolver dealResolver,
         IConcertRepository concertRepository,
-        ISettlementPayeeResolver settlementPayeeResolver,
-        ITicketPayeeResolver ticketPayeeResolver,
+        IDealPayeeResolver dealPayeeResolver,
         IInvoiceIssuer invoiceIssuer,
         ITenantModule tenantModule,
         ISelfBillingAgreementGate selfBillingAgreementGate,
@@ -41,8 +39,7 @@ internal sealed class FinishExecutor : IFinishExecutor
         this.workflows = workflows;
         this.dealResolver = dealResolver;
         this.concertRepository = concertRepository;
-        this.settlementPayeeResolver = settlementPayeeResolver;
-        this.ticketPayeeResolver = ticketPayeeResolver;
+        this.dealPayeeResolver = dealPayeeResolver;
         this.invoiceIssuer = invoiceIssuer;
         this.tenantModule = tenantModule;
         this.selfBillingAgreementGate = selfBillingAgreementGate;
@@ -63,8 +60,8 @@ internal sealed class FinishExecutor : IFinishExecutor
             // payee's so we can settle, and the counterparty's so the self-billed invoice minted in the same
             // transaction carries both parties' legally-required VAT details. If either is incomplete, don't
             // transition, don't pay, don't invoice; the hourly sweep self-heals once the missing details land.
-            var supplierTenantId = settlementPayeeResolver.ResolveTenantId(concert);
-            var customerTenantId = ticketPayeeResolver.ResolveTenantId(concert);
+            var supplierTenantId = dealPayeeResolver.ResolveSettlementTenantId(concert);
+            var customerTenantId = dealPayeeResolver.ResolveTicketTenantId(concert);
             var supplierComplete = await tenantModule.IsTaxComplianceCompleteAsync(supplierTenantId);
             var customerComplete = await tenantModule.IsTaxComplianceCompleteAsync(customerTenantId);
             if (!supplierComplete || !customerComplete)
