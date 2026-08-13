@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal abstract class BaseRepository<TEntity>(ConcertDbContext context)
-    : BaseRepository<TEntity, ConcertDbContext>(context)
+internal abstract class WriteRepository<TEntity>(ConcertDbContext context)
+    : WriteRepository<TEntity, ConcertDbContext>(context)
     where TEntity : class;
 
 internal abstract class Repository<TEntity>(ConcertDbContext context)
