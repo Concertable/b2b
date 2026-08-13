@@ -5,8 +5,8 @@ using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.Deal.Infrastructure.Repositories;
 
-internal abstract class BaseRepository<TEntity>(DealDbContext context)
-    : BaseRepository<TEntity, DealDbContext>(context)
+internal abstract class WriteRepository<TEntity>(DealDbContext context)
+    : WriteRepository<TEntity, DealDbContext>(context)
     where TEntity : class;
 
 internal abstract class Repository<TEntity>(DealDbContext context)

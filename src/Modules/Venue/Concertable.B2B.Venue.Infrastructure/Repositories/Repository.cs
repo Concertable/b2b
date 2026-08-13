@@ -5,8 +5,8 @@ using Concertable.B2B.Venue.Infrastructure.Data;
 
 namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
-internal abstract class BaseRepository<TEntity>(VenueDbContext context)
-    : BaseRepository<TEntity, VenueDbContext>(context)
+internal abstract class WriteRepository<TEntity>(VenueDbContext context)
+    : WriteRepository<TEntity, VenueDbContext>(context)
     where TEntity : class;
 
 internal abstract class Repository<TEntity>(VenueDbContext context)
