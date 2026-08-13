@@ -27,7 +27,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
 
         return countsTask.Result.Map(counts => new ArtistDashboardKpis(
             PendingApplications: counts.PendingApplications,
-            AcceptedAwaitingCheckout: 0, // TODO B.11: IConcertWorkflowCapabilityRegistry / IAcceptsCheckout
+            AcceptedAwaitingCheckout: counts.AcceptedAwaitingCheckout,
             UpcomingConcerts: counts.UpcomingConcerts,
             MtdPayoutsCents: 0,
             MtdPayoutsDeltaPercent: null));
