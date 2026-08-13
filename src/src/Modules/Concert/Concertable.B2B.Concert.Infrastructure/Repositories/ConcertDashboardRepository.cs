@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
@@ -58,11 +59,21 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
             .FirstOrDefaultAsync(ct);
     }
 
-    public Task<ArtistDashboardCounts?> GetArtistCountsAsync(int artistId, CancellationToken ct = default)
+    public Task<ArtistDashboardCounts?> GetArtistCountsAsync(
+        int artistId,
+        IReadOnlyCollection<DealType> checkoutCapableDealTypes,
+        CancellationToken ct = default)
     {
         var applications = opportunityUpcoming.ApplyVia(
             context.Applications
                 .Where(a => a.State == LifecycleState.Applied && a.ArtistId == artistId),
+            a => a.Opportunity);
+
+        var acceptedAwaitingCheckout = opportunityUpcoming.ApplyVia(
+            context.Applications
+                .Where(a => a.State == LifecycleState.Accepted
+                    && a.ArtistId == artistId
+                    && checkoutCapableDealTypes.Contains(a.DealType)),
             a => a.Opportunity);
 
         var upcomingConcerts = concertUpcoming.Apply(
@@ -70,7 +81,7 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
 
         return context.ArtistReadModels
             .Where(a => a.Id == artistId)
-            .ToArtistCounts(applications, upcomingConcerts)
+            .ToArtistCounts(applications, acceptedAwaitingCheckout, upcomingConcerts)
             .FirstOrDefaultAsync(ct);
     }
 }
