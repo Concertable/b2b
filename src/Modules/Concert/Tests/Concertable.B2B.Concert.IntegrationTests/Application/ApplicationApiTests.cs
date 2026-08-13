@@ -100,4 +100,25 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     #endregion
+
+    #region Apply
+
+    [Fact]
+    public async Task Apply_ShouldReturn400_WhenSameArtistReappliesAfterWithdraw()
+    {
+        // Arrange
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
+        var withdraw = await client.PostAsync($"/api/Application/{appId}/withdraw", (object?)null);
+        await withdraw.ShouldBe(HttpStatusCode.NoContent);
+
+        // Act
+        var response = await client.PostAsync($"/api/Application/{opportunityId}", new { eSignature = new { signatoryName = "Aretha Artist" } });
+
+        // Assert
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    #endregion
 }

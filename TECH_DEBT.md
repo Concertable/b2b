@@ -110,17 +110,6 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ## LOW
 
-### `BookingAdvancer` uses expanded braces for empty catch blocks
-
-`src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/Workflow/BookingAdvancer.cs`
-has two deliberately empty catches (`ConflictException` and duplicate-key `DbUpdateException`)
-formatted as three-line blocks instead of the repository's compact `{ }` empty-block convention.
-
-**Resolves when:** both catches use the one-line `catch (...) { }` form from
-[`api/agents/CODE_CONVENTIONS.md`](../agents/CODE_CONVENTIONS.md).
-
----
-
 ### Contract PDFs share the `images` blob container and rely on app-level write-once
 
 `ContractPdfService` stores contract PDFs under a `contracts/{bookingId}-{guid}.pdf` name in the **single shared `"images"` container** (the only container `Concertable.Shared.Blob` exposes). The blob *name* is fixed at creation, transactionally, at Accept (`ContractEntity.Create`), so generation can't race to mint competing names — but immutability of the *bytes* is still only app-level: `IBlobStorageService.UploadAsync` is `overwrite: true`, so nothing at the storage layer prevents a rewrite of a persisted legal document. A legal artefact ideally lives in its own container with a no-overwrite (write-once / immutability-policy) upload. Deliberately not done in the contract feature because both are **additive changes to the published `Concertable.Shared.Blob` package** (a dedicated container config + an overwrite-guarding `UploadAsync` overload), which would cross the package boundary the feature was scoped to avoid.
@@ -134,20 +123,6 @@ formatted as three-line blocks instead of the repository's compact `{ }` empty-b
 `ContractEntity`'s terms are immutable once built (private setters + `Create` factory), but nothing binds `Create` to the Accept transition — that timing lives in `ContractIssuer`/`AcceptExecutor`, so a future caller could mint a contract outside Accept and the model wouldn't stop them. `VenueTenantId`/`ArtistTenantId` are also publicly settable (for the tenant interceptor + issuer), so the snapshot isn't fully sealed either. Not addressed in the DEAL_RENAME refactor, which was names-only.
 
 **Resolves when:** the Accept aggregate owns contract creation (e.g. `Create` becomes internal to the transition, or the booking aggregate is the only path that can produce one), and the tenant fields are stamped through a constructor/interceptor seam rather than public setters.
-
----
-
-### Duplicate application attempt is a 500, not a 400 — guard landed, integration test outstanding
-
-Fixed on `Fix/TechDebtSweep`: `ApplicationService.ValidateCanApplyAsync` (the apply/insert path,
-used by both `ApplyAsync` overloads) rejects an existing `(opportunityId, artistId)` row via
-`IApplicationRepository.ExistsForOpportunityAndArtistAsync`, returning a clean 400. Deliberately
-*not* in the shared `ApplicationValidator.CanApplyAsync`: that validator is also reused by the
-VenueHire **pre-apply checkout** (`ApplyCheckoutAsync`), which legitimately runs while an
-application may already exist and must not be rejected. Outstanding only: an **integration test**
-for apply-after-withdraw → 400 (needs Docker).
-
-**Resolves when:** the apply-after-withdraw integration test lands green.
 
 ---
 
@@ -183,3 +158,18 @@ Deliberately not done now: the launch gate is *data completeness* (hold a comple
 `FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per tenant type from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/platform/DOMAINS_AND_DNS.md`](../../plans/platform/DOMAINS_AND_DNS.md). So in any non-local environment the tenant-type dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
 
 **Resolves when:** `Urls:Frontends:{Venue,Artist}` are supplied per environment from App Config, alongside `Auth:SpaClients` / `Cors:AllowedOrigins` (which key off the same hostnames), as part of the `DOMAINS_AND_DNS.md` config rollout.
+
+---
+
+### Integration tests pass `(object?)null` to bodyless `PostAsync` instead of the parameterless overload
+
+The B2B integration suites call `client.PostAsync(url, (object?)null)` for bodyless action POSTs
+(`withdraw`/`reject`/`cancel`/`accept`) — ~22 sites across `Concertable.B2B.Concert.IntegrationTests`
+(`ApplicationApiTests`, `ApplicationWithdrawRejectApiTests`, `ApplicationCancelApiTests`).
+`Concertable.Testing.HttpClientExtensions` already exposes a parameterless `PostAsync(this HttpClient,
+string url)` that posts the identical null JSON body (`PostAsJsonAsync<object?>(url, null)`), so the
+`(object?)null` cast is redundant ceremony that spread by copy-paste. Behaviour is identical — a
+readability nit, left uniform for now rather than migrating a lone call site out of step with its siblings.
+
+**Resolves when:** the `PostAsync(url, (object?)null)` sites switch to the parameterless `PostAsync(url)`
+in one mechanical sweep (no behaviour change).
