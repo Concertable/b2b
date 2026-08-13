@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class SequenceRepository<TSequence> : BaseRepository<TSequence>, ISequenceRepository<TSequence>
+internal sealed class SequenceRepository<TSequence> : WriteRepository<TSequence>, ISequenceRepository<TSequence>
     where TSequence : class, ISequence<TSequence>
 {
     public SequenceRepository(ConcertDbContext context) : base(context) { }
