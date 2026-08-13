@@ -31,6 +31,7 @@
   </Folder>
   <Folder Name="/Modules/Artist/Tests/">
     <Project Path="src/Modules/Artist/Tests/Concertable.B2B.Artist.IntegrationTests/Concertable.B2B.Artist.IntegrationTests.csproj" />
+    <Project Path="src/Modules/Artist/Tests/Concertable.B2B.Artist.UnitTests/Concertable.B2B.Artist.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Modules/Concert/">
     <Project Path="src/Modules/Concert/Concertable.B2B.Concert.Api/Concertable.B2B.Concert.Api.csproj" />
@@ -97,6 +98,7 @@
   </Folder>
   <Folder Name="/Modules/Venue/Tests/">
     <Project Path="src/Modules/Venue/Tests/Concertable.B2B.Venue.IntegrationTests/Concertable.B2B.Venue.IntegrationTests.csproj" />
+    <Project Path="src/Modules/Venue/Tests/Concertable.B2B.Venue.UnitTests/Concertable.B2B.Venue.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/Concertable.B2B.IntegrationTests.Fixtures/Concertable.B2B.IntegrationTests.Fixtures.csproj" />
