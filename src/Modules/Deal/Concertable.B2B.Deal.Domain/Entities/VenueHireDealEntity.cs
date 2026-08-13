@@ -25,12 +25,11 @@ public sealed class VenueHireDealEntity : DealEntity
 
         HireFee = hireFee;
         PaymentMethod = paymentMethod;
-        return UnitResult.Success<ValidationErrors>();
+        return new Success();
     }
 
     private static UnitResult<ValidationErrors> ValidateFee(decimal hireFee) =>
         hireFee > 0
-            ? UnitResult.Success<ValidationErrors>()
-            : UnitResult.Failure(new ValidationErrors(
-                [new(nameof(HireFee), "Hire fee must be greater than zero.")]));
+            ? new Success()
+            : new ValidationErrors([new(nameof(HireFee), "Hire fee must be greater than zero.")]);
 }

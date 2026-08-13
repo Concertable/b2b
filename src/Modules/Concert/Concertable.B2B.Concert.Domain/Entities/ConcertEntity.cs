@@ -81,10 +81,9 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public UnitResult<DoorRevenueDeclarationError> DeclareDoorRevenue(decimal doorRevenue)
     {
         if (doorRevenue < 0)
-            return UnitResult.Failure<DoorRevenueDeclarationError>(
-                new DoorRevenueDeclarationError.NegativeRevenue());
+            return new DoorRevenueDeclarationError.NegativeRevenue();
         DoorRevenue = doorRevenue;
-        return UnitResult.Success<DoorRevenueDeclarationError>();
+        return new Success();
     }
 
     public void Update(string name, string about, decimal price, int totalTickets)

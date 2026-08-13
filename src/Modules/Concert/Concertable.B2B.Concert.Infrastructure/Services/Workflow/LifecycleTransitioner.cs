@@ -25,13 +25,12 @@ internal sealed class LifecycleTransitioner : ILifecycleTransitioner
     {
         var application = await applicationRepository.GetByIdAsync(applicationId, ct);
         if (application is null)
-            return Result.Failure<ApplicationEntity, LifecycleTransitionError>(
-                new LifecycleTransitionError.ApplicationNotFound(applicationId));
+            return new LifecycleTransitionError.ApplicationNotFound(applicationId);
 
         var machine = machines.Get(application.DealType);
         var transition = machine.Next(application.State, trigger);
         if (transition.TryGetError(out var error))
-            return Result.Failure<ApplicationEntity, LifecycleTransitionError>(error);
+            return error;
 
         transition.TryGetValue(out var next);
 
@@ -40,7 +39,7 @@ internal sealed class LifecycleTransitioner : ILifecycleTransitioner
 
         application.Transition(next);
         await applicationRepository.SaveChangesAsync(ct);
-        return Result.Success<ApplicationEntity, LifecycleTransitionError>(application);
+        return application;
     }
 
     public async Task<Result<ApplicationEntity, TError>> TransitionAsync<TError>(
@@ -53,21 +52,20 @@ internal sealed class LifecycleTransitioner : ILifecycleTransitioner
     {
         var application = await applicationRepository.GetByIdAsync(applicationId, ct);
         if (application is null)
-            return Result.Failure<ApplicationEntity, TError>(
-                mapTransitionError(new LifecycleTransitionError.ApplicationNotFound(applicationId)));
+            return mapTransitionError(new LifecycleTransitionError.ApplicationNotFound(applicationId));
 
         var machine = machines.Get(application.DealType);
         var transition = machine.Next(application.State, trigger);
         if (transition.TryGetError(out var transitionError))
-            return Result.Failure<ApplicationEntity, TError>(mapTransitionError(transitionError));
+            return mapTransitionError(transitionError);
 
         var effectResult = await effect(application);
         if (effectResult.TryGetError(out var effectError))
-            return Result.Failure<ApplicationEntity, TError>(effectError);
+            return effectError;
 
         transition.TryGetValue(out var next);
         application.Transition(next);
         await applicationRepository.SaveChangesAsync(ct);
-        return Result.Success<ApplicationEntity, TError>(application);
+        return application;
     }
 }

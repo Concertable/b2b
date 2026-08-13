@@ -23,7 +23,9 @@ internal abstract partial record AcceptInvitationError : IError
             ErrorDefinition.Conflict<InvitationNotPending>(
                 "This invitation is no longer pending."),
         InvitationExpired =>
-            ErrorDefinition.Invalid<InvitationExpired>("This invitation has expired.")
+            ErrorDefinition.Invalid<InvitationExpired>("This invitation has expired."),
+        Unauthenticated =>
+            ErrorDefinition.Forbidden<Unauthenticated>("No authenticated user was found.")
     };
 
     [ErrorCode("tenant.accept_invitation_not_found")]
@@ -43,4 +45,7 @@ internal abstract partial record AcceptInvitationError : IError
 
     [ErrorCode("tenant.accept_invitation_expired")]
     public partial record InvitationExpired;
+
+    [ErrorCode("tenant.accept_invitation_unauthenticated")]
+    public partial record Unauthenticated;
 }

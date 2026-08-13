@@ -53,12 +53,10 @@ internal sealed class ApplyExecutor : IApplyExecutor
         var workflow = workflows.Create(deal.DealType);
         var venueTenantId = await opportunityRepository.GetTenantIdByIdAsync(opportunityId);
         if (venueTenantId is null)
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                new ApplyApplicationError.OpportunityNotFound(opportunityId));
+            return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
         if (tenantContext.TenantId is not { } artistTenantId)
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                new ApplyApplicationError.MissingTenant());
+            return new ApplyApplicationError.MissingTenant();
 
         ApplicationEntity application;
         if (workflow is IAppliesPaid paid && paymentMethodId is not null)
@@ -82,18 +80,15 @@ internal sealed class ApplyExecutor : IApplyExecutor
         }
         else
         {
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                new ApplyApplicationError.UnsupportedDeal(workflow.Type));
+            return new ApplyApplicationError.UnsupportedDeal(workflow.Type);
         }
 
         var period = await opportunityRepository.GetPeriodByIdAsync(opportunityId);
         if (period is null)
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                new ApplyApplicationError.OpportunityNotFound(opportunityId));
+            return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
         if (currentUser.Id is not { } userId)
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                new ApplyApplicationError.MissingUser());
+            return new ApplyApplicationError.MissingUser();
         application.RecordArtistESignature(
             new ESignature(
                 userId,
@@ -111,9 +106,8 @@ internal sealed class ApplyExecutor : IApplyExecutor
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
-            return Result.Failure<ApplicationEntity, ApplyApplicationError>(
-                new ApplyApplicationError.AlreadyApplied());
+            return new ApplyApplicationError.AlreadyApplied();
         }
-        return Result.Success<ApplicationEntity, ApplyApplicationError>(application);
+        return application;
     }
 }

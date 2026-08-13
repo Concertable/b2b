@@ -52,14 +52,13 @@ public sealed record TaxCompliance
         ValidateRequired(errors, nameof(BankReference), bankReference, 50);
 
         return errors.Count == 0
-            ? Result.Success<TaxCompliance, ValidationErrors>(
-                new TaxCompliance(
-                    vatNumber,
-                    sellerIdentifier,
-                    registeredAddress!,
-                    bankReference,
-                    holdsMusicLicence))
-            : Result.Failure<TaxCompliance, ValidationErrors>(new ValidationErrors(errors));
+            ? new TaxCompliance(
+                vatNumber,
+                sellerIdentifier,
+                registeredAddress!,
+                bankReference,
+                holdsMusicLicence)
+            : new ValidationErrors(errors);
     }
 
     private static void ValidateRequired(

@@ -44,6 +44,6 @@ internal sealed class WithdrawExecutor : IWithdrawExecutor
                 : Task.FromResult(UnitResult.Success<CancelApplicationError>()),
             ct);
 
-        return transition.Bind(_ => UnitResult.Success<CancelApplicationError>());
+        return transition.Bind(_ => new Success());
     }
 }

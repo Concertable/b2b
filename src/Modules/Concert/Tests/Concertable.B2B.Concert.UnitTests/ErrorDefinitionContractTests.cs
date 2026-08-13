@@ -38,6 +38,18 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.NotFound
         },
         {
+            new ApplicationError.OpportunityForbidden(42),
+            "application.query.opportunity_forbidden",
+            "You do not own concert opportunity 42.",
+            ErrorKind.Forbidden
+        },
+        {
+            new ApplicationError.MissingArtist(),
+            "application.query.missing_artist",
+            "You must have an artist account.",
+            ErrorKind.Forbidden
+        },
+        {
             new ApplyApplicationError.MissingArtist(),
             "application.apply.missing_artist",
             "You must create an artist account before applying for a concert opportunity.",

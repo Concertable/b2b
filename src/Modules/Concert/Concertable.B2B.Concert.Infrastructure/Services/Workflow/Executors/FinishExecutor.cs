@@ -51,12 +51,10 @@ internal sealed class FinishExecutor : IFinishExecutor
     {
         var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct);
         if (concert is null)
-            return Result.Failure<SettlementOutcome, FinishConcertError>(
-                new FinishConcertError.ConcertNotFound(concertId));
+            return new FinishConcertError.ConcertNotFound(concertId);
 
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
-            return Result.Failure<SettlementOutcome, FinishConcertError>(
-                new FinishConcertError.ConcertNotEnded());
+            return new FinishConcertError.ConcertNotEnded();
 
         var supplierTenantId = dealPayeeResolver.ResolveSettlementTenantId(concert);
         var customerTenantId = dealPayeeResolver.ResolveTicketTenantId(concert);
@@ -65,15 +63,13 @@ internal sealed class FinishExecutor : IFinishExecutor
         if (!supplierComplete || !customerComplete)
         {
             logger.SettlementDeferredPendingTaxCompliance(concertId, supplierComplete ? customerTenantId : supplierTenantId);
-            return Result.Success<SettlementOutcome, FinishConcertError>(
-                SettlementOutcome.DeferredPendingTaxCompliance);
+            return SettlementOutcome.DeferredPendingTaxCompliance;
         }
 
         if (!await selfBillingAgreementGate.HasCurrentAsync(supplierTenantId, timeProvider.GetUtcNow().UtcDateTime, ct))
         {
             logger.SettlementDeferredPendingSelfBillingAgreement(concertId, supplierTenantId);
-            return Result.Success<SettlementOutcome, FinishConcertError>(
-                SettlementOutcome.DeferredPendingSelfBillingAgreement);
+            return SettlementOutcome.DeferredPendingSelfBillingAgreement;
         }
 
         var transition = await transitioner.TransitionAsync<FinishConcertError>(
@@ -86,15 +82,15 @@ internal sealed class FinishExecutor : IFinishExecutor
                 var workflow = workflows.Create(app.DealType);
                 var finish = await workflow.Finish.ExecuteAsync(concertId, ct);
                 if (finish.TryGetError(out var finishError))
-                    return UnitResult.Failure(finishError);
+                    return finishError;
 
                 await invoiceIssuer.IssueAsync(concert);
-                return UnitResult.Success<FinishConcertError>();
+                return new Success();
             }, ct);
 
         if (transition.TryGetError(out var transitionError))
-            return Result.Failure<SettlementOutcome, FinishConcertError>(transitionError);
+            return transitionError;
 
-        return Result.Success<SettlementOutcome, FinishConcertError>(SettlementOutcome.Settled);
+        return SettlementOutcome.Settled;
     }
 }

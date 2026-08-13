@@ -50,7 +50,7 @@ internal sealed class ArtistService : IArtistService
     public async Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(CreateArtistRequest request)
     {
         if (!tenantContext.HasTenant)
-            return Result.Failure<ArtistDetails, CreateArtistError>(new CreateArtistError.Forbidden());
+            return new CreateArtistError.Forbidden();
 
         return await ArtistEntity.ValidateProfile(request.Name, request.About)
             .MapError(errors => (CreateArtistError)new CreateArtistError.Invalid(errors))
@@ -89,7 +89,7 @@ internal sealed class ArtistService : IArtistService
     {
         var artist = await repository.GetByIdAsync(id);
         if (artist is null)
-            return Result.Failure<ArtistDetails, UpdateArtistError>(new UpdateArtistError.NotFound(id));
+            return new UpdateArtistError.NotFound(id);
 
         return await ArtistEntity.ValidateProfile(request.Name, request.About)
             .MapError(errors => (UpdateArtistError)new UpdateArtistError.Invalid(errors))

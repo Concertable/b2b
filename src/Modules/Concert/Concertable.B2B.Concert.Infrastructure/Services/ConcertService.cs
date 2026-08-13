@@ -90,19 +90,17 @@ internal sealed class ConcertService : IConcertService
     {
         var concertEntity = await repository.GetByIdAsync(id);
         if (concertEntity is null)
-            return Result.Failure<ConcertUpdateResponse, UpdateConcertError>(
-                new UpdateConcertError.ConcertNotFound(id));
+            return new UpdateConcertError.ConcertNotFound(id);
 
         var result = concertValidator.CanUpdate(concertEntity, request.TotalTickets);
         if (result.TryGetErrors(out var errors))
-            return Result.Failure<ConcertUpdateResponse, UpdateConcertError>(
-                new UpdateConcertError.Invalid(new ValidationErrors(errors.ToDictionary())));
+            return new UpdateConcertError.Invalid(new ValidationErrors(errors.ToDictionary()));
 
         concertEntity.Update(request.Name, request.About, request.Price, request.TotalTickets);
 
         await repository.SaveChangesAsync();
 
-        return Result.Success<ConcertUpdateResponse, UpdateConcertError>(new ConcertUpdateResponse
+        return new ConcertUpdateResponse
         {
             Id = concertEntity.Id,
             Name = concertEntity.Name,
@@ -110,25 +108,23 @@ internal sealed class ConcertService : IConcertService
             Price = concertEntity.Price,
             TotalTickets = concertEntity.TotalTickets,
             AvailableTickets = 0 // moved to Customer.Concert; UI reads via Search projection in end-state
-        });
+        };
     }
 
     public async Task<UnitResult<PostConcertError>> PostAsync(int id, UpdateConcertRequest request)
     {
         var concertEntity = await repository.GetByIdWithBookingAsync(id);
         if (concertEntity is null)
-            return UnitResult.Failure<PostConcertError>(
-                new PostConcertError.ConcertNotFound(id));
+            return new PostConcertError.ConcertNotFound(id);
 
         var result = concertValidator.CanPost(concertEntity);
         if (result.TryGetErrors(out var errors))
-            return UnitResult.Failure<PostConcertError>(
-                new PostConcertError.Invalid(new ValidationErrors(errors.ToDictionary())));
+            return new PostConcertError.Invalid(new ValidationErrors(errors.ToDictionary()));
 
         concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime);
 
         await repository.SaveChangesAsync();
-        return UnitResult.Success<PostConcertError>();
+        return new Success();
     }
 
     public Task<UnitResult<CancelConcertError>> CancelAsync(int concertId, CancellationToken ct) =>
@@ -138,26 +134,21 @@ internal sealed class ConcertService : IConcertService
     {
         var concert = await repository.GetByIdWithBookingAsync(id);
         if (concert is null)
-            return UnitResult.Failure<DeclareDoorRevenueError>(
-                new DeclareDoorRevenueError.ConcertNotFound(id));
+            return new DeclareDoorRevenueError.ConcertNotFound(id);
 
         /* Only the concert's own venue may declare its door take. A non-party sees a null (tenant-filtered)
            Booking; the host/worker path (no HTTP context) bypasses tenant scoping, as elsewhere. */
         if (!tenantContext.IsHost && concert.Booking?.VenueTenantId != tenantContext.TenantId)
-            return UnitResult.Failure<DeclareDoorRevenueError>(
-                new DeclareDoorRevenueError.VenueForbidden());
+            return new DeclareDoorRevenueError.VenueForbidden();
 
         /* Only revenue-share settlements (DeferredBooking) take a declared door figure, and only once
            the gig has ended and before it settles. Re-declarable while Booked; frozen after. */
         if (concert.Booking is not DeferredBooking)
-            return UnitResult.Failure<DeclareDoorRevenueError>(
-                new DeclareDoorRevenueError.WrongDealType());
+            return new DeclareDoorRevenueError.WrongDealType();
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
-            return UnitResult.Failure<DeclareDoorRevenueError>(
-                new DeclareDoorRevenueError.TooEarly());
+            return new DeclareDoorRevenueError.TooEarly();
         if (concert.Booking.Application.State != LifecycleState.Booked)
-            return UnitResult.Failure<DeclareDoorRevenueError>(
-                new DeclareDoorRevenueError.AlreadySettled());
+            return new DeclareDoorRevenueError.AlreadySettled();
 
         return await concert.DeclareDoorRevenue(doorRevenue)
             .MapError(error => error.ToDeclareDoorRevenueError())

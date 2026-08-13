@@ -83,7 +83,7 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
 
         SyncGenresInternal(genres);
         events.Raise(new ArtistChangedDomainEvent(this));
-        return UnitResult.Success<ValidationErrors>();
+        return new Success();
     }
 
     public void SyncGenres(IEnumerable<Genre> genres)
@@ -134,8 +134,8 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
             errors.Add(new(nameof(About), "About must be 1000 characters or fewer."));
 
         return errors.Count == 0
-            ? UnitResult.Success<ValidationErrors>()
-            : UnitResult.Failure(new ValidationErrors(errors));
+            ? new Success()
+            : new ValidationErrors(errors);
     }
 
     private static void ValidateCollaborators(string bannerUrl, string avatar, Point location, Address address, string email)

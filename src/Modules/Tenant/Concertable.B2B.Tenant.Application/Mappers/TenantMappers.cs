@@ -30,12 +30,10 @@ internal static class TenantMappers
     public static Result<TaxCompliance, ValidationErrors> ToTaxCompliance(this TaxComplianceDto? dto)
     {
         if (dto is null)
-            return Result.Failure<TaxCompliance, ValidationErrors>(
-                new ValidationErrors([new("TaxCompliance", "TaxCompliance is required.")]));
+            return new ValidationErrors([new("TaxCompliance", "TaxCompliance is required.")]);
 
         if (dto.RegisteredAddress is null)
-            return Result.Failure<TaxCompliance, ValidationErrors>(
-                new ValidationErrors([new("RegisteredAddress", "RegisteredAddress is required.")]));
+            return new ValidationErrors([new("RegisteredAddress", "RegisteredAddress is required.")]);
 
         return RegisteredAddress.Create(
             dto.RegisteredAddress.Line1,

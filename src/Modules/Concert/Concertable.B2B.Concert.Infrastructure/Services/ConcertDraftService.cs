@@ -27,8 +27,7 @@ internal sealed class ConcertDraftService : IConcertDraftService
 
         var bookingConcert = await bookingRepository.GetByIdAsync(bookingId);
         if (bookingConcert is null)
-            return Result.Failure<ConcertEntity, CreateConcertDraftError>(
-                new CreateConcertDraftError.BookingNotFound(bookingId));
+            return new CreateConcertDraftError.BookingNotFound(bookingId);
 
         var artist = bookingConcert.Application.Artist;
         var opportunity = bookingConcert.Application.Opportunity;
@@ -44,8 +43,7 @@ internal sealed class ConcertDraftService : IConcertDraftService
         if (!matchingGenres.Any())
         {
             logger.ConcertDraftCreationFailed(bookingId, artist.Id, opportunity.Id);
-            return Result.Failure<ConcertEntity, CreateConcertDraftError>(
-                new CreateConcertDraftError.GenreMismatch());
+            return new CreateConcertDraftError.GenreMismatch();
         }
 
         var concert = ConcertEntity.CreateDraft(
@@ -65,6 +63,6 @@ internal sealed class ConcertDraftService : IConcertDraftService
         await notifier.ConcertDraftCreatedAsync(artist.UserId.ToString(), concert.Id);
         await notifier.ConcertDraftCreatedAsync(venue.UserId.ToString(), concert.Id);
 
-        return Result.Success<ConcertEntity, CreateConcertDraftError>(concert);
+        return concert;
     }
 }

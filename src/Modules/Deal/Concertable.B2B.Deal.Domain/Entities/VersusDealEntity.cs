@@ -32,7 +32,7 @@ public sealed class VersusDealEntity : DealEntity
         Guarantee = guarantee;
         ArtistDoorPercent = artistDoorPercent;
         PaymentMethod = paymentMethod;
-        return UnitResult.Success<ValidationErrors>();
+        return new Success();
     }
 
     private static UnitResult<ValidationErrors> Validate(decimal guarantee, decimal artistDoorPercent)
@@ -46,7 +46,7 @@ public sealed class VersusDealEntity : DealEntity
             errors.Add(new(nameof(ArtistDoorPercent), "Artist door percent must be between 0 and 100."));
 
         return errors.Count == 0
-            ? UnitResult.Success<ValidationErrors>()
-            : UnitResult.Failure(new ValidationErrors(errors));
+            ? new Success()
+            : new ValidationErrors(errors);
     }
 }

@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -44,34 +43,39 @@ internal sealed class ApplicationService : IApplicationService
         CancellationToken ct = default) =>
         await repository.GetFinancialOperationAsync(applicationId, ct);
 
-    public async Task<IReadOnlyList<ApplicationDto>> GetByOpportunityIdAsync(int id)
+    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id)
     {
         var response = await opportunityService.OwnsOpportunityAsync(id);
 
         if (!response)
-            throw new ForbiddenException("You do not own this Concert Opportunity");
+            return new ApplicationError.OpportunityForbidden(id);
 
         var applications = await repository.GetByOpportunityIdAsync(id);
 
-        return await mapper.ToDtosAsync(applications);
+        return new Success<IReadOnlyList<ApplicationDto>>(
+            await mapper.ToDtosAsync(applications));
     }
 
-    public async Task<IReadOnlyList<ApplicationDto>> GetPendingForArtistAsync()
+    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForArtistAsync()
     {
-        var artistId = (await artistModule.GetIdForCurrentTenantAsync()).Match(
-            value => value,
-            () => throw new ForbiddenException("You must have an Artist account"));
+        var artist = await artistModule.GetIdForCurrentTenantAsync();
+        if (!artist.TryGetValue(out var artistId))
+            return new ApplicationError.MissingArtist();
+
         var applications = await repository.GetPendingByArtistIdAsync(artistId);
-        return await mapper.ToDtosAsync(applications);
+        return new Success<IReadOnlyList<ApplicationDto>>(
+            await mapper.ToDtosAsync(applications));
     }
 
-    public async Task<IReadOnlyList<ApplicationDto>> GetRecentDeniedForArtistAsync()
+    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetRecentDeniedForArtistAsync()
     {
-        var artistId = (await artistModule.GetIdForCurrentTenantAsync()).Match(
-            value => value,
-            () => throw new ForbiddenException("You must have an Artist account"));
+        var artist = await artistModule.GetIdForCurrentTenantAsync();
+        if (!artist.TryGetValue(out var artistId))
+            return new ApplicationError.MissingArtist();
+
         var applications = await repository.GetRecentDeniedByArtistIdAsync(artistId);
-        return await mapper.ToDtosAsync(applications);
+        return new Success<IReadOnlyList<ApplicationDto>>(
+            await mapper.ToDtosAsync(applications));
     }
 
     public Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
@@ -86,16 +90,16 @@ internal sealed class ApplicationService : IApplicationService
     {
         var artist = await ResolveArtistIdAsync();
         if (artist.TryGetError(out var artistError))
-            return Result.Failure<ApplicationDto, ApplyApplicationError>(artistError);
+            return artistError;
         artist.TryGetValue(out var artistId);
 
         var validation = await ValidateCanApplyAsync(opportunityId, artistId);
         if (validation.TryGetError(out var validationError))
-            return Result.Failure<ApplicationDto, ApplyApplicationError>(validationError);
+            return validationError;
 
         var execution = await executor.ApplyAsync(opportunityId, artistId, paymentMethodId, eSignature);
         if (execution.TryGetError(out var executionError))
-            return Result.Failure<ApplicationDto, ApplyApplicationError>(executionError);
+            return executionError;
         var application = execution.Match(
             value => value,
             _ => throw new InvalidOperationException("Successful application execution returned no application."));
@@ -105,7 +109,7 @@ internal sealed class ApplicationService : IApplicationService
         var saved = (await GetByIdAsync(application.Id)).Match(
             value => value,
             _ => throw new InvalidOperationException($"Application {application.Id} not found after creation."));
-        return Result.Success<ApplicationDto, ApplyApplicationError>(saved);
+        return saved;
     }
 
     private async Task<Result<int, ApplyApplicationError>> ResolveArtistIdAsync() =>
@@ -116,26 +120,22 @@ internal sealed class ApplicationService : IApplicationService
     {
         var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
         if (opportunity is null)
-            return UnitResult.Failure<ApplyApplicationError>(
-                new ApplyApplicationError.OpportunityNotFound(opportunityId));
+            return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
         if (await repository.ExistsForOpportunityAndArtistAsync(opportunityId, artistId))
-            return UnitResult.Failure<ApplyApplicationError>(
-                new ApplyApplicationError.AlreadyApplied());
+            return new ApplyApplicationError.AlreadyApplied();
 
         var result = await applicationValidator.CanApplyAsync(opportunity, artistId);
         if (result.TryGetErrors(out var errors))
-            return UnitResult.Failure<ApplyApplicationError>(
-                new ApplyApplicationError.Invalid(new ValidationErrors(errors.ToDictionary())));
+            return new ApplyApplicationError.Invalid(new ValidationErrors(errors.ToDictionary()));
 
         var artistGenres = await artistModule.GetGenresAsync(artistId);
         var opportunityGenres = opportunity.Genres.ToHashSet();
 
         if (opportunityGenres.Count > 0 && !artistGenres.Overlaps(opportunityGenres))
-            return UnitResult.Failure<ApplyApplicationError>(
-                new ApplyApplicationError.GenreMismatch());
+            return new ApplyApplicationError.GenreMismatch();
 
-        return UnitResult.Success<ApplyApplicationError>();
+        return new Success();
     }
 
     public async Task<bool> CanApplyAsync(int opportunityId) =>
@@ -144,11 +144,11 @@ internal sealed class ApplicationService : IApplicationService
     public async Task<bool> CanAcceptAsync(int applicationId) =>
         (await CheckCanAcceptAsync(applicationId)).IsSuccess;
 
-    public async Task<Checkout> ApplyCheckoutAsync(int opportunityId)
+    public async Task<Result<Checkout, ApplicationEligibilityError>> ApplyCheckoutAsync(int opportunityId)
     {
         var result = await CheckCanApplyAsync(opportunityId);
         if (result.TryGetError(out var error))
-            throw new BadRequestException(error.Definition.Message);
+            return error;
 
         return await checkoutDispatcher.ApplyCheckoutAsync(opportunityId);
     }
@@ -165,52 +165,48 @@ internal sealed class ApplicationService : IApplicationService
         var result = await CheckCanAcceptAsync(applicationId);
 
         if (result.TryGetError(out var error))
-            return UnitResult.Failure<AcceptApplicationError>(new AcceptApplicationError.Ineligible(error));
+            return new AcceptApplicationError.Ineligible(error);
 
         var acceptance = await executor.AcceptAsync(applicationId, paymentMethodId, eSignature, ct);
         if (acceptance.TryGetError(out var acceptanceError))
-            return UnitResult.Failure(acceptanceError);
+            return acceptanceError;
 
         await notifier.AcceptedAsync(applicationId);
-        return UnitResult.Success<AcceptApplicationError>();
+        return new Success();
     }
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
         var artistId = await artistModule.GetIdForCurrentTenantAsync();
         if (!artistId.TryGetValue(out var value))
-            return UnitResult.Failure<ApplicationEligibilityError>(
-                new ApplicationEligibilityError.MissingArtist());
+            return new ApplicationEligibilityError.MissingArtist();
 
         var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
         if (opportunity is null)
-            return UnitResult.Failure<ApplicationEligibilityError>(
-                new ApplicationEligibilityError.OpportunityNotFound());
+            return new ApplicationEligibilityError.OpportunityNotFound();
 
         var validation = await applicationValidator.CanApplyAsync(opportunity, value);
-        return validation.TryGetErrors(out var errors)
-            ? UnitResult.Failure<ApplicationEligibilityError>(
-                new ApplicationEligibilityError.Invalid(new ValidationErrors(errors.ToDictionary())))
-            : UnitResult.Success<ApplicationEligibilityError>();
+        if (validation.TryGetErrors(out var errors))
+            return new ApplicationEligibilityError.Invalid(new ValidationErrors(errors.ToDictionary()));
+
+        return new Success();
     }
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanAcceptAsync(int applicationId)
     {
         var opportunity = await opportunityRepository.GetByApplicationIdAsync(applicationId);
         if (opportunity is null)
-            return UnitResult.Failure<ApplicationEligibilityError>(
-                new ApplicationEligibilityError.OpportunityNotFound());
+            return new ApplicationEligibilityError.OpportunityNotFound();
 
         var application = await repository.GetByIdAsync(applicationId);
         if (application is null)
-            return UnitResult.Failure<ApplicationEligibilityError>(
-                new ApplicationEligibilityError.ApplicationNotFound());
+            return new ApplicationEligibilityError.ApplicationNotFound();
 
         var validation = await applicationValidator.CanAcceptAsync(opportunity, application);
-        return validation.TryGetErrors(out var errors)
-            ? UnitResult.Failure<ApplicationEligibilityError>(
-                new ApplicationEligibilityError.Invalid(new ValidationErrors(errors.ToDictionary())))
-            : UnitResult.Success<ApplicationEligibilityError>();
+        if (validation.TryGetErrors(out var errors))
+            return new ApplicationEligibilityError.Invalid(new ValidationErrors(errors.ToDictionary()));
+
+        return new Success();
     }
 
     public async Task<UnitResult<CancelApplicationError>> WithdrawAsync(
@@ -219,10 +215,10 @@ internal sealed class ApplicationService : IApplicationService
     {
         var withdrawal = await executor.WithdrawAsync(applicationId, ct);
         if (withdrawal.TryGetError(out var withdrawalError))
-            return UnitResult.Failure(withdrawalError);
+            return withdrawalError;
 
         await notifier.WithdrawnAsync(applicationId);
-        return UnitResult.Success<CancelApplicationError>();
+        return new Success();
     }
 
     public async Task<UnitResult<RejectApplicationError>> RejectAsync(int applicationId)
@@ -237,11 +233,11 @@ internal sealed class ApplicationService : IApplicationService
                 LifecycleTransitionError.InvalidTransition(var current, var trigger) =>
                     new RejectApplicationError.InvalidTransition(current, trigger)
             };
-            return UnitResult.Failure(rejectionError);
+            return rejectionError;
         }
 
         await notifier.RejectedAsync(applicationId);
-        return UnitResult.Success<RejectApplicationError>();
+        return new Success();
     }
 
     public async Task<UnitResult<CancelApplicationError>> CancelAsync(
@@ -250,10 +246,10 @@ internal sealed class ApplicationService : IApplicationService
     {
         var cancellation = await executor.CancelAsync(applicationId, ct);
         if (cancellation.TryGetError(out var cancellationError))
-            return UnitResult.Failure(cancellationError);
+            return cancellationError;
 
         await notifier.CancelledAsync(applicationId);
-        return UnitResult.Success<CancelApplicationError>();
+        return new Success();
     }
 
     public async Task<Option<(ArtistReadModel, VenueReadModel)>> GetArtistAndVenueByIdAsync(int id) =>

@@ -57,7 +57,7 @@ internal sealed class DealService : IDealService
     {
         var existing = await dealRepository.GetByIdAsync(dealId, ct);
         if (existing is null)
-            return UnitResult.Failure<UpdateDealError>(new UpdateDealError.DealNotFound());
+            return new UpdateDealError.DealNotFound();
 
         var update = updater.Apply(existing, deal)
             .MapError<UpdateDealError>(errors => new UpdateDealError.Invalid(errors));
@@ -66,7 +66,7 @@ internal sealed class DealService : IDealService
 
         dealRepository.Update(existing);
         await dealRepository.SaveChangesAsync(ct);
-        return UnitResult.Success<UpdateDealError>();
+        return new Success();
     }
 
     public async Task DeleteAsync(int dealId, CancellationToken ct = default)

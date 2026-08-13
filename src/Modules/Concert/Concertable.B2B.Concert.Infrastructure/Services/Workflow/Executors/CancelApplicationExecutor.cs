@@ -42,12 +42,11 @@ internal sealed class CancelApplicationExecutor : ICancelApplicationExecutor
             async app =>
         {
             if (app.State is not (LifecycleState.Accepted or LifecycleState.PaymentFailed))
-                return UnitResult.Failure<CancelApplicationError>(
-                    new CancelApplicationError.InvalidState(app.State));
+                return new CancelApplicationError.InvalidState(app.State);
 
             return await cancelStep.ExecuteAsync(app.Id, ct);
         }, ct);
 
-        return transition.Bind(_ => UnitResult.Success<CancelApplicationError>());
+        return transition.Bind(_ => new Success());
     }
 }

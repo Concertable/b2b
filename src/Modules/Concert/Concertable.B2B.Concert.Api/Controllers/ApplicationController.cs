@@ -28,8 +28,9 @@ internal sealed class ApplicationController : ControllerBase
     [HttpGet("opportunity/{id}")]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetAllByOpportunityId(int id)
     {
-        var applications = await applicationService.GetByOpportunityIdAsync(id);
-        return Ok(mapper.ToResponses(applications));
+        return (await applicationService.GetByOpportunityIdAsync(id))
+            .Map(mapper.ToResponses)
+            .ToOkOrProblem();
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
@@ -49,16 +50,18 @@ internal sealed class ApplicationController : ControllerBase
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetPendingForArtist()
     {
-        var applications = await applicationService.GetPendingForArtistAsync();
-        return Ok(mapper.ToResponses(applications));
+        return (await applicationService.GetPendingForArtistAsync())
+            .Map(mapper.ToResponses)
+            .ToOkOrProblem();
     }
 
     [HttpGet("artist/recently-denied")]
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetRecentDeniedForArtist()
     {
-        var applications = await applicationService.GetRecentDeniedForArtistAsync();
-        return Ok(mapper.ToResponses(applications));
+        return (await applicationService.GetRecentDeniedForArtistAsync())
+            .Map(mapper.ToResponses)
+            .ToOkOrProblem();
     }
 
     [HttpGet("{id}")]
@@ -101,10 +104,9 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpPost("opportunity/{opportunityId}/checkout")]
-    public async Task<IActionResult> ApplyCheckout(int opportunityId)
+    public async Task<ActionResult<Checkout>> ApplyCheckout(int opportunityId)
     {
-        var checkout = await applicationService.ApplyCheckoutAsync(opportunityId);
-        return Ok(checkout);
+        return (await applicationService.ApplyCheckoutAsync(opportunityId)).ToOkOrProblem();
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -69,6 +70,44 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         Assert.False(await response.Content.ReadAsync<bool>());
     }
 
+    [Fact]
+    public async Task GetByOpportunity_ForeignVenue_ReturnsForbiddenProblem()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
+
+        var response = await client.GetAsync(
+            $"/api/Application/opportunity/{fixture.SeedState.FlatFeeApp.OpportunityId}");
+
+        await AssertProblemCodeAsync(
+            response,
+            HttpStatusCode.Forbidden,
+            "application.query.opportunity_forbidden");
+    }
+
+    [Theory]
+    [InlineData("/api/Application/artist/pending")]
+    [InlineData("/api/Application/artist/recently-denied")]
+    public async Task ArtistQueries_MissingArtist_ReturnForbiddenProblem(string path)
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
+
+        var response = await client.GetAsync(path);
+
+        await AssertProblemCodeAsync(response, HttpStatusCode.Forbidden, "application.query.missing_artist");
+    }
+
+    [Fact]
+    public async Task ApplyCheckout_MissingArtist_ReturnsForbiddenProblem()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
+
+        var response = await client.PostAsync(
+            $"/api/Application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/checkout",
+            null);
+
+        await AssertProblemCodeAsync(response, HttpStatusCode.Forbidden, "application.eligibility.missing_artist");
+    }
+
     #endregion
 
     #region Accept
@@ -121,4 +160,16 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     #endregion
+
+    private static async Task AssertProblemCodeAsync(
+        HttpResponseMessage response,
+        HttpStatusCode statusCode,
+        string expectedCode)
+    {
+        await response.ShouldBe(statusCode);
+        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.True(problem.Extensions.TryGetValue("code", out var code));
+        Assert.Equal(expectedCode, code?.ToString());
+    }
 }

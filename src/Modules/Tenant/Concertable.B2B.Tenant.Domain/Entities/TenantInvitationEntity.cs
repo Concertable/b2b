@@ -50,22 +50,22 @@ public sealed class TenantInvitationEntity : IGuidEntity
     public UnitResult<InvitationAcceptanceError> Accept(Guid userId, DateTime at)
     {
         if (Status != InvitationStatus.Pending)
-            return UnitResult.Failure<InvitationAcceptanceError>(new InvitationAcceptanceError.NotPending());
+            return new InvitationAcceptanceError.NotPending();
         if (at >= ExpiresAt)
-            return UnitResult.Failure<InvitationAcceptanceError>(new InvitationAcceptanceError.Expired());
+            return new InvitationAcceptanceError.Expired();
         Status = InvitationStatus.Accepted;
         AcceptedByUserId = userId;
         AcceptedAt = at;
-        return UnitResult.Success<InvitationAcceptanceError>();
+        return new Success();
     }
 
     /// <summary>Revokes a still-pending invitation.</summary>
     public UnitResult<InvitationRevocationError> Revoke()
     {
         if (Status != InvitationStatus.Pending)
-            return UnitResult.Failure<InvitationRevocationError>(new InvitationRevocationError.NotPending());
+            return new InvitationRevocationError.NotPending();
         Status = InvitationStatus.Revoked;
-        return UnitResult.Success<InvitationRevocationError>();
+        return new Success();
     }
 
     /// <summary>Retires a lapsed invitation. The row stays <see cref="InvitationStatus.Pending"/> once its TTL

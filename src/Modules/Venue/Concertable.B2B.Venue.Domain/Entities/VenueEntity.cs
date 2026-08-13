@@ -70,7 +70,7 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
         About = about;
         BannerUrl = bannerUrl;
         events.Raise(new VenueChangedDomainEvent(this));
-        return UnitResult.Success<ValidationErrors>();
+        return new Success();
     }
 
     public void Approve()
@@ -118,8 +118,8 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
             errors.Add(new(nameof(About), "About must be 1000 characters or fewer."));
 
         return errors.Count == 0
-            ? UnitResult.Success<ValidationErrors>()
-            : UnitResult.Failure(new ValidationErrors(errors));
+            ? new Success()
+            : new ValidationErrors(errors);
     }
 
     private static void ValidateCollaborators(string bannerUrl, string avatar, Point location, Address address, string email)
