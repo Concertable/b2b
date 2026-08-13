@@ -1,6 +1,5 @@
-using Concertable.B2B.Concert.Application.Workflow;
-using Concertable.B2B.Concert.Application.Workflow.Capabilities;
 using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
@@ -20,22 +19,19 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
     private readonly IUpcomingSpecification<ConcertEntity> concertUpcoming;
     private readonly IEndedAndBookedSpecification endedAndBooked;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
-    private readonly IConcertWorkflowCapabilityRegistry capabilityRegistry;
 
     public ConcertDashboardRepository(
         ConcertDbContext context,
         IUpcomingSpecification<OpportunityEntity> opportunityUpcoming,
         IUpcomingSpecification<ConcertEntity> concertUpcoming,
         IEndedAndBookedSpecification endedAndBooked,
-        IDoorRevenueOutstandingSpecification doorRevenueOutstanding,
-        IConcertWorkflowCapabilityRegistry capabilityRegistry)
+        IDoorRevenueOutstandingSpecification doorRevenueOutstanding)
     {
         this.context = context;
         this.opportunityUpcoming = opportunityUpcoming;
         this.concertUpcoming = concertUpcoming;
         this.endedAndBooked = endedAndBooked;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
-        this.capabilityRegistry = capabilityRegistry;
     }
 
     public Task<VenueDashboardCounts?> GetVenueCountsAsync(int venueId, CancellationToken ct = default)
@@ -63,14 +59,15 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
             .FirstOrDefaultAsync(ct);
     }
 
-    public Task<ArtistDashboardCounts?> GetArtistCountsAsync(int artistId, CancellationToken ct = default)
+    public Task<ArtistDashboardCounts?> GetArtistCountsAsync(
+        int artistId,
+        IReadOnlyCollection<DealType> checkoutCapableDealTypes,
+        CancellationToken ct = default)
     {
         var applications = opportunityUpcoming.ApplyVia(
             context.Applications
                 .Where(a => a.State == LifecycleState.Applied && a.ArtistId == artistId),
             a => a.Opportunity);
-
-        var checkoutCapableDealTypes = capabilityRegistry.DealTypesWith<IAcceptsCheckout>();
 
         var acceptedAwaitingCheckout = opportunityUpcoming.ApplyVia(
             context.Applications
