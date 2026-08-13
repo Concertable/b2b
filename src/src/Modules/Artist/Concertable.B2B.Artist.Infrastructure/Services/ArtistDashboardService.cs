@@ -33,6 +33,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
     public async Task<ArtistDashboardKpis?> GetKpisAsync(CancellationToken ct = default)
     {
         var artistId = await artistService.GetIdForCurrentUserAsync();
+        var tenantId = tenantContext.GetTenantId();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -41,7 +42,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         var mtdPayoutsTask = now == monthStart
             ? Task.FromResult(Money.Gbp(0m))
             : paymentReportingClient.GetSettlementPayoutsAsync(
-                tenantContext.GetTenantId(),
+                tenantId,
                 new DateRange(monthStart, now),
                 ct);
         await Task.WhenAll(countsTask, mtdPayoutsTask);

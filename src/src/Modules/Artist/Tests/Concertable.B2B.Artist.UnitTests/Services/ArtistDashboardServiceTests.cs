@@ -1,6 +1,7 @@
 using Concertable.B2B.Artist.Application.Interfaces;
 using Concertable.B2B.Artist.Infrastructure.Services;
 using Concertable.B2B.Concert.Contracts;
+using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
@@ -92,5 +93,14 @@ public sealed class ArtistDashboardServiceTests
         reportingClient.Verify(
             r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsForbidden()
+    {
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
+        tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => service.GetKpisAsync());
     }
 }

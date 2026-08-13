@@ -33,6 +33,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
     public async Task<VenueDashboardKpis?> GetKpisAsync(CancellationToken ct = default)
     {
         var venueId = await venueService.GetIdForCurrentUserAsync();
+        var tenantId = tenantContext.GetTenantId();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -41,7 +42,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         var mtdRevenueTask = now == monthStart
             ? Task.FromResult(Money.Gbp(0m))
             : paymentReportingClient.GetTicketRevenueAsync(
-                tenantContext.GetTenantId(),
+                tenantId,
                 new DateRange(monthStart, now),
                 ct);
         await Task.WhenAll(countsTask, mtdRevenueTask);
