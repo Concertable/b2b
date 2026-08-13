@@ -113,10 +113,10 @@ services.AddInfrastructure(builder.Configuration);
 services.AddClientCredentials(opts =>
 {
     opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services__auth__https__0"]
-        ?? (builder.Environment.IsEnvironment("Testing") ? null!
+        ?? (builder.Environment.IsEnvironment("Integration") ? null!
             : throw new InvalidOperationException("Auth:Authority is required (no explicit key and no service-discovery fallback)."));
     opts.ClientId = builder.Configuration["ServiceAuth:ClientId"]
-        ?? (builder.Environment.IsEnvironment("Testing") ? null!
+        ?? (builder.Environment.IsEnvironment("Integration") ? null!
             : throw new InvalidOperationException("ServiceAuth:ClientId is required."));
     if (builder.Configuration["ServiceAuth:ClientSecret"] is string clientSecret)
         opts.ClientSecret = clientSecret;
@@ -130,10 +130,10 @@ services.AddAzureServiceBusTransport(
     opts =>
     {
         opts.ConnectionString = builder.Configuration.GetConnectionString("asb")
-            ?? (builder.Environment.IsEnvironment("Testing") ? null!
+            ?? (builder.Environment.IsEnvironment("Integration") ? null!
                 : throw new InvalidOperationException("Connection string 'asb' is required."));
         opts.ServiceName = builder.Configuration["ServiceBus:ServiceName"]
-            ?? (builder.Environment.IsEnvironment("Testing") ? "concertable-b2b"
+            ?? (builder.Environment.IsEnvironment("Integration") ? "concertable-b2b"
                 : throw new InvalidOperationException("Configuration 'ServiceBus:ServiceName' is required."));
     },
     reg =>
@@ -157,7 +157,7 @@ services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionSt
 services.AddInbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
 services.AddInProcessEventDispatch();
 services.AddSeedingInfrastructure();
-if (!builder.Environment.IsEnvironment("Testing"))
+if (!builder.Environment.IsEnvironment("Integration"))
 {
     services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
     services.AddScoped<IDbInitializer, DevDbInitializer>();
@@ -181,7 +181,7 @@ services.AddArtistApi(builder.Configuration);
 services.AddVenueApi(builder.Configuration);
 services.AddConcertApi(builder.Configuration);
 services.AddDealApi(builder.Configuration);
-if (!builder.Environment.IsEnvironment("Testing"))
+if (!builder.Environment.IsEnvironment("Integration"))
     services.AddPaymentClient(builder.Configuration);
 services.AddQueueHostedService();
 services.AddCurrentUser();
