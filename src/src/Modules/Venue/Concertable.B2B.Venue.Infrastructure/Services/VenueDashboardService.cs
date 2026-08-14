@@ -19,7 +19,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
     {
         var venueIdOption = await venueService.GetIdForCurrentUserAsync();
         if (!venueIdOption.TryGetValue(out var venueId))
-            return null;
+            return new None();
 
         var countsTask = concertModule.GetVenueDashboardCountsAsync(venueId, ct);
         // TODO B.11: var mtdRevenueTask = paymentModule.GetVenueTicketRevenueMtdAsync(venueId, ct);

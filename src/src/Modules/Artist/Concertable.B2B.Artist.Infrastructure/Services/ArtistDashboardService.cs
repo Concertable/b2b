@@ -19,7 +19,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
     {
         var artistIdOption = await artistService.GetIdForCurrentUserAsync();
         if (!artistIdOption.TryGetValue(out var artistId))
-            return null;
+            return new None();
 
         var countsTask = concertModule.GetArtistDashboardCountsAsync(artistId, ct);
         // TODO B.11: var mtdPayoutsTask = paymentModule.GetArtistPayoutsMtdAsync(artistId, ct);
