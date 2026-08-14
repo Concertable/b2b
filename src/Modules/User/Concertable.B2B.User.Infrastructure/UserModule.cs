@@ -17,7 +17,7 @@ internal sealed class UserModule : IUserModule
     {
         var user = await userRepository.GetByIdAsync(id);
         if (user is null)
-            return null;
+            return new None();
 
         return await userMapper.ToDtoAsync(user);
     }
@@ -45,7 +45,7 @@ internal sealed class UserModule : IUserModule
     {
         var user = await userRepository.GetByIdAsync(userId);
         if (user is null)
-            return null;
+            return new None();
 
         return new ManagerDto { Id = user.Id, Email = user.Email, Avatar = user.Avatar };
     }
