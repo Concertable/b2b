@@ -19,11 +19,11 @@ internal sealed class ConcertDashboardService : IConcertDashboardService
     }
 
     public async Task<Option<VenueDashboardCounts>> GetVenueCountsAsync(int venueId, CancellationToken ct = default) =>
-        (await repository.GetVenueCountsAsync(venueId, ct)).ToOption();
+        await repository.GetVenueCountsAsync(venueId, ct);
 
     public async Task<Option<ArtistDashboardCounts>> GetArtistCountsAsync(int artistId, CancellationToken ct = default) =>
-        (await repository.GetArtistCountsAsync(
+        await repository.GetArtistCountsAsync(
             artistId,
             capabilityRegistry.DealTypesWith<IAcceptsCheckout>(),
-            ct)).ToOption();
+            ct);
 }

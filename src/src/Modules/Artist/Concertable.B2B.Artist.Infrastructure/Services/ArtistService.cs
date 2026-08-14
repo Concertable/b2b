@@ -131,11 +131,11 @@ internal sealed class ArtistService : IArtistService
     }
 
     public async Task<Option<ArtistSummary>> GetSummaryAsync(int id) =>
-        (await publicRepository.GetSummaryAsync(id)).ToOption();
+        await publicRepository.GetSummaryAsync(id);
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
         publicRepository.GetGenresAsync(id);
 
     public async Task<Option<ArtistOrgIdentity>> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
-        (await publicRepository.GetOrgIdentityByTenantIdAsync(tenantId)).ToOption();
+        await publicRepository.GetOrgIdentityByTenantIdAsync(tenantId);
 }
