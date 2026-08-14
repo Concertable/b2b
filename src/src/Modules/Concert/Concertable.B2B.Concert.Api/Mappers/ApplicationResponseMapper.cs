@@ -84,6 +84,6 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
 
     private static ActionLink? ContractAction(ApplicationDto dto) =>
         dto.ContractId is not null
-            ? new ActionLink($"/api/Application/{dto.Id}/contract", HttpMethods.Get)
+            ? new ActionLink($"/api/Application/{dto.Id}/contract/pdf", HttpMethods.Get)
             : null;
 }

@@ -119,6 +119,9 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Details")
                         .HasColumnType("nvarchar(max)");
 

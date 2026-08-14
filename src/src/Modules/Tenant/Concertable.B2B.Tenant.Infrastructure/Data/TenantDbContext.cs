@@ -10,6 +10,7 @@ internal sealed class TenantDbContext(
     public DbSet<TenantEntity> Tenants => Set<TenantEntity>();
     public DbSet<TenantMembershipEntity> Memberships => Set<TenantMembershipEntity>();
     public DbSet<TenantInvitationEntity> Invitations => Set<TenantInvitationEntity>();
+    public DbSet<TenantActivityEntity> Activities => Set<TenantActivityEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

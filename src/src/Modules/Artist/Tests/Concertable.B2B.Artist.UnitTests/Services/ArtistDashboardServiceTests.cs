@@ -2,6 +2,7 @@ using Concertable.B2B.Artist.Application.DTOs;
 using Concertable.B2B.Artist.Application.Interfaces;
 using Concertable.B2B.Artist.Infrastructure.Services;
 using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel.Exceptions;
@@ -22,6 +23,7 @@ public sealed class ArtistDashboardServiceTests
     private readonly Mock<IManagerPaymentReportingClient> reportingClient = new();
     private readonly Mock<IPayoutAccountOperationsClient> payoutAccountClient = new();
     private readonly Mock<ITenantContext> tenantContext = new();
+    private readonly Mock<ITenantModule> tenantModule = new();
     private readonly FakeTimeProvider timeProvider = new(new DateTimeOffset(2026, 8, 13, 10, 30, 0, TimeSpan.Zero));
     private readonly Guid tenantId = Guid.NewGuid();
     private readonly ArtistDashboardService service;
@@ -45,7 +47,24 @@ public sealed class ArtistDashboardServiceTests
             reportingClient.Object,
             payoutAccountClient.Object,
             tenantContext.Object,
+            tenantModule.Object,
             timeProvider);
+    }
+
+    [Fact]
+    public async Task GetActivityAsync_UsesActiveTenantAndRequestedLimit()
+    {
+        ActivityItemDto[] expected =
+        [
+            new(Guid.NewGuid(), ActivityType.MessageReceived, timeProvider.GetUtcNow(), "New message", null, "/_artist/?inbox=open")
+        ];
+        tenantModule
+            .Setup(m => m.GetRecentActivityAsync(tenantId, 5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        var result = await service.GetActivityAsync(5);
+
+        Assert.Same(expected, result);
     }
 
     #region GetOverviewAsync

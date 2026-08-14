@@ -7,4 +7,5 @@ public sealed class ArtistReview
     public string Email { get; set; } = null!;
     public double Stars { get; set; }
     public string? Details { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }

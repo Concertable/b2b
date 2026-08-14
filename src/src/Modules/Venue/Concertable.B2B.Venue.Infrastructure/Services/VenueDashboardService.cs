@@ -17,6 +17,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
     private readonly IManagerPaymentReportingClient paymentReportingClient;
     private readonly IPayoutAccountOperationsClient payoutAccountClient;
     private readonly ITenantContext tenantContext;
+    private readonly ITenantModule tenantModule;
     private readonly TimeProvider timeProvider;
 
     public VenueDashboardService(
@@ -26,6 +27,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         IManagerPaymentReportingClient paymentReportingClient,
         IPayoutAccountOperationsClient payoutAccountClient,
         ITenantContext tenantContext,
+        ITenantModule tenantModule,
         TimeProvider timeProvider)
     {
         this.venueService = venueService;
@@ -34,6 +36,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         this.paymentReportingClient = paymentReportingClient;
         this.payoutAccountClient = payoutAccountClient;
         this.tenantContext = tenantContext;
+        this.tenantModule = tenantModule;
         this.timeProvider = timeProvider;
     }
 
@@ -132,6 +135,9 @@ internal sealed class VenueDashboardService : IVenueDashboardService
             })
             .ToArray();
     }
+
+    public Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(int take, CancellationToken ct = default) =>
+        tenantModule.GetRecentActivityAsync(tenantContext.GetTenantId(), take, ct);
 
     private static ProfileHealth ToProfileHealth(VenueDetails venue, PaymentPayoutAccountStatus payoutStatus)
     {

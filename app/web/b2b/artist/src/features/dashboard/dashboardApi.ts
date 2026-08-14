@@ -1,4 +1,3 @@
-import { selectPersona } from "@concertable/shared/features/dashboard";
 import type {
   ActivityItem,
   ConcertCard,
@@ -7,7 +6,7 @@ import type {
   ReviewExcerpt,
 } from "@concertable/shared/features/dashboard";
 import type { OpportunityCard } from "@concertable/b2b/features/dashboard";
-import { artistFixtures } from "./fixtures";
+import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
   Application,
   ArtistDashboardKpis,
@@ -16,31 +15,56 @@ import type {
 
 const dashboardApi = {
   getOverview: async (): Promise<ArtistDashboardOverview> => {
-    return artistFixtures[selectPersona()].overview;
+    const { data } = await apiClient.get<ArtistDashboardOverview>(
+      "/artistDashboard/overview",
+    );
+    return data;
   },
   getKpis: async (): Promise<ArtistDashboardKpis> => {
-    return artistFixtures[selectPersona()].kpis;
+    const { data } = await apiClient.get<ArtistDashboardKpis>(
+      "/artistDashboard/kpis",
+    );
+    return data;
   },
   getApplications: async (): Promise<Application[]> => {
-    return artistFixtures[selectPersona()].applications;
+    const { data } = await apiClient.get<Application[]>(
+      "/application/artist/current",
+    );
+    return data;
   },
   getInbox: async (): Promise<MessagePreview[]> => {
-    return artistFixtures[selectPersona()].inbox;
+    const { data } = await apiClient.get<MessagePreview[]>("/message/previews");
+    return data;
   },
   getUpcomingConcerts: async (): Promise<ConcertCard[]> => {
-    return artistFixtures[selectPersona()].upcomingConcerts;
+    const { data } = await apiClient.get<ConcertCard[]>(
+      "/concert/upcoming/artist/current",
+    );
+    return data;
   },
   getPayouts: async (): Promise<MonthlyRevenuePoint[]> => {
-    return artistFixtures[selectPersona()].payouts;
+    const { data } = await apiClient.get<MonthlyRevenuePoint[]>(
+      "/artistDashboard/charts/payouts",
+    );
+    return data;
   },
   getRecommendedOpportunities: async (): Promise<OpportunityCard[]> => {
-    return artistFixtures[selectPersona()].recommendedOpportunities;
+    const { data } = await apiClient.get<OpportunityCard[]>(
+      "/opportunity/artist/recommended",
+    );
+    return data;
   },
   getActivity: async (): Promise<ActivityItem[]> => {
-    return artistFixtures[selectPersona()].activity;
+    const { data } = await apiClient.get<ActivityItem[]>(
+      "/artistDashboard/activity?take=10",
+    );
+    return data;
   },
   getRecentReviews: async (): Promise<ReviewExcerpt[]> => {
-    return artistFixtures[selectPersona()].recentReviews;
+    const { data } = await apiClient.get<ReviewExcerpt[]>(
+      "/artists/current/reviews/recent?take=5",
+    );
+    return data;
   },
 };
 

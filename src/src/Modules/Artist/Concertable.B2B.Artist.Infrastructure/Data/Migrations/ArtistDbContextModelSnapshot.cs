@@ -98,6 +98,9 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
 
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Details")
                         .HasColumnType("nvarchar(max)");
 

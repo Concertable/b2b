@@ -1,4 +1,6 @@
 using Concertable.B2B.Artist.Contracts.Events;
+using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.Artist.Infrastructure.Data;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Messaging.Contracts;
@@ -12,7 +14,10 @@ internal sealed class ArtistReviewProjectionHandler : IIntegrationEventHandler<C
     private readonly IBus bus;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
-    public ArtistReviewProjectionHandler(ArtistDbContext context, IBus bus, IOutboxUnitOfWorkBehavior outboxBehavior)
+    public ArtistReviewProjectionHandler(
+        ArtistDbContext context,
+        IBus bus,
+        IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.context = context;
         this.bus = bus;
@@ -59,8 +64,25 @@ internal sealed class ArtistReviewProjectionHandler : IIntegrationEventHandler<C
                 ArtistId = e.ArtistId,
                 Email = e.Email,
                 Stars = e.Stars,
-                Details = e.Details
+                Details = e.Details,
+                CreatedAt = envelope.OccurredAtUtc
             });
+
+            var tenantId = await context.Artists
+                .Where(a => a.Id == e.ArtistId)
+                .Select(a => a.TenantId)
+                .SingleOrDefaultAsync(ct);
+            if (tenantId != Guid.Empty)
+            {
+                await bus.PublishAsync(new TenantActivityRecordedEvent(new ActivityRecord(
+                    $"review:{envelope.MessageId}",
+                    tenantId,
+                    ActivityType.ReviewReceived,
+                    envelope.OccurredAtUtc,
+                    $"{e.Email} left a {e.Stars:G}-star review",
+                    e.Details,
+                    $"/_artist/find/artist/{e.ArtistId}")), ct);
+            }
 
             await bus.PublishAsync(new ArtistRatingUpdatedEvent(e.ArtistId, averageRating, reviewCount), ct);
         });
