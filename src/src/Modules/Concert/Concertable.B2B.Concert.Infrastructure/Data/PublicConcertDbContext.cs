@@ -1,8 +1,8 @@
 using Concertable.B2B.Artist.Domain.ReadModels;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
-using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Venue.Domain.ReadModels;
+using Concertable.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
@@ -15,7 +15,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data;
 internal sealed class PublicConcertDbContext(
     DbContextOptions<PublicConcertDbContext> options,
     ConcertConfigurationProvider provider)
-    : PublicDbContext(options, provider, Schema.Name)
+    : ReadDbContext(options, provider, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
     public DbSet<BookingEntity> Bookings => Set<BookingEntity>();

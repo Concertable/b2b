@@ -1,4 +1,4 @@
-using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Data;
@@ -12,7 +12,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Data;
 internal sealed class PublicArtistDbContext(
     DbContextOptions<PublicArtistDbContext> options,
     ArtistConfigurationProvider provider)
-    : PublicDbContext(options, provider, Schema.Name)
+    : ReadDbContext(options, provider, Schema.Name)
 {
     public DbSet<ArtistEntity> Artists => Set<ArtistEntity>();
     public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();

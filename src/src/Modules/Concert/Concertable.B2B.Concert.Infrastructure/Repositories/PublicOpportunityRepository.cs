@@ -2,16 +2,27 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.Contracts;
-using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class PublicOpportunityRepository : OpportunityRepository<PublicConcertDbContext>, IPublicOpportunityRepository
+internal sealed class PublicOpportunityRepository : IPublicOpportunityRepository
 {
-    public PublicOpportunityRepository(PublicConcertDbContext context, ITenantContext tenant, TimeProvider timeProvider)
-        : base(context, tenant, timeProvider) { }
+    private readonly PublicConcertDbContext context;
+    private readonly TimeProvider timeProvider;
+
+    public PublicOpportunityRepository(PublicConcertDbContext context, TimeProvider timeProvider)
+    {
+        this.context = context;
+        this.timeProvider = timeProvider;
+    }
 
     public async Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId, IPageParams pageParams) =>
         await ActiveForVenue(venueId).ToPaginationAsync(pageParams);
+
+    public async Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId) =>
+        await ActiveForVenue(venueId).ToListAsync();
+
+    private IQueryable<OpportunityEntity> ActiveForVenue(int venueId) =>
+        context.Opportunities.ActiveForVenue(venueId, timeProvider.GetUtcNow());
 }
