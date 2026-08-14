@@ -116,6 +116,7 @@ public class ApiFixture : IAsyncLifetime
                 services.AddSingleton<IEmailTransport>(EmailSender);
 
                 services.AddSingleton<IManagerPaymentOperationsClient>(ManagerPaymentClient);
+                services.AddSingleton<IManagerPaymentReportingClient>(ManagerPaymentClient);
                 services.AddSingleton<IEscrowOperationsClient>(EscrowClient);
                 services.AddSingleton<IPayoutAccountOperationsClient>(PayoutAccountClient);
 
