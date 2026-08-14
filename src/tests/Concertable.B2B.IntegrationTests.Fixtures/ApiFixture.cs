@@ -20,7 +20,6 @@ using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Seed.Infrastructure;
 using Concertable.Seed.Shared.Extensions;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -29,7 +28,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 using Concertable.DataAccess.Application;
@@ -93,22 +91,10 @@ public class ApiFixture : IAsyncLifetime
 
             builder.ConfigureTestServices(services =>
             {
-                services.AddLogging(b =>
-                {
-                    b.ClearProviders();
-                    b.AddProvider(new XunitLoggerProvider(outputAccessor));
-                    b.SetMinimumLevel(LogLevel.Information);
-                });
-
-                var asbDescriptors = services
-                    .Where(d => d.ServiceType == typeof(IHostedService) &&
-                                d.ImplementationType?.Name == "AzureServiceBusReceiver")
-                    .ToList();
-                foreach (var d in asbDescriptors)
-                    services.Remove(d);
+                services.AddXunitLogging(outputAccessor);
+                services.RemoveAzureServiceBus();
                 services.AddTransient<IStartupFilter, TestClientIpStartupFilter>();
 
-                services.Replace(ServiceDescriptor.Singleton<IBusTransport, MockBusTransport>());
                 services.AddSingleton<INotificationClient>(NotificationService);
                 services.AddSingleton(StripeApiClient);
                 services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient);
@@ -123,7 +109,7 @@ public class ApiFixture : IAsyncLifetime
                 services.Replace(ServiceDescriptor.Singleton<IHttpClientFactory>(_ => new WebApplicationHttpClientFactory(factory)));
                 services.AddScoped<IGeocodingClient, MockGeocodingClient>();
                 services.AddScoped<IImageService, MockImageService>();
-                services.AddScoped<IDbInitializer, TestDbInitializer>();
+                services.AddScoped<IDbInitializer, IntegrationDbInitializer>();
                 services.AddSeedingInfrastructure();
                 services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
                 services.AddSingleton<SeedCatalog>();
@@ -136,14 +122,7 @@ public class ApiFixture : IAsyncLifetime
                 services.AddConcertTestSeeder();
                 services.AddConversationsTestSeeder();
 
-                services.PostConfigure<AuthenticationOptions>(opts =>
-                {
-                    opts.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
-                    opts.DefaultChallengeScheme = TestAuthHandler.SchemeName;
-                    opts.DefaultScheme = TestAuthHandler.SchemeName;
-                });
-                services.AddAuthentication()
-                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
+                services.AddTestAuthentication();
             });
         });
 
