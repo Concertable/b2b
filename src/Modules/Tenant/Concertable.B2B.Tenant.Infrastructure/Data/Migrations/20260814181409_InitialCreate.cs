@@ -15,6 +15,25 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 name: "tenant");
 
             migrationBuilder.CreateTable(
+                name: "Activities",
+                schema: "tenant",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SourceKey = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
+                    At = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    Subject = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Detail = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    Url = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Activities", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Invitations",
                 schema: "tenant",
                 columns: table => new
@@ -78,6 +97,19 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Activities_TenantId_At",
+                schema: "tenant",
+                table: "Activities",
+                columns: new[] { "TenantId", "At" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Activities_TenantId_SourceKey",
+                schema: "tenant",
+                table: "Activities",
+                columns: new[] { "TenantId", "SourceKey" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Invitations_Email",
                 schema: "tenant",
                 table: "Invitations",
@@ -108,6 +140,10 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Activities",
+                schema: "tenant");
+
             migrationBuilder.DropTable(
                 name: "Invitations",
                 schema: "tenant");

@@ -17,6 +17,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
     private readonly IManagerPaymentReportingClient paymentReportingClient;
     private readonly IPayoutAccountOperationsClient payoutAccountClient;
     private readonly ITenantContext tenantContext;
+    private readonly ITenantModule tenantModule;
     private readonly TimeProvider timeProvider;
 
     public ArtistDashboardService(
@@ -26,6 +27,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         IManagerPaymentReportingClient paymentReportingClient,
         IPayoutAccountOperationsClient payoutAccountClient,
         ITenantContext tenantContext,
+        ITenantModule tenantModule,
         TimeProvider timeProvider)
     {
         this.artistService = artistService;
@@ -34,6 +36,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         this.paymentReportingClient = paymentReportingClient;
         this.payoutAccountClient = payoutAccountClient;
         this.tenantContext = tenantContext;
+        this.tenantModule = tenantModule;
         this.timeProvider = timeProvider;
     }
 
@@ -97,6 +100,9 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
 
         return FillMonthlySeries(points, firstMonth);
     }
+
+    public Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(int take, CancellationToken ct = default) =>
+        tenantModule.GetRecentActivityAsync(tenantContext.GetTenantId(), take, ct);
 
     private static ProfileHealth ToProfileHealth(ArtistDetails artist, PaymentPayoutAccountStatus payoutStatus)
     {

@@ -3,10 +3,12 @@ namespace Concertable.B2B.Tenant.Infrastructure;
 internal sealed class TenantModule : ITenantModule
 {
     private readonly ITenantService service;
+    private readonly ITenantActivityService activityService;
 
-    public TenantModule(ITenantService service)
+    public TenantModule(ITenantService service, ITenantActivityService activityService)
     {
         this.service = service;
+        this.activityService = activityService;
     }
 
     public Task<TenantDto?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
@@ -26,4 +28,10 @@ internal sealed class TenantModule : ITenantModule
 
     public Task<VatCalculation> GetVatCalculationAsync(Guid tenantId, decimal gross, CancellationToken ct = default) =>
         service.GetVatCalculationAsync(tenantId, gross, ct);
+
+    public Task<IReadOnlyList<ActivityItemDto>> GetRecentActivityAsync(
+        Guid tenantId,
+        int take,
+        CancellationToken ct = default) =>
+        activityService.GetRecentAsync(tenantId, take, ct);
 }

@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Infrastructure.Services;
@@ -21,6 +22,7 @@ public sealed class VenueDashboardServiceTests
     private readonly Mock<IManagerPaymentReportingClient> reportingClient = new();
     private readonly Mock<IPayoutAccountOperationsClient> payoutAccountClient = new();
     private readonly Mock<ITenantContext> tenantContext = new();
+    private readonly Mock<ITenantModule> tenantModule = new();
     private readonly FakeTimeProvider timeProvider = new(new DateTimeOffset(2026, 8, 13, 10, 30, 0, TimeSpan.Zero));
     private readonly Guid tenantId = Guid.NewGuid();
     private readonly VenueDashboardService service;
@@ -44,7 +46,24 @@ public sealed class VenueDashboardServiceTests
             reportingClient.Object,
             payoutAccountClient.Object,
             tenantContext.Object,
+            tenantModule.Object,
             timeProvider);
+    }
+
+    [Fact]
+    public async Task GetActivityAsync_UsesActiveTenantAndRequestedLimit()
+    {
+        ActivityItemDto[] expected =
+        [
+            new(Guid.NewGuid(), ActivityType.MessageReceived, timeProvider.GetUtcNow(), "New message", null, "/_venue/?inbox=open")
+        ];
+        tenantModule
+            .Setup(m => m.GetRecentActivityAsync(tenantId, 5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        var result = await service.GetActivityAsync(5);
+
+        Assert.Same(expected, result);
     }
 
     #region GetOverviewAsync

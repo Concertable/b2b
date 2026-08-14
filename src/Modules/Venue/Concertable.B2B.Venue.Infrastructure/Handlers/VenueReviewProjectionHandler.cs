@@ -1,6 +1,8 @@
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Messaging.Contracts;
 using Concertable.B2B.Venue.Contracts.Events;
+using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.Venue.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,7 +14,10 @@ internal sealed class VenueReviewProjectionHandler : IIntegrationEventHandler<Cu
     private readonly IBus bus;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
-    public VenueReviewProjectionHandler(VenueDbContext context, IBus bus, IOutboxUnitOfWorkBehavior outboxBehavior)
+    public VenueReviewProjectionHandler(
+        VenueDbContext context,
+        IBus bus,
+        IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.context = context;
         this.bus = bus;
@@ -59,8 +64,25 @@ internal sealed class VenueReviewProjectionHandler : IIntegrationEventHandler<Cu
                 VenueId = e.VenueId,
                 Email = e.Email,
                 Stars = e.Stars,
-                Details = e.Details
+                Details = e.Details,
+                CreatedAt = envelope.OccurredAtUtc
             });
+
+            var tenantId = await context.Venues
+                .Where(v => v.Id == e.VenueId)
+                .Select(v => v.TenantId)
+                .SingleOrDefaultAsync(ct);
+            if (tenantId != Guid.Empty)
+            {
+                await bus.PublishAsync(new TenantActivityRecordedEvent(new ActivityRecord(
+                    $"review:{envelope.MessageId}",
+                    tenantId,
+                    ActivityType.ReviewReceived,
+                    envelope.OccurredAtUtc,
+                    $"{e.Email} left a {e.Stars:G}-star review",
+                    e.Details,
+                    $"/_venue/find/venue/{e.VenueId}")), ct);
+            }
 
             await bus.PublishAsync(new VenueRatingUpdatedEvent(e.VenueId, averageRating, reviewCount), ct);
         });

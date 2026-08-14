@@ -1,4 +1,5 @@
 using Concertable.B2B.Artist.Application.DTOs;
+using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Artist.Application.Interfaces;
 
@@ -7,4 +8,5 @@ internal interface IArtistDashboardService
     Task<ArtistDashboardOverview?> GetOverviewAsync(CancellationToken ct = default);
     Task<ArtistDashboardKpis?> GetKpisAsync(CancellationToken ct = default);
     Task<IReadOnlyList<MonthlyRevenuePoint>> GetPayoutsAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(int take, CancellationToken ct = default);
 }

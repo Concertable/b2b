@@ -33,6 +33,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<IConversationsNotifier, ConversationsNotifier>();
+        services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IConversationsModule, ConversationsModule>();
 

@@ -25,4 +25,9 @@ public interface ITenantModule
     /// unregistered ⇒ <see cref="VatCalculation.None"/>). Throws if the tenant or its compliance is absent, since the
     /// settlement tax-gate guarantees both are present by invoice time.</summary>
     Task<VatCalculation> GetVatCalculationAsync(Guid tenantId, decimal gross, CancellationToken ct = default);
+
+    Task<IReadOnlyList<ActivityItemDto>> GetRecentActivityAsync(
+        Guid tenantId,
+        int take,
+        CancellationToken ct = default);
 }
