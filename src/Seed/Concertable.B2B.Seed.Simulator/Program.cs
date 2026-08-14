@@ -20,7 +20,7 @@ builder.Services.AddAzureServiceBusTransport(
     opts =>
     {
         opts.ConnectionString = builder.Configuration.GetConnectionString("asb")
-            ?? (builder.Environment.IsEnvironment("Testing") ? null!
+            ?? (builder.Environment.IsEnvironment("Integration") ? null!
                 : throw new InvalidOperationException("Connection string 'asb' is required."));
         opts.ServiceName = "concertable-b2b-seeding-simulator";
     },
