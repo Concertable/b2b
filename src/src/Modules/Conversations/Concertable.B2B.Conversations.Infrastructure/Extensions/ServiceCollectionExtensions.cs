@@ -28,6 +28,13 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
+        services.AddDbContext<AdminConversationsDbContext>((sp, opts) =>
+            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
         services.AddSingleton<ConversationsConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConversationsConfigurationProvider>());
 
@@ -35,10 +42,13 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<IContentReportRepository, ContentReportRepository>();
+        services.AddScoped<IAdminMessageRepository, AdminMessageRepository>();
+        services.AddScoped<IAdminContentReportRepository, AdminContentReportRepository>();
         services.AddScoped<IConversationsNotifier, ConversationsNotifier>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IContentReportNotifier, ContentReportNotifier>();
         services.AddScoped<IContentReportService, ContentReportService>();
+        services.AddScoped<IModerationService, ModerationService>();
         services.AddScoped<IConversationsModule, ConversationsModule>();
 
         return services;

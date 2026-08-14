@@ -18,11 +18,12 @@ internal sealed class MessageRepository : IMessageRepository
 
     public Task<IPagination<MessageEntity>> GetByTenantIdAsync(Guid tenantId, IPageParams pageParams) =>
         context.Messages
+            .Where(m => m.HiddenAt == null)
             .OrderByDescending(m => m.SentDate)
             .ToPaginationAsync(pageParams);
 
     public Task<int> GetUnreadCountByTenantIdAsync(Guid tenantId, Guid userId) =>
-        (from m in context.Messages.Where(m => m.SenderTenantId != tenantId)
+        (from m in context.Messages.Where(m => m.SenderTenantId != tenantId && m.HiddenAt == null)
          join p in context.ThreadReadStates.Where(p => p.UserId == userId)
              on new { m.VenueTenantId, m.ArtistTenantId } equals new { p.VenueTenantId, p.ArtistTenantId } into pointers
          from p in pointers.DefaultIfEmpty()

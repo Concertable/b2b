@@ -14,6 +14,8 @@ public sealed class MessageEntity : IIdEntity, IVenueArtistTenantScoped
     public Guid SentByUserId { get; private set; }
     public MessageAction? Action { get; private set; }
     public DateTime SentDate { get; private set; }
+    public DateTime? HiddenAt { get; private set; }
+    public Guid? HiddenByUserId { get; private set; }
 
     public static MessageEntity Create(
         Guid venueTenantId,
@@ -32,4 +34,18 @@ public sealed class MessageEntity : IIdEntity, IVenueArtistTenantScoped
             SentDate = sentDate,
             Action = action
         };
+
+    // Hiding is a visibility change, never a delete: the appeal right and any information request
+    // both need the original content.
+    public void Hide(Guid byUserId, DateTime at)
+    {
+        HiddenAt = at;
+        HiddenByUserId = byUserId;
+    }
+
+    public void Restore()
+    {
+        HiddenAt = null;
+        HiddenByUserId = null;
+    }
 }
