@@ -6,16 +6,14 @@ namespace Concertable.B2B.Artist.Infrastructure;
 internal sealed class ArtistModule : IArtistModule
 {
     private readonly IArtistService artistService;
-    private readonly IArtistRepository repository;
 
-    public ArtistModule(IArtistService artistService, IArtistRepository repository)
+    public ArtistModule(IArtistService artistService)
     {
         this.artistService = artistService;
-        this.repository = repository;
     }
 
-    public async Task<Option<int>> GetIdForCurrentTenantAsync() =>
-        (await repository.GetIdForCurrentTenantAsync()).ToOption();
+    public Task<Option<int>> GetIdForCurrentTenantAsync() =>
+        artistService.GetIdForCurrentTenantAsync();
 
     public Task<Option<ArtistSummary>> GetSummaryAsync(int artistId) =>
         artistService.GetSummaryAsync(artistId);

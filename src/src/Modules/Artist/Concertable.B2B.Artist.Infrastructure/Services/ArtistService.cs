@@ -121,7 +121,7 @@ internal sealed class ArtistService : IArtistService
             });
     }
 
-    public async Task<Option<int>> GetIdForCurrentUserAsync() =>
+    public async Task<Option<int>> GetIdForCurrentTenantAsync() =>
         (await repository.GetIdForCurrentTenantAsync()).ToOption();
 
     public async Task<bool> OwnsArtistAsync(int artistId)

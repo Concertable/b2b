@@ -10,7 +10,7 @@ internal interface IArtistService
     Task<Result<ArtistDetails, ArtistError>> GetDetailsForCurrentUserAsync();
     Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(CreateArtistRequest request);
     Task<Result<ArtistDetails, UpdateArtistError>> UpdateAsync(int id, UpdateArtistRequest request);
-    Task<Option<int>> GetIdForCurrentUserAsync();
+    Task<Option<int>> GetIdForCurrentTenantAsync();
     Task<bool> OwnsArtistAsync(int artistId);
 
     Task<Option<ArtistSummary>> GetSummaryAsync(int id);

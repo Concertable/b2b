@@ -10,7 +10,7 @@ internal interface IVenueService
     Task<Result<VenueDetails, VenueError>> GetDetailsForCurrentUserAsync();
     Task<Result<VenueDetails, CreateVenueError>> CreateAsync(CreateVenueRequest request);
     Task<Result<VenueDetails, UpdateVenueError>> UpdateAsync(int id, UpdateVenueRequest request);
-    Task<Option<int>> GetIdForCurrentUserAsync();
+    Task<Option<int>> GetIdForCurrentTenantAsync();
     Task<bool> OwnsVenueAsync(int venueId);
     Task<UnitResult<ApproveVenueError>> ApproveAsync(int id);
 

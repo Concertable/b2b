@@ -23,7 +23,7 @@ public sealed class VenueDashboardServiceTests
 
     public VenueDashboardServiceTests()
     {
-        venueService.Setup(s => s.GetIdForCurrentUserAsync()).ReturnsAsync(42);
+        venueService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(42);
         tenantContext.SetupGet(t => t.TenantId).Returns(tenantId);
         reportingClient
             .Setup(r => r.GetTicketRevenueAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()))
@@ -108,7 +108,7 @@ public sealed class VenueDashboardServiceTests
     [Fact]
     public async Task GetKpisAsync_WithoutVenue_ReturnsNoneWithoutQueries()
     {
-        venueService.Setup(s => s.GetIdForCurrentUserAsync()).ReturnsAsync(Option.None<int>());
+        venueService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(default(Option<int>));
 
         var result = await service.GetKpisAsync();
 
