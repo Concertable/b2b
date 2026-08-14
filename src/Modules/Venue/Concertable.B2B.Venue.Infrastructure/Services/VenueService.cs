@@ -123,7 +123,7 @@ internal sealed class VenueService : IVenueService
             .ToOption()
             .OrFailure((VenueError)new VenueError.CurrentTenantNotFound());
 
-    public async Task<Option<int>> GetIdForCurrentUserAsync() =>
+    public async Task<Option<int>> GetIdForCurrentTenantAsync() =>
         (await repository.GetIdForCurrentTenantAsync()).ToOption();
 
     public async Task<bool> OwnsVenueAsync(int venueId)

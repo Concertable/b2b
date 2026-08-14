@@ -23,7 +23,7 @@ public sealed class ArtistDashboardServiceTests
 
     public ArtistDashboardServiceTests()
     {
-        artistService.Setup(s => s.GetIdForCurrentUserAsync()).ReturnsAsync(42);
+        artistService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(42);
         tenantContext.SetupGet(t => t.TenantId).Returns(tenantId);
         reportingClient
             .Setup(r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()))
@@ -108,7 +108,7 @@ public sealed class ArtistDashboardServiceTests
     [Fact]
     public async Task GetKpisAsync_WithoutArtist_ReturnsNoneWithoutQueries()
     {
-        artistService.Setup(s => s.GetIdForCurrentUserAsync()).ReturnsAsync(Option.None<int>());
+        artistService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(default(Option<int>));
 
         var result = await service.GetKpisAsync();
 
