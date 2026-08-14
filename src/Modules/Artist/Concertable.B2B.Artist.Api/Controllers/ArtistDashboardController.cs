@@ -18,10 +18,21 @@ internal sealed class ArtistDashboardController : ControllerBase
         this.dashboardService = dashboardService;
     }
 
+    [HttpGet("overview")]
+    public async Task<ActionResult<ArtistDashboardOverview>> GetOverview(CancellationToken ct)
+    {
+        var overview = await dashboardService.GetOverviewAsync(ct);
+        return overview is null ? NoContent() : Ok(overview);
+    }
+
     [HttpGet("kpis")]
     public async Task<ActionResult<ArtistDashboardKpis>> GetKpis(CancellationToken ct)
     {
         var kpis = await dashboardService.GetKpisAsync(ct);
         return kpis is null ? NoContent() : Ok(kpis);
     }
+
+    [HttpGet("charts/payouts")]
+    public async Task<ActionResult<IReadOnlyList<MonthlyRevenuePoint>>> GetPayouts(CancellationToken ct) =>
+        Ok(await dashboardService.GetPayoutsAsync(ct));
 }

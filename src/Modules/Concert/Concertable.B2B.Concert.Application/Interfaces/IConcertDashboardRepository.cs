@@ -11,4 +11,8 @@ internal interface IConcertDashboardRepository
         int artistId,
         IReadOnlyCollection<DealType> checkoutCapableDealTypes,
         CancellationToken ct = default);
+
+    Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
+        IReadOnlyCollection<int> bookingIds,
+        CancellationToken ct = default);
 }
