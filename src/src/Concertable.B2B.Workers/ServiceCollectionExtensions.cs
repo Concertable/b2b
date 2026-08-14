@@ -1,4 +1,5 @@
 using Concertable.B2B.Artist.Infrastructure.Extensions;
+using Concertable.Kernel;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
@@ -62,10 +63,10 @@ internal static class ServiceCollectionExtensions
         services.AddClientCredentials(opts =>
         {
             opts.Authority = configuration["Auth:Authority"] ?? configuration["services:auth:https:0"]
-                ?? (environment.IsEnvironment("Integration") ? null!
+                ?? (environment.IsIntegration() ? null!
                     : throw new InvalidOperationException("Auth:Authority is required (no explicit key and no service-discovery fallback)."));
             opts.ClientId = configuration["ServiceAuth:ClientId"]
-                ?? (environment.IsEnvironment("Integration") ? null!
+                ?? (environment.IsIntegration() ? null!
                     : throw new InvalidOperationException("ServiceAuth:ClientId is required."));
             if (configuration["ServiceAuth:ClientSecret"] is string clientSecret)
                 opts.ClientSecret = clientSecret;
