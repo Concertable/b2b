@@ -1,14 +1,9 @@
-using Concertable.B2B.Venue.Contracts;
 using Concertable.B2B.Venue.Domain.Entities;
 using Concertable.B2B.Venue.Infrastructure.Data;
-using Concertable.B2B.Venue.Infrastructure.Repositories;
 using Concertable.DataAccess.Application;
 using Concertable.Kernel.Identity;
-using Concertable.Kernel.ValueObjects;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
-using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Venue.UnitTests;
 
@@ -21,8 +16,8 @@ public sealed class DbContextStanceTests
         await using var readContext = new VenueDbContext(
             CreateOptions<VenueDbContext>(),
             provider);
-        await using var tenantContext = new TenantVenueDbContext(
-            CreateOptions<TenantVenueDbContext>(),
+        await using var tenantContext = new VenueTenantDbContext(
+            CreateOptions<VenueTenantDbContext>(),
             provider,
             Mock.Of<ITenantContext>());
 
@@ -36,44 +31,6 @@ public sealed class DbContextStanceTests
         Assert.NotEmpty(tenantContext.Model.FindEntityType(typeof(VenueImageEntity))!.GetDeclaredQueryFilters());
     }
 
-    [Fact]
-    public async Task OrgIdentityLookup_ReadsAcrossTenants()
-    {
-        var databaseName = Guid.NewGuid().ToString();
-        var databaseRoot = new InMemoryDatabaseRoot();
-        var provider = new VenueConfigurationProvider();
-        var tenantId = Guid.NewGuid();
-
-        await using (var tenantContext = new TenantVenueDbContext(
-                         CreateInMemoryOptions<TenantVenueDbContext>(databaseName, databaseRoot),
-                         provider,
-                         Mock.Of<ITenantContext>(t => t.IsHost == true)))
-        {
-            var venue = VenueEntity.Create(
-                Guid.NewGuid(),
-                "Venue name",
-                "About",
-                "banner",
-                "avatar",
-                new Point(0, 0),
-                new Address("County", "Town"),
-                "venue@example.com");
-            venue.TenantId = tenantId;
-            tenantContext.Venues.Add(venue);
-            await tenantContext.SaveChangesAsync();
-        }
-
-        await using var readContext = new VenueDbContext(
-            CreateInMemoryOptions<VenueDbContext>(databaseName, databaseRoot),
-            provider);
-        var lookup = new VenueOrgIdentityLookup(readContext);
-
-        Assert.Equal(
-            new VenueOrgIdentity("Venue name", "County", "Town"),
-            await lookup.GetByTenantIdAsync(tenantId));
-        Assert.Null(await lookup.GetByTenantIdAsync(Guid.NewGuid()));
-    }
-
     private static DbContextOptions<TContext> CreateOptions<TContext>()
         where TContext : DbContext =>
         new DbContextOptionsBuilder<TContext>()
@@ -82,11 +39,4 @@ public sealed class DbContextStanceTests
                 sql => sql.UseNetTopologySuite())
             .Options;
 
-    private static DbContextOptions<TContext> CreateInMemoryOptions<TContext>(
-        string databaseName,
-        InMemoryDatabaseRoot databaseRoot)
-        where TContext : DbContext =>
-        new DbContextOptionsBuilder<TContext>()
-            .UseInMemoryDatabase(databaseName, databaseRoot)
-            .Options;
 }

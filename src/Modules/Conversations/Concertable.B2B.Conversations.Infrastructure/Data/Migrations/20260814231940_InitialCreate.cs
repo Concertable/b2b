@@ -35,6 +35,21 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ParticipantProfiles",
+                schema: "conversations",
+                columns: table => new
+                {
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    County = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Town = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ParticipantProfiles", x => x.TenantId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ThreadReadStates",
                 schema: "conversations",
                 columns: table => new
@@ -76,6 +91,10 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Messages",
+                schema: "conversations");
+
+            migrationBuilder.DropTable(
+                name: "ParticipantProfiles",
                 schema: "conversations");
 
             migrationBuilder.DropTable(

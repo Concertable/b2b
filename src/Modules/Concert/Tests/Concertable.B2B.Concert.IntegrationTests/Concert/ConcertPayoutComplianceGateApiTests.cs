@@ -38,7 +38,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
     private async Task RepointTenantAsync(int concertId, Guid? artistTenantId = null, Guid? venueTenantId = null)
     {
         using var scope = fixture.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<TenantConcertDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<ConcertTenantDbContext>();
         if (artistTenantId is { } artist)
             await context.Concerts.Where(c => c.Id == concertId)
                 .ExecuteUpdateAsync(s => s.SetProperty(c => c.ArtistTenantId, artist));

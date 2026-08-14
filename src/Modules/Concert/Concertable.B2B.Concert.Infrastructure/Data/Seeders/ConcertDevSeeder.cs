@@ -15,7 +15,7 @@ internal sealed class ConcertDevSeeder : IDevSeeder
 {
     public int Order => 4;
 
-    private readonly TenantConcertDbContext context;
+    private readonly ConcertTenantDbContext context;
     private readonly SeedState seed;
     private readonly IDealModule deals;
     private readonly ITermsFingerprintCalculator fingerprint;
@@ -24,7 +24,7 @@ internal sealed class ConcertDevSeeder : IDevSeeder
     private readonly TimeProvider timeProvider;
 
     public ConcertDevSeeder(
-        TenantConcertDbContext context,
+        ConcertTenantDbContext context,
         SeedState seed,
         IDealModule deals,
         ITermsFingerprintCalculator fingerprint,

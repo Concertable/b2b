@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Data;
 
-internal sealed class TenantVenueDbContext(
-    DbContextOptions<TenantVenueDbContext> options,
+internal sealed class VenueTenantDbContext(
+    DbContextOptions<VenueTenantDbContext> options,
     VenueConfigurationProvider provider,
     ITenantContext tenantContext)
     : TenantScopedDbContext(options, provider, tenantContext, Schema.Name)

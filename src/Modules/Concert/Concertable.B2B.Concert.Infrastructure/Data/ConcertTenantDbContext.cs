@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
 
-internal sealed class TenantConcertDbContext(
-    DbContextOptions<TenantConcertDbContext> options,
+internal sealed class ConcertTenantDbContext(
+    DbContextOptions<ConcertTenantDbContext> options,
     ConcertConfigurationProvider provider,
     ITenantContext tenantContext)
     : VenueArtistTenantDbContext(options, provider, tenantContext, Schema.Name)

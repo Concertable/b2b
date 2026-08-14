@@ -6,8 +6,12 @@ using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Concertable.B2B.Conversations.Infrastructure.Data.Seeders;
+using Concertable.B2B.Conversations.Infrastructure.Handlers;
 using Concertable.B2B.Conversations.Infrastructure.Repositories;
 using Concertable.B2B.Conversations.Infrastructure.Services;
+using Concertable.B2B.Artist.Contracts.Events;
+using Concertable.B2B.Venue.Contracts.Events;
+using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +39,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConversationsNotifier, ConversationsNotifier>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IConversationsModule, ConversationsModule>();
+        services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistParticipantProfileProjectionHandler>();
+        services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueParticipantProfileProjectionHandler>();
 
         return services;
     }

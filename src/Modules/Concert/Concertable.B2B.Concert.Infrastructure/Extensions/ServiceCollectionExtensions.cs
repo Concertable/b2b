@@ -52,7 +52,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddConcertModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<TenantConcertDbContext>((sp, opts) =>
+        services.AddDbContext<ConcertTenantDbContext>((sp, opts) =>
             opts.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sql => sql.UseNetTopologySuite())
@@ -69,7 +69,7 @@ public static class ServiceCollectionExtensions
                     sql => sql.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
-        services.AddScoped<IUnitOfWork<TenantConcertDbContext>, UnitOfWork<TenantConcertDbContext>>();
+        services.AddScoped<IUnitOfWork<ConcertTenantDbContext>, UnitOfWork<ConcertTenantDbContext>>();
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
 

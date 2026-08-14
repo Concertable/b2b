@@ -13,7 +13,6 @@ internal sealed class ArtistService : IArtistService
 {
     private readonly IArtistRepository repository;
     private readonly IPublicArtistRepository publicRepository;
-    private readonly IArtistOrgIdentityLookup orgIdentityLookup;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly ITenantContext tenantContext;
@@ -23,7 +22,6 @@ internal sealed class ArtistService : IArtistService
     public ArtistService(
         IArtistRepository repository,
         IPublicArtistRepository publicRepository,
-        IArtistOrgIdentityLookup orgIdentityLookup,
         IImageService imageService,
         ICurrentUser currentUser,
         ITenantContext tenantContext,
@@ -32,7 +30,6 @@ internal sealed class ArtistService : IArtistService
     {
         this.repository = repository;
         this.publicRepository = publicRepository;
-        this.orgIdentityLookup = orgIdentityLookup;
         this.imageService = imageService;
         this.currentUser = currentUser;
         this.tenantContext = tenantContext;
@@ -120,7 +117,4 @@ internal sealed class ArtistService : IArtistService
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
         publicRepository.GetGenresAsync(id);
-
-    public Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
-        orgIdentityLookup.GetByTenantIdAsync(tenantId);
 }

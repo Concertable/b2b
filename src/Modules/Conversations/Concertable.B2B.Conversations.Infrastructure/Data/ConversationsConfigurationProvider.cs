@@ -10,5 +10,6 @@ internal sealed class ConversationsConfigurationProvider : IEntityTypeConfigurat
     {
         modelBuilder.ApplyConfiguration(new MessageEntityConfiguration());
         modelBuilder.ApplyConfiguration(new ThreadReadStateEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new ParticipantProfileConfiguration());
     }
 }

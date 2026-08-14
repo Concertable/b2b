@@ -7,18 +7,18 @@ using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal abstract class WriteRepository<TEntity>(TenantConcertDbContext context)
-    : WriteRepository<TEntity, TenantConcertDbContext>(context)
+internal abstract class WriteRepository<TEntity>(ConcertTenantDbContext context)
+    : WriteRepository<TEntity, ConcertTenantDbContext>(context)
     where TEntity : class;
 
-internal abstract class Repository<TEntity>(TenantConcertDbContext context)
-    : Repository<TEntity, TenantConcertDbContext, int>(context)
+internal abstract class Repository<TEntity>(ConcertTenantDbContext context)
+    : Repository<TEntity, ConcertTenantDbContext, int>(context)
     where TEntity : class, IIdEntity;
 
-internal abstract class TenantScopedRepository<TEntity>(TenantConcertDbContext context, ITenantContext tenant)
-    : TenantScopedRepository<TEntity, TenantConcertDbContext, int>(context, tenant)
+internal abstract class TenantScopedRepository<TEntity>(ConcertTenantDbContext context, ITenantContext tenant)
+    : TenantScopedRepository<TEntity, ConcertTenantDbContext, int>(context, tenant)
     where TEntity : class, IIdEntity, ITenantScoped;
 
-internal abstract class VenueArtistTenantScopedRepository<TEntity>(TenantConcertDbContext context)
-    : VenueArtistTenantScopedRepository<TEntity, TenantConcertDbContext, int>(context)
+internal abstract class VenueArtistTenantScopedRepository<TEntity>(ConcertTenantDbContext context)
+    : VenueArtistTenantScopedRepository<TEntity, ConcertTenantDbContext, int>(context)
     where TEntity : class, IIdEntity, IVenueArtistTenantScoped;

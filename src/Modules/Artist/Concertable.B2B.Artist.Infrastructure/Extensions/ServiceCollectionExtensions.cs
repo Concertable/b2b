@@ -26,7 +26,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddArtistModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<TenantArtistDbContext>((sp, opt) =>
+        services.AddDbContext<ArtistTenantDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
@@ -47,7 +47,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IArtistReviewService, ArtistReviewService>();
         services.AddScoped<IArtistRepository, ArtistRepository>();
         services.AddScoped<IPublicArtistRepository, PublicArtistRepository>();
-        services.AddScoped<IArtistOrgIdentityLookup, ArtistOrgIdentityLookup>();
         services.AddScoped<IArtistModule, ArtistModule>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ArtistReviewProjectionHandler>();

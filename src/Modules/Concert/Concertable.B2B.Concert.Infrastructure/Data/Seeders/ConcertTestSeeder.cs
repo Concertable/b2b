@@ -13,14 +13,14 @@ internal sealed class ConcertTestSeeder : ITestSeeder
 {
     public int Order => 4;
 
-    private readonly TenantConcertDbContext context;
+    private readonly ConcertTenantDbContext context;
     private readonly SeedState seed;
     private readonly IDealModule deals;
     private readonly ITermsFingerprintCalculator fingerprint;
     private readonly TimeProvider timeProvider;
 
     public ConcertTestSeeder(
-        TenantConcertDbContext context,
+        ConcertTenantDbContext context,
         SeedState seed,
         IDealModule deals,
         ITermsFingerprintCalculator fingerprint,

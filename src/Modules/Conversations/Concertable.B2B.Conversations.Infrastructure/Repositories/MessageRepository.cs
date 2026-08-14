@@ -27,6 +27,11 @@ internal sealed class MessageRepository : IMessageRepository
          select m.Id)
         .CountAsync();
 
+    public async Task<IReadOnlyDictionary<Guid, ParticipantProfile>> GetParticipantProfilesAsync(IReadOnlySet<Guid> tenantIds) =>
+        await context.ParticipantProfiles
+            .Where(p => tenantIds.Contains(p.TenantId))
+            .ToDictionaryAsync(p => p.TenantId);
+
     public async Task AdvanceReadPointersAsync(Guid tenantId, Guid userId, DateTime readAt)
     {
         var pairs = await context.Messages
