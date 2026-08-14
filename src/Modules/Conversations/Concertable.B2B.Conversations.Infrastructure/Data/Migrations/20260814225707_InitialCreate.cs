@@ -54,7 +54,9 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     SenderTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     SentByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Action = table.Column<int>(type: "int", nullable: true),
-                    SentDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    SentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    HiddenAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    HiddenByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {

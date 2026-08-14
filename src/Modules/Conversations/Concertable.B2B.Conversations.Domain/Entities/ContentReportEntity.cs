@@ -30,6 +30,9 @@ public sealed class ContentReportEntity : IIdEntity, IVenueArtistTenantScoped
     public Guid? ResolvedByUserId { get; private set; }
     public string? ResolutionNotes { get; private set; }
 
+    /// <summary>The quotable decision reference an appellant cites. Derived from the key, never stored.</summary>
+    public string Reference => $"CR-{Id}";
+
     public static ContentReportEntity Create(
         MessageEntity message,
         Guid reporterTenantId,

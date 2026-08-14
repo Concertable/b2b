@@ -105,6 +105,12 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("HiddenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("HiddenByUserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("SenderTenantId")
                         .HasColumnType("uniqueidentifier");
 

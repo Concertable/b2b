@@ -183,3 +183,31 @@ readability nit, left uniform for now rather than migrating a lone call site out
 
 **Resolves when:** the `PostAsync(url, (object?)null)` sites switch to the parameterless `PostAsync(url)`
 in one mechanical sweep (no behaviour change).
+
+---
+
+### The `[Admin]` authorization seam is thin, and there is no admin UI for moderation
+
+`AdminAttribute` (`User.Api/Authorization`) resolves an `AdminProfileEntity` — a bare `Sub` column with
+no roles and no scoping — through `AdminProfileHandler`, which issues an **uncached `UserDbContext`
+query on every request** to every `[Admin]` endpoint. Admin provisioning only happens via registration
+through the `admin` client-id (`CredentialRegisteredHandler`) or `UserTestSeeder`. Until the OSA
+report-content work it was applied in exactly one place (`VenueController.Approve`); it now also gates
+`ModerationController` (hide / restore / resolve / triage queue).
+
+As an *authorization axis* this is correct and sufficient — it answers "is this caller a platform
+operator?", which is precisely what those endpoints ask, and it is deliberately not tenant RBAC
+(a `TenantRole` is scoped to one tenant and must never let a venue Owner moderate someone else's
+thread; an integration test asserts a tenant Owner gets 403 on every moderation endpoint). As an
+*operations surface* it is not sufficient:
+
+- **No admin SPA**, so moderation is Swagger/curl-driven at launch.
+- **No admin roles**, so every operator has every admin capability.
+- **A per-request uncached DB hit** on each `[Admin]` call.
+
+The moderation feature compensates in its own data rather than by growing the seam: every action stamps
+the acting user id and timestamp onto the report record, so the audit trail exists regardless. Accepted
+at the expected near-zero report volume.
+
+**Resolves when:** admin identity gains roles/scoping and a cached lookup, and an admin surface exists
+to drive moderation — at which point the Swagger/curl workaround and this entry both go.

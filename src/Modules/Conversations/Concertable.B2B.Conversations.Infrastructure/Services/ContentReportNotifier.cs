@@ -21,7 +21,7 @@ internal sealed class ContentReportNotifier : IContentReportNotifier
 
     public async Task SubmittedAsync(ContentReportEntity report)
     {
-        var reference = Reference(report);
+        var reference = report.Reference;
 
         await emailTransport.SendEmailAsync(
             settings.ReportInboxEmail,
@@ -52,6 +52,4 @@ internal sealed class ContentReportNotifier : IContentReportNotifier
              Quote this reference in any follow-up about the report or its outcome.
              """);
     }
-
-    private static string Reference(ContentReportEntity report) => $"CR-{report.Id}";
 }
