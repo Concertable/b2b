@@ -24,7 +24,8 @@ public sealed class ReportMessageErrorTests
 
         Assert.Equal("report.message_invalid", definition.Code);
         Assert.Equal("The report is invalid.", definition.Message);
-        Assert.Equal(ErrorKind.Validation, definition.Kind);
-        Assert.Equal(errors, definition.ValidationErrors);
+        Assert.Equal(ErrorKind.Invalid, definition.Kind);
+        var validation = Assert.IsType<ValidationError>(definition);
+        Assert.Equal(errors, validation.Errors);
     }
 }

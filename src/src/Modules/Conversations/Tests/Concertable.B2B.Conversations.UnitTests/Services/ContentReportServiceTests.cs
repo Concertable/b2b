@@ -96,7 +96,7 @@ public sealed class ContentReportServiceTests
 
         Assert.True(result.TryGetError(out var error));
         var invalid = Assert.IsType<ReportMessageError.Invalid>(error);
-        Assert.Contains(invalid.Errors, e => e.Key == "details");
+        Assert.Contains("details", invalid.Errors.Errors.Keys);
         reports.Verify(r => r.AddAsync(It.IsAny<ContentReportEntity>(), It.IsAny<CancellationToken>()), Times.Never);
         notifier.VerifyNoOtherCalls();
     }

@@ -1,4 +1,5 @@
 using Concertable.B2B.Conversations.Application.DTOs;
+using Concertable.B2B.Conversations.Contracts.Enums;
 
 namespace Concertable.B2B.Conversations.Api.Responses;
 
