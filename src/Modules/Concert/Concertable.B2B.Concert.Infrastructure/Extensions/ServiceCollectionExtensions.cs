@@ -52,7 +52,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddConcertModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<ConcertDbContext>((sp, opts) =>
+        services.AddDbContext<TenantConcertDbContext>((sp, opts) =>
             opts.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sql => sql.UseNetTopologySuite())
@@ -63,13 +63,13 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        services.AddDbContext<PublicConcertDbContext>((sp, opts) =>
+        services.AddDbContext<ConcertDbContext>((sp, opts) =>
             opts.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sql => sql.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
-        services.AddScoped<IUnitOfWork<ConcertDbContext>, UnitOfWork<ConcertDbContext>>();
+        services.AddScoped<IUnitOfWork<TenantConcertDbContext>, UnitOfWork<TenantConcertDbContext>>();
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
 
@@ -141,7 +141,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
-        services.AddScoped<IPublicBookingRepository, PublicBookingRepository>();
+        services.AddScoped<IBookingExistence, BookingExistence>();
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<ISelfBillingAgreementRepository, SelfBillingAgreementRepository>();

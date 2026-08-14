@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class PublicConcertRepository(PublicConcertDbContext context, TimeProvider timeProvider)
+internal sealed class PublicConcertRepository(ConcertDbContext context, TimeProvider timeProvider)
     : IPublicConcertRepository
 {
     public async Task<ConcertDetails?> GetDetailsByIdAsync(int id)

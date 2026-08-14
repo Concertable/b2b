@@ -8,9 +8,9 @@ namespace Concertable.B2B.Venue.Infrastructure.Services;
 
 internal sealed class VenueReviewService : IVenueReviewService
 {
-    private readonly VenueDbContext context;
+    private readonly TenantVenueDbContext context;
 
-    public VenueReviewService(VenueDbContext context)
+    public VenueReviewService(TenantVenueDbContext context)
     {
         this.context = context;
     }

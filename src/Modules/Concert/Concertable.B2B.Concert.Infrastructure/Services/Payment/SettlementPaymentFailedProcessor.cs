@@ -10,12 +10,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
     private readonly ISettlementExecutor settlementExecutor;
-    private readonly ConcertDbContext context;
+    private readonly TenantConcertDbContext context;
     private readonly ILogger<SettlementPaymentFailedProcessor> logger;
 
     public SettlementPaymentFailedProcessor(
         ISettlementExecutor settlementExecutor,
-        ConcertDbContext context,
+        TenantConcertDbContext context,
         ILogger<SettlementPaymentFailedProcessor> logger)
     {
         this.settlementExecutor = settlementExecutor;

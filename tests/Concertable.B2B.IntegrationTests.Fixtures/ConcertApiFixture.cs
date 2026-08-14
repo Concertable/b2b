@@ -6,7 +6,7 @@ namespace Concertable.B2B.IntegrationTests.Fixtures;
 
 public sealed class ConcertApiFixture : ApiFixture
 {
-    private PublicConcertDbContext concertReads = null!;
+    private ConcertDbContext concertReads = null!;
 
     /// <summary>
     /// The Concert module's unfiltered, read-only read stance — sees every tenant's rows, so
@@ -16,6 +16,6 @@ public sealed class ConcertApiFixture : ApiFixture
 
     protected override void OnReset(IServiceScope scope)
     {
-        concertReads = scope.ServiceProvider.GetRequiredService<PublicConcertDbContext>();
+        concertReads = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
     }
 }

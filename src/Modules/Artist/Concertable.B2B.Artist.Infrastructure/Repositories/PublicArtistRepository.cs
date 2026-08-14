@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
-internal sealed class PublicArtistRepository(PublicArtistDbContext context) : IPublicArtistRepository
+internal sealed class PublicArtistRepository(ArtistDbContext context) : IPublicArtistRepository
 {
     public async Task<ArtistSummary?> GetSummaryAsync(int id) =>
         await context.Artists
@@ -24,9 +24,4 @@ internal sealed class PublicArtistRepository(PublicArtistDbContext context) : IP
             .SelectMany(a => a.Genres)
             .ToHashSetAsync();
 
-    public async Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
-        await context.Artists
-            .Where(a => a.TenantId == tenantId)
-            .Select(a => new ArtistOrgIdentity(a.Name, a.Address.County, a.Address.Town))
-            .FirstOrDefaultAsync();
 }

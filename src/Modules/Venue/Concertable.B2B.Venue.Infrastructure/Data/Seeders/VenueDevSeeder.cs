@@ -10,10 +10,10 @@ internal sealed class VenueDevSeeder : IDevSeeder
 {
     public int Order => 2;
 
-    private readonly VenueDbContext context;
+    private readonly TenantVenueDbContext context;
     private readonly SeedState seed;
 
-    public VenueDevSeeder(VenueDbContext context, SeedState seed)
+    public VenueDevSeeder(TenantVenueDbContext context, SeedState seed)
     {
         this.context = context;
         this.seed = seed;

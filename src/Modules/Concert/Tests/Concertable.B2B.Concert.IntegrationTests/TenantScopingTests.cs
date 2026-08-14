@@ -160,22 +160,15 @@ public sealed class TenantScopingTests : IAsyncLifetime
         Assert.Equal(concertId, publicConcert!.Id);
     }
 
-    /// <summary>
-    /// The public booking stance is unfiltered by tenant: the escrow payment-webhook path (which runs
-    /// with no tenant context) reads existence through <c>IPublicBookingRepository</c> to tell a
-    /// tenant-filter-hidden row from a genuinely-absent one. A tenant filter creeping onto this read
-    /// would silently break that diagnostic — so assert it sees a booking without any tenant context,
-    /// and reports an absent id as false.
-    /// </summary>
     [Fact]
-    public async Task PublicBookingExistence_SeesBookingsWithoutTenantContext()
+    public async Task BookingExistence_SeesBookingsWithoutTenantContext()
     {
         var bookingId = (await fixture.ConcertReads.Set<BookingEntity>().FirstAsync()).Id;
 
         using var scope = fixture.Services.CreateScope();
-        var publicBookings = scope.ServiceProvider.GetRequiredService<IPublicBookingRepository>();
+        var bookingExistence = scope.ServiceProvider.GetRequiredService<IBookingExistence>();
 
-        Assert.True(await publicBookings.ExistsAsync(bookingId));
-        Assert.False(await publicBookings.ExistsAsync(bookingId + 100_000));
+        Assert.True(await bookingExistence.ExistsAsync(bookingId));
+        Assert.False(await bookingExistence.ExistsAsync(bookingId + 100_000));
     }
 }

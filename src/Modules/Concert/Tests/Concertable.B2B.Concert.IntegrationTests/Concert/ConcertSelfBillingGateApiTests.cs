@@ -99,7 +99,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
     {
         using var scope = fixture.Services.CreateScope();
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime;
-        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<TenantConcertDbContext>();
         context.SelfBillingAgreements.Add(SelfBillingAgreementEntity.Create(
             supplierTenantId,
             new InvoiceParty(supplierTenantId, "Sally Supplier Ltd", "GB123456789", "1 Road", null, "Town", "AB1 2CD", "United Kingdom"),

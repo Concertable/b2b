@@ -13,6 +13,7 @@ internal sealed class VenueService : IVenueService
 {
     private readonly IVenueRepository repository;
     private readonly IPublicVenueRepository publicRepository;
+    private readonly IVenueOrgIdentityLookup orgIdentityLookup;
     private readonly IAdminVenueRepository adminRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
@@ -23,6 +24,7 @@ internal sealed class VenueService : IVenueService
     public VenueService(
         IVenueRepository repository,
         IPublicVenueRepository publicRepository,
+        IVenueOrgIdentityLookup orgIdentityLookup,
         IAdminVenueRepository adminRepository,
         IImageService imageService,
         ICurrentUser currentUser,
@@ -32,6 +34,7 @@ internal sealed class VenueService : IVenueService
     {
         this.repository = repository;
         this.publicRepository = publicRepository;
+        this.orgIdentityLookup = orgIdentityLookup;
         this.adminRepository = adminRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
@@ -129,5 +132,5 @@ internal sealed class VenueService : IVenueService
             .OrNotFound();
 
     public Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
-        publicRepository.GetOrgIdentityByTenantIdAsync(tenantId);
+        orgIdentityLookup.GetByTenantIdAsync(tenantId);
 }

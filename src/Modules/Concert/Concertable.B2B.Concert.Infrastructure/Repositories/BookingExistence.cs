@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class PublicBookingRepository : IPublicBookingRepository
+internal sealed class BookingExistence : IBookingExistence
 {
-    private readonly PublicConcertDbContext context;
+    private readonly ConcertDbContext context;
 
-    public PublicBookingRepository(PublicConcertDbContext context)
+    public BookingExistence(ConcertDbContext context)
     {
         this.context = context;
     }

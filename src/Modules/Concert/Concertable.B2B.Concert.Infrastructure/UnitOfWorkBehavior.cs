@@ -3,7 +3,7 @@ using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Concert.Infrastructure;
 
-internal interface IUnitOfWorkBehavior : IUnitOfWorkBehavior<ConcertDbContext>;
+internal interface IUnitOfWorkBehavior : IUnitOfWorkBehavior<TenantConcertDbContext>;
 
-internal sealed class UnitOfWorkBehavior(IUnitOfWork<ConcertDbContext> unitOfWork)
-    : UnitOfWorkBehavior<ConcertDbContext>(unitOfWork), IUnitOfWorkBehavior;
+internal sealed class UnitOfWorkBehavior(IUnitOfWork<TenantConcertDbContext> unitOfWork)
+    : UnitOfWorkBehavior<TenantConcertDbContext>(unitOfWork), IUnitOfWorkBehavior;

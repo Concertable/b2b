@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 internal sealed class SequenceRepository<TSequence> : WriteRepository<TSequence>, ISequenceRepository<TSequence>
     where TSequence : class, ISequence<TSequence>
 {
-    public SequenceRepository(ConcertDbContext context) : base(context) { }
+    public SequenceRepository(TenantConcertDbContext context) : base(context) { }
 
     public async Task<long> AllocateNextAsync(Guid tenantId, CancellationToken ct = default)
     {
