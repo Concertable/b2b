@@ -9,7 +9,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 internal sealed class SelfBillingAgreementRepository
     : TenantScopedRepository<SelfBillingAgreementEntity>, ISelfBillingAgreementRepository
 {
-    public SelfBillingAgreementRepository(ConcertDbContext context, ITenantContext tenant) : base(context, tenant) { }
+    public SelfBillingAgreementRepository(TenantConcertDbContext context, ITenantContext tenant) : base(context, tenant) { }
 
     public Task<SelfBillingAgreementEntity?> GetCurrentAsync(DateTime nowUtc, CancellationToken ct = default) =>
         base.CurrentTenant

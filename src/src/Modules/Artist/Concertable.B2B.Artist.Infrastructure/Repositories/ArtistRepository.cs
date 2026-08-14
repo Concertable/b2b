@@ -7,7 +7,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
 internal sealed class ArtistRepository : TenantScopedRepository<ArtistEntity>, IArtistRepository
 {
-    public ArtistRepository(ArtistDbContext context, ITenantContext tenant) : base(context, tenant) { }
+    public ArtistRepository(TenantArtistDbContext context, ITenantContext tenant) : base(context, tenant) { }
 
     public async Task<int?> GetIdForCurrentTenantAsync() =>
         await base.CurrentTenant.AsNoTracking()

@@ -14,7 +14,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
 
     public ConcertRepository(
-        ConcertDbContext context,
+        TenantConcertDbContext context,
         IEndedAndBookedSpecification endedAndBooked,
         IDoorRevenueOutstandingSpecification doorRevenueOutstanding) : base(context)
     {

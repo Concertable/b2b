@@ -11,7 +11,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
 {
     private readonly TimeProvider timeProvider;
 
-    public ApplicationRepository(ConcertDbContext context, TimeProvider timeProvider) : base(context)
+    public ApplicationRepository(TenantConcertDbContext context, TimeProvider timeProvider) : base(context)
     {
         this.timeProvider = timeProvider;
     }

@@ -5,7 +5,7 @@ using Concertable.Messaging.Infrastructure.Outbox;
 
 namespace Concertable.B2B.Venue.Infrastructure;
 
-internal interface IOutboxUnitOfWorkBehavior : IOutboxUnitOfWorkBehavior<VenueDbContext>;
+internal interface IOutboxUnitOfWorkBehavior : IOutboxUnitOfWorkBehavior<TenantVenueDbContext>;
 
-internal sealed class OutboxUnitOfWorkBehavior(VenueDbContext context, IDbContextAccessor accessor)
-    : OutboxUnitOfWorkBehavior<VenueDbContext>(context, accessor), IOutboxUnitOfWorkBehavior;
+internal sealed class OutboxUnitOfWorkBehavior(TenantVenueDbContext context, IDbContextAccessor accessor)
+    : OutboxUnitOfWorkBehavior<TenantVenueDbContext>(context, accessor), IOutboxUnitOfWorkBehavior;

@@ -11,20 +11,20 @@ internal sealed class EscrowExecutor : IEscrowExecutor
     private readonly ILifecycleTransitioner transitioner;
     private readonly IConcertWorkflowFactory workflows;
     private readonly IBookingRepository bookingRepository;
-    private readonly IPublicBookingRepository publicBookingRepository;
+    private readonly IBookingExistence bookingExistence;
     private readonly IApplicationCancelStep cancelStep;
 
     public EscrowExecutor(
         ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
         IBookingRepository bookingRepository,
-        IPublicBookingRepository publicBookingRepository,
+        IBookingExistence bookingExistence,
         IApplicationCancelStep cancelStep)
     {
         this.transitioner = transitioner;
         this.workflows = workflows;
         this.bookingRepository = bookingRepository;
-        this.publicBookingRepository = publicBookingRepository;
+        this.bookingExistence = bookingExistence;
         this.cancelStep = cancelStep;
     }
 
@@ -57,7 +57,7 @@ internal sealed class EscrowExecutor : IEscrowExecutor
         if (await bookingRepository.GetApplicationIdByIdAsync(bookingId, ct) is { } applicationId)
             return applicationId;
         // Distinguishes a tenant-filter-hidden row from a genuinely-absent one (commit race).
-        var exists = await publicBookingRepository.ExistsAsync(bookingId);
+        var exists = await bookingExistence.ExistsAsync(bookingId);
         throw new NotFoundException($"Booking {bookingId} not found (exists ignoring tenant filter: {exists}).");
     }
 }

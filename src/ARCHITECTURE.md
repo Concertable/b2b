@@ -21,7 +21,9 @@ B2B owns the venue/artist side of Concertable: opportunities, applications, book
 | `Concertable.B2B.DataAccess` | Shared csproj | Shared data-access primitives: tenant query filters, the per-stance DbContext base classes, and repositories. |
 | `Concertable.B2B.AppHost` | Aspire AppHost | Local-dev orchestrator only. |
 
-**Database:** `B2BDb` (SQL Server). Per-module DbContexts for writes; each module's read-only `Public<Module>DbContext` (e.g. `PublicConcertDbContext`) for unfiltered / cross-tenant reads.
+**Database:** `B2BDb` (SQL Server). Artist, Venue, and Concert each use a tenant-bound tracked/write
+`Tenant<Module>DbContext` plus a tenant-independent read-only `<Module>DbContext`. Venue also has
+`AdminVenueDbContext` for tenant-independent administrative writes.
 
 ---
 
