@@ -76,6 +76,9 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
+        var application = await applyResponse.Content.ReadAsync<ApplicationResponse>();
+        Assert.NotNull(application);
+        Assert.Equal($"/api/Application/{application.Id}", applyResponse.Headers.Location?.OriginalString);
         var standard = await fixture.ConcertReads.Set<ApplicationEntity>()
             .OfType<StandardApplication>()
             .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);

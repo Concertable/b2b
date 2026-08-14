@@ -37,11 +37,9 @@ internal sealed class VenueController : ControllerBase
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]
-    public async Task<ActionResult<VenueDetails>> Create([FromForm] CreateVenueRequest request)
-    {
-        return (await venueService.CreateAsync(request)).ToActionResult(
-            venue => CreatedAtAction(nameof(GetDetailsById), new { Id = venue.Id }, venue));
-    }
+    public async Task<ActionResult<VenueDetails>> Create([FromForm] CreateVenueRequest request) =>
+        (await venueService.CreateAsync(request))
+            .ToCreatedOrProblem(venue => $"/api/Venue/{venue.Id}");
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPut("{id}")]
