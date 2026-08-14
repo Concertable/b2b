@@ -38,13 +38,10 @@ internal sealed class OpportunityController : ControllerBase
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPost]
-    public async Task<ActionResult<OpportunityResponse>> Create([FromBody] OpportunityRequest request)
-    {
-        var result = (await opportunityService.CreateAsync(request))
-            .Map(mapper.ToResponse);
-        return result.ToActionResult(
-            opportunity => CreatedAtAction(nameof(GetById), new { id = opportunity.Id }, opportunity));
-    }
+    public async Task<ActionResult<OpportunityResponse>> Create([FromBody] OpportunityRequest request) =>
+        (await opportunityService.CreateAsync(request))
+            .Map(mapper.ToResponse)
+            .ToCreatedOrProblem(opportunity => $"/api/Opportunity/{opportunity.Id}");
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPost("bulk")]

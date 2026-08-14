@@ -34,11 +34,9 @@ internal sealed class ArtistController : ControllerBase
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]
-    public async Task<ActionResult<ArtistDetails>> Create([FromForm] CreateArtistRequest request)
-    {
-        return (await artistService.CreateAsync(request)).ToActionResult(
-            artist => CreatedAtAction(nameof(GetDetailsById), new { Id = artist.Id }, artist));
-    }
+    public async Task<ActionResult<ArtistDetails>> Create([FromForm] CreateArtistRequest request) =>
+        (await artistService.CreateAsync(request))
+            .ToCreatedOrProblem(artist => $"/api/Artist/{artist.Id}");
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPut("{id}")]

@@ -49,12 +49,14 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         var response = await client.PostAsync("/api/Opportunity", request);
 
         // Assert
+        await response.ShouldBe(HttpStatusCode.Created);
         var opportunity = await response.Content.ReadAsync<OpportunityDto>();
         Assert.NotNull(opportunity);
         Assert.NotNull(opportunity.Id);
         Assert.Equal(request.StartDate, opportunity.StartDate);
         Assert.Equal(request.EndDate, opportunity.EndDate);
         Assert.Contains(Genre.Rock, opportunity.Genres);
+        Assert.Equal($"/api/Opportunity/{opportunity.Id}", response.Headers.Location?.OriginalString);
     }
 
     [Fact]

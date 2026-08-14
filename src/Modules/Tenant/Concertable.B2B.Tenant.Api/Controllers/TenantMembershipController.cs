@@ -35,7 +35,7 @@ internal sealed class TenantMembershipController : ControllerBase
     [HasPermission(SharedPermissions.MembersInvite)]
     public async Task<ActionResult<InvitationDto>> Invite(InviteMemberRequest request)
         => (await invitationService.InviteAsync(request))
-            .ToActionResult(value => CreatedAtAction(nameof(GetInvitations), value));
+            .ToCreatedOrProblem(_ => "/api/organizations/invitations");
 
     [HttpDelete("invitations/{id:guid}")]
     [HasPermission(SharedPermissions.MembersInvite)]

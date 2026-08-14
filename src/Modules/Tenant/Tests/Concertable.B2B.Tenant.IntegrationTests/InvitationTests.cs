@@ -37,6 +37,7 @@ public sealed class InvitationTests : IAsyncLifetime
     {
         var response = await Invite(client, email, role);
         await response.ShouldBe(HttpStatusCode.Created);
+        Assert.Equal("/api/organizations/invitations", response.Headers.Location?.OriginalString);
         return (await response.Content.ReadAsync<InvitationDto>())!;
     }
 

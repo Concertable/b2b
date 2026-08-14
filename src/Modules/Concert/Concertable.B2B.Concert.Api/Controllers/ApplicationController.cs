@@ -42,8 +42,7 @@ internal sealed class ApplicationController : ControllerBase
             : await applicationService.ApplyAsync(opportunityId, request.ESignature);
         return result
             .Map(mapper.ToResponse)
-            .ToActionResult(application =>
-                CreatedAtAction(nameof(GetById), new { id = application.Id }, application));
+            .ToCreatedOrProblem(application => $"/api/Application/{application.Id}");
     }
 
     [HttpGet("artist/pending")]

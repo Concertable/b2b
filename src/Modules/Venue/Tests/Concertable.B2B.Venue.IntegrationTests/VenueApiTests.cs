@@ -171,6 +171,7 @@ public sealed class VenueApiTests : IAsyncLifetime
         Assert.False(venue.Approved);
         Assert.EndsWith(".jpg", venue.BannerUrl);
         Assert.True(Guid.TryParse(Path.GetFileNameWithoutExtension(venue.BannerUrl), out _));
+        Assert.Equal($"/api/Venue/{venue.Id}", response.Headers.Location?.OriginalString);
     }
 
     [Fact]

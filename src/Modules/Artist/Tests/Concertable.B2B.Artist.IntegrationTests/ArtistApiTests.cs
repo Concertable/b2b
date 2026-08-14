@@ -139,6 +139,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
         Assert.Equal("Test Town", artist.Town);
         Assert.EndsWith(".jpg", artist.BannerUrl);
         Assert.True(Guid.TryParse(Path.GetFileNameWithoutExtension(artist.BannerUrl), out _));
+        Assert.Equal($"/api/Artist/{artist.Id}", response.Headers.Location?.OriginalString);
     }
 
     [Fact]
