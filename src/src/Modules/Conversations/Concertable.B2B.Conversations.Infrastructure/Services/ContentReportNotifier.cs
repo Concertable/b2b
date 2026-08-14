@@ -21,6 +21,11 @@ internal sealed class ContentReportNotifier : IContentReportNotifier
 
     public async Task SubmittedAsync(ContentReportEntity report)
     {
+        // Resolved before either send: Artifact 3 mandates the acknowledgement, so a reporter we cannot
+        // reach is an invariant violation, not a mail we quietly drop.
+        var reporterEmail = currentUser.Email
+            ?? throw new UnauthorizedAccessException("The reporting user has no email address.");
+
         var reference = report.Reference;
 
         await emailTransport.SendEmailAsync(
@@ -43,7 +48,7 @@ internal sealed class ContentReportNotifier : IContentReportNotifier
              """);
 
         await emailTransport.SendEmailAsync(
-            currentUser.Email,
+            reporterEmail,
             $"We have received your report ({reference})",
             $"""
              Thank you for reporting this message.
