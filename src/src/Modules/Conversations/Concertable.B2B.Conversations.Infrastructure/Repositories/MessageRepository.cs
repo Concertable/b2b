@@ -13,6 +13,9 @@ internal sealed class MessageRepository : IMessageRepository
         this.context = context;
     }
 
+    public Task<MessageEntity?> GetByIdAsync(int id) =>
+        context.Messages.FirstOrDefaultAsync(m => m.Id == id);
+
     public Task<IPagination<MessageEntity>> GetByTenantIdAsync(Guid tenantId, IPageParams pageParams) =>
         context.Messages
             .OrderByDescending(m => m.SentDate)
