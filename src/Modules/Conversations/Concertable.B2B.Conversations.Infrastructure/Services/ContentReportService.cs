@@ -3,6 +3,7 @@ using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Conversations.Application.Validators;
 using Concertable.B2B.Tenant.Contracts;
 using Reunion;
+using Reunion.Validation;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Services;
 
@@ -34,16 +35,16 @@ internal sealed class ContentReportService : IContentReportService
     public Task<UnitResult<ReportMessageError>> SubmitAsync(int messageId, ReportMessageRequest request) =>
         FindMessageAsync(messageId)
             .OrFailure<MessageEntity, ReportMessageError>(new ReportMessageError.MessageNotFound())
-            .Ensure(
-                _ => ContentReportValidators.Validate(request),
-                errors => new ReportMessageError.Invalid(errors))
-            .BindAsync(message => RecordAndNotifyAsync(message, request));
+            .BindAsync(message => ValidateAndRecordAsync(message, request));
 
     private async Task<Option<MessageEntity>> FindMessageAsync(int messageId) =>
         await messageRepository.GetByIdAsync(messageId);
 
-    private async Task<UnitResult<ReportMessageError>> RecordAndNotifyAsync(MessageEntity message, ReportMessageRequest request)
+    private async Task<UnitResult<ReportMessageError>> ValidateAndRecordAsync(MessageEntity message, ReportMessageRequest request)
     {
+        if (ContentReportValidators.Validate(request).TryGetErrors(out var errors))
+            return new ReportMessageError.Invalid(errors);
+
         var report = ContentReportEntity.Create(
             message,
             tenantContext.GetTenantId(),
