@@ -10,8 +10,10 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Moq" />
+    <PackageReference Include="Reunion" />
     <PackageReference Include="Reunion.Errors" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -20,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Concertable.B2B.Artist.Application\Concertable.B2B.Artist.Application.csproj" />
     <ProjectReference Include="..\..\Concertable.B2B.Artist.Infrastructure\Concertable.B2B.Artist.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

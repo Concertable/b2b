@@ -9,8 +9,8 @@ internal sealed class OpportunitySyncer
 {
     private readonly IDealModule dealModule;
 
-    public OpportunitySyncer(IBaseRepository<OpportunityEntity> repo, IDealModule dealModule)
-        : base(repo)
+    public OpportunitySyncer(IWriteRepository<OpportunityEntity> repository, IDealModule dealModule)
+        : base(repository)
     {
         this.dealModule = dealModule;
     }
