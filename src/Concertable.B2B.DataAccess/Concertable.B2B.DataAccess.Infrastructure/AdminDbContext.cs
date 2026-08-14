@@ -9,7 +9,7 @@ namespace Concertable.B2B.DataAccess.Infrastructure;
 /// with no tenancy on top — writable, so a cross-tenant operator (e.g. venue approval) can act on rows it
 /// does not own; the tenant write-guard interceptor no-ops for a tenant-less admin. One concrete subclass
 /// per module that has admin operations (e.g. <c>AdminVenueDbContext</c>), preserving module isolation.
-/// The unfiltered read-only counterpart is <see cref="PublicDbContext"/>; the tenant-filtered, writable
+/// The unfiltered read-only counterpart is <see cref="ReadDbContext"/>; the tenant-filtered, writable
 /// one is <see cref="TenantScopedDbContext"/>.
 /// </summary>
 public abstract class AdminDbContext : DbContextBase

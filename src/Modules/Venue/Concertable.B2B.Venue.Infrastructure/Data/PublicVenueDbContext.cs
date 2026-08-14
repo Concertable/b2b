@@ -1,4 +1,4 @@
-using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Data;
@@ -12,7 +12,7 @@ namespace Concertable.B2B.Venue.Infrastructure.Data;
 internal sealed class PublicVenueDbContext(
     DbContextOptions<PublicVenueDbContext> options,
     VenueConfigurationProvider provider)
-    : PublicDbContext(options, provider, Schema.Name)
+    : ReadDbContext(options, provider, Schema.Name)
 {
     public DbSet<VenueEntity> Venues => Set<VenueEntity>();
     public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
