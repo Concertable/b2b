@@ -13,6 +13,8 @@ internal interface IConcertRepository : IRepository<ConcertEntity>
     Task<ConcertDetails?> GetDetailsByApplicationIdAsync(int applicationId);
     Task<IEnumerable<ConcertSummary>> GetUnpostedByArtistIdAsync(int id);
     Task<IEnumerable<ConcertSummary>> GetUnpostedByVenueIdAsync(int id);
+    Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForVenueAsync(int venueId);
+    Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForArtistAsync(int artistId);
     Task<IEnumerable<int>> GetEndedConfirmedIdsAsync();
     Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId);
     Task<int?> GetDealIdByIdAsync(int concertId);

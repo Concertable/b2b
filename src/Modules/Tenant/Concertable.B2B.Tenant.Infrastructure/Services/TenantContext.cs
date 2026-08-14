@@ -31,6 +31,7 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
     public Guid? TenantId => tenantId;
 
     public TenantRole? Role => role;
+    public TenantType? Type => tenantType;
 
     /// <summary>
     /// No HTTP request in scope (worker, outbox dispatcher, event/projection handler) = system caller = filter bypass.

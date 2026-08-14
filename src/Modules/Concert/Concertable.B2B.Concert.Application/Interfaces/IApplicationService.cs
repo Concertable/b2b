@@ -11,6 +11,8 @@ internal interface IApplicationService
     Task<IEnumerable<ApplicationDto>> GetByOpportunityIdAsync(int id);
     Task<IEnumerable<ApplicationDto>> GetPendingForArtistAsync();
     Task<IEnumerable<ApplicationDto>> GetRecentDeniedForArtistAsync();
+    Task<IEnumerable<ApplicationDto>> GetPendingForCurrentVenueAsync();
+    Task<IEnumerable<ApplicationDto>> GetCurrentForCurrentArtistAsync();
     Task<ApplicationDto> ApplyAsync(int opportunityId, ESignatureRequest eSignature);
     Task<ApplicationDto> ApplyAsync(int opportunityId, string paymentMethodId, ESignatureRequest eSignature);
     Task<Checkout> ApplyCheckoutAsync(int opportunityId);

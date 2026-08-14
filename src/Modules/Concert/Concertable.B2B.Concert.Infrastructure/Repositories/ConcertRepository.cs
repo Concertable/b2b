@@ -12,14 +12,63 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
 {
     private readonly IEndedAndBookedSpecification endedAndBooked;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
+    private readonly TimeProvider timeProvider;
 
     public ConcertRepository(
         ConcertDbContext context,
         IEndedAndBookedSpecification endedAndBooked,
-        IDoorRevenueOutstandingSpecification doorRevenueOutstanding) : base(context)
+        IDoorRevenueOutstandingSpecification doorRevenueOutstanding,
+        TimeProvider timeProvider) : base(context)
     {
         this.endedAndBooked = endedAndBooked;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
+        this.timeProvider = timeProvider;
+    }
+
+    public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForVenueAsync(int venueId)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        return await context.Concerts
+            .AsNoTracking()
+            .Where(c => c.Booking.Application.Opportunity.VenueId == venueId
+                        && c.Booking.Application.Opportunity.Period.Start >= now
+                        && c.DatePosted != null)
+            .OrderBy(c => c.Booking.Application.Opportunity.Period.Start)
+            .Take(5)
+            .Select(c => new ManagerConcertCard(
+                c.Id,
+                c.Name,
+                c.BannerUrl ?? c.Booking.Application.Artist.BannerUrl,
+                c.Booking.Application.Opportunity.Period.Start,
+                c.Booking.Application.Opportunity.Period.End,
+                c.Booking.Application.Artist.Name,
+                c.TicketsSold,
+                c.TotalTickets,
+                $"/_venue/my/concerts/concert/{c.Id}"))
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForArtistAsync(int artistId)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        return await context.Concerts
+            .AsNoTracking()
+            .Where(c => c.Booking.Application.ArtistId == artistId
+                        && c.Booking.Application.Opportunity.Period.Start >= now
+                        && c.DatePosted != null)
+            .OrderBy(c => c.Booking.Application.Opportunity.Period.Start)
+            .Take(5)
+            .Select(c => new ManagerConcertCard(
+                c.Id,
+                c.Name,
+                c.BannerUrl ?? c.Booking.Application.Artist.BannerUrl,
+                c.Booking.Application.Opportunity.Period.Start,
+                c.Booking.Application.Opportunity.Period.End,
+                c.Booking.Application.Opportunity.Venue.Name,
+                c.TicketsSold,
+                c.TotalTickets,
+                $"/_artist/my/concerts/concert/{c.Id}"))
+            .ToListAsync();
     }
 
     public async Task<ConcertEntity?> GetByIdWithArtistAndVenueAsync(int id)

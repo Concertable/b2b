@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Kernel.Identity;
@@ -9,6 +10,30 @@ internal sealed class OpportunityRepository : OpportunityRepository<ConcertDbCon
 {
     public OpportunityRepository(ConcertDbContext context, ITenantContext tenant, TimeProvider timeProvider)
         : base(context, tenant, timeProvider) { }
+
+    public override Task<OpportunityEntity?> GetByIdAsync(int id, CancellationToken ct = default) =>
+        context.Opportunities
+            .Include(o => o.Venue)
+            .FirstOrDefaultAsync(o => o.Id == id, ct);
+
+    public async Task<IReadOnlyList<OpportunityListRow>> GetOpenWithCountsByVenueIdAsync(int venueId) =>
+        await ActiveForVenue(venueId)
+            .AsNoTracking()
+            .Take(5)
+            .Select(o => new OpportunityListRow
+            {
+                Id = o.Id,
+                VenueId = o.VenueId,
+                VenueName = o.Venue.Name,
+                County = o.Venue.Address.County,
+                Town = o.Venue.Address.Town,
+                StartDate = o.Period.Start,
+                EndDate = o.Period.End,
+                Genres = o.Genres,
+                DealId = o.DealId,
+                ApplicationCount = o.Applications.Count
+            })
+            .ToListAsync();
 
     public async Task<Guid?> GetOwnerByIdAsync(int opportunityId) =>
         await context.Opportunities

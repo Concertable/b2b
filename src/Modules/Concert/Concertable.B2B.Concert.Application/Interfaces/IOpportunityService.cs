@@ -15,4 +15,6 @@ internal interface IOpportunityService
     Task<Guid?> GetOwnerByIdAsync(int id);
     Task<bool> OwnsOpportunityAsync(int opportunityId);
     Task<bool> OwnsOpportunityByApplicationIdAsync(int applicationId);
+    Task<IReadOnlyList<VenueOpenOpportunity>> GetOpenForCurrentVenueAsync();
+    Task<IReadOnlyList<RecommendedOpportunity>> GetRecommendedForCurrentArtistAsync();
 }

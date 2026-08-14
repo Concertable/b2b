@@ -9,7 +9,6 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[RequiredTenantType(TenantType.Venue)]
 internal sealed class ConcertController : ControllerBase
 {
     private readonly IConcertService concertService;
@@ -83,6 +82,18 @@ internal sealed class ConcertController : ControllerBase
     {
         return Ok((await concertService.GetUpcomingByArtistIdAsync(id)).ToSummaryResponses());
     }
+
+    [HttpGet("upcoming/venue/current")]
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentVenue() =>
+        Ok(await concertService.GetUpcomingForCurrentVenueAsync());
+
+    [HttpGet("upcoming/artist/current")]
+    [RequiredTenantType(TenantType.Artist)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentArtist() =>
+        Ok(await concertService.GetUpcomingForCurrentArtistAsync());
 
     [HttpGet("history/venue/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetHistoryByVenueId(int id)

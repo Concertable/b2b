@@ -27,6 +27,43 @@ internal sealed class MessageRepository : IMessageRepository
          select m.Id)
         .CountAsync();
 
+    public async Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsAsync(Guid tenantId, Guid userId)
+    {
+        var tenantMessages = context.Messages
+            .Where(m => m.VenueTenantId == tenantId || m.ArtistTenantId == tenantId);
+        var latestMessageIds = tenantMessages
+            .GroupBy(m => new { m.VenueTenantId, m.ArtistTenantId })
+            .Select(group => group
+                .OrderByDescending(m => m.SentDate)
+                .ThenByDescending(m => m.Id)
+                .Select(m => m.Id)
+                .First());
+
+        return await context.Messages
+            .AsNoTracking()
+            .Where(m => (m.VenueTenantId == tenantId || m.ArtistTenantId == tenantId)
+                        && latestMessageIds.Contains(m.Id))
+            .OrderByDescending(m => m.SentDate)
+            .ThenByDescending(m => m.Id)
+            .Take(5)
+            .Select(m => new MessagePreview(
+                m.Id,
+                m.VenueTenantId == tenantId ? m.ArtistTenantId : m.VenueTenantId,
+                m.VenueTenantId != tenantId,
+                m.Content,
+                m.SentDate,
+                context.Messages.Any(candidate =>
+                    candidate.VenueTenantId == m.VenueTenantId
+                    && candidate.ArtistTenantId == m.ArtistTenantId
+                    && candidate.SenderTenantId != tenantId
+                    && !context.ThreadReadStates.Any(pointer =>
+                        pointer.UserId == userId
+                        && pointer.VenueTenantId == candidate.VenueTenantId
+                        && pointer.ArtistTenantId == candidate.ArtistTenantId
+                        && pointer.LastReadAt >= candidate.SentDate))))
+            .ToListAsync();
+    }
+
     public async Task AdvanceReadPointersAsync(Guid tenantId, Guid userId, DateTime readAt)
     {
         var pairs = await context.Messages

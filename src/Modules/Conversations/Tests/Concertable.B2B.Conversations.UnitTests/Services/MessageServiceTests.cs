@@ -12,6 +12,36 @@ namespace Concertable.B2B.Conversations.UnitTests.Services;
 public sealed class MessageServiceTests
 {
     [Fact]
+    public async Task GetRecentPreviews_ResolvesCounterpartyIdentityAndPersonaHref()
+    {
+        var activeTenantId = Guid.NewGuid();
+        var venueTenantId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var at = new DateTime(2026, 8, 14, 12, 0, 0, DateTimeKind.Utc);
+        var repository = new Mock<IMessageRepository>();
+        repository.Setup(r => r.GetRecentPreviewsAsync(activeTenantId, userId))
+            .ReturnsAsync([new(12, venueTenantId, true, "See you Friday", at, true)]);
+        var currentUser = new Mock<ICurrentUser>();
+        currentUser.SetupGet(u => u.Id).Returns(userId);
+        var tenantContext = new Mock<ITenantContext>();
+        tenantContext.SetupGet(t => t.TenantId).Returns(activeTenantId);
+        var venueModule = new Mock<IVenueModule>();
+        venueModule.Setup(v => v.GetOrgIdentityByTenantIdAsync(venueTenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new VenueOrgIdentity("The Roundhouse", "Greater London", "London"));
+        var service = new MessageService(
+            repository.Object, Mock.Of<IConversationsNotifier>(), currentUser.Object, tenantContext.Object,
+            Mock.Of<ITenantModule>(), Mock.Of<IUserModule>(), venueModule.Object, Mock.Of<IArtistModule>(), TimeProvider.System);
+
+        var previews = await service.GetRecentPreviewsAsync();
+
+        var preview = Assert.Single(previews);
+        Assert.Equal("The Roundhouse", preview.OtherPartyName);
+        Assert.Equal("See you Friday", preview.Preview);
+        Assert.True(preview.Unread);
+        Assert.Equal("/_artist/?inbox=open", preview.Href);
+    }
+
+    [Fact]
     public async Task SendAndNotify_FansOutOneNotificationPerRecipientTenantMember()
     {
         var venueTenantId = Guid.NewGuid();

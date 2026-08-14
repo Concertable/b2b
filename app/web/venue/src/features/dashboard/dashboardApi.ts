@@ -2,7 +2,7 @@ import { selectPersona } from "@concertable/shared/features/dashboard";
 import type {
   ActivityItem,
   ConcertCard,
-  MessageThread,
+  MessagePreview,
   MonthlyRevenuePoint,
   ReviewExcerpt,
   Settlement,
@@ -25,7 +25,7 @@ const dashboardApi = {
   getApplicationsToReview: async (): Promise<Application[]> => {
     return venueFixtures[selectPersona()].applicationsToReview;
   },
-  getInbox: async (): Promise<MessageThread[]> => {
+  getInbox: async (): Promise<MessagePreview[]> => {
     return venueFixtures[selectPersona()].inbox;
   },
   getUpcomingConcerts: async (): Promise<ConcertCard[]> => {

@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,6 +20,30 @@ public sealed class ApplicationApiTests : IAsyncLifetime
 
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
+
+    [Fact]
+    public async Task GetCurrentForVenue_ShouldReturnApplicationList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync("/api/Application/venue/current");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var applications = await response.Content.ReadAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, applications.ValueKind);
+    }
+
+    [Fact]
+    public async Task GetCurrentForArtist_ShouldReturnApplicationList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await client.GetAsync("/api/Application/artist/current");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var applications = await response.Content.ReadAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, applications.ValueKind);
+    }
 
     #region Accept
 

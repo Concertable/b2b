@@ -24,6 +24,9 @@ public sealed class MessageRepositoryTests
     private static MessageEntity FromArtist(DateTime sentDate) =>
         MessageEntity.Create(VenueTenantId, ArtistTenantId, ArtistTenantId, ArtistUserId, "received", sentDate);
 
+    private static MessageEntity FromArtist(Guid artistTenantId, DateTime sentDate, string content) =>
+        MessageEntity.Create(VenueTenantId, artistTenantId, artistTenantId, ArtistUserId, content, sentDate);
+
     [Fact]
     public async Task GetUnreadCount_CountsOnlyMessagesNewerThanTheMembersReadPointer()
     {
@@ -56,6 +59,45 @@ public sealed class MessageRepositoryTests
         var unread = await new MessageRepository(context).GetUnreadCountByTenantIdAsync(VenueTenantId, VenueMemberId);
 
         Assert.Equal(0, unread);
+    }
+
+    [Fact]
+    public async Task GetRecentPreviews_ReturnsLatestMessageAndMemberUnreadStatePerCounterparty()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        var secondArtistTenantId = Guid.NewGuid();
+        await using (var seed = NewContext(dbName))
+        {
+            seed.Messages.AddRange(
+                FromArtist(ArtistTenantId, Older, "old first thread"),
+                FromArtist(ArtistTenantId, Newer, "latest first thread"),
+                FromArtist(secondArtistTenantId, Between, "second thread"),
+                MessageEntity.Create(
+                    Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), ArtistUserId,
+                    "unrelated tenant thread", Newer.AddDays(1)));
+            seed.ThreadReadStates.Add(ThreadReadStateEntity.Create(
+                VenueTenantId, ArtistTenantId, VenueMemberId, Newer.AddMinutes(1)));
+            await seed.SaveChangesAsync();
+        }
+
+        await using var context = NewContext(dbName);
+        var previews = await new MessageRepository(context).GetRecentPreviewsAsync(VenueTenantId, VenueMemberId);
+
+        Assert.Collection(
+            previews,
+            first =>
+            {
+                Assert.Equal("latest first thread", first.Preview);
+                Assert.Equal(ArtistTenantId, first.CounterpartTenantId);
+                Assert.False(first.CounterpartIsVenue);
+                Assert.False(first.Unread);
+            },
+            second =>
+            {
+                Assert.Equal("second thread", second.Preview);
+                Assert.Equal(secondArtistTenantId, second.CounterpartTenantId);
+                Assert.True(second.Unread);
+            });
     }
 
     private sealed class StubTenantContext : ITenantContext

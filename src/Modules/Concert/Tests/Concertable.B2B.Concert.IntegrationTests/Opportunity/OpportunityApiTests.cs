@@ -26,6 +26,30 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
+    [Fact]
+    public async Task GetCurrentForVenue_ShouldReturnOpportunityList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync("/api/Opportunity/venue/current");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var opportunities = await response.Content.ReadAsync<System.Text.Json.JsonElement>();
+        Assert.Equal(System.Text.Json.JsonValueKind.Array, opportunities.ValueKind);
+    }
+
+    [Fact]
+    public async Task GetRecommendedForArtist_ShouldReturnOpportunityList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await client.GetAsync("/api/Opportunity/artist/recommended");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var opportunities = await response.Content.ReadAsync<System.Text.Json.JsonElement>();
+        Assert.Equal(System.Text.Json.JsonValueKind.Array, opportunities.ValueKind);
+    }
+
     public static TheoryData<IDeal> AllDealTypes =>
     [
         new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 },

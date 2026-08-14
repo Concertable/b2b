@@ -42,6 +42,7 @@ internal abstract class OpportunityRepository<TContext> : TenantScopedRepository
 
     protected IQueryable<OpportunityEntity> ActiveForVenue(int venueId) =>
         context.Set<OpportunityEntity>()
+            .Include(o => o.Venue)
             .Where(o => o.VenueId == venueId)
             .WhereActive(timeProvider.GetUtcNow())
             .OrderBy(o => o.Period.Start);
