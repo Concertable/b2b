@@ -71,6 +71,29 @@ internal sealed class MessageService : IMessageService
     public Task<int> GetUnreadCountForUserAsync() =>
         repository.GetUnreadCountByTenantIdAsync(tenantContext.GetTenantId(), currentUser.GetId());
 
+    public async Task<IReadOnlyList<MessagePreviewDto>> GetRecentPreviewsAsync()
+    {
+        var activeTenantId = tenantContext.GetTenantId();
+        var previews = await repository.GetRecentPreviewsAsync(activeTenantId, currentUser.GetId());
+        var responses = new List<MessagePreviewDto>(previews.Count);
+
+        foreach (var preview in previews)
+        {
+            var sender = await ResolveOrgSenderAsync(preview.CounterpartTenantId, preview.CounterpartIsVenue);
+            var persona = preview.CounterpartIsVenue ? "artist" : "venue";
+            responses.Add(new MessagePreviewDto(
+                preview.Id,
+                sender.DisplayName,
+                null,
+                preview.Preview,
+                preview.At,
+                preview.Unread,
+                $"/_{persona}/?inbox=open"));
+        }
+
+        return responses;
+    }
+
     public Task MarkInboxReadAsync() =>
         repository.AdvanceReadPointersAsync(tenantContext.GetTenantId(), currentUser.GetId(), timeProvider.GetUtcNow().DateTime);
 

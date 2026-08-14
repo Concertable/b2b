@@ -18,6 +18,8 @@ internal sealed class ConcertService : IConcertService
     private readonly ICancelExecutor cancelExecutor;
     private readonly TimeProvider timeProvider;
     private readonly ITenantContext tenantContext;
+    private readonly IVenueModule venueModule;
+    private readonly IArtistModule artistModule;
 
     public ConcertService(
         IConcertRepository repository,
@@ -29,7 +31,9 @@ internal sealed class ConcertService : IConcertService
         IConcertDraftService concertDraftService,
         ICancelExecutor cancelExecutor,
         TimeProvider timeProvider,
-        ITenantContext tenantContext)
+        ITenantContext tenantContext,
+        IVenueModule venueModule,
+        IArtistModule artistModule)
     {
         this.repository = repository;
         this.publicRepository = publicRepository;
@@ -41,6 +45,8 @@ internal sealed class ConcertService : IConcertService
         this.cancelExecutor = cancelExecutor;
         this.timeProvider = timeProvider;
         this.tenantContext = tenantContext;
+        this.venueModule = venueModule;
+        this.artistModule = artistModule;
     }
 
     public Task<IEnumerable<ConcertSummary>> GetUpcomingByVenueIdAsync(int id) =>
@@ -48,6 +54,20 @@ internal sealed class ConcertService : IConcertService
 
     public Task<IEnumerable<ConcertSummary>> GetUpcomingByArtistIdAsync(int id) =>
         publicRepository.GetUpcomingByArtistIdAsync(id);
+
+    public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingForCurrentVenueAsync()
+    {
+        var venueId = await venueModule.GetVenueIdForCurrentTenantAsync()
+            ?? throw new ForbiddenException("You must have a Venue account");
+        return await repository.GetUpcomingCardsForVenueAsync(venueId);
+    }
+
+    public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingForCurrentArtistAsync()
+    {
+        var artistId = await artistModule.GetIdForCurrentTenantAsync()
+            ?? throw new ForbiddenException("You must have an Artist account");
+        return await repository.GetUpcomingCardsForArtistAsync(artistId);
+    }
 
     public Task<IEnumerable<ConcertSummary>> GetHistoryByArtistIdAsync(int id) =>
         publicRepository.GetHistoryByArtistIdAsync(id);

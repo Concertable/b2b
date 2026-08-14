@@ -1,7 +1,7 @@
 import type {
   ActivityItem,
   ConcertCard,
-  MessageThread,
+  MessagePreview,
   MonthlyRevenuePoint,
   ReviewExcerpt,
   Settlement,
@@ -17,7 +17,7 @@ export interface VenueDashboardFixture {
   overview: VenueDashboardOverview;
   kpis: VenueDashboardKpis;
   applicationsToReview: Application[];
-  inbox: MessageThread[];
+  inbox: MessagePreview[];
   upcomingConcerts: ConcertCard[];
   ticketRevenue: MonthlyRevenuePoint[];
   openOpportunities: OpportunityWithCounts[];

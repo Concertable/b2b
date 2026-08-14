@@ -50,6 +50,7 @@ internal static class OpportunityMappers
     {
         Id = opportunity.Id,
         VenueId = opportunity.VenueId,
+        VenueName = opportunity.Venue.Name,
         DealId = opportunity.DealId,
         Deal = deal,
         StartDate = opportunity.Period.Start,

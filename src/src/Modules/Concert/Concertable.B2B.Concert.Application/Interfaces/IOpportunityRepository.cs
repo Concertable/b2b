@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Contracts;
 using Concertable.B2B.DataAccess.Application;
@@ -17,4 +18,5 @@ internal interface IOpportunityRepository : ITenantScopedRepository<OpportunityE
     Task<int?> GetDealIdByIdAsync(int opportunityId);
     Task<DateRange?> GetPeriodByIdAsync(int opportunityId);
     Task<(string Name, Guid UserId)?> GetVenueSummaryByIdAsync(int opportunityId);
+    Task<IReadOnlyList<OpportunityListRow>> GetOpenWithCountsByVenueIdAsync(int venueId);
 }

@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
@@ -16,6 +17,8 @@ internal sealed class OpportunityService : IOpportunityService
     private readonly IOpportunityMapper mapper;
     private readonly ITenantContext tenantContext;
     private readonly IUnitOfWorkBehavior uowBehavior;
+    private readonly IArtistModule artistModule;
+    private readonly TimeProvider timeProvider;
 
     public OpportunityService(
         IOpportunityRepository repository,
@@ -25,7 +28,9 @@ internal sealed class OpportunityService : IOpportunityService
         IOpportunitySyncer syncer,
         IOpportunityMapper mapper,
         ITenantContext tenantContext,
-        IUnitOfWorkBehavior uowBehavior)
+        IUnitOfWorkBehavior uowBehavior,
+        IArtistModule artistModule,
+        TimeProvider timeProvider)
     {
         this.repository = repository;
         this.publicRepository = publicRepository;
@@ -35,6 +40,8 @@ internal sealed class OpportunityService : IOpportunityService
         this.mapper = mapper;
         this.tenantContext = tenantContext;
         this.uowBehavior = uowBehavior;
+        this.artistModule = artistModule;
+        this.timeProvider = timeProvider;
     }
 
     public async Task<OpportunityDto> CreateAsync(OpportunityRequest request)
@@ -138,5 +145,59 @@ internal sealed class OpportunityService : IOpportunityService
 
         var opportunity = await repository.GetByApplicationIdAsync(applicationId);
         return opportunity?.TenantId == tenant;
+    }
+
+    public async Task<IReadOnlyList<VenueOpenOpportunity>> GetOpenForCurrentVenueAsync()
+    {
+        var venueId = await venueModule.GetVenueIdForCurrentTenantAsync()
+            ?? throw new ForbiddenException("You must have a Venue account");
+        var rows = await repository.GetOpenWithCountsByVenueIdAsync(venueId);
+        var deals = await GetDealsAsync(rows);
+        var today = timeProvider.GetUtcNow().UtcDateTime.Date;
+
+        return rows.Select(row => new VenueOpenOpportunity(
+            ToSummary(row, deals[row.DealId]),
+            row.ApplicationCount,
+            Math.Max(0, (row.StartDate.Date.AddDays(-7) - today).Days))).ToList();
+    }
+
+    public async Task<IReadOnlyList<RecommendedOpportunity>> GetRecommendedForCurrentArtistAsync()
+    {
+        var artistId = await artistModule.GetIdForCurrentTenantAsync()
+            ?? throw new ForbiddenException("You must have an Artist account");
+        var artistGenres = await artistModule.GetGenresAsync(artistId);
+        var rows = await publicRepository.GetRecommendedAsync(artistId, artistGenres);
+        var deals = await GetDealsAsync(rows);
+
+        return rows.Select(row => new RecommendedOpportunity(
+            row.Id,
+            row.VenueId,
+            row.VenueName,
+            null,
+            row.County,
+            row.Town,
+            row.StartDate,
+            row.EndDate,
+            row.Genres,
+            deals[row.DealId],
+            CalculateFitScore(row.Genres, artistGenres),
+            $"/_artist/find/venue/{row.VenueId}"))
+            .ToList();
+    }
+
+    private async Task<IReadOnlyDictionary<int, IDeal>> GetDealsAsync(IReadOnlyList<OpportunityListRow> rows) =>
+        (await dealModule.GetByIdsAsync(rows.Select(row => row.DealId).Distinct()))
+            .ToDictionary(deal => deal.Id);
+
+    private static ManagerOpportunitySummary ToSummary(OpportunityListRow row, IDeal deal) =>
+        new(row.Id, row.VenueId, row.VenueName, row.StartDate, row.EndDate, row.Genres, deal);
+
+    private static int CalculateFitScore(IReadOnlyList<Genre> opportunityGenres, IReadOnlySet<Genre> artistGenres)
+    {
+        if (opportunityGenres.Count == 0)
+            return 100;
+
+        var matchingGenres = opportunityGenres.Count(artistGenres.Contains);
+        return (int)Math.Round(matchingGenres * 100d / opportunityGenres.Count);
     }
 }

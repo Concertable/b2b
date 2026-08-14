@@ -1,7 +1,7 @@
 import type {
   ActivityItem,
   ConcertCard,
-  MessageThread,
+  MessagePreview,
   MonthlyRevenuePoint,
   ReviewExcerpt,
 } from "@concertable/shared/features/dashboard";
@@ -16,7 +16,7 @@ export interface ArtistDashboardFixture {
   overview: ArtistDashboardOverview;
   kpis: ArtistDashboardKpis;
   applications: Application[];
-  inbox: MessageThread[];
+  inbox: MessagePreview[];
   upcomingConcerts: ConcertCard[];
   payouts: MonthlyRevenuePoint[];
   recommendedOpportunities: OpportunityCard[];

@@ -23,6 +23,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .Include(ca => ca.Artist)
                 .ThenInclude(a => a.Genres)
             .Include(ca => ca.Opportunity)
+                .ThenInclude(o => o.Venue)
             .ToListAsync();
     }
 
@@ -38,6 +39,43 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
                 a.ArtistId == artistId &&
                 !context.Bookings.Any(b => b.ApplicationId == a.Id) &&
                 a.Opportunity.Period.Start > timeProvider.GetUtcNow())
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<ApplicationEntity>> GetPendingForVenueAsync(int venueId)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        return await context.Applications
+            .AsNoTracking()
+            .Include(a => a.Artist)
+                .ThenInclude(a => a.Genres)
+            .Include(a => a.Opportunity)
+                .ThenInclude(o => o.Venue)
+            .Where(a => a.Opportunity.VenueId == venueId
+                        && a.State == LifecycleState.Applied
+                        && a.Opportunity.Period.Start > now)
+            .OrderBy(a => a.Opportunity.Period.Start)
+            .ThenBy(a => a.Id)
+            .Take(5)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<ApplicationEntity>> GetCurrentForArtistAsync(int artistId)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        return await context.Applications
+            .AsNoTracking()
+            .Include(a => a.Artist)
+                .ThenInclude(a => a.Genres)
+            .Include(a => a.Opportunity)
+                .ThenInclude(o => o.Venue)
+            .Where(a => a.ArtistId == artistId
+                        && a.Opportunity.Period.Start > now
+                        && a.State != LifecycleState.Withdrawn
+                        && a.State != LifecycleState.Cancelled)
+            .OrderBy(a => a.Opportunity.Period.Start)
+            .ThenBy(a => a.Id)
+            .Take(10)
             .ToListAsync();
     }
 
@@ -83,6 +121,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .Include(ca => ca.Artist)
                 .ThenInclude(a => a.Genres)
             .Include(ca => ca.Opportunity)
+                .ThenInclude(o => o.Venue)
             .FirstOrDefaultAsync(ct);
     }
 

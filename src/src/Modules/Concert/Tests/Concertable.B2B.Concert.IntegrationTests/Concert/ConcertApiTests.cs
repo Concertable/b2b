@@ -21,6 +21,30 @@ public sealed class ConcertApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
+    [Fact]
+    public async Task GetUpcomingForVenue_ShouldReturnConcertList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync("/api/Concert/upcoming/venue/current");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var concerts = await response.Content.ReadAsync<System.Text.Json.JsonElement>();
+        Assert.Equal(System.Text.Json.JsonValueKind.Array, concerts.ValueKind);
+    }
+
+    [Fact]
+    public async Task GetUpcomingForArtist_ShouldReturnConcertList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await client.GetAsync("/api/Concert/upcoming/artist/current");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var concerts = await response.Content.ReadAsync<System.Text.Json.JsonElement>();
+        Assert.Equal(System.Text.Json.JsonValueKind.Array, concerts.ValueKind);
+    }
+
     /* Posting goes through the booking, which the two-party Tenant filter scopes to its parties —
        so the caller must be the venue manager who actually owns the concert's venue. */
     private System.Net.Http.HttpClient CreateOwningVenueClient(int venueId) =>

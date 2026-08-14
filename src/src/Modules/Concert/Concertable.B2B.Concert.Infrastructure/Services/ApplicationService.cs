@@ -11,6 +11,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IOpportunityService opportunityService;
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IArtistModule artistModule;
+    private readonly IVenueModule venueModule;
     private readonly IApplicationExecutor executor;
     private readonly ICheckoutDispatcher checkoutDispatcher;
     private readonly IApplicationMapper mapper;
@@ -22,6 +23,7 @@ internal sealed class ApplicationService : IApplicationService
         IOpportunityService opportunityService,
         IOpportunityRepository opportunityRepository,
         IArtistModule artistModule,
+        IVenueModule venueModule,
         IApplicationExecutor executor,
         ICheckoutDispatcher checkoutDispatcher,
         IApplicationMapper mapper)
@@ -32,6 +34,7 @@ internal sealed class ApplicationService : IApplicationService
         this.opportunityService = opportunityService;
         this.opportunityRepository = opportunityRepository;
         this.artistModule = artistModule;
+        this.venueModule = venueModule;
         this.executor = executor;
         this.checkoutDispatcher = checkoutDispatcher;
         this.mapper = mapper;
@@ -63,6 +66,20 @@ internal sealed class ApplicationService : IApplicationService
             ?? throw new ForbiddenException("You must have an Artist account");
         var applications = await repository.GetRecentDeniedByArtistIdAsync(artistId);
         return await mapper.ToDtosAsync(applications);
+    }
+
+    public async Task<IEnumerable<ApplicationDto>> GetPendingForCurrentVenueAsync()
+    {
+        var venueId = await venueModule.GetVenueIdForCurrentTenantAsync()
+            ?? throw new ForbiddenException("You must have a Venue account");
+        return await mapper.ToDtosAsync(await repository.GetPendingForVenueAsync(venueId));
+    }
+
+    public async Task<IEnumerable<ApplicationDto>> GetCurrentForCurrentArtistAsync()
+    {
+        var artistId = await artistModule.GetIdForCurrentTenantAsync()
+            ?? throw new ForbiddenException("You must have an Artist account");
+        return await mapper.ToDtosAsync(await repository.GetCurrentForArtistAsync(artistId));
     }
 
     public async Task<ApplicationDto> ApplyAsync(int opportunityId, ESignatureRequest eSignature)

@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Contracts;
 
@@ -14,4 +15,5 @@ internal interface IPublicOpportunityRepository
 {
     Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId, IPageParams pageParams);
     Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId);
+    Task<IReadOnlyList<OpportunityListRow>> GetRecommendedAsync(int artistId, IReadOnlySet<Genre> genres);
 }

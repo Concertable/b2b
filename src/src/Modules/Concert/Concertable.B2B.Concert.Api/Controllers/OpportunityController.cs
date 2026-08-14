@@ -8,7 +8,6 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[RequiredTenantType(TenantType.Venue)]
 internal sealed class OpportunityController : ControllerBase
 {
     private readonly IOpportunityService opportunityService;
@@ -76,4 +75,16 @@ internal sealed class OpportunityController : ControllerBase
     {
         return Ok(await opportunityService.OwnsOpportunityByApplicationIdAsync(applicationId));
     }
+
+    [HttpGet("venue/current")]
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<VenueOpenOpportunity>>> GetOpenForCurrentVenue() =>
+        Ok(await opportunityService.GetOpenForCurrentVenueAsync());
+
+    [HttpGet("artist/recommended")]
+    [RequiredTenantType(TenantType.Artist)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<RecommendedOpportunity>>> GetRecommendedForCurrentArtist() =>
+        Ok(await opportunityService.GetRecommendedForCurrentArtistAsync());
 }
