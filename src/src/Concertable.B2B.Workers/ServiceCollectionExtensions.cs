@@ -62,10 +62,10 @@ internal static class ServiceCollectionExtensions
         services.AddClientCredentials(opts =>
         {
             opts.Authority = configuration["Auth:Authority"] ?? configuration["services:auth:https:0"]
-                ?? (environment.IsEnvironment("Testing") ? null!
+                ?? (environment.IsEnvironment("Integration") ? null!
                     : throw new InvalidOperationException("Auth:Authority is required (no explicit key and no service-discovery fallback)."));
             opts.ClientId = configuration["ServiceAuth:ClientId"]
-                ?? (environment.IsEnvironment("Testing") ? null!
+                ?? (environment.IsEnvironment("Integration") ? null!
                     : throw new InvalidOperationException("ServiceAuth:ClientId is required."));
             if (configuration["ServiceAuth:ClientSecret"] is string clientSecret)
                 opts.ClientSecret = clientSecret;
