@@ -11,6 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Concertable.B2B.Conversations.Contracts\Concertable.B2B.Conversations.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Conversations.Application\Concertable.B2B.Conversations.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Conversations.Infrastructure\Concertable.B2B.Conversations.Infrastructure.csproj" />

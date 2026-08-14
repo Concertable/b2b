@@ -31,9 +31,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ConversationsConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConversationsConfigurationProvider>());
 
+        services.Configure<SafetySettings>(configuration.GetSection(SafetySettings.SectionName));
+
         services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddScoped<IContentReportRepository, ContentReportRepository>();
         services.AddScoped<IConversationsNotifier, ConversationsNotifier>();
         services.AddScoped<IMessageService, MessageService>();
+        services.AddScoped<IContentReportNotifier, ContentReportNotifier>();
+        services.AddScoped<IContentReportService, ContentReportService>();
         services.AddScoped<IConversationsModule, ConversationsModule>();
 
         return services;

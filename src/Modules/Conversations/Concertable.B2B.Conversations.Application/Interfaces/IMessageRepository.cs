@@ -4,6 +4,10 @@ namespace Concertable.B2B.Conversations.Application.Interfaces;
 
 internal interface IMessageRepository
 {
+    /// <summary>One message from the acting tenant's own threads; <see langword="null"/> when it does not
+    /// exist or the tenant is not party to it.</summary>
+    Task<MessageEntity?> GetByIdAsync(int id);
+
     /// <summary>Every message in the tenant's threads (both directions), newest first — the tenant's inbox rows.</summary>
     Task<IPagination<MessageEntity>> GetByTenantIdAsync(Guid tenantId, IPageParams pageParams);
 
