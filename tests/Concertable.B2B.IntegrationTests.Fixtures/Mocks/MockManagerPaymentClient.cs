@@ -101,4 +101,28 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
 
     public Task<string> FindHeldIntentAsync(Guid payerId, int applicationId, CancellationToken ct = default) =>
         Task.FromResult(stripeApiClient.LastPaymentIntentId);
+
+    public Task<Money> GetTicketRevenueAsync(Guid payeeId, DateRange period, CancellationToken ct = default) =>
+        Task.FromResult(Money.Gbp(0m));
+
+    public Task<Money> GetSettlementPayoutsAsync(Guid payeeId, DateRange period, CancellationToken ct = default) =>
+        Task.FromResult(Money.Gbp(0m));
+
+    public Task<IReadOnlyList<MonthlyPaymentPoint>> GetTicketRevenueByMonthAsync(
+        Guid payeeId,
+        DateRange period,
+        CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<MonthlyPaymentPoint>>([]);
+
+    public Task<IReadOnlyList<MonthlyPaymentPoint>> GetSettlementPayoutsByMonthAsync(
+        Guid payeeId,
+        DateRange period,
+        CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<MonthlyPaymentPoint>>([]);
+
+    public Task<IReadOnlyList<ManagerSettlement>> GetRecentSettlementsAsync(
+        Guid ownerId,
+        int take,
+        CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<ManagerSettlement>>([]);
 }
