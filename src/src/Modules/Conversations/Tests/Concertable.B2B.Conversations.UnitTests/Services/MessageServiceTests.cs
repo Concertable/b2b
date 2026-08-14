@@ -1,9 +1,8 @@
-using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Conversations.Application.Interfaces;
+using Concertable.B2B.Conversations.Domain.ReadModels;
 using Concertable.B2B.Conversations.Infrastructure.Services;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
-using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
 using Moq;
 
@@ -22,22 +21,23 @@ public sealed class MessageServiceTests
         var repository = new Mock<IMessageRepository>();
         repository.Setup(r => r.AddAsync(It.IsAny<MessageEntity>())).Returns(Task.CompletedTask);
         repository.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        repository.Setup(r => r.GetParticipantProfilesAsync(It.IsAny<IReadOnlySet<Guid>>()))
+            .ReturnsAsync(new Dictionary<Guid, ParticipantProfile>
+            {
+                [venueTenantId] = ParticipantProfile.Create(
+                    venueTenantId, "The Roundhouse", "Greater London", "London")
+            });
 
         var notifier = new Mock<IConversationsNotifier>();
         notifier.Setup(n => n.MessageReceivedAsync(It.IsAny<string>(), It.IsAny<object>())).Returns(Task.CompletedTask);
 
-        // Sender is the venue side, so the recipient tenant is the artist side.
         var tenantModule = new Mock<ITenantModule>();
         tenantModule.Setup(t => t.GetMemberUserIdsAsync(artistTenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(recipientMembers);
 
-        var venueModule = new Mock<IVenueModule>();
-        venueModule.Setup(v => v.GetOrgIdentityByTenantIdAsync(venueTenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new VenueOrgIdentity("The Roundhouse", "Greater London", "London"));
-
         var service = new MessageService(
             repository.Object, notifier.Object, Mock.Of<ICurrentUser>(), Mock.Of<ITenantContext>(),
-            tenantModule.Object, Mock.Of<IUserModule>(), venueModule.Object, Mock.Of<IArtistModule>(), TimeProvider.System);
+            tenantModule.Object, Mock.Of<IUserModule>(), TimeProvider.System);
 
         await service.SendAndNotifyAsync(venueTenantId, artistTenantId,
             senderTenantId: venueTenantId, sentByUserId: sentByUserId, "hello", MessageAction.ApplicationAccepted);

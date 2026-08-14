@@ -90,6 +90,20 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.ToTable("ThreadReadStates", "conversations");
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.ReadModels.ParticipantProfile", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("TenantId");
+
+                    b.ToTable("ParticipantProfiles", "conversations");
+                });
+
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
                 {
                     b.Property<Guid>("MessageId")
@@ -157,6 +171,35 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.ReadModels.ParticipantProfile", b =>
+                {
+                    b.OwnsOne("Concertable.Kernel.ValueObjects.Address", "Address", b1 =>
+                        {
+                            b1.Property<Guid>("ParticipantProfileTenantId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("County")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)")
+                                .HasColumnName("County");
+
+                            b1.Property<string>("Town")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)")
+                                .HasColumnName("Town");
+
+                            b1.HasKey("ParticipantProfileTenantId");
+
+                            b1.ToTable("ParticipantProfiles", "conversations");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ParticipantProfileTenantId");
+                        });
+
+                    b.Navigation("Address")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

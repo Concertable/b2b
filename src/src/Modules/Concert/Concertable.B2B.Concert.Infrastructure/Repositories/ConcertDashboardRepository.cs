@@ -14,14 +14,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
 {
-    private readonly TenantConcertDbContext context;
+    private readonly ConcertTenantDbContext context;
     private readonly IUpcomingSpecification<OpportunityEntity> opportunityUpcoming;
     private readonly IUpcomingSpecification<ConcertEntity> concertUpcoming;
     private readonly IEndedAndBookedSpecification endedAndBooked;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
 
     public ConcertDashboardRepository(
-        TenantConcertDbContext context,
+        ConcertTenantDbContext context,
         IUpcomingSpecification<OpportunityEntity> opportunityUpcoming,
         IUpcomingSpecification<ConcertEntity> concertUpcoming,
         IEndedAndBookedSpecification endedAndBooked,

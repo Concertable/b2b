@@ -10,10 +10,10 @@ internal sealed class VenueTestSeeder : ITestSeeder
 {
     public int Order => 2;
 
-    private readonly TenantVenueDbContext context;
+    private readonly VenueTenantDbContext context;
     private readonly SeedState seed;
 
-    public VenueTestSeeder(TenantVenueDbContext context, SeedState seed)
+    public VenueTestSeeder(VenueTenantDbContext context, SeedState seed)
     {
         this.context = context;
         this.seed = seed;

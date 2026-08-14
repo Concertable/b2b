@@ -25,7 +25,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddVenueModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<TenantVenueDbContext>((sp, opt) =>
+        services.AddDbContext<VenueTenantDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
@@ -55,7 +55,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVenueReviewService, VenueReviewService>();
         services.AddScoped<IVenueRepository, VenueRepository>();
         services.AddScoped<IPublicVenueRepository, PublicVenueRepository>();
-        services.AddScoped<IVenueOrgIdentityLookup, VenueOrgIdentityLookup>();
         services.AddScoped<IAdminVenueRepository, AdminVenueRepository>();
         services.AddScoped<IVenueModule, VenueModule>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();

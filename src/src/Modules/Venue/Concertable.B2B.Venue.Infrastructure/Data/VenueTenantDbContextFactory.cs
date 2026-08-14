@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Concertable.B2B.Venue.Infrastructure.Data;
 
-internal sealed class TenantVenueDbContextFactory : B2BDesignTimeDbContextFactory<TenantVenueDbContext>
+internal sealed class VenueTenantDbContextFactory : B2BDesignTimeDbContextFactory<VenueTenantDbContext>
 {
-    protected override TenantVenueDbContext Create(DbContextOptions<TenantVenueDbContext> options) =>
+    protected override VenueTenantDbContext Create(DbContextOptions<VenueTenantDbContext> options) =>
         new(options, new VenueConfigurationProvider(), DesignTimeTenantContext.Instance);
 
     protected override void ConfigureSqlServer(SqlServerDbContextOptionsBuilder sql) =>

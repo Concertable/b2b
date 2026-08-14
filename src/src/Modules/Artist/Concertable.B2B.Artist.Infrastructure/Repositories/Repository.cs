@@ -5,14 +5,14 @@ using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
-internal abstract class WriteRepository<TEntity>(TenantArtistDbContext context)
-    : WriteRepository<TEntity, TenantArtistDbContext>(context)
+internal abstract class WriteRepository<TEntity>(ArtistTenantDbContext context)
+    : WriteRepository<TEntity, ArtistTenantDbContext>(context)
     where TEntity : class;
 
-internal abstract class Repository<TEntity>(TenantArtistDbContext context)
-    : Repository<TEntity, TenantArtistDbContext, int>(context)
+internal abstract class Repository<TEntity>(ArtistTenantDbContext context)
+    : Repository<TEntity, ArtistTenantDbContext, int>(context)
     where TEntity : class, IIdEntity;
 
-internal abstract class TenantScopedRepository<TEntity>(TenantArtistDbContext context, ITenantContext tenant)
-    : TenantScopedRepository<TEntity, TenantArtistDbContext, int>(context, tenant)
+internal abstract class TenantScopedRepository<TEntity>(ArtistTenantDbContext context, ITenantContext tenant)
+    : TenantScopedRepository<TEntity, ArtistTenantDbContext, int>(context, tenant)
     where TEntity : class, IIdEntity, ITenantScoped;

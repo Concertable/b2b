@@ -44,7 +44,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     private async Task RepointArtistTenantAsync(int concertId, Guid artistTenantId)
     {
         using var scope = fixture.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<TenantConcertDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<ConcertTenantDbContext>();
         await context.Concerts.Where(c => c.Id == concertId)
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.ArtistTenantId, artistTenantId));
     }

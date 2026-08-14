@@ -5,14 +5,14 @@ using Concertable.B2B.Venue.Infrastructure.Data;
 
 namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
-internal abstract class WriteRepository<TEntity>(TenantVenueDbContext context)
-    : WriteRepository<TEntity, TenantVenueDbContext>(context)
+internal abstract class WriteRepository<TEntity>(VenueTenantDbContext context)
+    : WriteRepository<TEntity, VenueTenantDbContext>(context)
     where TEntity : class;
 
-internal abstract class Repository<TEntity>(TenantVenueDbContext context)
-    : Repository<TEntity, TenantVenueDbContext, int>(context)
+internal abstract class Repository<TEntity>(VenueTenantDbContext context)
+    : Repository<TEntity, VenueTenantDbContext, int>(context)
     where TEntity : class, IIdEntity;
 
-internal abstract class TenantScopedRepository<TEntity>(TenantVenueDbContext context, ITenantContext tenant)
-    : TenantScopedRepository<TEntity, TenantVenueDbContext, int>(context, tenant)
+internal abstract class TenantScopedRepository<TEntity>(VenueTenantDbContext context, ITenantContext tenant)
+    : TenantScopedRepository<TEntity, VenueTenantDbContext, int>(context, tenant)
     where TEntity : class, IIdEntity, ITenantScoped;

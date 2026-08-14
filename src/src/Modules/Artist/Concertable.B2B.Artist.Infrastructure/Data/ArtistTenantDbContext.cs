@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Data;
 
-internal sealed class TenantArtistDbContext(
-    DbContextOptions<TenantArtistDbContext> options,
+internal sealed class ArtistTenantDbContext(
+    DbContextOptions<ArtistTenantDbContext> options,
     ArtistConfigurationProvider provider,
     ITenantContext tenantContext)
     : TenantScopedDbContext(options, provider, tenantContext, Schema.Name)

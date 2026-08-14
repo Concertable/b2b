@@ -8,5 +8,6 @@ internal static class Schema
     {
         public const string Messages = "Messages";
         public const string ThreadReadStates = "ThreadReadStates";
+        public const string ParticipantProfiles = "ParticipantProfiles";
     }
 }

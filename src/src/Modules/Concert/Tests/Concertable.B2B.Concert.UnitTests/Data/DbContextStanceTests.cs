@@ -25,8 +25,8 @@ public sealed class DbContextStanceTests
         await using var readContext = new ConcertDbContext(
             CreateOptions<ConcertDbContext>(),
             provider);
-        await using var tenantContext = new TenantConcertDbContext(
-            CreateOptions<TenantConcertDbContext>(),
+        await using var tenantContext = new ConcertTenantDbContext(
+            CreateOptions<ConcertTenantDbContext>(),
             provider,
             Mock.Of<ITenantContext>());
 

@@ -9,10 +9,10 @@ internal sealed class ArtistTestSeeder : ITestSeeder
 {
     public int Order => 1;
 
-    private readonly TenantArtistDbContext context;
+    private readonly ArtistTenantDbContext context;
     private readonly SeedState seed;
 
-    public ArtistTestSeeder(TenantArtistDbContext context, SeedState seed)
+    public ArtistTestSeeder(ArtistTenantDbContext context, SeedState seed)
     {
         this.context = context;
         this.seed = seed;

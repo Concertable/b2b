@@ -1,4 +1,5 @@
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Conversations.Domain.ReadModels;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,7 @@ internal sealed class ConversationsDbContext(
 {
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
     public DbSet<ThreadReadStateEntity> ThreadReadStates => Set<ThreadReadStateEntity>();
+    public DbSet<ParticipantProfile> ParticipantProfiles => Set<ParticipantProfile>();
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {

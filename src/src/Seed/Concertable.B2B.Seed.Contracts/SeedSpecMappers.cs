@@ -10,7 +10,10 @@ public static class SeedSpecMappers
 {
     public static VenueChangedEvent ToChangedEvent(this VenueSeedSpec spec) => new(
         spec.VenueId, spec.UserId, spec.Name, spec.About, spec.Avatar, spec.BannerUrl,
-        spec.County, spec.Town, spec.Latitude, spec.Longitude, spec.Email);
+        spec.County, spec.Town, spec.Latitude, spec.Longitude, spec.Email)
+    {
+        TenantId = TenantSeedIds.For(spec.UserId)
+    };
 
     public static ArtistChangedEvent ToChangedEvent(this ArtistSeedSpec spec) => new(
         spec.ArtistId, spec.UserId, spec.Name, spec.About, spec.Avatar, spec.BannerUrl,
