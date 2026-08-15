@@ -69,6 +69,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "Concert draft {ConcertId} created for booking {BookingId} (artist {ArtistId}, venue {VenueId}); notifying users")]
     internal static partial void ConcertDraftCreated(this ILogger logger, int concertId, int bookingId, int artistId, int venueId);
 
+    [LoggerMessage(Level = LogLevel.Error, Message = "Booking-confirmation email failed for concert {ConcertId} (booking {BookingId}); the booking is confirmed regardless")]
+    internal static partial void BookingConfirmationEmailFailed(this ILogger logger, Exception exception, int concertId, int bookingId);
+
     #endregion
 
     #region ContractDocument
