@@ -68,6 +68,7 @@ producers still send synchronously** through `IEmailTransport` (the raw SMTP/fak
 failure still loses the mail and the send isn't atomic with the business change:
 
 - `Concert.Infrastructure/Services/Messenger` — the counterparty email on a conversation message/action.
+- `Concert.Infrastructure/Services/BookingConfirmationNotifier` — the both-party booking-confirmation email at concert-draft creation (`ConcertDraftService.CreateAsync`).
 - `Tenant.Infrastructure/Services/InvitationService` — the org-invitation email after the invitation saves.
 
 They were left synchronous because the integration-test harness can't deliver an outbox command

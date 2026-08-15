@@ -79,6 +79,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBookingService, BookingService>();
         services.AddScoped<IConcertNotifier, ConcertNotifier>();
         services.AddScoped<IBookingConfirmationEmailGenerator, BookingConfirmationEmailGenerator>();
+        services.AddScoped<IBookingConfirmationNotifier, BookingConfirmationNotifier>();
         services.AddScoped<IOpportunityService, OpportunityService>();
         services.AddScoped<IOpportunitySyncer>(sp => new Sync.OpportunitySyncer(
             sp.GetRequiredService<IOpportunityRepository>(),
