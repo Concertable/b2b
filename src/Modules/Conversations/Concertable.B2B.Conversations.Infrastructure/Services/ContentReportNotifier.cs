@@ -1,4 +1,5 @@
 using Concertable.Shared.Email.Application;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Services;
@@ -8,24 +9,22 @@ internal sealed class ContentReportNotifier : IContentReportNotifier
     private readonly IEmailTransport emailTransport;
     private readonly ICurrentUser currentUser;
     private readonly SafetySettings settings;
+    private readonly ILogger<ContentReportNotifier> logger;
 
     public ContentReportNotifier(
         IEmailTransport emailTransport,
         ICurrentUser currentUser,
-        IOptions<SafetySettings> settings)
+        IOptions<SafetySettings> settings,
+        ILogger<ContentReportNotifier> logger)
     {
         this.emailTransport = emailTransport;
         this.currentUser = currentUser;
         this.settings = settings.Value;
+        this.logger = logger;
     }
 
     public async Task SubmittedAsync(ContentReportEntity report)
     {
-        // Resolved before either send: Artifact 3 mandates the acknowledgement, so a reporter we cannot
-        // reach is an invariant violation, not a mail we quietly drop.
-        var reporterEmail = currentUser.Email
-            ?? throw new UnauthorizedAccessException("The reporting user has no email address.");
-
         var reference = report.Reference;
 
         await emailTransport.SendEmailAsync(
@@ -46,6 +45,13 @@ internal sealed class ContentReportNotifier : IContentReportNotifier
              Message excerpt:
              {report.MessageExcerpt}
              """);
+
+        var reporterEmail = currentUser.Email;
+        if (reporterEmail is null)
+        {
+            logger.ReporterEmailMissing(reference);
+            return;
+        }
 
         await emailTransport.SendEmailAsync(
             reporterEmail,

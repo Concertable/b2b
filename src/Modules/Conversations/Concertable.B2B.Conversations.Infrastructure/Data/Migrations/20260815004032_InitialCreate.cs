@@ -56,7 +56,9 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     Action = table.Column<int>(type: "int", nullable: true),
                     SentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     HiddenAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    HiddenByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    HiddenByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RestoredAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RestoredByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {

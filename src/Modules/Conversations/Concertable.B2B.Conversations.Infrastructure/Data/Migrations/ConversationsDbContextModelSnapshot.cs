@@ -111,6 +111,12 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<Guid?>("HiddenByUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("RestoredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RestoredByUserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("SenderTenantId")
                         .HasColumnType("uniqueidentifier");
 

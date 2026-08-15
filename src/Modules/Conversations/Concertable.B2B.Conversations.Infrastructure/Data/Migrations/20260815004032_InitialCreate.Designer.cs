@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConversationsDbContext))]
-    [Migration("20260814225707_InitialCreate")]
+    [Migration("20260815004032_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -112,6 +112,12 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<Guid?>("HiddenByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RestoredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RestoredByUserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("SenderTenantId")

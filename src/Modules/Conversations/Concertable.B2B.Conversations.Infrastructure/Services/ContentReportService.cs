@@ -1,6 +1,7 @@
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
+using Microsoft.Extensions.Logging;
 using Reunion;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Services;
@@ -13,6 +14,7 @@ internal sealed class ContentReportService : IContentReportService
     private readonly ICurrentUser currentUser;
     private readonly ITenantContext tenantContext;
     private readonly TimeProvider timeProvider;
+    private readonly ILogger<ContentReportService> logger;
 
     public ContentReportService(
         IMessageRepository messageRepository,
@@ -20,7 +22,8 @@ internal sealed class ContentReportService : IContentReportService
         IContentReportNotifier notifier,
         ICurrentUser currentUser,
         ITenantContext tenantContext,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILogger<ContentReportService> logger)
     {
         this.messageRepository = messageRepository;
         this.reportRepository = reportRepository;
@@ -28,6 +31,7 @@ internal sealed class ContentReportService : IContentReportService
         this.currentUser = currentUser;
         this.tenantContext = tenantContext;
         this.timeProvider = timeProvider;
+        this.logger = logger;
     }
 
     public Task<UnitResult<ReportMessageError>> SubmitAsync(int messageId, ReportMessageRequest request) =>
@@ -35,8 +39,14 @@ internal sealed class ContentReportService : IContentReportService
             .OrFailure<MessageEntity, ReportMessageError>(new ReportMessageError.MessageNotFound())
             .BindAsync(message => RecordAndNotifyAsync(message, request));
 
-    private async Task<Option<MessageEntity>> FindMessageAsync(int messageId) =>
-        await messageRepository.GetByIdAsync(messageId);
+    private async Task<Option<MessageEntity>> FindMessageAsync(int messageId)
+    {
+        var message = await messageRepository.GetByIdAsync(messageId);
+
+        // Your own tenant's message is not reportable. The inbox never offers the link, but the rule has
+        // to hold server-side too — and "not yours" reads as absent, exactly like a foreign thread does.
+        return message is null || message.SenderTenantId == tenantContext.GetTenantId() ? null : message;
+    }
 
     private async Task<UnitResult<ReportMessageError>> RecordAndNotifyAsync(MessageEntity message, ReportMessageRequest request)
     {
@@ -51,7 +61,16 @@ internal sealed class ContentReportService : IContentReportService
         await reportRepository.AddAsync(report);
         await reportRepository.SaveChangesAsync();
 
-        await notifier.SubmittedAsync(report);
+        try
+        {
+            await notifier.SubmittedAsync(report);
+        }
+        catch (Exception exception)
+        {
+            // The persisted report is the record the duty turns on; a transport failure must not fail a
+            // request whose write already committed, or the retry just files a duplicate.
+            logger.ContentReportNotificationFailed(report.Reference, exception);
+        }
 
         return new Success();
     }

@@ -24,21 +24,14 @@ internal sealed class ModerationService : IModerationService
         this.timeProvider = timeProvider;
     }
 
-    public async Task<IPagination<ContentReportDto>> GetQueueAsync(IPageParams pageParams)
-    {
-        var reports = await reportRepository.GetQueueAsync(pageParams);
-        return new Pagination<ContentReportDto>(
-            reports.Data.Select(r => r.ToDto()).ToList(),
-            reports.TotalCount,
-            reports.PageNumber,
-            reports.PageSize);
-    }
+    public async Task<IPagination<ContentReportDto>> GetQueueAsync(IPageParams pageParams) =>
+        (await reportRepository.GetQueueAsync(pageParams)).Select(r => r.ToDto());
 
     public Task<UnitResult<ModerationError>> HideMessageAsync(int messageId) =>
         MutateMessageAsync(messageId, message => message.Hide(currentUser.GetId(), timeProvider.GetUtcNow().DateTime));
 
     public Task<UnitResult<ModerationError>> RestoreMessageAsync(int messageId) =>
-        MutateMessageAsync(messageId, message => message.Restore());
+        MutateMessageAsync(messageId, message => message.Restore(currentUser.GetId(), timeProvider.GetUtcNow().DateTime));
 
     public async Task<UnitResult<ModerationError>> ResolveReportAsync(int reportId, ResolveReportRequest request)
     {

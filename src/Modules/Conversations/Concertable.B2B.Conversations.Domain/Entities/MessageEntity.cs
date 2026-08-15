@@ -16,6 +16,12 @@ public sealed class MessageEntity : IIdEntity, IVenueArtistTenantScoped
     public DateTime SentDate { get; private set; }
     public DateTime? HiddenAt { get; private set; }
     public Guid? HiddenByUserId { get; private set; }
+    public DateTime? RestoredAt { get; private set; }
+    public Guid? RestoredByUserId { get; private set; }
+
+    /// <summary>Hidden when the last moderation action was a hide. Both stamps are kept forever, so a
+    /// hide that was later appealed and reversed is still evidenced.</summary>
+    public bool IsHidden => HiddenAt is not null && (RestoredAt is null || RestoredAt < HiddenAt);
 
     public static MessageEntity Create(
         Guid venueTenantId,
@@ -43,9 +49,10 @@ public sealed class MessageEntity : IIdEntity, IVenueArtistTenantScoped
         HiddenByUserId = byUserId;
     }
 
-    public void Restore()
+    // Never clears the hide stamps — reversing a decision must not erase that it was made.
+    public void Restore(Guid byUserId, DateTime at)
     {
-        HiddenAt = null;
-        HiddenByUserId = null;
+        RestoredAt = at;
+        RestoredByUserId = byUserId;
     }
 }
