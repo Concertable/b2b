@@ -195,7 +195,7 @@ public class ApiFixture : IAsyncLifetime
             .ToListAsync();
 
         return rows
-            .Select(r => (SendEmailCommand)serializer.Deserialize(new BinaryData(r.Payload), typeof(SendEmailCommand)))
+            .Select(r => (SendEmailCommand)serializer.Deserialize(BinaryData.FromString(r.Payload), typeof(SendEmailCommand)))
             .ToList();
     }
 
