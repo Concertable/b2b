@@ -3,8 +3,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
-internal sealed class TenantActivityService(TenantDbContext context) : ITenantActivityService
+internal sealed class TenantActivityService : ITenantActivityService
 {
+    private readonly TenantDbContext context;
+
+    public TenantActivityService(TenantDbContext context)
+    {
+        this.context = context;
+    }
+
     public async Task AddAsync(ActivityRecord record, CancellationToken ct = default)
     {
         if (await context.Activities.AnyAsync(

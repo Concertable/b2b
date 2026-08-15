@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { FileText } from "lucide-react";
 import dayjs from "dayjs";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { useArtistApplicationsQuery } from "./hooks";
+import {
+  useArtistApplicationActions,
+  useArtistApplicationsQuery,
+} from "./hooks";
 import {
   APPLICATION_ACTION_LABELS,
   type ApplicationActionName,
@@ -12,10 +12,7 @@ import {
 import type { Application } from "./types";
 import type { DashboardApplicationStatus } from "@concertable/shared/features/dashboard";
 import { dealSummary } from "@concertable/b2b/features/deals";
-import {
-  actionLinkApi,
-  ConfirmActionDialog,
-} from "@concertable/b2b/features/concerts";
+import { ConfirmActionDialog } from "@concertable/b2b/features/concerts";
 import { Button } from "@concertable/web/components/ui/button";
 import { DataTable } from "@concertable/web/components/ui/data-table";
 import {
@@ -87,7 +84,7 @@ function createColumns(
             unknown,
           ][]
         )
-          .filter(([, action]) => action != null)
+          .filter(([, action]) => action !== undefined)
           .map(([name]) => name);
         if (actionNames.length === 0) return null;
         return (
@@ -111,45 +108,8 @@ function createColumns(
 
 export function ArtistApplicationsPipelineWidget() {
   const { data, isLoading, isError, refetch } = useArtistApplicationsQuery();
-  const queryClient = useQueryClient();
-  const [withdrawal, setWithdrawal] = useState<Application | null>(null);
-  const mutation = useMutation({
-    mutationFn: async ({
-      name,
-      application,
-    }: {
-      name: ApplicationActionName;
-      application: Application;
-    }) => {
-      const action = application.actions[name];
-      if (action == null) return;
-      if (name === "contract") {
-        await actionLinkApi.download(action, `contract-${application.id}.pdf`);
-        return;
-      }
-      await actionLinkApi.execute(action);
-    },
-    onSuccess: (_data, { name }) => {
-      if (name === "withdraw") {
-        toast.success("Application withdrawn.");
-        void queryClient.invalidateQueries({
-          queryKey: ["dashboard", "artist"],
-        });
-        void queryClient.invalidateQueries({ queryKey: ["applications"] });
-      }
-      setWithdrawal(null);
-    },
-  });
-
-  function handleAction(name: ApplicationActionName, application: Application) {
-    if (name === "withdraw") {
-      setWithdrawal(application);
-      return;
-    }
-    mutation.mutate({ name, application });
-  }
-
-  const columns = createColumns(handleAction);
+  const applicationActions = useArtistApplicationActions();
+  const columns = createColumns(applicationActions.request);
 
   return (
     <DashboardCard
@@ -168,19 +128,16 @@ export function ArtistApplicationsPipelineWidget() {
         />
       )}
       <ConfirmActionDialog
-        open={withdrawal != null}
+        open={applicationActions.isOpen}
         title="Withdraw this application?"
         description="Your application will be withdrawn and any payment made towards it will be refunded in full."
         dismissLabel="Keep application"
         confirmLabel="Withdraw application"
         pendingLabel="Withdrawing..."
         confirmTestId="dashboard-withdraw-confirm"
-        isPending={mutation.isPending}
-        onDismiss={() => setWithdrawal(null)}
-        onConfirm={() => {
-          if (withdrawal)
-            mutation.mutate({ name: "withdraw", application: withdrawal });
-        }}
+        isPending={applicationActions.isPending}
+        onDismiss={applicationActions.dismiss}
+        onConfirm={applicationActions.confirm}
       />
     </DashboardCard>
   );

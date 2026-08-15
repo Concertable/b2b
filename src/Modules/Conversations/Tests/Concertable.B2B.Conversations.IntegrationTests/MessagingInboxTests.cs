@@ -94,7 +94,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         var previews = await response.Content.ReadAsync<List<MessagePreview>>();
         var preview = Assert.Single(previews!);
         Assert.Equal("The Rockers", preview.OtherPartyName);
-        Assert.Equal("Test inbox message â€” artist to venue.", preview.Preview);
+        Assert.Equal("Test inbox message — venue to artist.", preview.Preview);
         Assert.True(preview.Unread);
         Assert.Equal("/_venue/?inbox=open", preview.Href);
     }
