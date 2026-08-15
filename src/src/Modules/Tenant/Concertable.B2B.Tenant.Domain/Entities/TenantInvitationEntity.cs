@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Domain.Events;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Tenant.Domain.Entities;
@@ -10,7 +11,7 @@ namespace Concertable.B2B.Tenant.Domain.Entities;
 /// per <c>(TenantId, Email)</c>; <see cref="Email"/> is stored normalized (trimmed, lower-cased) so the
 /// registration-match lookup and the unique index agree.
 /// </summary>
-public sealed class TenantInvitationEntity : IGuidEntity
+public sealed class TenantInvitationEntity : IGuidEntity, IEventRaiser
 {
     private TenantInvitationEntity() { }
 
@@ -27,13 +28,18 @@ public sealed class TenantInvitationEntity : IGuidEntity
     public Guid? AcceptedByUserId { get; private set; }
     public DateTime? AcceptedAt { get; private set; }
 
+    private readonly EventRaiser events = new();
+    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
+    public void ClearDomainEvents() => events.Clear();
+
     /// <summary>Whether the invitation is still live at <paramref name="utcNow"/> — pending and unexpired. A lapsed
     /// row stays <see cref="InvitationStatus.Pending"/> in storage (nothing sweeps it), so <c>Pending</c> alone is
     /// not "live". Mirrors the Auth token entities' <c>IsActive</c>.</summary>
     public bool IsActive(DateTime utcNow) => Status == InvitationStatus.Pending && utcNow < ExpiresAt;
 
-    public static TenantInvitationEntity Create(Guid tenantId, string email, TenantRole role, Guid createdBy, DateTime at, TimeSpan ttl) =>
-        new()
+    public static TenantInvitationEntity Create(Guid tenantId, TenantType tenantType, string email, TenantRole role, Guid createdBy, DateTime at, TimeSpan ttl)
+    {
+        var invitation = new TenantInvitationEntity
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
@@ -44,6 +50,9 @@ public sealed class TenantInvitationEntity : IGuidEntity
             CreatedAt = at,
             ExpiresAt = at + ttl,
         };
+        invitation.events.Raise(new TenantInvitationCreatedDomainEvent(invitation.Id, email, role, tenantType));
+        return invitation;
+    }
 
     /// <summary>Accepts a still-pending, unexpired invitation for <paramref name="userId"/>.</summary>
     public void Accept(Guid userId, DateTime at)
