@@ -5,7 +5,6 @@ import type {
   ReviewExcerpt,
 } from "@concertable/shared/features/dashboard";
 import type { OpportunityCard } from "@concertable/b2b/features/dashboard";
-import type { MessagePreview } from "@concertable/b2b/features/conversations";
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
   Application,
@@ -30,10 +29,6 @@ const dashboardApi = {
     const { data } = await apiClient.get<Application[]>(
       "/application/artist/current",
     );
-    return data;
-  },
-  getInbox: async (): Promise<MessagePreview[]> => {
-    const { data } = await apiClient.get<MessagePreview[]>("/message/previews");
     return data;
   },
   getUpcomingConcerts: async (): Promise<ConcertCard[]> => {
