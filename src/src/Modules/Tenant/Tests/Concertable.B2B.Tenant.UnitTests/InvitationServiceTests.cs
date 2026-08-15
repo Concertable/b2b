@@ -1,4 +1,3 @@
-using Concertable.B2B.Infrastructure.Uris;
 using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
@@ -7,7 +6,6 @@ using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.Tenant.Infrastructure.Services;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
-using Concertable.Shared.Email.Application;
 using Moq;
 
 namespace Concertable.B2B.Tenant.UnitTests;
@@ -18,8 +16,6 @@ public sealed class InvitationServiceTests
     private readonly Mock<ITenantContext> tenantContext = new();
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<IUserModule> userModule = new();
-    private readonly Mock<IEmailTransport> emailTransport = new();
-    private readonly Mock<IFrontendUriGenerator> uris = new();
 
     [Fact]
     public async Task AcceptInvitationAsync_ExpiredInvitation_MapsDomainFailureWithoutCreatingMembership()
@@ -28,6 +24,7 @@ public sealed class InvitationServiceTests
         var tenantId = Guid.NewGuid();
         var invitation = TenantInvitationEntity.Create(
             tenantId,
+            TenantType.Venue,
             "member@example.com",
             TenantRole.Staff,
             Guid.NewGuid(),
@@ -68,6 +65,7 @@ public sealed class InvitationServiceTests
         var tenantId = Guid.NewGuid();
         var invitation = TenantInvitationEntity.Create(
             tenantId,
+            TenantType.Venue,
             "member@example.com",
             TenantRole.Staff,
             Guid.NewGuid(),
@@ -128,7 +126,5 @@ public sealed class InvitationServiceTests
         tenantContext.Object,
         currentUser.Object,
         userModule.Object,
-        emailTransport.Object,
-        uris.Object,
         TimeProvider.System);
 }

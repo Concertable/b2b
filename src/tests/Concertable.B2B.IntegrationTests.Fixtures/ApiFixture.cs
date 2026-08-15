@@ -32,7 +32,10 @@ using Xunit;
 using Xunit.Abstractions;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Messaging.Application;
 using Concertable.Messaging.Contracts;
+using Concertable.Messaging.Domain;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.Shared.Email.Application;
 using Concertable.Shared.Geocoding.Application;
 using Concertable.Shared.Imaging.Application;
@@ -189,6 +192,27 @@ public class ApiFixture : IAsyncLifetime
         PaymentTransport.RejectLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
     public IServiceProvider Services => factory.Services;
+
+    /// <summary>The <see cref="SendEmailCommand"/>s staged on the transactional outbox this test run — the
+    /// durable form B2B's outbox-backed email producers take (post-commit the dispatcher drains them to the
+    /// transport, a no-op under <c>MockBusTransport</c>). Lets a test assert the staged mail directly.</summary>
+    public async Task<IReadOnlyList<SendEmailCommand>> GetStagedEmailsAsync()
+    {
+        using var readScope = factory.Services.CreateScope();
+        var outbox = readScope.ServiceProvider.GetRequiredService<OutboxDbContext>();
+        var serializer = readScope.ServiceProvider.GetRequiredService<MessageSerializer>();
+        var messageType = MessageTypeAttribute.Resolve(typeof(SendEmailCommand));
+
+        var rows = await outbox.Set<OutboxMessageEntity>()
+            .AsNoTracking()
+            .Where(m => m.MessageType == messageType)
+            .OrderBy(m => m.OccurredAtUtc)
+            .ToListAsync();
+
+        return rows
+            .Select(r => (SendEmailCommand)serializer.Deserialize(BinaryData.FromString(r.Payload), typeof(SendEmailCommand)))
+            .ToList();
+    }
 
     public HttpClient CreateClient(UserEntity user)
     {
