@@ -1,7 +1,11 @@
 using Concertable.Auth.Contracts.Events;
+using Concertable.B2B.Artist.Contracts.Events;
+using Concertable.B2B.Concert.Contracts.Events;
+using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Payment.Contracts.Events;
 using Concertable.Payment.Contracts;
+using B2BPayoutOwnerRegisteredEvent = Concertable.B2B.Tenant.Contracts.Events.PayoutOwnerRegisteredEvent;
 
 namespace Concertable.B2B.Hosting;
 
@@ -9,6 +13,14 @@ public static class B2BTopology
 {
     public static AsbTopology AddB2BTopology(this AsbTopology topology) =>
         topology
+            .Publish<ArtistChangedEvent>()
+            .Publish<ArtistRatingUpdatedEvent>()
+            .Publish<VenueChangedEvent>()
+            .Publish<VenueRatingUpdatedEvent>()
+            .Publish<ConcertChangedEvent>()
+            .Publish<ConcertPostedEvent>()
+            .Publish<ConcertRatingUpdatedEvent>()
+            .Publish<B2BPayoutOwnerRegisteredEvent>()
             .Subscribe<CustomerReviewSubmittedEvent>(B2BConstants.ServiceName)
             .Subscribe<CredentialRegisteredEvent>(B2BConstants.ServiceName)
             .Subscribe<PaymentSucceededEvent>(B2BConstants.ServiceName)
