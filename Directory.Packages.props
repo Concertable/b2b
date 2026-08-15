@@ -46,10 +46,10 @@
     <PackageVersion Include="QuestPDF" Version="2025.1.3" />
     <PackageVersion Include="Reqnroll.Microsoft.Extensions.DependencyInjection" Version="3.3.4" />
     <PackageVersion Include="Reqnroll.xUnit" Version="3.3.4" />
-    <PackageVersion Include="Reunion" Version="0.1.0-alpha.3" />
-    <PackageVersion Include="Reunion.AspNetCore" Version="0.1.0-alpha.3" />
-    <PackageVersion Include="Reunion.Errors" Version="0.1.0-alpha.3" />
-    <PackageVersion Include="Reunion.Validation" Version="0.1.0-alpha.3" />
+    <PackageVersion Include="Reunion" Version="0.1.0-alpha.7" />
+    <PackageVersion Include="Reunion.AspNetCore" Version="0.1.0-alpha.7" />
+    <PackageVersion Include="Reunion.Errors" Version="0.1.0-alpha.7" />
+    <PackageVersion Include="Reunion.Validation" Version="0.1.0-alpha.7" />
     <PackageVersion Include="Stripe.net" Version="47.3.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     <PackageVersion Include="TngTech.ArchUnitNET.xUnit" Version="0.11.0" />

@@ -29,8 +29,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetAllByOpportunityId(int id)
     {
         return (await applicationService.GetByOpportunityIdAsync(id))
-            .Map(mapper.ToResponses)
-            .ToOkOrProblem();
+            .ToOkOrProblem(mapper.ToResponses);
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
@@ -40,9 +39,9 @@ internal sealed class ApplicationController : ControllerBase
         var result = request.PaymentMethodId is not null
             ? await applicationService.ApplyAsync(opportunityId, request.PaymentMethodId, request.ESignature)
             : await applicationService.ApplyAsync(opportunityId, request.ESignature);
-        return result
-            .Map(mapper.ToResponse)
-            .ToCreatedOrProblem(application => $"/api/Application/{application.Id}");
+        return result.ToCreatedOrProblem(
+            mapper.ToResponse,
+            application => $"/api/Application/{application.Id}");
     }
 
     [HttpGet("artist/pending")]
@@ -50,8 +49,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetPendingForArtist()
     {
         return (await applicationService.GetPendingForArtistAsync())
-            .Map(mapper.ToResponses)
-            .ToOkOrProblem();
+            .ToOkOrProblem(mapper.ToResponses);
     }
 
     [HttpGet("artist/recently-denied")]
@@ -59,16 +57,14 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetRecentDeniedForArtist()
     {
         return (await applicationService.GetRecentDeniedForArtistAsync())
-            .Map(mapper.ToResponses)
-            .ToOkOrProblem();
+            .ToOkOrProblem(mapper.ToResponses);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ApplicationResponse>> GetById(int id)
     {
         return (await applicationService.GetByIdAsync(id))
-            .Map(mapper.ToResponse)
-            .ToOkOrProblem();
+            .ToOkOrProblem(mapper.ToResponse);
     }
 
     // No [HasPermission]: both parties read (venue + artist), enforced by the two-party tenant filter
@@ -84,7 +80,8 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<FileDownload>> GetContractPdf(int id)
     {
         return (await contractService.GetPdfByApplicationIdAsync(id))
-            .ToActionResult(pdf => File(pdf.Content, pdf.ContentType, pdf.FileName));
+            .ToActionResult(pdf => new ActionResult<FileDownload>(
+                File(pdf.Content, pdf.ContentType, pdf.FileName)));
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]

@@ -32,16 +32,16 @@ internal sealed class OpportunityController : ControllerBase
     public async Task<ActionResult<OpportunityResponse>> GetById(int id)
     {
         return (await opportunityService.GetByIdAsync(id))
-            .Map(mapper.ToResponse)
-            .ToOkOrProblem();
+            .ToOkOrProblem(mapper.ToResponse);
     }
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPost]
     public async Task<ActionResult<OpportunityResponse>> Create([FromBody] OpportunityRequest request) =>
         (await opportunityService.CreateAsync(request))
-            .Map(mapper.ToResponse)
-            .ToCreatedOrProblem(opportunity => $"/api/Opportunity/{opportunity.Id}");
+            .ToCreatedOrProblem(
+                mapper.ToResponse,
+                opportunity => $"/api/Opportunity/{opportunity.Id}");
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPost("bulk")]
