@@ -14,18 +14,4 @@ public sealed class ReportMessageErrorTests
         Assert.Equal("Message not found.", definition.Message);
         Assert.Equal(ErrorKind.NotFound, definition.Kind);
     }
-
-    [Fact]
-    public void Invalid_Definition_IsStableAndPreservesTheFields()
-    {
-        var errors = new ValidationErrors([new("details", "Details are too long.")]);
-
-        var definition = new ReportMessageError.Invalid(errors).Definition;
-
-        Assert.Equal("report.message_invalid", definition.Code);
-        Assert.Equal("The report is invalid.", definition.Message);
-        Assert.Equal(ErrorKind.Invalid, definition.Kind);
-        var validation = Assert.IsType<ValidationError>(definition);
-        Assert.Equal(errors, validation.Errors);
-    }
 }

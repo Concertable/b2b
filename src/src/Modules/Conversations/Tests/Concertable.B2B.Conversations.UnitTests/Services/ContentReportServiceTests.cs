@@ -1,8 +1,6 @@
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
-using Concertable.B2B.Conversations.Application.Validators;
-using FluentValidation;
 using Concertable.B2B.Conversations.Domain.Enums;
 using Concertable.B2B.Conversations.Infrastructure.Services;
 using Concertable.Kernel.Identity;
@@ -32,7 +30,7 @@ public sealed class ContentReportServiceTests
         tenantContext.SetupGet(t => t.TenantId).Returns(VenueTenantId);
 
         return new ContentReportService(messages.Object, reports.Object, notifier.Object,
-            new ReportMessageRequestValidator(), currentUser.Object, tenantContext.Object, TimeProvider.System);
+            currentUser.Object, tenantContext.Object, TimeProvider.System);
     }
 
     [Fact]
@@ -76,28 +74,6 @@ public sealed class ContentReportServiceTests
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<ReportMessageError.MessageNotFound>(error);
-        reports.Verify(r => r.AddAsync(It.IsAny<ContentReportEntity>(), It.IsAny<CancellationToken>()), Times.Never);
-        notifier.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task Submit_OverLongDetails_IsInvalidOnTheDetailsField()
-    {
-        var messages = new Mock<IMessageRepository>();
-        messages.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(Message());
-
-        var reports = new Mock<IContentReportRepository>();
-        var notifier = new Mock<IContentReportNotifier>();
-
-        var result = await Service(messages, reports, notifier).SubmitAsync(7, new ReportMessageRequest
-        {
-            Category = ReportCategory.Other,
-            Details = new string('x', ReportMessageRequestValidator.MaxDetailsLength + 1)
-        });
-
-        Assert.True(result.TryGetError(out var error));
-        var invalid = Assert.IsType<ReportMessageError.Invalid>(error);
-        Assert.Contains("details", invalid.Errors.Errors.Keys);
         reports.Verify(r => r.AddAsync(It.IsAny<ContentReportEntity>(), It.IsAny<CancellationToken>()), Times.Never);
         notifier.VerifyNoOtherCalls();
     }
