@@ -17,6 +17,11 @@
     "prepack": "npm run build"
   },
   "exports": {
+    "./features/conversations": {
+      "types": "./dist/features/conversations/index.d.ts",
+      "import": "./dist/features/conversations/index.js",
+      "default": "./dist/features/conversations/index.js"
+    },
     "./features/concerts": {
       "types": "./dist/features/concerts/index.d.ts",
       "import": "./dist/features/concerts/index.js",
