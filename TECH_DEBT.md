@@ -211,3 +211,47 @@ at the expected near-zero report volume.
 
 **Resolves when:** admin identity gains roles/scoping and a cached lookup, and an admin surface exists
 to drive moderation — at which point the Swagger/curl workaround and this entry both go.
+
+---
+
+### Conversations has no thread aggregate, no per-thread read, and no retention policy
+
+A "thread" in Conversations is implicit — it is whatever shares a `(VenueTenantId, ArtistTenantId)`
+pair. There is a `MessageEntity` and a `ThreadReadStateEntity` but no `ThreadEntity`, and consequently:
+
+- **No per-thread view exists.** `GetByTenantIdAsync` returns one flat inbox ordered by `SentDate`
+  across every counterparty. That is right for the notification bell it currently feeds and wrong the
+  moment anyone wants an actual conversation UI.
+- **`AdvanceReadPointersAsync` is O(threads) per call** — it loads every distinct pair, loads every
+  pointer for the member, then loops in memory. Invisible at ten threads, not at a thousand.
+- **Messages accumulate forever.** Nothing prunes them, and the Online Safety Act work deliberately
+  hides rather than deletes, so hidden content accumulates too.
+
+The storage choice itself is not the debt — a relational store is correct for booking correspondence
+that must be transactional with the booking flow and queryable for a regulator, and the specialised
+stores chat products use would trade away exactly the properties this needs. The debt is the missing
+aggregate and the missing lifecycle.
+
+**Resolves when:** a thread aggregate exists with a per-thread paged read, the read-pointer advance is
+a set-based update rather than a per-pair loop, and a retention policy is implemented — the last of
+which is gated on the solicitor-owned retention artifact in the OSA compliance pack, so it cannot be
+invented here.
+
+---
+
+### Content reporting is modelled as message-only and will not generalise as-is
+
+`ContentReportEntity` lives in Conversations because a `MessageEntity` is the only reportable artifact
+today, which is correct now and deliberately not abstracted early. But the Online Safety Act duty
+attaches to **user-generated content**, and this platform has more of it: venue and artist profile text,
+concert descriptions, uploaded images, and customer reviews. The Customer/marketplace OSA scope is
+explicitly deferred with the marketplace, which is when those become in-scope.
+
+The entity will not stretch to cover them. It carries a typed `MessageId` and is
+`IVenueArtistTenantScoped` — it holds a **thread pair**. A report against a venue profile has no thread
+pair, so neither the foreign key nor the tenancy shape fits.
+
+**Resolves when:** a second reportable content type is actually required, at which point choose
+deliberately between a polymorphic `(ContentType, ContentId)` report with per-type tenancy resolution,
+or a per-module report entity behind a shared triage view. Do not pre-build either before the second
+case exists.
