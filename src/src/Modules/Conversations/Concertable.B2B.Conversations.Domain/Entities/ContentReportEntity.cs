@@ -64,6 +64,13 @@ public sealed class ContentReportEntity : IIdEntity, IVenueArtistTenantScoped
         ResolvedAt = at;
     }
 
-    private static string Excerpt(string content) =>
-        content.Length <= MaxExcerptLength ? content : content[..MaxExcerptLength];
+    private static string Excerpt(string content)
+    {
+        if (content.Length <= MaxExcerptLength)
+            return content;
+
+        // Never cut between a surrogate pair — the excerpt is the evidence of what was reported.
+        var length = char.IsHighSurrogate(content[MaxExcerptLength - 1]) ? MaxExcerptLength - 1 : MaxExcerptLength;
+        return content[..length];
+    }
 }

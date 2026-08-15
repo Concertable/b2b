@@ -1,6 +1,7 @@
 using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
+using Concertable.Contracts;
 using Concertable.B2B.User.Api.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reunion.AspNetCore.Mvc;
@@ -25,8 +26,8 @@ internal sealed class ModerationController : ControllerBase
     }
 
     [HttpGet("reports")]
-    public async Task<ActionResult<IReadOnlyList<ContentReportDto>>> GetReports() =>
-        Ok(await moderationService.GetQueueAsync());
+    public async Task<ActionResult<IPagination<ContentReportDto>>> GetReports([FromQuery] PageParams pageParams) =>
+        Ok(await moderationService.GetQueueAsync(pageParams));
 
     [HttpPost("messages/{id}/hide")]
     public async Task<ActionResult> HideMessage(int id) =>
