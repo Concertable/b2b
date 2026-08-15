@@ -67,7 +67,7 @@ public sealed class InvitationTests : IAsyncLifetime
         Assert.Equal(InvitationStatus.Pending, invitation.Status);
         Assert.Equal(owner.Id, invitation.CreatedByUserId);
 
-        var email = Assert.Single(fixture.EmailSender.Sent, e => e.To == invitee);
+        var email = Assert.Single(await fixture.GetStagedEmailsAsync(), e => e.To == invitee);
         Assert.Contains($"https://localhost:5175/settings/members/accept/{dto.Id}", email.Body);
     }
 
@@ -79,7 +79,7 @@ public sealed class InvitationTests : IAsyncLifetime
 
         var dto = await InviteAsync(fixture.CreateClient(owner), invitee, TenantRole.Manager);
 
-        var email = Assert.Single(fixture.EmailSender.Sent, e => e.To == invitee);
+        var email = Assert.Single(await fixture.GetStagedEmailsAsync(), e => e.To == invitee);
         Assert.Contains($"https://localhost:5176/settings/members/accept/{dto.Id}", email.Body);
     }
 

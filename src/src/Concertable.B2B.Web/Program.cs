@@ -24,6 +24,7 @@ using Concertable.B2B.User.Api.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
+using Concertable.Shared.Email.Application;
 using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
@@ -151,6 +152,8 @@ services.AddAzureServiceBusTransport(
         reg.SubscribeTo<CustomerReviewSubmittedEvent>();
         reg.SubscribeTo<PaymentSucceededEvent>();
         reg.SubscribeTo<PaymentFailedEvent>();
+
+        reg.HandleCommand<SendEmailCommand>();
     });
 services.AddDirectBusKeyed("webhook");
 services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));

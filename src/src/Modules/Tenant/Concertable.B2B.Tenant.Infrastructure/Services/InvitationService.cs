@@ -1,9 +1,7 @@
-using Concertable.B2B.Infrastructure.Uris;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
-using Concertable.Shared.Email.Application;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
@@ -15,8 +13,6 @@ internal sealed class InvitationService : IInvitationService
     private readonly ITenantContext tenantContext;
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
-    private readonly IEmailTransport emailTransport;
-    private readonly IFrontendUriGenerator uris;
     private readonly TimeProvider timeProvider;
 
     public InvitationService(
@@ -24,16 +20,12 @@ internal sealed class InvitationService : IInvitationService
         ITenantContext tenantContext,
         ICurrentUser currentUser,
         IUserModule userModule,
-        IEmailTransport emailTransport,
-        IFrontendUriGenerator uris,
         TimeProvider timeProvider)
     {
         this.repository = repository;
         this.tenantContext = tenantContext;
         this.currentUser = currentUser;
         this.userModule = userModule;
-        this.emailTransport = emailTransport;
-        this.uris = uris;
         this.timeProvider = timeProvider;
     }
 
@@ -75,11 +67,10 @@ internal sealed class InvitationService : IInvitationService
         }
 
         var inviterId = currentUser.Id ?? throw new ForbiddenException("No authenticated user.");
-        var invitation = TenantInvitationEntity.Create(tenantId, email, request.Role, inviterId, now, InvitationTtl);
+        var invitation = TenantInvitationEntity.Create(tenantId, tenant.Type, email, request.Role, inviterId, now, InvitationTtl);
         repository.AddInvitation(invitation);
         await repository.SaveChangesAsync(ct);
 
-        await SendInvitationEmailAsync(invitation, tenant.Type);
         return new InvitationDto(invitation.Id, invitation.Email, invitation.Role, invitation.CreatedAt, invitation.ExpiresAt);
     }
 
@@ -120,17 +111,5 @@ internal sealed class InvitationService : IInvitationService
         await repository.SaveChangesAsync(ct);
 
         return new MembershipDto(tenant.Id, tenant.LegalName, tenant.Type, invitation.Role);
-    }
-
-    private async Task SendInvitationEmailAsync(TenantInvitationEntity invitation, TenantType tenantType)
-    {
-        var acceptLink = uris.Create(tenantType, $"/settings/members/accept/{invitation.Id}");
-
-        const string subject = "You've been invited to join an organization on Concertable";
-        var body =
-            $"You've been invited to join an organization on Concertable as {invitation.Role}. " +
-            $"Register or sign in on the manager portal, then accept your invitation here: {acceptLink}";
-
-        await emailTransport.SendEmailAsync(invitation.Email, subject, body);
     }
 }
