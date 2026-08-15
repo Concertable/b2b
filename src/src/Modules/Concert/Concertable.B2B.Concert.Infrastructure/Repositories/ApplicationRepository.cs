@@ -53,7 +53,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
                 .ThenInclude(o => o.Venue)
             .Where(a => a.Opportunity.VenueId == venueId
                         && a.State == LifecycleState.Applied
-                        && a.Opportunity.Period.Start > now)
+                        && a.Opportunity.Period.End > now)
             .OrderBy(a => a.Opportunity.Period.Start)
             .ThenBy(a => a.Id)
             .Take(5)
@@ -70,7 +70,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .Include(a => a.Opportunity)
                 .ThenInclude(o => o.Venue)
             .Where(a => a.ArtistId == artistId
-                        && a.Opportunity.Period.Start > now
+                        && a.Opportunity.Period.End > now
                         && a.State != LifecycleState.Withdrawn
                         && a.State != LifecycleState.Cancelled)
             .OrderBy(a => a.Opportunity.Period.Start)

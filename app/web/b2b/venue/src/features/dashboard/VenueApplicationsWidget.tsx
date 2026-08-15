@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Users } from "lucide-react";
 import dayjs from "dayjs";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
-import { useVenueApplicationsToReviewQuery } from "./hooks";
+import {
+  useVenueApplicationActions,
+  useVenueApplicationsToReviewQuery,
+} from "./hooks";
 import {
   APPLICATION_ACTION_LABELS,
   type ApplicationActionName,
@@ -13,10 +13,7 @@ import {
 import type { Application } from "./types";
 import type { DashboardApplicationStatus } from "@concertable/shared/features/dashboard";
 import { dealSummary } from "@concertable/b2b/features/deals";
-import {
-  actionLinkApi,
-  ConfirmActionDialog,
-} from "@concertable/b2b/features/concerts";
+import { ConfirmActionDialog } from "@concertable/b2b/features/concerts";
 import { Button } from "@concertable/web/components/ui/button";
 import { DataTable } from "@concertable/web/components/ui/data-table";
 import {
@@ -56,13 +53,6 @@ const actionVariants: Record<ApplicationActionName, "default" | "outline"> = {
   cancel: "outline",
   contract: "outline",
 };
-
-type DestructiveActionName = "decline" | "cancel";
-
-interface PendingAction {
-  name: DestructiveActionName;
-  application: Application;
-}
 
 function createColumns(
   onAction: (name: ApplicationActionName, application: Application) => void,
@@ -108,11 +98,12 @@ function createColumns(
             unknown,
           ][]
         )
-          .filter(([, action]) => action != null)
+          .filter(([, action]) => action !== undefined)
           .map(([name]) => name)
           .filter(
             (name) =>
-              name !== "accept" || row.original.actions.checkout == null,
+              name !== "accept" ||
+              row.original.actions.checkout === undefined,
           );
         if (actionNames.length === 0) return null;
         return (
@@ -145,63 +136,10 @@ function sortApplications(items: Application[]) {
 export function VenueApplicationsWidget() {
   const { data, isLoading, isError, refetch } =
     useVenueApplicationsToReviewQuery();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
-    null,
-  );
-  const mutation = useMutation({
-    mutationFn: async ({
-      name,
-      application,
-    }: {
-      name: ApplicationActionName;
-      application: Application;
-    }) => {
-      const action = application.actions[name];
-      if (action == null) return;
-      if (name === "contract") {
-        await actionLinkApi.download(action, `contract-${application.id}.pdf`);
-        return;
-      }
-      await actionLinkApi.execute(action);
-    },
-    onSuccess: (_data, { name }) => {
-      if (name !== "contract") {
-        toast.success(
-          name === "decline"
-            ? "Application declined."
-            : "Application cancelled.",
-        );
-        void queryClient.invalidateQueries({
-          queryKey: ["dashboard", "venue"],
-        });
-        void queryClient.invalidateQueries({ queryKey: ["applications"] });
-      }
-      setPendingAction(null);
-    },
-  });
-
-  function handleAction(name: ApplicationActionName, application: Application) {
-    if (name === "accept" || name === "checkout") {
-      void navigate({
-        to:
-          name === "checkout"
-            ? "/applications/$applicationId/checkout"
-            : "/applications/$applicationId/accept",
-        params: { applicationId: application.id },
-      });
-      return;
-    }
-    if (name === "contract") {
-      mutation.mutate({ name, application });
-      return;
-    }
-    setPendingAction({ name, application });
-  }
+  const applicationActions = useVenueApplicationActions();
 
   const sorted = useMemo(() => (data ? sortApplications(data) : []), [data]);
-  const columns = createColumns(handleAction);
+  const columns = createColumns(applicationActions.request);
 
   return (
     <DashboardCard
@@ -219,34 +157,20 @@ export function VenueApplicationsWidget() {
           emptyMessage="No applications waiting — share opportunities to attract artists."
         />
       )}
-      <ConfirmActionDialog
-        open={pendingAction != null}
-        title={
-          pendingAction?.name === "decline"
-            ? "Decline this application?"
-            : "Cancel this application?"
-        }
-        description={
-          pendingAction?.name === "decline"
-            ? "The artist will be notified that their application was declined."
-            : "The application will be cancelled and any payment held will be refunded in full."
-        }
-        dismissLabel="Keep application"
-        confirmLabel={
-          pendingAction?.name === "decline"
-            ? "Decline application"
-            : "Cancel application"
-        }
-        pendingLabel={
-          pendingAction?.name === "decline" ? "Declining..." : "Cancelling..."
-        }
-        confirmTestId="dashboard-application-confirm"
-        isPending={mutation.isPending}
-        onDismiss={() => setPendingAction(null)}
-        onConfirm={() => {
-          if (pendingAction) mutation.mutate(pendingAction);
-        }}
-      />
+      {applicationActions.confirmation !== undefined && (
+        <ConfirmActionDialog
+          open
+          title={applicationActions.confirmation.title}
+          description={applicationActions.confirmation.description}
+          dismissLabel="Keep application"
+          confirmLabel={applicationActions.confirmation.confirmLabel}
+          pendingLabel={applicationActions.confirmation.pendingLabel}
+          confirmTestId="dashboard-application-confirm"
+          isPending={applicationActions.isPending}
+          onDismiss={applicationActions.dismiss}
+          onConfirm={applicationActions.confirm}
+        />
+      )}
     </DashboardCard>
   );
 }

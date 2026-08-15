@@ -1,6 +1,11 @@
 ﻿using System.Net;
 using System.Text.Json;
+using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Kernel.ValueObjects;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -43,6 +48,36 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var applications = await response.Content.ReadAsync<JsonElement>();
         Assert.Equal(JsonValueKind.Array, applications.ValueKind);
+    }
+
+    [Fact]
+    public async Task CurrentLists_IncludeApplicationsForInProgressOpportunities()
+    {
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        using (var scope = fixture.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
+            var opportunity = await context.Opportunities
+                .SingleAsync(o => o.Id == fixture.SeedState.FlatFeeApp.OpportunityId);
+            var now = DateTime.UtcNow;
+            opportunity.Update(
+                new DateRange(now.AddHours(-1), now.AddHours(1)),
+                opportunity.DealId,
+                opportunity.Genres);
+            await context.SaveChangesAsync();
+        }
+
+        var venueResponse = await fixture.CreateClient(fixture.SeedState.VenueManager1)
+            .GetAsync("/api/Application/venue/current");
+        var artistResponse = await fixture.CreateClient(fixture.SeedState.ArtistManager1)
+            .GetAsync("/api/Application/artist/current");
+
+        await venueResponse.ShouldBe(HttpStatusCode.OK);
+        await artistResponse.ShouldBe(HttpStatusCode.OK);
+        var venueApplications = await venueResponse.Content.ReadAsync<JsonElement>();
+        var artistApplications = await artistResponse.Content.ReadAsync<JsonElement>();
+        Assert.Contains(venueApplications.EnumerateArray(), item => item.GetProperty("id").GetInt32() == applicationId);
+        Assert.Contains(artistApplications.EnumerateArray(), item => item.GetProperty("id").GetInt32() == applicationId);
     }
 
     #region Accept
