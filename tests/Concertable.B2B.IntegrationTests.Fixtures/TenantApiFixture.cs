@@ -38,8 +38,10 @@ public sealed class TenantApiFixture : ApiFixture
     public async Task<TenantInvitationEntity> AddInvitationAsync(Guid tenantId, string email, TenantRole role, Guid createdBy, DateTime expiresAt)
     {
         var now = DateTime.UtcNow;
+        var tenant = await tenantDb.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantId);
         var invitation = TenantInvitationEntity.Create(
-            tenantId, email.Trim().ToLowerInvariant(), role, createdBy, now, expiresAt - now);
+            tenantId, tenant?.Type ?? TenantType.Venue, email.Trim().ToLowerInvariant(), role, createdBy, now, expiresAt - now);
+        invitation.ClearDomainEvents(); // an arranged invitation must not stage an invite email
         tenantDb.Invitations.Add(invitation);
         await tenantDb.SaveChangesAsync();
         return invitation;
