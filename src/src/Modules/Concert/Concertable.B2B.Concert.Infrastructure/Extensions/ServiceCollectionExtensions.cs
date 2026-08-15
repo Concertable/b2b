@@ -141,7 +141,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
-        services.AddScoped<IBookingExistence, BookingExistence>();
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<ISelfBillingAgreementRepository, SelfBillingAgreementRepository>();

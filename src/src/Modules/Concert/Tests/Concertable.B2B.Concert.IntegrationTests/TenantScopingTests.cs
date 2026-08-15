@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Kernel.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -161,14 +162,16 @@ public sealed class TenantScopingTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task BookingExistence_SeesBookingsWithoutTenantContext()
+    public async Task BookingRepository_ResolvesBookingsWithoutTenantContext()
     {
-        var bookingId = (await fixture.ConcertReads.Set<BookingEntity>().FirstAsync()).Id;
+        var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync();
 
-        using var scope = fixture.Services.CreateScope();
-        var bookingExistence = scope.ServiceProvider.GetRequiredService<IBookingExistence>();
+        var scoped = fixture.Services.GetRequiredService<IScoped<IBookingRepository>>();
+        var applicationId = await scoped.RunAsync(repository => repository.GetApplicationIdByIdAsync(booking.Id));
+        var missingApplicationId = await scoped.RunAsync(
+            repository => repository.GetApplicationIdByIdAsync(booking.Id + 100_000));
 
-        Assert.True(await bookingExistence.ExistsAsync(bookingId));
-        Assert.False(await bookingExistence.ExistsAsync(bookingId + 100_000));
+        Assert.Equal(booking.ApplicationId, applicationId);
+        Assert.Null(missingApplicationId);
     }
 }
