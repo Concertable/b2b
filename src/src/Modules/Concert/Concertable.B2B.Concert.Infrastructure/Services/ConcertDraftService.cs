@@ -10,15 +10,18 @@ internal sealed class ConcertDraftService : IConcertDraftService
 {
     private readonly IBookingRepository bookingRepository;
     private readonly IConcertNotifier notifier;
+    private readonly IBookingConfirmationNotifier bookingConfirmationNotifier;
     private readonly ILogger<ConcertDraftService> logger;
 
     public ConcertDraftService(
         IBookingRepository bookingRepository,
         IConcertNotifier notifier,
+        IBookingConfirmationNotifier bookingConfirmationNotifier,
         ILogger<ConcertDraftService> logger)
     {
         this.bookingRepository = bookingRepository;
         this.notifier = notifier;
+        this.bookingConfirmationNotifier = bookingConfirmationNotifier;
         this.logger = logger;
     }
 
@@ -62,6 +65,11 @@ internal sealed class ConcertDraftService : IConcertDraftService
 
         await notifier.ConcertDraftCreatedAsync(artist.UserId.ToString(), concert.Id);
         await notifier.ConcertDraftCreatedAsync(venue.UserId.ToString(), concert.Id);
+
+        await bookingConfirmationNotifier.BookingConfirmedAsync(
+            bookingConcert.Application.VenueTenantId, venue.Name,
+            bookingConcert.Application.ArtistTenantId, artist.Name,
+            concert.Period);
 
         return Result.Ok(concert);
     }
