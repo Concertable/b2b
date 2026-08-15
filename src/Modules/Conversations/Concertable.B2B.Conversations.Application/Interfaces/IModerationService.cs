@@ -1,13 +1,14 @@
 using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Requests;
+using Concertable.Contracts;
 using Reunion;
 
 namespace Concertable.B2B.Conversations.Application.Interfaces;
 
 internal interface IModerationService
 {
-    Task<IReadOnlyList<ContentReportDto>> GetQueueAsync();
+    Task<IPagination<ContentReportDto>> GetQueueAsync(IPageParams pageParams);
 
     /// <summary>Removes the message from every participant's inbox without deleting its content.</summary>
     Task<UnitResult<ModerationError>> HideMessageAsync(int messageId);

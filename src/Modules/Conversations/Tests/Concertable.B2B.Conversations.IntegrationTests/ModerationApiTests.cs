@@ -116,7 +116,7 @@ public sealed class ModerationApiTests : IAsyncLifetime
     }
 
     private static async Task<List<QueuedReport>> GetQueueAsync(HttpClient admin) =>
-        (await (await admin.GetAsync("/api/Moderation/reports")).Content.ReadAsync<List<QueuedReport>>())!;
+        (await (await admin.GetAsync("/api/Moderation/reports")).Content.ReadAsync<QueuePage>())!.Data;
 
     private static async Task<int> InboundMessageIdAsync(HttpClient client) =>
         (await GetInboxAsync(client)).Data.Single(m => m.Content == InboundMessage).Id;
@@ -128,6 +128,7 @@ public sealed class ModerationApiTests : IAsyncLifetime
         await (await client.GetAsync("/api/Message/user/unread-count")).Content.ReadAsync<int>();
 
     private sealed record InboxPage(List<InboxMessage> Data);
+    private sealed record QueuePage(List<QueuedReport> Data);
     private sealed record InboxMessage(int Id, string Content);
     private sealed record QueuedReport(
         int Id, string Reference, int MessageId, string MessageExcerpt,

@@ -1,5 +1,6 @@
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Requests;
+using Concertable.Contracts;
 using Reunion;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Services;
@@ -23,8 +24,15 @@ internal sealed class ModerationService : IModerationService
         this.timeProvider = timeProvider;
     }
 
-    public async Task<IReadOnlyList<ContentReportDto>> GetQueueAsync() =>
-        (await reportRepository.GetQueueAsync()).Select(r => r.ToDto()).ToList();
+    public async Task<IPagination<ContentReportDto>> GetQueueAsync(IPageParams pageParams)
+    {
+        var reports = await reportRepository.GetQueueAsync(pageParams);
+        return new Pagination<ContentReportDto>(
+            reports.Data.Select(r => r.ToDto()).ToList(),
+            reports.TotalCount,
+            reports.PageNumber,
+            reports.PageSize);
+    }
 
     public Task<UnitResult<ModerationError>> HideMessageAsync(int messageId) =>
         MutateMessageAsync(messageId, message => message.Hide(currentUser.GetId(), timeProvider.GetUtcNow().DateTime));
