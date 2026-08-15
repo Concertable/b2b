@@ -131,7 +131,6 @@ internal sealed class InvitationService : IInvitationService
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await invitation.Accept(userId, now)
-            .MapError(error => error.ToAcceptInvitationError())
             .BindAsync(async () =>
             {
                 repository.AddMembership(TenantMembershipEntity.Create(
@@ -140,7 +139,7 @@ internal sealed class InvitationService : IInvitationService
 
                 return Result.Success<MembershipDto, AcceptInvitationError>(
                     new MembershipDto(tenant.Id, tenant.LegalName, tenant.Type, invitation.Role));
-            });
+            }, error => error.ToAcceptInvitationError());
     }
 
     private async Task SendInvitationEmailAsync(TenantInvitationEntity invitation, TenantType tenantType)

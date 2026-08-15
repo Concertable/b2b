@@ -53,7 +53,6 @@ internal sealed class ArtistService : IArtistService
             return new CreateArtistError.Forbidden();
 
         return await ArtistEntity.ValidateProfile(request.Name, request.About)
-            .MapError(errors => (CreateArtistError)new CreateArtistError.Invalid(errors))
             .BindAsync(async () =>
             {
                 var bannerUrl = await imageService.UploadAsync(request.Banner);
@@ -71,7 +70,6 @@ internal sealed class ArtistService : IArtistService
                     address,
                     currentUser.Email!,
                     request.Genres)
-                    .MapError(errors => (CreateArtistError)new CreateArtistError.Invalid(errors))
                     .BindAsync(async artist =>
                     {
                         var createdArtist = await repository.AddAsync(artist);
@@ -81,8 +79,8 @@ internal sealed class ArtistService : IArtistService
                             ?? throw new InvalidOperationException(
                                 $"Artist {createdArtist.Id} not found after creation.");
                         return Result.Success<ArtistDetails, CreateArtistError>(details);
-                    });
-            });
+                    }, errors => new CreateArtistError.Invalid(errors));
+            }, errors => new CreateArtistError.Invalid(errors));
     }
 
     public async Task<Result<ArtistDetails, UpdateArtistError>> UpdateAsync(int id, UpdateArtistRequest request)
@@ -92,14 +90,12 @@ internal sealed class ArtistService : IArtistService
             return new UpdateArtistError.NotFound(id);
 
         return await ArtistEntity.ValidateProfile(request.Name, request.About)
-            .MapError(errors => (UpdateArtistError)new UpdateArtistError.Invalid(errors))
             .BindAsync(async () =>
             {
                 var bannerUrl = request.Banner is not null
                     ? await imageService.ReplaceAsync(request.Banner, artist.BannerUrl)
                     : artist.BannerUrl;
                 return await artist.Update(request.Name, request.About, bannerUrl, request.Genres)
-                    .MapError(errors => (UpdateArtistError)new UpdateArtistError.Invalid(errors))
                     .BindAsync(async () =>
                     {
                         var address = await geocodingClient.GetLocationAsync(
@@ -117,8 +113,8 @@ internal sealed class ArtistService : IArtistService
                         var details = await publicRepository.GetDetailsByIdAsync(id)
                             ?? throw new InvalidOperationException($"Artist {id} not found after update.");
                         return Result.Success<ArtistDetails, UpdateArtistError>(details);
-                    });
-            });
+                    }, errors => new UpdateArtistError.Invalid(errors));
+            }, errors => new UpdateArtistError.Invalid(errors));
     }
 
     public async Task<Option<int>> GetIdForCurrentTenantAsync() =>

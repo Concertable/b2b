@@ -51,7 +51,6 @@ internal sealed class VenueService : IVenueService
             return new CreateVenueError.NoActiveTenant();
 
         return await VenueEntity.ValidateProfile(request.Name, request.About)
-            .MapError(errors => (CreateVenueError)new CreateVenueError.Invalid(errors))
             .BindAsync(async () =>
             {
                 var bannerUrl = await imageService.UploadAsync(request.Banner);
@@ -68,7 +67,6 @@ internal sealed class VenueService : IVenueService
                     coordinates,
                     address,
                     currentUser.Email!)
-                    .MapError(errors => (CreateVenueError)new CreateVenueError.Invalid(errors))
                     .BindAsync(async venue =>
                     {
                         var createdVenue = await repository.AddAsync(venue);
@@ -78,8 +76,8 @@ internal sealed class VenueService : IVenueService
                             ?? throw new InvalidOperationException(
                                 $"Venue {createdVenue.Id} not found after creation.");
                         return Result.Success<VenueDetails, CreateVenueError>(details);
-                    });
-            });
+                    }, errors => new CreateVenueError.Invalid(errors));
+            }, errors => new CreateVenueError.Invalid(errors));
     }
 
     public async Task<Result<VenueDetails, UpdateVenueError>> UpdateAsync(int id, UpdateVenueRequest request)
@@ -89,14 +87,12 @@ internal sealed class VenueService : IVenueService
             return new UpdateVenueError.VenueNotFound(id);
 
         return await VenueEntity.ValidateProfile(request.Name, request.About)
-            .MapError(errors => (UpdateVenueError)new UpdateVenueError.Invalid(errors))
             .BindAsync(async () =>
             {
                 var bannerUrl = request.Banner is not null
                     ? await imageService.ReplaceAsync(request.Banner, venue.BannerUrl)
                     : venue.BannerUrl;
                 return await venue.Update(request.Name, request.About, bannerUrl)
-                    .MapError(errors => (UpdateVenueError)new UpdateVenueError.Invalid(errors))
                     .BindAsync(async () =>
                     {
                         var address = await geocodingClient.GetLocationAsync(
@@ -114,8 +110,8 @@ internal sealed class VenueService : IVenueService
                         var details = await publicRepository.GetDetailsByIdAsync(id)
                             ?? throw new InvalidOperationException($"Venue {id} not found after update.");
                         return Result.Success<VenueDetails, UpdateVenueError>(details);
-                    });
-            });
+                    }, errors => new UpdateVenueError.Invalid(errors));
+            }, errors => new UpdateVenueError.Invalid(errors));
     }
 
     public Task<Result<VenueDetails, VenueError>> GetDetailsForCurrentUserAsync() =>

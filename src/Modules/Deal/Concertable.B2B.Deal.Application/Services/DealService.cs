@@ -45,13 +45,12 @@ internal sealed class DealService : IDealService
 
     public Task<Result<int, CreateDealError>> CreateAsync(IDeal deal, CancellationToken ct = default) =>
         mapper.ToEntity(deal)
-            .MapError<CreateDealError>(errors => new CreateDealError.Invalid(errors))
             .BindAsync(async (DealEntity entity) =>
             {
                 await dealRepository.AddAsync(entity, ct);
                 await dealRepository.SaveChangesAsync(ct);
                 return Result.Success<int, CreateDealError>(entity.Id);
-            });
+            }, errors => new CreateDealError.Invalid(errors));
 
     public async Task<UnitResult<UpdateDealError>> UpdateAsync(int dealId, IDeal deal, CancellationToken ct = default)
     {

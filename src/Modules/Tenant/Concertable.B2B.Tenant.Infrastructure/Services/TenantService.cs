@@ -56,15 +56,13 @@ internal sealed class TenantService : ITenantService
             return new UpdateTenantError.TenantNotFound(tenantId);
 
         return await request.TaxCompliance.ToTaxCompliance()
-            .MapError(errors => (UpdateTenantError)new UpdateTenantError.Invalid(errors))
             .Bind(taxCompliance => tenant
-                .UpdateLegalDetails(request.LegalName, taxCompliance)
-                .MapError(errors => (UpdateTenantError)new UpdateTenantError.Invalid(errors)))
+                .UpdateLegalDetails(request.LegalName, taxCompliance))
             .BindAsync(async () =>
             {
                 await repository.SaveChangesAsync(ct);
                 return Result.Success<TenantDetails, UpdateTenantError>(ToDetails(tenant));
-            });
+            }, errors => new UpdateTenantError.Invalid(errors));
     }
 
     public async Task<UnitResult<DeleteTenantError>> DeleteCurrentTenantAsync(CancellationToken ct = default)
