@@ -4,6 +4,8 @@ using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Kernel.DependencyInjection;
 using Concertable.Messaging.Contracts;
 using Concertable.Messaging.Domain;
+using Concertable.Payment.Contracts;
+using Concertable.Payment.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
