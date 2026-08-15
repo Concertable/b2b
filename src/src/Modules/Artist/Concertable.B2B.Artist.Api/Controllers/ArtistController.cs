@@ -21,16 +21,14 @@ internal sealed class ArtistController : ControllerBase
     public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
         return (await artistService.GetDetailsByIdAsync(id))
-            .Map(artist => artist.ToDetailsResponse())
-            .ToOkOrProblem();
+            .ToOkOrProblem(artist => artist.ToDetailsResponse());
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("user")]
     public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser() =>
         (await artistService.GetDetailsForCurrentUserAsync())
-            .Map(artist => artist.ToDetailsResponse())
-            .ToOkOrProblem();
+            .ToOkOrProblem(artist => artist.ToDetailsResponse());
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]

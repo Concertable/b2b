@@ -24,16 +24,14 @@ internal sealed class VenueController : ControllerBase
     public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
         return (await venueService.GetDetailsByIdAsync(id))
-            .Map(venue => venue.ToDetailsResponse())
-            .ToOkOrProblem();
+            .ToOkOrProblem(venue => venue.ToDetailsResponse());
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("user")]
     public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser() =>
         (await venueService.GetDetailsForCurrentUserAsync())
-            .Map(venue => venue.ToDetailsResponse())
-            .ToOkOrProblem();
+            .ToOkOrProblem(venue => venue.ToDetailsResponse());
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]

@@ -30,23 +30,22 @@ internal sealed class ConcertController : ControllerBase
     public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
         return (await concertService.GetDetailsByIdAsync(id))
-            .Map(concert => concert.ToDetailsResponse())
-            .ToOkOrProblem();
+            .ToOkOrProblem(concert => concert.ToDetailsResponse());
     }
 
     [HttpGet("user/{id}")]
     public async Task<ActionResult<MyDetailsResponse>> GetDetailsForCurrentUser(int id)
     {
         return (await concertService.GetDetailsForCurrentUserAsync(id))
-            .Map(concert => concert.ToMyDetailsResponse())
-            .ToOkOrProblem();
+            .ToOkOrProblem(concert => concert.ToMyDetailsResponse());
     }
 
     [HttpGet("{id}/contract/pdf")]
     public async Task<ActionResult<FileDownload>> GetContractPdf(int id)
     {
         return (await contractService.GetPdfByConcertIdAsync(id))
-            .ToActionResult(pdf => File(pdf.Content, pdf.ContentType, pdf.FileName));
+            .ToActionResult(pdf => new ActionResult<FileDownload>(
+                File(pdf.Content, pdf.ContentType, pdf.FileName)));
     }
 
     [HttpGet("{id}/invoice")]
@@ -60,15 +59,15 @@ internal sealed class ConcertController : ControllerBase
     public async Task<ActionResult<FileDownload>> GetInvoicePdf(int id)
     {
         return (await invoiceService.GetPdfByConcertIdAsync(id))
-            .ToActionResult(pdf => File(pdf.Content, pdf.ContentType, pdf.FileName));
+            .ToActionResult(pdf => new ActionResult<FileDownload>(
+                File(pdf.Content, pdf.ContentType, pdf.FileName)));
     }
 
     [HttpGet("application/{applicationId}")]
     public async Task<ActionResult<MyDetailsResponse>> GetDetailsByApplicationId(int applicationId)
     {
         return (await concertService.GetDetailsByApplicationIdAsync(applicationId))
-            .Map(concert => concert.ToMyDetailsResponse())
-            .ToOkOrProblem();
+            .ToOkOrProblem(concert => concert.ToMyDetailsResponse());
     }
 
     [HttpGet("upcoming/venue/{id}")]
