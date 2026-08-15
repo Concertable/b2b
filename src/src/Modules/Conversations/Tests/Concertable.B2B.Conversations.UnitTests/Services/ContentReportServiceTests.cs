@@ -2,6 +2,7 @@ using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Conversations.Application.Validators;
+using FluentValidation;
 using Concertable.B2B.Conversations.Domain.Enums;
 using Concertable.B2B.Conversations.Infrastructure.Services;
 using Concertable.Kernel.Identity;
@@ -31,7 +32,7 @@ public sealed class ContentReportServiceTests
         tenantContext.SetupGet(t => t.TenantId).Returns(VenueTenantId);
 
         return new ContentReportService(messages.Object, reports.Object, notifier.Object,
-            currentUser.Object, tenantContext.Object, TimeProvider.System);
+            new ReportMessageRequestValidator(), currentUser.Object, tenantContext.Object, TimeProvider.System);
     }
 
     [Fact]
@@ -91,7 +92,7 @@ public sealed class ContentReportServiceTests
         var result = await Service(messages, reports, notifier).SubmitAsync(7, new ReportMessageRequest
         {
             Category = ReportCategory.Other,
-            Details = new string('x', ContentReportValidators.MaxDetailsLength + 1)
+            Details = new string('x', ReportMessageRequestValidator.MaxDetailsLength + 1)
         });
 
         Assert.True(result.TryGetError(out var error));

@@ -1,28 +1,18 @@
 using Concertable.B2B.Conversations.Application.Requests;
-using Reunion.Errors;
-using Reunion.Validation;
+using FluentValidation;
 
 namespace Concertable.B2B.Conversations.Application.Validators;
 
-internal static class ContentReportValidators
+internal sealed class ReportMessageRequestValidator : AbstractValidator<ReportMessageRequest>
 {
     public const int MaxDetailsLength = 2000;
 
-    public static ValidationResult Validate(ReportMessageRequest request) =>
-        new[]
-        {
-            Validate(
-                Enum.IsDefined(request.Category),
-                "category",
-                "Select a valid report category."),
-            Validate(
-                request.Details is null || request.Details.Length <= MaxDetailsLength,
-                "details",
-                $"Details must be {MaxDetailsLength} characters or fewer.")
-        }.Combine();
+    public ReportMessageRequestValidator()
+    {
+        RuleFor(x => x.Category).IsInEnum();
 
-    private static ValidationResult Validate(bool isValid, string field, string message) =>
-        isValid
-            ? ValidationResult.Valid()
-            : ValidationResult.Invalid(new ValidationErrors([new(field, message)]));
+        // Optional on purpose: the category may say everything, and a reporting route must never be
+        // harder to complete than it has to be.
+        RuleFor(x => x.Details).MaximumLength(MaxDetailsLength);
+    }
 }
