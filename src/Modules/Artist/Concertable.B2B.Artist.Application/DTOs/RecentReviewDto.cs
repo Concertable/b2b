@@ -1,10 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace Concertable.B2B.Artist.Application.DTOs;
 
 internal sealed record RecentReviewDto(
     int Id,
     string ReviewerName,
-    string? ReviewerAvatarUrl,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ReviewerAvatarUrl,
     int Stars,
-    string? Excerpt,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Excerpt,
     DateTimeOffset At,
     string Href);

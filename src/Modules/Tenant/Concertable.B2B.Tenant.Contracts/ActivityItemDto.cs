@@ -21,7 +21,7 @@ public sealed record ActivityItemDto(
     ActivityType Type,
     DateTimeOffset At,
     string Subject,
-    string? Detail,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Detail,
     string Url);
 
 public sealed record ActivityRecord(

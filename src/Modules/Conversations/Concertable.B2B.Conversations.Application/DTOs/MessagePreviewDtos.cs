@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Concertable.B2B.Conversations.Application.DTOs;
 
 internal sealed record MessagePreview(
@@ -11,7 +13,7 @@ internal sealed record MessagePreview(
 internal sealed record MessagePreviewDto(
     int Id,
     string OtherPartyName,
-    string? OtherPartyAvatarUrl,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? OtherPartyAvatarUrl,
     string Preview,
     DateTime At,
     bool Unread,
