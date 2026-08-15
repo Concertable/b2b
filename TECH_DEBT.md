@@ -60,29 +60,30 @@ See [`plans/platform/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/platform/SPLIT_TIM
 
 ## MED
 
-### B2B outbound email is still synchronous inline — not on the transactional outbox
+### B2B counterparty email (`Messenger`) is still synchronous inline — not on the transactional outbox
 
-The async-email-outbox refactor put Auth (verification/reset) and Customer (ticket receipt) on the
-transactional outbox (`IEmailSender` → `OutboxEmailSender` → `SendEmailCommand`), but **B2B's two email
-producers still send synchronously** through `IEmailTransport` (the raw SMTP/fake send), so a transient
+The async-email-outbox refactor put Auth (verification/reset), Customer (ticket receipt), and **B2B's
+org-invitation email** on the transactional outbox: an `IPreCommitDomainEventHandler` stages a
+`SendEmailCommand` on the same transaction as the business change (the `TicketPurchasedDomainEventHandler`
+pattern). `Tenant.Infrastructure/Services/InvitationService` now raises `TenantInvitationCreatedDomainEvent`
+whose pre-commit handler stages the invite mail, anchored on the invitation save — done.
+
+One B2B producer remains synchronous through `IEmailTransport` (the raw SMTP/fake send), so a transient
 failure still loses the mail and the send isn't atomic with the business change:
 
 - `Concert.Infrastructure/Services/Messenger` — the counterparty email on a conversation message/action.
 - `Concert.Infrastructure/Services/BookingConfirmationNotifier` — the both-party booking-confirmation email at concert-draft creation (`ConcertDraftService.CreateAsync`).
-- `Tenant.Infrastructure/Services/InvitationService` — the org-invitation email after the invitation saves.
 
-They were left synchronous because the integration-test harness can't deliver an outbox command
-in-process (`LocalDispatchingBus` deliberately doesn't dispatch commands locally, and the fixtures'
-`MockBusTransport.SendAsync` is a no-op), so the `EmailSender.Sent` assertions in
-`ApplicationCancel`/`ApplicationWithdrawReject`/`Invitation` tests only observe a synchronous send.
-`Messenger` also has no clean transactional anchor — it fires off a conversation action, not a persisted
-lifecycle transition.
+`Messenger` has no clean transactional anchor of its own — it fires a conversation *action*, not a persisted
+lifecycle transition, so it can't simply mirror the invitation fix. The lifecycle executors that drive it
+(`ApplicationCancel`/`ApplicationWithdrawReject`) *do* persist a transition, so the anchor is that
+transition's domain event, not `Messenger` itself. Their `EmailSender.Sent` integration assertions still
+observe a synchronous send.
 
-**Resolves when:** the concert-lifecycle transition (and the conversation action) raise a domain event
-whose pre-commit handler stages a `SendEmailCommand` on the same transaction (the
-`TicketPurchasedDomainEventHandler` pattern), making B2B email transactional/retried like Auth and
-Customer — with the B2B email integration assertions moved to draining the outbox (or asserting the
-staged command) rather than a synchronous `Sent` list.
+**Resolves when:** the concert-lifecycle transition raises a domain event whose pre-commit handler stages
+the counterparty `SendEmailCommand` on the same transaction, making it transactional/retried like the
+invitation email — with the `ApplicationCancel`/`ApplicationWithdrawReject` email assertions moved to
+asserting the staged command (`fixture.GetStagedEmailsAsync()`) rather than a synchronous `Sent` list.
 
 ---
 
