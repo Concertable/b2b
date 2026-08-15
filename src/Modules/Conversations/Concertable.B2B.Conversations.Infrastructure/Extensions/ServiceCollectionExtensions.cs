@@ -3,6 +3,8 @@ using Concertable.DataAccess;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Conversations.Application.Interfaces;
+using Concertable.B2B.Conversations.Application.Validators;
+using FluentValidation;
 using Concertable.B2B.Conversations.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Concertable.B2B.Conversations.Infrastructure.Data.Seeders;
@@ -37,6 +39,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<ConversationsConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConversationsConfigurationProvider>());
+
+        services.AddValidatorsFromAssemblyContaining<ReportMessageRequestValidator>(includeInternalTypes: true);
 
         services.Configure<SafetySettings>(configuration.GetSection(SafetySettings.SectionName));
 
