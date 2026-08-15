@@ -18,8 +18,8 @@ internal sealed class ReleaseEscrowFinishStep : IFinishStep
         var bookingId = await bookingRepository.GetIdByConcertIdAsync(concertId)
             ?? throw new InvalidOperationException($"Concert {concertId} has no booking.");
 
-        return (await escrowClient.ReleaseByBookingIdAsync(bookingId, ct))
-            .MapError(error => (FinishConcertError)new FinishConcertError.EscrowReleaseFailure(error))
-            .Bind(_ => new Success());
+        return (await escrowClient.ReleaseByBookingIdAsync(bookingId, ct)).Bind(
+            _ => UnitResult.Success<FinishConcertError>(),
+            error => new FinishConcertError.EscrowReleaseFailure(error));
     }
 }
