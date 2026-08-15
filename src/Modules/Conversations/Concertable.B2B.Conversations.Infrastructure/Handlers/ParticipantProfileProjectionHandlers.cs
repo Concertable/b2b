@@ -7,20 +7,32 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Handlers;
 
-internal sealed class ArtistParticipantProfileProjectionHandler(ConversationsDbContext context)
-    : IIntegrationEventHandler<ArtistChangedEvent>
+internal sealed class ArtistParticipantProfileProjectionHandler : IIntegrationEventHandler<ArtistChangedEvent>
 {
+    private readonly ConversationsDbContext context;
+
+    public ArtistParticipantProfileProjectionHandler(ConversationsDbContext context)
+    {
+        this.context = context;
+    }
+
     public Task HandleAsync(ArtistChangedEvent e, MessageEnvelope envelope, CancellationToken ct = default) =>
-        ParticipantProfileProjection.UpsertAsync(context, e.TenantId, e.Name, e.County, e.Town, ct);
+        ParticipantProfileProjection.UpsertAsync(this.context, e.TenantId, e.Name, e.County, e.Town, ct);
 }
 
-internal sealed class VenueParticipantProfileProjectionHandler(ConversationsDbContext context)
-    : IIntegrationEventHandler<VenueChangedEvent>
+internal sealed class VenueParticipantProfileProjectionHandler : IIntegrationEventHandler<VenueChangedEvent>
 {
+    private readonly ConversationsDbContext context;
+
+    public VenueParticipantProfileProjectionHandler(ConversationsDbContext context)
+    {
+        this.context = context;
+    }
+
     public Task HandleAsync(VenueChangedEvent e, MessageEnvelope envelope, CancellationToken ct = default) =>
         e.TenantId == Guid.Empty
             ? Task.CompletedTask
-            : ParticipantProfileProjection.UpsertAsync(context, e.TenantId, e.Name, e.County, e.Town, ct);
+            : ParticipantProfileProjection.UpsertAsync(this.context, e.TenantId, e.Name, e.County, e.Town, ct);
 }
 
 internal static class ParticipantProfileProjection
