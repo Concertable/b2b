@@ -24,6 +24,7 @@ using Concertable.B2B.User.Api.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
+using Concertable.Shared.Email.Application;
 using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
@@ -113,10 +114,10 @@ services.AddInfrastructure(builder.Configuration);
 services.AddClientCredentials(opts =>
 {
     opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services__auth__https__0"]
-        ?? (builder.Environment.IsEnvironment("Testing") ? null!
+        ?? (builder.Environment.IsIntegration() ? null!
             : throw new InvalidOperationException("Auth:Authority is required (no explicit key and no service-discovery fallback)."));
     opts.ClientId = builder.Configuration["ServiceAuth:ClientId"]
-        ?? (builder.Environment.IsEnvironment("Testing") ? null!
+        ?? (builder.Environment.IsIntegration() ? null!
             : throw new InvalidOperationException("ServiceAuth:ClientId is required."));
     if (builder.Configuration["ServiceAuth:ClientSecret"] is string clientSecret)
         opts.ClientSecret = clientSecret;
@@ -130,10 +131,10 @@ services.AddAzureServiceBusTransport(
     opts =>
     {
         opts.ConnectionString = builder.Configuration.GetConnectionString("asb")
-            ?? (builder.Environment.IsEnvironment("Testing") ? null!
+            ?? (builder.Environment.IsIntegration() ? null!
                 : throw new InvalidOperationException("Connection string 'asb' is required."));
         opts.ServiceName = builder.Configuration["ServiceBus:ServiceName"]
-            ?? (builder.Environment.IsEnvironment("Testing") ? "concertable-b2b"
+            ?? (builder.Environment.IsIntegration() ? "concertable-b2b"
                 : throw new InvalidOperationException("Configuration 'ServiceBus:ServiceName' is required."));
     },
     reg =>
@@ -151,13 +152,15 @@ services.AddAzureServiceBusTransport(
         reg.SubscribeTo<CustomerReviewSubmittedEvent>();
         reg.SubscribeTo<PaymentSucceededEvent>();
         reg.SubscribeTo<PaymentFailedEvent>();
+
+        reg.HandleCommand<SendEmailCommand>();
     });
 services.AddDirectBusKeyed("webhook");
 services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
 services.AddInbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
 services.AddInProcessEventDispatch();
 services.AddSeedingInfrastructure();
-if (!builder.Environment.IsEnvironment("Testing"))
+if (!builder.Environment.IsIntegration())
 {
     services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
     services.AddScoped<IDbInitializer, DevDbInitializer>();
@@ -181,7 +184,7 @@ services.AddArtistApi(builder.Configuration);
 services.AddVenueApi(builder.Configuration);
 services.AddConcertApi(builder.Configuration);
 services.AddDealApi(builder.Configuration);
-if (!builder.Environment.IsEnvironment("Testing"))
+if (!builder.Environment.IsIntegration())
     services.AddPaymentClient(builder.Configuration);
 services.AddQueueHostedService();
 services.AddCurrentUser();
