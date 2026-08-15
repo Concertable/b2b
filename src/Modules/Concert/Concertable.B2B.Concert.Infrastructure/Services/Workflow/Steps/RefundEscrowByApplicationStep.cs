@@ -23,7 +23,7 @@ internal sealed class RefundEscrowByApplicationStep : IApplicationCancelStep
         await bus.SendAsync(new RefundEscrowCommand(
             booking.Application.BeginCancellation(),
             booking.Id,
-            "application-cancelled"), ct);
+            RefundReasonCodes.RequestedByCustomer), ct);
         return new Success();
     }
 }

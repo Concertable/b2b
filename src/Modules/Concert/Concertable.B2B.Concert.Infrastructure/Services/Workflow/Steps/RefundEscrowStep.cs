@@ -20,7 +20,7 @@ internal sealed class RefundEscrowStep : ICancelStep
         await bus.SendAsync(new RefundEscrowCommand(
             booking.Application.BeginCancellation(),
             booking.Id,
-            "concert-cancelled"), ct);
+            RefundReasonCodes.RequestedByCustomer), ct);
         return new Success();
     }
 }
