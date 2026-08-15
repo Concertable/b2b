@@ -4,6 +4,7 @@ using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Conversations.Domain.Enums;
 using Concertable.B2B.Conversations.Infrastructure.Services;
 using Concertable.Kernel.Identity;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Concertable.B2B.Conversations.UnitTests.Services;
@@ -30,14 +31,15 @@ public sealed class ContentReportServiceTests
         tenantContext.SetupGet(t => t.TenantId).Returns(VenueTenantId);
 
         return new ContentReportService(messages.Object, reports.Object, notifier.Object,
-            currentUser.Object, tenantContext.Object, TimeProvider.System);
+            currentUser.Object, tenantContext.Object, TimeProvider.System,
+            NullLogger<ContentReportService>.Instance);
     }
 
     [Fact]
     public async Task Submit_PersistsTheReportAndNotifiesOnce()
     {
         var messages = new Mock<IMessageRepository>();
-        messages.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(Message());
+        messages.Setup(r => r.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(Message());
 
         ContentReportEntity? persisted = null;
         var reports = new Mock<IContentReportRepository>();
@@ -61,10 +63,52 @@ public sealed class ContentReportServiceTests
     }
 
     [Fact]
+    public async Task Submit_OwnTenantsOutboundMessage_IsNotFound_AndRecordsNothing()
+    {
+        var outbound = MessageEntity.Create(VenueTenantId, ArtistTenantId, senderTenantId: VenueTenantId,
+            sentByUserId: ReportingUserId, "our own message", new DateTime(2026, 1, 1));
+
+        var messages = new Mock<IMessageRepository>();
+        messages.Setup(r => r.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(outbound);
+
+        var reports = new Mock<IContentReportRepository>();
+        var notifier = new Mock<IContentReportNotifier>();
+
+        var result = await Service(messages, reports, notifier)
+            .SubmitAsync(7, new ReportMessageRequest { Category = ReportCategory.Harassment });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<ReportMessageError.MessageNotFound>(error);
+        reports.Verify(r => r.AddAsync(It.IsAny<ContentReportEntity>(), It.IsAny<CancellationToken>()), Times.Never);
+        notifier.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Submit_NotificationFailure_StillSucceeds_BecauseTheRecordIsTheDuty()
+    {
+        var messages = new Mock<IMessageRepository>();
+        messages.Setup(r => r.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(Message());
+
+        var reports = new Mock<IContentReportRepository>();
+        reports.Setup(r => r.AddAsync(It.IsAny<ContentReportEntity>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ContentReportEntity report, CancellationToken _) => report);
+
+        var notifier = new Mock<IContentReportNotifier>();
+        notifier.Setup(n => n.SubmittedAsync(It.IsAny<ContentReportEntity>()))
+            .ThrowsAsync(new InvalidOperationException("smtp is down"));
+
+        var result = await Service(messages, reports, notifier)
+            .SubmitAsync(7, new ReportMessageRequest { Category = ReportCategory.Spam });
+
+        Assert.True(result.IsSuccess);
+        reports.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Submit_MessageOutsideTheTenantsThreads_IsNotFound()
     {
         var messages = new Mock<IMessageRepository>();
-        messages.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((MessageEntity?)null);
+        messages.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((MessageEntity?)null);
 
         var reports = new Mock<IContentReportRepository>();
         var notifier = new Mock<IContentReportNotifier>();

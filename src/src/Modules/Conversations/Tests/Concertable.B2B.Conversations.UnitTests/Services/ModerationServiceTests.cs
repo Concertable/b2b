@@ -61,6 +61,23 @@ public sealed class ModerationServiceTests
     }
 
     [Fact]
+    public async Task Restore_StampsTheActingAdmin_WithoutErasingTheHide()
+    {
+        var message = Message();
+        message.Hide(Guid.NewGuid(), new DateTime(2026, 8, 15));
+        var messages = new Mock<IAdminMessageRepository>();
+        messages.Setup(r => r.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(message);
+        var reports = new Mock<IAdminContentReportRepository>();
+
+        var result = await Service(messages, reports).RestoreMessageAsync(7);
+
+        Assert.True(result.IsSuccess);
+        Assert.False(message.IsHidden);
+        Assert.NotNull(message.HiddenAt);
+        Assert.Equal(AdminUserId, message.RestoredByUserId);
+    }
+
+    [Fact]
     public async Task Hide_StampsTheActingAdmin_AndSavesOnce()
     {
         var message = Message();
