@@ -6,12 +6,6 @@ using Concertable.Shared.Email.Application;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Events;
 
-/// <summary>
-/// Stages the org-invitation email on the transactional outbox when an invitation is created, so the send
-/// commits with the invitation row and is retried by the outbox — instead of firing synchronously after the
-/// save, where a transient failure silently lost the mail. Pre-commit so the <c>SendEmailCommand</c> row
-/// enlists in the same transaction.
-/// </summary>
 internal sealed class TenantInvitationCreatedDomainEventHandler : IPreCommitDomainEventHandler<TenantInvitationCreatedDomainEvent>
 {
     private readonly IBus bus;
