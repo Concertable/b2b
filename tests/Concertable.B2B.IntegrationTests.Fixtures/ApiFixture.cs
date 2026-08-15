@@ -79,7 +79,6 @@ public class ApiFixture : IAsyncLifetime
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:B2BDb"] = sqlFixture.ConnectionString,
-                    ["ConnectionStrings:PaymentDb"] = sqlFixture.ConnectionString,
                     ["ExternalServices:UseRealStripe"] = "false",
                     ["ExternalServices:UseRealBlob"] = "false",
                     ["ExternalServices:UseRealEmail"] = "false",
