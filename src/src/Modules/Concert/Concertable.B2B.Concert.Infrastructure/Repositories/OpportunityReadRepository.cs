@@ -6,12 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class PublicOpportunityRepository : IPublicOpportunityRepository
+internal sealed class OpportunityReadRepository : IOpportunityReadRepository
 {
     private readonly ConcertDbContext context;
     private readonly TimeProvider timeProvider;
 
-    public PublicOpportunityRepository(ConcertDbContext context, TimeProvider timeProvider)
+    public OpportunityReadRepository(ConcertDbContext context, TimeProvider timeProvider)
     {
         this.context = context;
         this.timeProvider = timeProvider;

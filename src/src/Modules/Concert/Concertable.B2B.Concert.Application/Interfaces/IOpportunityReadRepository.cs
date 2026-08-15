@@ -10,7 +10,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// by another tenant correctly stops showing as open. Management reads live on
 /// <see cref="IOpportunityRepository"/>, which is tenant-scoped.
 /// </summary>
-internal interface IPublicOpportunityRepository
+internal interface IOpportunityReadRepository
 {
     Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId, IPageParams pageParams);
     Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId);

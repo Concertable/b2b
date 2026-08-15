@@ -12,7 +12,7 @@ namespace Concertable.B2B.Venue.Infrastructure.Services;
 internal sealed class VenueService : IVenueService
 {
     private readonly IVenueRepository repository;
-    private readonly IPublicVenueRepository publicRepository;
+    private readonly IVenueReadRepository readRepository;
     private readonly IAdminVenueRepository adminRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
@@ -22,7 +22,7 @@ internal sealed class VenueService : IVenueService
 
     public VenueService(
         IVenueRepository repository,
-        IPublicVenueRepository publicRepository,
+        IVenueReadRepository readRepository,
         IAdminVenueRepository adminRepository,
         IImageService imageService,
         ICurrentUser currentUser,
@@ -31,7 +31,7 @@ internal sealed class VenueService : IVenueService
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.repository = repository;
-        this.publicRepository = publicRepository;
+        this.readRepository = readRepository;
         this.adminRepository = adminRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
@@ -42,7 +42,7 @@ internal sealed class VenueService : IVenueService
 
     public async Task<VenueDetails> GetDetailsByIdAsync(int id)
     {
-        return await publicRepository.GetDetailsByIdAsync(id)
+        return await readRepository.GetDetailsByIdAsync(id)
             .OrNotFound();
     }
 
@@ -69,7 +69,7 @@ internal sealed class VenueService : IVenueService
         var createdVenue = await repository.AddAsync(venue);
         await repository.SaveChangesAsync();
 
-        return await publicRepository.GetDetailsByIdAsync(createdVenue.Id)
+        return await readRepository.GetDetailsByIdAsync(createdVenue.Id)
             ?? throw new InternalServerException($"Venue {createdVenue.Id} not found after creation.");
     }
 
@@ -94,7 +94,7 @@ internal sealed class VenueService : IVenueService
 
         await repository.SaveChangesAsync();
 
-        return await publicRepository.GetDetailsByIdAsync(id)
+        return await readRepository.GetDetailsByIdAsync(id)
             ?? throw new InternalServerException($"Venue {id} not found after update.");
     }
 
@@ -125,6 +125,6 @@ internal sealed class VenueService : IVenueService
     }
 
     public async Task<VenueSummary> GetSummaryAsync(int id) =>
-        await publicRepository.GetSummaryAsync(id)
+        await readRepository.GetSummaryAsync(id)
             .OrNotFound();
 }

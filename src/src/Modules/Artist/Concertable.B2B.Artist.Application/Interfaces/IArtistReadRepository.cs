@@ -3,7 +3,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Artist.Application.Interfaces;
 
-internal interface IPublicArtistRepository
+internal interface IArtistReadRepository
 {
     Task<ArtistSummary?> GetSummaryAsync(int id);
     Task<ArtistDetails?> GetDetailsByIdAsync(int id);
