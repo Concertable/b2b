@@ -1,12 +1,12 @@
 import type {
   ActivityItem,
   ConcertCard,
-  MessagePreview,
   MonthlyRevenuePoint,
   ReviewExcerpt,
   Settlement,
 } from "@concertable/shared/features/dashboard";
 import type { OpportunityWithCounts } from "@concertable/b2b/features/dashboard";
+import type { MessagePreview } from "@concertable/b2b/features/conversations";
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
   Application,
