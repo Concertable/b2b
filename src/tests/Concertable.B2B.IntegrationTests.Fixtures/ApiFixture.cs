@@ -4,6 +4,7 @@ using Concertable.Payment.Contracts.Events;
 using Concertable.Payment.Client;
 using Concertable.B2B.User.Contracts;
 using Concertable.B2B.User.Domain.Entities;
+using Concertable.Kernel;
 using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Logging;
 using Concertable.Testing.Integration.Mocks;
@@ -19,7 +20,6 @@ using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Seed.Infrastructure;
 using Concertable.Seed.Shared.Extensions;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -28,12 +28,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Messaging.Application;
 using Concertable.Messaging.Contracts;
+using Concertable.Messaging.Domain;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.Shared.Email.Application;
 using Concertable.Shared.Geocoding.Application;
 using Concertable.Shared.Imaging.Application;
@@ -74,13 +76,12 @@ public class ApiFixture : IAsyncLifetime
         await sqlFixture.InitializeAsync();
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.UseEnvironment("Testing");
+            builder.UseEnvironment(Environments.Integration);
             builder.ConfigureAppConfiguration((_, config) =>
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:B2BDb"] = sqlFixture.ConnectionString,
-                    ["ConnectionStrings:PaymentDb"] = sqlFixture.ConnectionString,
                     ["ExternalServices:UseRealStripe"] = "false",
                     ["ExternalServices:UseRealBlob"] = "false",
                     ["ExternalServices:UseRealEmail"] = "false",
@@ -92,22 +93,10 @@ public class ApiFixture : IAsyncLifetime
 
             builder.ConfigureTestServices(services =>
             {
-                services.AddLogging(b =>
-                {
-                    b.ClearProviders();
-                    b.AddProvider(new XunitLoggerProvider(outputAccessor));
-                    b.SetMinimumLevel(LogLevel.Information);
-                });
-
-                var asbDescriptors = services
-                    .Where(d => d.ServiceType == typeof(IHostedService) &&
-                                d.ImplementationType?.Name == "AzureServiceBusReceiver")
-                    .ToList();
-                foreach (var d in asbDescriptors)
-                    services.Remove(d);
+                services.AddXunitLogging(outputAccessor);
+                services.RemoveAzureServiceBus();
                 services.AddTransient<IStartupFilter, TestClientIpStartupFilter>();
 
-                services.Replace(ServiceDescriptor.Singleton<IBusTransport, MockBusTransport>());
                 services.AddSingleton<INotificationClient>(NotificationService);
                 services.AddSingleton(StripeApiClient);
                 services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient);
@@ -122,7 +111,7 @@ public class ApiFixture : IAsyncLifetime
                 services.Replace(ServiceDescriptor.Singleton<IHttpClientFactory>(_ => new WebApplicationHttpClientFactory(factory)));
                 services.AddScoped<IGeocodingClient, MockGeocodingClient>();
                 services.AddScoped<IImageService, MockImageService>();
-                services.AddScoped<IDbInitializer, TestDbInitializer>();
+                services.AddScoped<IDbInitializer, IntegrationDbInitializer>();
                 services.AddSeedingInfrastructure();
                 services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
                 services.AddSingleton<SeedCatalog>();
@@ -135,14 +124,7 @@ public class ApiFixture : IAsyncLifetime
                 services.AddConcertTestSeeder();
                 services.AddConversationsTestSeeder();
 
-                services.PostConfigure<AuthenticationOptions>(opts =>
-                {
-                    opts.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
-                    opts.DefaultChallengeScheme = TestAuthHandler.SchemeName;
-                    opts.DefaultScheme = TestAuthHandler.SchemeName;
-                });
-                services.AddAuthentication()
-                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
+                services.AddTestAuthentication();
             });
         });
 
@@ -195,6 +177,27 @@ public class ApiFixture : IAsyncLifetime
     }
 
     public IServiceProvider Services => factory.Services;
+
+    /// <summary>The <see cref="SendEmailCommand"/>s staged on the transactional outbox this test run — the
+    /// durable form B2B's outbox-backed email producers take (post-commit the dispatcher drains them to the
+    /// transport, a no-op under <c>MockBusTransport</c>). Lets a test assert the staged mail directly.</summary>
+    public async Task<IReadOnlyList<SendEmailCommand>> GetStagedEmailsAsync()
+    {
+        using var readScope = factory.Services.CreateScope();
+        var outbox = readScope.ServiceProvider.GetRequiredService<OutboxDbContext>();
+        var serializer = readScope.ServiceProvider.GetRequiredService<MessageSerializer>();
+        var messageType = MessageTypeAttribute.Resolve(typeof(SendEmailCommand));
+
+        var rows = await outbox.Set<OutboxMessageEntity>()
+            .AsNoTracking()
+            .Where(m => m.MessageType == messageType)
+            .OrderBy(m => m.OccurredAtUtc)
+            .ToListAsync();
+
+        return rows
+            .Select(r => (SendEmailCommand)serializer.Deserialize(BinaryData.FromString(r.Payload), typeof(SendEmailCommand)))
+            .ToList();
+    }
 
     public HttpClient CreateClient(UserEntity user)
     {

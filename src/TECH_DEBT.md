@@ -60,36 +60,29 @@ See [`plans/platform/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/platform/SPLIT_TIM
 
 ## MED
 
-### B2B outbound email is still synchronous inline — not on the transactional outbox
+### B2B counterparty email (`Messenger`) is still synchronous inline — not on the transactional outbox
 
-The async-email-outbox refactor put Auth (verification/reset) and Customer (ticket receipt) on the
-transactional outbox (`IEmailSender` → `OutboxEmailSender` → `SendEmailCommand`), but **B2B's two email
-producers still send synchronously** through `IEmailTransport` (the raw SMTP/fake send), so a transient
+The async-email-outbox refactor put Auth (verification/reset), Customer (ticket receipt), and **B2B's
+org-invitation email** on the transactional outbox: an `IPreCommitDomainEventHandler` stages a
+`SendEmailCommand` on the same transaction as the business change (the `TicketPurchasedDomainEventHandler`
+pattern). `Tenant.Infrastructure/Services/InvitationService` now raises `TenantInvitationCreatedDomainEvent`
+whose pre-commit handler stages the invite mail, anchored on the invitation save — done.
+
+One B2B producer remains synchronous through `IEmailTransport` (the raw SMTP/fake send), so a transient
 failure still loses the mail and the send isn't atomic with the business change:
 
 - `Concert.Infrastructure/Services/Messenger` — the counterparty email on a conversation message/action.
-- `Tenant.Infrastructure/Services/InvitationService` — the org-invitation email after the invitation saves.
 
-They were left synchronous because the integration-test harness can't deliver an outbox command
-in-process (`LocalDispatchingBus` deliberately doesn't dispatch commands locally, and the fixtures'
-`MockBusTransport.SendAsync` is a no-op), so the `EmailSender.Sent` assertions in
-`ApplicationCancel`/`ApplicationWithdrawReject`/`Invitation` tests only observe a synchronous send.
-`Messenger` also has no clean transactional anchor — it fires off a conversation action, not a persisted
-lifecycle transition.
+`Messenger` has no clean transactional anchor of its own — it fires a conversation *action*, not a persisted
+lifecycle transition, so it can't simply mirror the invitation fix. The lifecycle executors that drive it
+(`ApplicationCancel`/`ApplicationWithdrawReject`) *do* persist a transition, so the anchor is that
+transition's domain event, not `Messenger` itself. Their `EmailSender.Sent` integration assertions still
+observe a synchronous send.
 
-**Resolves when:** the concert-lifecycle transition (and the conversation action) raise a domain event
-whose pre-commit handler stages a `SendEmailCommand` on the same transaction (the
-`TicketPurchasedDomainEventHandler` pattern), making B2B email transactional/retried like Auth and
-Customer — with the B2B email integration assertions moved to draining the outbox (or asserting the
-staged command) rather than a synchronous `Sent` list.
-
----
-
-### B2B integration fixture boots Payment in-process on a shared DB
-
-`Concertable.B2B.IntegrationTests.Fixtures/ApiFixture.cs` registers `AddPaymentInfrastructure`, a `PaymentDbContext` bound to the same connection string as `B2BDb`, and `AddPaymentTestSeeder`. `MockEscrowClient` writes `EscrowEntity` rows straight into `PaymentDbContext`, and `MockWebhookSimulator` resolves and fires Payment's own `IIntegrationEventHandler<PaymentSucceededEvent>` (`PaymentTransactionHandler`) in-process. The B2B integration suite therefore runs B2B + Payment as a mini-monolith over one database — a microservice-isolation violation confined to the test harness. (Production B2B no longer touches Payment internals: after the Payment-agnostic refactor, `ReadDbContext` exposes no Payment entities and escrow reads go through the fixture's `PaymentDbContext`, not B2B's read context.)
-
-**Resolves when:** `MockEscrowClient` / `MockManagerPaymentClient` / `MockCustomerPaymentClient` are pure in-memory contract mocks (return `Payment.Client` response types and record call args; no `PaymentDbContext`); `AddPaymentInfrastructure`, the `PaymentDbContext` registration, `AddPaymentTestSeeder`, and the shared `PaymentDb` connection string are removed from the B2B fixture; `MockWebhookSimulator` fires only B2B's `PaymentSucceededEvent` handlers; escrow/transaction *persistence* assertions move into Payment's own integration tests while B2B asserts on recorded mock call args (payer/payee/booking) instead of `fixture.Escrows`; and the `InternalsVisibleTo` from `Concertable.Payment.Application` / `.Infrastructure` to the B2B test projects are dropped.
+**Resolves when:** the concert-lifecycle transition raises a domain event whose pre-commit handler stages
+the counterparty `SendEmailCommand` on the same transaction, making it transactional/retried like the
+invitation email — with the `ApplicationCancel`/`ApplicationWithdrawReject` email assertions moved to
+asserting the staged command (`fixture.GetStagedEmailsAsync()`) rather than a synchronous `Sent` list.
 
 ---
 

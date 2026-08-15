@@ -1,4 +1,5 @@
 using Concertable.B2B.Artist.Contracts.Events;
+using Concertable.Kernel;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Simulator;
@@ -20,7 +21,7 @@ builder.Services.AddAzureServiceBusTransport(
     opts =>
     {
         opts.ConnectionString = builder.Configuration.GetConnectionString("asb")
-            ?? (builder.Environment.IsEnvironment("Testing") ? null!
+            ?? (builder.Environment.IsIntegration() ? null!
                 : throw new InvalidOperationException("Connection string 'asb' is required."));
         opts.ServiceName = "concertable-b2b-seeding-simulator";
     },
