@@ -66,10 +66,17 @@ internal sealed class ConcertDraftService : IConcertDraftService
         await notifier.ConcertDraftCreatedAsync(artist.UserId.ToString(), concert.Id);
         await notifier.ConcertDraftCreatedAsync(venue.UserId.ToString(), concert.Id);
 
-        await bookingConfirmationNotifier.BookingConfirmedAsync(
-            bookingConcert.Application.VenueTenantId, venue.Name,
-            bookingConcert.Application.ArtistTenantId, artist.Name,
-            concert.Period);
+        try
+        {
+            await bookingConfirmationNotifier.BookingConfirmedAsync(
+                bookingConcert.Application.VenueTenantId, venue.Name,
+                bookingConcert.Application.ArtistTenantId, artist.Name,
+                concert.Period);
+        }
+        catch (Exception ex)
+        {
+            logger.BookingConfirmationEmailFailed(ex, concert.Id, bookingId);
+        }
 
         return Result.Ok(concert);
     }
