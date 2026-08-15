@@ -318,7 +318,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         var application = await response.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
 
         Assert.NotNull(application!.Actions.Contract);
-        Assert.Equal($"/api/Application/{applicationId}/contract", application.Actions.Contract!.Href);
+        Assert.Equal($"/api/Application/{applicationId}/contract/pdf", application.Actions.Contract!.Href);
         Assert.Equal("GET", application.Actions.Contract.Method);
     }
 

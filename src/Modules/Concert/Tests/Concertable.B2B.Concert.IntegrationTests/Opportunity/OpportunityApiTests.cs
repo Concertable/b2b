@@ -1,6 +1,4 @@
 using System.Net;
-using Concertable.B2B.Concert.Application.DTOs;
-
 using Concertable.B2B.Concert.Api.Responses;
 using Xunit;
 using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
@@ -72,7 +70,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         var response = await client.PostAsync("/api/Opportunity", request);
 
         // Assert
-        var opportunity = await response.Content.ReadAsync<OpportunityDto>();
+        var opportunity = await response.Content.ReadAsync<OpportunityResponse>();
         Assert.NotNull(opportunity);
         Assert.NotNull(opportunity.Id);
         Assert.Equal(request.StartDate, opportunity.StartDate);
@@ -122,7 +120,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var result = await response.Content.ReadAsync<Pagination<OpportunityDto>>();
+        var result = await response.Content.ReadAsync<Pagination<OpportunityResponse>>();
         Assert.NotNull(result);
         Assert.Contains(result.Data, o => o.Id == fixture.SeedState.FreshVenueHireOpportunity.Id);
     }
