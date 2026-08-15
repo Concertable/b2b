@@ -193,9 +193,6 @@ public class ApiFixture : IAsyncLifetime
 
     public IServiceProvider Services => factory.Services;
 
-    /// <summary>The <see cref="SendEmailCommand"/>s staged on the transactional outbox this test run — the
-    /// durable form B2B's outbox-backed email producers take (post-commit the dispatcher drains them to the
-    /// transport, a no-op under <c>MockBusTransport</c>). Lets a test assert the staged mail directly.</summary>
     public async Task<IReadOnlyList<SendEmailCommand>> GetStagedEmailsAsync()
     {
         using var readScope = factory.Services.CreateScope();
