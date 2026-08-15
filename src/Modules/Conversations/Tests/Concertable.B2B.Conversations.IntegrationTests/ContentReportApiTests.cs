@@ -70,6 +70,8 @@ public sealed class ContentReportApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
+    // FluentValidation auto-validation rejects before the action runs, so the key is ModelState's
+    // property name — dictionary keys are not camel-cased by JsonSerializerDefaults.Web.
     [Fact]
     public async Task Report_ShouldReturn400_WithFieldIndexedErrors_WhenDetailsAreTooLong()
     {
@@ -81,7 +83,7 @@ public sealed class ContentReportApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadAsync<ValidationProblem>();
-        Assert.True(problem!.Errors.ContainsKey("details"));
+        Assert.Contains("Details", problem!.Errors.Keys);
         Assert.Empty(fixture.EmailSender.Sent);
     }
 
