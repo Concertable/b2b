@@ -13,10 +13,17 @@
   ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "prebuild": "npm test",
     "build": "npm run clean && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json --resolve-full-paths --resolve-full-extension .js",
+    "test": "vitest run src",
     "prepack": "npm run build"
   },
   "exports": {
+    "./features/conversations": {
+      "types": "./dist/features/conversations/index.d.ts",
+      "import": "./dist/features/conversations/index.js",
+      "default": "./dist/features/conversations/index.js"
+    },
     "./features/concerts": {
       "types": "./dist/features/concerts/index.d.ts",
       "import": "./dist/features/concerts/index.js",
