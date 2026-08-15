@@ -9,7 +9,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// Party/host reads live on <see cref="IConcertRepository"/>; availability booleans on
 /// <see cref="IConcertAvailability"/>.
 /// </summary>
-internal interface IPublicConcertRepository
+internal interface IConcertReadRepository
 {
     Task<ConcertDetails?> GetDetailsByIdAsync(int id);
     Task<ConcertSummary?> GetSummaryAsync(int id);

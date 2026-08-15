@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
-internal sealed class PublicArtistRepository(ArtistDbContext context) : IPublicArtistRepository
+internal sealed class ArtistReadRepository(ArtistDbContext context) : IArtistReadRepository
 {
     public async Task<ArtistSummary?> GetSummaryAsync(int id) =>
         await context.Artists

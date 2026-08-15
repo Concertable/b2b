@@ -3,7 +3,7 @@ namespace Concertable.B2B.Venue.Application.Interfaces;
 /// <summary>
 /// The platform-admin surface over venues — cross-tenant read/write for privileged operations
 /// (venue approval), served by an unfiltered writable context. Tenant-scoped access lives on
-/// <see cref="IVenueRepository"/>; public marketplace reads on <see cref="IPublicVenueRepository"/>.
+/// <see cref="IVenueRepository"/>; marketplace reads on <see cref="IVenueReadRepository"/>.
 /// </summary>
 internal interface IAdminVenueRepository
 {

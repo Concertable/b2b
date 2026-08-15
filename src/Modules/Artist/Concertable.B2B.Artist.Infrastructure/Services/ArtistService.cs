@@ -12,7 +12,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Services;
 internal sealed class ArtistService : IArtistService
 {
     private readonly IArtistRepository repository;
-    private readonly IPublicArtistRepository publicRepository;
+    private readonly IArtistReadRepository readRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly ITenantContext tenantContext;
@@ -21,7 +21,7 @@ internal sealed class ArtistService : IArtistService
 
     public ArtistService(
         IArtistRepository repository,
-        IPublicArtistRepository publicRepository,
+        IArtistReadRepository readRepository,
         IImageService imageService,
         ICurrentUser currentUser,
         ITenantContext tenantContext,
@@ -29,7 +29,7 @@ internal sealed class ArtistService : IArtistService
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.repository = repository;
-        this.publicRepository = publicRepository;
+        this.readRepository = readRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
         this.tenantContext = tenantContext;
@@ -41,7 +41,7 @@ internal sealed class ArtistService : IArtistService
         repository.GetDetailsForCurrentTenantAsync();
 
     public async Task<ArtistDetails> GetDetailsByIdAsync(int id) =>
-        await publicRepository.GetDetailsByIdAsync(id)
+        await readRepository.GetDetailsByIdAsync(id)
             .OrNotFound();
 
     public async Task<ArtistDetails> CreateAsync(CreateArtistRequest request)
@@ -68,7 +68,7 @@ internal sealed class ArtistService : IArtistService
         var createdArtist = await repository.AddAsync(artist);
         await repository.SaveChangesAsync();
 
-        return await publicRepository.GetDetailsByIdAsync(createdArtist.Id)
+        return await readRepository.GetDetailsByIdAsync(createdArtist.Id)
             ?? throw new InternalServerException($"Artist {createdArtist.Id} not found after creation.");
     }
 
@@ -93,7 +93,7 @@ internal sealed class ArtistService : IArtistService
 
         await repository.SaveChangesAsync();
 
-        return await publicRepository.GetDetailsByIdAsync(id)
+        return await readRepository.GetDetailsByIdAsync(id)
             ?? throw new InternalServerException($"Artist {id} not found after update.");
     }
 
@@ -112,9 +112,9 @@ internal sealed class ArtistService : IArtistService
     }
 
     public async Task<ArtistSummary> GetSummaryAsync(int id) =>
-        await publicRepository.GetSummaryAsync(id)
+        await readRepository.GetSummaryAsync(id)
             .OrNotFound();
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
-        publicRepository.GetGenresAsync(id);
+        readRepository.GetGenresAsync(id);
 }
