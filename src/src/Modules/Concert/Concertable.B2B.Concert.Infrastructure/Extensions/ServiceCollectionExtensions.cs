@@ -53,7 +53,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddConcertModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<ConcertTenantDbContext>((sp, opts) =>
+        services.AddDbContext<ConcertDbContext>((sp, opts) =>
             opts.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sql => sql.UseNetTopologySuite())
@@ -64,13 +64,13 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        services.AddDbContext<ConcertDbContext>((sp, opts) =>
+        services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
             opts.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sql => sql.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
-        services.AddScoped<IUnitOfWork<ConcertTenantDbContext>, UnitOfWork<ConcertTenantDbContext>>();
+        services.AddScoped<IUnitOfWork<ConcertDbContext>, UnitOfWork<ConcertDbContext>>();
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
 

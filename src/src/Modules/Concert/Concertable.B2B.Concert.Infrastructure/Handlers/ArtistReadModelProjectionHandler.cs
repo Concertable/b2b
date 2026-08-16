@@ -9,9 +9,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Handlers;
 
 internal sealed class ArtistReadModelProjectionHandler : IIntegrationEventHandler<ArtistChangedEvent>
 {
-    private readonly ConcertTenantDbContext context;
+    private readonly ConcertDbContext context;
 
-    public ArtistReadModelProjectionHandler(ConcertTenantDbContext context)
+    public ArtistReadModelProjectionHandler(ConcertDbContext context)
     {
         this.context = context;
     }

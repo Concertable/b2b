@@ -11,8 +11,8 @@ using NetTopologySuite.Geometries;
 
 namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
 {
-    [DbContext(typeof(VenueTenantDbContext))]
-    partial class VenueTenantDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(VenueDbContext))]
+    partial class VenueDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {

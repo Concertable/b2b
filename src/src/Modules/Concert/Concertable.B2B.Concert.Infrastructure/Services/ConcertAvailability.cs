@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class ConcertAvailability(ConcertDbContext context) : IConcertAvailability
+internal sealed class ConcertAvailability(ConcertReadDbContext context) : IConcertAvailability
 {
     public Task<bool> OpportunityHasConcertAsync(int opportunityId)
     {

@@ -176,7 +176,7 @@ public sealed class SelfBillingAgreementApiTests : IAsyncLifetime
     private async Task InsertAgreementAsync(Guid tenantId, DateTime acceptedAtUtc)
     {
         using var scope = fixture.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ConcertTenantDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
         context.SelfBillingAgreements.Add(SelfBillingAgreementEntity.Create(
             tenantId,
             new InvoiceParty(tenantId, "Sally Supplier Ltd", "GB123456789", "1 Road", null, "Town", "AB1 2CD", "United Kingdom"),

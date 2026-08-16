@@ -7,7 +7,7 @@ namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
 internal sealed class VenueRepository : TenantScopedRepository<VenueEntity>, IVenueRepository
 {
-    public VenueRepository(VenueTenantDbContext context, ITenantContext tenant) : base(context, tenant) { }
+    public VenueRepository(VenueDbContext context, ITenantContext tenant) : base(context, tenant) { }
 
     public async Task<int?> GetIdForCurrentTenantAsync() =>
         await base.CurrentTenant.AsNoTracking()

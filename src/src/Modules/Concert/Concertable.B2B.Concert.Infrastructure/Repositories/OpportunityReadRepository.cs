@@ -8,10 +8,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class OpportunityReadRepository : IOpportunityReadRepository
 {
-    private readonly ConcertDbContext context;
+    private readonly ConcertReadDbContext context;
     private readonly TimeProvider timeProvider;
 
-    public OpportunityReadRepository(ConcertDbContext context, TimeProvider timeProvider)
+    public OpportunityReadRepository(ConcertReadDbContext context, TimeProvider timeProvider)
     {
         this.context = context;
         this.timeProvider = timeProvider;

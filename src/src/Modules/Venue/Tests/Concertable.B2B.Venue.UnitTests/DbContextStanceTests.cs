@@ -13,11 +13,11 @@ public sealed class DbContextStanceTests
     public async Task Contexts_TenancyStances_EnforceCapabilitiesAndFilters()
     {
         var provider = new VenueConfigurationProvider();
-        await using var readContext = new VenueDbContext(
-            CreateOptions<VenueDbContext>(),
+        await using var readContext = new VenueReadDbContext(
+            CreateOptions<VenueReadDbContext>(),
             provider);
-        await using var tenantContext = new VenueTenantDbContext(
-            CreateOptions<VenueTenantDbContext>(),
+        await using var tenantContext = new VenueDbContext(
+            CreateOptions<VenueDbContext>(),
             provider,
             Mock.Of<ITenantContext>());
 

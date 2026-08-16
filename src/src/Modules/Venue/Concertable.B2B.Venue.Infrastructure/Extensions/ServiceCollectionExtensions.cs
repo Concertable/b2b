@@ -25,7 +25,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddVenueModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<VenueTenantDbContext>((sp, opt) =>
+        services.AddDbContext<VenueDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
@@ -35,13 +35,13 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        services.AddDbContext<VenueDbContext>((sp, opt) =>
+        services.AddDbContext<VenueReadDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
-        services.AddDbContext<AdminVenueDbContext>((sp, opt) =>
+        services.AddDbContext<VenueAdminDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
@@ -55,7 +55,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVenueReviewService, VenueReviewService>();
         services.AddScoped<IVenueRepository, VenueRepository>();
         services.AddScoped<IVenueReadRepository, VenueReadRepository>();
-        services.AddScoped<IAdminVenueRepository, AdminVenueRepository>();
+        services.AddScoped<IVenueAdminRepository, VenueAdminRepository>();
         services.AddScoped<IVenueModule, VenueModule>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, VenueReviewProjectionHandler>();

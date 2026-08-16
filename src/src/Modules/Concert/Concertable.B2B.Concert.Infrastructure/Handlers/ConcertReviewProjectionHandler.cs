@@ -9,11 +9,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Handlers;
 
 internal sealed class ConcertReviewProjectionHandler : IIntegrationEventHandler<CustomerReviewSubmittedEvent>
 {
-    private readonly ConcertTenantDbContext context;
+    private readonly ConcertDbContext context;
     private readonly IBus bus;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
-    public ConcertReviewProjectionHandler(ConcertTenantDbContext context, IBus bus, IOutboxUnitOfWorkBehavior outboxBehavior)
+    public ConcertReviewProjectionHandler(ConcertDbContext context, IBus bus, IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.context = context;
         this.bus = bus;

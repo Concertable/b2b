@@ -22,8 +22,8 @@ B2B owns the venue/artist side of Concertable: opportunities, applications, book
 | `Concertable.B2B.AppHost` | Aspire AppHost | Local-dev orchestrator only. |
 
 **Database:** `B2BDb` (SQL Server). Artist, Venue, and Concert each use a tenant-bound tracked/write
-`<Module>TenantDbContext` plus a tenant-independent read-only `<Module>DbContext`. Venue also has
-`AdminVenueDbContext` for tenant-independent administrative writes.
+`<Module>DbContext` plus a tenant-independent read-only `<Module>ReadDbContext`. Venue also has
+`VenueAdminDbContext` for tenant-independent administrative writes.
 
 ---
 

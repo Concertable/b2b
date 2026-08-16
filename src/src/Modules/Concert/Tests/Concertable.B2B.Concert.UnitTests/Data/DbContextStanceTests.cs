@@ -22,11 +22,11 @@ public sealed class DbContextStanceTests
     public async Task Contexts_TenancyStances_EnforceCapabilitiesAndFilters()
     {
         var provider = new ConcertConfigurationProvider();
-        await using var readContext = new ConcertDbContext(
-            CreateOptions<ConcertDbContext>(),
+        await using var readContext = new ConcertReadDbContext(
+            CreateOptions<ConcertReadDbContext>(),
             provider);
-        await using var tenantContext = new ConcertTenantDbContext(
-            CreateOptions<ConcertTenantDbContext>(),
+        await using var tenantContext = new ConcertDbContext(
+            CreateOptions<ConcertDbContext>(),
             provider,
             Mock.Of<ITenantContext>());
 
