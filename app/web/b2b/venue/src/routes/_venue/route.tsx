@@ -24,20 +24,20 @@ const profileItems: ProfileMenuItem[] = [
 
 function VenueLayout() {
   useVenueNotifications();
-  const { selectionRequired } = useTenant("Venue");
-  if (selectionRequired) return <TenantChooser tenantType="Venue" />;
+  const { selectionRequired } = useTenant("venue");
+  if (selectionRequired) return <TenantChooser tenantType="venue" />;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher tenantType="Venue" />}
+      headerSlot={<TenantSwitcher tenantType="venue" />}
     />
   );
 }
 
 export const Route = createFileRoute("/_venue")({
   beforeLoad: async ({ location }) => {
-    const { selectionRequired } = await resolveTenantRoute("Venue");
+    const { selectionRequired } = await resolveTenantRoute("venue");
     if (selectionRequired) return;
     await requireVenue({ pathname: location.pathname });
   },

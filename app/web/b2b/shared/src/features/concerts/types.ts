@@ -4,15 +4,15 @@ import type { Concert } from "@concertable/shared/features/concerts/types";
 import type { Deal } from "@b2b/features/deals";
 
 export type ApplicationStatus =
-  | "Pending"
-  | "Rejected"
-  | "Withdrawn"
-  | "Accepted"
-  | "Cancelled"
-  | "AwaitingPayment"
-  | "Confirmed"
-  | "Complete"
-  | "Settled";
+  | "pending"
+  | "rejected"
+  | "withdrawn"
+  | "accepted"
+  | "cancelled"
+  | "awaitingPayment"
+  | "confirmed"
+  | "complete"
+  | "settled";
 
 export interface OpportunityActions {
   checkout?: ActionLink | null;
