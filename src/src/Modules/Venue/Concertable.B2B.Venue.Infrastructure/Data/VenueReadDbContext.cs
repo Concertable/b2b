@@ -6,8 +6,9 @@ namespace Concertable.B2B.Venue.Infrastructure.Data;
 internal sealed class VenueReadDbContext(
     DbContextOptions<VenueReadDbContext> options,
     VenueConfigurationProvider provider)
-    : ReadDbContext(options, provider, Schema.Name)
+    : ReadDbContext(options, provider, Schema.Name), IVenueReadDbContext
 {
-    public DbSet<VenueEntity> Venues => Set<VenueEntity>();
-    public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
+    IQueryable<VenueEntity> IVenueReadDbContext.Venues => Query<VenueEntity>();
+    IQueryable<VenueRatingProjection> IVenueReadDbContext.VenueRatingProjections =>
+        Query<VenueRatingProjection>();
 }

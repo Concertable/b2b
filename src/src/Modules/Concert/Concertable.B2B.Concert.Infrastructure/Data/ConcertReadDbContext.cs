@@ -10,13 +10,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Data;
 internal sealed class ConcertReadDbContext(
     DbContextOptions<ConcertReadDbContext> options,
     ConcertConfigurationProvider provider)
-    : ReadDbContext(options, provider, Schema.Name)
+    : ReadDbContext(options, provider, Schema.Name), IConcertReadDbContext
 {
-    public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
-    public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
-    public DbSet<OpportunityEntity> Opportunities => Set<OpportunityEntity>();
-    public DbSet<SelfBillingAgreementEntity> SelfBillingAgreements => Set<SelfBillingAgreementEntity>();
-    public DbSet<ConcertRatingProjection> ConcertRatingProjections => Set<ConcertRatingProjection>();
-    public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();
-    public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
+    IQueryable<ConcertEntity> IConcertReadDbContext.Concerts => Query<ConcertEntity>();
+    IQueryable<OpportunityEntity> IConcertReadDbContext.Opportunities => Query<OpportunityEntity>();
+    IQueryable<SelfBillingAgreementEntity> IConcertReadDbContext.SelfBillingAgreements =>
+        Query<SelfBillingAgreementEntity>();
+    IQueryable<ConcertRatingProjection> IConcertReadDbContext.ConcertRatingProjections =>
+        Query<ConcertRatingProjection>();
+    IQueryable<ArtistRatingProjection> IConcertReadDbContext.ArtistRatingProjections =>
+        Query<ArtistRatingProjection>();
+    IQueryable<VenueRatingProjection> IConcertReadDbContext.VenueRatingProjections =>
+        Query<VenueRatingProjection>();
 }
