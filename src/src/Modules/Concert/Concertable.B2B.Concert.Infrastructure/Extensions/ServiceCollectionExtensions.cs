@@ -21,6 +21,7 @@ using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Data.Seeders;
+using Concertable.B2B.Concert.Infrastructure.Emails;
 using Concertable.B2B.Concert.Infrastructure.Events;
 using Concertable.B2B.Concert.Infrastructure.Handlers;
 using Concertable.B2B.Concert.Infrastructure.Pdf;
@@ -78,8 +79,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConcertDraftService, ConcertDraftService>();
         services.AddScoped<IBookingService, BookingService>();
         services.AddScoped<IConcertNotifier, ConcertNotifier>();
-        services.AddScoped<IBookingConfirmationEmailGenerator, BookingConfirmationEmailGenerator>();
-        services.AddScoped<IBookingConfirmationNotifier, BookingConfirmationNotifier>();
+        services.AddScoped<BookingConfirmationEmailSender>();
         services.AddScoped<IOpportunityService, OpportunityService>();
         services.AddScoped<IOpportunitySyncer>(sp => new Sync.OpportunitySyncer(
             sp.GetRequiredService<IOpportunityRepository>(),
@@ -164,6 +164,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDomainEventHandler<ConcertChangedDomainEvent>, ConcertChangedDomainEventHandler>();
         services.AddScoped<IDomainEventHandler<ConcertPostedDomainEvent>, ConcertPostedDomainEventHandler>();
         services.AddScoped<IDomainEventHandler<ConcertCancelledDomainEvent>, ConcertCancelledDomainEventHandler>();
+        services.AddScoped<IDomainEventHandler<BookingConfirmedDomainEvent>, BookingConfirmedDomainEventHandler>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistReadModelProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueReadModelProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ConcertReviewProjectionHandler>();
