@@ -1,6 +1,6 @@
 using System.Net;
-using Concertable.B2B.Concert.Application.Interfaces;
-using Concertable.Kernel.ValueObjects;
+using Concertable.B2B.Concert.Infrastructure.Emails;
+using Concertable.Shared.Email.Application;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
@@ -25,7 +25,7 @@ public sealed class BookingConfirmationEmailTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
-    public async Task Book_SendsBothPartiesLegalDetails_ToEveryMemberOfBothTenants()
+    public async Task Book_StagesBothPartiesLegalDetails_ToEveryMemberOfBothTenants()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
@@ -35,7 +35,8 @@ public sealed class BookingConfirmationEmailTests : IAsyncLifetime
         await accept.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
-        var confirmations = fixture.EmailSender.Sent.Where(e => e.Subject.StartsWith("Booking confirmed:")).ToList();
+        var confirmations = (await fixture.GetStagedEmailsAsync())
+            .Where(e => e.Subject.StartsWith("Booking confirmed:")).ToList();
         var recipients = confirmations.Select(e => e.To).ToList();
 
         // Venue tenant has two members (VenueManager1 + VenueManager3); artist tenant has one.
@@ -53,30 +54,20 @@ public sealed class BookingConfirmationEmailTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Book_RendersLegalNameOnly_WhenTenantTaxComplianceAbsent()
+    public void Render_ShowsLegalNameOnly_AndHtmlEscapes_WhenTaxComplianceAbsent()
     {
-        var venueTenant = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManagerNoVenue.Id);
-        var artistTenant = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManagerNoArtist.Id);
-        var period = new DateRange(fixture.SeedNow.AddDays(30), fixture.SeedNow.AddDays(30).AddHours(3));
-
         using var scope = fixture.Services.CreateScope();
-        var notifier = scope.ServiceProvider.GetRequiredService<IBookingConfirmationNotifier>();
+        var renderer = scope.ServiceProvider.GetRequiredService<IEmailRenderer>();
 
-        await notifier.BookingConfirmedAsync(venueTenant.Id, "Test Venue", artistTenant.Id, "Test Artist", period);
+        var html = renderer.Render(new BookingConfirmationEmailContent(
+            new EmailParty("The Venue", "Bar & Grill <Ltd>", vat: null, address: null),
+            new EmailParty("The Artist", "Artist Legal Name", vat: null, address: null),
+            "Monday 1 January 2035")).HtmlBody;
 
-        var confirmations = fixture.EmailSender.Sent.Where(e => e.Subject.StartsWith("Booking confirmed:")).ToList();
-        var recipients = confirmations.Select(e => e.To).ToList();
-
-        Assert.Contains(fixture.SeedState.VenueManagerNoVenue.Email, recipients);
-        Assert.Contains(fixture.SeedState.ArtistManagerNoArtist.Email, recipients);
-
-        Assert.NotEmpty(confirmations);
-        Assert.All(confirmations, e =>
-        {
-            Assert.Contains(fixture.SeedState.VenueManagerNoVenue.Email, e.Body);
-            Assert.Contains(fixture.SeedState.ArtistManagerNoArtist.Email, e.Body);
-            Assert.DoesNotContain("VAT number", e.Body);
-            Assert.DoesNotContain("Seed Way", e.Body);
-        });
+        Assert.Contains("Bar &amp; Grill &lt;Ltd&gt;", html);
+        Assert.DoesNotContain("Bar & Grill <Ltd>", html);
+        Assert.Contains("Artist Legal Name", html);
+        Assert.DoesNotContain("VAT number", html);
+        Assert.DoesNotContain("Seed Way", html);
     }
 }
