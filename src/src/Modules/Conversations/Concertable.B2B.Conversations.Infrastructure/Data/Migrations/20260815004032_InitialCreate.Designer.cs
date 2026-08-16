@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConversationsDbContext))]
-    [Migration("20260731091317_InitialCreate")]
+    [Migration("20260815004032_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -25,6 +25,70 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ContentReportEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("ArtistTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MessageExcerpt")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("MessageId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Outcome")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ReportedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ReportedTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ReporterTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ResolutionNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ResolvedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("VenueTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArtistTenantId");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("VenueTenantId");
+
+                    b.ToTable("ContentReports", "conversations");
+                });
 
             modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.MessageEntity", b =>
                 {
@@ -43,6 +107,18 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("HiddenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("HiddenByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RestoredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RestoredByUserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("SenderTenantId")
                         .HasColumnType("uniqueidentifier");
