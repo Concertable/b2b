@@ -1,12 +1,13 @@
 using System.ComponentModel;
 using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
 
 [DisplayName(DisplayNames.Booking)]
-public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped
+public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IEventRaiser
 {
     public int Id { get; private set; }
     public Guid VenueTenantId { get; private set; }
@@ -14,6 +15,10 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped
     public int ApplicationId { get; private set; }
     public ApplicationEntity Application { get; private set; } = null!;
     public ConcertEntity? Concert { get; private set; }
+
+    private readonly EventRaiser events = new();
+    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
+    public void ClearDomainEvents() => events.Clear();
 
     protected BookingEntity() { }
 
@@ -29,7 +34,11 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped
         ArtistTenantId = application.ArtistTenantId;
     }
 
-    public void Confirm(ConcertEntity concert) => Concert = concert;
+    public void Confirm(ConcertEntity concert, string venueName, string artistName)
+    {
+        Concert = concert;
+        events.Raise(new BookingConfirmedDomainEvent(VenueTenantId, venueName, ArtistTenantId, artistName, concert.Period));
+    }
 }
 
 public sealed class StandardBooking : BookingEntity
