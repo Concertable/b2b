@@ -1,5 +1,6 @@
 using System.Globalization;
 using Concertable.B2B.Concert.Domain.Events;
+using Concertable.B2B.Concert.Infrastructure.Mappers;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
 using Concertable.Messaging.Contracts;
@@ -54,22 +55,12 @@ internal sealed class BookingConfirmationEmailSender
         if ((await tenantModule.GetTaxComplianceAsync(tenantId, ct)).TryGetValue(out var tax))
         {
             vat = string.IsNullOrWhiteSpace(tax.VatNumber) ? null : tax.VatNumber;
-            var formatted = FormatAddress(tax.RegisteredAddress);
+            var formatted = tax.RegisteredAddress.ToSingleLine();
             address = string.IsNullOrWhiteSpace(formatted) ? null : formatted;
         }
 
         return new EmailParty(displayName, tenant.LegalName, vat, address);
     }
-
-    private static string FormatAddress(RegisteredAddressDto address) =>
-        string.Join(", ", new[]
-        {
-            address.Line1,
-            address.Line2,
-            address.City,
-            address.Postcode,
-            address.Country
-        }.Where(part => !string.IsNullOrWhiteSpace(part)));
 
     private async Task StageToMembersAsync(Guid tenantId, RenderedEmail email, CancellationToken ct)
     {
