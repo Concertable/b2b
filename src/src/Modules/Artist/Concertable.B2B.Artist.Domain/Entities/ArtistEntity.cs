@@ -35,7 +35,7 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
     public void ClearDomainEvents() => events.Clear();
 
-    public static ArtistEntity Create(
+    public static Result<ArtistEntity, ValidationErrors> Create(
         Guid userId,
         string name,
         string about,
@@ -46,29 +46,36 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
         string email,
         IEnumerable<Genre> genres)
     {
-        Validate(name, about, bannerUrl, avatar, location, address, email);
-
-        var artist = new ArtistEntity
+        var validation = ValidateProfile(name, about);
+        return validation.Bind(() =>
         {
-            UserId = userId,
-            Name = name,
-            About = about,
-            BannerUrl = bannerUrl,
-            Avatar = avatar,
-            Location = location,
-            Address = address,
-            Email = email
-        };
+            ValidateCollaborators(bannerUrl, avatar, location, address, email);
 
-        artist.SyncGenresInternal(genres);
-        artist.events.Raise(new ArtistChangedDomainEvent(artist));
+            var artist = new ArtistEntity
+            {
+                UserId = userId,
+                Name = name,
+                About = about,
+                BannerUrl = bannerUrl,
+                Avatar = avatar,
+                Location = location,
+                Address = address,
+                Email = email
+            };
 
-        return artist;
+            artist.SyncGenresInternal(genres);
+            artist.events.Raise(new ArtistChangedDomainEvent(artist));
+            return Result.Success<ArtistEntity, ValidationErrors>(artist);
+        });
     }
 
-    public void Update(string name, string about, string bannerUrl, IEnumerable<Genre> genres)
+    public UnitResult<ValidationErrors> Update(string name, string about, string bannerUrl, IEnumerable<Genre> genres)
     {
-        Validate(name, about, bannerUrl, Avatar, Location, Address, Email);
+        var validation = ValidateProfile(name, about);
+        if (validation.IsFailure)
+            return validation;
+
+        ValidateCollaborators(bannerUrl, Avatar, Location, Address, Email);
 
         Name = name;
         About = about;
@@ -76,6 +83,7 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
 
         SyncGenresInternal(genres);
         events.Raise(new ArtistChangedDomainEvent(this));
+        return new Success();
     }
 
     public void SyncGenres(IEnumerable<Genre> genres)
@@ -111,10 +119,27 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
     private void SyncGenresInternal(IEnumerable<Genre> genres) =>
         Genres = genres.ToList();
 
-    private static void Validate(string name, string about, string bannerUrl, string avatar, Point location, Address address, string email)
+    public static UnitResult<ValidationErrors> ValidateProfile(string name, string about)
     {
-        DomainException.ThrowIfNullOrWhiteSpace(name, "Name");
-        DomainException.ThrowIfNullOrWhiteSpace(about, "About");
+        var errors = new List<KeyValuePair<string, string>>();
+
+        if (string.IsNullOrWhiteSpace(name))
+            errors.Add(new(nameof(Name), "Name is required."));
+        else if (name.Length > 100)
+            errors.Add(new(nameof(Name), "Name must be 100 characters or fewer."));
+
+        if (string.IsNullOrWhiteSpace(about))
+            errors.Add(new(nameof(About), "About is required."));
+        else if (about.Length > 1000)
+            errors.Add(new(nameof(About), "About must be 1000 characters or fewer."));
+
+        return errors.Count == 0
+            ? new Success()
+            : new ValidationErrors(errors);
+    }
+
+    private static void ValidateCollaborators(string bannerUrl, string avatar, Point location, Address address, string email)
+    {
         DomainException.ThrowIfNullOrWhiteSpace(bannerUrl, "Banner URL");
         DomainException.ThrowIfNullOrWhiteSpace(avatar, "Avatar");
         DomainException.ThrowIfNull(location, "Location");

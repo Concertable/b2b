@@ -32,6 +32,10 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
         builder.ToTable(Schema.Tables.Applications, Schema.Name);
         builder.Property(ca => ca.State);
         builder.Property(ca => ca.PaymentVerification);
+        builder.Property(ca => ca.FinancialFailureCode).HasMaxLength(100);
+        builder.Property(ca => ca.FinancialFailureMessage).HasMaxLength(1000);
+        builder.HasIndex(ca => ca.AcceptanceOperationId).IsUnique().HasFilter("[AcceptanceOperationId] IS NOT NULL");
+        builder.HasIndex(ca => ca.CancellationOperationId).IsUnique().HasFilter("[CancellationOperationId] IS NOT NULL");
         builder.HasIndex(ca => new { ca.OpportunityId, ca.ArtistId }).IsUnique();
         builder.HasOne(ca => ca.Opportunity)
             .WithMany(o => o.Applications)

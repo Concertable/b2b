@@ -1,5 +1,7 @@
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Domain.Entities;
+using Reunion.Errors;
+using Reunion;
 
 namespace Concertable.B2B.Deal.Application.Mappers;
 
@@ -17,9 +19,9 @@ internal sealed class VersusDealMapper : IDealMapper
         };
     }
 
-    public DealEntity ToEntity(IDeal deal)
+    public Result<DealEntity, ValidationErrors> ToEntity(IDeal deal)
     {
         var c = (VersusDeal)deal;
-        return VersusDealEntity.Create(c.Guarantee, c.ArtistDoorPercent, c.PaymentMethod);
+        return VersusDealEntity.Create(c.Guarantee, c.ArtistDoorPercent, c.PaymentMethod).Map<DealEntity>(entity => entity);
     }
 }

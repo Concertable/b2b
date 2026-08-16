@@ -2,5 +2,7 @@ namespace Concertable.B2B.Concert.Application.Workflow.Steps;
 
 internal interface IApplicationCancelStep
 {
-    Task ExecuteAsync(int applicationId);
+    Task<UnitResult<CancelApplicationError>> ExecuteAsync(
+        int applicationId,
+        CancellationToken ct = default);
 }

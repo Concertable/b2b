@@ -3,7 +3,6 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Application.Mappers;
 
@@ -18,12 +17,14 @@ internal sealed class OpportunityMapper : IOpportunityMapper
 
     public async Task<OpportunityDto> ToDtoAsync(OpportunityEntity opportunity)
     {
-        var deal = await dealModule.GetByIdAsync(opportunity.DealId)
-            .OrNotFound($"Deal {opportunity.DealId}");
+        var dealOption = await dealModule.GetByIdAsync(opportunity.DealId);
+        if (!dealOption.TryGetValue(out var deal))
+            throw new InvalidOperationException($"Opportunity {opportunity.Id} references missing deal {opportunity.DealId}.");
+
         return opportunity.ToDto(deal);
     }
 
-    public async Task<IEnumerable<OpportunityDto>> ToDtosAsync(IEnumerable<OpportunityEntity> opportunities)
+    public async Task<IReadOnlyList<OpportunityDto>> ToDtosAsync(IEnumerable<OpportunityEntity> opportunities)
     {
         var opportunityList = opportunities.ToList();
         var dealMap = (await dealModule.GetByIdsAsync(opportunityList.Select(o => o.DealId).Distinct()))
@@ -32,9 +33,9 @@ internal sealed class OpportunityMapper : IOpportunityMapper
         return opportunityList.Select(o =>
         {
             if (!dealMap.TryGetValue(o.DealId, out var deal))
-                throw new NotFoundException($"Deal {o.DealId} not found");
+                throw new InvalidOperationException($"Opportunity {o.Id} references missing deal {o.DealId}.");
             return o.ToDto(deal);
-        });
+        }).ToList();
     }
 
     public async Task<IPagination<OpportunityDto>> ToDtosAsync(IPagination<OpportunityEntity> opportunities)

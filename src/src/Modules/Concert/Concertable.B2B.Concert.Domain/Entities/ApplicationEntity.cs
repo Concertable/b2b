@@ -21,6 +21,10 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     public OpportunityEntity Opportunity { get; set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
     public BookingEntity? Booking { get; private set; }
+    public Guid? AcceptanceOperationId { get; private set; }
+    public Guid? CancellationOperationId { get; private set; }
+    public string? FinancialFailureCode { get; private set; }
+    public string? FinancialFailureMessage { get; private set; }
 
     public ESignature ArtistESignature { get; private set; } = null!;
     public string TermsFingerprint { get; private set; } = null!;
@@ -46,6 +50,32 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
 
     public void Accept(BookingEntity booking) => Booking = booking;
 
+    public Guid BeginAcceptance()
+    {
+        AcceptanceOperationId ??= Guid.NewGuid();
+        FinancialFailureCode = null;
+        FinancialFailureMessage = null;
+        return AcceptanceOperationId.Value;
+    }
+
+    public Guid BeginCancellation()
+    {
+        if (CancellationOperationId is null || State == LifecycleState.CancellationFailed)
+            CancellationOperationId = Guid.NewGuid();
+        FinancialFailureCode = null;
+        FinancialFailureMessage = null;
+        return CancellationOperationId.Value;
+    }
+
+    internal void RecordFinancialFailure(string code, string message)
+    {
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(message))
+            throw new InvalidOperationException("A financial failure requires a code and message.");
+
+        FinancialFailureCode = code;
+        FinancialFailureMessage = message;
+    }
+
     internal void RecordPaymentVerified() => PaymentVerification = PaymentVerification.Verified;
 
     internal void RecordPaymentFailed() => PaymentVerification = PaymentVerification.Failed;
@@ -56,7 +86,7 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
         TermsFingerprint = termsFingerprint;
     }
 
-    internal void Transition(Trigger trigger, LifecycleStateMachine machine) => State = machine.Next(State, trigger);
+    internal void Transition(LifecycleState next) => State = next;
 }
 
 public sealed class StandardApplication : ApplicationEntity
