@@ -308,6 +308,12 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.Forbidden
         },
         {
+            new SelfBillingAgreementPdfError.NotFound(),
+            "self_billing.pdf.not_found",
+            "Self-Billing Agreement not found",
+            ErrorKind.NotFound
+        },
+        {
             new OpportunityError.NotFound(42),
             "opportunity.get.not_found",
             "Opportunity 42 was not found.",

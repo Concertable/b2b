@@ -4,7 +4,6 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -111,13 +110,19 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
         return new Success();
     }
 
-    public async Task<FileDownload> GetPdfAsync(CancellationToken ct = default)
-    {
-        var agreement = await repository.GetCurrentAsync(timeProvider.GetUtcNow().UtcDateTime, ct)
-            .OrNotFound(DisplayNames.SelfBillingAgreement);
-        var blobName = agreement.PdfBlobName
-            ?? throw new InvalidOperationException("Self-billing agreement has no assigned PDF blob name");
-        var bytes = await pdfCache.GetOrCreateAsync(blobName, new SelfBillingAgreementDocument(agreement, logger), ct);
-        return agreement.ToFileDownload(bytes);
-    }
+    public async Task<Result<FileDownload, SelfBillingAgreementPdfError>> GetPdfAsync(
+        CancellationToken ct = default) =>
+        await repository.GetCurrentAsync(timeProvider.GetUtcNow().UtcDateTime, ct)
+            .ToOption()
+            .OrFailure(() => (SelfBillingAgreementPdfError)new SelfBillingAgreementPdfError.NotFound())
+            .MapAsync(async agreement =>
+            {
+                var blobName = agreement.PdfBlobName
+                    ?? throw new InvalidOperationException("Self-billing agreement has no assigned PDF blob name");
+                var bytes = await pdfCache.GetOrCreateAsync(
+                    blobName,
+                    new SelfBillingAgreementDocument(agreement, logger),
+                    ct);
+                return agreement.ToFileDownload(bytes);
+            });
 }

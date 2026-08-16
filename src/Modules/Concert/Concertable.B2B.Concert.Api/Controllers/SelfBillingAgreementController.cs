@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Requests;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Application.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,9 +33,10 @@ internal sealed class SelfBillingAgreementController : ControllerBase
     }
 
     [HttpGet("pdf")]
-    public async Task<IActionResult> GetPdf()
+    public async Task<ActionResult<FileDownload>> GetPdf()
     {
-        var pdf = await service.GetPdfAsync();
-        return File(pdf.Content, pdf.ContentType, pdf.FileName);
+        return (await service.GetPdfAsync())
+            .ToActionResult(pdf => new ActionResult<FileDownload>(
+                File(pdf.Content, pdf.ContentType, pdf.FileName)));
     }
 }
