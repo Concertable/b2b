@@ -21,8 +21,9 @@ public sealed class MessageServiceTests
         var recipientMembers = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
 
         var repository = new Mock<IMessageRepository>();
-        repository.Setup(r => r.AddAsync(It.IsAny<MessageEntity>())).Returns(Task.CompletedTask);
-        repository.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        repository.Setup(r => r.AddAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageEntity message, CancellationToken _) => message);
+        repository.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var notifier = new Mock<IConversationsNotifier>();
         notifier.Setup(n => n.MessageReceivedAsync(It.IsAny<string>(), It.IsAny<object>())).Returns(Task.CompletedTask);
