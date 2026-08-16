@@ -1,9 +1,10 @@
 using Concertable.B2B.Venue.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
-internal sealed class VenueReviewRepository : ReadRepository<VenueReview>, IVenueReviewRepository
+internal sealed class VenueReviewRepository : ReadRepository<VenueReview, int>, IVenueReviewRepository
 {
     private readonly VenueDbContext venueContext;
 
