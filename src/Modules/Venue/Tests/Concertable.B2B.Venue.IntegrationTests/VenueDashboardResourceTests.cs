@@ -2,7 +2,6 @@ using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Contracts.Events;
-using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Domain.ReadModels;
 using Concertable.B2B.Venue.Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,13 +49,15 @@ public sealed class VenueDashboardResourceTests : IAsyncLifetime
         await context.SaveChangesAsync();
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        var response = await client.GetAsync("/api/venues/current/reviews/recent?take=1");
+        var response = await client.GetAsync("/api/venues/current/reviews/recent");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var reviews = await response.Content.ReadAsync<List<RecentReviewDto>>();
-        var review = Assert.Single(reviews!);
+        var reviews = await response.Content.ReadAsync<List<RecentReviewResponse>>();
+        Assert.Equal(2, reviews!.Count);
+        var review = reviews[0];
         Assert.Equal("newer@example.com", review.ReviewerName);
         Assert.Equal("Newer", review.Excerpt);
+        Assert.Equal($"/_venue/find/venue/{fixture.SeedState.Venue.Id}", review.Href);
     }
 
     [Fact]
@@ -83,11 +84,19 @@ public sealed class VenueDashboardResourceTests : IAsyncLifetime
             "/_artist/?inbox=open")), MessageEnvelope.Create<TenantActivityRecordedEvent>(at));
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        var response = await client.GetAsync("/api/VenueDashboard/activity?take=10");
+        var response = await client.GetAsync("/api/VenueDashboard/activity");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var activity = await response.Content.ReadAsync<List<ActivityItemDto>>();
         var item = Assert.Single(activity!);
         Assert.Equal("Venue activity", item.Subject);
     }
+
+    private sealed record RecentReviewResponse(
+        int Id,
+        string ReviewerName,
+        int Stars,
+        string? Excerpt,
+        DateTimeOffset At,
+        string Href);
 }

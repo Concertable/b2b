@@ -1,5 +1,4 @@
 using System.Net;
-using Concertable.B2B.Artist.Application.DTOs;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Messaging.Contracts;
@@ -33,13 +32,15 @@ public sealed class ArtistDashboardResourceTests : IAsyncLifetime
         await SubmitReviewAsync(handler, "newer@example.com", 5, "Newer", new(2026, 8, 13, 12, 0, 0, TimeSpan.Zero));
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
-        var response = await client.GetAsync("/api/artists/current/reviews/recent?take=1");
+        var response = await client.GetAsync("/api/artists/current/reviews/recent");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var reviews = await response.Content.ReadAsync<List<RecentReviewDto>>();
-        var review = Assert.Single(reviews!);
+        var reviews = await response.Content.ReadAsync<List<RecentReviewResponse>>();
+        Assert.Equal(2, reviews!.Count);
+        var review = reviews[0];
         Assert.Equal("newer@example.com", review.ReviewerName);
         Assert.Equal("Newer", review.Excerpt);
+        Assert.Equal($"/_artist/find/artist/{fixture.SeedState.Artist.Id}", review.Href);
     }
 
     private Task SubmitReviewAsync(
@@ -59,4 +60,12 @@ public sealed class ArtistDashboardResourceTests : IAsyncLifetime
             details);
         return handler.HandleAsync(review, MessageEnvelope.Create<CustomerReviewSubmittedEvent>(at));
     }
+
+    private sealed record RecentReviewResponse(
+        int Id,
+        string ReviewerName,
+        int Stars,
+        string? Excerpt,
+        DateTimeOffset At,
+        string Href);
 }

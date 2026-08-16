@@ -52,7 +52,7 @@ const dashboardApi = {
   },
   getActivity: async (): Promise<ActivityItem[]> => {
     const { data } = await apiClient.get<ActivityItem[]>(
-      "/venueDashboard/activity?take=10",
+      "/venueDashboard/activity",
     );
     return data;
   },
@@ -64,7 +64,7 @@ const dashboardApi = {
   },
   getRecentReviews: async (): Promise<ReviewExcerpt[]> => {
     const { data } = await apiClient.get<ReviewExcerpt[]>(
-      "/venues/current/reviews/recent?take=5",
+      "/venues/current/reviews/recent",
     );
     return data;
   },

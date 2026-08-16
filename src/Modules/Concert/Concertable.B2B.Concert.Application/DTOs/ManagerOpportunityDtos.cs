@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts.Enums;
 
@@ -36,7 +35,6 @@ internal sealed record RecommendedOpportunity(
     int Id,
     int VenueId,
     string VenueName,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? VenueAvatarUrl,
     string County,
     string Town,
     DateTime StartDate,

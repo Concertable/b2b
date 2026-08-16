@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IArtistDashboardService, ArtistDashboardService>();
         services.AddScoped<IArtistReviewService, ArtistReviewService>();
         services.AddScoped<IArtistRepository, ArtistRepository>();
+        services.AddScoped<IArtistReviewRepository, ArtistReviewRepository>();
         services.AddScoped<IPublicArtistRepository, PublicArtistRepository>();
         services.AddScoped<IArtistModule, ArtistModule>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();

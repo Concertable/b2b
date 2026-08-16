@@ -1,11 +1,12 @@
 using Concertable.B2B.Artist.Application.DTOs;
 using Concertable.B2B.Artist.Application.Interfaces;
+using Concertable.B2B.Artist.Infrastructure.Extensions;
+using Concertable.B2B.Artist.Infrastructure.Mappers;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
-using PaymentPayoutAccountStatus = Concertable.Payment.Client.Enums.PayoutAccountStatus;
 
 namespace Concertable.B2B.Artist.Infrastructure.Services;
 
@@ -47,17 +48,18 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
             return null;
 
         var tenantId = tenantContext.GetTenantId();
-        var reviewSummaryTask = reviewService.GetSummaryAsync(artist.Id);
+        var reviewSummaryTask = reviewService.GetSummaryAsync(artist.Id, ct);
         var payoutStatusTask = payoutAccountClient.GetAccountStatusAsync(tenantId, ct);
         await Task.WhenAll(reviewSummaryTask, payoutStatusTask);
 
-        var profileHealth = ToProfileHealth(artist, payoutStatusTask.Result);
+        var reviewSummary = await reviewSummaryTask;
+        var payoutStatus = await payoutStatusTask;
         return new ArtistDashboardOverview(
             artist.Id,
             artist.Name,
-            profileHealth,
-            ToStripeConnectStatus(payoutStatusTask.Result),
-            reviewSummaryTask.Result);
+            artist.ToProfileHealth(payoutStatus),
+            payoutStatus.ToStripeConnectStatus(),
+            reviewSummary);
     }
 
     public async Task<ArtistDashboardKpis?> GetKpisAsync(CancellationToken ct = default)
@@ -66,7 +68,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         var tenantId = tenantContext.GetTenantId();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var monthStart = now.StartOfMonth();
 
         var countsTask = concertModule.GetArtistDashboardCountsAsync(artistId, ct);
         var mtdPayoutsTask = now == monthStart
@@ -77,68 +79,30 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
                 ct);
         await Task.WhenAll(countsTask, mtdPayoutsTask);
 
-        var counts = countsTask.Result;
+        var counts = await countsTask;
         if (counts is null) return null;
+        var mtdPayouts = await mtdPayoutsTask;
 
         return new ArtistDashboardKpis(
             PendingApplications: counts.PendingApplications,
             AcceptedAwaitingCheckout: counts.AcceptedAwaitingCheckout,
             UpcomingConcerts: counts.UpcomingConcerts,
-            MtdPayoutsCents: mtdPayoutsTask.Result.ToMinorUnits(),
-            MtdPayoutsDeltaPercent: null);
+            MtdPayoutsCents: mtdPayouts.ToMinorUnits());
     }
 
     public async Task<IReadOnlyList<MonthlyRevenuePoint>> GetPayoutsAsync(CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        var firstMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-5);
+        var firstMonth = now.StartOfMonth().AddMonths(-5);
         var points = await paymentReportingClient.GetSettlementPayoutsByMonthAsync(
             tenantId,
             new DateRange(firstMonth, now),
             ct);
 
-        return FillMonthlySeries(points, firstMonth);
+        return points.ToMonthlyRevenuePoints(firstMonth);
     }
 
-    public Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(int take, CancellationToken ct = default) =>
-        tenantModule.GetRecentActivityAsync(tenantContext.GetTenantId(), take, ct);
-
-    private static ProfileHealth ToProfileHealth(ArtistDetails artist, PaymentPayoutAccountStatus payoutStatus)
-    {
-        ProfileHealthItem[] items =
-        [
-            new("name", "Set artist name", "/_artist/my", !string.IsNullOrWhiteSpace(artist.Name)),
-            new("bio", "Add an about section", "/_artist/my", !string.IsNullOrWhiteSpace(artist.About)),
-            new("banner", "Upload a banner image", "/_artist/my", !string.IsNullOrWhiteSpace(artist.BannerUrl)),
-            new("avatar", "Upload a profile image", "/_artist/my", !string.IsNullOrWhiteSpace(artist.Avatar)),
-            new("genres", "Set genres", "/_artist/my", artist.Genres.Any()),
-            new("stripe", "Connect Stripe payouts", "/_artist/settings/payment", payoutStatus == PaymentPayoutAccountStatus.Verified)
-        ];
-        var completeness = items.Count(item => item.Done) * 100 / items.Length;
-        return new ProfileHealth(completeness, items);
-    }
-
-    private static StripeConnectStatus ToStripeConnectStatus(PaymentPayoutAccountStatus payoutStatus) =>
-        new(
-            payoutStatus switch
-            {
-                PaymentPayoutAccountStatus.Verified => StripeConnectState.Complete,
-                PaymentPayoutAccountStatus.Pending => StripeConnectState.Pending,
-                _ => StripeConnectState.Incomplete
-            },
-            "/_artist/settings/payment");
-
-    private static IReadOnlyList<MonthlyRevenuePoint> FillMonthlySeries(
-        IReadOnlyList<Concertable.Payment.Client.MonthlyPaymentPoint> points,
-        DateTime firstMonth)
-    {
-        var byMonth = points.ToDictionary(point => point.Month);
-        return Enumerable.Range(0, 6)
-            .Select(offset => DateOnly.FromDateTime(firstMonth.AddMonths(offset)))
-            .Select(month => byMonth.TryGetValue(month, out var point)
-                ? new MonthlyRevenuePoint(month, point.Gross.ToMinorUnits(), point.Net.ToMinorUnits(), point.Count)
-                : new MonthlyRevenuePoint(month, 0, 0, 0))
-            .ToArray();
-    }
+    public Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(CancellationToken ct = default) =>
+        tenantModule.GetRecentActivityAsync(tenantContext.GetTenantId(), 10, ct);
 }

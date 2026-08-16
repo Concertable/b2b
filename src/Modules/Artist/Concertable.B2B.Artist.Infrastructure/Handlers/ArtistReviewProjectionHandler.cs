@@ -1,4 +1,5 @@
 using Concertable.B2B.Artist.Contracts.Events;
+using Concertable.B2B.Artist.Application.Interfaces;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.Artist.Infrastructure.Data;
@@ -11,15 +12,18 @@ namespace Concertable.B2B.Artist.Infrastructure.Handlers;
 internal sealed class ArtistReviewProjectionHandler : IIntegrationEventHandler<CustomerReviewSubmittedEvent>
 {
     private readonly ArtistDbContext context;
+    private readonly IArtistRepository artistRepository;
     private readonly IBus bus;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public ArtistReviewProjectionHandler(
         ArtistDbContext context,
+        IArtistRepository artistRepository,
         IBus bus,
         IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.context = context;
+        this.artistRepository = artistRepository;
         this.bus = bus;
         this.outboxBehavior = outboxBehavior;
     }
@@ -68,15 +72,12 @@ internal sealed class ArtistReviewProjectionHandler : IIntegrationEventHandler<C
                 CreatedAt = envelope.OccurredAtUtc
             });
 
-            var tenantId = await context.Artists
-                .Where(a => a.Id == e.ArtistId)
-                .Select(a => a.TenantId)
-                .SingleOrDefaultAsync(ct);
-            if (tenantId != Guid.Empty)
+            var tenantId = await artistRepository.GetTenantIdByIdAsync(e.ArtistId, ct);
+            if (tenantId is not null)
             {
                 await bus.PublishAsync(new TenantActivityRecordedEvent(new ActivityRecord(
                     $"review:{envelope.MessageId}",
-                    tenantId,
+                    tenantId.Value,
                     ActivityType.ReviewReceived,
                     envelope.OccurredAtUtc,
                     $"{e.Email} left a {e.Stars:G}-star review",

@@ -8,5 +8,5 @@ internal interface IArtistDashboardService
     Task<ArtistDashboardOverview?> GetOverviewAsync(CancellationToken ct = default);
     Task<ArtistDashboardKpis?> GetKpisAsync(CancellationToken ct = default);
     Task<IReadOnlyList<MonthlyRevenuePoint>> GetPayoutsAsync(CancellationToken ct = default);
-    Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(int take, CancellationToken ct = default);
+    Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(CancellationToken ct = default);
 }

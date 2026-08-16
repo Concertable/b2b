@@ -41,8 +41,6 @@ internal sealed class VenueDashboardController : ControllerBase
         Ok(await dashboardService.GetSettlementsAsync(ct));
 
     [HttpGet("activity")]
-    public async Task<ActionResult<IReadOnlyList<ActivityItemDto>>> GetActivity(
-        [FromQuery] int take,
-        CancellationToken ct) =>
-        Ok(await dashboardService.GetActivityAsync(Math.Clamp(take, 1, 20), ct));
+    public async Task<ActionResult<IReadOnlyList<ActivityItemDto>>> GetActivity(CancellationToken ct) =>
+        Ok(await dashboardService.GetActivityAsync(ct));
 }

@@ -1,6 +1,8 @@
+using Concertable.Kernel;
+
 namespace Concertable.B2B.Venue.Domain.ReadModels;
 
-public sealed class VenueReview
+public sealed class VenueReview : IIdEntity
 {
     public int Id { get; set; }
     public int VenueId { get; set; }
