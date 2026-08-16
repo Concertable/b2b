@@ -21,7 +21,4 @@ internal interface IArtistService
 
     Task<Option<ArtistSummary>> GetSummaryAsync(int id, CancellationToken ct = default);
     Task<IReadOnlySet<Genre>> GetGenresAsync(int id, CancellationToken ct = default);
-    Task<Option<ArtistOrgIdentity>> GetOrgIdentityByTenantIdAsync(
-        Guid tenantId,
-        CancellationToken ct = default);
 }

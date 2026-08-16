@@ -14,8 +14,8 @@ namespace Concertable.B2B.Venue.Infrastructure.Services;
 internal sealed class VenueService : IVenueService
 {
     private readonly IVenueRepository repository;
-    private readonly IPublicVenueRepository publicRepository;
-    private readonly IAdminVenueRepository adminRepository;
+    private readonly IVenueReadRepository readRepository;
+    private readonly IVenueAdminRepository adminRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly ITenantContext tenantContext;
@@ -24,8 +24,8 @@ internal sealed class VenueService : IVenueService
 
     public VenueService(
         IVenueRepository repository,
-        IPublicVenueRepository publicRepository,
-        IAdminVenueRepository adminRepository,
+        IVenueReadRepository readRepository,
+        IVenueAdminRepository adminRepository,
         IImageService imageService,
         ICurrentUser currentUser,
         ITenantContext tenantContext,
@@ -33,7 +33,7 @@ internal sealed class VenueService : IVenueService
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.repository = repository;
-        this.publicRepository = publicRepository;
+        this.readRepository = readRepository;
         this.adminRepository = adminRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
@@ -45,7 +45,7 @@ internal sealed class VenueService : IVenueService
     public Task<Result<VenueDetails, VenueError>> GetDetailsByIdAsync(
         int id,
         CancellationToken ct = default) =>
-        publicRepository.GetDetailsByIdAsync(id, ct)
+        readRepository.GetDetailsByIdAsync(id, ct)
             .ToOption()
             .OrFailure(() => (VenueError)new VenueError.NotFound(id));
 
@@ -88,7 +88,7 @@ internal sealed class VenueService : IVenueService
                             return new CreateVenueError.ActiveTenantAlreadyHasVenue();
                         }
 
-                        var details = await publicRepository.GetDetailsByIdAsync(createdVenue.Id, ct)
+                        var details = await readRepository.GetDetailsByIdAsync(createdVenue.Id, ct)
                             ?? throw new InvalidOperationException(
                                 $"Venue {createdVenue.Id} not found after creation.");
                         return Result.Success<VenueDetails, CreateVenueError>(details);
@@ -128,7 +128,7 @@ internal sealed class VenueService : IVenueService
 
                         await repository.SaveChangesAsync(ct);
 
-                        var details = await publicRepository.GetDetailsByIdAsync(venue.Id, ct)
+                        var details = await readRepository.GetDetailsByIdAsync(venue.Id, ct)
                             ?? throw new InvalidOperationException(
                                 $"Venue {venue.Id} not found after update.");
                         return Result.Success<VenueDetails, UpdateVenueError>(details);
@@ -167,10 +167,5 @@ internal sealed class VenueService : IVenueService
     public async Task<Option<VenueSummary>> GetSummaryAsync(
         int id,
         CancellationToken ct = default) =>
-        await publicRepository.GetSummaryAsync(id, ct);
-
-    public async Task<Option<VenueOrgIdentity>> GetOrgIdentityByTenantIdAsync(
-        Guid tenantId,
-        CancellationToken ct = default) =>
-        await publicRepository.GetOrgIdentityByTenantIdAsync(tenantId, ct);
+        await readRepository.GetSummaryAsync(id, ct);
 }

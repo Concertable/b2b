@@ -11,7 +11,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class OpportunityService : IOpportunityService
 {
     private readonly IOpportunityRepository repository;
-    private readonly IPublicOpportunityRepository publicRepository;
+    private readonly IOpportunityReadRepository readRepository;
     private readonly IVenueReadModelRepository venueRepository;
     private readonly IDealModule dealModule;
     private readonly IOpportunitySyncer syncer;
@@ -21,7 +21,7 @@ internal sealed class OpportunityService : IOpportunityService
 
     public OpportunityService(
         IOpportunityRepository repository,
-        IPublicOpportunityRepository publicRepository,
+        IOpportunityReadRepository readRepository,
         IVenueReadModelRepository venueRepository,
         IDealModule dealModule,
         IOpportunitySyncer syncer,
@@ -30,7 +30,7 @@ internal sealed class OpportunityService : IOpportunityService
         IUnitOfWorkBehavior uowBehavior)
     {
         this.repository = repository;
-        this.publicRepository = publicRepository;
+        this.readRepository = readRepository;
         this.venueRepository = venueRepository;
         this.dealModule = dealModule;
         this.syncer = syncer;
@@ -93,13 +93,13 @@ internal sealed class OpportunityService : IOpportunityService
 
     public async Task<IPagination<OpportunityDto>> GetActiveByVenueIdAsync(int id, IPageParams pageParams)
     {
-        var opportunities = await publicRepository.GetActiveByVenueIdAsync(id, pageParams);
+        var opportunities = await readRepository.GetActiveByVenueIdAsync(id, pageParams);
         return await mapper.ToDtosAsync(opportunities);
     }
 
     public async Task<IReadOnlyList<OpportunityDto>> GetActiveByVenueIdAsync(int venueId)
     {
-        var opportunities = await publicRepository.GetActiveByVenueIdAsync(venueId);
+        var opportunities = await readRepository.GetActiveByVenueIdAsync(venueId);
         return await mapper.ToDtosAsync(opportunities);
     }
 
@@ -125,7 +125,7 @@ internal sealed class OpportunityService : IOpportunityService
 
         await uowBehavior.ExecuteAsync(() => syncer.SyncAsync(venueId, current, desiredList));
 
-        var updated = await publicRepository.GetActiveByVenueIdAsync(venueId);
+        var updated = await readRepository.GetActiveByVenueIdAsync(venueId);
         return new Success<IReadOnlyList<OpportunityDto>>(
             await mapper.ToDtosAsync(updated));
     }

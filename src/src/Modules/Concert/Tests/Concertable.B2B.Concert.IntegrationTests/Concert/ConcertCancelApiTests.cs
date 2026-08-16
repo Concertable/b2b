@@ -48,7 +48,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         // Assert — booking dead, escrow refunded, cancel no longer offered.
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         var refund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
         Assert.Equal(booking.Id, refund.BookingId);
         Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
@@ -79,7 +79,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(booking.Id, fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
         Assert.Equal(LifecycleState.Cancelled, application.State);

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth } from "react-oidc-context";
 import { z } from "zod";
 
@@ -7,6 +7,7 @@ function LoginRedirect() {
   const auth = useAuth();
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
+  const redirectStarted = useRef(false);
 
   useEffect(() => {
     if (auth.isLoading) return;
@@ -15,6 +16,8 @@ function LoginRedirect() {
       void navigate({ to: redirect || "/", replace: true });
       return;
     }
+    if (redirectStarted.current) return;
+    redirectStarted.current = true;
     void auth.signinRedirect({ state: { redirect } });
   }, [auth.isLoading, auth.isAuthenticated, auth.activeNavigator, auth, navigate, redirect]);
 

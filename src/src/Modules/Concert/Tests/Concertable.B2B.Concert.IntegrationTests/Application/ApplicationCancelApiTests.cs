@@ -66,7 +66,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         var refund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
         Assert.Equal(booking.Id, refund.BookingId);
         Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
@@ -109,7 +109,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(booking.Id, fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId);
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
     }
@@ -154,7 +154,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         // Act
         await fixture.StripeClient.SendWebhookAsync();
         var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
 
         // Assert
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
@@ -239,7 +239,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         var reopenedResponse = await client.GetAsync($"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
         var reopened = await reopenedResponse.Content.ReadAsync<IEnumerable<OpportunityResponse>>();
         Assert.Contains(reopened!, o => o.Id == opportunityId);
@@ -263,7 +263,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         var reopenedResponse = await client.GetAsync($"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
         var reopened = await reopenedResponse.Content.ReadAsync<IEnumerable<OpportunityResponse>>();
         Assert.Contains(reopened!, o => o.Id == opportunityId);
@@ -293,7 +293,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         var afterResponse = await client.GetAsync($"/api/application/{appId}");
         await afterResponse.ShouldBe(HttpStatusCode.OK);
         var after = await afterResponse.Content.ReadAsync<ApplicationResponse>();
