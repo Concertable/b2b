@@ -40,6 +40,7 @@ public static class ServiceCollectionExtensions
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<IVenueReadDbContext>(sp => sp.GetRequiredService<VenueReadDbContext>());
 
         services.AddDbContext<VenueAdminDbContext>((sp, opt) =>
             opt.UseSqlServer(

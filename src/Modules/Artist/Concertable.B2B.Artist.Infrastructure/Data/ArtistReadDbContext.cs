@@ -6,8 +6,9 @@ namespace Concertable.B2B.Artist.Infrastructure.Data;
 internal sealed class ArtistReadDbContext(
     DbContextOptions<ArtistReadDbContext> options,
     ArtistConfigurationProvider provider)
-    : ReadDbContext(options, provider, Schema.Name)
+    : ReadDbContext(options, provider, Schema.Name), IArtistReadDbContext
 {
-    public DbSet<ArtistEntity> Artists => Set<ArtistEntity>();
-    public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();
+    IQueryable<ArtistEntity> IArtistReadDbContext.Artists => Query<ArtistEntity>();
+    IQueryable<ArtistRatingProjection> IArtistReadDbContext.ArtistRatingProjections =>
+        Query<ArtistRatingProjection>();
 }

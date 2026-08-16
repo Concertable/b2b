@@ -41,6 +41,7 @@ public static class ServiceCollectionExtensions
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<IArtistReadDbContext>(sp => sp.GetRequiredService<ArtistReadDbContext>());
 
         services.AddScoped<IArtistService, ArtistService>();
         services.AddScoped<IArtistDashboardService, ArtistDashboardService>();
