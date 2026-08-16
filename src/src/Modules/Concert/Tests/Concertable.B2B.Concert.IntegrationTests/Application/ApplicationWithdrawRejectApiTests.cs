@@ -41,7 +41,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.NoContent);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
         Assert.Equal(LifecycleState.Withdrawn, application.State);
-        Assert.Contains(fixture.EmailSender.Sent, e =>
+        Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
             e.To == fixture.SeedState.VenueManager1.Email && e.Subject == "Concert Application Withdrawn");
     }
 
@@ -128,7 +128,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.NoContent);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
         Assert.Equal(LifecycleState.Rejected, application.State);
-        Assert.Contains(fixture.EmailSender.Sent, e =>
+        Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
             e.To == fixture.SeedState.ArtistManager1.Email && e.Subject == "Concert Application Update");
     }
 
