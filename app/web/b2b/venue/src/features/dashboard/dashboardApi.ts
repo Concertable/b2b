@@ -5,10 +5,10 @@ import type {
   ReviewExcerpt,
   Settlement,
 } from "@concertable/shared/features/dashboard";
-import type { OpportunityApplicationMetrics } from "@concertable/b2b/features/dashboard";
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
   Application,
+  OpportunityApplicationMetrics,
   VenueDashboardKpis,
   VenueDashboardOverview,
 } from "./types";
