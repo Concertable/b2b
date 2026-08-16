@@ -91,7 +91,9 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
     {
         using var scope = fixture.Services.CreateScope();
         var result = await scope.ServiceProvider.GetRequiredService<IFinishExecutor>().FinishAsync(concertId);
-        Assert.True(result.IsSuccess, string.Join("; ", result.Errors.Select(e => e.Message)));
+        Assert.True(
+            result.IsSuccess,
+            result.TryGetError(out var error) ? error.Definition.Message : null);
     }
 
     // A host (no-HTTP) scope, so the tenant interceptor no-ops and the row keeps the explicit supplier TenantId.

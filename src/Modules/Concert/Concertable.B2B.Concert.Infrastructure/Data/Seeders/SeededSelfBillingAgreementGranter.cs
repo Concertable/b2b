@@ -26,9 +26,9 @@ internal static class SeededSelfBillingAgreementGranter
     {
         foreach (var tenant in seed.Tenants)
         {
-            var identity = await tenants.GetByIdAsync(tenant.Id, ct);
-            var tax = await tenants.GetTaxComplianceAsync(tenant.Id, ct);
-            if (identity is null || tax is null)
+            var identityOption = await tenants.GetByIdAsync(tenant.Id, ct);
+            var taxOption = await tenants.GetTaxComplianceAsync(tenant.Id, ct);
+            if (!identityOption.TryGetValue(out var identity) || !taxOption.TryGetValue(out var tax))
                 continue;
 
             var address = tax.RegisteredAddress;

@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -93,5 +94,23 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
 
         // Assert — frozen after settlement.
         await response.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Declare_ShouldReturnStableProblem_WhenRevenueIsNegative()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
+
+        var response = await client.PostAsync(
+            $"/api/Concert/{concertId}/door-revenue",
+            new { doorRevenue = -0.01m });
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal("Door revenue must be zero or greater.", problem.Detail);
+        Assert.True(problem.Extensions.TryGetValue("code", out var code));
+        Assert.Equal("declare.door_revenue_negative", code?.ToString());
     }
 }

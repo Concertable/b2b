@@ -6,30 +6,23 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
 
-/// <summary>
-/// The supplier's own self-billing agreement — a standing, per-tenant compliance fact, reachable by both tenant
-/// types (the artist is the supplier for FlatFee/DoorSplit/Versus, the venue for VenueHire). Every read and write
-/// is single-owner scoped to the caller's tenant, so there is no id and a caller can only ever act on its own.
-/// </summary>
 [ApiController]
 [Authorize]
 [Route("api/self-billing-agreement")]
 internal sealed class SelfBillingAgreementController : ControllerBase
 {
     private readonly ISelfBillingAgreementService service;
-    private readonly TimeProvider timeProvider;
 
-    public SelfBillingAgreementController(ISelfBillingAgreementService service, TimeProvider timeProvider)
+    public SelfBillingAgreementController(ISelfBillingAgreementService service)
     {
         this.service = service;
-        this.timeProvider = timeProvider;
     }
 
     [HttpGet]
     public async Task<ActionResult<SelfBillingAgreementResponse>> GetCurrent()
     {
-        var latest = await service.GetLatestAsync();
-        return Ok(latest.ToResponse(timeProvider.GetUtcNow().UtcDateTime));
+        var status = await service.GetStatusAsync();
+        return Ok(status.ToResponse());
     }
 
     [HttpPost]

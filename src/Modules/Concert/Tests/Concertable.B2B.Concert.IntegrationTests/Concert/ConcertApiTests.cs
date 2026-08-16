@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using Xunit.Abstractions;
 using static Concertable.B2B.Concert.IntegrationTests.Concert.ConcertRequestBuilders;
@@ -66,6 +67,12 @@ public sealed class ConcertApiTests : IAsyncLifetime
             request);
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal("concert.post.invalid", problem.Extensions["code"].ToString());
+        Assert.Equal(
+            ["Concert cannot be posted until the booking is confirmed"],
+            problem.Errors["booking"]);
     }
 
     [Fact]
@@ -96,6 +103,10 @@ public sealed class ConcertApiTests : IAsyncLifetime
             request);
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal("concert.post.invalid", problem.Extensions["code"].ToString());
+        Assert.Equal(["Concert has already been posted"], problem.Errors["datePosted"]);
     }
 
     #endregion

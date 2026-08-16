@@ -7,21 +7,36 @@ namespace Concertable.B2B.Seed.Infrastructure.Factories;
 
 public static class TenantFactory
 {
-    // Pass the seed id into Create (not .WithId after) so the raised TenantCreatedDomainEvent carries it.
-    public static TenantEntity Create(Guid userId, string email, TenantType type, DateTime createdAt, bool taxComplianceComplete = true)
+    public static TenantEntity Create(
+        Guid userId,
+        string email,
+        TenantType type,
+        DateTime createdAt,
+        bool taxComplianceComplete = true)
     {
         var tenant = TenantEntity.Create(email, userId, type, createdAt, TenantSeedIds.For(userId));
-        if (taxComplianceComplete)
-            // Onboarded seller — tax details complete so the fail-closed payout gate lets settlement through. Pass the
-            // email as the legal name so LegalName still carries it to Announce()'s event (Stripe provisioning).
-            tenant.UpdateLegalDetails(email, SeedTaxCompliance);
-        return tenant;
+        return !taxComplianceComplete
+            ? tenant
+            : tenant.UpdateLegalDetails(email, SeedTaxCompliance).Match(
+                () => tenant,
+                errors => throw new InvalidOperationException(
+                    $"Seed tenant {tenant.Id} is invalid: {Format(errors)}"));
     }
 
-    private static TaxCompliance SeedTaxCompliance => new(
-        vatNumber: null,
-        sellerIdentifier: "SEED000001",
-        registeredAddress: new RegisteredAddress("1 Seed Way", null, "London", "EC1A 1AA", "United Kingdom"),
-        bankReference: "GB00SEED00000000000001",
-        holdsMusicLicence: true);
+    private static TaxCompliance SeedTaxCompliance => RegisteredAddress
+        .Create("1 Seed Way", null, "London", "EC1A 1AA", "United Kingdom")
+        .Bind(address => TaxCompliance.Create(
+            vatNumber: null,
+            sellerIdentifier: "SEED000001",
+            registeredAddress: address,
+            bankReference: "GB00SEED00000000000001",
+            holdsMusicLicence: true))
+        .Match(
+            compliance => compliance,
+            errors => throw new InvalidOperationException(
+                $"Seed tax compliance is invalid: {Format(errors)}"));
+
+    private static string Format(ValidationErrors errors) => string.Join(
+        "; ",
+        errors.Errors.SelectMany(error => error.Value.Select(message => $"{error.Key}: {message}")));
 }

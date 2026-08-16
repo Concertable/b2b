@@ -14,7 +14,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260808194821_InitialCreate")]
+    [Migration("20260812192008_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -55,10 +55,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<Guid?>("AcceptanceOperationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
 
                     b.Property<Guid>("ArtistTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CancellationOperationId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("DealType")
@@ -68,6 +74,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(21)
                         .HasColumnType("nvarchar(21)");
+
+                    b.Property<string>("FinancialFailureCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FinancialFailureMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
@@ -114,7 +128,15 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AcceptanceOperationId")
+                        .IsUnique()
+                        .HasFilter("[AcceptanceOperationId] IS NOT NULL");
+
                     b.HasIndex("ArtistId");
+
+                    b.HasIndex("CancellationOperationId")
+                        .IsUnique()
+                        .HasFilter("[CancellationOperationId] IS NOT NULL");
 
                     b.HasIndex("OpportunityId", "ArtistId")
                         .IsUnique();
