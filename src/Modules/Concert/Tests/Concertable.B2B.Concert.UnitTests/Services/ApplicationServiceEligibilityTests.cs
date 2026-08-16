@@ -23,7 +23,10 @@ public sealed class ApplicationServiceEligibilityTests
     private readonly Mock<IOpportunityRepository> opportunityRepository;
     private readonly Mock<IOpportunityService> opportunityService;
     private readonly Mock<IArtistModule> artistModule;
+    private readonly Mock<IApplicationExecutor> executor;
+    private readonly Mock<IApplicationNotifier> notifier;
     private readonly Mock<ICheckoutDispatcher> checkoutDispatcher;
+    private readonly Mock<IApplicationMapper> mapper;
     private readonly ApplicationService service;
     private readonly OpportunityEntity opportunity;
     private readonly ApplicationEntity application;
@@ -35,7 +38,10 @@ public sealed class ApplicationServiceEligibilityTests
         this.opportunityRepository = new Mock<IOpportunityRepository>();
         this.opportunityService = new Mock<IOpportunityService>();
         this.artistModule = new Mock<IArtistModule>();
+        this.executor = new Mock<IApplicationExecutor>();
+        this.notifier = new Mock<IApplicationNotifier>();
         this.checkoutDispatcher = new Mock<ICheckoutDispatcher>();
+        this.mapper = new Mock<IApplicationMapper>();
         this.opportunity = OpportunityEntity.Create(
             1,
             new DateRange(
@@ -72,13 +78,13 @@ public sealed class ApplicationServiceEligibilityTests
         this.service = new ApplicationService(
             this.repository.Object,
             this.validator.Object,
-            Mock.Of<IApplicationNotifier>(),
+            this.notifier.Object,
             this.opportunityService.Object,
             this.opportunityRepository.Object,
             this.artistModule.Object,
-            Mock.Of<IApplicationExecutor>(),
+            this.executor.Object,
             this.checkoutDispatcher.Object,
-            Mock.Of<IApplicationMapper>());
+            this.mapper.Object);
     }
 
     [Fact]
@@ -141,6 +147,28 @@ public sealed class ApplicationServiceEligibilityTests
         Assert.True(result.TryGetError(out var error));
         var invalid = Assert.IsType<ApplyApplicationError.Invalid>(error);
         Assert.Equal(["Validation failed."], invalid.Errors.Errors["application"]);
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ExecutorFailure_ReturnsErrorWithoutCompletingApplication()
+    {
+        var expected = new ApplyApplicationError.UnsupportedDeal(DealType.FlatFee);
+        this.executor
+            .Setup(value => value.ApplyAsync(
+                OpportunityId,
+                ArtistId,
+                null,
+                It.IsAny<ESignatureRequest>()))
+            .ReturnsAsync(Result.Failure<ApplicationEntity, ApplyApplicationError>(expected));
+
+        var result = await this.service.ApplyAsync(
+            OpportunityId,
+            new ESignatureRequest { SignatoryName = "Test Signatory" });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Same(expected, error);
+        this.notifier.Verify(value => value.AppliedAsync(It.IsAny<int>()), Times.Never);
+        this.mapper.Verify(value => value.ToDtoAsync(It.IsAny<ApplicationEntity>()), Times.Never);
     }
 
     [Fact]
