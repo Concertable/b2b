@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
-using Concertable.Kernel.Exceptions;
+using Reunion.Errors;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Concert.UnitTests.Lifecycle;
@@ -35,12 +35,16 @@ public sealed class LifecycleStateMachineTests
 
         // Act + Assert
         foreach (var ((state, trigger), next) in machine.Transitions)
-            Assert.Equal(next, machine.Next(state, trigger));
+        {
+            var result = machine.Next(state, trigger);
+            Assert.True(result.TryGetValue(out var actual));
+            Assert.Equal(next, actual);
+        }
     }
 
     [Theory]
     [MemberData(nameof(AllDealTypes))]
-    public void Next_ShouldThrowConflict_ForEveryUndeclaredPair(DealType dealType)
+    public void Next_ShouldReturnConflict_ForEveryUndeclaredPair(DealType dealType)
     {
         // Arrange
         var machine = Registry.Get(dealType);
@@ -52,7 +56,11 @@ public sealed class LifecycleStateMachineTests
 
         // Act + Assert
         foreach (var (state, trigger) in undeclared)
-            Assert.Throws<ConflictException>(() => machine.Next(state, trigger));
+        {
+            var result = machine.Next(state, trigger);
+            Assert.True(result.TryGetError(out var error));
+            Assert.Equal(ErrorKind.Conflict, error.Definition.Kind);
+        }
     }
 
     [Theory]

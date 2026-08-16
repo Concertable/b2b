@@ -8,6 +8,7 @@ using Concertable.B2B.User.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Messaging.Contracts;
+using Reunion;
 using Moq;
 
 namespace Concertable.B2B.Conversations.UnitTests.Services;
@@ -54,22 +55,23 @@ public sealed class MessageServiceTests
         var recipientMembers = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
 
         var repository = new Mock<IMessageRepository>();
-        repository.Setup(r => r.AddAsync(It.IsAny<MessageEntity>())).Returns(Task.CompletedTask);
         var bus = new Mock<IBus>();
         bus.Setup(b => b.PublishAsync(It.IsAny<TenantActivityRecordedEvent>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
+        repository.Setup(r => r.AddAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageEntity message, CancellationToken _) => message);
+        repository.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var notifier = new Mock<IConversationsNotifier>();
         notifier.Setup(n => n.MessageReceivedAsync(It.IsAny<string>(), It.IsAny<object>())).Returns(Task.CompletedTask);
 
-        // Sender is the venue side, so the recipient tenant is the artist side.
         var tenantModule = new Mock<ITenantModule>();
         tenantModule.Setup(t => t.GetMemberUserIdsAsync(artistTenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(recipientMembers);
 
         var venueModule = new Mock<IVenueModule>();
         venueModule.Setup(v => v.GetOrgIdentityByTenantIdAsync(venueTenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new VenueOrgIdentity("The Roundhouse", "Greater London", "London"));
+            .ReturnsAsync(Option.Some(new VenueOrgIdentity("The Roundhouse", "Greater London", "London")));
 
         var service = new MessageService(
             repository.Object, notifier.Object, bus.Object, new InlineOutboxBehavior(),

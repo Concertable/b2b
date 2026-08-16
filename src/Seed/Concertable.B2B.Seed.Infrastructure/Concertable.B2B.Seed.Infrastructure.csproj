@@ -22,6 +22,8 @@
   <ItemGroup>
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Seed.Identity" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
   </ItemGroup>
 
 </Project>

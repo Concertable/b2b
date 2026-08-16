@@ -1,7 +1,7 @@
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.IntegrationTests.Fixtures;
-using Concertable.Kernel.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -45,7 +45,10 @@ public sealed class ConcertVenueHireApiTests : IAsyncLifetime
         var concertId = fixture.SeedState.UpcomingVenueHireBooking.Concert!.Id;
 
         // Act & Assert
-        await Assert.ThrowsAsync<BadRequestException>(() => fixture.FinishConcertAsync(concertId));
+        var result = await fixture.FinishConcertAsync(concertId);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<FinishConcertError.ConcertNotEnded>(error);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.UpcomingVenueHireApp.Id);
         Assert.Equal(LifecycleState.Booked, application.State);
     }

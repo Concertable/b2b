@@ -1,3 +1,4 @@
+using Concertable.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Concertable.B2B.Conversations.Infrastructure.Repositories;
 using Concertable.Kernel.Identity;
@@ -98,6 +99,29 @@ public sealed class MessageRepositoryTests
                 Assert.Equal(secondArtistTenantId, second.CounterpartTenantId);
                 Assert.True(second.Unread);
             });
+    }
+
+    [Fact]
+    public async Task HiddenMessages_AreExcludedFromTheInboxAndTheUnreadCount()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using (var seed = NewContext(dbName))
+        {
+            var visible = FromArtist(Older);
+            var hidden = FromArtist(Newer);
+            hidden.Hide(Guid.NewGuid(), Newer.AddDays(1));
+            seed.Messages.AddRange(visible, hidden);
+            await seed.SaveChangesAsync();
+        }
+
+        await using var context = NewContext(dbName);
+        var repository = new MessageRepository(context);
+
+        var page = await repository.GetByTenantIdAsync(VenueTenantId, new PageParams());
+        Assert.Equal(1, page.TotalCount);
+        Assert.Equal(Older, page.Data.Single().SentDate);
+
+        Assert.Equal(1, await repository.GetUnreadCountByTenantIdAsync(VenueTenantId, VenueMemberId));
     }
 
     private sealed class StubTenantContext : ITenantContext

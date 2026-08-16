@@ -1,18 +1,19 @@
 using Concertable.B2B.Venue.Application.DTOs;
+using Concertable.B2B.Venue.Application.Errors;
 using Concertable.B2B.Venue.Application.Requests;
 
 namespace Concertable.B2B.Venue.Application.Interfaces;
 
 internal interface IVenueService
 {
-    Task<VenueDetails> GetDetailsByIdAsync(int id);
-    Task<VenueDetails?> GetDetailsForCurrentUserAsync();
-    Task<VenueDetails> CreateAsync(CreateVenueRequest request);
-    Task<VenueDetails> UpdateAsync(int id, UpdateVenueRequest request);
-    Task<int> GetIdForCurrentUserAsync();
+    Task<Result<VenueDetails, VenueError>> GetDetailsByIdAsync(int id);
+    Task<Result<VenueDetails, VenueError>> GetDetailsForCurrentUserAsync();
+    Task<Result<VenueDetails, CreateVenueError>> CreateAsync(CreateVenueRequest request);
+    Task<Result<VenueDetails, UpdateVenueError>> UpdateAsync(int id, UpdateVenueRequest request);
+    Task<Option<int>> GetIdForCurrentTenantAsync();
     Task<bool> OwnsVenueAsync(int venueId);
-    Task ApproveAsync(int id);
+    Task<UnitResult<ApproveVenueError>> ApproveAsync(int id);
 
-    Task<VenueSummary> GetSummaryAsync(int id);
-    Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId);
+    Task<Option<VenueSummary>> GetSummaryAsync(int id);
+    Task<Option<VenueOrgIdentity>> GetOrgIdentityByTenantIdAsync(Guid tenantId);
 }

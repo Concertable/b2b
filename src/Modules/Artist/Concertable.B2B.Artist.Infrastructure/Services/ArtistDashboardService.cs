@@ -1,4 +1,5 @@
 using Concertable.B2B.Artist.Application.DTOs;
+using Concertable.B2B.Artist.Application.Errors;
 using Concertable.B2B.Artist.Application.Interfaces;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Infrastructure.Mappers;
@@ -41,30 +42,30 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         this.timeProvider = timeProvider;
     }
 
-    public async Task<ArtistDashboardOverview?> GetOverviewAsync(CancellationToken ct = default)
+    public async Task<Result<ArtistDashboardOverview, ArtistError>> GetOverviewAsync(CancellationToken ct = default) =>
+        await (await artistService.GetDetailsForCurrentUserAsync())
+            .MapAsync(async artist =>
+            {
+                var tenantId = tenantContext.GetTenantId();
+                var reviewSummaryTask = reviewService.GetSummaryAsync(artist.Id, ct);
+                var payoutStatusTask = payoutAccountClient.GetAccountStatusAsync(tenantId, ct);
+                await Task.WhenAll(reviewSummaryTask, payoutStatusTask);
+
+                var reviewSummary = await reviewSummaryTask;
+                var payoutStatus = await payoutStatusTask;
+                return new ArtistDashboardOverview(
+                    artist.Id,
+                    artist.Name,
+                    artist.ToProfileHealth(payoutStatus),
+                    payoutStatus.ToStripeConnectStatus(),
+                    reviewSummary);
+            });
+
+    public async Task<Option<ArtistDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
-        var artist = await artistService.GetDetailsForCurrentUserAsync();
-        if (artist is null)
+        var artistIdOption = await artistService.GetIdForCurrentTenantAsync();
+        if (!artistIdOption.TryGetValue(out var artistId))
             return null;
-
-        var tenantId = tenantContext.GetTenantId();
-        var reviewSummaryTask = reviewService.GetSummaryAsync(artist.Id, ct);
-        var payoutStatusTask = payoutAccountClient.GetAccountStatusAsync(tenantId, ct);
-        await Task.WhenAll(reviewSummaryTask, payoutStatusTask);
-
-        var reviewSummary = await reviewSummaryTask;
-        var payoutStatus = await payoutStatusTask;
-        return new ArtistDashboardOverview(
-            artist.Id,
-            artist.Name,
-            artist.ToProfileHealth(payoutStatus),
-            payoutStatus.ToStripeConnectStatus(),
-            reviewSummary);
-    }
-
-    public async Task<ArtistDashboardKpis?> GetKpisAsync(CancellationToken ct = default)
-    {
-        var artistId = await artistService.GetIdForCurrentUserAsync();
         var tenantId = tenantContext.GetTenantId();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
@@ -80,14 +81,13 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         await Task.WhenAll(countsTask, mtdPayoutsTask);
 
         var counts = await countsTask;
-        if (counts is null) return null;
         var mtdPayouts = await mtdPayoutsTask;
 
-        return new ArtistDashboardKpis(
-            PendingApplications: counts.PendingApplications,
-            AcceptedAwaitingCheckout: counts.AcceptedAwaitingCheckout,
-            UpcomingConcerts: counts.UpcomingConcerts,
-            MtdPayoutsCents: mtdPayouts.ToMinorUnits());
+        return counts.Map(value => new ArtistDashboardKpis(
+            PendingApplications: value.PendingApplications,
+            AcceptedAwaitingCheckout: value.AcceptedAwaitingCheckout,
+            UpcomingConcerts: value.UpcomingConcerts,
+            MtdPayoutsCents: mtdPayouts.ToMinorUnits()));
     }
 
     public async Task<IReadOnlyList<MonthlyRevenuePoint>> GetPayoutsAsync(CancellationToken ct = default)

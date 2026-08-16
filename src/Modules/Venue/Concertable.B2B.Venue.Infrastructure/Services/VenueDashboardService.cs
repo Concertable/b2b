@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Venue.Application.DTOs;
+using Concertable.B2B.Venue.Application.Errors;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Mappers;
@@ -41,30 +42,30 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         this.timeProvider = timeProvider;
     }
 
-    public async Task<VenueDashboardOverview?> GetOverviewAsync(CancellationToken ct = default)
+    public async Task<Result<VenueDashboardOverview, VenueError>> GetOverviewAsync(CancellationToken ct = default) =>
+        await (await venueService.GetDetailsForCurrentUserAsync())
+            .MapAsync(async venue =>
+            {
+                var tenantId = tenantContext.GetTenantId();
+                var reviewSummaryTask = reviewService.GetSummaryAsync(venue.Id, ct);
+                var payoutStatusTask = payoutAccountClient.GetAccountStatusAsync(tenantId, ct);
+                await Task.WhenAll(reviewSummaryTask, payoutStatusTask);
+
+                var reviewSummary = await reviewSummaryTask;
+                var payoutStatus = await payoutStatusTask;
+                return new VenueDashboardOverview(
+                    venue.Id,
+                    venue.Name,
+                    venue.ToProfileHealth(payoutStatus),
+                    payoutStatus.ToStripeConnectStatus(),
+                    reviewSummary);
+            });
+
+    public async Task<Option<VenueDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
-        var venue = await venueService.GetDetailsForCurrentUserAsync();
-        if (venue is null)
+        var venueIdOption = await venueService.GetIdForCurrentTenantAsync();
+        if (!venueIdOption.TryGetValue(out var venueId))
             return null;
-
-        var tenantId = tenantContext.GetTenantId();
-        var reviewSummaryTask = reviewService.GetSummaryAsync(venue.Id, ct);
-        var payoutStatusTask = payoutAccountClient.GetAccountStatusAsync(tenantId, ct);
-        await Task.WhenAll(reviewSummaryTask, payoutStatusTask);
-
-        var reviewSummary = await reviewSummaryTask;
-        var payoutStatus = await payoutStatusTask;
-        return new VenueDashboardOverview(
-            venue.Id,
-            venue.Name,
-            venue.ToProfileHealth(payoutStatus),
-            payoutStatus.ToStripeConnectStatus(),
-            reviewSummary);
-    }
-
-    public async Task<VenueDashboardKpis?> GetKpisAsync(CancellationToken ct = default)
-    {
-        var venueId = await venueService.GetIdForCurrentUserAsync();
         var tenantId = tenantContext.GetTenantId();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
@@ -80,15 +81,14 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         await Task.WhenAll(countsTask, mtdRevenueTask);
 
         var counts = await countsTask;
-        if (counts is null) return null;
         var mtdRevenue = await mtdRevenueTask;
 
-        return new VenueDashboardKpis(
-            ApplicationsToReview: counts.ApplicationsToReview,
-            OpenOpportunities: counts.OpenOpportunities,
-            UpcomingConcerts: counts.UpcomingConcerts,
-            AwaitingDoorRevenue: counts.AwaitingDoorRevenue,
-            MtdRevenueCents: mtdRevenue.ToMinorUnits());
+        return counts.Map(value => new VenueDashboardKpis(
+            ApplicationsToReview: value.ApplicationsToReview,
+            OpenOpportunities: value.OpenOpportunities,
+            UpcomingConcerts: value.UpcomingConcerts,
+            AwaitingDoorRevenue: value.AwaitingDoorRevenue,
+            MtdRevenueCents: mtdRevenue.ToMinorUnits()));
     }
 
     public async Task<IReadOnlyList<MonthlyRevenuePoint>> GetTicketRevenueAsync(CancellationToken ct = default)

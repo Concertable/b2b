@@ -12,6 +12,7 @@ using Concertable.Payment.Client;
 using Concertable.Payment.Client.Enums;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
+using Reunion;
 
 namespace Concertable.B2B.Artist.UnitTests.Services;
 
@@ -30,7 +31,7 @@ public sealed class ArtistDashboardServiceTests
 
     public ArtistDashboardServiceTests()
     {
-        artistService.Setup(s => s.GetIdForCurrentUserAsync()).ReturnsAsync(42);
+        artistService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(42);
         tenantContext.SetupGet(t => t.TenantId).Returns(tenantId);
         reviewService.Setup(s => s.GetSummaryAsync(It.IsAny<int>())).ReturnsAsync(new ReviewSummary(0, null));
         payoutAccountClient
@@ -77,12 +78,12 @@ public sealed class ArtistDashboardServiceTests
 
         var result = await service.GetOverviewAsync();
 
-        Assert.NotNull(result);
-        Assert.Equal(42, result!.ArtistId);
-        Assert.Equal(100, result.ProfileHealth.Completeness);
-        Assert.Equal(6, result.ProfileHealth.Items.Count);
-        Assert.Equal(StripeConnectState.Complete, result.StripeConnect.State);
-        Assert.Equal(9, result.ReviewSummary.TotalReviews);
+        Assert.True(result.TryGetValue(out var overview));
+        Assert.Equal(42, overview.ArtistId);
+        Assert.Equal(100, overview.ProfileHealth.Completeness);
+        Assert.Equal(6, overview.ProfileHealth.Items.Count);
+        Assert.Equal(StripeConnectState.Complete, overview.StripeConnect.State);
+        Assert.Equal(9, overview.ReviewSummary.TotalReviews);
     }
 
     #endregion
@@ -110,9 +111,9 @@ public sealed class ArtistDashboardServiceTests
 
         var result = await service.GetKpisAsync();
 
-        Assert.NotNull(result);
-        Assert.Equal(6789, result!.MtdPayoutsCents);
-        Assert.Equal(4, result.PendingApplications);
+        Assert.True(result.TryGetValue(out var kpis));
+        Assert.Equal(6789, kpis.MtdPayoutsCents);
+        Assert.Equal(4, kpis.PendingApplications);
         Assert.Equal(tenantId, capturedPayee);
         Assert.Equal(new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc), capturedPeriod!.Start);
         Assert.Equal(timeProvider.GetUtcNow().UtcDateTime, capturedPeriod.End);
@@ -123,11 +124,11 @@ public sealed class ArtistDashboardServiceTests
     {
         concertModule
             .Setup(m => m.GetArtistDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ArtistDashboardCounts?)null);
+            .ReturnsAsync(Option.None<ArtistDashboardCounts>());
 
         var result = await service.GetKpisAsync();
 
-        Assert.Null(result);
+        Assert.False(result.TryGetValue(out _));
     }
 
     [Fact]
@@ -141,8 +142,8 @@ public sealed class ArtistDashboardServiceTests
 
         var result = await service.GetKpisAsync();
 
-        Assert.NotNull(result);
-        Assert.Equal(0, result.MtdPayoutsCents);
+        Assert.True(result.TryGetValue(out var kpis));
+        Assert.Equal(0, kpis.MtdPayoutsCents);
         reportingClient.Verify(
             r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
             Times.Never);
@@ -155,6 +156,22 @@ public sealed class ArtistDashboardServiceTests
         tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
 
         await Assert.ThrowsAsync<ForbiddenException>(() => service.GetKpisAsync());
+    }
+
+    [Fact]
+    public async Task GetKpisAsync_WithoutArtist_ReturnsNoneWithoutQueries()
+    {
+        artistService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(default(Option<int>));
+
+        var result = await service.GetKpisAsync();
+
+        Assert.False(result.TryGetValue(out _));
+        concertModule.Verify(
+            m => m.GetArtistDashboardCountsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        reportingClient.Verify(
+            r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     #endregion

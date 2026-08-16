@@ -16,6 +16,20 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         this.timeProvider = timeProvider;
     }
 
+    public Task<FinancialOperation?> GetFinancialOperationAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        context.Applications
+            .Where(application =>
+                application.Id == applicationId &&
+                (application.CancellationOperationId != null || application.AcceptanceOperationId != null))
+            .Select(application => new FinancialOperation(
+                application.CancellationOperationId ?? application.AcceptanceOperationId ?? Guid.Empty,
+                application.State,
+                application.FinancialFailureCode,
+                application.FinancialFailureMessage))
+            .FirstOrDefaultAsync(ct);
+
     public async Task<IEnumerable<ApplicationEntity>> GetByOpportunityIdAsync(int id)
     {
         return await context.Applications

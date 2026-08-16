@@ -204,17 +204,19 @@ internal sealed class MessageService : IMessageService
         if (isVenue)
         {
             var venue = await venueModule.GetOrgIdentityByTenantIdAsync(tenantId);
-            if (venue is not null)
-                return MessageSender.Org(venue.Name, venue.County, venue.Town);
+            if (venue.TryGetValue(out var value))
+                return MessageSender.Org(value.Name, value.County, value.Town);
         }
         else
         {
             var artist = await artistModule.GetOrgIdentityByTenantIdAsync(tenantId);
-            if (artist is not null)
-                return MessageSender.Org(artist.Name, artist.County, artist.Town);
+            if (artist.TryGetValue(out var value))
+                return MessageSender.Org(value.Name, value.County, value.Town);
         }
 
         var tenant = await tenantModule.GetByIdAsync(tenantId);
-        return MessageSender.Org(tenant?.LegalName ?? UnknownOrg, null, null);
+        return tenant.Match(
+            value => MessageSender.Org(value.LegalName, null, null),
+            () => MessageSender.Org(UnknownOrg, null, null));
     }
 }

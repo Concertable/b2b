@@ -11,6 +11,7 @@ using Concertable.Payment.Client;
 using Concertable.Payment.Client.Enums;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
+using Reunion;
 
 namespace Concertable.B2B.Venue.UnitTests.Services;
 
@@ -29,7 +30,7 @@ public sealed class VenueDashboardServiceTests
 
     public VenueDashboardServiceTests()
     {
-        venueService.Setup(s => s.GetIdForCurrentUserAsync()).ReturnsAsync(42);
+        venueService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(42);
         tenantContext.SetupGet(t => t.TenantId).Returns(tenantId);
         reviewService.Setup(s => s.GetSummaryAsync(It.IsAny<int>())).ReturnsAsync(new ReviewSummary(0, null));
         payoutAccountClient
@@ -76,12 +77,12 @@ public sealed class VenueDashboardServiceTests
 
         var result = await service.GetOverviewAsync();
 
-        Assert.NotNull(result);
-        Assert.Equal(42, result!.VenueId);
-        Assert.Equal(100, result.ProfileHealth.Completeness);
-        Assert.Equal(5, result.ProfileHealth.Items.Count);
-        Assert.Equal(StripeConnectState.Complete, result.StripeConnect.State);
-        Assert.Equal(12, result.ReviewSummary.TotalReviews);
+        Assert.True(result.TryGetValue(out var overview));
+        Assert.Equal(42, overview.VenueId);
+        Assert.Equal(100, overview.ProfileHealth.Completeness);
+        Assert.Equal(5, overview.ProfileHealth.Items.Count);
+        Assert.Equal(StripeConnectState.Complete, overview.StripeConnect.State);
+        Assert.Equal(12, overview.ReviewSummary.TotalReviews);
     }
 
     #endregion
@@ -109,9 +110,9 @@ public sealed class VenueDashboardServiceTests
 
         var result = await service.GetKpisAsync();
 
-        Assert.NotNull(result);
-        Assert.Equal(12345, result!.MtdRevenueCents);
-        Assert.Equal(3, result.ApplicationsToReview);
+        Assert.True(result.TryGetValue(out var kpis));
+        Assert.Equal(12345, kpis.MtdRevenueCents);
+        Assert.Equal(3, kpis.ApplicationsToReview);
         Assert.Equal(tenantId, capturedPayee);
         Assert.Equal(new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc), capturedPeriod!.Start);
         Assert.Equal(timeProvider.GetUtcNow().UtcDateTime, capturedPeriod.End);
@@ -122,11 +123,11 @@ public sealed class VenueDashboardServiceTests
     {
         concertModule
             .Setup(m => m.GetVenueDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((VenueDashboardCounts?)null);
+            .ReturnsAsync(Option.None<VenueDashboardCounts>());
 
         var result = await service.GetKpisAsync();
 
-        Assert.Null(result);
+        Assert.False(result.TryGetValue(out _));
     }
 
     [Fact]
@@ -140,8 +141,8 @@ public sealed class VenueDashboardServiceTests
 
         var result = await service.GetKpisAsync();
 
-        Assert.NotNull(result);
-        Assert.Equal(0, result.MtdRevenueCents);
+        Assert.True(result.TryGetValue(out var kpis));
+        Assert.Equal(0, kpis.MtdRevenueCents);
         reportingClient.Verify(
             r => r.GetTicketRevenueAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
             Times.Never);
@@ -154,6 +155,22 @@ public sealed class VenueDashboardServiceTests
         tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
 
         await Assert.ThrowsAsync<ForbiddenException>(() => service.GetKpisAsync());
+    }
+
+    [Fact]
+    public async Task GetKpisAsync_WithoutVenue_ReturnsNoneWithoutQueries()
+    {
+        venueService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(default(Option<int>));
+
+        var result = await service.GetKpisAsync();
+
+        Assert.False(result.TryGetValue(out _));
+        concertModule.Verify(
+            m => m.GetVenueDashboardCountsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        reportingClient.Verify(
+            r => r.GetTicketRevenueAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     #endregion

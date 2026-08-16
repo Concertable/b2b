@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.DTOs;
+using Concertable.B2B.Concert.Application.Projections;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Kernel.Identity;
@@ -16,17 +16,16 @@ internal sealed class OpportunityRepository : OpportunityRepository<ConcertDbCon
             .Include(o => o.Venue)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
 
-    public async Task<IReadOnlyList<OpportunityListRow>> GetOpenWithCountsByVenueIdAsync(int venueId) =>
+    public async Task<IReadOnlyList<OpportunityApplicationProjection>> GetOpenWithApplicationCountsByVenueIdAsync(
+        int venueId) =>
         await ActiveForVenue(venueId)
             .AsNoTracking()
             .Take(5)
-            .Select(o => new OpportunityListRow
+            .Select(o => new OpportunityApplicationProjection
             {
                 Id = o.Id,
                 VenueId = o.VenueId,
                 VenueName = o.Venue.Name,
-                County = o.Venue.Address.County,
-                Town = o.Venue.Address.Town,
                 StartDate = o.Period.Start,
                 EndDate = o.Period.End,
                 Genres = o.Genres,

@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.DTOs;
+using Concertable.B2B.Concert.Application.Projections;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
@@ -21,7 +21,9 @@ internal sealed class PublicOpportunityRepository : OpportunityRepository<Public
     public async Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId, IPageParams pageParams) =>
         await ActiveForVenue(venueId).ToPaginationAsync(pageParams);
 
-    public async Task<IReadOnlyList<OpportunityListRow>> GetRecommendedAsync(int artistId, IReadOnlySet<Genre> genres)
+    public async Task<IReadOnlyList<OpportunityMatchProjection>> GetMatchCandidatesAsync(
+        int artistId,
+        IReadOnlySet<Genre> genres)
     {
         var genreList = genres.ToList();
         var now = timeProvider.GetUtcNow();
@@ -33,7 +35,7 @@ internal sealed class PublicOpportunityRepository : OpportunityRepository<Public
             .Where(o => o.Genres.Count == 0 || o.Genres.Any(g => genreList.Contains(g)))
             .OrderBy(o => o.Period.Start)
             .Take(5)
-            .Select(o => new OpportunityListRow
+            .Select(o => new OpportunityMatchProjection
             {
                 Id = o.Id,
                 VenueId = o.VenueId,
@@ -43,8 +45,7 @@ internal sealed class PublicOpportunityRepository : OpportunityRepository<Public
                 StartDate = o.Period.Start,
                 EndDate = o.Period.End,
                 Genres = o.Genres,
-                DealId = o.DealId,
-                ApplicationCount = o.Applications.Count
+                DealId = o.DealId
             })
             .ToListAsync();
     }

@@ -1,5 +1,5 @@
 export type {
   OpportunitySummary,
-  OpportunityWithCounts,
-  OpportunityCard,
+  OpportunityApplicationMetrics,
+  OpportunityMatch,
 } from "./types";
