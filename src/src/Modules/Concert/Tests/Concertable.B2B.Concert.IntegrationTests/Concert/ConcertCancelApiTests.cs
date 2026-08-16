@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
+using Concertable.Payment.Contracts;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -47,7 +48,10 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         // Assert — booking dead, escrow refunded, cancel no longer offered.
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Contains(booking.Id, fixture.EscrowClient.Refunds);
+        await fixture.CompleteLatestFinancialOperationAsync();
+        var refund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
+        Assert.Equal(booking.Id, refund.BookingId);
+        Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
         Assert.Equal(LifecycleState.Cancelled, application.State);
 
@@ -75,7 +79,8 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Contains(booking.Id, fixture.EscrowClient.Refunds);
+        await fixture.CompleteLatestFinancialOperationAsync();
+        Assert.Equal(booking.Id, fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
         Assert.Equal(LifecycleState.Cancelled, application.State);
     }
@@ -100,6 +105,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         // Assert — cancels cleanly; no escrow hold existed, so the refund is a correct no-op.
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.CompleteLatestFinancialOperationAsync();
         Assert.Empty(fixture.EscrowClient.Holds);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
         Assert.Equal(LifecycleState.Cancelled, application.State);

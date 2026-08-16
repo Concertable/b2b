@@ -8,3 +8,8 @@ internal sealed record SelfBillingAgreementDto(
     DateTime ExpiresAtUtc,
     string PlatformTermsVersion,
     DateTime CreatedAtUtc);
+
+internal sealed record SelfBillingAgreementStatusDto(
+    SelfBillingAgreementDto? Agreement,
+    bool IsInForce,
+    bool CanRenew);

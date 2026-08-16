@@ -94,14 +94,14 @@ function App() {
         <div className="grid w-full max-w-3xl grid-cols-2 gap-6">
         <GatewayCard
           testId="get-started-venue"
-          href={`${venueUrl}/login`}
+          href={`${venueUrl}/login?redirect=%2Fcreate`}
           icon={<BuildingIcon />}
           title="I manage a venue"
           description="Post opportunities, review applications, run shows and settle with artists."
         />
         <GatewayCard
           testId="get-started-artist"
-          href={`${artistUrl}/login`}
+          href={`${artistUrl}/login?redirect=%2Fcreate`}
           icon={<MusicIcon />}
           title="I represent artists"
           description="List your artists, apply to opportunities, manage bookings and get paid."

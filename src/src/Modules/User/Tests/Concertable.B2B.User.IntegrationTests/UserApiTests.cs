@@ -2,6 +2,9 @@ using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.User.Application.Requests;
 using Concertable.B2B.User.Contracts;
+using Concertable.B2B.User.Domain.Entities;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.User.IntegrationTests;
@@ -34,6 +37,28 @@ public sealed class UserApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task UpdateLocation_ShouldReturnTyped401WithoutWritingLocation_WhenUserProjectionIsMissing()
+    {
+        var missingUser = UserEntity.FromRegistration(Guid.NewGuid(), "missing@test.com");
+        var client = fixture.CreateClient(missingUser);
+
+        var response = await client.PutAsync("/api/User/location", new UpdateLocationRequest(51.5, -0.1));
+
+        await response.ShouldBe(HttpStatusCode.Unauthorized);
+        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal((int)HttpStatusCode.Unauthorized, problem.Status);
+        Assert.Equal("Unauthorized", problem.Title);
+        Assert.Equal("The current user was not found.", problem.Detail);
+        Assert.True(problem.Extensions.TryGetValue("code", out var code));
+        Assert.Equal("user.location_unauthenticated", code?.ToString());
+
+        using var scope = fixture.Services.CreateScope();
+        var userModule = scope.ServiceProvider.GetRequiredService<IUserModule>();
+        Assert.False((await userModule.GetByIdAsync(missingUser.Id)).TryGetValue(out _));
     }
 
     [Fact]

@@ -1,20 +1,22 @@
 using Concertable.B2B.Tenant.Domain.ValueObjects;
-using Concertable.Kernel;
 
 namespace Concertable.B2B.Tenant.UnitTests;
 
 public sealed class TaxComplianceTests
 {
-    private static RegisteredAddress Address() =>
-        new("1 High Street", null, "Manchester", "M1 1AA", "United Kingdom");
-
     [Fact]
-    public void Constructor_SetsAllValues()
+    public void Create_SetsAllValues()
     {
         var address = Address();
 
-        var taxCompliance = new TaxCompliance("GB123456789", "12345678", address, "GB00BANK1234", true);
+        var result = TaxCompliance.Create(
+            "GB123456789",
+            "12345678",
+            address,
+            "GB00BANK1234",
+            true);
 
+        Assert.True(result.TryGetValue(out var taxCompliance));
         Assert.Equal("GB123456789", taxCompliance.VatNumber);
         Assert.Equal("12345678", taxCompliance.SellerIdentifier);
         Assert.Equal(address, taxCompliance.RegisteredAddress);
@@ -25,72 +27,88 @@ public sealed class TaxComplianceTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void Constructor_StoresMusicLicenceAttestation(bool holdsMusicLicence)
+    public void Create_StoresMusicLicenceAttestation(bool holdsMusicLicence)
     {
-        var taxCompliance = new TaxCompliance("GB123456789", "12345678", Address(), "GB00BANK1234", holdsMusicLicence);
+        var result = TaxCompliance.Create(
+            "GB123456789",
+            "12345678",
+            Address(),
+            "GB00BANK1234",
+            holdsMusicLicence);
 
+        Assert.True(result.TryGetValue(out var taxCompliance));
         Assert.Equal(holdsMusicLicence, taxCompliance.HoldsMusicLicence);
     }
 
-    [Fact]
-    public void Constructor_NullVatNumber_MeansNotRegistered()
-    {
-        var taxCompliance = new TaxCompliance(null, "12345678", Address(), "GB00BANK1234", false);
-
-        Assert.Null(taxCompliance.VatNumber);
-    }
-
     [Theory]
+    [InlineData(null)]
     [InlineData("")]
     [InlineData("  ")]
-    public void Constructor_BlankVatNumber_NormalizesToNull(string vatNumber)
+    public void Create_MissingVatNumber_MeansNotRegistered(string? vatNumber)
     {
-        var taxCompliance = new TaxCompliance(vatNumber, "12345678", Address(), "GB00BANK1234", false);
+        var result = TaxCompliance.Create(
+            vatNumber,
+            "12345678",
+            Address(),
+            "GB00BANK1234",
+            false);
 
+        Assert.True(result.TryGetValue(out var taxCompliance));
         Assert.Null(taxCompliance.VatNumber);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void Constructor_MissingSellerIdentifier_Throws(string sellerIdentifier)
+    [Fact]
+    public void Create_InvalidFields_ReturnsStructuredErrors()
     {
-        Assert.Throws<DomainException>(() =>
-            new TaxCompliance(null, sellerIdentifier, Address(), "GB00BANK1234", false));
-    }
+        var result = TaxCompliance.Create(
+            new string('V', 21),
+            " ",
+            null!,
+            "",
+            false);
 
-    [Theory]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void Constructor_MissingBankReference_Throws(string bankReference)
-    {
-        Assert.Throws<DomainException>(() =>
-            new TaxCompliance(null, "12345678", Address(), bankReference, false));
+        Assert.True(result.TryGetError(out var errors));
+        Assert.Equal(["VatNumber must be 20 characters or fewer."], errors.Errors["VatNumber"]);
+        Assert.Equal(["SellerIdentifier is required."], errors.Errors["SellerIdentifier"]);
+        Assert.Equal(["RegisteredAddress is required."], errors.Errors["RegisteredAddress"]);
+        Assert.Equal(["BankReference is required."], errors.Errors["BankReference"]);
     }
 
     [Fact]
-    public void Constructor_MissingAddress_Throws()
+    public void RegisteredAddress_Create_BlankLine2_NormalizesToNull()
     {
-        Assert.Throws<DomainException>(() =>
-            new TaxCompliance(null, "12345678", null!, "GB00BANK1234", false));
-    }
+        var result = RegisteredAddress.Create(
+            "1 High Street",
+            " ",
+            "Manchester",
+            "M1 1AA",
+            "United Kingdom");
 
-    [Fact]
-    public void RegisteredAddress_BlankLine2_NormalizesToNull()
-    {
-        var address = new RegisteredAddress("1 High Street", " ", "Manchester", "M1 1AA", "United Kingdom");
-
+        Assert.True(result.TryGetValue(out var address));
         Assert.Null(address.Line2);
     }
 
-    [Theory]
-    [InlineData("", "Manchester", "M1 1AA", "United Kingdom")]
-    [InlineData("1 High Street", "", "M1 1AA", "United Kingdom")]
-    [InlineData("1 High Street", "Manchester", "", "United Kingdom")]
-    [InlineData("1 High Street", "Manchester", "M1 1AA", "")]
-    public void RegisteredAddress_MissingRequiredField_Throws(string line1, string city, string postcode, string country)
+    [Fact]
+    public void RegisteredAddress_Create_InvalidFields_ReturnsStructuredErrors()
     {
-        Assert.Throws<DomainException>(() =>
-            new RegisteredAddress(line1, null, city, postcode, country));
+        var result = RegisteredAddress.Create(
+            "",
+            new string('L', 201),
+            new string('C', 101),
+            " ",
+            new string('N', 101));
+
+        Assert.True(result.TryGetError(out var errors));
+        Assert.Equal(["Line1 is required."], errors.Errors["Line1"]);
+        Assert.Equal(["Line2 must be 200 characters or fewer."], errors.Errors["Line2"]);
+        Assert.Equal(["City must be 100 characters or fewer."], errors.Errors["City"]);
+        Assert.Equal(["Postcode is required."], errors.Errors["Postcode"]);
+        Assert.Equal(["Country must be 100 characters or fewer."], errors.Errors["Country"]);
     }
+
+    private static RegisteredAddress Address() => RegisteredAddress
+        .Create("1 High Street", null, "Manchester", "M1 1AA", "United Kingdom")
+        .Match(
+            address => address,
+            _ => throw new InvalidOperationException("Test address is invalid."));
 }
