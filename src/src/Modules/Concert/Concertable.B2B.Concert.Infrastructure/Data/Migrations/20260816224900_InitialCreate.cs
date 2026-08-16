@@ -432,13 +432,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArtistReadModels_UserId",
-                schema: "concert",
-                table: "ArtistReadModels",
-                column: "UserId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Bookings_ApplicationId",
                 schema: "concert",
                 table: "Bookings",
@@ -502,13 +495,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 schema: "concert",
                 table: "VenueReadModels",
                 column: "TenantId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_VenueReadModels_UserId",
-                schema: "concert",
-                table: "VenueReadModels",
-                column: "UserId",
                 unique: true);
         }
 

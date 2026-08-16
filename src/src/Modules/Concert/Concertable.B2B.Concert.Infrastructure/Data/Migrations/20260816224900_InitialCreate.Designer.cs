@@ -14,7 +14,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260816202507_InitialCreate")]
+    [Migration("20260816224900_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -762,9 +762,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.HasIndex("TenantId")
                         .IsUnique();
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
                     b.ToTable("ArtistReadModels", "concert");
                 });
 
@@ -823,9 +820,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId")
-                        .IsUnique();
-
-                    b.HasIndex("UserId")
                         .IsUnique();
 
                     b.ToTable("VenueReadModels", "concert");

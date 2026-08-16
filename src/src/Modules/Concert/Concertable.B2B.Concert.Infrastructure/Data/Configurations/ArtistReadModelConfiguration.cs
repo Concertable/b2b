@@ -11,7 +11,6 @@ internal sealed class ArtistReadModelConfiguration : IEntityTypeConfiguration<Ar
     {
         builder.ToTable(Schema.Tables.ArtistReadModels, Schema.Name);
         builder.Property(a => a.Id).ValueGeneratedNever();
-        builder.HasIndex(a => a.UserId).IsUnique();
         builder.HasIndex(a => a.TenantId).IsUnique();
         builder.OwnsAddress(a => a.Address);
         builder.HasMany(a => a.Genres)

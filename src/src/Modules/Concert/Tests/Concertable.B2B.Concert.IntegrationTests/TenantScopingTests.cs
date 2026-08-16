@@ -116,13 +116,13 @@ public sealed class TenantScopingTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// The current-user concert read (<c>GET /organization/concert/{id}</c>) is tenant-scoped: both parties read
+    /// The organization concert read (<c>GET /organization/concert/{id}</c>) is tenant-scoped: both parties read
     /// it and receive the party-only action links; a third-party tenant sees 404, not 403 — the deal
     /// never reveals its existence. The public read (<c>GET /concert/{id}</c>) carries no actions, so
     /// those party affordances never leak to the marketplace.
     /// </summary>
     [Fact]
-    public async Task CurrentUserConcertRead_ScopesActionsToPartiesAndKeepsPublicReadActionFree()
+    public async Task OrganizationConcertRead_ScopesActionsToPartiesAndKeepsPublicReadActionFree()
     {
         // Arrange — drive FlatFee to Booked so a concert (with a frozen contract) exists.
         var appId = fixture.SeedState.FlatFeeApp.Id;
