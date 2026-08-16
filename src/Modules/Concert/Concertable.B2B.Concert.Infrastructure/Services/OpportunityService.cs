@@ -46,25 +46,22 @@ internal sealed class OpportunityService : IOpportunityService
             return venueError;
         venue.TryGetValue(out var venueId);
 
-        var validation = ValidateDeals([request.Deal]);
-        if (validation.TryGetError(out var error))
-            return error;
-
-        var opportunity = await uowBehavior.ExecuteAsync(async () =>
+        var creation = await uowBehavior.ExecuteAsync(async () =>
         {
-            var dealId = await CreateValidatedDealAsync(request.Deal);
-            var entity = OpportunityEntity.Create(
-                venueId,
-                new DateRange(request.StartDate, request.EndDate),
-                dealId,
-                request.Genres);
-            await repository.AddAsync(entity);
-            return entity;
+            var deal = await CreateDealAsync(request.Deal);
+            return await deal.BindAsync(async dealId =>
+            {
+                var entity = OpportunityEntity.Create(
+                    venueId,
+                    new DateRange(request.StartDate, request.EndDate),
+                    dealId,
+                    request.Genres);
+                await repository.AddAsync(entity);
+                return Result.Success<OpportunityEntity, OpportunityMutationError>(entity);
+            });
         });
 
-        var saved = await repository.GetByIdAsync(opportunity.Id)
-            ?? throw new InvalidOperationException("Opportunity was not found after it was saved.");
-        return await mapper.ToDtoAsync(saved);
+        return await creation.MapAsync(mapper.ToDtoAsync);
     }
 
     public async Task<UnitResult<OpportunityMutationError>> CreateMultipleAsync(IEnumerable<OpportunityRequest> requests)
@@ -84,7 +81,7 @@ internal sealed class OpportunityService : IOpportunityService
         {
             foreach (var request in requestList)
             {
-                var dealId = await CreateValidatedDealAsync(request.Deal);
+                var dealId = await CreatePrevalidatedDealAsync(request.Deal);
                 var opportunity = OpportunityEntity.Create(
                     venueId,
                     new DateRange(request.StartDate, request.EndDate),
@@ -179,11 +176,18 @@ internal sealed class OpportunityService : IOpportunityService
         return new Success();
     }
 
-    private async Task<int> CreateValidatedDealAsync(IDeal deal)
+    private async Task<Result<int, OpportunityMutationError>> CreateDealAsync(IDeal deal) =>
+        (await dealModule.CreateAsync(deal))
+            .MapError<OpportunityMutationError>(
+                error => error.Match<OpportunityMutationError>(
+                    invalid => new OpportunityMutationError.InvalidDeal(invalid.Errors)));
+
+    private async Task<int> CreatePrevalidatedDealAsync(IDeal deal)
     {
         var result = await dealModule.CreateAsync(deal);
-        return result.Match(
-            dealId => dealId,
-            _ => throw new InvalidOperationException("Deal creation failed after successful validation."));
+        if (result.TryGetValue(out var dealId))
+            return dealId;
+
+        throw new InvalidOperationException("Deal creation failed after successful validation.");
     }
 }
