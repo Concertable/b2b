@@ -7,7 +7,7 @@ namespace Concertable.B2B.Concert.Api.Responses;
 
 [JsonDerivedType(typeof(ApplicationResponse<VenueApplicationActions>))]
 [JsonDerivedType(typeof(ApplicationResponse<ArtistApplicationActions>))]
-internal abstract record ApplicationResponse(
+internal record ApplicationResponse(
     int Id,
     ArtistSummary Artist,
     OpportunitySummaryResponse Opportunity,
