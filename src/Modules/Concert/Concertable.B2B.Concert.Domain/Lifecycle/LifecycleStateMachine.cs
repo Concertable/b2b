@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Domain.Lifecycle;
 
@@ -12,8 +11,8 @@ internal sealed class LifecycleStateMachine
         Transitions = transitions.ToFrozenDictionary();
     }
 
-    public LifecycleState Next(LifecycleState current, Trigger trigger)
+    public Result<LifecycleState, LifecycleTransitionError> Next(LifecycleState current, Trigger trigger)
         => Transitions.TryGetValue((current, trigger), out var next)
             ? next
-            : throw new ConflictException($"Cannot {trigger} from {current}");
+            : new LifecycleTransitionError.InvalidTransition(current, trigger);
 }

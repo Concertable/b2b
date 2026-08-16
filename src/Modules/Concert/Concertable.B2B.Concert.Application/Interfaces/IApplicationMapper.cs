@@ -6,5 +6,5 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 internal interface IApplicationMapper
 {
     Task<ApplicationDto> ToDtoAsync(ApplicationEntity application);
-    Task<IEnumerable<ApplicationDto>> ToDtosAsync(IEnumerable<ApplicationEntity> applications);
+    Task<IReadOnlyList<ApplicationDto>> ToDtosAsync(IEnumerable<ApplicationEntity> applications);
 }

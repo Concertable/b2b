@@ -20,6 +20,8 @@
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
   <ItemGroup>
     <PackageReference Include="Concertable.Shared.Api" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.AspNetCore" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,3 @@
-using FluentResults;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure;
@@ -86,11 +85,16 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "ConcertCompletionRunner: found {Count} ended confirmed concert(s) to settle")]
     internal static partial void FoundConcertsToSettle(this ILogger logger, int count);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to finish concert {ConcertId}: {Errors}")]
-    internal static partial void ConcertCompletionFailed(this ILogger logger, int concertId, IReadOnlyList<IError> errors);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not finish concert {ConcertId}: {Code} {Message}")]
+    internal static partial void ConcertCompletionRefused(
+        this ILogger logger,
+        int concertId,
+        string code,
+        string message);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Finished concert {ConcertId}")]
     internal static partial void ConcertFinished(this ILogger logger, int concertId);
+
 
     #endregion
 }

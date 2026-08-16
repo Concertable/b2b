@@ -6,6 +6,7 @@ internal static class Schema
 
     public static class Tables
     {
+        public const string ContentReports = "ContentReports";
         public const string Messages = "Messages";
         public const string ThreadReadStates = "ThreadReadStates";
         public const string ParticipantProfiles = "ParticipantProfiles";

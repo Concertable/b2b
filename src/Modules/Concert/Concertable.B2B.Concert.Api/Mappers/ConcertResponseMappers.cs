@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
@@ -54,13 +53,7 @@ internal static class ConcertResponseMappers
         Venue = dto.Venue.ToVenueResponse()
     };
 
-    /// <summary>
-    /// The owner (party-scoped) read: the public details plus the party-only action links and
-    /// venue-private figures the anonymous read omits. Cancel is offered only while Booked; the contract
-    /// is frozen at accept so it always exists; DeclareDoorRevenue shows only for an ended, still-Booked,
-    /// undeclared revenue-share gig.
-    /// </summary>
-    public static MyDetailsResponse ToMyDetailsResponse(this ConcertDetails dto, DateTime utcNow) => new()
+    public static MyDetailsResponse ToMyDetailsResponse(this ConcertDetails dto) => new()
     {
         Id = dto.Id,
         Name = dto.Name,
@@ -80,12 +73,11 @@ internal static class ConcertResponseMappers
         TicketsSold = dto.TicketsSold,
         DoorRevenue = dto.DoorRevenue,
         Actions = new ConcertActions(
-            Cancel: dto.State == LifecycleState.Booked
+            Cancel: dto.CanCancel
                 ? new ActionLink($"/api/Concert/{dto.Id}/cancel", HttpMethods.Post)
                 : null,
             Contract: new ActionLink($"/api/Concert/{dto.Id}/contract/pdf", HttpMethods.Get),
-            DeclareDoorRevenue: dto.State == LifecycleState.Booked
-                && dto.IsRevenueShare && dto.DoorRevenue is null && dto.EndDate < utcNow
+            DeclareDoorRevenue: dto.CanDeclareDoorRevenue
                 ? new ActionLink($"/api/Concert/{dto.Id}/door-revenue", HttpMethods.Post)
                 : null,
             Invoice: dto.InvoiceId is not null

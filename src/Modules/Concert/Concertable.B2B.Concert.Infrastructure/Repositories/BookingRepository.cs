@@ -34,6 +34,11 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             .FirstOrDefaultAsync(ct);
     }
 
+    public Task<BookingEntity?> GetByConcertIdAsync(int concertId, CancellationToken ct = default) =>
+        context.Bookings
+            .Include(booking => booking.Application)
+            .SingleOrDefaultAsync(booking => booking.Concert!.Id == concertId, ct);
+
     public async Task<BookingEntity?> GetForSettlementByConcertIdAsync(int concertId)
     {
         return await context.Bookings

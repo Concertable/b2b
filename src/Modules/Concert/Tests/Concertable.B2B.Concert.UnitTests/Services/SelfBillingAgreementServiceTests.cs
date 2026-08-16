@@ -8,6 +8,7 @@ using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Exceptions;
+using Reunion;
 using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -36,9 +37,9 @@ public sealed class SelfBillingAgreementServiceTests
         clientContext.SetupGet(c => c.IpAddress).Returns(IPAddress.Loopback);
         clientContext.SetupGet(c => c.UserAgent).Returns("supplier-agent");
         tenantModule.Setup(m => m.GetByIdAsync(supplierTenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TenantDto(supplierTenantId, "Sally Supplier Ltd"));
+            .ReturnsAsync(Option.Some(new TenantDto(supplierTenantId, "Sally Supplier Ltd")));
         tenantModule.Setup(m => m.GetTaxComplianceAsync(supplierTenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TaxComplianceDto
+            .ReturnsAsync(Option.Some(new TaxComplianceDto
             {
                 VatNumber = "GB123456789",
                 SellerIdentifier = "SELL-1",
@@ -46,9 +47,12 @@ public sealed class SelfBillingAgreementServiceTests
                 HoldsMusicLicence = true,
                 RegisteredAddress = new RegisteredAddressDto
                 {
-                    Line1 = "1 Road", City = "Town", Postcode = "AB1 2CD", Country = "United Kingdom",
+                    Line1 = "1 Road",
+                    City = "Town",
+                    Postcode = "AB1 2CD",
+                    Country = "United Kingdom",
                 },
-            });
+            }));
 
         service = new SelfBillingAgreementService(
             repository.Object,
@@ -105,7 +109,7 @@ public sealed class SelfBillingAgreementServiceTests
     public async Task GrantAsync_WithoutTaxCompliance_ThrowsBadRequest()
     {
         tenantModule.Setup(m => m.GetTaxComplianceAsync(supplierTenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((TaxComplianceDto?)null);
+            .ReturnsAsync(Option.None<TaxComplianceDto>());
 
         await Assert.ThrowsAsync<BadRequestException>(() =>
             service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" }));
@@ -121,18 +125,26 @@ public sealed class SelfBillingAgreementServiceTests
     }
 
     [Fact]
-    public async Task GetLatestAsync_MapsLatestAgreement_OrNullWhenNone()
+    public async Task GetStatusAsync_LatestAgreement_ReturnsCurrentStatus()
     {
-        Assert.Null(await service.GetLatestAsync());
+        var emptyStatus = await service.GetStatusAsync();
+
+        Assert.Null(emptyStatus.Agreement);
+        Assert.False(emptyStatus.IsInForce);
+        Assert.False(emptyStatus.CanRenew);
 
         repository.Setup(r => r.GetLatestAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(BuildAgreement());
 
-        var dto = await service.GetLatestAsync();
+        var status = await service.GetStatusAsync();
 
-        Assert.NotNull(dto);
-        Assert.Equal("Sally Supplier Ltd", dto.SupplierLegalName);
-        Assert.Equal(new DateTime(2027, 2, 1, 12, 0, 0, DateTimeKind.Utc), dto.ExpiresAtUtc);
+        Assert.NotNull(status.Agreement);
+        Assert.Equal("Sally Supplier Ltd", status.Agreement.SupplierLegalName);
+        Assert.Equal(
+            new DateTime(2027, 2, 1, 12, 0, 0, DateTimeKind.Utc),
+            status.Agreement.ExpiresAtUtc);
+        Assert.True(status.IsInForce);
+        Assert.False(status.CanRenew);
     }
 
     [Fact]

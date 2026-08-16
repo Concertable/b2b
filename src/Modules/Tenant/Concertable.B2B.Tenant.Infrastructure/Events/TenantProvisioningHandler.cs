@@ -66,7 +66,9 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
                 if (!alreadyMember)
                     context.Memberships.Add(TenantMembershipEntity.Create(
                         invitation.TenantId, e.UserId, invitation.Role, invitedBy: invitation.CreatedByUserId, now));
-                invitation.Accept(e.UserId, now);
+                var acceptance = invitation.Accept(e.UserId, now);
+                if (acceptance.TryGetError(out var error))
+                    throw new InvalidOperationException(error.Definition.Message);
             }
 
             await context.SaveChangesAsync(ct);

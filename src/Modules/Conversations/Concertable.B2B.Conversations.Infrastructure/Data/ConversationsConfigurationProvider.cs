@@ -8,6 +8,7 @@ internal sealed class ConversationsConfigurationProvider : IEntityTypeConfigurat
 {
     public void Configure(ModelBuilder modelBuilder)
     {
+        modelBuilder.ApplyConfiguration(new ContentReportEntityConfiguration());
         modelBuilder.ApplyConfiguration(new MessageEntityConfiguration());
         modelBuilder.ApplyConfiguration(new ThreadReadStateEntityConfiguration());
         modelBuilder.ApplyConfiguration(new ParticipantProfileConfiguration());
