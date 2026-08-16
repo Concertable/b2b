@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
-internal sealed class VenueReadRepository(IVenueReadDbContext context) : IVenueReadRepository
+internal sealed class VenueReadRepository : IVenueReadRepository
 {
+    private readonly IVenueReadDbContext context;
+
+    public VenueReadRepository(IVenueReadDbContext context)
+    {
+        this.context = context;
+    }
+
     public async Task<VenueSummary?> GetSummaryAsync(int id) =>
         await context.Venues
             .Where(v => v.Id == id)
