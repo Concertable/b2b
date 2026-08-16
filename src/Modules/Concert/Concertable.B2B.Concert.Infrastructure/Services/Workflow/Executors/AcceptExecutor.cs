@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Capabilities;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel;
 
@@ -88,6 +89,8 @@ internal sealed class AcceptExecutor : IAcceptExecutor
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
+
+            app.NotifyCounterparty(ApplicationNotification.Accepted);
             return new Success();
         }, ct);
 

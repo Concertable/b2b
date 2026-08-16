@@ -50,32 +50,6 @@ See [`plans/platform/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/platform/SPLIT_TIM
 
 ## MED
 
-### B2B counterparty email (`Messenger`) is still synchronous inline — not on the transactional outbox
-
-The async-email-outbox refactor put Auth (verification/reset), Customer (ticket receipt), and **B2B's
-org-invitation email** on the transactional outbox: an `IPreCommitDomainEventHandler` stages a
-`SendEmailCommand` on the same transaction as the business change (the `TicketPurchasedDomainEventHandler`
-pattern). `Tenant.Infrastructure/Services/InvitationService` now raises `TenantInvitationCreatedDomainEvent`
-whose pre-commit handler stages the invite mail, anchored on the invitation save — done.
-
-One B2B producer remains synchronous through `IEmailTransport` (the raw SMTP/fake send), so a transient
-failure still loses the mail and the send isn't atomic with the business change:
-
-- `Concert.Infrastructure/Services/Messenger` — the counterparty email on a conversation message/action.
-
-`Messenger` has no clean transactional anchor of its own — it fires a conversation *action*, not a persisted
-lifecycle transition, so it can't simply mirror the invitation fix. The lifecycle executors that drive it
-(`ApplicationCancel`/`ApplicationWithdrawReject`) *do* persist a transition, so the anchor is that
-transition's domain event, not `Messenger` itself. Their `EmailSender.Sent` integration assertions still
-observe a synchronous send.
-
-**Resolves when:** the concert-lifecycle transition raises a domain event whose pre-commit handler stages
-the counterparty `SendEmailCommand` on the same transaction, making it transactional/retried like the
-invitation email — with the `ApplicationCancel`/`ApplicationWithdrawReject` email assertions moved to
-asserting the staged command (`fixture.GetStagedEmailsAsync()`) rather than a synchronous `Sent` list.
-
----
-
 ### `DELETE api/organizations` is a local hard-delete with no cross-module / cross-service teardown
 
 `TenantService.DeleteCurrentTenantAsync` deletes the tenant row and cascades only the Tenant module's own children (memberships, invitations). It emits **no `TenantDeletedEvent`** and touches nothing outside the `tenant` schema, so deleting an organization silently **orphans** everything provisioned off it: the Payment Stripe payout account (provisioned by `CredentialRegisteredHandler`), the venues/artists/concerts owned by the tenant (separate modules/contexts, no cross-schema FK — so no error, just dangling rows), and downstream Search projections. The create path deliberately re-raises `TenantCreatedEvent` via `Announce()` for exactly this cross-service reason; delete has no symmetric path. Landed as a simple synchronous endpoint in the member-management phase (Phase 6.2); the full teardown is its own design (a new integration event + a Payment consumer that deactivates the connected account + module-owned cleanup of venue/artist/concert data).

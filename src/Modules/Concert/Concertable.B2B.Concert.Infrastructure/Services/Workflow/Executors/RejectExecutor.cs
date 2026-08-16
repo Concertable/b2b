@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
+using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
@@ -15,7 +16,14 @@ internal sealed class RejectExecutor : IRejectExecutor
 
     public async Task<UnitResult<LifecycleTransitionError>> RejectAsync(int applicationId)
     {
-        var result = await transitioner.TransitionAsync(applicationId, Trigger.Reject);
+        var result = await transitioner.TransitionAsync(
+            applicationId,
+            Trigger.Reject,
+            app =>
+            {
+                app.NotifyCounterparty(ApplicationNotification.Rejected);
+                return Task.CompletedTask;
+            });
         return result.Match(
             _ => UnitResult.Success<LifecycleTransitionError>(),
             UnitResult.Failure);
