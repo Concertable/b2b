@@ -40,6 +40,7 @@ internal sealed class OpportunityMapper : IOpportunityMapper
 
     public async Task<IPagination<OpportunityDto>> ToDtosAsync(IPagination<OpportunityEntity> opportunities)
     {
+        // Not IPagination.Map: this projection is async, and Map takes a synchronous selector.
         var dtos = await ToDtosAsync(opportunities.Data);
         return new Pagination<OpportunityDto>(dtos.ToList(), opportunities.TotalCount, opportunities.PageNumber, opportunities.PageSize);
     }
