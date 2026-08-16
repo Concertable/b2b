@@ -92,10 +92,18 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
     [Fact]
     public async Task Registration_BootstrapEmail_GrantsNoAdminProfile_WhenAnAdminAlreadyExists()
     {
-        // The standard seed graph already seeds one admin (fixture.SeedState.Admin) — bootstrap is a
-        // one-time first-admin path and must stay closed once any admin exists.
-        var newUserId = Guid.NewGuid();
+        // The standard seed graph's admin already occupies SeedUsers.AdminEmail (the dev-default bootstrap
+        // email), which real registration can never collide with (Auth enforces global email uniqueness) —
+        // so free it up and provision a distinct admin first, proving it's the AdminProfiles-non-empty gate,
+        // not an artificial email collision, that keeps bootstrap closed.
+        await fixture.ClearAdminsAsync();
+        var existingAdminUserId = Guid.NewGuid();
+        var existingAdminEmail = $"{Guid.NewGuid():N}@existing-admin.test";
+        await fixture.AddAdminInvitationAsync(existingAdminEmail, Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+        await ProvisionAsync(new CredentialRegisteredEvent(existingAdminUserId, existingAdminEmail, ClientIds.Admin));
+        Assert.True(await fixture.IsAdminAsync(existingAdminUserId));
 
+        var newUserId = Guid.NewGuid();
         await ProvisionAsync(new CredentialRegisteredEvent(newUserId, SeedUsers.AdminEmail, ClientIds.Admin));
 
         Assert.False(await fixture.IsAdminAsync(newUserId));
