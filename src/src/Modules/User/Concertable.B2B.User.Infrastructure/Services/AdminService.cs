@@ -25,7 +25,7 @@ internal sealed class AdminService : IAdminService
         this.timeProvider = timeProvider;
     }
 
-    public async Task<AdminOverviewDto> GetOverviewAsync(CancellationToken ct = default)
+    public async Task<AdminOverview> GetOverviewAsync(CancellationToken ct = default)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
@@ -38,7 +38,7 @@ internal sealed class AdminService : IAdminService
         var invitations = await repository.ListPendingInvitationsAsync(now, ct);
         var pending = invitations.Select(i => i.ToDto()).ToList();
 
-        return new AdminOverviewDto(admins, pending);
+        return new AdminOverview(admins, pending);
     }
 
     public async Task<Result<AdminInvitationDto, InviteAdminError>> InviteAsync(

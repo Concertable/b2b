@@ -19,7 +19,7 @@ internal sealed class AdminController : ControllerBase
 
     [Admin]
     [HttpGet]
-    public async Task<ActionResult<AdminOverviewDto>> GetOverview() =>
+    public async Task<ActionResult<AdminOverview>> GetOverview() =>
         Ok(await adminService.GetOverviewAsync());
 
     [Admin]

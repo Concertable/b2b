@@ -6,4 +6,4 @@ internal sealed record AdminDto(Guid Sub, string Email);
 /// "expires in N days" hint.</summary>
 internal sealed record AdminInvitationDto(Guid Id, string Email, DateTime CreatedAt, DateTime ExpiresAt);
 
-internal sealed record AdminOverviewDto(IReadOnlyList<AdminDto> Admins, IReadOnlyList<AdminInvitationDto> PendingInvitations);
+internal sealed record AdminOverview(IReadOnlyList<AdminDto> Admins, IReadOnlyList<AdminInvitationDto> PendingInvitations);
