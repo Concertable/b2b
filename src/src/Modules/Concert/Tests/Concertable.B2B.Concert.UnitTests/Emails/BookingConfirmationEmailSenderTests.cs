@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Infrastructure.Emails;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.ValueObjects;
+using Reunion;
 using Concertable.Messaging.Contracts;
 using Concertable.Shared.Email.Application;
 using Moq;
@@ -24,11 +25,11 @@ public sealed class BookingConfirmationEmailSenderTests
 
         var tenant = new Mock<ITenantModule>();
         tenant.Setup(m => m.GetByIdAsync(VenueTenant, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TenantDto(VenueTenant, "Venue Legal Ltd"));
+            .Returns(Task.FromResult(Option.Some(new TenantDto(VenueTenant, "Venue Legal Ltd"))));
         tenant.Setup(m => m.GetByIdAsync(ArtistTenant, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TenantDto(ArtistTenant, "Artist Legal Ltd"));
+            .Returns(Task.FromResult(Option.Some(new TenantDto(ArtistTenant, "Artist Legal Ltd"))));
         tenant.Setup(m => m.GetTaxComplianceAsync(VenueTenant, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TaxComplianceDto
+            .Returns(Task.FromResult(Option.Some(new TaxComplianceDto
             {
                 VatNumber = "GB123456789",
                 SellerIdentifier = "SELLER-1",
@@ -41,9 +42,9 @@ public sealed class BookingConfirmationEmailSenderTests
                 },
                 BankReference = "BANK-1",
                 HoldsMusicLicence = true
-            });
+            })));
         tenant.Setup(m => m.GetTaxComplianceAsync(ArtistTenant, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((TaxComplianceDto?)null);
+            .Returns(Task.FromResult(Option.None<TaxComplianceDto>()));
         tenant.Setup(m => m.GetMemberUserIdsAsync(VenueTenant, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Guid> { venueMember1, venueMember2 });
         tenant.Setup(m => m.GetMemberUserIdsAsync(ArtistTenant, It.IsAny<CancellationToken>()))

@@ -60,8 +60,8 @@ public sealed class BookingConfirmationEmailTests : IAsyncLifetime
         var renderer = scope.ServiceProvider.GetRequiredService<IEmailRenderer>();
 
         var html = renderer.Render(new BookingConfirmationEmailContent(
-            new EmailParty("The Venue", "Bar & Grill <Ltd>", vat: null, address: null),
-            new EmailParty("The Artist", "Artist Legal Name", vat: null, address: null),
+            new EmailParty("The Venue", "Bar & Grill <Ltd>", null, null),
+            new EmailParty("The Artist", "Artist Legal Name", null, null),
             "Monday 1 January 2035")).HtmlBody;
 
         Assert.Contains("Bar &amp; Grill &lt;Ltd&gt;", html);
