@@ -30,6 +30,8 @@ internal sealed class EscrowPaymentProcessor : IIntegrationEventHandler<PaymentS
     {
         if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Escrow)
             return;
+        if (@event.Metadata.ContainsKey(PaymentMetadataKeys.OperationId))
+            return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(EscrowPaymentProcessor), ct))
             return;

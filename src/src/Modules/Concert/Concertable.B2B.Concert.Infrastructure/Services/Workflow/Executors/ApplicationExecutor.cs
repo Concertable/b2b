@@ -1,5 +1,7 @@
 using Concertable.B2B.Concert.Application.Workflow.Executors;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
@@ -25,18 +27,30 @@ internal sealed class ApplicationExecutor : IApplicationExecutor
         this.cancel = cancel;
     }
 
-    public Task<ApplicationEntity> ApplyAsync(int opportunityId, int artistId, string? paymentMethodId, ESignatureRequest eSignature) =>
+    public Task<Result<ApplicationEntity, ApplyApplicationError>> ApplyAsync(
+        int opportunityId,
+        int artistId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature) =>
         apply.ApplyAsync(opportunityId, artistId, paymentMethodId, eSignature);
 
-    public Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature) =>
-        accept.AcceptAsync(applicationId, paymentMethodId, eSignature);
+    public Task<UnitResult<AcceptApplicationError>> AcceptAsync(
+        int applicationId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature,
+        CancellationToken ct = default) =>
+        accept.AcceptAsync(applicationId, paymentMethodId, eSignature, ct);
 
-    public Task WithdrawAsync(int applicationId) =>
-        withdraw.WithdrawAsync(applicationId);
+    public Task<UnitResult<CancelApplicationError>> WithdrawAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        withdraw.WithdrawAsync(applicationId, ct);
 
-    public Task RejectAsync(int applicationId) =>
+    public Task<UnitResult<LifecycleTransitionError>> RejectAsync(int applicationId) =>
         reject.RejectAsync(applicationId);
 
-    public Task CancelAsync(int applicationId) =>
-        cancel.CancelAsync(applicationId);
+    public Task<UnitResult<CancelApplicationError>> CancelAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        cancel.CancelAsync(applicationId, ct);
 }

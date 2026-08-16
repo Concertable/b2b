@@ -88,6 +88,7 @@
   </Folder>
   <Folder Name="/Modules/User/Tests/">
     <Project Path="src/Modules/User/Tests/Concertable.B2B.User.IntegrationTests/Concertable.B2B.User.IntegrationTests.csproj" />
+    <Project Path="src/Modules/User/Tests/Concertable.B2B.User.UnitTests/Concertable.B2B.User.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Modules/Venue/">
     <Project Path="src/Modules/Venue/Concertable.B2B.Venue.Api/Concertable.B2B.Venue.Api.csproj" />

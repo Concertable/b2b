@@ -27,8 +27,9 @@ internal sealed class VerifyExecutor : IVerifyExecutor
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id, ct).OrNotFound();
             var workflow = workflows.Create(app.DealType);
             await workflow.Book.ExecuteAsync(booking.Id);
-        }, ct);
+        }, ct).GetValueOrThrowAsync();
 
     public Task FailedAsync(int applicationId, CancellationToken ct = default)
-        => transitioner.TransitionAsync(applicationId, Trigger.VerifyPaymentFailed, ct: ct);
+        => transitioner.TransitionAsync(applicationId, Trigger.VerifyPaymentFailed, ct: ct)
+            .GetValueOrThrowAsync();
 }

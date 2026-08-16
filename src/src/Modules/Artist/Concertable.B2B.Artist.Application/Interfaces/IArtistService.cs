@@ -1,17 +1,18 @@
 using Concertable.B2B.Artist.Application.DTOs;
+using Concertable.B2B.Artist.Application.Errors;
 using Concertable.B2B.Artist.Application.Requests;
 
 namespace Concertable.B2B.Artist.Application.Interfaces;
 
 internal interface IArtistService
 {
-    Task<ArtistDetails> GetDetailsByIdAsync(int id);
-    Task<ArtistDetails?> GetDetailsForCurrentUserAsync();
-    Task<ArtistDetails> CreateAsync(CreateArtistRequest request);
-    Task<ArtistDetails> UpdateAsync(int id, UpdateArtistRequest request);
-    Task<int> GetIdForCurrentUserAsync();
+    Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(int id);
+    Task<Result<ArtistDetails, ArtistError>> GetDetailsForCurrentUserAsync();
+    Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(CreateArtistRequest request);
+    Task<Result<ArtistDetails, UpdateArtistError>> UpdateAsync(int id, UpdateArtistRequest request);
+    Task<Option<int>> GetIdForCurrentTenantAsync();
     Task<bool> OwnsArtistAsync(int artistId);
 
-    Task<ArtistSummary> GetSummaryAsync(int id);
+    Task<Option<ArtistSummary>> GetSummaryAsync(int id);
     Task<IReadOnlySet<Genre>> GetGenresAsync(int id);
 }

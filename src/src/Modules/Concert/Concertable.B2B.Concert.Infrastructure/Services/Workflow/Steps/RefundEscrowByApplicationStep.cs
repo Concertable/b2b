@@ -1,26 +1,29 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
 internal sealed class RefundEscrowByApplicationStep : IApplicationCancelStep
 {
     private readonly IBookingRepository bookingRepository;
-    private readonly IEscrowOperationsClient escrowClient;
+    private readonly IBus bus;
 
-    public RefundEscrowByApplicationStep(IBookingRepository bookingRepository, IEscrowOperationsClient escrowClient)
+    public RefundEscrowByApplicationStep(IBookingRepository bookingRepository, IBus bus)
     {
         this.bookingRepository = bookingRepository;
-        this.escrowClient = escrowClient;
+        this.bus = bus;
     }
 
-    public async Task ExecuteAsync(int applicationId)
+    public async Task<UnitResult<CancelApplicationError>> ExecuteAsync(
+        int applicationId,
+        CancellationToken ct = default)
     {
         var booking = await bookingRepository.GetByApplicationIdAsync(applicationId)
-            ?? throw new NotFoundException("Booking not found for application");
+            ?? throw new InvalidOperationException($"Application {applicationId} has no booking.");
 
-        var refund = await escrowClient.RefundByBookingIdAsync(booking.Id);
-        if (refund.TryGetError(out var error))
-            throw new BadRequestException(error.Definition.Message);
+        await bus.SendAsync(new RefundEscrowCommand(
+            booking.Application.BeginCancellation(),
+            booking.Id,
+            RefundReasonCodes.RequestedByCustomer), ct);
+        return new Success();
     }
 }

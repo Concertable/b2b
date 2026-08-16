@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   TenantChooser,
   TenantSwitcher,
+  requireLocalB2bAuth,
   resolveTenantRoute,
   useTenant,
 } from "@concertable/b2b/features/tenant";
@@ -37,6 +38,10 @@ function ArtistLayout() {
 
 export const Route = createFileRoute("/_artist")({
   beforeLoad: async ({ location }) => {
+    if (location.pathname === "/create") {
+      await requireLocalB2bAuth({ location });
+      return;
+    }
     const { selectionRequired } = await resolveTenantRoute("Artist");
     if (selectionRequired) return;
     await requireArtist({ pathname: location.pathname });

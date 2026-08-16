@@ -30,6 +30,8 @@ internal sealed class EscrowPaymentFailedProcessor : IIntegrationEventHandler<Pa
     {
         if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Escrow)
             return;
+        if (@event.Metadata.ContainsKey(PaymentMetadataKeys.OperationId))
+            return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(EscrowPaymentFailedProcessor), ct))
             return;

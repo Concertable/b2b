@@ -1,4 +1,4 @@
-using Concertable.Kernel.Exceptions;
+using Concertable.B2B.Venue.Application.Errors;
 using Concertable.B2B.Venue.Application.Requests;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel.Geometry;
@@ -40,74 +40,87 @@ internal sealed class VenueService : IVenueService
         this.geometryProvider = geometryProvider;
     }
 
-    public async Task<VenueDetails> GetDetailsByIdAsync(int id)
-    {
-        return await readRepository.GetDetailsByIdAsync(id)
-            .OrNotFound();
-    }
+    public Task<Result<VenueDetails, VenueError>> GetDetailsByIdAsync(int id) =>
+        readRepository.GetDetailsByIdAsync(id)
+            .ToOption()
+            .OrFailure(() => (VenueError)new VenueError.NotFound(id));
 
-    public async Task<VenueDetails> CreateAsync(CreateVenueRequest request)
+    public async Task<Result<VenueDetails, CreateVenueError>> CreateAsync(CreateVenueRequest request)
     {
         if (!tenantContext.HasTenant)
-            throw new ForbiddenException("No active tenant");
+            return new CreateVenueError.NoActiveTenant();
 
-        var bannerUrl = await imageService.UploadAsync(request.Banner);
-        var avatarUrl = await imageService.UploadAsync(request.Avatar);
-        var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
-        var coordinates = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
+        return await VenueEntity.ValidateProfile(request.Name, request.About)
+            .BindAsync(async () =>
+            {
+                var bannerUrl = await imageService.UploadAsync(request.Banner);
+                var avatarUrl = await imageService.UploadAsync(request.Avatar);
+                var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
+                var coordinates = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
 
-        var venue = VenueEntity.Create(
-            currentUser.GetId(),
-            request.Name,
-            request.About,
-            bannerUrl,
-            avatarUrl,
-            coordinates,
-            address,
-            currentUser.Email!);
+                return await VenueEntity.Create(
+                    currentUser.GetId(),
+                    request.Name,
+                    request.About,
+                    bannerUrl,
+                    avatarUrl,
+                    coordinates,
+                    address,
+                    currentUser.Email!)
+                    .BindAsync(async venue =>
+                    {
+                        var createdVenue = await repository.AddAsync(venue);
+                        await repository.SaveChangesAsync();
 
-        var createdVenue = await repository.AddAsync(venue);
-        await repository.SaveChangesAsync();
-
-        return await readRepository.GetDetailsByIdAsync(createdVenue.Id)
-            ?? throw new InternalServerException($"Venue {createdVenue.Id} not found after creation.");
+                        var details = await readRepository.GetDetailsByIdAsync(createdVenue.Id)
+                            ?? throw new InvalidOperationException(
+                                $"Venue {createdVenue.Id} not found after creation.");
+                        return Result.Success<VenueDetails, CreateVenueError>(details);
+                    }, errors => new CreateVenueError.Invalid(errors));
+            }, errors => new CreateVenueError.Invalid(errors));
     }
 
-    public async Task<VenueDetails> UpdateAsync(int id, UpdateVenueRequest request)
+    public async Task<Result<VenueDetails, UpdateVenueError>> UpdateAsync(int id, UpdateVenueRequest request)
     {
-        var venue = await repository.GetByIdAsync(id)
-            .OrNotFound();
+        var venue = await repository.GetByIdAsync(id);
+        if (venue is null)
+            return new UpdateVenueError.VenueNotFound(id);
 
-        var bannerUrl = request.Banner is not null
-            ? await imageService.ReplaceAsync(request.Banner, venue.BannerUrl)
-            : venue.BannerUrl;
+        return await VenueEntity.ValidateProfile(request.Name, request.About)
+            .BindAsync(async () =>
+            {
+                var bannerUrl = request.Banner is not null
+                    ? await imageService.ReplaceAsync(request.Banner, venue.BannerUrl)
+                    : venue.BannerUrl;
+                return await venue.Update(request.Name, request.About, bannerUrl)
+                    .BindAsync(async () =>
+                    {
+                        var address = await geocodingClient.GetLocationAsync(
+                            request.Latitude,
+                            request.Longitude);
+                        venue.UpdateLocation(
+                            geometryProvider.CreatePoint(request.Latitude, request.Longitude),
+                            address);
 
-        venue.Update(request.Name, request.About, bannerUrl);
+                        if (request.Avatar is not null)
+                            venue.UpdateAvatar(await imageService.ReplaceAsync(request.Avatar, venue.Avatar));
 
-        var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
-        venue.UpdateLocation(
-            geometryProvider.CreatePoint(request.Latitude, request.Longitude),
-            address);
+                        await repository.SaveChangesAsync();
 
-        if (request.Avatar is not null)
-            venue.UpdateAvatar(await imageService.ReplaceAsync(request.Avatar, venue.Avatar));
-
-        await repository.SaveChangesAsync();
-
-        return await readRepository.GetDetailsByIdAsync(id)
-            ?? throw new InternalServerException($"Venue {id} not found after update.");
+                        var details = await readRepository.GetDetailsByIdAsync(id)
+                            ?? throw new InvalidOperationException($"Venue {id} not found after update.");
+                        return Result.Success<VenueDetails, UpdateVenueError>(details);
+                    }, errors => new UpdateVenueError.Invalid(errors));
+            }, errors => new UpdateVenueError.Invalid(errors));
     }
 
-    public Task<VenueDetails?> GetDetailsForCurrentUserAsync() =>
-        repository.GetDetailsForCurrentTenantAsync();
+    public Task<Result<VenueDetails, VenueError>> GetDetailsForCurrentUserAsync() =>
+        repository.GetDetailsForCurrentTenantAsync()
+            .ToOption()
+            .OrFailure((VenueError)new VenueError.CurrentTenantNotFound());
 
-    public async Task<int> GetIdForCurrentUserAsync()
-    {
-        int? id = await repository.GetIdForCurrentTenantAsync();
-        ForbiddenException.ThrowIfNull(id, "You do not own a Venue");
-
-        return id.Value;
-    }
+    public async Task<Option<int>> GetIdForCurrentTenantAsync() =>
+        (await repository.GetIdForCurrentTenantAsync()).ToOption();
 
     public async Task<bool> OwnsVenueAsync(int venueId)
     {
@@ -115,16 +128,17 @@ internal sealed class VenueService : IVenueService
         return id == venueId;
     }
 
-    public async Task ApproveAsync(int id)
+    public async Task<UnitResult<ApproveVenueError>> ApproveAsync(int id)
     {
-        var venue = await adminRepository.GetByIdAsync(id)
-            .OrNotFound();
+        var venue = await adminRepository.GetByIdAsync(id);
+        if (venue is null)
+            return new ApproveVenueError.VenueNotFound(id);
 
         venue.Approve();
         await adminRepository.SaveChangesAsync();
+        return new Success();
     }
 
-    public async Task<VenueSummary> GetSummaryAsync(int id) =>
-        await readRepository.GetSummaryAsync(id)
-            .OrNotFound();
+    public async Task<Option<VenueSummary>> GetSummaryAsync(int id) =>
+        await readRepository.GetSummaryAsync(id);
 }

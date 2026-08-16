@@ -42,7 +42,7 @@ public sealed class ArtistDashboardCountsTests : IAsyncLifetime
         using var scope = fixture.Services.CreateScope();
         var concertModule = scope.ServiceProvider.GetRequiredService<IConcertModule>();
         var counts = await concertModule.GetArtistDashboardCountsAsync(artistId);
-        Assert.NotNull(counts);
-        return counts!.AcceptedAwaitingCheckout;
+        Assert.True(counts.TryGetValue(out var value));
+        return value.AcceptedAwaitingCheckout;
     }
 }

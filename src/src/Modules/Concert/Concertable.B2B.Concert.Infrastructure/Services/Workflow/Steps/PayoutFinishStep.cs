@@ -3,7 +3,6 @@ using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.Kernel.Enums;
-using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
@@ -30,26 +29,24 @@ internal sealed class PayoutFinishStep : IFinishStep
         this.logger = logger;
     }
 
-    public async Task ExecuteAsync(int concertId)
+    public async Task<UnitResult<FinishConcertError>> ExecuteAsync(int concertId, CancellationToken ct = default)
     {
-        // Same resolver the invoice issuer uses, so the charged share and the invoiced gross can't diverge.
         var artistShare = await settlementAmountResolver.ResolveGrossAsync(concertId, dealAccessor.Deal);
 
         logger.ArtistShareCalculated(concertId, artistShare.Amount);
-
-        /* DoorSplit/Versus: the venue tenant pays the artist tenant, per the booking's frozen snapshot. */
         var settlement = await bookingService.GetSettlementByConcertIdAsync(concertId);
 
         logger.SettlingConcert(concertId, settlement.BookingId, artistShare.Amount, settlement.VenueTenantId, settlement.ArtistTenantId);
 
-        var payment = await managerPaymentClient.PayAsync(
+        return (await managerPaymentClient.PayAsync(
             settlement.VenueTenantId,
             settlement.ArtistTenantId,
             artistShare,
             settlement.PaymentMethodId,
             PaymentSession.OffSession,
-            settlement.BookingId);
-        if (payment.TryGetError(out var error))
-            throw new BadRequestException(error.Definition.Message);
+            settlement.BookingId,
+            ct)).Bind(
+                _ => UnitResult.Success<FinishConcertError>(),
+                error => new FinishConcertError.ManagerPaymentFailure(error));
     }
 }
