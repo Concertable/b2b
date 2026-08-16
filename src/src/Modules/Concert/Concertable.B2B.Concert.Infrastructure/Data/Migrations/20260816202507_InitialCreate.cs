@@ -104,6 +104,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     About = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     County = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -424,6 +425,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_ArtistReadModels_TenantId",
+                schema: "concert",
+                table: "ArtistReadModels",
+                column: "TenantId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ArtistReadModels_UserId",
                 schema: "concert",
                 table: "ArtistReadModels",
@@ -488,6 +496,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 schema: "concert",
                 table: "Opportunities",
                 column: "VenueId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_VenueReadModels_TenantId",
+                schema: "concert",
+                table: "VenueReadModels",
+                column: "TenantId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_VenueReadModels_UserId",

@@ -75,6 +75,13 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
                 schema: "artist",
                 table: "ArtistReviews",
                 column: "ArtistId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Artists_TenantId",
+                schema: "artist",
+                table: "Artists",
+                column: "TenantId",
+                unique: true);
         }
 
         /// <inheritdoc />

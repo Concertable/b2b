@@ -15,31 +15,33 @@ namespace Concertable.B2B.Tenant.Api.Controllers;
 /// </summary>
 [ApiController]
 [Authorize]
-[Route("api/organizations")]
-internal sealed class TenantController : ControllerBase
+[Route("api/organization")]
+internal sealed class OrganizationController : ControllerBase
 {
     private readonly ITenantService tenantService;
 
-    public TenantController(ITenantService tenantService)
+    public OrganizationController(ITenantService tenantService)
     {
         this.tenantService = tenantService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<TenantDetails>> GetForCurrentUser()
+    public async Task<ActionResult<TenantDetails>> Get(CancellationToken ct)
     {
-        var tenant = await tenantService.GetDetailsForCurrentTenantAsync();
+        var tenant = await tenantService.GetDetailsForActiveTenantAsync(ct);
         return tenant.Match<ActionResult<TenantDetails>>(
             value => Ok(value),
             () => NoContent());
     }
 
     [HttpPut]
-    public async Task<ActionResult<TenantDetails>> Update(UpdateTenantRequest request) =>
-        (await tenantService.UpdateAsync(request)).ToOkOrProblem();
+    public async Task<ActionResult<TenantDetails>> Update(
+        UpdateTenantRequest request,
+        CancellationToken ct) =>
+        (await tenantService.UpdateAsync(request, ct)).ToOkOrProblem();
 
     [HttpDelete]
     [HasPermission(SharedPermissions.TenantDelete)]
-    public async Task<IActionResult> DeleteCurrentTenant() =>
-        (await tenantService.DeleteCurrentTenantAsync()).ToNoContentOrProblem();
+    public async Task<IActionResult> Delete(CancellationToken ct) =>
+        (await tenantService.DeleteActiveTenantAsync(ct)).ToNoContentOrProblem();
 }

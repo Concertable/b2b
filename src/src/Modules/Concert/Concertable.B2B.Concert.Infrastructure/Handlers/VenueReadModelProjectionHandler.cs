@@ -32,6 +32,7 @@ internal sealed class VenueReadModelProjectionHandler : IIntegrationEventHandler
             {
                 Id = e.VenueId,
                 UserId = e.UserId,
+                TenantId = e.TenantId,
                 Name = e.Name,
                 About = e.About,
                 Address = new Address(e.County, e.Town),
@@ -41,6 +42,7 @@ internal sealed class VenueReadModelProjectionHandler : IIntegrationEventHandler
         else
         {
             venue.UserId = e.UserId;
+            venue.TenantId = e.TenantId;
             venue.Name = e.Name;
             venue.About = e.About;
             venue.Address = new Address(e.County, e.Town);

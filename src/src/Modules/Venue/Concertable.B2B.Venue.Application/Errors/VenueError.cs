@@ -10,14 +10,14 @@ internal abstract partial record VenueError : IError
     {
         NotFound(var venueId) =>
             ErrorDefinition.NotFound<NotFound>($"Venue {venueId} was not found."),
-        CurrentTenantNotFound =>
-            ErrorDefinition.NotFound<CurrentTenantNotFound>(
-                "No venue was found for the current tenant.")
+        ActiveTenantNotFound =>
+            ErrorDefinition.NotFound<ActiveTenantNotFound>(
+                "No venue was found for the active tenant.")
     };
 
     [ErrorCode("venue.get.not_found")]
     public partial record NotFound(int VenueId);
 
-    [ErrorCode("venue.get.current_tenant_not_found")]
-    public partial record CurrentTenantNotFound;
+    [ErrorCode("venue.get.active_tenant_not_found")]
+    public partial record ActiveTenantNotFound;
 }

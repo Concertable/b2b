@@ -68,6 +68,9 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId")
+                        .IsUnique();
+
                     b.ToTable("Artists", "artist");
                 });
 
