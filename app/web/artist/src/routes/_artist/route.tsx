@@ -24,20 +24,20 @@ const profileItems: ProfileMenuItem[] = [
 
 function ArtistLayout() {
   useArtistNotifications();
-  const { selectionRequired } = useTenant("artist");
-  if (selectionRequired) return <TenantChooser tenantType="artist" />;
+  const { selectionRequired } = useTenant("Artist");
+  if (selectionRequired) return <TenantChooser tenantType="Artist" />;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher tenantType="artist" />}
+      headerSlot={<TenantSwitcher tenantType="Artist" />}
     />
   );
 }
 
 export const Route = createFileRoute("/_artist")({
   beforeLoad: async ({ location }) => {
-    const { selectionRequired } = await resolveTenantRoute("artist");
+    const { selectionRequired } = await resolveTenantRoute("Artist");
     if (selectionRequired) return;
     await requireArtist({ pathname: location.pathname });
   },

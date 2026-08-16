@@ -52,7 +52,7 @@ export function ApplicationCard({
 
         <div className="flex shrink-0 items-center gap-2">
           <Badge variant="outline">{status}</Badge>
-          {status === "pending" && (
+          {status === "Pending" && (
             <Button size="sm" onClick={handleAccept} data-testid="accept">
               Accept
             </Button>
