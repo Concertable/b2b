@@ -11,10 +11,12 @@ internal sealed record MessageDto
     public required string Content { get; init; }
 }
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<MessageSenderKind>))]
 internal enum MessageSenderKind
 {
+    [JsonStringEnumMemberName("org")]
     Org,
+    [JsonStringEnumMemberName("member")]
     Member
 }
 
