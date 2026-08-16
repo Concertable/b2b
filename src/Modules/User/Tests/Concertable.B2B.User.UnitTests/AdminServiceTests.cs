@@ -120,6 +120,92 @@ public sealed class AdminServiceTests
         repository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task RevokeInvitationAsync_InvitationNotFound_ReturnsInvitationNotFound()
+    {
+        var id = Guid.NewGuid();
+        repository.Setup(value => value.GetInvitationByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AdminInvitationEntity?)null);
+
+        var result = await CreateService().RevokeInvitationAsync(id);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<RevokeAdminInvitationError.InvitationNotFound>(error);
+        repository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RevokeInvitationAsync_AlreadyAccepted_ReturnsInvitationNotPendingWithoutSaving()
+    {
+        var invitation = AdminInvitationEntity.Create("invitee@example.com", Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
+        invitation.Accept(Guid.NewGuid(), DateTime.UtcNow);
+        repository.Setup(value => value.GetInvitationByIdAsync(invitation.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(invitation);
+
+        var result = await CreateService().RevokeInvitationAsync(invitation.Id);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<RevokeAdminInvitationError.InvitationNotPending>(error);
+        repository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RevokeInvitationAsync_Pending_RevokesAndSaves()
+    {
+        var invitation = AdminInvitationEntity.Create("invitee@example.com", Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
+        repository.Setup(value => value.GetInvitationByIdAsync(invitation.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(invitation);
+
+        var result = await CreateService().RevokeInvitationAsync(invitation.Id);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(AdminInvitationStatus.Revoked, invitation.Status);
+        repository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task IsCurrentUserAdminAsync_NoCurrentUser_ReturnsFalseWithoutQuerying()
+    {
+        currentUser.SetupGet(user => user.Id).Returns((Guid?)null);
+
+        var result = await CreateService().IsCurrentUserAdminAsync();
+
+        Assert.False(result);
+        repository.Verify(value => value.IsAdminAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task IsCurrentUserAdminAsync_CurrentUserIsAdmin_ReturnsTrue()
+    {
+        var sub = Guid.NewGuid();
+        currentUser.SetupGet(user => user.Id).Returns(sub);
+        repository.Setup(value => value.IsAdminAsync(sub, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var result = await CreateService().IsCurrentUserAdminAsync();
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_JoinsAdminEmailsAndPendingInvitations()
+    {
+        var adminSub = Guid.NewGuid();
+        repository.Setup(value => value.ListAdminSubsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([adminSub]);
+        userModule.Setup(value => value.GetEmailsByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync(new Dictionary<Guid, string> { [adminSub] = "admin@example.com" });
+        var invitation = AdminInvitationEntity.Create("invitee@example.com", Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
+        repository.Setup(value => value.ListPendingInvitationsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([invitation]);
+
+        var overview = await CreateService().GetOverviewAsync();
+
+        var admin = Assert.Single(overview.Admins);
+        Assert.Equal(adminSub, admin.Sub);
+        Assert.Equal("admin@example.com", admin.Email);
+        var pending = Assert.Single(overview.PendingInvitations);
+        Assert.Equal(invitation.Id, pending.Id);
+    }
+
     private AdminService CreateService() => new(
         repository.Object,
         currentUser.Object,
