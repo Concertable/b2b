@@ -1,10 +1,13 @@
 ﻿using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Deal.Contracts;
+using System.Text.Json.Serialization;
 
 namespace Concertable.B2B.Concert.Api.Responses;
 
-internal record ApplicationResponse(
+[JsonDerivedType(typeof(ApplicationResponse<VenueApplicationActions>))]
+[JsonDerivedType(typeof(ApplicationResponse<ArtistApplicationActions>))]
+internal abstract record ApplicationResponse(
     int Id,
     ArtistSummary Artist,
     OpportunitySummaryResponse Opportunity,
