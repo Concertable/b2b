@@ -29,6 +29,7 @@ internal sealed class MessageRepository(ConversationsDbContext context)
     public async Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsAsync(Guid tenantId, Guid userId)
     {
         var tenantMessages = context.Messages
+            .Where(NotHidden)
             .Where(m => m.VenueTenantId == tenantId || m.ArtistTenantId == tenantId);
         var latestMessageIds = tenantMessages
             .GroupBy(m => new { m.VenueTenantId, m.ArtistTenantId })
@@ -38,10 +39,9 @@ internal sealed class MessageRepository(ConversationsDbContext context)
                 .Select(m => m.Id)
                 .First());
 
-        return await context.Messages
+        return await tenantMessages
             .AsNoTracking()
-            .Where(m => (m.VenueTenantId == tenantId || m.ArtistTenantId == tenantId)
-                        && latestMessageIds.Contains(m.Id))
+            .Where(m => latestMessageIds.Contains(m.Id))
             .OrderByDescending(m => m.SentDate)
             .ThenByDescending(m => m.Id)
             .Take(5)
@@ -51,7 +51,7 @@ internal sealed class MessageRepository(ConversationsDbContext context)
                 m.VenueTenantId != tenantId,
                 m.Content,
                 m.SentDate,
-                context.Messages.Any(candidate =>
+                context.Messages.Where(NotHidden).Any(candidate =>
                     candidate.VenueTenantId == m.VenueTenantId
                     && candidate.ArtistTenantId == m.ArtistTenantId
                     && candidate.SenderTenantId != tenantId

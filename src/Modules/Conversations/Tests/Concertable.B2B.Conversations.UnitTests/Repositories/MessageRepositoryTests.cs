@@ -124,6 +124,34 @@ public sealed class MessageRepositoryTests
         Assert.Equal(1, await repository.GetUnreadCountByTenantIdAsync(VenueTenantId, VenueMemberId));
     }
 
+    [Fact]
+    public async Task GetRecentPreviews_HiddenLatestMessage_ReturnsVisibleMessageAsRead()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using (var seed = NewContext(dbName))
+        {
+            var visible = FromArtist(Older);
+            var hidden = FromArtist(Newer);
+            hidden.Hide(Guid.NewGuid(), Newer.AddDays(1));
+            seed.Messages.AddRange(visible, hidden);
+            seed.ThreadReadStates.Add(ThreadReadStateEntity.Create(
+                VenueTenantId,
+                ArtistTenantId,
+                VenueMemberId,
+                Between));
+            await seed.SaveChangesAsync();
+        }
+
+        await using var context = NewContext(dbName);
+        var repository = new MessageRepository(context);
+
+        var previews = await repository.GetRecentPreviewsAsync(VenueTenantId, VenueMemberId);
+
+        var preview = Assert.Single(previews);
+        Assert.Equal(Older, preview.At);
+        Assert.False(preview.Unread);
+    }
+
     private sealed class StubTenantContext : ITenantContext
     {
         public StubTenantContext(Guid tenantId) => TenantId = tenantId;
