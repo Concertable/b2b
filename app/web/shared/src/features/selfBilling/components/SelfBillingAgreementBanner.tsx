@@ -8,11 +8,11 @@ export function SelfBillingAgreementBanner() {
   if (isLoading || !agreement) return null;
 
   // Nag only when action is due: never signed, lapsed, or a renew affordance surfaced (within the window).
-  const needsAction = agreement.status !== "Active" || agreement.actions.renew != null;
+  const needsAction = agreement.status !== "active" || agreement.actions.renew != null;
   if (!needsAction) return null;
 
-  const isRenewal = agreement.status !== "None";
-  const isInForce = agreement.status === "Active";
+  const isRenewal = agreement.status !== "none";
+  const isInForce = agreement.status === "active";
 
   return (
     <div className="border-border bg-card flex items-center justify-between gap-4 rounded-xl border p-4">

@@ -4,7 +4,7 @@ import { MembersPage } from "@concertable/b2b/features/members";
 export const Route = createFileRoute("/_venue/settings/members")({
   component: () => (
     <MembersPage
-      tenantType="Venue"
+      tenantType="venue"
       title="Members"
       description="People who can access this organization, and pending invitations."
     />
