@@ -25,7 +25,7 @@ internal sealed class ModerationService : IModerationService
     }
 
     public async Task<IPagination<ContentReportDto>> GetQueueAsync(IPageParams pageParams) =>
-        (await reportRepository.GetQueueAsync(pageParams)).Select(r => r.ToDto());
+        (await reportRepository.GetQueueAsync(pageParams)).Map(r => r.ToDto());
 
     public Task<UnitResult<ModerationError>> HideMessageAsync(int messageId) =>
         MutateMessageAsync(messageId, message => message.Hide(currentUser.GetId(), timeProvider.GetUtcNow().DateTime));
