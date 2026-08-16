@@ -759,9 +759,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.HasIndex("TenantId")
                         .IsUnique();
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
                     b.ToTable("ArtistReadModels", "concert");
                 });
 
@@ -820,9 +817,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId")
-                        .IsUnique();
-
-                    b.HasIndex("UserId")
                         .IsUnique();
 
                     b.ToTable("VenueReadModels", "concert");
