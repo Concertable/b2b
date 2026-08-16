@@ -64,11 +64,12 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        services.AddDbContext<PublicConcertDbContext>((sp, opts) =>
+        services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
             opts.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sql => sql.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<IConcertReadDbContext>(sp => sp.GetRequiredService<ConcertReadDbContext>());
 
         services.AddScoped<IUnitOfWork<ConcertDbContext>, UnitOfWork<ConcertDbContext>>();
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
@@ -136,13 +137,12 @@ public static class ServiceCollectionExtensions
 
         // Repositories
         services.AddScoped<IConcertRepository, ConcertRepository>();
-        services.AddScoped<IPublicConcertRepository, PublicConcertRepository>();
+        services.AddScoped<IConcertReadRepository, ConcertReadRepository>();
         services.AddScoped<IOpportunityRepository, OpportunityRepository>();
-        services.AddScoped<IPublicOpportunityRepository, PublicOpportunityRepository>();
+        services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
-        services.AddScoped<IPublicBookingRepository, PublicBookingRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<ISelfBillingAgreementRepository, SelfBillingAgreementRepository>();

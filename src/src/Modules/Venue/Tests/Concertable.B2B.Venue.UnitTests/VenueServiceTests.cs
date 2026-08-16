@@ -17,8 +17,8 @@ namespace Concertable.B2B.Venue.UnitTests;
 public sealed class VenueServiceTests
 {
     private readonly Mock<IVenueRepository> repository = new();
-    private readonly Mock<IPublicVenueRepository> publicRepository = new();
-    private readonly Mock<IAdminVenueRepository> adminRepository = new();
+    private readonly Mock<IVenueReadRepository> readRepository = new();
+    private readonly Mock<IVenueAdminRepository> adminRepository = new();
     private readonly Mock<IImageService> imageService = new();
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<ITenantContext> tenantContext = new();
@@ -109,7 +109,7 @@ public sealed class VenueServiceTests
 
     private VenueService CreateService() => new(
         repository.Object,
-        publicRepository.Object,
+        readRepository.Object,
         adminRepository.Object,
         imageService.Object,
         currentUser.Object,

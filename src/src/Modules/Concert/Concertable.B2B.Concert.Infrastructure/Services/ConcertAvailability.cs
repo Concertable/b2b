@@ -3,8 +3,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class ConcertAvailability(PublicConcertDbContext context) : IConcertAvailability
+internal sealed class ConcertAvailability : IConcertAvailability
 {
+    private readonly IConcertReadDbContext context;
+
+    public ConcertAvailability(IConcertReadDbContext context)
+    {
+        this.context = context;
+    }
+
     public Task<bool> OpportunityHasConcertAsync(int opportunityId)
     {
         return context.Concerts.AnyAsync(e => e.Booking.Application.OpportunityId == opportunityId);

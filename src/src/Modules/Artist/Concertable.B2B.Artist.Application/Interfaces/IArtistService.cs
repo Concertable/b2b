@@ -15,5 +15,4 @@ internal interface IArtistService
 
     Task<Option<ArtistSummary>> GetSummaryAsync(int id);
     Task<IReadOnlySet<Genre>> GetGenresAsync(int id);
-    Task<Option<ArtistOrgIdentity>> GetOrgIdentityByTenantIdAsync(Guid tenantId);
 }

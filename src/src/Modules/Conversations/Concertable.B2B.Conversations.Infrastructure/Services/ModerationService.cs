@@ -7,14 +7,14 @@ namespace Concertable.B2B.Conversations.Infrastructure.Services;
 
 internal sealed class ModerationService : IModerationService
 {
-    private readonly IAdminMessageRepository messageRepository;
-    private readonly IAdminContentReportRepository reportRepository;
+    private readonly IMessageAdminRepository messageRepository;
+    private readonly IContentReportAdminRepository reportRepository;
     private readonly ICurrentUser currentUser;
     private readonly TimeProvider timeProvider;
 
     public ModerationService(
-        IAdminMessageRepository messageRepository,
-        IAdminContentReportRepository reportRepository,
+        IMessageAdminRepository messageRepository,
+        IContentReportAdminRepository reportRepository,
         ICurrentUser currentUser,
         TimeProvider timeProvider)
     {
