@@ -11,6 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
+    <PackageReference Include="Reunion.Validation" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
   </ItemGroup>
 
@@ -36,6 +41,7 @@
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Seed.Shared" />
     <PackageReference Include="Concertable.Seed.Identity" />
+    <PackageReference Include="Concertable.Shared.Email.Application" />
   </ItemGroup>
 
 </Project>

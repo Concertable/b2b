@@ -1,7 +1,8 @@
 using Concertable.B2B.Concert.Application.Workflow.Executors;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
 using Concertable.DataAccess.Application;
-using FluentResults;
+using Reunion;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Concertable.B2B.Workers.Functions;
@@ -25,22 +26,21 @@ public sealed class ConcertCompletionRunnerTests
         logger = new Mock<ILogger<ConcertCompletionRunner>>();
         sut = new ConcertCompletionRunner(concertRepository.Object, completion.Object, logger.Object);
 
-        finishExecutor.Setup(p => p.FinishAsync(It.IsAny<int>())).ReturnsAsync(Result.Ok(SettlementOutcome.Settled));
+        finishExecutor.Setup(p => p.FinishAsync(It.IsAny<int>())).ReturnsAsync(
+            Result.Success<SettlementOutcome, FinishConcertError>(SettlementOutcome.Settled));
         completion
-            .Setup(s => s.RunAsync(It.IsAny<Func<IFinishExecutor, Task<Result<SettlementOutcome>>>>()))
-            .Returns<Func<IFinishExecutor, Task<Result<SettlementOutcome>>>>(action => action(finishExecutor.Object));
+            .Setup(s => s.RunAsync(It.IsAny<Func<IFinishExecutor, Task<Result<SettlementOutcome, FinishConcertError>>>>()))
+            .Returns<Func<IFinishExecutor, Task<Result<SettlementOutcome, FinishConcertError>>>>(
+                action => action(finishExecutor.Object));
     }
 
     [Fact]
     public async Task RunAsync_ShouldCallFinishAsync_ForEachEndedConcert()
     {
-        // Arrange
         concertRepository.Setup(r => r.GetEndedConfirmedIdsAsync()).ReturnsAsync([1, 2, 3]);
 
-        // Act
         await sut.RunAsync();
 
-        // Assert
         finishExecutor.Verify(p => p.FinishAsync(1), Times.Once);
         finishExecutor.Verify(p => p.FinishAsync(2), Times.Once);
         finishExecutor.Verify(p => p.FinishAsync(3), Times.Once);
@@ -49,29 +49,37 @@ public sealed class ConcertCompletionRunnerTests
     [Fact]
     public async Task RunAsync_ShouldContinueProcessing_WhenOneFinishFails()
     {
-        // Arrange
         concertRepository.Setup(r => r.GetEndedConfirmedIdsAsync()).ReturnsAsync([1, 2, 3]);
-        finishExecutor.Setup(p => p.FinishAsync(2)).ReturnsAsync(Result.Fail<SettlementOutcome>("Payment failed"));
+        finishExecutor.Setup(p => p.FinishAsync(2)).ReturnsAsync(
+            Result.Failure<SettlementOutcome, FinishConcertError>(new FinishConcertError.ConcertNotEnded()));
 
-        // Act
         await sut.RunAsync();
 
-        // Assert
         finishExecutor.Verify(p => p.FinishAsync(1), Times.Once);
         finishExecutor.Verify(p => p.FinishAsync(2), Times.Once);
         finishExecutor.Verify(p => p.FinishAsync(3), Times.Once);
     }
 
     [Fact]
+    public async Task RunAsync_ShouldPropagateInfrastructureFailure()
+    {
+        concertRepository.Setup(r => r.GetEndedConfirmedIdsAsync()).ReturnsAsync([1, 2, 3]);
+        finishExecutor.Setup(p => p.FinishAsync(2)).ThrowsAsync(new InvalidOperationException());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.RunAsync());
+
+        finishExecutor.Verify(p => p.FinishAsync(1), Times.Once);
+        finishExecutor.Verify(p => p.FinishAsync(2), Times.Once);
+        finishExecutor.Verify(p => p.FinishAsync(3), Times.Never);
+    }
+
+    [Fact]
     public async Task RunAsync_ShouldNotCallFinishAsync_WhenNoEndedConcerts()
     {
-        // Arrange
         concertRepository.Setup(r => r.GetEndedConfirmedIdsAsync()).ReturnsAsync([]);
 
-        // Act
         await sut.RunAsync();
 
-        // Assert
         finishExecutor.Verify(p => p.FinishAsync(It.IsAny<int>()), Times.Never);
     }
 }
@@ -81,14 +89,11 @@ public sealed class ConcertFinishedFunctionTests
     [Fact]
     public async Task Run_ShouldDelegateToRunner()
     {
-        // Arrange
         var runner = new Mock<IConcertCompletionRunner>();
         var sut = new ConcertFinishedFunction(runner.Object);
 
-        // Act
         await sut.Run(null!);
 
-        // Assert
         runner.Verify(r => r.RunAsync(default), Times.Once);
     }
 }

@@ -1,36 +1,26 @@
-using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Kernel.Identity;
-using FluentResults;
+using Reunion.Validation;
 
 namespace Concertable.B2B.Concert.Infrastructure.Validators;
 
 internal sealed class ApplicationValidator : IApplicationValidator
 {
     private readonly IConcertAvailability availability;
-    private readonly IOpportunityRepository opportunityRepository;
-    private readonly IApplicationRepository applicationRepository;
-    private readonly IArtistModule artistModule;
     private readonly ITenantContext tenantContext;
     private readonly TimeProvider timeProvider;
 
     public ApplicationValidator(
         IConcertAvailability availability,
-        IOpportunityRepository opportunityRepository,
-        IApplicationRepository applicationRepository,
-        IArtistModule artistModule,
         ITenantContext tenantContext,
         TimeProvider timeProvider)
     {
         this.availability = availability;
-        this.opportunityRepository = opportunityRepository;
-        this.applicationRepository = applicationRepository;
-        this.artistModule = artistModule;
         this.tenantContext = tenantContext;
         this.timeProvider = timeProvider;
     }
 
-    public async Task<Result> CanApplyAsync(OpportunityEntity opportunity, int artistId)
+    public async Task<ValidationResult> CanApplyAsync(OpportunityEntity opportunity, int artistId)
     {
         var errors = new List<string>();
 
@@ -43,23 +33,10 @@ internal sealed class ApplicationValidator : IApplicationValidator
         if (await availability.ArtistHasConcertOnDateAsync(artistId, opportunity.Period.Start))
             errors.Add("You already have a concert on this day");
 
-        return errors.Count > 0 ? Result.Fail(errors) : Result.Ok();
+        return ToValidationResult(errors);
     }
 
-    public async Task<Result> CanApplyAsync(int opportunityId)
-    {
-        var artistId = await artistModule.GetIdForCurrentTenantAsync();
-        if (artistId is null)
-            return Result.Fail("You must have an artist account to apply for a concert opportunity");
-
-        var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
-        if (opportunity is null)
-            return Result.Fail("Concert opportunity does not exist");
-
-        return await CanApplyAsync(opportunity, artistId.Value);
-    }
-
-    public async Task<Result> CanAcceptAsync(OpportunityEntity opportunity, ApplicationEntity application)
+    public async Task<ValidationResult> CanAcceptAsync(OpportunityEntity opportunity, ApplicationEntity application)
     {
         var errors = new List<string>();
 
@@ -78,20 +55,15 @@ internal sealed class ApplicationValidator : IApplicationValidator
         if (await availability.VenueHasConcertOnDateAsync(opportunity.VenueId, opportunity.Period.Start))
             errors.Add("You already have a concert on this day");
 
-        return errors.Count > 0 ? Result.Fail(errors) : Result.Ok();
+        return ToValidationResult(errors);
     }
 
-    public async Task<Result> CanAcceptAsync(int applicationId)
+    private static ValidationResult ToValidationResult(IEnumerable<string> messages)
     {
-        var opportunity = await opportunityRepository.GetByApplicationIdAsync(applicationId);
-        var application = await applicationRepository.GetByIdAsync(applicationId);
-
-        if (opportunity is null)
-            return Result.Fail("Concert opportunity does not exist");
-
-        if (application is null)
-            return Result.Fail("Concert application does not exist");
-
-        return await CanAcceptAsync(opportunity, application);
+        var errors = messages.ToArray();
+        return errors.Length == 0
+            ? ValidationResult.Valid()
+            : ValidationResult.Invalid(new ValidationErrors(
+                new Dictionary<string, string[]> { ["application"] = errors }));
     }
 }

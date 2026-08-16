@@ -15,7 +15,11 @@ internal sealed class CreateConcertDraftStep : IBookStep
     public async Task ExecuteAsync(int bookingId)
     {
         var result = await concertDraftService.CreateAsync(bookingId);
-        if (result.IsFailed)
-            throw new BadRequestException(result.Errors);
+        if (result.TryGetError(out var error))
+        {
+            throw error.Definition.Kind is ErrorKind.NotFound
+                ? new NotFoundException(error.Definition.Message)
+                : new BadRequestException(error.Definition.Message);
+        }
     }
 }

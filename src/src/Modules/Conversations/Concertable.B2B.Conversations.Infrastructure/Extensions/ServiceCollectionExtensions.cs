@@ -3,6 +3,8 @@ using Concertable.DataAccess;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Conversations.Application.Interfaces;
+using Concertable.B2B.Conversations.Application.Validators;
+using FluentValidation;
 using Concertable.B2B.Conversations.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Concertable.B2B.Conversations.Infrastructure.Data.Seeders;
@@ -28,12 +30,29 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
+        services.AddDbContext<AdminConversationsDbContext>((sp, opts) =>
+            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
         services.AddSingleton<ConversationsConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConversationsConfigurationProvider>());
 
+        services.AddValidatorsFromAssemblyContaining<ReportMessageRequestValidator>(includeInternalTypes: true);
+
+        services.Configure<SafetySettings>(configuration.GetSection(SafetySettings.SectionName));
+
         services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddScoped<IContentReportRepository, ContentReportRepository>();
+        services.AddScoped<IAdminMessageRepository, AdminMessageRepository>();
+        services.AddScoped<IAdminContentReportRepository, AdminContentReportRepository>();
         services.AddScoped<IConversationsNotifier, ConversationsNotifier>();
         services.AddScoped<IMessageService, MessageService>();
+        services.AddScoped<IContentReportNotifier, ContentReportNotifier>();
+        services.AddScoped<IContentReportService, ContentReportService>();
+        services.AddScoped<IModerationService, ModerationService>();
         services.AddScoped<IConversationsModule, ConversationsModule>();
 
         return services;

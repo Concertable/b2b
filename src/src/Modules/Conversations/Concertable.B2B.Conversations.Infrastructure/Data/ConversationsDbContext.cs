@@ -10,11 +10,13 @@ internal sealed class ConversationsDbContext(
     ITenantContext tenantContext)
     : VenueArtistTenantDbContext(options, provider, tenantContext, Schema.Name)
 {
+    public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
     public DbSet<ThreadReadStateEntity> ThreadReadStates => Set<ThreadReadStateEntity>();
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
+        modelBuilder.ApplyVenueArtist<ContentReportEntity>(this);
         modelBuilder.ApplyVenueArtist<MessageEntity>(this);
         modelBuilder.ApplyVenueArtist<ThreadReadStateEntity>(this);
     }

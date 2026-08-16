@@ -1,27 +1,28 @@
 using System.Net;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.Kernel.Exceptions;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Reunion;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 internal static class ConcertWorkflowExtensions
 {
-    public static async Task FinishConcertAsync(this ConcertApiFixture fixture, int concertId)
+    public static async Task<Result<SettlementOutcome, FinishConcertError>> FinishConcertAsync(
+        this ConcertApiFixture fixture,
+        int concertId)
     {
         await fixture.EnsureSupplierSelfBillingAgreementAsync(concertId);
 
         using var scope = fixture.Services.CreateScope();
         var finishExecutor = scope.ServiceProvider.GetRequiredService<IFinishExecutor>();
-        var result = await finishExecutor.FinishAsync(concertId);
-        if (result.IsFailed)
-            throw new BadRequestException(result.Errors);
+        return await finishExecutor.FinishAsync(concertId);
     }
 
     public static async Task DeclareDoorRevenueAsync(this ConcertApiFixture fixture, int concertId, decimal doorRevenue)
@@ -38,9 +39,6 @@ internal static class ConcertWorkflowExtensions
         await runner.RunAsync();
     }
 
-    // The fail-closed self-billing gate blocks settlement unless the concert's supplier holds a current agreement;
-    // the minimal test seed grants none, so settling as a compliant supplier means arranging one first. A background
-    // (no-HTTP) scope is host, so the tenant interceptor no-ops and the row keeps its explicit supplier TenantId.
     private static async Task EnsureSupplierSelfBillingAgreementAsync(this ConcertApiFixture fixture, int concertId)
     {
         using var scope = fixture.Services.CreateScope();

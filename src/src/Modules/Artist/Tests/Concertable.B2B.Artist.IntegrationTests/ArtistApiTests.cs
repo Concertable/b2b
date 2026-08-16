@@ -86,13 +86,13 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetDetailsForCurrentUser_ShouldReturn204_WhenNoArtistExists()
+    public async Task GetDetailsForCurrentUser_ShouldReturn404_WhenNoArtistExists()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
 
         var response = await client.GetAsync("/api/Artist/user");
 
-        await response.ShouldBe(HttpStatusCode.NoContent);
+        await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
     #endregion
@@ -139,6 +139,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
         Assert.Equal("Test Town", artist.Town);
         Assert.EndsWith(".jpg", artist.BannerUrl);
         Assert.True(Guid.TryParse(Path.GetFileNameWithoutExtension(artist.BannerUrl), out _));
+        Assert.Equal($"/api/Artist/{artist.Id}", response.Headers.Location?.OriginalString);
     }
 
     [Fact]

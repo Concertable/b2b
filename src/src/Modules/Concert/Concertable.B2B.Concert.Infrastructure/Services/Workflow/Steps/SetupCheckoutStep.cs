@@ -34,7 +34,9 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
         var venueSummary = await opportunityRepository.GetVenueSummaryByIdAsync(opportunityId)
             .OrNotFound(DisplayNames.Opportunity);
         var manager = await userModule.GetManagerByIdAsync(venueSummary.UserId);
-        var venue = new PayeeSummary(venueSummary.Name, manager?.Email);
+        var venue = new PayeeSummary(
+            venueSummary.Name,
+            manager.Match(value => value.Email, () => null));
         var deal = (VenueHireDeal)dealAccessor.Deal;
 
         var metadata = new Dictionary<string, string>

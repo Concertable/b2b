@@ -4,7 +4,6 @@ using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
@@ -18,6 +17,8 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private readonly ITermsFingerprintCalculator termsFingerprint;
     private readonly IBookingAdvancer bookingAdvancer;
     private readonly IBackgroundTaskRunner taskRunner;
+    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IOutboxUnitOfWorkBehavior outbox;
 
     public AcceptExecutor(
         ILifecycleTransitioner transitioner,
@@ -27,7 +28,9 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         IContractIssuer contractIssuer,
         ITermsFingerprintCalculator termsFingerprint,
         IBookingAdvancer bookingAdvancer,
-        IBackgroundTaskRunner taskRunner)
+        IBackgroundTaskRunner taskRunner,
+        IUnitOfWorkBehavior unitOfWork,
+        IOutboxUnitOfWorkBehavior outbox)
     {
         this.transitioner = transitioner;
         this.workflows = workflows;
@@ -37,42 +40,67 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.termsFingerprint = termsFingerprint;
         this.bookingAdvancer = bookingAdvancer;
         this.taskRunner = taskRunner;
+        this.unitOfWork = unitOfWork;
+        this.outbox = outbox;
     }
 
-    public async Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature)
+    public async Task<UnitResult<AcceptApplicationError>> AcceptAsync(
+        int applicationId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature,
+        CancellationToken ct = default)
+        => await unitOfWork.ExecuteAsync(
+            () => outbox.ExecuteAsync(() => AcceptCoreAsync(applicationId, paymentMethodId, eSignature, ct), ct),
+            ct);
+
+    private async Task<UnitResult<AcceptApplicationError>> AcceptCoreAsync(
+        int applicationId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature,
+        CancellationToken ct)
     {
-        await transitioner.TransitionAsync(applicationId, Trigger.Accept, async app =>
+        var transition = await transitioner.TransitionAsync<AcceptApplicationError>(
+            applicationId,
+            Trigger.Accept,
+            error => (AcceptApplicationError)new AcceptApplicationError.TransitionFailure(error),
+            async app =>
         {
             var deal = await dealResolver.ResolveByApplicationIdAsync(app.Id);
-            VerifyTermsUnchanged(app, deal);
+            var terms = VerifyTermsUnchanged(app, deal);
+            if (terms.TryGetError(out var termsError))
+                return termsError;
 
             var workflow = workflows.Create(app.DealType);
-            await (workflow switch
+            UnitResult<AcceptApplicationError> acceptance = workflow switch
             {
-                IAcceptsPaid w when paymentMethodId is not null => w.Accept.ExecuteAsync(app, paymentMethodId),
-                IAcceptsPaid => throw new BadRequestException("This deal requires a payment method at acceptance"),
-                IAcceptsSimple w => w.Accept.ExecuteAsync(app),
-                _ => throw new BadRequestException($"Deal {workflow.Type} does not support Accept")
-            });
+                IAcceptsPaid w when paymentMethodId is not null => await w.Accept.ExecuteAsync(app, paymentMethodId, ct),
+                IAcceptsPaid => new AcceptApplicationError.PaymentMethodRequired(),
+                IAcceptsSimple w => await w.Accept.ExecuteAsync(app, ct),
+                _ => new AcceptApplicationError.UnsupportedDeal(workflow.Type)
+            };
+            if (acceptance.TryGetError(out var acceptanceError))
+                return acceptanceError;
 
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
-                ?? throw new NotFoundException("Booking not found for application");
+                ?? throw new InvalidOperationException($"Application {app.Id} has no booking after acceptance.");
             app.Accept(booking);
             await contractIssuer.IssueAsync(app, booking, eSignature);
 
             await taskRunner.RunAsync<IApplicationRepository>(
                 (repo, runCt) => repo.RejectAllExceptAsync(app.OpportunityId, app.Id));
-        });
+            return new Success();
+        }, ct);
+
+        var result = transition.Bind(_ => new Success());
+        if (result.IsFailure)
+            return result;
 
         await bookingAdvancer.AdvanceIfReadyAsync(applicationId);
+        return result;
     }
 
-    /* Must run BEFORE the accept step: the step captures/charges real money, and only the DB
-       side of this transition rolls back on a throw. */
-    private void VerifyTermsUnchanged(ApplicationEntity app, IDeal deal)
-    {
-        if (app.TermsFingerprint != termsFingerprint.Calculate(deal, app.Opportunity.Period))
-            throw new ConflictException(
-                "The deal terms have changed since the artist applied — the artist must re-apply before you can accept");
-    }
+    private UnitResult<AcceptApplicationError> VerifyTermsUnchanged(ApplicationEntity app, IDeal deal) =>
+        app.TermsFingerprint == termsFingerprint.Calculate(deal, app.Opportunity.Period)
+            ? new Success()
+            : new AcceptApplicationError.TermsChanged();
 }

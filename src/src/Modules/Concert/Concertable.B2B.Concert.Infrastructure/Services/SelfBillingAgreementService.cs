@@ -12,6 +12,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
 {
+    private static readonly TimeSpan RenewalWindow = TimeSpan.FromDays(30);
     private readonly ISelfBillingAgreementRepository repository;
     private readonly ITenantModule tenantModule;
     private readonly ICurrentUser currentUser;
@@ -44,10 +45,17 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
         this.logger = logger;
     }
 
-    public async Task<SelfBillingAgreementDto?> GetLatestAsync(CancellationToken ct = default)
+    public async Task<SelfBillingAgreementStatusDto> GetStatusAsync(CancellationToken ct = default)
     {
         var agreement = await repository.GetLatestAsync(ct);
-        return agreement?.ToDto();
+        if (agreement is null)
+            return new SelfBillingAgreementStatusDto(null, IsInForce: false, CanRenew: false);
+
+        var dto = agreement.ToDto();
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        var isInForce = dto.ExpiresAtUtc > utcNow;
+        var canRenew = !isInForce || dto.ExpiresAtUtc - utcNow <= RenewalWindow;
+        return new SelfBillingAgreementStatusDto(dto, isInForce, canRenew);
     }
 
     public async Task GrantAsync(ESignatureRequest eSignature, CancellationToken ct = default)
@@ -55,10 +63,12 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
         var supplierTenantId = tenantContext.TenantId
             ?? throw new ForbiddenException("No tenant for the current request.");
 
-        var tenant = await tenantModule.GetByIdAsync(supplierTenantId, ct)
-            ?? throw new NotFoundException($"Tenant {supplierTenantId} not found.");
-        var tax = await tenantModule.GetTaxComplianceAsync(supplierTenantId, ct)
-            ?? throw new BadRequestException("Complete your tax details before granting a self-billing agreement.");
+        var tenant = (await tenantModule.GetByIdAsync(supplierTenantId, ct)).Match(
+            value => value,
+            () => throw new NotFoundException($"Tenant {supplierTenantId} not found."));
+        var tax = (await tenantModule.GetTaxComplianceAsync(supplierTenantId, ct)).Match(
+            value => value,
+            () => throw new BadRequestException("Complete your tax details before granting a self-billing agreement."));
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var address = tax.RegisteredAddress;
