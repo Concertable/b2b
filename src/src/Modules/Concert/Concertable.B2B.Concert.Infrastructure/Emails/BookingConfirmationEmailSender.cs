@@ -34,8 +34,8 @@ internal sealed class BookingConfirmationEmailSender
 
     public async Task SendAsync(BookingConfirmedDomainEvent e, CancellationToken ct = default)
     {
-        var venue = await BuildPartyAsync(e.VenueTenantId, e.VenueName);
-        var artist = await BuildPartyAsync(e.ArtistTenantId, e.ArtistName);
+        var venue = await BuildPartyAsync(e.VenueTenantId, e.VenueName, ct);
+        var artist = await BuildPartyAsync(e.ArtistTenantId, e.ArtistName, ct);
         var when = e.Period.Start.ToString("dddd d MMMM yyyy", CultureInfo.InvariantCulture);
 
         var email = emailRenderer.Render(new BookingConfirmationEmailContent(venue, artist, when));
@@ -44,14 +44,14 @@ internal sealed class BookingConfirmationEmailSender
         await StageToMembersAsync(e.ArtistTenantId, email, ct);
     }
 
-    private async Task<EmailParty> BuildPartyAsync(Guid tenantId, string displayName)
+    private async Task<EmailParty> BuildPartyAsync(Guid tenantId, string displayName, CancellationToken ct)
     {
-        if (!(await tenantModule.GetByIdAsync(tenantId)).TryGetValue(out var tenant))
+        if (!(await tenantModule.GetByIdAsync(tenantId, ct)).TryGetValue(out var tenant))
             throw new InvalidOperationException($"Tenant {tenantId} not found when sending its booking confirmation.");
 
         string? vat = null;
         string? address = null;
-        if ((await tenantModule.GetTaxComplianceAsync(tenantId)).TryGetValue(out var tax))
+        if ((await tenantModule.GetTaxComplianceAsync(tenantId, ct)).TryGetValue(out var tax))
         {
             vat = string.IsNullOrWhiteSpace(tax.VatNumber) ? null : tax.VatNumber;
             var formatted = FormatAddress(tax.RegisteredAddress);
@@ -73,7 +73,7 @@ internal sealed class BookingConfirmationEmailSender
 
     private async Task StageToMembersAsync(Guid tenantId, RenderedEmail email, CancellationToken ct)
     {
-        var memberIds = await tenantModule.GetMemberUserIdsAsync(tenantId);
+        var memberIds = await tenantModule.GetMemberUserIdsAsync(tenantId, ct);
         var emails = (await userModule.GetEmailsByIdsAsync(memberIds)).Values;
         foreach (var recipient in emails)
             await bus.SendAsync(new SendEmailCommand(recipient, email.Subject, email.HtmlBody), ct);
