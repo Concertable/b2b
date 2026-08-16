@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ReadModels;
+using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -12,7 +13,8 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IApplicationNotifier notifier;
     private readonly IOpportunityService opportunityService;
     private readonly IOpportunityRepository opportunityRepository;
-    private readonly IArtistModule artistModule;
+    private readonly IArtistReadModelRepository artistRepository;
+    private readonly ITenantContext tenantContext;
     private readonly IApplicationExecutor executor;
     private readonly ICheckoutDispatcher checkoutDispatcher;
     private readonly IApplicationMapper mapper;
@@ -23,7 +25,8 @@ internal sealed class ApplicationService : IApplicationService
         IApplicationNotifier notifier,
         IOpportunityService opportunityService,
         IOpportunityRepository opportunityRepository,
-        IArtistModule artistModule,
+        IArtistReadModelRepository artistRepository,
+        ITenantContext tenantContext,
         IApplicationExecutor executor,
         ICheckoutDispatcher checkoutDispatcher,
         IApplicationMapper mapper)
@@ -33,7 +36,8 @@ internal sealed class ApplicationService : IApplicationService
         this.notifier = notifier;
         this.opportunityService = opportunityService;
         this.opportunityRepository = opportunityRepository;
-        this.artistModule = artistModule;
+        this.artistRepository = artistRepository;
+        this.tenantContext = tenantContext;
         this.executor = executor;
         this.checkoutDispatcher = checkoutDispatcher;
         this.mapper = mapper;
@@ -59,22 +63,22 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForArtistAsync()
     {
-        var artist = await artistModule.GetIdForCurrentTenantAsync();
-        if (!artist.TryGetValue(out var artistId))
+        var artist = await GetActiveTenantArtistAsync();
+        if (artist is null)
             return new ApplicationError.MissingArtist();
 
-        var applications = await repository.GetPendingByArtistIdAsync(artistId);
+        var applications = await repository.GetPendingByArtistTenantIdAsync(artist.TenantId);
         return new Success<IReadOnlyList<ApplicationDto>>(
             await mapper.ToDtosAsync(applications));
     }
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetRecentDeniedForArtistAsync()
     {
-        var artist = await artistModule.GetIdForCurrentTenantAsync();
-        if (!artist.TryGetValue(out var artistId))
+        var artist = await GetActiveTenantArtistAsync();
+        if (artist is null)
             return new ApplicationError.MissingArtist();
 
-        var applications = await repository.GetRecentDeniedByArtistIdAsync(artistId);
+        var applications = await repository.GetRecentDeniedByArtistTenantIdAsync(artist.TenantId);
         return new Success<IReadOnlyList<ApplicationDto>>(
             await mapper.ToDtosAsync(applications));
     }
@@ -89,22 +93,33 @@ internal sealed class ApplicationService : IApplicationService
         string? paymentMethodId,
         ESignatureRequest eSignature)
     {
-        var artist = await ResolveArtistIdAsync();
+        var artist = await ResolveActiveTenantArtistAsync();
         if (artist.TryGetError(out var artistError))
             return artistError;
-        artist.TryGetValue(out var artistId);
+        artist.TryGetValue(out var artistReadModel);
 
-        var validation = await ValidateCanApplyAsync(opportunityId, artistId);
+        var validation = await ValidateCanApplyAsync(opportunityId, artistReadModel!);
         if (validation.TryGetError(out var validationError))
             return validationError;
 
-        var execution = await executor.ApplyAsync(opportunityId, artistId, paymentMethodId, eSignature);
+        var execution = await executor.ApplyAsync(
+            opportunityId,
+            artistReadModel!.Id,
+            paymentMethodId,
+            eSignature);
         return await execution.BindAsync(CompleteApplyAsync);
     }
 
-    private async Task<Result<int, ApplyApplicationError>> ResolveArtistIdAsync() =>
-        (await artistModule.GetIdForCurrentTenantAsync())
+    private async Task<Result<ArtistReadModel, ApplyApplicationError>> ResolveActiveTenantArtistAsync() =>
+        (await GetActiveTenantArtistAsync())
+            .ToOption()
             .OrFailure(() => (ApplyApplicationError)new ApplyApplicationError.MissingArtist());
+
+    private async Task<ArtistReadModel?> GetActiveTenantArtistAsync(
+        CancellationToken ct = default) =>
+        tenantContext.TenantId is { } tenantId
+            ? await artistRepository.GetByTenantIdAsync(tenantId, ct)
+            : null;
 
     private async Task<Result<ApplicationDto, ApplyApplicationError>> CompleteApplyAsync(ApplicationEntity application)
     {
@@ -115,20 +130,24 @@ internal sealed class ApplicationService : IApplicationService
         return await mapper.ToDtoAsync(saved);
     }
 
-    private async Task<UnitResult<ApplyApplicationError>> ValidateCanApplyAsync(int opportunityId, int artistId)
+    private async Task<UnitResult<ApplyApplicationError>> ValidateCanApplyAsync(
+        int opportunityId,
+        ArtistReadModel artist)
     {
         var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
         if (opportunity is null)
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
-        if (await repository.ExistsForOpportunityAndArtistAsync(opportunityId, artistId))
+        if (await repository.ExistsForOpportunityAndArtistTenantAsync(
+            opportunityId,
+            artist.TenantId))
             return new ApplyApplicationError.AlreadyApplied();
 
-        var result = await applicationValidator.CanApplyAsync(opportunity, artistId);
+        var result = await applicationValidator.CanApplyAsync(opportunity, artist.Id);
         if (result.TryGetErrors(out var errors))
             return new ApplyApplicationError.Invalid(new ValidationErrors(errors.ToDictionary()));
 
-        var artistGenres = await artistModule.GetGenresAsync(artistId);
+        var artistGenres = artist.Genres.Select(g => g.Genre).ToHashSet();
         var opportunityGenres = opportunity.Genres.ToHashSet();
 
         if (opportunityGenres.Count > 0 && !artistGenres.Overlaps(opportunityGenres))
@@ -176,15 +195,15 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
-        var artistId = await artistModule.GetIdForCurrentTenantAsync();
-        if (!artistId.TryGetValue(out var value))
+        var artist = await GetActiveTenantArtistAsync();
+        if (artist is null)
             return new ApplicationEligibilityError.MissingArtist();
 
         var opportunity = await opportunityRepository.GetByIdAsync(opportunityId);
         if (opportunity is null)
             return new ApplicationEligibilityError.OpportunityNotFound();
 
-        var validation = await applicationValidator.CanApplyAsync(opportunity, value);
+        var validation = await applicationValidator.CanApplyAsync(opportunity, artist.Id);
         if (validation.TryGetErrors(out var errors))
             return new ApplicationEligibilityError.Invalid(new ValidationErrors(errors.ToDictionary()));
 

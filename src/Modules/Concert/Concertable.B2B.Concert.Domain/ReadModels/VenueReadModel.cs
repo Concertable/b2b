@@ -12,6 +12,7 @@ public sealed class VenueReadModel : IIdEntity
 {
     public int Id { get; set; }
     public Guid UserId { get; set; }
+    public Guid TenantId { get; set; }
     public string Name { get; set; } = null!;
     public string About { get; set; } = null!;
     public Address Address { get; set; } = null!;

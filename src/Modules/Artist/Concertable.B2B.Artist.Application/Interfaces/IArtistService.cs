@@ -6,14 +6,22 @@ namespace Concertable.B2B.Artist.Application.Interfaces;
 
 internal interface IArtistService
 {
-    Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(int id);
-    Task<Result<ArtistDetails, ArtistError>> GetDetailsForCurrentUserAsync();
-    Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(CreateArtistRequest request);
-    Task<Result<ArtistDetails, UpdateArtistError>> UpdateAsync(int id, UpdateArtistRequest request);
-    Task<Option<int>> GetIdForCurrentTenantAsync();
-    Task<bool> OwnsArtistAsync(int artistId);
+    Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(
+        int id,
+        CancellationToken ct = default);
+    Task<Result<ArtistDetails, ArtistError>> GetDetailsForActiveTenantAsync(
+        CancellationToken ct = default);
+    Task<Result<ArtistDetails, CreateArtistError>> CreateForActiveTenantAsync(
+        CreateArtistRequest request,
+        CancellationToken ct = default);
+    Task<Result<ArtistDetails, UpdateArtistError>> UpdateForActiveTenantAsync(
+        UpdateArtistRequest request,
+        CancellationToken ct = default);
+    Task<bool> OwnsArtistAsync(int artistId, CancellationToken ct = default);
 
-    Task<Option<ArtistSummary>> GetSummaryAsync(int id);
-    Task<IReadOnlySet<Genre>> GetGenresAsync(int id);
-    Task<Option<ArtistOrgIdentity>> GetOrgIdentityByTenantIdAsync(Guid tenantId);
+    Task<Option<ArtistSummary>> GetSummaryAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlySet<Genre>> GetGenresAsync(int id, CancellationToken ct = default);
+    Task<Option<ArtistOrgIdentity>> GetOrgIdentityByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default);
 }

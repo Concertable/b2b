@@ -17,7 +17,7 @@ describe("actionLinkApi", () => {
     mocks.request.mockResolvedValue({});
 
     await actionLinkApi.execute({
-      href: "/api/Application/42/withdraw",
+      href: "/api/application/42/withdraw",
       method: "POST",
     });
 
@@ -46,7 +46,7 @@ describe("actionLinkApi", () => {
     vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
 
     await actionLinkApi.download(
-      { href: "/api/Application/42/contract/pdf", method: "GET" },
+      { href: "/api/application/42/contract/pdf", method: "GET" },
       "contract-42.pdf",
     );
 

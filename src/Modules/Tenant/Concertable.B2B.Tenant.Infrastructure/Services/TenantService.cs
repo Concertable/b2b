@@ -36,7 +36,7 @@ internal sealed class TenantService : ITenantService
         return memberships.Select(m => m.UserId).ToList();
     }
 
-    public async Task<Option<TenantDetails>> GetDetailsForCurrentTenantAsync(CancellationToken ct = default)
+    public async Task<Option<TenantDetails>> GetDetailsForActiveTenantAsync(CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
             return null;
@@ -65,7 +65,7 @@ internal sealed class TenantService : ITenantService
             }, errors => new UpdateTenantError.Invalid(errors));
     }
 
-    public async Task<UnitResult<DeleteTenantError>> DeleteCurrentTenantAsync(CancellationToken ct = default)
+    public async Task<UnitResult<DeleteTenantError>> DeleteActiveTenantAsync(CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
         var tenant = await repository.GetByIdAsync(tenantId, ct);

@@ -12,11 +12,11 @@ internal interface ITenantService
 
     Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
 
-    Task<Option<TenantDetails>> GetDetailsForCurrentTenantAsync(CancellationToken ct = default);
+    Task<Option<TenantDetails>> GetDetailsForActiveTenantAsync(CancellationToken ct = default);
 
     Task<Result<TenantDetails, UpdateTenantError>> UpdateAsync(UpdateTenantRequest request, CancellationToken ct = default);
 
-    Task<UnitResult<DeleteTenantError>> DeleteCurrentTenantAsync(CancellationToken ct = default);
+    Task<UnitResult<DeleteTenantError>> DeleteActiveTenantAsync(CancellationToken ct = default);
 
     Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default);
 

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/concert")]
 [RequiredTenantType(TenantType.Venue)]
 internal sealed class ConcertController : ControllerBase
 {
@@ -31,13 +31,6 @@ internal sealed class ConcertController : ControllerBase
     {
         return (await concertService.GetDetailsByIdAsync(id))
             .ToOkOrProblem(concert => concert.ToDetailsResponse());
-    }
-
-    [HttpGet("user/{id}")]
-    public async Task<ActionResult<MyDetailsResponse>> GetDetailsForCurrentUser(int id)
-    {
-        return (await concertService.GetDetailsForCurrentUserAsync(id))
-            .ToOkOrProblem(concert => concert.ToMyDetailsResponse());
     }
 
     [HttpGet("{id}/contract/pdf")]

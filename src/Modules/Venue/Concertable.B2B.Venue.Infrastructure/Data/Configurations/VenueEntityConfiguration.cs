@@ -9,6 +9,7 @@ internal sealed class VenueEntityConfiguration : IEntityTypeConfiguration<VenueE
     public void Configure(EntityTypeBuilder<VenueEntity> builder)
     {
         builder.ToTable(Schema.Tables.Venues, Schema.Name);
+        builder.HasIndex(v => v.TenantId).IsUnique();
         builder.Property(v => v.Location).HasColumnType("geography");
         builder.OwnsAddress(v => v.Address);
     }

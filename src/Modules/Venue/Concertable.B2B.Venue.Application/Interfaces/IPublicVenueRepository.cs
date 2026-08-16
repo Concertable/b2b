@@ -8,7 +8,9 @@ namespace Concertable.B2B.Venue.Application.Interfaces;
 /// </summary>
 internal interface IPublicVenueRepository
 {
-    Task<VenueSummary?> GetSummaryAsync(int id);
-    Task<VenueDetails?> GetDetailsByIdAsync(int id);
-    Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId);
+    Task<VenueSummary?> GetSummaryAsync(int id, CancellationToken ct = default);
+    Task<VenueDetails?> GetDetailsByIdAsync(int id, CancellationToken ct = default);
+    Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default);
 }

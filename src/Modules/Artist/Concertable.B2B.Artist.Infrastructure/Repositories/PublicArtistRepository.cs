@@ -6,27 +6,29 @@ namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
 internal sealed class PublicArtistRepository(PublicArtistDbContext context) : IPublicArtistRepository
 {
-    public async Task<ArtistSummary?> GetSummaryAsync(int id) =>
+    public async Task<ArtistSummary?> GetSummaryAsync(int id, CancellationToken ct = default) =>
         await context.Artists
             .Where(a => a.Id == id)
             .ToSummary(context.ArtistRatingProjections)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
 
-    public async Task<ArtistDetails?> GetDetailsByIdAsync(int id) =>
+    public async Task<ArtistDetails?> GetDetailsByIdAsync(int id, CancellationToken ct = default) =>
         await context.Artists
             .Where(a => a.Id == id)
             .ToDetails(context.ArtistRatingProjections)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
 
-    public async Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
+    public async Task<IReadOnlySet<Genre>> GetGenresAsync(int id, CancellationToken ct = default) =>
         await context.Artists
             .Where(a => a.Id == id)
             .SelectMany(a => a.Genres)
-            .ToHashSetAsync();
+            .ToHashSetAsync(ct);
 
-    public async Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
+    public async Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
         await context.Artists
             .Where(a => a.TenantId == tenantId)
             .Select(a => new ArtistOrgIdentity(a.Name, a.Address.County, a.Address.Town))
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync(ct);
 }

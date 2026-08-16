@@ -14,7 +14,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260812192008_InitialCreate")]
+    [Migration("20260816202507_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -759,6 +759,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId")
+                        .IsUnique();
+
                     b.HasIndex("UserId")
                         .IsUnique();
 
@@ -811,10 +814,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique();
 
                     b.HasIndex("UserId")
                         .IsUnique();

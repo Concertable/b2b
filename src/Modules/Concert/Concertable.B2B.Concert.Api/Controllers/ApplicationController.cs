@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/application")]
 internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
@@ -41,7 +41,7 @@ internal sealed class ApplicationController : ControllerBase
             : await applicationService.ApplyAsync(opportunityId, request.ESignature);
         return result.ToCreatedOrProblem(
             mapper.ToResponse,
-            application => $"/api/Application/{application.Id}");
+            application => $"/api/application/{application.Id}");
     }
 
     [HttpGet("artist/pending")]
