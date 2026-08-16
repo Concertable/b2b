@@ -4,12 +4,12 @@ import type {
   MonthlyRevenuePoint,
   ReviewExcerpt,
 } from "@concertable/shared/features/dashboard";
-import type { OpportunityMatch } from "@concertable/b2b/features/dashboard";
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
   Application,
   ArtistDashboardKpis,
   ArtistDashboardOverview,
+  OpportunityMatch,
 } from "./types";
 
 const dashboardApi = {

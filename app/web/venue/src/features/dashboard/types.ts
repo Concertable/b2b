@@ -30,3 +30,9 @@ export interface Application {
   opportunity: OpportunitySummary;
   actions: ApplicationActions;
 }
+
+export interface OpportunityApplicationMetrics {
+  opportunity: OpportunitySummary;
+  applicationCount: number;
+  daysUntilDeadline: number;
+}
