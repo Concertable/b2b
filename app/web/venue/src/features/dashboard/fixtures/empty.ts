@@ -15,7 +15,7 @@ export const venueEmpty: VenueDashboardFixture = {
       ],
     },
     stripeConnect: {
-      state: "Incomplete",
+      state: "incomplete",
       href: "/stripe-return",
     },
     reviewSummary: {
