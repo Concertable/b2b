@@ -1,6 +1,7 @@
-using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Application.Errors;
+using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Domain.ReadModels;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -98,23 +99,21 @@ internal sealed class ApplicationService : IApplicationService
             return validationError;
 
         var execution = await executor.ApplyAsync(opportunityId, artistId, paymentMethodId, eSignature);
-        if (execution.TryGetError(out var executionError))
-            return executionError;
-        var application = execution.Match(
-            value => value,
-            _ => throw new InvalidOperationException("Successful application execution returned no application."));
-
-        await notifier.AppliedAsync(application.Id);
-
-        var saved = (await GetByIdAsync(application.Id)).Match(
-            value => value,
-            _ => throw new InvalidOperationException($"Application {application.Id} not found after creation."));
-        return saved;
+        return await execution.BindAsync(CompleteApplyAsync);
     }
 
     private async Task<Result<int, ApplyApplicationError>> ResolveArtistIdAsync() =>
         (await artistModule.GetIdForCurrentTenantAsync())
             .OrFailure(() => (ApplyApplicationError)new ApplyApplicationError.MissingArtist());
+
+    private async Task<Result<ApplicationDto, ApplyApplicationError>> CompleteApplyAsync(ApplicationEntity application)
+    {
+        await notifier.AppliedAsync(application.Id);
+
+        var saved = await repository.GetByIdAsync(application.Id)
+            ?? throw new InvalidOperationException($"Application {application.Id} not found after creation.");
+        return await mapper.ToDtoAsync(saved);
+    }
 
     private async Task<UnitResult<ApplyApplicationError>> ValidateCanApplyAsync(int opportunityId, int artistId)
     {
