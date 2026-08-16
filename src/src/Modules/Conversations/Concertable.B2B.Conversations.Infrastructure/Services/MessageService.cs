@@ -66,15 +66,11 @@ internal sealed class MessageService : IMessageService
     public Task MarkInboxReadAsync() =>
         repository.AdvanceReadPointersAsync(tenantContext.GetTenantId(), currentUser.GetId(), timeProvider.GetUtcNow().DateTime);
 
-    private async Task<Pagination<MessageDto>> ToPaginationAsync(IPagination<MessageEntity> messages)
+    private async Task<IPagination<MessageDto>> ToPaginationAsync(IPagination<MessageEntity> messages)
     {
         var activeTenantId = tenantContext.GetTenantId();
         var senders = await ResolveSendersAsync(messages.Data, activeTenantId);
-        return new Pagination<MessageDto>(
-            messages.Data.Select(m => m.ToDto(senders[m.Id], CounterpartOf(m, activeTenantId))).ToList(),
-            messages.TotalCount,
-            messages.PageNumber,
-            messages.PageSize);
+        return messages.Map(m => m.ToDto(senders[m.Id], CounterpartOf(m, activeTenantId)));
     }
 
     private static Guid CounterpartOf(MessageEntity message, Guid activeTenantId) =>

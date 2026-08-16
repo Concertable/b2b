@@ -8,11 +8,7 @@ namespace Concertable.B2B.Conversations.Api.Mappers;
 internal static class MessageResponseMappers
 {
     public static IPagination<MessageResponse> ToResponses(this IPagination<MessageDto> messages) =>
-        new Pagination<MessageResponse>(
-            messages.Data.Select(m => m.ToResponse()).ToList(),
-            messages.TotalCount,
-            messages.PageNumber,
-            messages.PageSize);
+        messages.Map(m => m.ToResponse());
 
     public static MessageResponse ToResponse(this MessageDto message) => new()
     {
