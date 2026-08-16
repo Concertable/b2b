@@ -9,5 +9,5 @@ internal interface IVenueDashboardService
     Task<VenueDashboardKpis?> GetKpisAsync(CancellationToken ct = default);
     Task<IReadOnlyList<MonthlyRevenuePoint>> GetTicketRevenueAsync(CancellationToken ct = default);
     Task<IReadOnlyList<Settlement>> GetSettlementsAsync(CancellationToken ct = default);
-    Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(int take, CancellationToken ct = default);
+    Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(CancellationToken ct = default);
 }

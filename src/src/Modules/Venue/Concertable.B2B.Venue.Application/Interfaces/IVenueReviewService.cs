@@ -5,7 +5,7 @@ namespace Concertable.B2B.Venue.Application.Interfaces;
 
 internal interface IVenueReviewService
 {
-    Task<ReviewSummary> GetSummaryAsync(int venueId);
+    Task<ReviewSummary> GetSummaryAsync(int venueId, CancellationToken ct = default);
     Task<IPagination<ReviewDto>> GetPagedAsync(int venueId, IPageParams pageParams);
-    Task<IReadOnlyList<RecentReviewDto>> GetRecentForCurrentAsync(int take);
+    Task<IReadOnlyList<VenueReview>> GetRecentForCurrentAsync(int take, CancellationToken ct = default);
 }

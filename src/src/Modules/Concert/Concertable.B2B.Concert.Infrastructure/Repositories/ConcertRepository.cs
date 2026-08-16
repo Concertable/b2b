@@ -31,7 +31,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         return await context.Concerts
             .AsNoTracking()
             .Where(c => c.Booking.Application.Opportunity.VenueId == venueId
-                        && c.Booking.Application.Opportunity.Period.Start >= now
+                        && c.Booking.Application.Opportunity.Period.End > now
                         && c.DatePosted != null)
             .OrderBy(c => c.Booking.Application.Opportunity.Period.Start)
             .Take(5)
@@ -54,7 +54,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         return await context.Concerts
             .AsNoTracking()
             .Where(c => c.Booking.Application.ArtistId == artistId
-                        && c.Booking.Application.Opportunity.Period.Start >= now
+                        && c.Booking.Application.Opportunity.Period.End > now
                         && c.DatePosted != null)
             .OrderBy(c => c.Booking.Application.Opportunity.Period.Start)
             .Take(5)

@@ -1,43 +1,33 @@
-using Concertable.B2B.Tenant.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
 internal sealed class TenantActivityService : ITenantActivityService
 {
-    private readonly TenantDbContext context;
+    private readonly ITenantActivityRepository repository;
 
-    public TenantActivityService(TenantDbContext context)
+    public TenantActivityService(ITenantActivityRepository repository)
     {
-        this.context = context;
+        this.repository = repository;
     }
 
     public async Task AddAsync(ActivityRecord record, CancellationToken ct = default)
     {
-        if (await context.Activities.AnyAsync(
-                a => a.TenantId == record.TenantId && a.SourceKey == record.SourceKey,
-                ct))
+        if (await repository.ExistsAsync(record.TenantId, record.SourceKey, ct))
             return;
 
-        context.Activities.Add(TenantActivityEntity.Create(record));
+        await repository.AddAsync(TenantActivityEntity.Create(record), ct);
     }
 
     public async Task<IReadOnlyList<ActivityItemDto>> GetRecentAsync(
         Guid tenantId,
         int take,
         CancellationToken ct = default) =>
-        await context.Activities
-            .AsNoTracking()
-            .Where(a => a.TenantId == tenantId)
-            .OrderByDescending(a => a.At)
-            .ThenByDescending(a => a.Id)
-            .Take(take)
-            .Select(a => new ActivityItemDto(
-                a.Id,
-                a.Type,
-                a.At,
-                a.Subject,
-                a.Detail,
-                a.Url))
-            .ToListAsync(ct);
+        (await repository.GetRecentAsync(tenantId, take, ct))
+            .Select(activity => new ActivityItemDto(
+                activity.Id,
+                activity.Type,
+                activity.At,
+                activity.Subject,
+                activity.Detail,
+                activity.Url))
+            .ToArray();
 }

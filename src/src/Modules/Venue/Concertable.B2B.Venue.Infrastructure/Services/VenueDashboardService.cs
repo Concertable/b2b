@@ -2,10 +2,11 @@ using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Application.Interfaces;
+using Concertable.B2B.Venue.Infrastructure.Extensions;
+using Concertable.B2B.Venue.Infrastructure.Mappers;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
-using PaymentPayoutAccountStatus = Concertable.Payment.Client.Enums.PayoutAccountStatus;
 
 namespace Concertable.B2B.Venue.Infrastructure.Services;
 
@@ -47,17 +48,18 @@ internal sealed class VenueDashboardService : IVenueDashboardService
             return null;
 
         var tenantId = tenantContext.GetTenantId();
-        var reviewSummaryTask = reviewService.GetSummaryAsync(venue.Id);
+        var reviewSummaryTask = reviewService.GetSummaryAsync(venue.Id, ct);
         var payoutStatusTask = payoutAccountClient.GetAccountStatusAsync(tenantId, ct);
         await Task.WhenAll(reviewSummaryTask, payoutStatusTask);
 
-        var profileHealth = ToProfileHealth(venue, payoutStatusTask.Result);
+        var reviewSummary = await reviewSummaryTask;
+        var payoutStatus = await payoutStatusTask;
         return new VenueDashboardOverview(
             venue.Id,
             venue.Name,
-            profileHealth,
-            ToStripeConnectStatus(payoutStatusTask.Result),
-            reviewSummaryTask.Result);
+            venue.ToProfileHealth(payoutStatus),
+            payoutStatus.ToStripeConnectStatus(),
+            reviewSummary);
     }
 
     public async Task<VenueDashboardKpis?> GetKpisAsync(CancellationToken ct = default)
@@ -66,7 +68,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         var tenantId = tenantContext.GetTenantId();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var monthStart = now.StartOfMonth();
 
         var countsTask = concertModule.GetVenueDashboardCountsAsync(venueId, ct);
         var mtdRevenueTask = now == monthStart
@@ -77,30 +79,29 @@ internal sealed class VenueDashboardService : IVenueDashboardService
                 ct);
         await Task.WhenAll(countsTask, mtdRevenueTask);
 
-        var counts = countsTask.Result;
+        var counts = await countsTask;
         if (counts is null) return null;
+        var mtdRevenue = await mtdRevenueTask;
 
         return new VenueDashboardKpis(
             ApplicationsToReview: counts.ApplicationsToReview,
-            ApplicationsToReviewDelta: null,
             OpenOpportunities: counts.OpenOpportunities,
             UpcomingConcerts: counts.UpcomingConcerts,
             AwaitingDoorRevenue: counts.AwaitingDoorRevenue,
-            MtdRevenueCents: mtdRevenueTask.Result.ToMinorUnits(),
-            MtdRevenueDeltaPercent: null);
+            MtdRevenueCents: mtdRevenue.ToMinorUnits());
     }
 
     public async Task<IReadOnlyList<MonthlyRevenuePoint>> GetTicketRevenueAsync(CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        var firstMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-5);
+        var firstMonth = now.StartOfMonth().AddMonths(-5);
         var points = await paymentReportingClient.GetTicketRevenueByMonthAsync(
             tenantId,
             new DateRange(firstMonth, now),
             ct);
 
-        return FillMonthlySeries(points, firstMonth);
+        return points.ToMonthlyRevenuePoints(firstMonth);
     }
 
     public async Task<IReadOnlyList<Settlement>> GetSettlementsAsync(CancellationToken ct = default)
@@ -136,43 +137,6 @@ internal sealed class VenueDashboardService : IVenueDashboardService
             .ToArray();
     }
 
-    public Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(int take, CancellationToken ct = default) =>
-        tenantModule.GetRecentActivityAsync(tenantContext.GetTenantId(), take, ct);
-
-    private static ProfileHealth ToProfileHealth(VenueDetails venue, PaymentPayoutAccountStatus payoutStatus)
-    {
-        ProfileHealthItem[] items =
-        [
-            new("name", "Set venue name", "/_venue/my", !string.IsNullOrWhiteSpace(venue.Name)),
-            new("bio", "Add an about section", "/_venue/my", !string.IsNullOrWhiteSpace(venue.About)),
-            new("banner", "Upload a banner image", "/_venue/my", !string.IsNullOrWhiteSpace(venue.BannerUrl)),
-            new("avatar", "Upload a profile image", "/_venue/my", !string.IsNullOrWhiteSpace(venue.Avatar)),
-            new("stripe", "Connect Stripe payouts", "/_venue/settings/payment", payoutStatus == PaymentPayoutAccountStatus.Verified)
-        ];
-        var completeness = items.Count(item => item.Done) * 100 / items.Length;
-        return new ProfileHealth(completeness, items);
-    }
-
-    private static StripeConnectStatus ToStripeConnectStatus(PaymentPayoutAccountStatus payoutStatus) =>
-        new(
-            payoutStatus switch
-            {
-                PaymentPayoutAccountStatus.Verified => StripeConnectState.Complete,
-                PaymentPayoutAccountStatus.Pending => StripeConnectState.Pending,
-                _ => StripeConnectState.Incomplete
-            },
-            "/_venue/settings/payment");
-
-    private static IReadOnlyList<MonthlyRevenuePoint> FillMonthlySeries(
-        IReadOnlyList<Concertable.Payment.Client.MonthlyPaymentPoint> points,
-        DateTime firstMonth)
-    {
-        var byMonth = points.ToDictionary(point => point.Month);
-        return Enumerable.Range(0, 6)
-            .Select(offset => DateOnly.FromDateTime(firstMonth.AddMonths(offset)))
-            .Select(month => byMonth.TryGetValue(month, out var point)
-                ? new MonthlyRevenuePoint(month, point.Gross.ToMinorUnits(), point.Net.ToMinorUnits(), point.Count)
-                : new MonthlyRevenuePoint(month, 0, 0, 0))
-            .ToArray();
-    }
+    public Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(CancellationToken ct = default) =>
+        tenantModule.GetRecentActivityAsync(tenantContext.GetTenantId(), 10, ct);
 }

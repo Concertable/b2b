@@ -54,6 +54,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVenueDashboardService, VenueDashboardService>();
         services.AddScoped<IVenueReviewService, VenueReviewService>();
         services.AddScoped<IVenueRepository, VenueRepository>();
+        services.AddScoped<IVenueReviewRepository, VenueReviewRepository>();
         services.AddScoped<IPublicVenueRepository, PublicVenueRepository>();
         services.AddScoped<IAdminVenueRepository, AdminVenueRepository>();
         services.AddScoped<IVenueModule, VenueModule>();

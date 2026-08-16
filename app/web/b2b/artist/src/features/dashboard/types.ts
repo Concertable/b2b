@@ -20,7 +20,6 @@ export interface ArtistDashboardKpis {
   acceptedAwaitingCheckout: number;
   upcomingConcerts: number;
   mtdPayoutsCents: number;
-  mtdPayoutsDeltaPercent?: number;
 }
 
 export interface Application {

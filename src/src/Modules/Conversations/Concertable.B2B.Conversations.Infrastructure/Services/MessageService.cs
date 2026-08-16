@@ -131,7 +131,6 @@ internal sealed class MessageService : IMessageService
             responses.Add(new MessagePreviewDto(
                 preview.Id,
                 sender.DisplayName,
-                null,
                 preview.Preview,
                 preview.At,
                 preview.Unread,

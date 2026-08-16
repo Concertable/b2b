@@ -1,5 +1,10 @@
 ﻿using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Concert.Application.DTOs;
+using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.Kernel.ValueObjects;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 using static Concertable.B2B.Concert.IntegrationTests.Concert.ConcertRequestBuilders;
@@ -45,11 +50,47 @@ public sealed class ConcertApiTests : IAsyncLifetime
         Assert.Equal(System.Text.Json.JsonValueKind.Array, concerts.ValueKind);
     }
 
+    [Fact]
+    public async Task GetUpcomingForManagers_IncludesConcertAlreadyInProgress()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
+        var seededConcert = fixture.SeedState.Concerts.First(concert => concert.DatePosted is not null);
+        var concert = await context.Concerts
+            .Include(entity => entity.Booking)
+            .ThenInclude(booking => booking.Application)
+            .ThenInclude(application => application.Opportunity)
+            .SingleAsync(entity => entity.Id == seededConcert.Id);
+        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime;
+        var opportunity = concert.Booking.Application.Opportunity;
+        opportunity.Update(
+            new DateRange(now.AddHours(-1), now.AddHours(1)),
+            opportunity.DealId,
+            opportunity.Genres);
+        await context.SaveChangesAsync();
+
+        var venueResponse = await CreateOwningVenueClient(concert.VenueId)
+            .GetAsync("/api/Concert/upcoming/venue/current");
+        var artistResponse = await CreateOwningArtistClient(concert.ArtistId)
+            .GetAsync("/api/Concert/upcoming/artist/current");
+
+        await venueResponse.ShouldBe(HttpStatusCode.OK);
+        await artistResponse.ShouldBe(HttpStatusCode.OK);
+        var venueConcerts = await venueResponse.Content.ReadAsync<List<ManagerConcertCard>>();
+        var artistConcerts = await artistResponse.Content.ReadAsync<List<ManagerConcertCard>>();
+        Assert.Contains(venueConcerts!, item => item.Id == concert.Id);
+        Assert.Contains(artistConcerts!, item => item.Id == concert.Id);
+    }
+
     /* Posting goes through the booking, which the two-party Tenant filter scopes to its parties —
        so the caller must be the venue manager who actually owns the concert's venue. */
     private System.Net.Http.HttpClient CreateOwningVenueClient(int venueId) =>
         fixture.CreateClient(fixture.SeedState.VenueManagers.Single(m =>
             m.Id == fixture.SeedState.Venues.Single(v => v.Id == venueId).UserId));
+
+    private System.Net.Http.HttpClient CreateOwningArtistClient(int artistId) =>
+        fixture.CreateClient(fixture.SeedState.ArtistManagers.Single(manager =>
+            manager.Id == fixture.SeedState.Artists.Single(artist => artist.Id == artistId).UserId));
 
     #region Post
 

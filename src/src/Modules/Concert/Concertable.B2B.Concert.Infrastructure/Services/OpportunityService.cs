@@ -173,7 +173,6 @@ internal sealed class OpportunityService : IOpportunityService
             row.Id,
             row.VenueId,
             row.VenueName,
-            null,
             row.County,
             row.Town,
             row.StartDate,

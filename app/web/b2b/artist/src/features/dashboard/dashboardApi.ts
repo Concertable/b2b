@@ -51,13 +51,13 @@ const dashboardApi = {
   },
   getActivity: async (): Promise<ActivityItem[]> => {
     const { data } = await apiClient.get<ActivityItem[]>(
-      "/artistDashboard/activity?take=10",
+      "/artistDashboard/activity",
     );
     return data;
   },
   getRecentReviews: async (): Promise<ReviewExcerpt[]> => {
     const { data } = await apiClient.get<ReviewExcerpt[]>(
-      "/artists/current/reviews/recent?take=5",
+      "/artists/current/reviews/recent",
     );
     return data;
   },

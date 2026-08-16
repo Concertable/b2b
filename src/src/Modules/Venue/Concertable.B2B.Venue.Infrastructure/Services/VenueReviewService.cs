@@ -1,57 +1,34 @@
 using Concertable.Contracts;
 using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Application.Interfaces;
-using Concertable.B2B.Venue.Infrastructure.Data;
 using Concertable.B2B.Venue.Infrastructure.Mappers;
-using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Services;
 
 internal sealed class VenueReviewService : IVenueReviewService
 {
-    private readonly VenueDbContext context;
     private readonly IVenueService venueService;
+    private readonly IVenueReviewRepository reviewRepository;
 
-    public VenueReviewService(VenueDbContext context, IVenueService venueService)
+    public VenueReviewService(
+        IVenueService venueService,
+        IVenueReviewRepository reviewRepository)
     {
-        this.context = context;
         this.venueService = venueService;
+        this.reviewRepository = reviewRepository;
     }
 
-    public async Task<ReviewSummary> GetSummaryAsync(int venueId)
-    {
-        var projection = await context.VenueRatingProjections
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.VenueId == venueId);
-        return projection.ToReviewSummary();
-    }
+    public async Task<ReviewSummary> GetSummaryAsync(int venueId, CancellationToken ct = default) =>
+        (await reviewRepository.GetRatingByVenueIdAsync(venueId, ct)).ToReviewSummary();
 
-    public Task<IPagination<ReviewDto>> GetPagedAsync(int venueId, IPageParams pageParams) =>
-        context.VenueReviews
-            .AsNoTracking()
-            .Where(r => r.VenueId == venueId)
-            .OrderByDescending(r => r.Id)
-            .Select(r => new ReviewDto { Id = r.Id, Email = r.Email, Stars = (int)r.Stars, Details = r.Details })
-            .ToPaginationAsync(pageParams);
+    public async Task<IPagination<ReviewDto>> GetPagedAsync(int venueId, IPageParams pageParams) =>
+        (await reviewRepository.GetPagedByVenueIdAsync(venueId, pageParams)).Select(review => review.ToReviewDto());
 
-    public async Task<IReadOnlyList<RecentReviewDto>> GetRecentForCurrentAsync(int take)
+    public async Task<IReadOnlyList<VenueReview>> GetRecentForCurrentAsync(
+        int take,
+        CancellationToken ct = default)
     {
         var venueId = await venueService.GetIdForCurrentUserAsync();
-
-        return await context.VenueReviews
-            .AsNoTracking()
-            .Where(r => r.VenueId == venueId)
-            .OrderByDescending(r => r.CreatedAt)
-            .ThenByDescending(r => r.Id)
-            .Take(take)
-            .Select(r => new RecentReviewDto(
-                r.Id,
-                r.Email,
-                null,
-                (int)r.Stars,
-                r.Details,
-                r.CreatedAt,
-                $"/_venue/find/venue/{venueId}"))
-            .ToListAsync();
+        return await reviewRepository.GetRecentByVenueIdAsync(venueId, take, ct);
     }
 }

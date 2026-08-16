@@ -1,8 +1,9 @@
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.Kernel;
 
 namespace Concertable.B2B.Tenant.Domain.Entities;
 
-public sealed class TenantActivityEntity
+public sealed class TenantActivityEntity : IGuidEntity
 {
     private TenantActivityEntity() { }
 

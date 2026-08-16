@@ -1,11 +1,10 @@
 using System.Text.Json.Serialization;
 
-namespace Concertable.B2B.Venue.Application.DTOs;
+namespace Concertable.B2B.Venue.Api.Responses;
 
-internal sealed record RecentReviewDto(
+internal sealed record RecentReviewResponse(
     int Id,
     string ReviewerName,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ReviewerAvatarUrl,
     int Stars,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Excerpt,
     DateTimeOffset At,

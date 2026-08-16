@@ -111,7 +111,6 @@ public sealed class MessagingInboxTests : IAsyncLifetime
     private sealed record MessagePreview(
         int Id,
         string OtherPartyName,
-        string? OtherPartyAvatarUrl,
         string Preview,
         DateTime At,
         bool Unread,

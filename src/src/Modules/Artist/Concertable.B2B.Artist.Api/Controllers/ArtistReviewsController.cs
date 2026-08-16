@@ -1,5 +1,6 @@
 using Concertable.Contracts;
-using Concertable.B2B.Artist.Application.DTOs;
+using Concertable.B2B.Artist.Api.Mappers;
+using Concertable.B2B.Artist.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,6 +28,7 @@ internal sealed class ArtistReviewsController : ControllerBase
     [HttpGet("current/reviews/recent")]
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.OperationsView)]
-    public async Task<ActionResult<IReadOnlyList<RecentReviewDto>>> GetRecentForCurrent([FromQuery] int take = 5) =>
-        Ok(await reviewService.GetRecentForCurrentAsync(Math.Clamp(take, 1, 20)));
+    public async Task<ActionResult<IReadOnlyList<RecentReviewResponse>>> GetRecentForCurrent(
+        CancellationToken ct) =>
+        Ok((await reviewService.GetRecentForCurrentAsync(5, ct)).ToResponses());
 }

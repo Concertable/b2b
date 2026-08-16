@@ -1,6 +1,8 @@
+using Concertable.Kernel;
+
 namespace Concertable.B2B.Artist.Domain.ReadModels;
 
-public sealed class ArtistReview
+public sealed class ArtistReview : IIdEntity
 {
     public int Id { get; set; }
     public int ArtistId { get; set; }

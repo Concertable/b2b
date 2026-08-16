@@ -51,17 +51,17 @@ public sealed class VenueDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetActivityAsync_UsesActiveTenantAndRequestedLimit()
+    public async Task GetActivityAsync_UsesActiveTenantAndDashboardLimit()
     {
         ActivityItemDto[] expected =
         [
             new(Guid.NewGuid(), ActivityType.MessageReceived, timeProvider.GetUtcNow(), "New message", null, "/_venue/?inbox=open")
         ];
         tenantModule
-            .Setup(m => m.GetRecentActivityAsync(tenantId, 5, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetRecentActivityAsync(tenantId, 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
-        var result = await service.GetActivityAsync(5);
+        var result = await service.GetActivityAsync();
 
         Assert.Same(expected, result);
     }
