@@ -38,5 +38,5 @@ internal sealed class OpportunityResponseMapper : IOpportunityResponseMapper
         dtos.Select(ToResponse);
 
     public IPagination<OpportunityResponse> ToResponses(IPagination<OpportunityDto> page) =>
-        new Pagination<OpportunityResponse>(ToResponses(page.Data).ToList(), page.TotalCount, page.PageNumber, page.PageSize);
+        page.Map(ToResponse);
 }
