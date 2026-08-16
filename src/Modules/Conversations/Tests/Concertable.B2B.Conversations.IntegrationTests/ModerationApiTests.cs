@@ -58,7 +58,7 @@ public sealed class ModerationApiTests : IAsyncLifetime
         await (await venue.PostAsync($"/api/Moderation/messages/{messageId}/hide")).ShouldBe(HttpStatusCode.Forbidden);
         await (await venue.PostAsync($"/api/Moderation/messages/{messageId}/restore")).ShouldBe(HttpStatusCode.Forbidden);
         await (await venue.PostAsync($"/api/Moderation/reports/{reportId}/resolve",
-            new { outcome = "NoActionTaken", notes = (string?)null })).ShouldBe(HttpStatusCode.Forbidden);
+            new { outcome = "noActionTaken", notes = (string?)null })).ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -78,16 +78,16 @@ public sealed class ModerationApiTests : IAsyncLifetime
         var reportId = await SubmitReportAsync(venue, await InboundMessageIdAsync(venue));
 
         var resolve = await admin.PostAsync($"/api/Moderation/reports/{reportId}/resolve",
-            new { outcome = "ContentRemoved", notes = "message hidden" });
+            new { outcome = "contentRemoved", notes = "message hidden" });
         await resolve.ShouldBe(HttpStatusCode.NoContent);
 
         var report = (await GetQueueAsync(admin)).Single(r => r.Id == reportId);
-        Assert.Equal("ContentRemoved", report.Outcome);
+        Assert.Equal("contentRemoved", report.Outcome);
         Assert.Equal("message hidden", report.ResolutionNotes);
         Assert.NotNull(report.ResolvedAt);
 
         var second = await admin.PostAsync($"/api/Moderation/reports/{reportId}/resolve",
-            new { outcome = "NoActionTaken", notes = (string?)null });
+            new { outcome = "noActionTaken", notes = (string?)null });
         await second.ShouldBe(HttpStatusCode.Conflict);
     }
 
