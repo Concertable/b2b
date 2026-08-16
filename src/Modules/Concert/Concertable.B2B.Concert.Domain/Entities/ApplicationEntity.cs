@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Application;
@@ -8,7 +9,7 @@ using Concertable.Kernel;
 namespace Concertable.B2B.Concert.Domain.Entities;
 
 [DisplayName(DisplayNames.Application)]
-public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
+public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, IEventRaiser
 {
     public int Id { get; private set; }
     public Guid VenueTenantId { get; private set; }
@@ -87,6 +88,18 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped
     }
 
     internal void Transition(LifecycleState next) => State = next;
+
+    private readonly EventRaiser events = new();
+    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
+    public void ClearDomainEvents() => events.Clear();
+
+    public void NotifyCounterparty(ApplicationNotification kind)
+    {
+        var recipient = kind is ApplicationNotification.Applied or ApplicationNotification.Withdrawn
+            ? VenueTenantId
+            : ArtistTenantId;
+        events.Raise(new ApplicationCounterpartyNotifiedDomainEvent(recipient, kind));
+    }
 }
 
 public sealed class StandardApplication : ApplicationEntity
