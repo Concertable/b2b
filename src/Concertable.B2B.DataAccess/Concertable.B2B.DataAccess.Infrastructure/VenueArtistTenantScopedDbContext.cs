@@ -11,14 +11,14 @@ namespace Concertable.B2B.DataAccess.Infrastructure;
 /// is sealed so filters can never run before the model exists. The tenant-independent counterpart (same provider,
 /// no tenancy) is <see cref="ReadDbContext"/>.
 /// </summary>
-public abstract class VenueArtistTenantDbContext : DbContextBase, IHasTenantContext
+public abstract class VenueArtistTenantScopedDbContext : DbContextBase, IHasTenantContext
 {
     private readonly IEntityTypeConfigurationProvider provider;
     private readonly string defaultSchema;
 
     public ITenantContext TenantContext { get; }
 
-    protected VenueArtistTenantDbContext(
+    protected VenueArtistTenantScopedDbContext(
         DbContextOptions options,
         IEntityTypeConfigurationProvider provider,
         ITenantContext tenantContext,

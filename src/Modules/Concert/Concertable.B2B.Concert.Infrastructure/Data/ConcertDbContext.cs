@@ -12,7 +12,7 @@ internal sealed class ConcertDbContext(
     DbContextOptions<ConcertDbContext> options,
     ConcertConfigurationProvider provider,
     ITenantContext tenantContext)
-    : VenueArtistTenantDbContext(options, provider, tenantContext, Schema.Name)
+    : VenueArtistTenantScopedDbContext(options, provider, tenantContext, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
     public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
