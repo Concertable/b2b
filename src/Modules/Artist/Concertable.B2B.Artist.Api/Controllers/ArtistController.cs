@@ -20,29 +20,26 @@ internal sealed class ArtistController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
-        return Ok((await artistService.GetDetailsByIdAsync(id)).ToDetailsResponse());
+        return (await artistService.GetDetailsByIdAsync(id))
+            .ToOkOrProblem(artist => artist.ToDetailsResponse());
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("user")]
-    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser()
-    {
-        var artist = await artistService.GetDetailsForCurrentUserAsync();
-        return artist is null ? NoContent() : Ok(artist.ToDetailsResponse());
-    }
+    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser() =>
+        (await artistService.GetDetailsForCurrentUserAsync())
+            .ToOkOrProblem(artist => artist.ToDetailsResponse());
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]
-    public async Task<IActionResult> Create([FromForm] CreateArtistRequest request)
-    {
-        var artistDto = await artistService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetDetailsById), new { Id = artistDto.Id }, artistDto);
-    }
+    public async Task<ActionResult<ArtistDetails>> Create([FromForm] CreateArtistRequest request) =>
+        (await artistService.CreateAsync(request))
+            .ToCreatedOrProblem(artist => $"/api/Artist/{artist.Id}");
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromForm] UpdateArtistRequest request)
+    public async Task<ActionResult<ArtistDetails>> Update(int id, [FromForm] UpdateArtistRequest request)
     {
-        return Ok(await artistService.UpdateAsync(id, request));
+        return (await artistService.UpdateAsync(id, request)).ToOkOrProblem();
     }
 }

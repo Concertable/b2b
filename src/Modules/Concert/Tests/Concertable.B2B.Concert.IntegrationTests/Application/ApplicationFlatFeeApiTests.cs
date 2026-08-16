@@ -3,7 +3,9 @@ using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Deal.Contracts;
+using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.IntegrationTests.Fixtures;
@@ -74,6 +76,9 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
+        var application = await applyResponse.Content.ReadAsync<ApplicationResponse>();
+        Assert.NotNull(application);
+        Assert.Equal($"/api/Application/{application.Id}", applyResponse.Headers.Location?.OriginalString);
         var standard = await fixture.ConcertReads.Set<ApplicationEntity>()
             .OfType<StandardApplication>()
             .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
@@ -95,7 +100,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
-        Assert.Single(fixture.EscrowClient.Holds); // rejected second accept must not place a second hold
+        fixture.PaymentTransport.SingleCommand<CaptureEscrowCommand>();
     }
 
     [Fact]
@@ -130,10 +135,11 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
         var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
-        var hold = Assert.Single(fixture.EscrowClient.Holds, h => h.BookingId == booking.Id); // exactly one hold — no double-charge
-        Assert.Equal(venueTenantId, hold.PayerId);
-        Assert.Equal(artistTenantId, hold.PayeeId);
-        Assert.Equal(fixture.SeedState.FlatFeeAppDeal.Fee, hold.Amount);
+        var command = fixture.PaymentTransport.SingleCommand<CaptureEscrowCommand>();
+        Assert.Equal(booking.Id, command.BookingId);
+        Assert.Equal(venueTenantId, command.PayerId);
+        Assert.Equal(artistTenantId, command.PayeeId);
+        Assert.Equal((long)(fixture.SeedState.FlatFeeAppDeal.Fee * 100), command.AmountMinor);
     }
 
     [Fact]
@@ -178,15 +184,17 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
     public async Task Accept_ShouldRejectAndNotCreateDraft_WhenPaymentFails()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingPayment());
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
         var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        // Assert — a failed hold rejects the accept, leaves it un-accepted, posts no concert, notifies nobody
-        await response.ShouldBe(HttpStatusCode.BadRequest);
-        var application = await (await client.GetAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}")).Content.ReadAsync<ApplicationResponse>();
-        Assert.NotEqual(ApplicationStatus.Accepted, application!.Status);
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.RejectLatestFinancialOperationAsync();
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>()
+            .AsNoTracking()
+            .SingleAsync(value => value.Id == fixture.SeedState.FlatFeeApp.Id);
+        Assert.Equal(LifecycleState.PaymentFailed, application.State);
         var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
         Assert.Null(draft);
         Assert.Empty(fixture.NotificationService.DraftCreated);

@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Reunion" />
   </ItemGroup>
 
   <ItemGroup>

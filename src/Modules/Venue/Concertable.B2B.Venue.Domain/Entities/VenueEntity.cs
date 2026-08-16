@@ -28,7 +28,7 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
     public void ClearDomainEvents() => events.Clear();
 
-    public static VenueEntity Create(
+    public static Result<VenueEntity, ValidationErrors> Create(
         Guid userId,
         string name,
         string about,
@@ -38,30 +38,39 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
         Address address,
         string email)
     {
-        Validate(name, about, bannerUrl, avatar, location, address, email);
-
-        var venue = new VenueEntity
+        var validation = ValidateProfile(name, about);
+        return validation.Bind(() =>
         {
-            UserId = userId,
-            Name = name,
-            About = about,
-            BannerUrl = bannerUrl,
-            Avatar = avatar,
-            Location = location,
-            Address = address,
-            Email = email
-        };
-        venue.events.Raise(new VenueChangedDomainEvent(venue));
-        return venue;
+            ValidateCollaborators(bannerUrl, avatar, location, address, email);
+
+            var venue = new VenueEntity
+            {
+                UserId = userId,
+                Name = name,
+                About = about,
+                BannerUrl = bannerUrl,
+                Avatar = avatar,
+                Location = location,
+                Address = address,
+                Email = email
+            };
+            venue.events.Raise(new VenueChangedDomainEvent(venue));
+            return Result.Success<VenueEntity, ValidationErrors>(venue);
+        });
     }
 
-    public void Update(string name, string about, string bannerUrl)
+    public UnitResult<ValidationErrors> Update(string name, string about, string bannerUrl)
     {
-        Validate(name, about, bannerUrl, Avatar, Location, Address, Email);
+        var validation = ValidateProfile(name, about);
+        if (validation.IsFailure)
+            return validation;
+
+        ValidateCollaborators(bannerUrl, Avatar, Location, Address, Email);
         Name = name;
         About = about;
         BannerUrl = bannerUrl;
         events.Raise(new VenueChangedDomainEvent(this));
+        return new Success();
     }
 
     public void Approve()
@@ -94,10 +103,27 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
         events.Raise(new VenueChangedDomainEvent(this));
     }
 
-    private static void Validate(string name, string about, string bannerUrl, string avatar, Point location, Address address, string email)
+    public static UnitResult<ValidationErrors> ValidateProfile(string name, string about)
     {
-        DomainException.ThrowIfNullOrWhiteSpace(name, "Name");
-        DomainException.ThrowIfNullOrWhiteSpace(about, "About");
+        var errors = new List<KeyValuePair<string, string>>();
+
+        if (string.IsNullOrWhiteSpace(name))
+            errors.Add(new(nameof(Name), "Name is required."));
+        else if (name.Length > 100)
+            errors.Add(new(nameof(Name), "Name must be 100 characters or fewer."));
+
+        if (string.IsNullOrWhiteSpace(about))
+            errors.Add(new(nameof(About), "About is required."));
+        else if (about.Length > 1000)
+            errors.Add(new(nameof(About), "About must be 1000 characters or fewer."));
+
+        return errors.Count == 0
+            ? new Success()
+            : new ValidationErrors(errors);
+    }
+
+    private static void ValidateCollaborators(string bannerUrl, string avatar, Point location, Address address, string email)
+    {
         DomainException.ThrowIfNullOrWhiteSpace(bannerUrl, "Banner URL");
         DomainException.ThrowIfNullOrWhiteSpace(avatar, "Avatar");
         DomainException.ThrowIfNull(location, "Location");

@@ -36,6 +36,8 @@ internal sealed class ConcertWorkflowBuilder
         Add(PaymentFailed, EscrowPaymentSucceeded, Booked);
         Add(Cancelled, EscrowPaymentSucceeded, Cancelled);
         Add(Cancelled, EscrowPaymentFailed, Cancelled);
+        Add(CancellationPending, EscrowPaymentSucceeded, CancellationPending);
+        Add(CancellationPending, EscrowPaymentFailed, CancellationPending);
         return this;
     }
 
@@ -58,16 +60,19 @@ internal sealed class ConcertWorkflowBuilder
 
     public ConcertWorkflowBuilder WithCancel<TStep>() where TStep : class, ICancelStep
     {
-        Add(Booked, Cancel, Cancelled);
+        Add(Booked, Cancel, CancellationPending);
+        Add(CancellationPending, RefundSucceeded, Cancelled);
+        Add(CancellationPending, RefundFailed, CancellationFailed);
+        Add(CancellationFailed, Cancel, CancellationPending);
         return RegisterStep<TStep>();
     }
 
     public ConcertWorkflowBuilder WithApplicationCancel()
     {
-        Add(Accepted, Withdraw, Cancelled);
-        Add(Accepted, Cancel, Cancelled);
-        Add(PaymentFailed, Withdraw, Cancelled);
-        Add(PaymentFailed, Cancel, Cancelled);
+        Add(Accepted, Withdraw, CancellationPending);
+        Add(Accepted, Cancel, CancellationPending);
+        Add(PaymentFailed, Withdraw, CancellationPending);
+        Add(PaymentFailed, Cancel, CancellationPending);
         return this;
     }
 

@@ -172,6 +172,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, EscrowPaymentFailedProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, SettlementPaymentFailedProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, VerifyPaymentFailedProcessor>();
+        services.AddScoped<FinancialOperationOutcomeProcessor>();
+        services.AddScoped<IIntegrationEventHandler<CaptureEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<CaptureEscrowRejectedEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<DepositEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<DepositEscrowRejectedEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<RefundEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<RefundEscrowRejectedEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<RefundEscrowDeferredEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
 
         services.AddSingleton<ConcertConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConcertConfigurationProvider>());

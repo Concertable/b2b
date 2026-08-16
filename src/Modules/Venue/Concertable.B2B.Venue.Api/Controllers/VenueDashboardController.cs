@@ -22,6 +22,8 @@ internal sealed class VenueDashboardController : ControllerBase
     public async Task<ActionResult<VenueDashboardKpis>> GetKpis(CancellationToken ct)
     {
         var kpis = await dashboardService.GetKpisAsync(ct);
-        return kpis is null ? NoContent() : Ok(kpis);
+        return kpis.Match<ActionResult<VenueDashboardKpis>>(
+            value => Ok(value),
+            () => NoContent());
     }
 }

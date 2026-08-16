@@ -1,8 +1,6 @@
-using FluentResults;
-
 namespace Concertable.B2B.Concert.Application.Workflow.Executors;
 
 internal interface IFinishExecutor
 {
-    Task<Result<SettlementOutcome>> FinishAsync(int concertId, CancellationToken ct = default);
+    Task<Result<SettlementOutcome, FinishConcertError>> FinishAsync(int concertId, CancellationToken ct = default);
 }
