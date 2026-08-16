@@ -46,12 +46,19 @@ internal sealed class BookingConfirmationEmailSender
 
     private async Task<EmailParty> BuildPartyAsync(Guid tenantId, string displayName)
     {
-        var tenant = await tenantModule.GetByIdAsync(tenantId)
-            ?? throw new InvalidOperationException($"Tenant {tenantId} not found when sending its booking confirmation.");
-        var tax = await tenantModule.GetTaxComplianceAsync(tenantId);
-        var vat = string.IsNullOrWhiteSpace(tax?.VatNumber) ? null : tax!.VatNumber;
-        var address = tax is null ? null : FormatAddress(tax.RegisteredAddress);
-        return new EmailParty(displayName, tenant.LegalName, vat, string.IsNullOrWhiteSpace(address) ? null : address);
+        if (!(await tenantModule.GetByIdAsync(tenantId)).TryGetValue(out var tenant))
+            throw new InvalidOperationException($"Tenant {tenantId} not found when sending its booking confirmation.");
+
+        string? vat = null;
+        string? address = null;
+        if ((await tenantModule.GetTaxComplianceAsync(tenantId)).TryGetValue(out var tax))
+        {
+            vat = string.IsNullOrWhiteSpace(tax.VatNumber) ? null : tax.VatNumber;
+            var formatted = FormatAddress(tax.RegisteredAddress);
+            address = string.IsNullOrWhiteSpace(formatted) ? null : formatted;
+        }
+
+        return new EmailParty(displayName, tenant.LegalName, vat, address);
     }
 
     private static string FormatAddress(RegisteredAddressDto address) =>
