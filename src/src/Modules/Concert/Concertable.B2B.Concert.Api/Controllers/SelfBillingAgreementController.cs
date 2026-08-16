@@ -28,8 +28,7 @@ internal sealed class SelfBillingAgreementController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Grant([FromBody] GrantSelfBillingAgreementRequest request)
     {
-        await service.GrantAsync(request.ESignature);
-        return NoContent();
+        return (await service.GrantAsync(request.ESignature)).ToNoContentOrProblem();
     }
 
     [HttpGet("pdf")]

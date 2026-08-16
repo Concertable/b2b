@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ValueObjects;
@@ -58,17 +59,23 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
         return new SelfBillingAgreementStatusDto(dto, isInForce, canRenew);
     }
 
-    public async Task GrantAsync(ESignatureRequest eSignature, CancellationToken ct = default)
+    public async Task<UnitResult<GrantSelfBillingAgreementError>> GrantAsync(
+        ESignatureRequest eSignature,
+        CancellationToken ct = default)
     {
-        var supplierTenantId = tenantContext.TenantId
-            ?? throw new ForbiddenException("No tenant for the current request.");
+        if (tenantContext.TenantId is not { } supplierTenantId)
+            return new GrantSelfBillingAgreementError.MissingTenant();
 
-        var tenant = (await tenantModule.GetByIdAsync(supplierTenantId, ct)).Match(
-            value => value,
-            () => throw new NotFoundException($"Tenant {supplierTenantId} not found."));
-        var tax = (await tenantModule.GetTaxComplianceAsync(supplierTenantId, ct)).Match(
-            value => value,
-            () => throw new BadRequestException("Complete your tax details before granting a self-billing agreement."));
+        var tenantOption = await tenantModule.GetByIdAsync(supplierTenantId, ct);
+        if (!tenantOption.TryGetValue(out var tenant))
+            return new GrantSelfBillingAgreementError.TenantNotFound(supplierTenantId);
+
+        var taxOption = await tenantModule.GetTaxComplianceAsync(supplierTenantId, ct);
+        if (!taxOption.TryGetValue(out var tax))
+            return new GrantSelfBillingAgreementError.MissingTaxCompliance();
+
+        if (currentUser.Id is not { } userId)
+            return new GrantSelfBillingAgreementError.MissingUser();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var address = tax.RegisteredAddress;
@@ -83,7 +90,7 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
             address.Country);
 
         var signature = new ESignature(
-            currentUser.Id ?? throw new ForbiddenException("No user for current request"),
+            userId,
             now,
             clientContext.IpAddress,
             clientContext.UserAgent,
@@ -101,6 +108,7 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
 
         await repository.AddAsync(agreement, ct);
         await repository.SaveChangesAsync(ct);
+        return new Success();
     }
 
     public async Task<FileDownload> GetPdfAsync(CancellationToken ct = default)

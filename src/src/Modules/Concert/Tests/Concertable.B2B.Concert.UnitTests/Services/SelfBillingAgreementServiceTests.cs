@@ -1,4 +1,5 @@
 using System.Net;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Domain.Entities;
@@ -75,8 +76,9 @@ public sealed class SelfBillingAgreementServiceTests
             .Callback<SelfBillingAgreementEntity, CancellationToken>((a, _) => built = a)
             .ReturnsAsync((SelfBillingAgreementEntity a, CancellationToken _) => a);
 
-        await service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" });
+        var result = await service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" });
 
+        Assert.True(result.IsSuccess);
         Assert.NotNull(built);
         Assert.Equal(supplierTenantId, built.TenantId);
         Assert.Equal("Sally Supplier Ltd", built.Supplier.LegalName);
@@ -98,30 +100,59 @@ public sealed class SelfBillingAgreementServiceTests
             .Callback<SelfBillingAgreementEntity, CancellationToken>((a, _) => built = a)
             .ReturnsAsync((SelfBillingAgreementEntity a, CancellationToken _) => a);
 
-        await service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" });
+        var result = await service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" });
 
+        Assert.True(result.IsSuccess);
         Assert.Equal("Sally Supplier", built!.SupplierESignature.SignatoryName);
         Assert.Equal(userId, built.SupplierESignature.UserId);
         Assert.Equal(IPAddress.Loopback, built.SupplierESignature.Ip);
     }
 
     [Fact]
-    public async Task GrantAsync_WithoutTaxCompliance_ThrowsBadRequest()
+    public async Task GrantAsync_WithoutTaxCompliance_ReturnsTypedError()
     {
         tenantModule.Setup(m => m.GetTaxComplianceAsync(supplierTenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Option.None<TaxComplianceDto>());
 
-        await Assert.ThrowsAsync<BadRequestException>(() =>
-            service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" }));
+        var result = await service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<GrantSelfBillingAgreementError.MissingTaxCompliance>(error);
     }
 
     [Fact]
-    public async Task GrantAsync_WithoutTenant_ThrowsForbidden()
+    public async Task GrantAsync_WithoutTenant_ReturnsTypedError()
     {
         tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
 
-        await Assert.ThrowsAsync<ForbiddenException>(() =>
-            service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" }));
+        var result = await service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<GrantSelfBillingAgreementError.MissingTenant>(error);
+    }
+
+    [Fact]
+    public async Task GrantAsync_WithoutTenantRecord_ReturnsTypedError()
+    {
+        tenantModule.Setup(m => m.GetByIdAsync(supplierTenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Option.None<TenantDto>());
+
+        var result = await service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" });
+
+        Assert.True(result.TryGetError(out var error));
+        var missing = Assert.IsType<GrantSelfBillingAgreementError.TenantNotFound>(error);
+        Assert.Equal(supplierTenantId, missing.TenantId);
+    }
+
+    [Fact]
+    public async Task GrantAsync_WithoutUser_ReturnsTypedError()
+    {
+        currentUser.SetupGet(u => u.Id).Returns((Guid?)null);
+
+        var result = await service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<GrantSelfBillingAgreementError.MissingUser>(error);
     }
 
     [Fact]
