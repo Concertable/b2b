@@ -5,6 +5,7 @@ using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
+using Reunion;
 using Moq;
 
 namespace Concertable.B2B.Conversations.UnitTests.Services;
@@ -20,8 +21,9 @@ public sealed class MessageServiceTests
         var recipientMembers = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
 
         var repository = new Mock<IMessageRepository>();
-        repository.Setup(r => r.AddAsync(It.IsAny<MessageEntity>())).Returns(Task.CompletedTask);
-        repository.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        repository.Setup(r => r.AddAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageEntity message, CancellationToken _) => message);
+        repository.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var notifier = new Mock<IConversationsNotifier>();
         notifier.Setup(n => n.MessageReceivedAsync(It.IsAny<string>(), It.IsAny<object>())).Returns(Task.CompletedTask);
@@ -33,7 +35,7 @@ public sealed class MessageServiceTests
 
         var venueModule = new Mock<IVenueModule>();
         venueModule.Setup(v => v.GetOrgIdentityByTenantIdAsync(venueTenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new VenueOrgIdentity("The Roundhouse", "Greater London", "London"));
+            .ReturnsAsync(Option.Some(new VenueOrgIdentity("The Roundhouse", "Greater London", "London")));
 
         var service = new MessageService(
             repository.Object, notifier.Object, Mock.Of<ICurrentUser>(), Mock.Of<ITenantContext>(),

@@ -86,12 +86,17 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
 
         var tenant = await fixture.Tenants.SingleOrDefaultAsync(t => t.Id == tenantId);
 
-        var expected = new TaxCompliance(
-            vatNumber: "GB123456789",
-            sellerIdentifier: "12345678",
-            registeredAddress: new RegisteredAddress("1 High Street", "Floor 2", "Manchester", "M1 1AA", "United Kingdom"),
-            bankReference: "GB29NWBK60161331926819",
-            holdsMusicLicence: true);
+        var expected = RegisteredAddress
+            .Create("1 High Street", "Floor 2", "Manchester", "M1 1AA", "United Kingdom")
+            .Bind(address => TaxCompliance.Create(
+                "GB123456789",
+                "12345678",
+                address,
+                "GB29NWBK60161331926819",
+                true))
+            .Match(
+                compliance => compliance,
+                _ => throw new InvalidOperationException("Test tax compliance is invalid."));
         Assert.NotNull(tenant);
         Assert.Equal(expected, tenant!.TaxCompliance);
     }

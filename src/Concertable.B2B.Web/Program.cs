@@ -11,6 +11,7 @@ using Concertable.B2B.Deal.Api.Extensions;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
 using Concertable.Payment.Client.Extensions;
 using Concertable.Payment.Contracts.Events;
+using Concertable.Payment.Contracts;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;
@@ -147,11 +148,21 @@ services.AddAzureServiceBusTransport(
         reg.Publishes<ConcertPostedEvent>();
         reg.Publishes<ConcertRatingUpdatedEvent>();
         reg.Publishes<Concertable.B2B.Tenant.Contracts.Events.PayoutOwnerRegisteredEvent>();
+        reg.SendsTo<CaptureEscrowCommand>(PaymentServiceIdentity.Name);
+        reg.SendsTo<DepositEscrowCommand>(PaymentServiceIdentity.Name);
+        reg.SendsTo<RefundEscrowCommand>(PaymentServiceIdentity.Name);
 
         reg.SubscribeTo<CredentialRegisteredEvent>();
         reg.SubscribeTo<CustomerReviewSubmittedEvent>();
         reg.SubscribeTo<PaymentSucceededEvent>();
         reg.SubscribeTo<PaymentFailedEvent>();
+        reg.SubscribeTo<CaptureEscrowSucceededEvent>();
+        reg.SubscribeTo<CaptureEscrowRejectedEvent>();
+        reg.SubscribeTo<DepositEscrowSucceededEvent>();
+        reg.SubscribeTo<DepositEscrowRejectedEvent>();
+        reg.SubscribeTo<RefundEscrowSucceededEvent>();
+        reg.SubscribeTo<RefundEscrowRejectedEvent>();
+        reg.SubscribeTo<RefundEscrowDeferredEvent>();
 
         reg.HandleCommand<SendEmailCommand>();
     });

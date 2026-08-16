@@ -1,7 +1,7 @@
 using Concertable.B2B.Concert.Application.DTOs;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Mappers;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -16,17 +16,18 @@ internal sealed class InvoiceService : IInvoiceService
         this.invoicePdfRenderer = invoicePdfRenderer;
     }
 
-    public async Task<InvoiceDto> GetByConcertIdAsync(int concertId)
-    {
-        var invoice = await repository.GetByConcertIdAsync(concertId)
-            .OrNotFound();
-        return invoice.ToDto();
-    }
+    public Task<Result<InvoiceDto, InvoiceError>> GetByConcertIdAsync(int concertId) =>
+        repository.GetByConcertIdAsync(concertId)
+            .ToOption()
+            .OrFailure(() => (InvoiceError)new InvoiceError.ConcertNotFound(concertId))
+            .Map(invoice => invoice.ToDto());
 
-    public async Task<FileDownload> GetPdfByConcertIdAsync(int concertId)
+    public async Task<Result<FileDownload, InvoiceError>> GetPdfByConcertIdAsync(int concertId)
     {
-        var invoice = await repository.GetByConcertIdAsync(concertId)
-            .OrNotFound();
-        return invoice.ToFileDownload(await invoicePdfRenderer.GetOrCreateAsync(invoice));
+        return await repository.GetByConcertIdAsync(concertId)
+            .ToOption()
+            .OrFailure(() => (InvoiceError)new InvoiceError.ConcertNotFound(concertId))
+            .MapAsync(async invoice =>
+                invoice.ToFileDownload(await invoicePdfRenderer.GetOrCreateAsync(invoice)));
     }
 }

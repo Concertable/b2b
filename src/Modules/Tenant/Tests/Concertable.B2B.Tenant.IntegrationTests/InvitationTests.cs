@@ -37,6 +37,7 @@ public sealed class InvitationTests : IAsyncLifetime
     {
         var response = await Invite(client, email, role);
         await response.ShouldBe(HttpStatusCode.Created);
+        Assert.Equal("/api/organizations/invitations", response.Headers.Location?.OriginalString);
         return (await response.Content.ReadAsync<InvitationDto>())!;
     }
 
@@ -226,6 +227,22 @@ public sealed class InvitationTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task Revoke_AcceptedInvitation_IsConflict_WithoutMutation()
+    {
+        var owner = fixture.SeedState.VenueManager1;
+        var tenantId = TenantOf(owner.Id);
+        var invitee = fixture.SeedState.VenueManagerNoVenue;
+        var dto = await InviteAsync(fixture.CreateClient(owner), invitee.Email, TenantRole.Manager);
+        await (await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept")).ShouldBe(HttpStatusCode.OK);
+
+        var response = await fixture.CreateClient(owner).DeleteAsync($"/api/organizations/invitations/{dto.Id}");
+
+        await response.ShouldBe(HttpStatusCode.Conflict);
+        Assert.Equal(InvitationStatus.Accepted, fixture.Invitations.Single(i => i.Id == dto.Id).Status);
+        Assert.Equal(1, fixture.Memberships.Count(m => m.TenantId == tenantId && m.UserId == invitee.Id));
+    }
+
     #endregion
 
     #region Accept
@@ -249,6 +266,20 @@ public sealed class InvitationTests : IAsyncLifetime
         Assert.Equal(TenantRole.Manager, membership.Role);
         Assert.Equal(owner.Id, membership.InvitedByUserId);
         Assert.Equal(InvitationStatus.Accepted, fixture.Invitations.Single(i => i.Id == dto.Id).Status);
+    }
+
+    [Fact]
+    public async Task Accept_UnknownInvitation_IsNotFound_WithoutMutation()
+    {
+        var invitee = fixture.SeedState.VenueManagerNoVenue;
+        var invitationCount = fixture.Invitations.Count();
+        var membershipCount = fixture.Memberships.Count();
+
+        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{Guid.NewGuid()}/accept");
+
+        await response.ShouldBe(HttpStatusCode.NotFound);
+        Assert.Equal(invitationCount, fixture.Invitations.Count());
+        Assert.Equal(membershipCount, fixture.Memberships.Count());
     }
 
     [Fact]
@@ -303,7 +334,7 @@ public sealed class InvitationTests : IAsyncLifetime
 
         var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{dto.Id}/accept");
 
-        await response.ShouldBe(HttpStatusCode.BadRequest);
+        await response.ShouldBe(HttpStatusCode.Conflict);
     }
 
     [Fact]
