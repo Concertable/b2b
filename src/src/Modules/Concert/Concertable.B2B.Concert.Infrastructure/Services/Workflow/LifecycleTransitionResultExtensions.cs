@@ -9,9 +9,13 @@ internal static class LifecycleTransitionResultExtensions
         this Task<Result<ApplicationEntity, LifecycleTransitionError>> resultTask)
     {
         var result = await resultTask;
-        return result.Match(
-            application => application,
-            error => throw new InvalidOperationException(
-                $"Internal lifecycle transition failed ({error.Definition.Code}): {error.Definition.Message}"));
+        if (result.TryGetError(out var error))
+            throw new InvalidOperationException(
+                $"Internal lifecycle transition failed ({error.Definition.Code}): {error.Definition.Message}");
+
+        if (result.TryGetValue(out var application))
+            return application;
+
+        throw new InvalidOperationException("Internal lifecycle transition returned an invalid result state.");
     }
 }
