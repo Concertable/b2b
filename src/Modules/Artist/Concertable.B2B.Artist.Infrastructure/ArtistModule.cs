@@ -20,7 +20,4 @@ internal sealed class ArtistModule : IArtistModule
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(int artistId) =>
         artistService.GetGenresAsync(artistId);
-
-    public Task<Option<ArtistOrgIdentity>> GetOrgIdentityByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
-        artistService.GetOrgIdentityByTenantIdAsync(tenantId);
 }

@@ -10,15 +10,18 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 internal sealed class EscrowPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
     private readonly IEscrowExecutor escrowExecutor;
+    private readonly IBookingRepository bookingRepository;
     private readonly ConcertDbContext context;
     private readonly ILogger<EscrowPaymentFailedProcessor> logger;
 
     public EscrowPaymentFailedProcessor(
         IEscrowExecutor escrowExecutor,
+        IBookingRepository bookingRepository,
         ConcertDbContext context,
         ILogger<EscrowPaymentFailedProcessor> logger)
     {
         this.escrowExecutor = escrowExecutor;
+        this.bookingRepository = bookingRepository;
         this.context = context;
         this.logger = logger;
     }
@@ -40,7 +43,15 @@ internal sealed class EscrowPaymentFailedProcessor : IIntegrationEventHandler<Pa
 
         try
         {
-            await escrowExecutor.FailedAsync(bookingId, ct);
+            var applicationId = await bookingRepository.GetApplicationIdByIdAsync(bookingId, ct);
+            if (applicationId is null)
+            {
+                logger.BookingNotFoundForEscrowPayment(bookingId);
+                await context.SaveChangesAsync(ct);
+                return;
+            }
+
+            await escrowExecutor.FailedAsync(applicationId.Value, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

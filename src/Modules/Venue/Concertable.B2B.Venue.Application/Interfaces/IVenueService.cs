@@ -15,5 +15,4 @@ internal interface IVenueService
     Task<UnitResult<ApproveVenueError>> ApproveAsync(int id);
 
     Task<Option<VenueSummary>> GetSummaryAsync(int id);
-    Task<Option<VenueOrgIdentity>> GetOrgIdentityByTenantIdAsync(Guid tenantId);
 }

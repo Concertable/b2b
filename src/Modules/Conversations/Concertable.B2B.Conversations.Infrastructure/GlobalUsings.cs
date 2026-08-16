@@ -5,6 +5,7 @@ global using Concertable.B2B.Conversations.Application.Mappers;
 global using Concertable.B2B.Conversations.Contracts;
 global using Concertable.B2B.Conversations.Contracts.Enums;
 global using Concertable.B2B.Conversations.Domain.Entities;
+global using Concertable.B2B.Conversations.Domain.ReadModels;
 global using Concertable.Kernel.Identity;
 global using Concertable.B2B.User.Contracts;
 global using Concertable.Kernel.Notifications;
