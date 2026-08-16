@@ -29,7 +29,7 @@ export function VenueSettlementsWidget() {
                 {formatCurrency(s.amountCents, { fractionDigits: 2 })}
               </span>
               <span className="text-muted-foreground w-32 shrink-0 truncate text-right text-xs">
-                {s.direction === "out" ? "→" : "←"} {s.counterpartyName}
+                {s.direction === "Out" ? "→" : "←"} {s.counterpartyName}
               </span>
             </li>
           ))}
