@@ -21,6 +21,7 @@ public static class B2BTopology
             .Publish<ConcertPostedEvent>()
             .Publish<ConcertRatingUpdatedEvent>()
             .Publish<B2BPayoutOwnerRegisteredEvent>()
+            .Publish<Concertable.B2B.Tenant.Contracts.Events.TenantActivityRecordedEvent>()
             .Subscribe<CustomerReviewSubmittedEvent>(B2BConstants.ServiceName)
             .Subscribe<CredentialRegisteredEvent>(B2BConstants.ServiceName)
             .Subscribe<PaymentSucceededEvent>(B2BConstants.ServiceName)
