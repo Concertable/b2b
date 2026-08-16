@@ -12,7 +12,7 @@ internal sealed class DealRepository
     public DealRepository(DealDbContext context, ITenantContext tenant)
         : base(context, tenant) { }
 
-    public async Task<IEnumerable<DealEntity>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken ct = default) =>
+    public async Task<IReadOnlyList<DealEntity>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken ct = default) =>
         await context.Deals
             .Where(c => ids.Contains(c.Id))
             .ToListAsync(ct);

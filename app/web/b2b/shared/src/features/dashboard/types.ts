@@ -11,13 +11,13 @@ export interface OpportunitySummary {
   deal: Deal;
 }
 
-export interface OpportunityWithCounts {
+export interface OpportunityApplicationMetrics {
   opportunity: OpportunitySummary;
   applicationCount: number;
   daysUntilDeadline: number;
 }
 
-export interface OpportunityCard {
+export interface OpportunityMatch {
   id: number;
   venueId: number;
   venueName: string;

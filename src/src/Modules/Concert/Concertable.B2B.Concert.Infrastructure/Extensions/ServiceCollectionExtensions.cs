@@ -79,6 +79,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBookingService, BookingService>();
         services.AddScoped<IConcertNotifier, ConcertNotifier>();
         services.AddScoped<IOpportunityService, OpportunityService>();
+        services.AddScoped<IOpportunityDashboardService, OpportunityDashboardService>();
         services.AddScoped<IOpportunitySyncer>(sp => new Sync.OpportunitySyncer(
             sp.GetRequiredService<IOpportunityRepository>(),
             sp.GetRequiredService<IDealModule>()));
@@ -172,6 +173,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, EscrowPaymentFailedProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, SettlementPaymentFailedProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, VerifyPaymentFailedProcessor>();
+        services.AddScoped<FinancialOperationOutcomeProcessor>();
+        services.AddScoped<IIntegrationEventHandler<CaptureEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<CaptureEscrowRejectedEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<DepositEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<DepositEscrowRejectedEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<RefundEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<RefundEscrowRejectedEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
+        services.AddScoped<IIntegrationEventHandler<RefundEscrowDeferredEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
 
         services.AddSingleton<ConcertConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConcertConfigurationProvider>());

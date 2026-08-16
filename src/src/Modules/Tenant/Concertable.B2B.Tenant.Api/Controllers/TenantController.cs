@@ -2,6 +2,7 @@ using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
+using Reunion.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,20 +29,17 @@ internal sealed class TenantController : ControllerBase
     public async Task<ActionResult<TenantDetails>> GetForCurrentUser()
     {
         var tenant = await tenantService.GetDetailsForCurrentTenantAsync();
-        return tenant is null ? NoContent() : Ok(tenant);
+        return tenant.Match<ActionResult<TenantDetails>>(
+            value => Ok(value),
+            () => NoContent());
     }
 
     [HttpPut]
-    public async Task<ActionResult<TenantDetails>> Update(UpdateTenantRequest request)
-    {
-        return Ok(await tenantService.UpdateAsync(request));
-    }
+    public async Task<ActionResult<TenantDetails>> Update(UpdateTenantRequest request) =>
+        (await tenantService.UpdateAsync(request)).ToOkOrProblem();
 
     [HttpDelete]
     [HasPermission(SharedPermissions.TenantDelete)]
-    public async Task<IActionResult> DeleteCurrentTenant()
-    {
-        await tenantService.DeleteCurrentTenantAsync();
-        return NoContent();
-    }
+    public async Task<IActionResult> DeleteCurrentTenant() =>
+        (await tenantService.DeleteCurrentTenantAsync()).ToNoContentOrProblem();
 }

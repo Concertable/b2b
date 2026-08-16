@@ -4,7 +4,7 @@ import type {
   MonthlyRevenuePoint,
   ReviewExcerpt,
 } from "@concertable/shared/features/dashboard";
-import type { OpportunityCard } from "@concertable/b2b/features/dashboard";
+import type { OpportunityMatch } from "@concertable/b2b/features/dashboard";
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
   Application,
@@ -43,8 +43,8 @@ const dashboardApi = {
     );
     return data;
   },
-  getRecommendedOpportunities: async (): Promise<OpportunityCard[]> => {
-    const { data } = await apiClient.get<OpportunityCard[]>(
+  getRecommendedOpportunities: async (): Promise<OpportunityMatch[]> => {
+    const { data } = await apiClient.get<OpportunityMatch[]>(
       "/opportunity/artist/recommended",
     );
     return data;

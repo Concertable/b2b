@@ -8,6 +8,9 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<ApplicationEntity>
 {
+    Task<FinancialOperation?> GetFinancialOperationAsync(
+        int applicationId,
+        CancellationToken ct = default);
     Task<(LifecycleState State, PaymentVerification Verification)?> GetLifecycleAndPaymentStateAsync(
         int applicationId,
         CancellationToken ct = default);

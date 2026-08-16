@@ -5,7 +5,7 @@ import type {
   ReviewExcerpt,
   Settlement,
 } from "@concertable/shared/features/dashboard";
-import type { OpportunityWithCounts } from "@concertable/b2b/features/dashboard";
+import type { OpportunityApplicationMetrics } from "@concertable/b2b/features/dashboard";
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
   Application,
@@ -44,8 +44,8 @@ const dashboardApi = {
     );
     return data;
   },
-  getOpenOpportunities: async (): Promise<OpportunityWithCounts[]> => {
-    const { data } = await apiClient.get<OpportunityWithCounts[]>(
+  getOpenOpportunities: async (): Promise<OpportunityApplicationMetrics[]> => {
+    const { data } = await apiClient.get<OpportunityApplicationMetrics[]>(
       "/opportunity/venue/current",
     );
     return data;

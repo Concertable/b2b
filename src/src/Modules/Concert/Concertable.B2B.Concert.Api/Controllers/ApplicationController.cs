@@ -11,20 +11,17 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
-    private readonly IApplicationValidator applicationValidator;
     private readonly IContractService contractService;
     private readonly IApplicationResponseMapper mapper;
     private readonly IMembershipContext membership;
 
     public ApplicationController(
         IApplicationService applicationService,
-        IApplicationValidator applicationValidator,
         IContractService contractService,
         IApplicationResponseMapper mapper,
         IMembershipContext membership)
     {
         this.applicationService = applicationService;
-        this.applicationValidator = applicationValidator;
         this.contractService = contractService;
         this.mapper = mapper;
         this.membership = membership;
@@ -34,34 +31,38 @@ internal sealed class ApplicationController : ControllerBase
     [HttpGet("opportunity/{id}")]
     public async Task<ActionResult<IEnumerable<ApplicationResponse<VenueApplicationActions>>>> GetAllByOpportunityId(int id)
     {
-        var applications = await applicationService.GetByOpportunityIdAsync(id);
-        return Ok(mapper.ToVenueResponses(applications));
+        return (await applicationService.GetByOpportunityIdAsync(id))
+            .ToOkOrProblem(mapper.ToVenueResponses);
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpPost("{opportunityId}")]
-    public async Task<IActionResult> Apply(int opportunityId, [FromBody] ApplyRequest request)
+    public async Task<ActionResult<ApplicationResponse<ArtistApplicationActions>>> Apply(
+        int opportunityId,
+        [FromBody] ApplyRequest request)
     {
-        var application = request.PaymentMethodId is not null
+        var result = request.PaymentMethodId is not null
             ? await applicationService.ApplyAsync(opportunityId, request.PaymentMethodId, request.ESignature)
             : await applicationService.ApplyAsync(opportunityId, request.ESignature);
-        return CreatedAtAction(nameof(GetById), new { id = application.Id }, mapper.ToArtistResponse(application));
+        return result.ToCreatedOrProblem(
+            mapper.ToArtistResponse,
+            application => $"/api/Application/{application.Id}");
     }
 
     [HttpGet("artist/pending")]
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     public async Task<ActionResult<IEnumerable<ApplicationResponse<ArtistApplicationActions>>>> GetPendingForArtist()
     {
-        var applications = await applicationService.GetPendingForArtistAsync();
-        return Ok(mapper.ToArtistResponses(applications));
+        return (await applicationService.GetPendingForArtistAsync())
+            .ToOkOrProblem(mapper.ToArtistResponses);
     }
 
     [HttpGet("artist/recently-denied")]
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     public async Task<ActionResult<IEnumerable<ApplicationResponse<ArtistApplicationActions>>>> GetRecentDeniedForArtist()
     {
-        var applications = await applicationService.GetRecentDeniedForArtistAsync();
-        return Ok(mapper.ToArtistResponses(applications));
+        return (await applicationService.GetRecentDeniedForArtistAsync())
+            .ToOkOrProblem(mapper.ToArtistResponses);
     }
 
     [HttpGet("venue/current")]
@@ -69,8 +70,8 @@ internal sealed class ApplicationController : ControllerBase
     [HasPermission(SharedPermissions.OperationsView)]
     public async Task<ActionResult<IEnumerable<ApplicationResponse<VenueApplicationActions>>>> GetPendingForCurrentVenue()
     {
-        var applications = await applicationService.GetPendingForCurrentVenueAsync();
-        return Ok(mapper.ToVenueResponses(applications));
+        return (await applicationService.GetPendingForCurrentVenueAsync())
+            .ToOkOrProblem(mapper.ToVenueResponses);
     }
 
     [HttpGet("artist/current")]
@@ -78,20 +79,28 @@ internal sealed class ApplicationController : ControllerBase
     [HasPermission(SharedPermissions.OperationsView)]
     public async Task<ActionResult<IEnumerable<ApplicationResponse<ArtistApplicationActions>>>> GetCurrentForCurrentArtist()
     {
-        var applications = await applicationService.GetCurrentForCurrentArtistAsync();
-        return Ok(mapper.ToArtistResponses(applications));
+        return (await applicationService.GetCurrentForCurrentArtistAsync())
+            .ToOkOrProblem(mapper.ToArtistResponses);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<ApplicationResponse>> GetById(int id)
     {
-        var application = await applicationService.GetByIdAsync(id);
-        return membership.Type switch
+        Func<ApplicationDto, ApplicationResponse> responseMapper;
+        switch (membership.Type)
         {
-            TenantType.Venue => Ok(mapper.ToVenueResponse(application)),
-            TenantType.Artist => Ok(mapper.ToArtistResponse(application)),
-            _ => Forbid()
-        };
+            case TenantType.Venue:
+                responseMapper = mapper.ToVenueResponse;
+                break;
+            case TenantType.Artist:
+                responseMapper = mapper.ToArtistResponse;
+                break;
+            default:
+                return Forbid();
+        }
+
+        return (await applicationService.GetByIdAsync(id))
+            .ToOkOrProblem(responseMapper);
     }
 
     // No [HasPermission]: both parties read (venue + artist), enforced by the two-party tenant filter
@@ -99,39 +108,37 @@ internal sealed class ApplicationController : ControllerBase
     [HttpGet("{id}/contract")]
     public async Task<ActionResult<ContractDto>> GetContract(int id)
     {
-        var contract = await contractService.GetByApplicationIdAsync(id);
-        return Ok(contract);
+        return (await contractService.GetByApplicationIdAsync(id))
+            .ToOkOrProblem();
     }
 
     [HttpGet("{id}/contract/pdf")]
-    public async Task<IActionResult> GetContractPdf(int id)
+    public async Task<ActionResult<FileDownload>> GetContractPdf(int id)
     {
-        var pdf = await contractService.GetPdfByApplicationIdAsync(id);
-        return File(pdf.Content, pdf.ContentType, pdf.FileName);
+        return (await contractService.GetPdfByApplicationIdAsync(id))
+            .ToActionResult(pdf => new ActionResult<FileDownload>(
+                File(pdf.Content, pdf.ContentType, pdf.FileName)));
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpGet("opportunity/{opportunityId}/eligibility")]
     public async Task<ActionResult<bool>> CanApply(int opportunityId)
     {
-        var result = await applicationValidator.CanApplyAsync(opportunityId);
-        return Ok(result.IsSuccess);
+        return Ok(await applicationService.CanApplyAsync(opportunityId));
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpGet("{applicationId}/eligibility")]
     public async Task<ActionResult<bool>> CanAccept(int applicationId)
     {
-        var result = await applicationValidator.CanAcceptAsync(applicationId);
-        return Ok(result.IsSuccess);
+        return Ok(await applicationService.CanAcceptAsync(applicationId));
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpPost("opportunity/{opportunityId}/checkout")]
-    public async Task<IActionResult> ApplyCheckout(int opportunityId)
+    public async Task<ActionResult<Checkout>> ApplyCheckout(int opportunityId)
     {
-        var checkout = await applicationService.ApplyCheckoutAsync(opportunityId);
-        return Ok(checkout);
+        return (await applicationService.ApplyCheckoutAsync(opportunityId)).ToOkOrProblem();
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
@@ -144,34 +151,45 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/accept")]
-    public async Task<IActionResult> Accept(int applicationId, [FromBody] AcceptRequest request)
+    public async Task<IActionResult> Accept(
+        int applicationId,
+        [FromBody] AcceptRequest request,
+        CancellationToken ct)
     {
-        await applicationService.AcceptAsync(applicationId, request.PaymentMethodId, request.ESignature);
-        return NoContent();
+        return (await applicationService.AcceptAsync(
+            applicationId,
+            request.PaymentMethodId,
+            request.ESignature,
+            ct)).ToNoContentOrProblem();
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [HttpPost("{applicationId}/withdraw")]
-    public async Task<IActionResult> Withdraw(int applicationId)
+    public async Task<IActionResult> Withdraw(int applicationId, CancellationToken ct)
     {
-        await applicationService.WithdrawAsync(applicationId);
-        return NoContent();
+        return (await applicationService.WithdrawAsync(applicationId, ct)).ToNoContentOrProblem();
+    }
+
+    [HttpGet("{id}/financial-operation")]
+    public async Task<ActionResult<FinancialOperation>> GetFinancialOperation(
+        int id,
+        CancellationToken ct)
+    {
+        return (await applicationService.GetFinancialOperationAsync(id, ct)).ToOkOr(NotFound);
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/reject")]
     public async Task<IActionResult> Reject(int applicationId)
     {
-        await applicationService.RejectAsync(applicationId);
-        return NoContent();
+        return (await applicationService.RejectAsync(applicationId)).ToNoContentOrProblem();
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/cancel")]
-    public async Task<IActionResult> Cancel(int applicationId)
+    public async Task<IActionResult> Cancel(int applicationId, CancellationToken ct)
     {
-        await applicationService.CancelAsync(applicationId);
-        return NoContent();
+        return (await applicationService.CancelAsync(applicationId, ct)).ToNoContentOrProblem();
     }
 
 }

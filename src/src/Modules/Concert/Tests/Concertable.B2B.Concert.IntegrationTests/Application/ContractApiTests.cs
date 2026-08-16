@@ -404,9 +404,11 @@ public sealed class ContractApiTests : IAsyncLifetime
 
         using var scope = fixture.Services.CreateScope();
         var contracts = scope.ServiceProvider.GetRequiredService<IDealModule>();
-        await contracts.UpdateAsync(opportunity.DealId, desired);
+        var update = await contracts.UpdateAsync(opportunity.DealId, desired);
+        Assert.True(update.IsSuccess);
 
-        var updated = await contracts.GetByIdAsync(opportunity.DealId);
+        var updatedOption = await contracts.GetByIdAsync(opportunity.DealId);
+        Assert.True(updatedOption.TryGetValue(out var updated));
         desired.Id = opportunity.DealId;
         Assert.Equal(desired, updated); // sanity: the live contract really changed
     }

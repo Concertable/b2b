@@ -30,5 +30,6 @@ internal sealed class VenueReviewsController : ControllerBase
     [HasPermission(SharedPermissions.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<RecentReviewResponse>>> GetRecentForCurrent(
         CancellationToken ct) =>
-        Ok((await reviewService.GetRecentForCurrentAsync(5, ct)).ToResponses());
+        (await reviewService.GetRecentForCurrentAsync(5, ct))
+            .ToOkOrProblem(reviews => reviews.ToResponses());
 }
