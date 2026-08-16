@@ -12,5 +12,6 @@ internal interface ISelfBillingAgreementService
         ESignatureRequest eSignature,
         CancellationToken ct = default);
 
-    Task<FileDownload> GetPdfAsync(CancellationToken ct = default);
+    Task<Result<FileDownload, SelfBillingAgreementPdfError>> GetPdfAsync(
+        CancellationToken ct = default);
 }

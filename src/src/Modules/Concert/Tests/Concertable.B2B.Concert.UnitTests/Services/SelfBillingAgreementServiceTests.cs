@@ -8,7 +8,6 @@ using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.Kernel.Exceptions;
 using Reunion;
 using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -103,7 +102,8 @@ public sealed class SelfBillingAgreementServiceTests
         var result = await service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" });
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("Sally Supplier", built!.SupplierESignature.SignatoryName);
+        Assert.NotNull(built);
+        Assert.Equal("Sally Supplier", built.SupplierESignature.SignatoryName);
         Assert.Equal(userId, built.SupplierESignature.UserId);
         Assert.Equal(IPAddress.Loopback, built.SupplierESignature.Ip);
     }
@@ -179,19 +179,24 @@ public sealed class SelfBillingAgreementServiceTests
     }
 
     [Fact]
-    public async Task GetPdfAsync_RendersCurrentAgreementLazily_OrThrowsNotFoundWhenNone()
+    public async Task GetPdfAsync_RendersCurrentAgreementLazily_OrReturnsNotFoundWhenNone()
     {
-        await Assert.ThrowsAsync<NotFoundException>(() => service.GetPdfAsync());
+        var missing = await service.GetPdfAsync();
+
+        Assert.True(missing.TryGetError(out var error));
+        Assert.IsType<SelfBillingAgreementPdfError.NotFound>(error);
 
         var agreement = BuildAgreement();
         repository.Setup(r => r.GetCurrentAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(agreement);
         var bytes = new byte[] { 1, 2, 3 };
-        pdfCache.Setup(c => c.GetOrCreateAsync(agreement.PdfBlobName!, It.IsAny<QuestPDF.Infrastructure.IDocument>(), It.IsAny<CancellationToken>()))
+        var blobName = Assert.IsType<string>(agreement.PdfBlobName);
+        pdfCache.Setup(c => c.GetOrCreateAsync(blobName, It.IsAny<QuestPDF.Infrastructure.IDocument>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(bytes);
 
-        var download = await service.GetPdfAsync();
+        var result = await service.GetPdfAsync();
 
+        Assert.True(result.TryGetValue(out var download));
         Assert.Equal(bytes, download.Content);
         Assert.Contains("self-billing-agreement", download.FileName);
     }
