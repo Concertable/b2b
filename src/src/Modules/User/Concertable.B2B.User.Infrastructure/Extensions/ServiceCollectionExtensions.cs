@@ -7,15 +7,20 @@ using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.User.Application.Validators;
 using Concertable.B2B.User.Infrastructure.Authorization;
+using Concertable.B2B.User.Domain.Events;
 using Concertable.B2B.User.Infrastructure.Data;
 using Concertable.B2B.User.Infrastructure.Data.Seeders;
 using Concertable.B2B.User.Infrastructure.Events;
+using Concertable.B2B.User.Infrastructure.Settings;
 using Concertable.B2B.Venue.Contracts.Events;
+using Concertable.Seed.Identity;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 
@@ -38,17 +43,27 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserModule, UserModule>();
+        services.AddScoped<IAdminService, AdminService>();
 
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, CredentialRegisteredHandler>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistManagerSyncHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueManagerSyncHandler>();
+        services.AddScoped<IDomainEventHandler<AdminInvitationCreatedDomainEvent>, AdminInvitationCreatedDomainEventHandler>();
 
         services.AddHealthChecks().AddCheck<UserHealthCheck>("users");
 
         services.AddSingleton<UserConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<UserConfigurationProvider>());
 
-        services.AddValidatorsFromAssemblyContaining<UpdateLocationRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<UpdateLocationRequestValidator>(includeInternalTypes: true);
+
+        services.AddOptions<AdminOptions>()
+            .Bind(configuration.GetSection(AdminOptions.SectionName))
+            .PostConfigure<IHostEnvironment>((options, env) =>
+            {
+                if (options.BootstrapEmail is null && !env.IsProduction())
+                    options.BootstrapEmail = SeedUsers.AdminEmail;
+            });
 
         services.AddAuthorization(options =>
         {
