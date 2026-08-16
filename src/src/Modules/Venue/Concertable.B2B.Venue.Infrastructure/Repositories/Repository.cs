@@ -9,10 +9,6 @@ internal abstract class WriteRepository<TEntity>(VenueDbContext context)
     : WriteRepository<TEntity, VenueDbContext>(context)
     where TEntity : class;
 
-internal abstract class ReadRepository<TEntity>(VenueDbContext context)
-    : ReadRepository<TEntity, int>(context)
-    where TEntity : class, IIdEntity;
-
 internal abstract class Repository<TEntity>(VenueDbContext context)
     : Repository<TEntity, VenueDbContext, int>(context)
     where TEntity : class, IIdEntity;

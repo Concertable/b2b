@@ -1,10 +1,11 @@
 using Concertable.B2B.Artist.Infrastructure.Data;
 using Concertable.B2B.Artist.Application.Interfaces;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
-internal sealed class ArtistReviewRepository : ReadRepository<ArtistReview>, IArtistReviewRepository
+internal sealed class ArtistReviewRepository : ReadRepository<ArtistReview, int>, IArtistReviewRepository
 {
     private readonly ArtistDbContext artistContext;
 
