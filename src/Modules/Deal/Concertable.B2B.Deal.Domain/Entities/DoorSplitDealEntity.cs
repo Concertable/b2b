@@ -1,3 +1,6 @@
+using Reunion.Errors;
+using Reunion;
+
 namespace Concertable.B2B.Deal.Domain.Entities;
 
 public sealed class DoorSplitDealEntity : DealEntity
@@ -7,22 +10,27 @@ public sealed class DoorSplitDealEntity : DealEntity
     public override DealType DealType => DealType.DoorSplit;
     public decimal ArtistDoorPercent { get; private set; }
 
-    public static DoorSplitDealEntity Create(decimal artistDoorPercent, PaymentMethod paymentMethod)
+    public static Result<DoorSplitDealEntity, ValidationErrors> Create(decimal artistDoorPercent, PaymentMethod paymentMethod)
     {
-        ValidateArtistDoorPercent(artistDoorPercent);
-        return new() { ArtistDoorPercent = artistDoorPercent, PaymentMethod = paymentMethod };
+        var validation = ValidateArtistDoorPercent(artistDoorPercent);
+        return validation.Bind(() => Result.Success<DoorSplitDealEntity, ValidationErrors>(
+            new DoorSplitDealEntity { ArtistDoorPercent = artistDoorPercent, PaymentMethod = paymentMethod }));
     }
 
-    public void Update(decimal artistDoorPercent, PaymentMethod paymentMethod)
+    public UnitResult<ValidationErrors> Update(decimal artistDoorPercent, PaymentMethod paymentMethod)
     {
-        ValidateArtistDoorPercent(artistDoorPercent);
+        var validation = ValidateArtistDoorPercent(artistDoorPercent);
+        if (validation.IsFailure)
+            return validation;
+
         ArtistDoorPercent = artistDoorPercent;
         PaymentMethod = paymentMethod;
+        return new Success();
     }
 
-    private static void ValidateArtistDoorPercent(decimal artistDoorPercent)
-    {
-        if (artistDoorPercent < 0 || artistDoorPercent > 100)
-            throw new DomainException("Artist door percent must be between 0 and 100.");
-    }
+    private static UnitResult<ValidationErrors> ValidateArtistDoorPercent(decimal artistDoorPercent) =>
+        artistDoorPercent is >= 0 and <= 100
+            ? new Success()
+            : new ValidationErrors(
+                [new(nameof(ArtistDoorPercent), "Artist door percent must be between 0 and 100.")]);
 }

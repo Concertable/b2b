@@ -23,38 +23,34 @@ internal sealed class VenueController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
-        return Ok((await venueService.GetDetailsByIdAsync(id)).ToDetailsResponse());
+        return (await venueService.GetDetailsByIdAsync(id))
+            .ToOkOrProblem(venue => venue.ToDetailsResponse());
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("user")]
-    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser()
-    {
-        var venue = await venueService.GetDetailsForCurrentUserAsync();
-        return venue is null ? NoContent() : Ok(venue.ToDetailsResponse());
-    }
+    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser() =>
+        (await venueService.GetDetailsForCurrentUserAsync())
+            .ToOkOrProblem(venue => venue.ToDetailsResponse());
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost]
-    public async Task<IActionResult> Create([FromForm] CreateVenueRequest request)
-    {
-        var venueDto = await venueService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetDetailsById), new { Id = venueDto.Id }, venueDto);
-    }
+    public async Task<ActionResult<VenueDetails>> Create([FromForm] CreateVenueRequest request) =>
+        (await venueService.CreateAsync(request))
+            .ToCreatedOrProblem(venue => $"/api/Venue/{venue.Id}");
 
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromForm] UpdateVenueRequest request)
+    public async Task<ActionResult<VenueDetails>> Update(int id, [FromForm] UpdateVenueRequest request)
     {
-        return Ok(await venueService.UpdateAsync(id, request));
+        return (await venueService.UpdateAsync(id, request)).ToOkOrProblem();
     }
 
     [Admin]
     [HttpPatch("{id}/approve")]
     public async Task<IActionResult> Approve(int id)
     {
-        await venueService.ApproveAsync(id);
-        return NoContent();
+        return (await venueService.ApproveAsync(id)).ToNoContentOrProblem();
     }
 
     [HttpGet("{id}/ownership")]

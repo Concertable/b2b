@@ -6,9 +6,11 @@ using Concertable.B2B.Concert.Api.Responses;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Payment.Contracts;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Application;
@@ -103,7 +105,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
-        Assert.Single(fixture.EscrowClient.Holds); // rejected second accept must not place a second hold
+        fixture.PaymentTransport.SingleCommand<DepositEscrowCommand>();
     }
 
     [Fact]
@@ -136,10 +138,11 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == fixture.SeedState.VenueHireApp.Id);
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
         var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
-        var hold = Assert.Single(fixture.EscrowClient.Holds, h => h.BookingId == booking.Id); // exactly one hold — no double-charge
-        Assert.Equal(artistTenantId, hold.PayerId);
-        Assert.Equal(venueTenantId, hold.PayeeId);
-        Assert.Equal(fixture.SeedState.VenueHireAppDeal.HireFee, hold.Amount);
+        var command = fixture.PaymentTransport.SingleCommand<DepositEscrowCommand>();
+        Assert.Equal(booking.Id, command.BookingId);
+        Assert.Equal(artistTenantId, command.PayerId);
+        Assert.Equal(venueTenantId, command.PayeeId);
+        Assert.Equal((long)(fixture.SeedState.VenueHireAppDeal.HireFee * 100), command.AmountMinor);
     }
 
     [Fact]
@@ -180,15 +183,17 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
     public async Task Accept_ShouldRejectAndNotCreateDraft_WhenPaymentFails()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingPayment());
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
         var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        // Assert — a failed hold rejects the accept, leaves it un-accepted, posts no concert, notifies nobody
-        await response.ShouldBe(HttpStatusCode.BadRequest);
-        var application = await (await client.GetAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}")).Content.ReadAsync<ApplicationResponse>();
-        Assert.NotEqual(ApplicationStatus.Accepted, application!.Status);
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.RejectLatestFinancialOperationAsync();
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>()
+            .AsNoTracking()
+            .SingleAsync(value => value.Id == fixture.SeedState.VenueHireApp.Id);
+        Assert.Equal(LifecycleState.PaymentFailed, application.State);
         var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.VenueHireApp.Id);
         Assert.Null(draft);
         Assert.Empty(fixture.NotificationService.DraftCreated);

@@ -1,3 +1,6 @@
+using Reunion.Errors;
+using Reunion;
+
 namespace Concertable.B2B.Deal.Domain.Entities;
 
 public sealed class FlatFeeDealEntity : DealEntity
@@ -7,23 +10,26 @@ public sealed class FlatFeeDealEntity : DealEntity
     public override DealType DealType => DealType.FlatFee;
     public decimal Fee { get; private set; }
 
-    public static FlatFeeDealEntity Create(decimal fee, PaymentMethod paymentMethod)
+    public static Result<FlatFeeDealEntity, ValidationErrors> Create(decimal fee, PaymentMethod paymentMethod)
     {
-        ValidateFee(fee);
-        return new() { Fee = fee, PaymentMethod = paymentMethod };
+        var validation = ValidateFee(fee);
+        return validation.Bind(() => Result.Success<FlatFeeDealEntity, ValidationErrors>(
+            new FlatFeeDealEntity { Fee = fee, PaymentMethod = paymentMethod }));
     }
 
-    public void Update(decimal fee, PaymentMethod paymentMethod)
+    public UnitResult<ValidationErrors> Update(decimal fee, PaymentMethod paymentMethod)
     {
-        ValidateFee(fee);
+        var validation = ValidateFee(fee);
+        if (validation.IsFailure)
+            return validation;
 
         Fee = fee;
         PaymentMethod = paymentMethod;
+        return new Success();
     }
 
-    private static void ValidateFee(decimal fee)
-    {
-        if (fee <= 0)
-            throw new DomainException("Fee must be greater than zero.");
-    }
+    private static UnitResult<ValidationErrors> ValidateFee(decimal fee) =>
+        fee > 0
+            ? new Success()
+            : new ValidationErrors([new(nameof(Fee), "Fee must be greater than zero.")]);
 }

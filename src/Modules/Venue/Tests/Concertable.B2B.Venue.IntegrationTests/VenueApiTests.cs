@@ -102,7 +102,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetDetailsForCurrentUser_ShouldReturn204_WhenNoVenueExists()
+    public async Task GetDetailsForCurrentUser_ShouldReturn404_WhenNoVenueExists()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
@@ -111,7 +111,7 @@ public sealed class VenueApiTests : IAsyncLifetime
         var response = await client.GetAsync("/api/Venue/user");
 
         // Assert
-        await response.ShouldBe(HttpStatusCode.NoContent);
+        await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
     #endregion
@@ -171,6 +171,7 @@ public sealed class VenueApiTests : IAsyncLifetime
         Assert.False(venue.Approved);
         Assert.EndsWith(".jpg", venue.BannerUrl);
         Assert.True(Guid.TryParse(Path.GetFileNameWithoutExtension(venue.BannerUrl), out _));
+        Assert.Equal($"/api/Venue/{venue.Id}", response.Headers.Location?.OriginalString);
     }
 
     [Fact]

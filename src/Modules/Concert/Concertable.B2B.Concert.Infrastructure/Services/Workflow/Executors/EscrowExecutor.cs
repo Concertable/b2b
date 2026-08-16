@@ -31,25 +31,32 @@ internal sealed class EscrowExecutor : IEscrowExecutor
     public async Task SucceededAsync(int bookingId, CancellationToken ct = default)
     {
         var applicationId = await LoadApplicationIdAsync(bookingId, ct);
-        await transitioner.TransitionAsync(applicationId, Trigger.EscrowPaymentSucceeded, async app =>
-        {
-            // A late capture landing after application-cancel confirms money into escrow on a dead
-            // application — compensate by refunding instead of booking.
-            if (app.State == LifecycleState.Cancelled)
+        var transition = await transitioner.TransitionAsync<CancelApplicationError>(
+            applicationId,
+            Trigger.EscrowPaymentSucceeded,
+            error => (CancelApplicationError)new CancelApplicationError.TransitionFailure(error),
+            async app =>
             {
-                await cancelStep.ExecuteAsync(app.Id);
-                return;
-            }
+                // A late capture landing after application-cancel confirms money into escrow on a dead
+                // application — compensate by refunding instead of booking.
+                if (app.State == LifecycleState.CancellationPending)
+                    return await cancelStep.ExecuteAsync(app.Id, ct);
 
-            var workflow = workflows.Create(app.DealType);
-            await workflow.Book.ExecuteAsync(bookingId);
-        }, ct);
+                var workflow = workflows.Create(app.DealType);
+                await workflow.Book.ExecuteAsync(bookingId);
+                return new Success();
+            }, ct);
+
+        if (transition.TryGetError(out var error))
+            throw new InvalidOperationException(
+                $"Escrow payment handling failed ({error.Definition.Code}): {error.Definition.Message}");
     }
 
     public async Task FailedAsync(int bookingId, CancellationToken ct = default)
     {
         var applicationId = await LoadApplicationIdAsync(bookingId, ct);
-        await transitioner.TransitionAsync(applicationId, Trigger.EscrowPaymentFailed, ct: ct);
+        await transitioner.TransitionAsync(applicationId, Trigger.EscrowPaymentFailed, ct: ct)
+            .GetValueOrThrowAsync();
     }
 
     private async Task<int> LoadApplicationIdAsync(int bookingId, CancellationToken ct)

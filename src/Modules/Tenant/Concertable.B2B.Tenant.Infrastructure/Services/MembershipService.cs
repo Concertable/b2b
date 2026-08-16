@@ -1,6 +1,5 @@
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.User.Contracts;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
@@ -28,36 +27,46 @@ internal sealed class MembershipService : IMembershipService
             .ToList();
     }
 
-    public async Task ChangeRoleAsync(Guid userId, ChangeMemberRoleRequest request, CancellationToken ct = default)
+    public async Task<UnitResult<ChangeMemberRoleError>> ChangeRoleAsync(
+        Guid userId,
+        ChangeMemberRoleRequest request,
+        CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var membership = await repository.FindMembershipAsync(tenantId, userId, ct)
-            ?? throw new NotFoundException($"User {userId} is not a member of tenant {tenantId}.");
+        var membership = await repository.FindMembershipAsync(tenantId, userId, ct);
+        if (membership is null)
+            return new ChangeMemberRoleError.MemberNotFound(userId);
 
-        if (membership.Role == TenantRole.Owner && request.Role != TenantRole.Owner)
-            await EnsureNotLastOwnerAsync(tenantId, ct);
+        if (membership.Role == TenantRole.Owner
+            && request.Role != TenantRole.Owner
+            && await IsLastOwnerAsync(tenantId, ct))
+        {
+            return new ChangeMemberRoleError.LastOwner();
+        }
 
         membership.ChangeRole(request.Role);
         await repository.SaveChangesAsync(ct);
+        return new Success();
     }
 
-    public async Task RemoveMemberAsync(Guid userId, CancellationToken ct = default)
+    public async Task<UnitResult<RemoveMemberError>> RemoveMemberAsync(
+        Guid userId,
+        CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var membership = await repository.FindMembershipAsync(tenantId, userId, ct)
-            ?? throw new NotFoundException($"User {userId} is not a member of tenant {tenantId}.");
+        var membership = await repository.FindMembershipAsync(tenantId, userId, ct);
+        if (membership is null)
+            return new RemoveMemberError.MemberNotFound(userId);
 
-        if (membership.Role == TenantRole.Owner)
-            await EnsureNotLastOwnerAsync(tenantId, ct);
+        if (membership.Role == TenantRole.Owner && await IsLastOwnerAsync(tenantId, ct))
+            return new RemoveMemberError.LastOwner();
 
         repository.RemoveMembership(membership);
         await repository.SaveChangesAsync(ct);
+        return new Success();
     }
 
     // A tenant must always keep at least one Owner — only Owner holds manage-roles/remove/delete, so an ownerless tenant is unrecoverable.
-    private async Task EnsureNotLastOwnerAsync(Guid tenantId, CancellationToken ct)
-    {
-        if (await repository.CountOwnersAsync(tenantId, ct) <= 1)
-            throw new ConflictException("The last owner of an organization cannot be removed or demoted.");
-    }
+    private async Task<bool> IsLastOwnerAsync(Guid tenantId, CancellationToken ct) =>
+        await repository.CountOwnersAsync(tenantId, ct) <= 1;
 }

@@ -1,4 +1,6 @@
 using Concertable.B2B.Concert.Application.DTOs;
+using Concertable.B2B.Concert.Application.Errors;
+using Concertable.B2B.Concert.Domain.Errors;
 using Concertable.B2B.Concert.Domain.Entities;
 
 namespace Concertable.B2B.Concert.Application.Mappers;
@@ -16,4 +18,11 @@ internal static class ConcertMappers
         Town = concert.Booking.Application.Opportunity.Venue.Address.Town,
         DatePosted = concert.DatePosted
     };
+
+    public static DeclareDoorRevenueError ToDeclareDoorRevenueError(
+        this DoorRevenueDeclarationError error) => error switch
+        {
+            DoorRevenueDeclarationError.NegativeRevenue =>
+                new DeclareDoorRevenueError.Negative()
+        };
 }
