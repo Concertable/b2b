@@ -11,13 +11,13 @@ internal sealed class EscrowPaymentProcessor : IIntegrationEventHandler<PaymentS
 {
     private readonly IEscrowExecutor escrowExecutor;
     private readonly IBookingRepository bookingRepository;
-    private readonly ConcertTenantDbContext context;
+    private readonly ConcertDbContext context;
     private readonly ILogger<EscrowPaymentProcessor> logger;
 
     public EscrowPaymentProcessor(
         IEscrowExecutor escrowExecutor,
         IBookingRepository bookingRepository,
-        ConcertTenantDbContext context,
+        ConcertDbContext context,
         ILogger<EscrowPaymentProcessor> logger)
     {
         this.escrowExecutor = escrowExecutor;

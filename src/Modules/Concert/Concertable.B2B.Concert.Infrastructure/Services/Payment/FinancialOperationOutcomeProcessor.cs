@@ -16,13 +16,13 @@ internal sealed class FinancialOperationOutcomeProcessor :
     IIntegrationEventHandler<RefundEscrowRejectedEvent>,
     IIntegrationEventHandler<RefundEscrowDeferredEvent>
 {
-    private readonly ConcertTenantDbContext context;
+    private readonly ConcertDbContext context;
     private readonly IEscrowExecutor escrowExecutor;
     private readonly ILifecycleTransitioner transitioner;
     private readonly IOutboxUnitOfWorkBehavior outbox;
 
     public FinancialOperationOutcomeProcessor(
-        ConcertTenantDbContext context,
+        ConcertDbContext context,
         IEscrowExecutor escrowExecutor,
         ILifecycleTransitioner transitioner,
         IOutboxUnitOfWorkBehavior outbox)

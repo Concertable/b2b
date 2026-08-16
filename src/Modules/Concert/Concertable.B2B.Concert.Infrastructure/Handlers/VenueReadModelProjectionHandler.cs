@@ -14,9 +14,9 @@ internal sealed class VenueReadModelProjectionHandler : IIntegrationEventHandler
     private static readonly GeometryFactory GeometryFactory =
         NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
 
-    private readonly ConcertTenantDbContext context;
+    private readonly ConcertDbContext context;
 
-    public VenueReadModelProjectionHandler(ConcertTenantDbContext context)
+    public VenueReadModelProjectionHandler(ConcertDbContext context)
     {
         this.context = context;
     }

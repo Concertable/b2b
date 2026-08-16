@@ -13,7 +13,7 @@ internal sealed class VenueService : IVenueService
 {
     private readonly IVenueRepository repository;
     private readonly IVenueReadRepository readRepository;
-    private readonly IAdminVenueRepository adminRepository;
+    private readonly IVenueAdminRepository adminRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly ITenantContext tenantContext;
@@ -23,7 +23,7 @@ internal sealed class VenueService : IVenueService
     public VenueService(
         IVenueRepository repository,
         IVenueReadRepository readRepository,
-        IAdminVenueRepository adminRepository,
+        IVenueAdminRepository adminRepository,
         IImageService imageService,
         ICurrentUser currentUser,
         ITenantContext tenantContext,

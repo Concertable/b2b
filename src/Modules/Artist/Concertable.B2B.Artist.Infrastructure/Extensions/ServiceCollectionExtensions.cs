@@ -26,7 +26,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddArtistModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<ArtistTenantDbContext>((sp, opt) =>
+        services.AddDbContext<ArtistDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
@@ -36,7 +36,7 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        services.AddDbContext<ArtistDbContext>((sp, opt) =>
+        services.AddDbContext<ArtistReadDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())

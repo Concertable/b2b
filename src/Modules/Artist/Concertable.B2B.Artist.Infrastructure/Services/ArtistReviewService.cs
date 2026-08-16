@@ -8,9 +8,9 @@ namespace Concertable.B2B.Artist.Infrastructure.Services;
 
 internal sealed class ArtistReviewService : IArtistReviewService
 {
-    private readonly ArtistTenantDbContext context;
+    private readonly ArtistDbContext context;
 
-    public ArtistReviewService(ArtistTenantDbContext context)
+    public ArtistReviewService(ArtistDbContext context)
     {
         this.context = context;
     }

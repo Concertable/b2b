@@ -9,10 +9,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class TicketSaleProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
-    private readonly ConcertTenantDbContext context;
+    private readonly ConcertDbContext context;
     private readonly ILogger<TicketSaleProcessor> logger;
 
-    public TicketSaleProcessor(ConcertTenantDbContext context, ILogger<TicketSaleProcessor> logger)
+    public TicketSaleProcessor(ConcertDbContext context, ILogger<TicketSaleProcessor> logger)
     {
         this.context = context;
         this.logger = logger;

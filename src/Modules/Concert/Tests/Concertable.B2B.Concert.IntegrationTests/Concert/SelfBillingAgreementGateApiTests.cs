@@ -51,7 +51,7 @@ public sealed class SelfBillingAgreementGateApiTests : IAsyncLifetime
         // A background (no-HTTP) scope is host, so the tenant interceptor no-ops and rows keep their explicit TenantId.
         using (var seed = fixture.Services.CreateScope())
         {
-            var context = seed.ServiceProvider.GetRequiredService<ConcertTenantDbContext>();
+            var context = seed.ServiceProvider.GetRequiredService<ConcertDbContext>();
             context.SelfBillingAgreements.AddRange(
                 Agreement(inForce, Now.AddMonths(-13)),
                 Agreement(inForce, Now.AddMonths(-1)),

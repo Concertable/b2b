@@ -10,7 +10,7 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
 {
     private readonly TimeProvider timeProvider;
 
-    public OpportunityRepository(ConcertTenantDbContext context, ITenantContext tenant, TimeProvider timeProvider)
+    public OpportunityRepository(ConcertDbContext context, ITenantContext tenant, TimeProvider timeProvider)
         : base(context, tenant)
     {
         this.timeProvider = timeProvider;

@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Data;
 
-internal sealed class AdminVenueDbContext(
-    DbContextOptions<AdminVenueDbContext> options,
+internal sealed class VenueAdminDbContext(
+    DbContextOptions<VenueAdminDbContext> options,
     VenueConfigurationProvider provider)
     : AdminDbContext(options, provider, Schema.Name)
 {

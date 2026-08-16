@@ -17,7 +17,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Seeders;
 internal static class SeededSelfBillingAgreementGranter
 {
     public static async Task GrantAsync(
-        ConcertTenantDbContext context,
+        ConcertDbContext context,
         SeedState seed,
         ITenantModule tenants,
         string platformTermsVersion,

@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Concertable.B2B.Artist.Infrastructure.Data;
 
-internal sealed class ArtistTenantDbContextFactory : B2BDesignTimeDbContextFactory<ArtistTenantDbContext>
+internal sealed class ArtistDbContextFactory : B2BDesignTimeDbContextFactory<ArtistDbContext>
 {
-    protected override ArtistTenantDbContext Create(DbContextOptions<ArtistTenantDbContext> options) =>
+    protected override ArtistDbContext Create(DbContextOptions<ArtistDbContext> options) =>
         new(options, new ArtistConfigurationProvider(), DesignTimeTenantContext.Instance);
 
     protected override void ConfigureSqlServer(SqlServerDbContextOptionsBuilder sql) =>

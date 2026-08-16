@@ -11,12 +11,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
     private readonly IVerifyCoordinator coordinator;
-    private readonly ConcertTenantDbContext context;
+    private readonly ConcertDbContext context;
     private readonly ILogger<VerifyPaymentFailedProcessor> logger;
 
     public VerifyPaymentFailedProcessor(
         IVerifyCoordinator coordinator,
-        ConcertTenantDbContext context,
+        ConcertDbContext context,
         ILogger<VerifyPaymentFailedProcessor> logger)
     {
         this.coordinator = coordinator;

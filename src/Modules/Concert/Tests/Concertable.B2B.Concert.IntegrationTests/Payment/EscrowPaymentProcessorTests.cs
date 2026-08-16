@@ -17,12 +17,12 @@ namespace Concertable.B2B.Concert.IntegrationTests.Payment;
 public sealed class EscrowPaymentProcessorTests : IAsyncLifetime
 {
     private readonly ConcertApiFixture fixture;
-    private readonly IScoped<ConcertTenantDbContext> scoped;
+    private readonly IScoped<ConcertDbContext> scoped;
 
     public EscrowPaymentProcessorTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
-        this.scoped = fixture.Services.GetRequiredService<IScoped<ConcertTenantDbContext>>();
+        this.scoped = fixture.Services.GetRequiredService<IScoped<ConcertDbContext>>();
         fixture.AttachOutput(output);
     }
 

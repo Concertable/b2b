@@ -13,11 +13,11 @@ public sealed class DbContextStanceTests
     public async Task Contexts_TenancyStances_EnforceCapabilitiesAndFilters()
     {
         var provider = new ArtistConfigurationProvider();
-        await using var readContext = new ArtistDbContext(
-            CreateOptions<ArtistDbContext>(),
+        await using var readContext = new ArtistReadDbContext(
+            CreateOptions<ArtistReadDbContext>(),
             provider);
-        await using var tenantContext = new ArtistTenantDbContext(
-            CreateOptions<ArtistTenantDbContext>(),
+        await using var tenantContext = new ArtistDbContext(
+            CreateOptions<ArtistDbContext>(),
             provider,
             Mock.Of<ITenantContext>());
 
