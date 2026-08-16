@@ -8,8 +8,8 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data;
 /// <see cref="ConversationsDbContext"/>, writable, with no tenant filter — a platform operator moderates
 /// threads they are not party to. The tenant-filtered counterpart is <see cref="ConversationsDbContext"/>.
 /// </summary>
-internal sealed class AdminConversationsDbContext(
-    DbContextOptions<AdminConversationsDbContext> options,
+internal sealed class ConversationsAdminDbContext(
+    DbContextOptions<ConversationsAdminDbContext> options,
     ConversationsConfigurationProvider provider)
     : AdminDbContext(options, provider, Schema.Name)
 {

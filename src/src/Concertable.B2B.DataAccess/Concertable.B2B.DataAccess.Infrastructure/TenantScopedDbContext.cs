@@ -10,7 +10,7 @@ namespace Concertable.B2B.DataAccess.Infrastructure;
 /// rows — a row is visible to its owning tenant and the host. Composes the module's anemic configuration provider
 /// first, then the module's filter declarations — the order is sealed so filters can never run before the model
 /// exists. The tenant-independent counterpart (same provider, no tenancy) is <see cref="ReadDbContext"/>; the two-party
-/// sibling is <see cref="VenueArtistTenantDbContext"/>.
+/// sibling is <see cref="VenueArtistTenantScopedDbContext"/>.
 /// </summary>
 public abstract class TenantScopedDbContext : DbContextBase, IHasTenantContext
 {

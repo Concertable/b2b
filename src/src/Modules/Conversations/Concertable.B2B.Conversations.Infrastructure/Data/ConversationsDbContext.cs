@@ -9,7 +9,7 @@ internal sealed class ConversationsDbContext(
     DbContextOptions<ConversationsDbContext> options,
     ConversationsConfigurationProvider provider,
     ITenantContext tenantContext)
-    : VenueArtistTenantDbContext(options, provider, tenantContext, Schema.Name)
+    : VenueArtistTenantScopedDbContext(options, provider, tenantContext, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
