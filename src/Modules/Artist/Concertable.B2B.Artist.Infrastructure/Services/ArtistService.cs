@@ -14,7 +14,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Services;
 internal sealed class ArtistService : IArtistService
 {
     private readonly IArtistRepository repository;
-    private readonly IPublicArtistRepository publicRepository;
+    private readonly IArtistReadRepository readRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly ITenantContext tenantContext;
@@ -23,7 +23,7 @@ internal sealed class ArtistService : IArtistService
 
     public ArtistService(
         IArtistRepository repository,
-        IPublicArtistRepository publicRepository,
+        IArtistReadRepository readRepository,
         IImageService imageService,
         ICurrentUser currentUser,
         ITenantContext tenantContext,
@@ -31,7 +31,7 @@ internal sealed class ArtistService : IArtistService
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.repository = repository;
-        this.publicRepository = publicRepository;
+        this.readRepository = readRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
         this.tenantContext = tenantContext;
@@ -53,7 +53,7 @@ internal sealed class ArtistService : IArtistService
     public Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(
         int id,
         CancellationToken ct = default) =>
-        publicRepository.GetDetailsByIdAsync(id, ct)
+        readRepository.GetDetailsByIdAsync(id, ct)
             .ToOption()
             .OrFailure(() => (ArtistError)new ArtistError.NotFound(id));
 
@@ -97,7 +97,7 @@ internal sealed class ArtistService : IArtistService
                             return new CreateArtistError.ActiveTenantAlreadyHasArtist();
                         }
 
-                        var details = await publicRepository.GetDetailsByIdAsync(createdArtist.Id, ct)
+                        var details = await readRepository.GetDetailsByIdAsync(createdArtist.Id, ct)
                             ?? throw new InvalidOperationException(
                                 $"Artist {createdArtist.Id} not found after creation.");
                         return Result.Success<ArtistDetails, CreateArtistError>(details);
@@ -137,7 +137,7 @@ internal sealed class ArtistService : IArtistService
 
                         await repository.SaveChangesAsync(ct);
 
-                        var details = await publicRepository.GetDetailsByIdAsync(artist.Id, ct)
+                        var details = await readRepository.GetDetailsByIdAsync(artist.Id, ct)
                             ?? throw new InvalidOperationException(
                                 $"Artist {artist.Id} not found after update.");
                         return Result.Success<ArtistDetails, UpdateArtistError>(details);
@@ -152,15 +152,10 @@ internal sealed class ArtistService : IArtistService
     public async Task<Option<ArtistSummary>> GetSummaryAsync(
         int id,
         CancellationToken ct = default) =>
-        await publicRepository.GetSummaryAsync(id, ct);
+        await readRepository.GetSummaryAsync(id, ct);
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(
         int id,
         CancellationToken ct = default) =>
-        publicRepository.GetGenresAsync(id, ct);
-
-    public async Task<Option<ArtistOrgIdentity>> GetOrgIdentityByTenantIdAsync(
-        Guid tenantId,
-        CancellationToken ct = default) =>
-        await publicRepository.GetOrgIdentityByTenantIdAsync(tenantId, ct);
+        readRepository.GetGenresAsync(id, ct);
 }

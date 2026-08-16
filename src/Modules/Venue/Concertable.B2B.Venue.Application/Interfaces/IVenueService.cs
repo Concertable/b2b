@@ -23,7 +23,4 @@ internal interface IVenueService
         CancellationToken ct = default);
 
     Task<Option<VenueSummary>> GetSummaryAsync(int id, CancellationToken ct = default);
-    Task<Option<VenueOrgIdentity>> GetOrgIdentityByTenantIdAsync(
-        Guid tenantId,
-        CancellationToken ct = default);
 }

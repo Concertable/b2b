@@ -6,6 +6,12 @@ Data service — venue↔artist booking + settlement. Inherits root [`AGENTS.md`
 
 Tokens are identity-only (`sub` + `email`); authority is the active tenant (`X-Tenant-Id` → membership `TenantRole`) resolved per request via `ITenantContext`. Never add a role/authority claim to a B2B token. The tenant *is* the legal/VAT/Stripe entity (`TenantEntity.TaxCompliance`).
 
+## Tenant is the canonical backend term
+
+In the current B2B model, one tenant is one business account, legal entity, membership boundary, and settlement identity. There is no separate organisation aggregate or identifier. Use `Tenant` throughout Domain, Application, Infrastructure, and cross-module Contracts. `Organisation` is presentation vocabulary only, such as HTTP DTOs, routes, and UI copy.
+
+Artist and Venue are tenant-owned marketplace profiles, not alternative organisation identities. Do not add `Org*` domain types or cross-module identity lookups. Introduce a separate organisation concept only after an explicit lifecycle or cardinality distinction is established.
+
 ## VAT/settlement posture is agent, not principal
 
 VAT/invoice direction branches on contract type **and** the supplier's VAT-registration status. VenueHire reverses supply direction — the artist is the buyer there — so a blanket "add 20% to the artist payout" is wrong. Detail → `LEGAL_REQUIREMENTS.md`.

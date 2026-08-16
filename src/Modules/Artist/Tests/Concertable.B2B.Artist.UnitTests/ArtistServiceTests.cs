@@ -18,7 +18,7 @@ namespace Concertable.B2B.Artist.UnitTests;
 public sealed class ArtistServiceTests
 {
     private readonly Mock<IArtistRepository> repository = new();
-    private readonly Mock<IPublicArtistRepository> publicRepository = new();
+    private readonly Mock<IArtistReadRepository> readRepository = new();
     private readonly Mock<IImageService> imageService = new();
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<ITenantContext> tenantContext = new();
@@ -112,7 +112,7 @@ public sealed class ArtistServiceTests
 
     private ArtistService CreateService() => new(
         repository.Object,
-        publicRepository.Object,
+        readRepository.Object,
         imageService.Object,
         currentUser.Object,
         tenantContext.Object,

@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Kernel.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -160,22 +161,17 @@ public sealed class TenantScopingTests : IAsyncLifetime
         Assert.Equal(concertId, publicConcert!.Id);
     }
 
-    /// <summary>
-    /// The public booking stance is unfiltered by tenant: the escrow payment-webhook path (which runs
-    /// with no tenant context) reads existence through <c>IPublicBookingRepository</c> to tell a
-    /// tenant-filter-hidden row from a genuinely-absent one. A tenant filter creeping onto this read
-    /// would silently break that diagnostic — so assert it sees a booking without any tenant context,
-    /// and reports an absent id as false.
-    /// </summary>
     [Fact]
-    public async Task PublicBookingExistence_SeesBookingsWithoutTenantContext()
+    public async Task BookingRepository_ResolvesBookingsWithoutTenantContext()
     {
-        var bookingId = (await fixture.ConcertReads.Set<BookingEntity>().FirstAsync()).Id;
+        var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync();
 
-        using var scope = fixture.Services.CreateScope();
-        var publicBookings = scope.ServiceProvider.GetRequiredService<IPublicBookingRepository>();
+        var scoped = fixture.Services.GetRequiredService<IScoped<IBookingRepository>>();
+        var applicationId = await scoped.RunAsync(repository => repository.GetApplicationIdByIdAsync(booking.Id));
+        var missingApplicationId = await scoped.RunAsync(
+            repository => repository.GetApplicationIdByIdAsync(booking.Id + 100_000));
 
-        Assert.True(await publicBookings.ExistsAsync(bookingId));
-        Assert.False(await publicBookings.ExistsAsync(bookingId + 100_000));
+        Assert.Equal(booking.ApplicationId, applicationId);
+        Assert.Null(missingApplicationId);
     }
 }
