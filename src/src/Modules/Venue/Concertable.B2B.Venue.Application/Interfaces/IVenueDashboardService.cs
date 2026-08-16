@@ -4,5 +4,5 @@ namespace Concertable.B2B.Venue.Application.Interfaces;
 
 internal interface IVenueDashboardService
 {
-    Task<VenueDashboardKpis?> GetKpisAsync(CancellationToken ct = default);
+    Task<Option<VenueDashboardKpis>> GetKpisAsync(CancellationToken ct = default);
 }

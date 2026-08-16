@@ -10,6 +10,8 @@ public enum LifecycleState
     Booked,                 // payment confirmed, draft created â€” CanPost gate
     AwaitingSettlement,     // deferred payout leg
     SettlementFailed,       // post-Finish payout failed â€” recovery lands Complete, not Booked
+    CancellationPending,
+    CancellationFailed,
     Complete,
     Cancelled,              // booking killed while escrow Held (Booked) â€” escrow refunded, concert dead
 }

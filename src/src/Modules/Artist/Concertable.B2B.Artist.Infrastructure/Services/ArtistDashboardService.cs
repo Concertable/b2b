@@ -30,9 +30,11 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         this.timeProvider = timeProvider;
     }
 
-    public async Task<ArtistDashboardKpis?> GetKpisAsync(CancellationToken ct = default)
+    public async Task<Option<ArtistDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
-        var artistId = await artistService.GetIdForCurrentUserAsync();
+        var artistIdOption = await artistService.GetIdForCurrentTenantAsync();
+        if (!artistIdOption.TryGetValue(out var artistId))
+            return null;
         var tenantId = tenantContext.GetTenantId();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
@@ -47,14 +49,11 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
                 ct);
         await Task.WhenAll(countsTask, mtdPayoutsTask);
 
-        var counts = countsTask.Result;
-        if (counts is null) return null;
-
-        return new ArtistDashboardKpis(
+        return countsTask.Result.Map(counts => new ArtistDashboardKpis(
             PendingApplications: counts.PendingApplications,
             AcceptedAwaitingCheckout: counts.AcceptedAwaitingCheckout,
             UpcomingConcerts: counts.UpcomingConcerts,
             MtdPayoutsCents: mtdPayoutsTask.Result.ToMinorUnits(),
-            MtdPayoutsDeltaPercent: null);
+            MtdPayoutsDeltaPercent: null));
     }
 }

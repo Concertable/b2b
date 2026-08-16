@@ -15,6 +15,8 @@ internal static class ApplicationMappers
         LifecycleState.Accepted
             or LifecycleState.PaymentFailed
             or LifecycleState.Booked
+            or LifecycleState.CancellationPending
+            or LifecycleState.CancellationFailed
             or LifecycleState.AwaitingSettlement
             or LifecycleState.SettlementFailed
             or LifecycleState.Complete => ApplicationStatus.Accepted,

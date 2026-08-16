@@ -1,4 +1,5 @@
 global using Concertable.Kernel;
+global using Reunion;
 global using Concertable.Kernel.ValueObjects;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
@@ -10,5 +11,6 @@ global using Concertable.B2B.User.Contracts;
 global using Concertable.B2B.User.Domain.Entities;
 global using Concertable.B2B.Concert.Domain;
 global using Concertable.B2B.User.Application.Interfaces;
+global using Concertable.B2B.User.Application.Errors;
 global using Concertable.B2B.User.Infrastructure.Repositories;
 global using Concertable.B2B.User.Infrastructure.Services;

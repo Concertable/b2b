@@ -1,5 +1,6 @@
 global using Concertable.DataAccess.Infrastructure;
 global using Concertable.B2B.Tenant.Application.DTOs;
+global using Concertable.B2B.Tenant.Application.Errors;
 global using Concertable.B2B.Tenant.Application.Interfaces;
 global using Concertable.B2B.Tenant.Application.Mappers;
 global using Concertable.B2B.Tenant.Domain.Entities;
@@ -8,6 +9,7 @@ global using Concertable.B2B.Tenant.Contracts;
 global using Concertable.B2B.Tenant.Contracts.Enums;
 global using Concertable.DataAccess;
 global using Concertable.Kernel;
+global using Reunion;
 global using Concertable.Kernel.ValueObjects;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;

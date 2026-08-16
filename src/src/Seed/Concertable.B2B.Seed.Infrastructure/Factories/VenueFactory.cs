@@ -20,7 +20,9 @@ public static class VenueFactory
     {
         var venue = VenueEntity
             .Create(userId, name, about, bannerUrl, avatar, location, address, email)
-            .WithId(id);
+            .Match(
+                venue => venue.WithId(id),
+                _ => throw new InvalidOperationException($"Seed venue {id} is invalid."));
         venue.Approve();
         return venue;
     }
