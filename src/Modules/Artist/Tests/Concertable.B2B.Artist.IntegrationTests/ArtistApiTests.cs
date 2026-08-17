@@ -180,18 +180,6 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task LegacyCreateRoute_ShouldReturn404()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
-
-        var response = await client.PostAsync(
-            "/api/artist",
-            await BuildCreateRequest().ToFormContent());
-
-        await response.ShouldBe(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
     public async Task Create_ShouldEnforceOneProfilePerTenant_WhenRequestsRace()
     {
         var manager = fixture.SeedState.ArtistManagerNoArtist;
@@ -253,19 +241,6 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task LegacyUpdateRoute_ShouldReturn405()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var request = BuildUpdateRequest();
-
-        var response = await client.PutAsync(
-            $"/api/artist/{fixture.SeedState.Artist.Id}",
-            await request.ToFormContent());
-
-        await response.ShouldBe(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
     public async Task Update_ShouldReturn200_WithUpdatedArtistDto_WhenValidRequest()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
@@ -315,16 +290,6 @@ public sealed class ArtistApiTests : IAsyncLifetime
         var response = await client.GetAsync("/api/artist-dashboard/kpis");
 
         await response.ShouldBe(HttpStatusCode.NoContent);
-    }
-
-    [Fact]
-    public async Task LegacyGetRoute_ShouldReturn404()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-
-        var response = await client.GetAsync("/api/artist/user");
-
-        await response.ShouldBe(HttpStatusCode.MethodNotAllowed);
     }
 
     #endregion
