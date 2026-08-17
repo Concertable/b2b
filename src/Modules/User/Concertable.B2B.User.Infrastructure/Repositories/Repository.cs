@@ -4,10 +4,6 @@ using Concertable.B2B.User.Infrastructure.Data;
 
 namespace Concertable.B2B.User.Infrastructure.Repositories;
 
-internal abstract class WriteRepository<TEntity>(UserDbContext context)
-    : WriteRepository<TEntity, UserDbContext>(context)
-    where TEntity : class;
-
 internal abstract class Repository<TEntity>(UserDbContext context)
-    : Repository<TEntity, UserDbContext, Guid>(context)
+    : Repository<TEntity, Guid>(context)
     where TEntity : class, IGuidEntity;
