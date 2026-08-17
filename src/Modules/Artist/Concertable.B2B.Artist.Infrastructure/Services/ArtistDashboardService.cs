@@ -30,8 +30,8 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
     public async Task<Option<ArtistDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var counts = await concertModule.GetArtistDashboardCountsAsync(tenantId, ct);
-        if (!counts.TryGetValue(out var dashboardCounts))
+        var countsOption = await concertModule.GetArtistDashboardCountsAsync(tenantId, ct);
+        if (!countsOption.TryGetValue(out var counts))
             return null;
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
@@ -44,9 +44,9 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
                 ct);
 
         return new ArtistDashboardKpis(
-            PendingApplications: dashboardCounts.PendingApplications,
-            AcceptedAwaitingCheckout: dashboardCounts.AcceptedAwaitingCheckout,
-            UpcomingConcerts: dashboardCounts.UpcomingConcerts,
+            PendingApplications: counts.PendingApplications,
+            AcceptedAwaitingCheckout: counts.AcceptedAwaitingCheckout,
+            UpcomingConcerts: counts.UpcomingConcerts,
             MtdPayoutsCents: mtdPayouts.ToMinorUnits(),
             MtdPayoutsDeltaPercent: null);
     }

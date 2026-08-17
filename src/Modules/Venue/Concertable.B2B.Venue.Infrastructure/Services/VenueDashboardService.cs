@@ -30,8 +30,8 @@ internal sealed class VenueDashboardService : IVenueDashboardService
     public async Task<Option<VenueDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var counts = await concertModule.GetVenueDashboardCountsAsync(tenantId, ct);
-        if (!counts.TryGetValue(out var dashboardCounts))
+        var countsOption = await concertModule.GetVenueDashboardCountsAsync(tenantId, ct);
+        if (!countsOption.TryGetValue(out var counts))
             return null;
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
@@ -44,11 +44,11 @@ internal sealed class VenueDashboardService : IVenueDashboardService
                 ct);
 
         return new VenueDashboardKpis(
-            ApplicationsToReview: dashboardCounts.ApplicationsToReview,
+            ApplicationsToReview: counts.ApplicationsToReview,
             ApplicationsToReviewDelta: null,
-            OpenOpportunities: dashboardCounts.OpenOpportunities,
-            UpcomingConcerts: dashboardCounts.UpcomingConcerts,
-            AwaitingDoorRevenue: dashboardCounts.AwaitingDoorRevenue,
+            OpenOpportunities: counts.OpenOpportunities,
+            UpcomingConcerts: counts.UpcomingConcerts,
+            AwaitingDoorRevenue: counts.AwaitingDoorRevenue,
             MtdRevenueCents: mtdRevenue.ToMinorUnits(),
             MtdRevenueDeltaPercent: null);
     }
