@@ -33,6 +33,7 @@ builder.AddPaymentWorkers<Projects.Concertable_Payment_Workers>(paymentDb, asb);
 builder.AddVenueSpa(api, auth);
 builder.AddArtistSpa(api, auth);
 builder.AddBusinessSpa(api, auth);
+builder.AddAdminSpa(api, auth);
 builder.AddMobileB2B(api, auth, paymentWeb);
 builder.AddStripeCli(paymentWeb);
 
