@@ -43,14 +43,14 @@ internal sealed class VenueController : ControllerBase
 
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.OperationsView)]
-    [HttpGet("/api/organization/venue")]
+    [HttpGet("/api/organization/[controller]")]
     public async Task<ActionResult<DetailsResponse>> GetDetails(CancellationToken ct) =>
         (await venueService.GetDetailsAsync(ct))
             .ToOkOrNoContent(venue => venue.ToDetailsResponse());
 
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPost("/api/organization/venue")]
+    [HttpPost("/api/organization/[controller]")]
     public async Task<ActionResult<DetailsResponse>> Create(
         [FromForm] CreateVenueRequest request,
         CancellationToken ct) =>
@@ -61,7 +61,7 @@ internal sealed class VenueController : ControllerBase
 
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPut("/api/organization/venue")]
+    [HttpPut("/api/organization/[controller]")]
     public async Task<ActionResult<DetailsResponse>> Update(
         [FromForm] UpdateVenueRequest request,
         CancellationToken ct) =>

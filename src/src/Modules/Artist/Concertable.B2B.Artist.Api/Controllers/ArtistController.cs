@@ -27,14 +27,14 @@ internal sealed class ArtistController : ControllerBase
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.OperationsView)]
-    [HttpGet("/api/organization/artist")]
+    [HttpGet("/api/organization/[controller]")]
     public async Task<ActionResult<DetailsResponse>> GetDetails(CancellationToken ct) =>
         (await artistService.GetDetailsAsync(ct))
             .ToOkOrNoContent(artist => artist.ToDetailsResponse());
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPost("/api/organization/artist")]
+    [HttpPost("/api/organization/[controller]")]
     public async Task<ActionResult<DetailsResponse>> Create(
         [FromForm] CreateArtistRequest request,
         CancellationToken ct) =>
@@ -45,7 +45,7 @@ internal sealed class ArtistController : ControllerBase
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPut("/api/organization/artist")]
+    [HttpPut("/api/organization/[controller]")]
     public async Task<ActionResult<DetailsResponse>> Update(
         [FromForm] UpdateArtistRequest request,
         CancellationToken ct) =>
