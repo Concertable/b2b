@@ -38,7 +38,9 @@ internal sealed class TenantService : ITenantService
 
     public async Task<Option<TenantDetails>> GetDetailsAsync(CancellationToken ct = default)
     {
-        var tenantId = tenantContext.GetTenantId();
+        if (tenantContext.TenantId is not { } tenantId)
+            return Option.None<TenantDetails>();
+
         return (await repository.GetByIdAsync(tenantId, ct)).ToOption().Map(ToDetails);
     }
 

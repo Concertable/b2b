@@ -30,6 +30,7 @@ internal sealed class OrganizationController : ControllerBase
     }
 
     [HttpPut]
+    [HasPermission(SharedPermissions.TenantSettingsEdit)]
     public async Task<ActionResult<TenantDetails>> Update(
         UpdateTenantRequest request,
         CancellationToken ct) =>
