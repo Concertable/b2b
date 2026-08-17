@@ -5,7 +5,12 @@ namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 
 internal sealed class TenantRepository : Repository<TenantEntity>, ITenantRepository
 {
-    public TenantRepository(TenantDbContext context) : base(context) { }
+    private readonly TenantDbContext context;
+
+    public TenantRepository(TenantDbContext context) : base(context)
+    {
+        this.context = context;
+    }
 
     public Task<UserMembership?> GetMembershipAsync(Guid userId, Guid tenantId, CancellationToken ct = default) =>
         Project(context.Memberships.Where(m => m.UserId == userId && m.TenantId == tenantId)).FirstOrDefaultAsync(ct);

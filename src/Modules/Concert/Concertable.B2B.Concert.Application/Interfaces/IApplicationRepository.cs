@@ -15,9 +15,16 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
         int applicationId,
         CancellationToken ct = default);
     Task<IEnumerable<ApplicationEntity>> GetByOpportunityIdAsync(int opportunityId);
-    Task<bool> ExistsForOpportunityAndArtistAsync(int opportunityId, int artistId);
-    Task<IEnumerable<ApplicationEntity>> GetPendingByArtistIdAsync(int id);
-    Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistIdAsync(int id);
+    Task<bool> ExistsForOpportunityAndArtistTenantAsync(
+        int opportunityId,
+        Guid artistTenantId,
+        CancellationToken ct = default);
+    Task<IEnumerable<ApplicationEntity>> GetPendingByArtistTenantIdAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
+    Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistTenantIdAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
     Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id);
     Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(int applicationId);
     Task RejectAllExceptAsync(int opportunityId, int applicationId);

@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
 using Reunion;
@@ -10,8 +11,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class OpportunityService : IOpportunityService
 {
     private readonly IOpportunityRepository repository;
-    private readonly IPublicOpportunityRepository publicRepository;
-    private readonly IVenueModule venueModule;
+    private readonly IOpportunityReadRepository readRepository;
+    private readonly IVenueReadModelRepository venueRepository;
     private readonly IDealModule dealModule;
     private readonly IOpportunitySyncer syncer;
     private readonly IOpportunityMapper mapper;
@@ -20,8 +21,8 @@ internal sealed class OpportunityService : IOpportunityService
 
     public OpportunityService(
         IOpportunityRepository repository,
-        IPublicOpportunityRepository publicRepository,
-        IVenueModule venueModule,
+        IOpportunityReadRepository readRepository,
+        IVenueReadModelRepository venueRepository,
         IDealModule dealModule,
         IOpportunitySyncer syncer,
         IOpportunityMapper mapper,
@@ -29,8 +30,8 @@ internal sealed class OpportunityService : IOpportunityService
         IUnitOfWorkBehavior uowBehavior)
     {
         this.repository = repository;
-        this.publicRepository = publicRepository;
-        this.venueModule = venueModule;
+        this.readRepository = readRepository;
+        this.venueRepository = venueRepository;
         this.dealModule = dealModule;
         this.syncer = syncer;
         this.mapper = mapper;
@@ -40,11 +41,9 @@ internal sealed class OpportunityService : IOpportunityService
 
     public async Task<Result<OpportunityDto, OpportunityMutationError>> CreateAsync(OpportunityRequest request)
     {
-        var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
-            .OrFailure(() => (OpportunityMutationError)new OpportunityMutationError.VenueNotFound());
-        if (venue.TryGetError(out var venueError))
-            return venueError;
-        venue.TryGetValue(out var venueId);
+        var venue = await GetActiveTenantVenueAsync();
+        if (venue is null)
+            return new OpportunityMutationError.VenueNotFound();
 
         var creation = await uowBehavior.ExecuteAsync(async () =>
         {
@@ -52,7 +51,7 @@ internal sealed class OpportunityService : IOpportunityService
             return await deal.BindAsync(async dealId =>
             {
                 var entity = OpportunityEntity.Create(
-                    venueId,
+                    venue.Id,
                     new DateRange(request.StartDate, request.EndDate),
                     dealId,
                     request.Genres);
@@ -67,11 +66,9 @@ internal sealed class OpportunityService : IOpportunityService
     public async Task<UnitResult<OpportunityMutationError>> CreateMultipleAsync(IEnumerable<OpportunityRequest> requests)
     {
         var requestList = requests.ToList();
-        var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
-            .OrFailure(() => (OpportunityMutationError)new OpportunityMutationError.VenueNotFound());
-        if (venue.TryGetError(out var venueError))
-            return venueError;
-        venue.TryGetValue(out var venueId);
+        var venue = await GetActiveTenantVenueAsync();
+        if (venue is null)
+            return new OpportunityMutationError.VenueNotFound();
 
         var validation = ValidateDeals(requestList.Select(request => request.Deal));
         if (validation.IsFailure)
@@ -83,7 +80,7 @@ internal sealed class OpportunityService : IOpportunityService
             {
                 var dealId = await CreatePrevalidatedDealAsync(request.Deal);
                 var opportunity = OpportunityEntity.Create(
-                    venueId,
+                    venue.Id,
                     new DateRange(request.StartDate, request.EndDate),
                     dealId,
                     request.Genres);
@@ -96,13 +93,13 @@ internal sealed class OpportunityService : IOpportunityService
 
     public async Task<IPagination<OpportunityDto>> GetActiveByVenueIdAsync(int id, IPageParams pageParams)
     {
-        var opportunities = await publicRepository.GetActiveByVenueIdAsync(id, pageParams);
+        var opportunities = await readRepository.GetActiveByVenueIdAsync(id, pageParams);
         return await mapper.ToDtosAsync(opportunities);
     }
 
     public async Task<IReadOnlyList<OpportunityDto>> GetActiveByVenueIdAsync(int venueId)
     {
-        var opportunities = await publicRepository.GetActiveByVenueIdAsync(venueId);
+        var opportunities = await readRepository.GetActiveByVenueIdAsync(venueId);
         return await mapper.ToDtosAsync(opportunities);
     }
 
@@ -110,13 +107,11 @@ internal sealed class OpportunityService : IOpportunityService
         int venueId,
         IEnumerable<OpportunityRequest> desired)
     {
-        var venue = (await venueModule.GetVenueIdForCurrentTenantAsync())
-            .OrFailure(() => (OpportunityMutationError)new OpportunityMutationError.VenueNotFound());
-        if (venue.TryGetError(out var venueError))
-            return venueError;
-        venue.TryGetValue(out var ownedVenueId);
+        var venue = await GetActiveTenantVenueAsync();
+        if (venue is null)
+            return new OpportunityMutationError.VenueNotFound();
 
-        if (ownedVenueId != venueId)
+        if (venue.Id != venueId)
             return new OpportunityMutationError.VenueForbidden();
 
         var desiredList = desired.ToList();
@@ -130,7 +125,7 @@ internal sealed class OpportunityService : IOpportunityService
 
         await uowBehavior.ExecuteAsync(() => syncer.SyncAsync(venueId, current, desiredList));
 
-        var updated = await publicRepository.GetActiveByVenueIdAsync(venueId);
+        var updated = await readRepository.GetActiveByVenueIdAsync(venueId);
         return new Success<IReadOnlyList<OpportunityDto>>(
             await mapper.ToDtosAsync(updated));
     }
@@ -161,6 +156,12 @@ internal sealed class OpportunityService : IOpportunityService
         var opportunity = await repository.GetByApplicationIdAsync(applicationId);
         return opportunity?.TenantId == tenant;
     }
+
+    private async Task<VenueReadModel?> GetActiveTenantVenueAsync(
+        CancellationToken ct = default) =>
+        tenantContext.TenantId is { } tenantId
+            ? await venueRepository.GetByTenantIdAsync(tenantId, ct)
+            : null;
 
     private UnitResult<OpportunityMutationError> ValidateDeals(IEnumerable<IDeal> deals)
     {

@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddTenantModule(configuration);
         services.AddControllers()
-            .AddInternalControllers(typeof(TenantController).Assembly);
+            .AddInternalControllers(typeof(OrganizationController).Assembly);
         return services;
     }
 }
