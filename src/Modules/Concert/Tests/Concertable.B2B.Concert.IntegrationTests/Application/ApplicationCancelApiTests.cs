@@ -133,7 +133,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
     }
 
