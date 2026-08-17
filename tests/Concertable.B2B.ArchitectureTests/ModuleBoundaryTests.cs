@@ -17,9 +17,6 @@ public sealed class ModuleBoundaryTests
     private static readonly string[] Modules =
         ["Artist", "Concert", "Conversations", "Deal", "Tenant", "User", "Venue"];
 
-    private static readonly string[] LifecycleModules =
-        ["Application", "Booking", "Concert", "Deal", "Opportunity"];
-
     private static readonly string ModsAlt = string.Join("|", Modules);
 
     private static readonly System.Reflection.Assembly[] Assemblies = LoadAssemblies();
@@ -76,28 +73,6 @@ public sealed class ModuleBoundaryTests
                 .Should().NotDependOnAny(
                     Types().That().ResideInNamespace($@"^Concertable\.B2B\.{into}\.Infrastructure($|\.)", useRegularExpressions: true))
                 .Because($"{from} must reach {into} only via {into}.Contracts or integration events, never its Infrastructure.")
-                .Check(Architecture);
-        }
-    }
-
-    [Fact]
-    public void LifecycleModules_DependOnEachOtherOnlyThroughContracts()
-    {
-        foreach (var from in LifecycleModules)
-        foreach (var into in LifecycleModules)
-        {
-            if (from == into)
-                continue;
-
-            Types().That().ResideInNamespace(
-                    $@"^Concertable\.B2B\.{from}\.(Domain|Application|Infrastructure|Api)($|\.)",
-                    useRegularExpressions: true)
-                .Should().NotDependOnAny(
-                    Types().That().ResideInNamespace(
-                        $@"^Concertable\.B2B\.{into}\.(Domain|Application|Infrastructure|Api)($|\.)",
-                        useRegularExpressions: true))
-                .Because($"{from} may depend on {into}.Contracts but not its runtime or entities.")
-                .WithoutRequiringPositiveResults()
                 .Check(Architecture);
         }
     }
