@@ -144,7 +144,7 @@ internal sealed class ConcertService : IConcertService
         if (!tenantContext.IsHost && concert.VenueTenantId != tenantContext.TenantId)
             return new DeclareDoorRevenueError.VenueForbidden();
 
-        if (concert.DealType is not (DealType.DoorSplit or DealType.Versus))
+        if (!concert.RequiresDoorRevenue)
             return new DeclareDoorRevenueError.WrongDealType();
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
             return new DeclareDoorRevenueError.TooEarly();

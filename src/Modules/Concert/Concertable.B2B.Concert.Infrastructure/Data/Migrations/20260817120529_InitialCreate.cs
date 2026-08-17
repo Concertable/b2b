@@ -248,6 +248,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     ArtistId = table.Column<int>(type: "int", nullable: false),
                     VenueId = table.Column<int>(type: "int", nullable: false),
                     DealType = table.Column<int>(type: "int", nullable: false),
+                    RequiresDoorRevenue = table.Column<bool>(type: "bit", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     About = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BannerUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),

@@ -28,6 +28,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public int ArtistId { get; private set; }
     public int VenueId { get; private set; }
     public DealType DealType { get; private set; }
+    public bool RequiresDoorRevenue { get; private set; }
     public string Name { get; private set; } = null!;
     public string About { get; private set; } = null!;
     public string? BannerUrl { get; private set; }
@@ -69,6 +70,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
             ArtistId = booking.ArtistId,
             VenueId = booking.VenueId,
             DealType = booking.DealType,
+            RequiresDoorRevenue = booking.RequiresDoorRevenue,
             Period = new DateRange(booking.StartDate, booking.EndDate),
             Name = name,
             About = about,
@@ -78,8 +80,6 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
 
     public void IncrementTicketsSold(int quantity) => TicketsSold += quantity;
 
-    /* Venue-declared gross the artist's revenue share settles against (external ticketing + box
-       office + cash on the door). A dead night is a real 0m; null means "not yet declared". */
     public UnitResult<DoorRevenueDeclarationError> DeclareDoorRevenue(decimal doorRevenue)
     {
         if (doorRevenue < 0)

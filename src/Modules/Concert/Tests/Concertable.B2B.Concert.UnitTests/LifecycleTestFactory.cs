@@ -30,6 +30,7 @@ internal static class LifecycleTestFactory
             booking.VenueTenantId,
             booking.ArtistTenantId,
             booking.DealType,
+            booking is DeferredBooking,
             period.Start,
             period.End);
 }

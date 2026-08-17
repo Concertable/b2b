@@ -61,6 +61,7 @@ internal sealed class ConcertDraftService : IConcertDraftService
                 booking.VenueTenantId,
                 booking.ArtistTenantId,
                 booking.DealType,
+                booking is DeferredBooking,
                 opportunity.Period.Start,
                 opportunity.Period.End),
             $"{artist.Name} performing at {venue.Name}",

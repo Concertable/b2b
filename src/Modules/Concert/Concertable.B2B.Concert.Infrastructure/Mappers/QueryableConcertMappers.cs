@@ -36,7 +36,7 @@ internal static class QueryableConcertMappers
             StartDate = c.Period.Start,
             EndDate = c.Period.End,
             State = application.State,
-            IsRevenueShare = c.DealType == DealType.DoorSplit || c.DealType == DealType.Versus,
+            IsRevenueShare = c.RequiresDoorRevenue,
             TicketsSold = c.TicketsSold,
             DoorRevenue = c.DoorRevenue,
             Genres = c.Genres,

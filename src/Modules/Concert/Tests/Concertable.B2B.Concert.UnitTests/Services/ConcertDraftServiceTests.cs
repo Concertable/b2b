@@ -69,6 +69,7 @@ public sealed class ConcertDraftServiceTests
         Assert.NotNull(addedConcert);
         Assert.Equal(booking.ApplicationId, addedConcert.ApplicationId);
         Assert.Equal(venue.Id, addedConcert.VenueId);
+        Assert.False(addedConcert.RequiresDoorRevenue);
         Assert.Contains(booking.DomainEvents, value => value is BookingConfirmedDomainEvent);
         concertRepository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         bookingRepository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);

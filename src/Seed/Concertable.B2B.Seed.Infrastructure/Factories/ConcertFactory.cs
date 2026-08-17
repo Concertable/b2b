@@ -20,6 +20,7 @@ public static class ConcertFactory
                     booking.VenueTenantId,
                     booking.ArtistTenantId,
                     booking.DealType,
+                    booking is DeferredBooking,
                     spec.Period.Start,
                     spec.Period.End),
                 spec.Name,

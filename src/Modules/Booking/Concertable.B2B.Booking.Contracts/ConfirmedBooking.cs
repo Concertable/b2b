@@ -11,5 +11,6 @@ public sealed record ConfirmedBooking(
     Guid VenueTenantId,
     Guid ArtistTenantId,
     DealType DealType,
+    bool RequiresDoorRevenue,
     DateTime StartDate,
     DateTime EndDate);
