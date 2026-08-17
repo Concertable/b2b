@@ -14,13 +14,20 @@ internal sealed class UserController : ControllerBase
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
     private readonly ITenantModule tenantModule;
+    private readonly IAdminService adminService;
 
-    public UserController(IUserService userService, ICurrentUser currentUser, IUserModule userModule, ITenantModule tenantModule)
+    public UserController(
+        IUserService userService,
+        ICurrentUser currentUser,
+        IUserModule userModule,
+        ITenantModule tenantModule,
+        IAdminService adminService)
     {
         this.userService = userService;
         this.currentUser = currentUser;
         this.userModule = userModule;
         this.tenantModule = tenantModule;
+        this.adminService = adminService;
     }
 
     [HttpPut("location")]
@@ -37,6 +44,7 @@ internal sealed class UserController : ControllerBase
             return Unauthorized();
 
         var memberships = await tenantModule.GetMembershipsAsync(currentUser.GetId());
-        return Ok(value with { Memberships = memberships });
+        var isAdmin = await adminService.IsCurrentUserAdminAsync();
+        return Ok(value with { Memberships = memberships, IsAdmin = isAdmin });
     }
 }

@@ -11,6 +11,7 @@ public sealed record UserDto
     public string? County { get; init; }
     public string? Town { get; init; }
     public bool IsEmailVerified { get; init; }
+    public bool IsAdmin { get; init; }
     public IReadOnlyList<MembershipDto> Memberships { get; init; } = [];
 }
 
