@@ -104,6 +104,13 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                 schema: "venue",
                 table: "VenueReviews",
                 column: "VenueId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Venues_TenantId",
+                schema: "venue",
+                table: "Venues",
+                column: "TenantId",
+                unique: true);
         }
 
         /// <inheritdoc />
