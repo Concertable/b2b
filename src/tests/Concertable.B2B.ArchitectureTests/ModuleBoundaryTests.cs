@@ -8,7 +8,7 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 namespace Concertable.B2B.ArchitectureTests;
 
 /// <summary>
-/// Enforces the modular-monolith rules (api/agents/CONVENTIONS.md) that the compiler alone
+/// Enforces the modular-monolith rules (api/agents/MODULE_STRUCTURE.md) that the compiler alone
 /// can't: cross-module isolation once a type is <c>public</c>, plus the layer reference graph as
 /// defense-in-depth. ArchUnitNET reads compiled IL, so it sees <c>internal</c> types too.
 /// </summary>
@@ -58,7 +58,7 @@ public sealed class ModuleBoundaryTests
 
     // Cross-module isolation — a module talks to another only via its Contracts / integration events,
     // never reaching into its Infrastructure. (Domain is intentionally allowed: public read-model
-    // types are shared cross-module as projection targets — CONVENTIONS.md.)
+    // types are shared cross-module as projection targets — MODULE_STRUCTURE.md.)
 
     [Fact]
     public void Modules_do_not_reach_into_another_modules_Infrastructure()
@@ -113,7 +113,7 @@ public sealed class ModuleBoundaryTests
 
         Types().That().ResideInNamespace(source, useRegularExpressions: true)
             .Should().NotDependOnAny(Types().That().ResideInNamespace(forbidden, useRegularExpressions: true))
-            .Because($"the {layer} layer must not depend on {string.Join("/", forbiddenLayers)} (CONVENTIONS.md reference graph).")
+            .Because($"the {layer} layer must not depend on {string.Join("/", forbiddenLayers)} (MODULE_STRUCTURE.md reference graph).")
             .Check(Architecture);
     }
 }

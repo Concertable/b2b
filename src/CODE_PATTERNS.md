@@ -6,8 +6,8 @@ deliberately omit. Nothing here restates a rule.
 
 ## The DbContext stances, per module
 
-All in `B2B.DataAccess.Infrastructure`. Each composes the module's anemic `XConfigurationProvider`; none
-modifies it.
+The bases live in `B2B.DataAccess.Infrastructure`; each concrete context lives in its own module's
+`Infrastructure/Data/`. Each composes the module's anemic `XConfigurationProvider`; none modifies it.
 
 | Stance | Base | Concrete examples |
 |---|---|---|
