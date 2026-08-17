@@ -1,5 +1,6 @@
 using Concertable.B2B.Venue.Api.Mappers;
 using Concertable.B2B.Venue.Api.Responses;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Api.Authorization;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Application.Requests;
@@ -39,4 +40,31 @@ internal sealed class VenueController : ControllerBase
     {
         return Ok(await venueService.OwnsVenueAsync(venueId, ct));
     }
+
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    [HttpGet("/api/organization/venue")]
+    public async Task<ActionResult<DetailsResponse>> GetForActiveTenant(CancellationToken ct) =>
+        (await venueService.GetDetailsForActiveTenantAsync(ct))
+            .ToOkOrProblem(venue => venue.ToDetailsResponse());
+
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.ProfileEdit)]
+    [HttpPost("/api/organization/venue")]
+    public async Task<ActionResult<DetailsResponse>> CreateForActiveTenant(
+        [FromForm] CreateVenueRequest request,
+        CancellationToken ct) =>
+        (await venueService.CreateForActiveTenantAsync(request, ct))
+            .Map(venue => venue.ToDetailsResponse())
+            .ToCreatedOrProblem(venue => $"/api/venue/{venue.Id}");
+
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.ProfileEdit)]
+    [HttpPut("/api/organization/venue")]
+    public async Task<ActionResult<DetailsResponse>> UpdateForActiveTenant(
+        [FromForm] UpdateVenueRequest request,
+        CancellationToken ct) =>
+        (await venueService.UpdateForActiveTenantAsync(request, ct))
+            .Map(venue => venue.ToDetailsResponse())
+            .ToOkOrProblem();
 }
