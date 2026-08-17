@@ -33,7 +33,16 @@ internal sealed class ArtistController : ControllerBase
             .ToOkOrProblem(artist => artist.ToDetailsResponse());
 
     [RequiredTenantType(TenantType.Artist)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    [HttpGet("user")]
+    public async Task<ActionResult<DetailsResponse>> GetLegacy(CancellationToken ct) =>
+        (await artistService.GetDetailsAsync(ct)).Match<ActionResult<DetailsResponse>>(
+            artist => Ok(artist.ToDetailsResponse()),
+            _ => NoContent());
+
+    [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
+    [HttpPost]
     [HttpPost("/api/organization/artist")]
     public async Task<ActionResult<DetailsResponse>> Create(
         [FromForm] CreateArtistRequest request,
@@ -44,6 +53,7 @@ internal sealed class ArtistController : ControllerBase
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
+    [HttpPut("{artistId:int}")]
     [HttpPut("/api/organization/artist")]
     public async Task<ActionResult<DetailsResponse>> Update(
         [FromForm] UpdateArtistRequest request,

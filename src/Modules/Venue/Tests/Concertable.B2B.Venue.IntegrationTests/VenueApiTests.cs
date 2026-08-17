@@ -2,6 +2,7 @@ using System.Net;
 using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.B2B.Venue.Api.Responses;
+using Concertable.B2B.Tenant.Contracts;
 using static Concertable.B2B.Venue.IntegrationTests.VenueRequestBuilders;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
