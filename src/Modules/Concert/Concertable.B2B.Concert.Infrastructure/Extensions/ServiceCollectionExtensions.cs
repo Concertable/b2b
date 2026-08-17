@@ -119,10 +119,6 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IApplyExecutor, ApplyExecutor>();
         services.AddScoped<IAcceptExecutor, AcceptExecutor>();
-        services.AddScoped<IVerifyExecutor, VerifyExecutor>();
-        services.AddScoped<IVerifyCoordinator, VerifyCoordinator>();
-        services.AddScoped<IBookingAdvancer, BookingAdvancer>();
-        services.AddScoped<IPaymentVerificationRecorder, PaymentVerificationRecorder>();
         services.AddScoped<IEscrowExecutor, EscrowExecutor>();
         services.AddScoped<ISettlementExecutor, SettlementExecutor>();
         services.AddScoped<IFinishExecutor, FinishExecutor>();
@@ -172,11 +168,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ConcertReviewProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, SettlementPaymentProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, EscrowPaymentProcessor>();
-        services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, VerifyPaymentProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, TicketSaleProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, EscrowPaymentFailedProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, SettlementPaymentFailedProcessor>();
-        services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, VerifyPaymentFailedProcessor>();
         services.AddScoped<FinancialOperationOutcomeProcessor>();
         services.AddScoped<IIntegrationEventHandler<CaptureEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
         services.AddScoped<IIntegrationEventHandler<CaptureEscrowRejectedEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());

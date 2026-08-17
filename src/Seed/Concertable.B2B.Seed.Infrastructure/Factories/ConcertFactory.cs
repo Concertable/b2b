@@ -15,6 +15,7 @@ public static class ConcertFactory
                     booking.OperationId,
                     booking.Id,
                     booking.ApplicationId,
+                    booking.OpportunityId,
                     spec.ArtistId,
                     spec.VenueId,
                     booking.VenueTenantId,

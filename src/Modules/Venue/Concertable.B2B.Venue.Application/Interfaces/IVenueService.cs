@@ -23,4 +23,7 @@ internal interface IVenueService
         CancellationToken ct = default);
 
     Task<Option<VenueSummary>> GetSummaryAsync(int id, CancellationToken ct = default);
+    Task<Option<int>> GetCurrentIdAsync(CancellationToken ct = default);
+    Task<Option<VenueProfile>> GetProfileAsync(int id, CancellationToken ct = default);
+    Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
 }

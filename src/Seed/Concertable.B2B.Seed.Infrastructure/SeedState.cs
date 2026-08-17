@@ -1,4 +1,5 @@
 using Concertable.B2B.Artist.Domain.Entities;
+using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Seed.Contracts;
@@ -9,6 +10,7 @@ using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.User.Domain.Entities;
 using Concertable.Contracts;
 using Concertable.B2B.Venue.Domain.Entities;
+using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Seed.Identity;
 using Concertable.Seed.Identity.Extensions;

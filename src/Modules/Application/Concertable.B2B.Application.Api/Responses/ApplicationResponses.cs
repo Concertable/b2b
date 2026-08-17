@@ -1,0 +1,16 @@
+using Concertable.B2B.Artist.Contracts;
+using Concertable.B2B.Application.Application.DTOs;
+using Concertable.B2B.Deal.Contracts;
+
+namespace Concertable.B2B.Application.Api.Responses;
+
+internal sealed record ApplicationResponse(
+    int Id,
+    ArtistSummary Artist,
+    OpportunitySummaryResponse Opportunity,
+    ApplicationStatus Status,
+    ApplicationActions Actions);
+
+internal sealed record OpportunitySummaryResponse(int Id, DateTime StartDate, DateTime EndDate, IDeal Deal);
+
+internal sealed record ApplicationActions(ActionLink? Accept, ActionLink? Checkout, ActionLink? Withdraw, ActionLink? Reject, ActionLink? Cancel, ActionLink? Contract);

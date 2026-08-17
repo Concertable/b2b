@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Booking.Domain.Entities;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;

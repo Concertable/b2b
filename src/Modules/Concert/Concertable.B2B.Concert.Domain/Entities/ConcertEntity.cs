@@ -25,6 +25,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public Guid OperationId { get; private set; }
     public int BookingId { get; private set; }
     public int ApplicationId { get; private set; }
+    public int OpportunityId { get; private set; }
     public int ArtistId { get; private set; }
     public int VenueId { get; private set; }
     public DealType DealType { get; private set; }
@@ -65,6 +66,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
             OperationId = booking.OperationId,
             BookingId = booking.BookingId,
             ApplicationId = booking.ApplicationId,
+            OpportunityId = booking.OpportunityId,
             VenueTenantId = booking.VenueTenantId,
             ArtistTenantId = booking.ArtistTenantId,
             ArtistId = booking.ArtistId,

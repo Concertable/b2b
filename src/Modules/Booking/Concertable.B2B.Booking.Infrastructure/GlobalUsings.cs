@@ -1,0 +1,11 @@
+global using Concertable.B2B.Booking.Application.Interfaces;
+global using Concertable.B2B.Booking.Domain.Entities;
+global using Concertable.B2B.DataAccess.Application;
+global using Concertable.B2B.DataAccess.Infrastructure;
+global using Concertable.B2B.Deal.Contracts.Enums;
+global using Concertable.Contracts;
+global using Concertable.DataAccess;
+global using Concertable.DataAccess.Infrastructure;
+global using Concertable.Kernel;
+global using Concertable.Kernel.Identity;
+global using Reunion;

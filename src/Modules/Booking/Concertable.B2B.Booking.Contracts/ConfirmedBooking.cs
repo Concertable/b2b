@@ -6,6 +6,7 @@ public sealed record ConfirmedBooking(
     Guid OperationId,
     int BookingId,
     int ApplicationId,
+    int OpportunityId,
     int ArtistId,
     int VenueId,
     Guid VenueTenantId,

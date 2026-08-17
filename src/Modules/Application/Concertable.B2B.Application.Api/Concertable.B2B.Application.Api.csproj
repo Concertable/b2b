@@ -11,5 +11,14 @@
     <ProjectReference Include="..\Concertable.B2B.Application.Contracts\Concertable.B2B.Application.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Application.Application\Concertable.B2B.Application.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Application.Infrastructure\Concertable.B2B.Application.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Artist\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" />
+    <ProjectReference Include="..\..\Booking\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" />
+    <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Concertable.Shared.Api" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.AspNetCore" />
   </ItemGroup>
 </Project>

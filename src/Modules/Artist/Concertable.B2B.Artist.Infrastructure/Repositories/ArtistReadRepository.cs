@@ -31,4 +31,20 @@ internal sealed class ArtistReadRepository : IArtistReadRepository
             .SelectMany(a => a.Genres)
             .ToHashSetAsync(ct);
 
+    public Task<ArtistProfile?> GetProfileAsync(int id, CancellationToken ct = default) =>
+        Profiles().FirstOrDefaultAsync(artist => artist.Id == id, ct);
+
+    public Task<ArtistProfile?> GetProfileByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        Profiles().FirstOrDefaultAsync(artist => artist.TenantId == tenantId, ct);
+
+    private IQueryable<ArtistProfile> Profiles() =>
+        context.Artists.Select(artist => new ArtistProfile(
+            artist.Id,
+            artist.TenantId,
+            artist.UserId,
+            artist.Name,
+            artist.About,
+            artist.Email,
+            artist.Genres.ToHashSet()));
+
 }

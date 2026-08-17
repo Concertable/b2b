@@ -1,9 +1,6 @@
 using Concertable.B2B.Concert.Api.Controllers;
-using Concertable.B2B.Concert.Api.Mappers;
-using Concertable.B2B.Concert.Api.Validators;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.Shared.Api.Extensions;
-using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,9 +11,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddConcertApi(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddConcertModule(configuration);
-        services.AddSingleton<IApplicationResponseMapper, ApplicationResponseMapper>();
-        services.AddSingleton<IOpportunityResponseMapper, OpportunityResponseMapper>();
-        services.AddValidatorsFromAssemblyContaining<ApplyRequestValidator>(includeInternalTypes: true);
         services.AddControllers()
             .AddInternalControllers(typeof(ConcertController).Assembly);
         return services;

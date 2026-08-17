@@ -21,4 +21,6 @@ internal interface IArtistService
 
     Task<Option<ArtistSummary>> GetSummaryAsync(int id, CancellationToken ct = default);
     Task<IReadOnlySet<Genre>> GetGenresAsync(int id, CancellationToken ct = default);
+    Task<Option<ArtistProfile>> GetProfileAsync(int id, CancellationToken ct = default);
+    Task<Option<ArtistProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
 }

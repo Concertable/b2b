@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel.ValueObjects;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;

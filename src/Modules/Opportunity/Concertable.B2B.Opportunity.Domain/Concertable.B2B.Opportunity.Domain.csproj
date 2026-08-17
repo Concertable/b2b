@@ -10,4 +10,9 @@
     <ProjectReference Include="..\Concertable.B2B.Opportunity.Contracts\Concertable.B2B.Opportunity.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Contracts" />
+  </ItemGroup>
+
 </Project>

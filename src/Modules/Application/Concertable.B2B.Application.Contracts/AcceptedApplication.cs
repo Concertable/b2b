@@ -2,11 +2,124 @@ using Concertable.B2B.Deal.Contracts.Enums;
 
 namespace Concertable.B2B.Application.Contracts;
 
-public sealed record AcceptedApplication(
+public abstract record AcceptedApplication(
     Guid OperationId,
     int ApplicationId,
     int OpportunityId,
     int ArtistId,
+    int VenueId,
     Guid VenueTenantId,
     Guid ArtistTenantId,
-    DealType DealType);
+    DealType DealType,
+    bool RequiresDoorRevenue,
+    PaymentMethod PaymentMethod,
+    DateTime StartDate,
+    DateTime EndDate,
+    string ArtistName,
+    string VenueName,
+    string TermsText,
+    string PlatformTermsVersion,
+    Signature ArtistSignature,
+    Signature VenueSignature);
+
+public sealed record FlatFeeAcceptedApplication(
+    Guid OperationId,
+    int ApplicationId,
+    int OpportunityId,
+    int ArtistId,
+    int VenueId,
+    Guid VenueTenantId,
+    Guid ArtistTenantId,
+    PaymentMethod PaymentMethod,
+    DateTime StartDate,
+    DateTime EndDate,
+    string ArtistName,
+    string VenueName,
+    string TermsText,
+    string PlatformTermsVersion,
+    Signature ArtistSignature,
+    Signature VenueSignature,
+    decimal Fee)
+    : AcceptedApplication(
+        OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
+        VenueTenantId, ArtistTenantId, DealType.FlatFee, false, PaymentMethod,
+        StartDate, EndDate, ArtistName, VenueName, TermsText, PlatformTermsVersion,
+        ArtistSignature, VenueSignature);
+
+public sealed record DoorSplitAcceptedApplication(
+    Guid OperationId,
+    int ApplicationId,
+    int OpportunityId,
+    int ArtistId,
+    int VenueId,
+    Guid VenueTenantId,
+    Guid ArtistTenantId,
+    PaymentMethod PaymentMethod,
+    DateTime StartDate,
+    DateTime EndDate,
+    string ArtistName,
+    string VenueName,
+    string TermsText,
+    string PlatformTermsVersion,
+    Signature ArtistSignature,
+    Signature VenueSignature,
+    decimal ArtistDoorPercent,
+    string PaymentMethodId,
+    VerifyPayment? Verification)
+    : AcceptedApplication(
+        OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
+        VenueTenantId, ArtistTenantId, DealType.DoorSplit, true, PaymentMethod,
+        StartDate, EndDate, ArtistName, VenueName, TermsText, PlatformTermsVersion,
+        ArtistSignature, VenueSignature);
+
+public sealed record VersusAcceptedApplication(
+    Guid OperationId,
+    int ApplicationId,
+    int OpportunityId,
+    int ArtistId,
+    int VenueId,
+    Guid VenueTenantId,
+    Guid ArtistTenantId,
+    PaymentMethod PaymentMethod,
+    DateTime StartDate,
+    DateTime EndDate,
+    string ArtistName,
+    string VenueName,
+    string TermsText,
+    string PlatformTermsVersion,
+    Signature ArtistSignature,
+    Signature VenueSignature,
+    decimal Guarantee,
+    decimal ArtistDoorPercent,
+    string PaymentMethodId,
+    VerifyPayment? Verification)
+    : AcceptedApplication(
+        OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
+        VenueTenantId, ArtistTenantId, DealType.Versus, true, PaymentMethod,
+        StartDate, EndDate, ArtistName, VenueName, TermsText, PlatformTermsVersion,
+        ArtistSignature, VenueSignature);
+
+public sealed record VenueHireAcceptedApplication(
+    Guid OperationId,
+    int ApplicationId,
+    int OpportunityId,
+    int ArtistId,
+    int VenueId,
+    Guid VenueTenantId,
+    Guid ArtistTenantId,
+    PaymentMethod PaymentMethod,
+    DateTime StartDate,
+    DateTime EndDate,
+    string ArtistName,
+    string VenueName,
+    string TermsText,
+    string PlatformTermsVersion,
+    Signature ArtistSignature,
+    Signature VenueSignature,
+    decimal HireFee,
+    string PaymentMethodId)
+    : AcceptedApplication(
+        OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
+        VenueTenantId, ArtistTenantId, DealType.VenueHire, false, PaymentMethod,
+        StartDate, EndDate, ArtistName, VenueName, TermsText, PlatformTermsVersion,
+        ArtistSignature, VenueSignature);

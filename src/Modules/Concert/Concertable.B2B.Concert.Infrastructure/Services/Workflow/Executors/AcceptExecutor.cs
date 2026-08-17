@@ -17,7 +17,6 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private readonly IBookingRepository bookingRepository;
     private readonly IContractIssuer contractIssuer;
     private readonly ITermsFingerprintCalculator termsFingerprint;
-    private readonly IBookingAdvancer bookingAdvancer;
     private readonly IBackgroundTaskRunner taskRunner;
     private readonly IUnitOfWorkBehavior unitOfWork;
     private readonly IOutboxUnitOfWorkBehavior outbox;
@@ -30,7 +29,6 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         IBookingRepository bookingRepository,
         IContractIssuer contractIssuer,
         ITermsFingerprintCalculator termsFingerprint,
-        IBookingAdvancer bookingAdvancer,
         IBackgroundTaskRunner taskRunner,
         IUnitOfWorkBehavior unitOfWork,
         IOutboxUnitOfWorkBehavior outbox)
@@ -42,7 +40,6 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.bookingRepository = bookingRepository;
         this.contractIssuer = contractIssuer;
         this.termsFingerprint = termsFingerprint;
-        this.bookingAdvancer = bookingAdvancer;
         this.taskRunner = taskRunner;
         this.unitOfWork = unitOfWork;
         this.outbox = outbox;
@@ -102,7 +99,6 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         if (result.IsFailure)
             return result;
 
-        await bookingAdvancer.AdvanceIfReadyAsync(applicationId);
         return result;
     }
 
