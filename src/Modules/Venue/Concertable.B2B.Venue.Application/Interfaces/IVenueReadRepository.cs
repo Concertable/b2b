@@ -4,6 +4,6 @@ namespace Concertable.B2B.Venue.Application.Interfaces;
 
 internal interface IVenueReadRepository
 {
-    Task<VenueSummary?> GetSummaryAsync(int id);
-    Task<VenueDetails?> GetDetailsByIdAsync(int id);
+    Task<VenueSummary?> GetSummaryAsync(int id, CancellationToken ct = default);
+    Task<VenueDetails?> GetDetailsByIdAsync(int id, CancellationToken ct = default);
 }

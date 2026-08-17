@@ -40,7 +40,7 @@ export const artistMid: ArtistDashboardFixture = {
         deal: { $type: "versus", paymentMethod: "Transfer", guarantee: 250, artistDoorPercent: 70 },
       },
       actions: {
-        withdraw: { href: "/api/Application/301/withdraw", method: "POST" },
+        withdraw: { href: "/api/application/301/withdraw", method: "POST" },
       },
     },
     {
@@ -56,7 +56,7 @@ export const artistMid: ArtistDashboardFixture = {
         deal: { $type: "flatFee", paymentMethod: "Transfer", fee: 180 },
       },
       actions: {
-        withdraw: { href: "/api/Application/302/withdraw", method: "POST" },
+        withdraw: { href: "/api/application/302/withdraw", method: "POST" },
       },
     },
     {
@@ -72,7 +72,7 @@ export const artistMid: ArtistDashboardFixture = {
         deal: { $type: "venueHire", paymentMethod: "Transfer", hireFee: 420 },
       },
       actions: {
-        checkout: { href: "/api/Application/303/checkout", method: "POST" },
+        checkout: { href: "/api/application/303/checkout", method: "POST" },
       },
     },
     {
@@ -88,7 +88,7 @@ export const artistMid: ArtistDashboardFixture = {
         deal: { $type: "doorSplit", paymentMethod: "Transfer", artistDoorPercent: 60 },
       },
       actions: {
-        withdraw: { href: "/api/Application/304/withdraw", method: "POST" },
+        withdraw: { href: "/api/application/304/withdraw", method: "POST" },
       },
     },
     {

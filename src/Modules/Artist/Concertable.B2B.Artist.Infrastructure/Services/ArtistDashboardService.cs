@@ -32,15 +32,14 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
 
     public async Task<Option<ArtistDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
-        var artistIdOption = await artistService.GetIdForCurrentTenantAsync();
-        if (!artistIdOption.TryGetValue(out var artistId))
+        if ((await artistService.GetDetailsAsync(ct)).IsFailure)
             return null;
         var tenantId = tenantContext.GetTenantId();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        var countsTask = concertModule.GetArtistDashboardCountsAsync(artistId, ct);
+        var countsTask = concertModule.GetArtistDashboardCountsAsync(tenantId, ct);
         var mtdPayoutsTask = now == monthStart
             ? Task.FromResult(Money.Gbp(0m))
             : paymentReportingClient.GetSettlementPayoutsAsync(

@@ -13,16 +13,16 @@ internal sealed class VenueReadRepository : IVenueReadRepository
         this.context = context;
     }
 
-    public async Task<VenueSummary?> GetSummaryAsync(int id) =>
+    public async Task<VenueSummary?> GetSummaryAsync(int id, CancellationToken ct = default) =>
         await context.Venues
             .Where(v => v.Id == id)
             .ToSummary(context.VenueRatingProjections)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
 
-    public async Task<VenueDetails?> GetDetailsByIdAsync(int id) =>
+    public async Task<VenueDetails?> GetDetailsByIdAsync(int id, CancellationToken ct = default) =>
         await context.Venues
             .Where(v => v.Id == id)
             .ToDetails(context.VenueRatingProjections)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
 
 }

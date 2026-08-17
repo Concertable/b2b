@@ -13,22 +13,22 @@ internal sealed class ArtistReadRepository : IArtistReadRepository
         this.context = context;
     }
 
-    public async Task<ArtistSummary?> GetSummaryAsync(int id) =>
+    public async Task<ArtistSummary?> GetSummaryAsync(int id, CancellationToken ct = default) =>
         await context.Artists
             .Where(a => a.Id == id)
             .ToSummary(context.ArtistRatingProjections)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
 
-    public async Task<ArtistDetails?> GetDetailsByIdAsync(int id) =>
+    public async Task<ArtistDetails?> GetDetailsByIdAsync(int id, CancellationToken ct = default) =>
         await context.Artists
             .Where(a => a.Id == id)
             .ToDetails(context.ArtistRatingProjections)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
 
-    public async Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
+    public async Task<IReadOnlySet<Genre>> GetGenresAsync(int id, CancellationToken ct = default) =>
         await context.Artists
             .Where(a => a.Id == id)
             .SelectMany(a => a.Genres)
-            .ToHashSetAsync();
+            .ToHashSetAsync(ct);
 
 }
