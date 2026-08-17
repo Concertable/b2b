@@ -1,7 +1,6 @@
 using Concertable.B2B.Artist.Application.Requests;
 using Concertable.B2B.Artist.Application.Errors;
-using Concertable.DataAccess.Infrastructure.Extensions;
-using Microsoft.EntityFrameworkCore;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel.Geometry;
 using Concertable.Kernel.Identity;
@@ -87,15 +86,9 @@ internal sealed class ArtistService : IArtistService
                     request.Genres)
                     .BindAsync(async artist =>
                     {
-                        var createdArtist = await repository.AddAsync(artist, ct);
-                        try
-                        {
-                            await repository.SaveChangesAsync(ct);
-                        }
-                        catch (DbUpdateException ex) when (ex.IsDuplicateKey())
-                        {
+                        if (!(await repository.TryInsertAsync(artist, ct))
+                            .TryGetValue(out var createdArtist))
                             return new CreateArtistError.ActiveTenantAlreadyHasArtist();
-                        }
 
                         var details = await readRepository.GetDetailsByIdAsync(createdArtist.Id, ct)
                             ?? throw new InvalidOperationException(

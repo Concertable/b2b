@@ -1,7 +1,6 @@
 using Concertable.B2B.Venue.Application.Errors;
 using Concertable.B2B.Venue.Application.Requests;
-using Concertable.DataAccess.Infrastructure.Extensions;
-using Microsoft.EntityFrameworkCore;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel.Geometry;
 using Concertable.Kernel.Identity;
@@ -78,15 +77,9 @@ internal sealed class VenueService : IVenueService
                     currentUser.Email!)
                     .BindAsync(async venue =>
                     {
-                        var createdVenue = await repository.AddAsync(venue, ct);
-                        try
-                        {
-                            await repository.SaveChangesAsync(ct);
-                        }
-                        catch (DbUpdateException ex) when (ex.IsDuplicateKey())
-                        {
+                        if (!(await repository.TryInsertAsync(venue, ct))
+                            .TryGetValue(out var createdVenue))
                             return new CreateVenueError.ActiveTenantAlreadyHasVenue();
-                        }
 
                         var details = await readRepository.GetDetailsByIdAsync(createdVenue.Id, ct)
                             ?? throw new InvalidOperationException(
