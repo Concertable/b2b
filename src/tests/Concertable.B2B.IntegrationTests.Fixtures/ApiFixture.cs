@@ -172,12 +172,20 @@ public class ApiFixture : IAsyncLifetime
             return;
         }
 
+        await SendPaymentFailedWebhookAsync(TransactionTypes.Escrow, bookingId);
+    }
+
+    public Task SendSettlementFailedWebhookAsync(int bookingId) =>
+        SendPaymentFailedWebhookAsync(TransactionTypes.Settlement, bookingId);
+
+    private async Task SendPaymentFailedWebhookAsync(string transactionType, int bookingId)
+    {
         using var eventScope = factory.Services.CreateScope();
         var handlers = eventScope.ServiceProvider.GetServices<IIntegrationEventHandler<PaymentFailedEvent>>();
         var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
         var evt = new PaymentFailedEvent($"pi_fail_{bookingId}", "card_declined", "Card was declined", new Dictionary<string, string>
         {
-            [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
+            [PaymentMetadataKeys.Type] = transactionType,
             [PaymentMetadataKeys.BookingId] = bookingId.ToString()
         });
 
