@@ -8,8 +8,12 @@ using FluentValidation;
 using Concertable.B2B.Conversations.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Concertable.B2B.Conversations.Infrastructure.Data.Seeders;
+using Concertable.B2B.Conversations.Infrastructure.Handlers;
 using Concertable.B2B.Conversations.Infrastructure.Repositories;
 using Concertable.B2B.Conversations.Infrastructure.Services;
+using Concertable.B2B.Artist.Contracts.Events;
+using Concertable.B2B.Venue.Contracts.Events;
+using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +34,7 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        services.AddDbContext<AdminConversationsDbContext>((sp, opts) =>
+        services.AddDbContext<ConversationsAdminDbContext>((sp, opts) =>
             opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
@@ -46,14 +50,16 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<IContentReportRepository, ContentReportRepository>();
-        services.AddScoped<IAdminMessageRepository, AdminMessageRepository>();
-        services.AddScoped<IAdminContentReportRepository, AdminContentReportRepository>();
+        services.AddScoped<IMessageAdminRepository, MessageAdminRepository>();
+        services.AddScoped<IContentReportAdminRepository, ContentReportAdminRepository>();
         services.AddScoped<IConversationsNotifier, ConversationsNotifier>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IContentReportNotifier, ContentReportNotifier>();
         services.AddScoped<IContentReportService, ContentReportService>();
         services.AddScoped<IModerationService, ModerationService>();
         services.AddScoped<IConversationsModule, ConversationsModule>();
+        services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistParticipantProfileProjectionHandler>();
+        services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueParticipantProfileProjectionHandler>();
 
         return services;
     }

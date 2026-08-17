@@ -9,6 +9,7 @@ internal sealed class ArtistEntityConfiguration : IEntityTypeConfiguration<Artis
     public void Configure(EntityTypeBuilder<ArtistEntity> builder)
     {
         builder.ToTable(Schema.Tables.Artists, Schema.Name);
+        builder.HasIndex(a => a.TenantId).IsUnique();
         builder.Property(a => a.Location).HasColumnType("geography");
         builder.OwnsAddress(a => a.Address);
         builder.PrimitiveCollection(a => a.Genres);

@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class ConcertService : IConcertService
 {
     private readonly IConcertRepository repository;
-    private readonly IPublicConcertRepository publicRepository;
+    private readonly IConcertReadRepository readRepository;
     private readonly IInvoiceRepository invoiceRepository;
     private readonly IConcertValidator concertValidator;
     private readonly ICurrentUser currentUser;
@@ -20,7 +20,7 @@ internal sealed class ConcertService : IConcertService
 
     public ConcertService(
         IConcertRepository repository,
-        IPublicConcertRepository publicRepository,
+        IConcertReadRepository readRepository,
         IInvoiceRepository invoiceRepository,
         IConcertValidator concertValidator,
         ICurrentUser currentUser,
@@ -31,7 +31,7 @@ internal sealed class ConcertService : IConcertService
         ITenantContext tenantContext)
     {
         this.repository = repository;
-        this.publicRepository = publicRepository;
+        this.readRepository = readRepository;
         this.invoiceRepository = invoiceRepository;
         this.concertValidator = concertValidator;
         this.currentUser = currentUser;
@@ -43,30 +43,32 @@ internal sealed class ConcertService : IConcertService
     }
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUpcomingByVenueIdAsync(int id) =>
-        (await publicRepository.GetUpcomingByVenueIdAsync(id)).ToList();
+        (await readRepository.GetUpcomingByVenueIdAsync(id)).ToList();
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUpcomingByArtistIdAsync(int id) =>
-        (await publicRepository.GetUpcomingByArtistIdAsync(id)).ToList();
+        (await readRepository.GetUpcomingByArtistIdAsync(id)).ToList();
 
     public async Task<IReadOnlyList<ConcertSummary>> GetHistoryByArtistIdAsync(int id) =>
-        (await publicRepository.GetHistoryByArtistIdAsync(id)).ToList();
+        (await readRepository.GetHistoryByArtistIdAsync(id)).ToList();
 
     public async Task<IReadOnlyList<ConcertSummary>> GetHistoryByVenueIdAsync(int id) =>
-        (await publicRepository.GetHistoryByVenueIdAsync(id)).ToList();
+        (await readRepository.GetHistoryByVenueIdAsync(id)).ToList();
 
     public Task<Result<ConcertDetails, ConcertError>> GetDetailsByIdAsync(int id) =>
-        publicRepository.GetDetailsByIdAsync(id)
+        readRepository.GetDetailsByIdAsync(id)
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.NotFound(id));
 
-    public async Task<Result<ConcertDetails, ConcertError>> GetDetailsForCurrentUserAsync(int id)
+    public async Task<Result<ConcertDetails, ConcertError>> GetDetailsAsync(
+        int id,
+        CancellationToken ct = default)
     {
-        return await repository.GetDetailsByIdAsync(id)
+        return await repository.GetDetailsByIdAsync(id, ct)
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.NotFound(id))
             .MapAsync(async details =>
             {
-                var invoice = await invoiceRepository.GetByConcertIdAsync(id);
+                var invoice = await invoiceRepository.GetByConcertIdAsync(id, ct);
                 return WithActions(details with { InvoiceId = invoice?.Id });
             });
     }

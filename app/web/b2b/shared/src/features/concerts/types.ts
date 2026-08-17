@@ -47,7 +47,7 @@ export interface ConcertActions {
   invoice?: ActionLink | null;
 }
 
-// The party-scoped owner read (GET /concert/user/{id}): the public concert plus the venue-private
+// The party-scoped owner read (GET /organization/concert/{id}): the public concert plus the venue-private
 // figures and party-only action links the anonymous marketplace read omits.
 export interface MyConcert extends Concert {
   ticketsSold: number;

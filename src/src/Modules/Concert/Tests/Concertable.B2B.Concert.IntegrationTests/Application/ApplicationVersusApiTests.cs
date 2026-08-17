@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Api.Responses;
@@ -35,7 +35,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/checkout");
+        var response = await client.PostAsync($"/api/application/{fixture.SeedState.VersusApp.Id}/checkout");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
@@ -53,7 +53,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/opportunity/{fixture.SeedState.VersusApp.OpportunityId}/checkout");
+        var response = await client.PostAsync($"/api/application/opportunity/{fixture.SeedState.VersusApp.OpportunityId}/checkout");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -64,13 +64,13 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
     {
         // Arrange — venue manager creates a fresh Versus opportunity
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var oppResponse = await venueClient.PostAsync("/api/Opportunity",
+        var oppResponse = await venueClient.PostAsync("/api/opportunity",
             BuildRequest(new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 }, fixture.SeedNow));
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies directly with no payment method
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { eSignature = new { signatoryName = "Test Signatory" } });
+        var applyResponse = await artistClient.PostAsync($"/api/application/{opportunity!.Id}", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
@@ -88,7 +88,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
 
         // Act
         var response = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         // Assert — booking created but draft not created until verify webhook fires
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -102,15 +102,15 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.VersusApp.Id}/checkout");
 
         // Act
-        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+        var acceptResponse = await client.PostAsync($"/api/application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.VersusApp.Id}");
+        var concertResponse = await client.GetAsync($"/api/concert/application/{fixture.SeedState.VersusApp.Id}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
         var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(concert);
@@ -128,11 +128,11 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         // Act
         var response = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -143,11 +143,11 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.VersusApp.Id}/checkout");
 
         // Act
         var acceptResponse = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
         await fixture.StripeClient.SendWebhookAsync();
@@ -162,11 +162,11 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         // Arrange
         fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingStripe());
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.VersusApp.Id}/checkout");
 
         // Act
         var acceptResponse = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -183,7 +183,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
     {
         // Arrange — the webhook wins the race and lands while the application is still Applied.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VersusApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.VersusApp.Id}/checkout");
         await fixture.StripeClient.SendWebhookAsync();
 
         var beforeAccept = await fixture.ConcertReads.Set<ConcertEntity>()
@@ -193,7 +193,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
 
         // Act
         var acceptResponse = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.VersusApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);

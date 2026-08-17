@@ -28,9 +28,9 @@ public sealed class BookingConfirmationEmailTests : IAsyncLifetime
     public async Task Book_StagesBothPartiesLegalDetails_ToEveryMemberOfBothTenants()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
 
-        var accept = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept",
+        var accept = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await accept.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();

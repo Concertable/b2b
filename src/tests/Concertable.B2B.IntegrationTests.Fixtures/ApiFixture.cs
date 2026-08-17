@@ -1,4 +1,5 @@
 using Concertable.Kernel.Notifications;
+using Concertable.Kernel.DependencyInjection;
 using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Events;
 using Concertable.Payment.Client;
@@ -30,7 +31,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 using Xunit.Abstractions;
-using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Messaging.Application;
 using Concertable.Messaging.Contracts;
@@ -41,6 +41,7 @@ using Concertable.Shared.Geocoding.Application;
 using Concertable.Shared.Imaging.Application;
 using Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 using Concertable.B2B.DataAccess.Infrastructure;
+using IDbInitializer = Concertable.DataAccess.Application.IDbInitializer;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
@@ -172,21 +173,35 @@ public class ApiFixture : IAsyncLifetime
             return;
         }
 
-        using var eventScope = factory.Services.CreateScope();
-        var handlers = eventScope.ServiceProvider.GetServices<IIntegrationEventHandler<PaymentFailedEvent>>();
+        await SendPaymentFailedWebhookAsync(TransactionTypes.Escrow, bookingId);
+    }
+
+    public Task SendSettlementFailedWebhookAsync(int bookingId) =>
+        SendPaymentFailedWebhookAsync(TransactionTypes.Settlement, bookingId);
+
+    private Task SendPaymentFailedWebhookAsync(string transactionType, int bookingId)
+    {
         var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
         var evt = new PaymentFailedEvent($"pi_fail_{bookingId}", "card_declined", "Card was declined", new Dictionary<string, string>
         {
-            [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
+            [PaymentMetadataKeys.Type] = transactionType,
             [PaymentMetadataKeys.BookingId] = bookingId.ToString()
         });
 
-        foreach (var handler in handlers)
-            await handler.HandleAsync(evt, envelope, CancellationToken.None);
+        return factory.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<PaymentFailedEvent>>>>()
+            .RunAsync(async handlers =>
+            {
+                foreach (var handler in handlers)
+                    await handler.HandleAsync(evt, envelope);
+            });
     }
 
     public Task CompleteLatestFinancialOperationAsync() =>
         PaymentTransport.CompleteLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+    public Task CompleteLatestFinancialOperationAsync<TCommand>()
+        where TCommand : IIntegrationCommand =>
+        PaymentTransport.CompleteLatestAsync<TCommand>(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
     public Task RejectLatestFinancialOperationAsync() =>
         PaymentTransport.RejectLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
