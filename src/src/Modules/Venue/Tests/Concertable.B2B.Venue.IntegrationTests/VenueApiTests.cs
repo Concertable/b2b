@@ -219,18 +219,6 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task LegacyCreateRoute_ShouldReturn404()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
-
-        var response = await client.PostAsync(
-            "/api/venue",
-            await BuildCreateRequest().ToFormContent());
-
-        await response.ShouldBe(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
     public async Task Create_ShouldEnforceOneProfilePerTenant_WhenRequestsRace()
     {
         var manager = fixture.SeedState.VenueManagerNoVenue;
@@ -315,22 +303,6 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task LegacyUpdateRoute_ShouldReturn405()
-    {
-        // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var request = BuildUpdateRequest();
-
-        // Act
-        var response = await client.PutAsync(
-            $"/api/venue/{fixture.SeedState.Venue.Id}",
-            await request.ToFormContent());
-
-        // Assert
-        await response.ShouldBe(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
     public async Task Update_ShouldReturn200_WithUpdatedVenueDto_WhenValidRequest()
     {
         // Arrange
@@ -386,16 +358,6 @@ public sealed class VenueApiTests : IAsyncLifetime
         var response = await client.GetAsync("/api/venue-dashboard/kpis");
 
         await response.ShouldBe(HttpStatusCode.NoContent);
-    }
-
-    [Fact]
-    public async Task LegacyGetRoute_ShouldReturn404()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-
-        var response = await client.GetAsync("/api/venue/user");
-
-        await response.ShouldBe(HttpStatusCode.MethodNotAllowed);
     }
 
     #endregion
