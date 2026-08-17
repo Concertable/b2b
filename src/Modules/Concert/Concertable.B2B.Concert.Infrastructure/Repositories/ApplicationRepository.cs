@@ -9,10 +9,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<ApplicationEntity>, IApplicationRepository
 {
+    private readonly ConcertDbContext context;
     private readonly TimeProvider timeProvider;
 
     public ApplicationRepository(ConcertDbContext context, TimeProvider timeProvider) : base(context)
     {
+        this.context = context;
         this.timeProvider = timeProvider;
     }
 
