@@ -10,6 +10,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRepository
 {
+    private readonly ConcertDbContext context;
     private readonly IEndedAndBookedSpecification endedAndBooked;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
 
@@ -18,6 +19,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         IEndedAndBookedSpecification endedAndBooked,
         IDoorRevenueOutstandingSpecification doorRevenueOutstanding) : base(context)
     {
+        this.context = context;
         this.endedAndBooked = endedAndBooked;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
     }

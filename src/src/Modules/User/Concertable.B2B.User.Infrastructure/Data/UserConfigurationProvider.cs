@@ -10,5 +10,6 @@ internal sealed class UserConfigurationProvider : IEntityTypeConfigurationProvid
     {
         modelBuilder.ApplyConfiguration(new UserEntityConfiguration());
         modelBuilder.ApplyConfiguration(new AdminProfileEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new AdminInvitationEntityConfiguration());
     }
 }

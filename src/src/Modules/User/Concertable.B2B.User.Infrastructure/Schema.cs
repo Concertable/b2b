@@ -8,5 +8,6 @@ internal static class Schema
     {
         public const string Users = "Users";
         public const string AdminProfiles = "AdminProfiles";
+        public const string AdminInvitations = "AdminInvitations";
     }
 }
