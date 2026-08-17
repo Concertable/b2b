@@ -34,7 +34,6 @@ internal sealed class OpportunityMapper : IOpportunityMapper
 
     public async Task<IPagination<OpportunityDto>> ToDtosAsync(IPagination<OpportunityEntity> opportunities)
     {
-        // The deals are fetched once for the whole page; projecting each row is then synchronous.
         var deals = await DealsByIdAsync(opportunities.Data);
 
         return opportunities.Map(o => ToDto(o, deals));
