@@ -9,12 +9,12 @@ internal interface IArtistService
     Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(
         int id,
         CancellationToken ct = default);
-    Task<Result<ArtistDetails, ArtistError>> GetDetailsForActiveTenantAsync(
+    Task<Result<ArtistDetails, ArtistError>> GetDetailsAsync(
         CancellationToken ct = default);
-    Task<Result<ArtistDetails, CreateArtistError>> CreateForActiveTenantAsync(
+    Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(
         CreateArtistRequest request,
         CancellationToken ct = default);
-    Task<Result<ArtistDetails, UpdateArtistError>> UpdateForActiveTenantAsync(
+    Task<Result<ArtistDetails, UpdateArtistError>> UpdateAsync(
         UpdateArtistRequest request,
         CancellationToken ct = default);
     Task<bool> OwnsArtistAsync(int artistId, CancellationToken ct = default);

@@ -28,27 +28,27 @@ internal sealed class ArtistController : ControllerBase
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("/api/organization/artist")]
-    public async Task<ActionResult<DetailsResponse>> GetForActiveTenant(CancellationToken ct) =>
-        (await artistService.GetDetailsForActiveTenantAsync(ct))
+    public async Task<ActionResult<DetailsResponse>> Get(CancellationToken ct) =>
+        (await artistService.GetDetailsAsync(ct))
             .ToOkOrProblem(artist => artist.ToDetailsResponse());
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost("/api/organization/artist")]
-    public async Task<ActionResult<DetailsResponse>> CreateForActiveTenant(
+    public async Task<ActionResult<DetailsResponse>> Create(
         [FromForm] CreateArtistRequest request,
         CancellationToken ct) =>
-        (await artistService.CreateForActiveTenantAsync(request, ct))
+        (await artistService.CreateAsync(request, ct))
             .Map(artist => artist.ToDetailsResponse())
             .ToCreatedOrProblem(artist => $"/api/artist/{artist.Id}");
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPut("/api/organization/artist")]
-    public async Task<ActionResult<DetailsResponse>> UpdateForActiveTenant(
+    public async Task<ActionResult<DetailsResponse>> Update(
         [FromForm] UpdateArtistRequest request,
         CancellationToken ct) =>
-        (await artistService.UpdateForActiveTenantAsync(request, ct))
+        (await artistService.UpdateAsync(request, ct))
             .Map(artist => artist.ToDetailsResponse())
             .ToOkOrProblem();
 }

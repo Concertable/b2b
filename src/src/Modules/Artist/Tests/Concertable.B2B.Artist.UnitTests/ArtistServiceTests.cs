@@ -51,7 +51,7 @@ public sealed class ArtistServiceTests
             Avatar = Mock.Of<IFormFile>()
         };
 
-        var result = await CreateService().CreateForActiveTenantAsync(request);
+        var result = await CreateService().CreateAsync(request);
 
         Assert.True(result.TryGetError(out var error));
         var invalid = Assert.IsType<CreateArtistError.Invalid>(error);
@@ -95,7 +95,7 @@ public sealed class ArtistServiceTests
             Banner = Mock.Of<IFormFile>()
         };
 
-        var result = await CreateService().UpdateForActiveTenantAsync(request);
+        var result = await CreateService().UpdateAsync(request);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<UpdateArtistError.Invalid>(error);

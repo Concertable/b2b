@@ -32,7 +32,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
 
     public async Task<Option<ArtistDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
-        if ((await artistService.GetDetailsForActiveTenantAsync(ct)).IsFailure)
+        if ((await artistService.GetDetailsAsync(ct)).IsFailure)
             return null;
         var tenantId = tenantContext.GetTenantId();
 

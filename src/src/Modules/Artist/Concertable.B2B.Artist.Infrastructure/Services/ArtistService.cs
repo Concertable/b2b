@@ -1,5 +1,6 @@
 using Concertable.B2B.Artist.Application.Requests;
 using Concertable.B2B.Artist.Application.Errors;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel.Geometry;
@@ -38,15 +39,14 @@ internal sealed class ArtistService : IArtistService
         this.geometryProvider = geometryProvider;
     }
 
-    public async Task<Result<ArtistDetails, ArtistError>> GetDetailsForActiveTenantAsync(
+    public async Task<Result<ArtistDetails, ArtistError>> GetDetailsAsync(
         CancellationToken ct = default)
     {
-        if (tenantContext.TenantId is not { } tenantId)
-            return new ArtistError.ActiveTenantNotFound();
+        var tenantId = tenantContext.GetTenantId();
 
         return await repository.GetDetailsByTenantIdAsync(tenantId, ct)
             .ToOption()
-            .OrFailure((ArtistError)new ArtistError.ActiveTenantNotFound());
+            .OrFailure((ArtistError)new ArtistError.NotFoundForActiveTenant());
     }
 
     public Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(
@@ -56,12 +56,11 @@ internal sealed class ArtistService : IArtistService
             .ToOption()
             .OrFailure(() => (ArtistError)new ArtistError.NotFound(id));
 
-    public async Task<Result<ArtistDetails, CreateArtistError>> CreateForActiveTenantAsync(
+    public async Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(
         CreateArtistRequest request,
         CancellationToken ct = default)
     {
-        if (tenantContext.TenantId is not { } tenantId)
-            return new CreateArtistError.NoActiveTenant();
+        var tenantId = tenantContext.GetTenantId();
 
         if (await repository.ExistsByTenantIdAsync(tenantId, ct))
             return new CreateArtistError.ActiveTenantAlreadyHasArtist();
@@ -98,16 +97,15 @@ internal sealed class ArtistService : IArtistService
             }, errors => new CreateArtistError.Invalid(errors));
     }
 
-    public async Task<Result<ArtistDetails, UpdateArtistError>> UpdateForActiveTenantAsync(
+    public async Task<Result<ArtistDetails, UpdateArtistError>> UpdateAsync(
         UpdateArtistRequest request,
         CancellationToken ct = default)
     {
-        if (tenantContext.TenantId is not { } tenantId)
-            return new UpdateArtistError.ActiveTenantNotFound();
+        var tenantId = tenantContext.GetTenantId();
 
         var artist = await repository.GetByTenantIdAsync(tenantId, ct);
         if (artist is null)
-            return new UpdateArtistError.ActiveTenantNotFound();
+            return new UpdateArtistError.ArtistNotFound();
 
         return await ArtistEntity.ValidateProfile(request.Name, request.About)
             .BindAsync(async () =>

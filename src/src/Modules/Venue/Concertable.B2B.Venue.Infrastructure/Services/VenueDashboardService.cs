@@ -32,7 +32,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
 
     public async Task<Option<VenueDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
-        if ((await venueService.GetDetailsForActiveTenantAsync(ct)).IsFailure)
+        if ((await venueService.GetDetailsAsync(ct)).IsFailure)
             return null;
         var tenantId = tenantContext.GetTenantId();
 

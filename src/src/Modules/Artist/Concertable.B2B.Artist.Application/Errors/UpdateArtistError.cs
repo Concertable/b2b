@@ -8,8 +8,8 @@ internal abstract partial record UpdateArtistError : IError
 {
     public ErrorDefinition Definition => this switch
     {
-        ActiveTenantNotFound =>
-            ErrorDefinition.NotFound<ActiveTenantNotFound>(
+        ArtistNotFound =>
+            ErrorDefinition.NotFound<ArtistNotFound>(
                 "No artist was found for the active tenant."),
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
@@ -18,7 +18,7 @@ internal abstract partial record UpdateArtistError : IError
     };
 
     [ErrorCode("artist.update_not_found")]
-    public partial record ActiveTenantNotFound;
+    public partial record ArtistNotFound;
 
     public partial record Invalid(ValidationErrors Errors);
 }

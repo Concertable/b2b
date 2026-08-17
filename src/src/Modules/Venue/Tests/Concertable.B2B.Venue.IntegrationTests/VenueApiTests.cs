@@ -57,10 +57,10 @@ public sealed class VenueApiTests : IAsyncLifetime
 
     #endregion
 
-    #region GetDetailsForActiveTenant
+    #region Get
 
     [Fact]
-    public async Task GetDetailsForActiveTenant_ShouldReturn401_WhenUnauthenticated()
+    public async Task Get_ShouldReturn401_WhenUnauthenticated()
     {
         // Arrange
         var client = fixture.CreateClient();
@@ -73,7 +73,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetDetailsForActiveTenant_ShouldReturn403_WhenNotVenueManager()
+    public async Task Get_ShouldReturn403_WhenNotVenueManager()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
@@ -86,7 +86,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetDetailsForActiveTenant_ShouldReturn200_WhenVenueExists()
+    public async Task Get_ShouldReturn200_WhenVenueExists()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -102,7 +102,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetDetailsForActiveTenant_ShouldReturn404_WhenNoVenueExists()
+    public async Task Get_ShouldReturn404_WhenNoVenueExists()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
