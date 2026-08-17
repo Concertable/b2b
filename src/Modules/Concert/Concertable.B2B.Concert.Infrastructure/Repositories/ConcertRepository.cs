@@ -10,6 +10,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRepository
 {
+    private readonly ConcertDbContext context;
     private readonly IEndedSpecification ended;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
 
@@ -18,6 +19,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         IEndedSpecification ended,
         IDoorRevenueOutstandingSpecification doorRevenueOutstanding) : base(context)
     {
+        this.context = context;
         this.ended = ended;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
     }
@@ -46,9 +48,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .FirstOrDefaultAsync(ct);
     }
 
-    /* Owner read by concert id. Concert itself is public/unfiltered, so scope by requiring a
-       tenant-visible Booking (Bookings is tenant-filtered) — a non-party sees none and gets a 404,
-       exactly like ContractRepository.GetByConcertIdAsync. */
+    // Bookings is tenant-filtered; omitting this predicate exposes Concert details to non-parties.
     public async Task<ConcertDetails?> GetDetailsByIdAsync(
         int id,
         CancellationToken ct = default)
@@ -112,9 +112,6 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .Select(c => c.Id)
             .ToListAsync();
 
-    /* The gross the artist's revenue share settles against: Concertable's own ticket sales
-       (TicketsSold * Price, known) plus the venue-declared external/box-office/cash take
-       (DoorRevenue). Null until the venue has declared — DoorRevenue null propagates to null. */
     public Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId) =>
         context.Concerts
             .Where(c => c.Id == concertId)
