@@ -11,7 +11,7 @@ namespace Concertable.B2B.User.UnitTests;
 
 public sealed class AdminServiceTests
 {
-    private readonly Mock<IUserRepository> repository = new();
+    private readonly Mock<IAdminRepository> repository = new();
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<IUserModule> userModule = new();
 
@@ -75,7 +75,7 @@ public sealed class AdminServiceTests
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<InviteAdminError.AlreadyAdmin>(error);
-        repository.Verify(value => value.AddInvitation(It.IsAny<AdminInvitationEntity>()), Times.Never);
+        repository.Verify(value => value.InsertAsync(It.IsAny<AdminInvitationEntity>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class AdminServiceTests
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<InviteAdminError.InvitationPending>(error);
-        repository.Verify(value => value.AddInvitation(It.IsAny<AdminInvitationEntity>()), Times.Never);
+        repository.Verify(value => value.InsertAsync(It.IsAny<AdminInvitationEntity>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public sealed class AdminServiceTests
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<InviteAdminError.Unauthenticated>(error);
-        repository.Verify(value => value.AddInvitation(It.IsAny<AdminInvitationEntity>()), Times.Never);
+        repository.Verify(value => value.InsertAsync(It.IsAny<AdminInvitationEntity>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -116,15 +116,14 @@ public sealed class AdminServiceTests
 
         Assert.True(result.TryGetValue(out var dto));
         Assert.Equal("invitee@example.com", dto.Email);
-        repository.Verify(value => value.AddInvitation(It.IsAny<AdminInvitationEntity>()), Times.Once);
-        repository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        repository.Verify(value => value.InsertAsync(It.IsAny<AdminInvitationEntity>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task RevokeInvitationAsync_InvitationNotFound_ReturnsInvitationNotFound()
     {
         var id = Guid.NewGuid();
-        repository.Setup(value => value.GetInvitationByIdAsync(id, It.IsAny<CancellationToken>()))
+        repository.Setup(value => value.GetByIdAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AdminInvitationEntity?)null);
 
         var result = await CreateService().RevokeInvitationAsync(id);
@@ -139,7 +138,7 @@ public sealed class AdminServiceTests
     {
         var invitation = AdminInvitationEntity.Create("invitee@example.com", Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
         invitation.Accept(Guid.NewGuid(), DateTime.UtcNow);
-        repository.Setup(value => value.GetInvitationByIdAsync(invitation.Id, It.IsAny<CancellationToken>()))
+        repository.Setup(value => value.GetByIdAsync(invitation.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(invitation);
 
         var result = await CreateService().RevokeInvitationAsync(invitation.Id);
@@ -153,7 +152,7 @@ public sealed class AdminServiceTests
     public async Task RevokeInvitationAsync_Pending_RevokesAndSaves()
     {
         var invitation = AdminInvitationEntity.Create("invitee@example.com", Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
-        repository.Setup(value => value.GetInvitationByIdAsync(invitation.Id, It.IsAny<CancellationToken>()))
+        repository.Setup(value => value.GetByIdAsync(invitation.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(invitation);
 
         var result = await CreateService().RevokeInvitationAsync(invitation.Id);

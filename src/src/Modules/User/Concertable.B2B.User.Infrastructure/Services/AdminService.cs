@@ -8,13 +8,13 @@ internal sealed class AdminService : IAdminService
 {
     private static readonly TimeSpan InvitationTtl = TimeSpan.FromDays(7);
 
-    private readonly IUserRepository repository;
+    private readonly IAdminRepository repository;
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
     private readonly TimeProvider timeProvider;
 
     public AdminService(
-        IUserRepository repository,
+        IAdminRepository repository,
         ICurrentUser currentUser,
         IUserModule userModule,
         TimeProvider timeProvider)
@@ -69,8 +69,7 @@ internal sealed class AdminService : IAdminService
             return new InviteAdminError.Unauthenticated();
 
         var invitation = AdminInvitationEntity.Create(email, inviterId, now, InvitationTtl);
-        repository.AddInvitation(invitation);
-        await repository.SaveChangesAsync(ct);
+        await repository.InsertAsync(invitation, ct);
 
         return invitation.ToDto();
     }
@@ -79,7 +78,7 @@ internal sealed class AdminService : IAdminService
         Guid invitationId,
         CancellationToken ct = default)
     {
-        var invitation = await repository.GetInvitationByIdAsync(invitationId, ct);
+        var invitation = await repository.GetByIdAsync(invitationId, ct);
         if (invitation is null)
             return new RevokeAdminInvitationError.InvitationNotFound(invitationId);
 

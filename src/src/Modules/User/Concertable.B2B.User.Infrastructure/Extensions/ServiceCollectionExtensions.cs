@@ -43,6 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserModule, UserModule>();
+        services.AddScoped<IAdminRepository, AdminRepository>();
         services.AddScoped<IAdminService, AdminService>();
 
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, CredentialRegisteredHandler>();
