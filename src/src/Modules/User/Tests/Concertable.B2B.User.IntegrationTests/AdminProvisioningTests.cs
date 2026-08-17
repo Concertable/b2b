@@ -26,7 +26,7 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    private async Task ProvisionAsync(CredentialRegisteredEvent e, MessageEnvelope? envelope = null)
+    private async Task RegisterAsync(CredentialRegisteredEvent e, MessageEnvelope? envelope = null)
     {
         using var scope = fixture.Services.CreateScope();
         var handler = scope.ServiceProvider
@@ -36,15 +36,22 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
         await handler.HandleAsync(e, envelope ?? MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow));
     }
 
+    /// <summary>Simulates the first authenticated request after login (what every SPA calls right after
+    /// signin) — the point where <c>AdminService.EnsureCurrentUserAdminGrantedIfEligibleAsync</c> actually
+    /// runs. Registration alone (<see cref="RegisterAsync"/>) only ever creates the plain <see cref="UserEntity"/>.</summary>
+    private Task LogInAsync(Guid userId, string email) =>
+        fixture.CreateClient(UserEntity.FromRegistration(userId, email)).GetAsync("/api/auth/me");
+
     [Fact]
-    public async Task Registration_MatchingPendingInvitation_GrantsAdminProfile()
+    public async Task Login_MatchingPendingInvitation_GrantsAdminProfile()
     {
         var inviter = fixture.SeedState.Admin;
         var newUserId = Guid.NewGuid();
         var newEmail = $"{Guid.NewGuid():N}@invited.test";
         var invitation = await fixture.AddAdminInvitationAsync(newEmail, inviter.Id, DateTime.UtcNow.AddDays(7));
+        await RegisterAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.Admin));
 
-        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.Admin));
+        await LogInAsync(newUserId, newEmail);
 
         Assert.True(await fixture.IsAdminAsync(newUserId));
         var accepted = await fixture.AdminInvitations.SingleAsync(i => i.Id == invitation.Id);
@@ -53,44 +60,61 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Registration_InvitedEmail_MatchesCaseInsensitively()
-    {
-        var inviter = fixture.SeedState.Admin;
-        var newUserId = Guid.NewGuid();
-        await fixture.AddAdminInvitationAsync("invitee@casing.test", inviter.Id, DateTime.UtcNow.AddDays(7));
-
-        // Auth carries the email verbatim; the handler normalizes it before matching the stored (normalized) invite.
-        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, "  Invitee@Casing.TEST ", ClientIds.Admin));
-
-        Assert.True(await fixture.IsAdminAsync(newUserId));
-    }
-
-    [Fact]
-    public async Task Registration_ExpiredInvitation_GrantsNoAdminProfile()
+    public async Task Registration_MatchingPendingInvitation_GrantsNoAdminProfileYet()
     {
         var inviter = fixture.SeedState.Admin;
         var newUserId = Guid.NewGuid();
         var newEmail = $"{Guid.NewGuid():N}@invited.test";
-        await fixture.AddAdminInvitationAsync(newEmail, inviter.Id, DateTime.UtcNow.AddDays(-1));
+        await fixture.AddAdminInvitationAsync(newEmail, inviter.Id, DateTime.UtcNow.AddDays(7));
 
-        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.Admin));
+        await RegisterAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.Admin));
 
         Assert.False(await fixture.IsAdminAsync(newUserId));
     }
 
     [Fact]
-    public async Task Registration_BootstrapEmail_GrantsAdminProfile_WhenNoAdminExistsYet()
+    public async Task Login_InvitedEmail_MatchesCaseInsensitively()
     {
-        await fixture.ClearAdminsAsync();
+        var inviter = fixture.SeedState.Admin;
         var newUserId = Guid.NewGuid();
+        await fixture.AddAdminInvitationAsync("invitee@casing.test", inviter.Id, DateTime.UtcNow.AddDays(7));
 
-        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, SeedUsers.AdminEmail, ClientIds.Admin));
+        // Auth carries the email verbatim; the grant normalizes it before matching the stored (normalized) invite.
+        var rawEmail = "  Invitee@Casing.TEST ";
+        await RegisterAsync(new CredentialRegisteredEvent(newUserId, rawEmail, ClientIds.Admin));
+        await LogInAsync(newUserId, rawEmail);
 
         Assert.True(await fixture.IsAdminAsync(newUserId));
     }
 
     [Fact]
-    public async Task Registration_BootstrapEmail_GrantsNoAdminProfile_WhenAnAdminAlreadyExists()
+    public async Task Login_ExpiredInvitation_GrantsNoAdminProfile()
+    {
+        var inviter = fixture.SeedState.Admin;
+        var newUserId = Guid.NewGuid();
+        var newEmail = $"{Guid.NewGuid():N}@invited.test";
+        await fixture.AddAdminInvitationAsync(newEmail, inviter.Id, DateTime.UtcNow.AddDays(-1));
+        await RegisterAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.Admin));
+
+        await LogInAsync(newUserId, newEmail);
+
+        Assert.False(await fixture.IsAdminAsync(newUserId));
+    }
+
+    [Fact]
+    public async Task Login_BootstrapEmail_GrantsAdminProfile_WhenNoAdminExistsYet()
+    {
+        await fixture.ClearAdminsAsync();
+        var newUserId = Guid.NewGuid();
+        await RegisterAsync(new CredentialRegisteredEvent(newUserId, SeedUsers.AdminEmail, ClientIds.Admin));
+
+        await LogInAsync(newUserId, SeedUsers.AdminEmail);
+
+        Assert.True(await fixture.IsAdminAsync(newUserId));
+    }
+
+    [Fact]
+    public async Task Login_BootstrapEmail_GrantsNoAdminProfile_WhenAnAdminAlreadyExists()
     {
         // The standard seed graph's admin already occupies SeedUsers.AdminEmail (the dev-default bootstrap
         // email), which real registration can never collide with (Auth enforces global email uniqueness) —
@@ -100,11 +124,13 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
         var existingAdminUserId = Guid.NewGuid();
         var existingAdminEmail = $"{Guid.NewGuid():N}@existing-admin.test";
         await fixture.AddAdminInvitationAsync(existingAdminEmail, Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
-        await ProvisionAsync(new CredentialRegisteredEvent(existingAdminUserId, existingAdminEmail, ClientIds.Admin));
+        await RegisterAsync(new CredentialRegisteredEvent(existingAdminUserId, existingAdminEmail, ClientIds.Admin));
+        await LogInAsync(existingAdminUserId, existingAdminEmail);
         Assert.True(await fixture.IsAdminAsync(existingAdminUserId));
 
         var newUserId = Guid.NewGuid();
-        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, SeedUsers.AdminEmail, ClientIds.Admin));
+        await RegisterAsync(new CredentialRegisteredEvent(newUserId, SeedUsers.AdminEmail, ClientIds.Admin));
+        await LogInAsync(newUserId, SeedUsers.AdminEmail);
 
         Assert.False(await fixture.IsAdminAsync(newUserId));
     }
@@ -115,7 +141,7 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
         var newUserId = Guid.NewGuid();
         var newEmail = $"{Guid.NewGuid():N}@uninvited.test";
 
-        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.Admin));
+        await RegisterAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.Admin));
 
         using var scope = fixture.Services.CreateScope();
         var userModule = scope.ServiceProvider.GetRequiredService<IUserModule>();
@@ -124,11 +150,23 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Login_NoInvitationAndNonBootstrapEmail_GrantsNoAdminProfile()
+    {
+        var newUserId = Guid.NewGuid();
+        var newEmail = $"{Guid.NewGuid():N}@uninvited.test";
+        await RegisterAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.Admin));
+
+        await LogInAsync(newUserId, newEmail);
+
+        Assert.False(await fixture.IsAdminAsync(newUserId));
+    }
+
+    [Fact]
     public async Task Registration_NonAdminClient_ProvisionsNothing()
     {
         var newUserId = Guid.NewGuid();
 
-        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, "venue-manager@test.com", ClientIds.VenueWeb));
+        await RegisterAsync(new CredentialRegisteredEvent(newUserId, "venue-manager@test.com", ClientIds.VenueWeb));
 
         Assert.False(await fixture.IsAdminAsync(newUserId));
     }
@@ -144,8 +182,25 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
         // Same envelope → same MessageId → the inbox dedup swallows the redelivery.
         var envelope = MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow);
         var e = new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.Admin);
-        await ProvisionAsync(e, envelope);
-        await ProvisionAsync(e, envelope);
+        await RegisterAsync(e, envelope);
+        await RegisterAsync(e, envelope);
+        await LogInAsync(newUserId, newEmail);
+
+        Assert.True(await fixture.IsAdminAsync(newUserId));
+    }
+
+    [Fact]
+    public async Task Login_AlreadyAdmin_DoesNotReAcceptInvitationOrDuplicateGrant()
+    {
+        var inviter = fixture.SeedState.Admin;
+        var newUserId = Guid.NewGuid();
+        var newEmail = $"{Guid.NewGuid():N}@invited.test";
+        await fixture.AddAdminInvitationAsync(newEmail, inviter.Id, DateTime.UtcNow.AddDays(7));
+        await RegisterAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.Admin));
+        await LogInAsync(newUserId, newEmail);
+        Assert.True(await fixture.IsAdminAsync(newUserId));
+
+        await LogInAsync(newUserId, newEmail);
 
         Assert.True(await fixture.IsAdminAsync(newUserId));
     }

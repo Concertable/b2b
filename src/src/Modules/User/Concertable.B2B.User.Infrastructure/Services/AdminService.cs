@@ -1,6 +1,9 @@
 using Concertable.B2B.User.Application.DTOs;
 using Concertable.B2B.User.Application.Mappers;
 using Concertable.B2B.User.Application.Requests;
+using Concertable.B2B.User.Infrastructure.Settings;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.User.Infrastructure.Services;
 
@@ -12,17 +15,23 @@ internal sealed class AdminService : IAdminService
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
     private readonly TimeProvider timeProvider;
+    private readonly AdminOptions adminOptions;
+    private readonly ILogger<AdminService> logger;
 
     public AdminService(
         IAdminRepository repository,
         ICurrentUser currentUser,
         IUserModule userModule,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IOptions<AdminOptions> adminOptions,
+        ILogger<AdminService> logger)
     {
         this.repository = repository;
         this.currentUser = currentUser;
         this.userModule = userModule;
         this.timeProvider = timeProvider;
+        this.adminOptions = adminOptions.Value;
+        this.logger = logger;
     }
 
     public async Task<AdminOverview> GetOverviewAsync(CancellationToken ct = default)
@@ -103,4 +112,33 @@ internal sealed class AdminService : IAdminService
 
     public Task<bool> IsCurrentUserAdminAsync(CancellationToken ct = default) =>
         currentUser.Id is { } id ? repository.IsAdminAsync(id, ct) : Task.FromResult(false);
+
+    public async Task EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default)
+    {
+        if (currentUser.Id is not { } userId || currentUser.Email is not { } email)
+            return;
+        if (await repository.IsAdminAsync(userId, ct))
+            return;
+
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+
+        var invitation = await repository.GetPendingInvitationByEmailAsync(normalizedEmail, ct);
+        if (invitation is not null && invitation.IsActive(now))
+        {
+            invitation.Accept(userId, now);
+            repository.AddAdmin(userId);
+            await repository.SaveChangesAsync(ct);
+            logger.GrantedAdminProfile(userId, "invitation");
+            return;
+        }
+
+        if (string.Equals(normalizedEmail, adminOptions.BootstrapEmail, StringComparison.OrdinalIgnoreCase) &&
+            await repository.CountAdminsAsync(ct) == 0)
+        {
+            repository.AddAdmin(userId);
+            await repository.SaveChangesAsync(ct);
+            logger.GrantedAdminProfile(userId, "bootstrap");
+        }
+    }
 }
