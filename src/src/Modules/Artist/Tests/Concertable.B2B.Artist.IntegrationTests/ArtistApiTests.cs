@@ -1,8 +1,10 @@
 using System.Net;
 using Concertable.B2B.Artist.Application.DTOs;
+using Concertable.B2B.Artist.Application.Interfaces;
 using Concertable.B2B.Artist.Api.Responses;
-using static Concertable.B2B.Artist.IntegrationTests.ArtistRequestBuilders;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Microsoft.Extensions.DependencyInjection;
+using static Concertable.B2B.Artist.IntegrationTests.ArtistRequestBuilders;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Artist.IntegrationTests;
@@ -50,10 +52,10 @@ public sealed class ArtistApiTests : IAsyncLifetime
 
     #endregion
 
-    #region Get
+    #region GetDetails
 
     [Fact]
-    public async Task Get_ShouldReturn401_WhenUnauthenticated()
+    public async Task GetDetails_ShouldReturn401_WhenUnauthenticated()
     {
         var client = fixture.CreateClient();
 
@@ -63,7 +65,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Get_ShouldReturn403_WhenNotArtistManager()
+    public async Task GetDetails_ShouldReturn403_WhenNotArtistManager()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
@@ -73,7 +75,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Get_ShouldReturn200_WhenArtistExists()
+    public async Task GetDetails_ShouldReturn200_WhenArtistExists()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
@@ -86,13 +88,13 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Get_ShouldReturn404_WhenNoArtistExists()
+    public async Task GetDetails_ShouldReturn204_WhenNoArtistExists()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
 
         var response = await client.GetAsync("/api/organization/artist");
 
-        await response.ShouldBe(HttpStatusCode.NotFound);
+        await response.ShouldBe(HttpStatusCode.NoContent);
     }
 
     #endregion
@@ -165,7 +167,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Create_ShouldReturn409_WhenActiveTenantAlreadyHasArtist()
+    public async Task Create_ShouldReturn409_WhenProfileAlreadyExists()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var request = BuildCreateRequest();
@@ -175,6 +177,42 @@ public sealed class ArtistApiTests : IAsyncLifetime
             await request.ToFormContent());
 
         await response.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task LegacyCreateRoute_ShouldReturn404()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
+
+        var response = await client.PostAsync(
+            "/api/artist",
+            await BuildCreateRequest().ToFormContent());
+
+        await response.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Create_ShouldEnforceOneProfilePerTenant_WhenRequestsRace()
+    {
+        var manager = fixture.SeedState.ArtistManagerNoArtist;
+        var tenantId = fixture.SeedState.Tenants.Single(
+            tenant => tenant.CreatedByUserId == manager.Id).Id;
+        var client = fixture.CreateClient(manager);
+
+        var responses = await Task.WhenAll(
+            client.PostAsync(
+                "/api/organization/artist",
+                await BuildCreateRequest().ToFormContent()),
+            client.PostAsync(
+                "/api/organization/artist",
+                await BuildCreateRequest().ToFormContent()));
+
+        Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Created));
+        Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Conflict));
+        using var scope = fixture.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IArtistRepository>();
+        var profiles = await repository.GetAllByTenantIdAsync(tenantId);
+        Assert.Single(profiles);
     }
 
     #endregion
@@ -204,7 +242,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Update_ShouldReturn404_WhenActiveTenantHasNoArtist()
+    public async Task Update_ShouldReturn404_WhenProfileDoesNotExist()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
         var request = BuildUpdateRequest();
@@ -215,13 +253,13 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task UpdateWithArtistId_ShouldReturn404()
+    public async Task LegacyUpdateRoute_ShouldReturn405()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var request = BuildUpdateRequest();
 
         var response = await client.PutAsync(
-            "/api/organization/artist/99999",
+            $"/api/artist/{fixture.SeedState.Artist.Id}",
             await request.ToFormContent());
 
         await response.ShouldBe(HttpStatusCode.NotFound);
@@ -253,6 +291,40 @@ public sealed class ArtistApiTests : IAsyncLifetime
         var response = await client.PutAsync("/api/organization/artist", await request.ToFormContent());
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    #endregion
+
+    #region Dashboard
+
+    [Fact]
+    public async Task GetDashboardKpis_ShouldReturn200_WhenProfileExists()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await client.GetAsync("/api/artist-dashboard/kpis");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GetDashboardKpis_ShouldReturn204_WhenProfileDoesNotExist()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
+
+        var response = await client.GetAsync("/api/artist-dashboard/kpis");
+
+        await response.ShouldBe(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task LegacyGetRoute_ShouldReturn404()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await client.GetAsync("/api/artist/user");
+
+        await response.ShouldBe(HttpStatusCode.MethodNotAllowed);
     }
 
     #endregion

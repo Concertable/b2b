@@ -10,7 +10,7 @@ internal abstract partial record UpdateArtistError : IError
     {
         ArtistNotFound =>
             ErrorDefinition.NotFound<ArtistNotFound>(
-                "No artist was found for the active tenant."),
+                "The artist profile does not exist."),
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The artist update is invalid.",

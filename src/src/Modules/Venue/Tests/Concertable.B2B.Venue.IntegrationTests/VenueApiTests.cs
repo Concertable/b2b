@@ -1,10 +1,12 @@
 using System.Net;
 using Concertable.B2B.Venue.Application.DTOs;
+using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.B2B.Venue.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
-using static Concertable.B2B.Venue.IntegrationTests.VenueRequestBuilders;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Microsoft.Extensions.DependencyInjection;
+using static Concertable.B2B.Venue.IntegrationTests.VenueRequestBuilders;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Venue.IntegrationTests;
@@ -58,10 +60,10 @@ public sealed class VenueApiTests : IAsyncLifetime
 
     #endregion
 
-    #region Get
+    #region GetDetails
 
     [Fact]
-    public async Task Get_ShouldReturn401_WhenUnauthenticated()
+    public async Task GetDetails_ShouldReturn401_WhenUnauthenticated()
     {
         // Arrange
         var client = fixture.CreateClient();
@@ -74,7 +76,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Get_ShouldReturn403_WhenNotVenueManager()
+    public async Task GetDetails_ShouldReturn403_WhenNotVenueManager()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
@@ -87,7 +89,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Get_ShouldReturn200_WhenVenueExists()
+    public async Task GetDetails_ShouldReturn200_WhenVenueExists()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -103,7 +105,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Get_ShouldReturn404_WhenNoVenueExists()
+    public async Task GetDetails_ShouldReturn204_WhenNoVenueExists()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
@@ -112,7 +114,7 @@ public sealed class VenueApiTests : IAsyncLifetime
         var response = await client.GetAsync("/api/organization/venue");
 
         // Assert
-        await response.ShouldBe(HttpStatusCode.NotFound);
+        await response.ShouldBe(HttpStatusCode.NoContent);
     }
 
     #endregion
@@ -204,7 +206,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Create_ShouldReturn409_WhenActiveTenantAlreadyHasVenue()
+    public async Task Create_ShouldReturn409_WhenProfileAlreadyExists()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var request = BuildCreateRequest();
@@ -214,6 +216,42 @@ public sealed class VenueApiTests : IAsyncLifetime
             await request.ToFormContent());
 
         await response.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task LegacyCreateRoute_ShouldReturn404()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
+
+        var response = await client.PostAsync(
+            "/api/venue",
+            await BuildCreateRequest().ToFormContent());
+
+        await response.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Create_ShouldEnforceOneProfilePerTenant_WhenRequestsRace()
+    {
+        var manager = fixture.SeedState.VenueManagerNoVenue;
+        var tenantId = fixture.SeedState.Tenants.Single(
+            tenant => tenant.CreatedByUserId == manager.Id).Id;
+        var client = fixture.CreateClient(manager);
+
+        var responses = await Task.WhenAll(
+            client.PostAsync(
+                "/api/organization/venue",
+                await BuildCreateRequest().ToFormContent()),
+            client.PostAsync(
+                "/api/organization/venue",
+                await BuildCreateRequest().ToFormContent()));
+
+        Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Created));
+        Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Conflict));
+        using var scope = fixture.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IVenueRepository>();
+        var profiles = await repository.GetAllByTenantIdAsync(tenantId);
+        Assert.Single(profiles);
     }
 
     #endregion
@@ -249,6 +287,17 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Update_ShouldReturn404_WhenProfileDoesNotExist()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
+        var request = BuildUpdateRequest();
+
+        var response = await client.PutAsync("/api/organization/venue", await request.ToFormContent());
+
+        await response.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task Update_ShouldReturn200_WhenAnotherTenantMemberManagesVenue()
     {
         // Arrange
@@ -266,7 +315,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task UpdateWithVenueId_ShouldReturn404()
+    public async Task LegacyUpdateRoute_ShouldReturn405()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -274,7 +323,7 @@ public sealed class VenueApiTests : IAsyncLifetime
 
         // Act
         var response = await client.PutAsync(
-            "/api/organization/venue/99999",
+            $"/api/venue/{fixture.SeedState.Venue.Id}",
             await request.ToFormContent());
 
         // Assert
@@ -313,6 +362,40 @@ public sealed class VenueApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    #endregion
+
+    #region Dashboard
+
+    [Fact]
+    public async Task GetDashboardKpis_ShouldReturn200_WhenProfileExists()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync("/api/venue-dashboard/kpis");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GetDashboardKpis_ShouldReturn204_WhenProfileDoesNotExist()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
+
+        var response = await client.GetAsync("/api/venue-dashboard/kpis");
+
+        await response.ShouldBe(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task LegacyGetRoute_ShouldReturn404()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync("/api/venue/user");
+
+        await response.ShouldBe(HttpStatusCode.MethodNotAllowed);
     }
 
     #endregion
