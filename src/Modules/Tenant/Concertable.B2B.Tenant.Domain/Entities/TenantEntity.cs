@@ -59,7 +59,7 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
 
     /// <summary>
     /// Tenant setup: replaces the provisioning placeholder legal name (the registration email)
-    /// and the tax-compliance details in one transition — the <c>/organizations</c> form submits them together.
+    /// and the tax-compliance details in one transition — the organization form submits them together.
     /// </summary>
     public UnitResult<ValidationErrors> UpdateLegalDetails(string legalName, TaxCompliance taxCompliance)
     {

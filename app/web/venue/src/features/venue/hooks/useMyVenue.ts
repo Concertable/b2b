@@ -1,4 +1,4 @@
-﻿import {
+import {
   useMyVenue as useMyVenueShared,
   useMyVenueQuery,
 } from "@concertable/shared/features/venues";

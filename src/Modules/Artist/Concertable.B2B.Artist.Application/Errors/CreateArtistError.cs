@@ -8,17 +8,17 @@ internal abstract partial record CreateArtistError : IError
 {
     public ErrorDefinition Definition => this switch
     {
-        Forbidden =>
-            ErrorDefinition.Forbidden<Forbidden>(
-                "No active organization was found for the current user."),
+        ActiveTenantAlreadyHasArtist =>
+            ErrorDefinition.Conflict<ActiveTenantAlreadyHasArtist>(
+                "The active organization already has an artist."),
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The artist is invalid.",
                 errors)
     };
 
-    [ErrorCode("artist.create_forbidden")]
-    public partial record Forbidden;
+    [ErrorCode("artist.create.active_tenant_already_has_artist")]
+    public partial record ActiveTenantAlreadyHasArtist;
 
     public partial record Invalid(ValidationErrors Errors);
 }

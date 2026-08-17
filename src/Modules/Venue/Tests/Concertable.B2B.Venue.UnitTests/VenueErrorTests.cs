@@ -14,15 +14,15 @@ public sealed class VenueErrorTests
             ErrorKind.NotFound
         },
         {
-            new CreateVenueError.NoActiveTenant(),
-            "venue.create_forbidden",
-            "No active organization was found for the current user.",
-            ErrorKind.Forbidden
+            new CreateVenueError.ActiveTenantAlreadyHasVenue(),
+            "venue.create.active_tenant_already_has_venue",
+            "The active organization already has a venue.",
+            ErrorKind.Conflict
         },
         {
-            new UpdateVenueError.VenueNotFound(42),
+            new UpdateVenueError.VenueNotFound(),
             "venue.update_not_found",
-            "Venue 42 was not found.",
+            "No venue was found for the active tenant.",
             ErrorKind.NotFound
         },
         {
@@ -32,9 +32,9 @@ public sealed class VenueErrorTests
             ErrorKind.NotFound
         },
         {
-            new VenueError.CurrentTenantNotFound(),
-            "venue.get.current_tenant_not_found",
-            "No venue was found for the current tenant.",
+            new VenueError.NotFoundForActiveTenant(),
+            "venue.get.active_tenant_not_found",
+            "No venue was found for the active tenant.",
             ErrorKind.NotFound
         }
     };

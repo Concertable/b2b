@@ -14,21 +14,21 @@ public sealed class ArtistErrorTests
             ErrorKind.NotFound
         },
         {
-            new ArtistError.CurrentTenantNotFound(),
-            "artist.get.current_tenant_not_found",
-            "No artist was found for the current tenant.",
+            new ArtistError.NotFoundForActiveTenant(),
+            "artist.get.active_tenant_not_found",
+            "No artist was found for the active tenant.",
             ErrorKind.NotFound
         },
         {
-            new CreateArtistError.Forbidden(),
-            "artist.create_forbidden",
-            "No active organization was found for the current user.",
-            ErrorKind.Forbidden
+            new CreateArtistError.ActiveTenantAlreadyHasArtist(),
+            "artist.create.active_tenant_already_has_artist",
+            "The active organization already has an artist.",
+            ErrorKind.Conflict
         },
         {
-            new UpdateArtistError.NotFound(42),
+            new UpdateArtistError.ArtistNotFound(),
             "artist.update_not_found",
-            "Artist 42 was not found.",
+            "No artist was found for the active tenant.",
             ErrorKind.NotFound
         }
     };
