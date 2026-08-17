@@ -49,6 +49,21 @@ public sealed class TenantServiceTests
         return tenant;
     }
 
+    #region GetDetailsAsync
+
+    [Fact]
+    public async Task GetDetailsAsync_NoActiveTenant_ReturnsNone()
+    {
+        var result = await service.GetDetailsAsync();
+
+        Assert.True(result.IsNone);
+        repository.Verify(
+            value => value.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    #endregion
+
     #region UpdateAsync
 
     [Fact]
