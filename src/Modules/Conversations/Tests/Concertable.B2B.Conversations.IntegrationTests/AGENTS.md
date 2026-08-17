@@ -1,4 +1,4 @@
-# Concertable.B2B.Tenant.IntegrationTests — integration tests
+# Concertable.B2B.Conversations.IntegrationTests — integration tests
 
 **Integration-only: this tier pays for a booted host and a containerized database. A test that
 needs neither belongs in the matching `*.UnitTests` project.**
