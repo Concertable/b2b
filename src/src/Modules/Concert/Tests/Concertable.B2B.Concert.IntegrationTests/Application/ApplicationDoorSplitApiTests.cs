@@ -138,7 +138,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldIgnoreDuplicateWebhookEvent()
+    public async Task Accept_ShouldCreateOneConcert_WhenWebhookEventIsRedelivered()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -153,6 +153,9 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         // Assert
         Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+        var concertCount = await fixture.ConcertReads.Set<ConcertEntity>()
+            .CountAsync(c => c.Booking.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
+        Assert.Equal(1, concertCount);
     }
 
     [Fact]
