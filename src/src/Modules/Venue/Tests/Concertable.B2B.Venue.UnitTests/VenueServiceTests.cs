@@ -28,7 +28,7 @@ public sealed class VenueServiceTests
     [Fact]
     public async Task CreateAsync_InvalidProfile_MapsStructuredDomainFailure()
     {
-        tenantContext.SetupGet(context => context.HasTenant).Returns(true);
+        tenantContext.SetupGet(context => context.TenantId).Returns(Guid.NewGuid());
         currentUser.SetupGet(user => user.Id).Returns(Guid.NewGuid());
         currentUser.SetupGet(user => user.Email).Returns("venue@example.com");
         imageService
@@ -43,8 +43,8 @@ public sealed class VenueServiceTests
             .Returns(new Point(1, 2));
         var request = new CreateVenueRequest
         {
-            Name = "",
-            About = "",
+            Name = string.Empty,
+            About = string.Empty,
             Latitude = 1,
             Longitude = 2,
             Banner = Mock.Of<IFormFile>(),
@@ -68,8 +68,10 @@ public sealed class VenueServiceTests
     [Fact]
     public async Task UpdateAsync_InvalidProfile_MapsFailureBeforeDownstreamUpdates()
     {
+        var tenantId = Guid.NewGuid();
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         var venue = VenueEntity.Create(
-            Guid.NewGuid(),
+            tenantId,
             "Venue",
             "About",
             "banner",
@@ -81,18 +83,18 @@ public sealed class VenueServiceTests
                 value => value,
                 _ => throw new InvalidOperationException("Test venue is invalid."));
         repository
-            .Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(venue);
         var request = new UpdateVenueRequest
         {
-            Name = "",
-            About = "",
+            Name = string.Empty,
+            About = string.Empty,
             Latitude = 1,
             Longitude = 2,
             Banner = Mock.Of<IFormFile>()
         };
 
-        var result = await CreateService().UpdateAsync(42, request);
+        var result = await CreateService().UpdateAsync(request);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<UpdateVenueError.Invalid>(error);

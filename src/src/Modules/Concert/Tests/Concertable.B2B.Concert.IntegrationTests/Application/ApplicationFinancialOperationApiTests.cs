@@ -27,7 +27,7 @@ public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.GetAsync(
-            $"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/financial-operation");
+            $"/api/application/{fixture.SeedState.FlatFeeApp.Id}/financial-operation");
 
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -37,16 +37,16 @@ public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
-        await client.PostAsync($"/api/Application/{applicationId}/checkout");
+        await client.PostAsync($"/api/application/{applicationId}/checkout");
         var accept = await client.PostAsync(
-            $"/api/Application/{applicationId}/accept",
+            $"/api/application/{applicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await accept.ShouldBe(HttpStatusCode.NoContent);
         var command = Assert.Single(
             await fixture.PaymentTransport.WaitForCommandsAsync<CaptureEscrowCommand>(1));
 
         var pendingResponse = await client.GetAsync(
-            $"/api/Application/{applicationId}/financial-operation");
+            $"/api/application/{applicationId}/financial-operation");
         await pendingResponse.ShouldBe(HttpStatusCode.OK);
         var pending = await pendingResponse.Content.ReadAsync<FinancialOperationResponse>();
         Assert.Equal(command.OperationId, pending!.OperationId);
@@ -57,7 +57,7 @@ public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
         await fixture.RejectLatestFinancialOperationAsync();
 
         var rejectedResponse = await client.GetAsync(
-            $"/api/Application/{applicationId}/financial-operation");
+            $"/api/application/{applicationId}/financial-operation");
         await rejectedResponse.ShouldBe(HttpStatusCode.OK);
         var rejected = await rejectedResponse.Content.ReadAsync<FinancialOperationResponse>();
         Assert.Equal(command.OperationId, rejected!.OperationId);

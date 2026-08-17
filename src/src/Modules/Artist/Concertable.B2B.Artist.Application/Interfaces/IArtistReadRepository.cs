@@ -5,7 +5,7 @@ namespace Concertable.B2B.Artist.Application.Interfaces;
 
 internal interface IArtistReadRepository
 {
-    Task<ArtistSummary?> GetSummaryAsync(int id);
-    Task<ArtistDetails?> GetDetailsByIdAsync(int id);
-    Task<IReadOnlySet<Genre>> GetGenresAsync(int id);
+    Task<ArtistSummary?> GetSummaryAsync(int id, CancellationToken ct = default);
+    Task<ArtistDetails?> GetDetailsByIdAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlySet<Genre>> GetGenresAsync(int id, CancellationToken ct = default);
 }
