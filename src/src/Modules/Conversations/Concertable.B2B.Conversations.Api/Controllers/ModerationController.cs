@@ -2,7 +2,7 @@ using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.Contracts;
-using Concertable.B2B.User.Api.Authorization;
+using Concertable.B2B.Admin.Api.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reunion.AspNetCore.Mvc;
 
