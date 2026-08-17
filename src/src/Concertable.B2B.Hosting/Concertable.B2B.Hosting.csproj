@@ -12,6 +12,7 @@
     <PackageReference Include="Aspire.Hosting.Azure.ServiceBus" />
     <PackageReference Include="Concertable.Payment.Contracts" />
     <ProjectReference Include="..\..\..\Concertable.AppHost.Shared\Concertable.AppHost.Shared.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\..\Concertable.Shared\src\Concertable.Shared.Email\Concertable.Shared.Email.Application\Concertable.Shared.Email.Application.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\Modules\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" IsAspireProjectResource="false" />

@@ -42,8 +42,8 @@ export const venueMid: VenueDashboardFixture = {
         deal: { $type: "versus", paymentMethod: "Transfer", guarantee: 250, artistDoorPercent: 70 },
       },
       actions: {
-        accept: { href: "/api/Application/101/accept", method: "POST" },
-        decline: { href: "/api/Application/101/decline", method: "POST" },
+        accept: { href: "/api/application/101/accept", method: "POST" },
+        decline: { href: "/api/application/101/decline", method: "POST" },
       },
     },
     {
@@ -60,8 +60,8 @@ export const venueMid: VenueDashboardFixture = {
         deal: { $type: "flatFee", paymentMethod: "Transfer", fee: 420 },
       },
       actions: {
-        accept: { href: "/api/Application/102/accept", method: "POST" },
-        decline: { href: "/api/Application/102/decline", method: "POST" },
+        accept: { href: "/api/application/102/accept", method: "POST" },
+        decline: { href: "/api/application/102/decline", method: "POST" },
       },
     },
     {
@@ -78,8 +78,8 @@ export const venueMid: VenueDashboardFixture = {
         deal: { $type: "versus", paymentMethod: "Transfer", guarantee: 250, artistDoorPercent: 70 },
       },
       actions: {
-        accept: { href: "/api/Application/103/accept", method: "POST" },
-        decline: { href: "/api/Application/103/decline", method: "POST" },
+        accept: { href: "/api/application/103/accept", method: "POST" },
+        decline: { href: "/api/application/103/decline", method: "POST" },
       },
     },
     {
@@ -96,8 +96,8 @@ export const venueMid: VenueDashboardFixture = {
         deal: { $type: "doorSplit", paymentMethod: "Transfer", artistDoorPercent: 60 },
       },
       actions: {
-        accept: { href: "/api/Application/104/accept", method: "POST" },
-        decline: { href: "/api/Application/104/decline", method: "POST" },
+        accept: { href: "/api/application/104/accept", method: "POST" },
+        decline: { href: "/api/application/104/decline", method: "POST" },
       },
     },
     {
@@ -114,8 +114,8 @@ export const venueMid: VenueDashboardFixture = {
         deal: { $type: "flatFee", paymentMethod: "Transfer", fee: 420 },
       },
       actions: {
-        accept: { href: "/api/Application/105/accept", method: "POST" },
-        decline: { href: "/api/Application/105/decline", method: "POST" },
+        accept: { href: "/api/application/105/accept", method: "POST" },
+        decline: { href: "/api/application/105/decline", method: "POST" },
       },
     },
   ],

@@ -9,13 +9,15 @@ using Reunion.AspNetCore.Mvc;
 namespace Concertable.B2B.Tenant.Api.Controllers;
 
 [ApiController]
-[Route("api/organizations")]
-internal sealed class TenantMembershipController : ControllerBase
+[Route("api/organization")]
+internal sealed class OrganizationMembershipController : ControllerBase
 {
     private readonly IMembershipService membershipService;
     private readonly IInvitationService invitationService;
 
-    public TenantMembershipController(IMembershipService membershipService, IInvitationService invitationService)
+    public OrganizationMembershipController(
+        IMembershipService membershipService,
+        IInvitationService invitationService)
     {
         this.membershipService = membershipService;
         this.invitationService = invitationService;
@@ -35,7 +37,7 @@ internal sealed class TenantMembershipController : ControllerBase
     [HasPermission(SharedPermissions.MembersInvite)]
     public async Task<ActionResult<InvitationDto>> Invite(InviteMemberRequest request)
         => (await invitationService.InviteAsync(request))
-            .ToCreatedOrProblem(_ => "/api/organizations/invitations");
+            .ToCreatedOrProblem(_ => "/api/organization/invitations");
 
     [HttpDelete("invitations/{id:guid}")]
     [HasPermission(SharedPermissions.MembersInvite)]

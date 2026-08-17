@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
@@ -37,7 +37,7 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.Unauthorized);
@@ -50,7 +50,7 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -63,7 +63,7 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.AwaitingPaymentBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.AwaitingPaymentBooking.Concert!.Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -82,7 +82,7 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -95,11 +95,11 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var request = BuildPostRequest();
 
         await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
             request);
 
         var response = await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.BadRequest);

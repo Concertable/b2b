@@ -10,14 +10,14 @@ internal abstract partial record ArtistError : IError
     {
         NotFound(var artistId) =>
             ErrorDefinition.NotFound<NotFound>($"Artist {artistId} was not found."),
-        CurrentTenantNotFound =>
-            ErrorDefinition.NotFound<CurrentTenantNotFound>(
-                "No artist was found for the current tenant.")
+        NotFoundForActiveTenant =>
+            ErrorDefinition.NotFound<NotFoundForActiveTenant>(
+                "No artist was found for the active tenant.")
     };
 
     [ErrorCode("artist.get.not_found")]
     public partial record NotFound(int ArtistId);
 
-    [ErrorCode("artist.get.current_tenant_not_found")]
-    public partial record CurrentTenantNotFound;
+    [ErrorCode("artist.get.active_tenant_not_found")]
+    public partial record NotFoundForActiveTenant;
 }
