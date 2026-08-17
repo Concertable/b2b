@@ -4,4 +4,4 @@ using Concertable.DataAccess.Infrastructure;
 namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
 internal sealed class VenueAdminRepository(VenueAdminDbContext context)
-    : Repository<VenueEntity, VenueAdminDbContext, int>(context), IVenueAdminRepository;
+    : Repository<VenueEntity, int>(context), IVenueAdminRepository;
