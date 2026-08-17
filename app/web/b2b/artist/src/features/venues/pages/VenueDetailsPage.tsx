@@ -1,6 +1,7 @@
 import { DetailsLayout, type DetailsSection } from "@concertable/web/components/details/DetailsLayout";
 import { DetailsPageSkeleton } from "@concertable/web/components/skeletons/DetailsPageSkeleton";
-import { useVenueById, VenueHero, venueSections } from "@concertable/web/features/venues";
+import { useVenueById } from "@concertable/shared/features/venues";
+import { VenueHero, venueSections } from "@concertable/web/features/venues";
 import { VenueOpportunitiesSection } from "../components/VenueOpportunitiesSection";
 
 interface Props {

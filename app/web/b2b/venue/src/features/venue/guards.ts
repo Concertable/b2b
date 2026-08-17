@@ -5,7 +5,7 @@ import venueApi from "@concertable/shared/features/venues/api/venueApi";
 export async function requireVenue({ pathname }: { pathname: string }) {
   if (pathname === "/create") return;
   try {
-    const venue = await venueApi.getOrganizationVenue();
+    const venue = await venueApi.getMyVenue();
     if (venue === null) throw redirect({ to: "/create" });
   } catch (e) {
     if (e instanceof Response || (e as any)?.isRedirect) throw e;
