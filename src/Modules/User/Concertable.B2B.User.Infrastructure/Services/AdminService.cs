@@ -83,7 +83,7 @@ internal sealed class AdminService : IAdminService
             return new RevokeAdminInvitationError.InvitationNotFound(invitationId);
 
         return await invitation.Revoke()
-            .MapError(error => error.ToRevokeAdminInvitationError())
+            .MapError<RevokeAdminInvitationError>(error => new RevokeAdminInvitationError.RevocationFailed(error))
             .TapAsync(() => repository.SaveChangesAsync(ct));
     }
 
