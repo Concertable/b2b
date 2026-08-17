@@ -62,14 +62,16 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Finish_ShouldCompleteBooking_WhenSettlementWebhookSucceeds()
+    public async Task Finish_ShouldCompleteBooking_WhenFailedSettlementIsRetriedSuccessfully()
     {
         // Arrange
-        var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
+        var booking = fixture.SeedState.PastDoorSplitBooking;
+        var concert = booking.Concert!;
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
         await fixture.FinishConcertAsync(concert.Id);
 
         // Act
+        await fixture.SendSettlementFailedWebhookAsync(booking.Id);
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
