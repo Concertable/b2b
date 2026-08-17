@@ -3,6 +3,7 @@ using Concertable.B2B.User.Application.Interfaces;
 using Concertable.B2B.User.Application.Requests;
 using Concertable.B2B.User.Contracts;
 using Concertable.B2B.User.Domain.Entities;
+using Concertable.B2B.User.Domain.Errors;
 using Concertable.B2B.User.Infrastructure.Services;
 using Concertable.Kernel.Identity;
 using Moq;
@@ -144,7 +145,8 @@ public sealed class AdminServiceTests
         var result = await CreateService().RevokeInvitationAsync(invitation.Id);
 
         Assert.True(result.TryGetError(out var error));
-        Assert.IsType<RevokeAdminInvitationError.InvitationNotPending>(error);
+        var revocationFailed = Assert.IsType<RevokeAdminInvitationError.RevocationFailed>(error);
+        Assert.IsType<AdminInvitationRevocationError.NotPending>(revocationFailed.Error);
         repository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 

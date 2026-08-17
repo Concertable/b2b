@@ -1,3 +1,4 @@
+using Concertable.B2B.User.Domain.Errors;
 using Dunet;
 
 namespace Concertable.B2B.User.Application.Errors;
@@ -9,13 +10,11 @@ internal abstract partial record RevokeAdminInvitationError : IError
     {
         InvitationNotFound(var invitationId) =>
             ErrorDefinition.NotFound<InvitationNotFound>($"Invitation {invitationId} was not found."),
-        InvitationNotPending =>
-            ErrorDefinition.Conflict<InvitationNotPending>("Only a pending invitation can be revoked.")
+        RevocationFailed(var error) => error.Definition
     };
 
     [ErrorCode("admin.revoke_invitation_not_found")]
     public partial record InvitationNotFound(Guid InvitationId);
 
-    [ErrorCode("admin.revoke_invitation_not_pending")]
-    public partial record InvitationNotPending;
+    public partial record RevocationFailed(AdminInvitationRevocationError Error);
 }
