@@ -30,7 +30,7 @@ public sealed class CancelExecutorTests
         await cancellationSource.CancelAsync();
         var cancellationToken = cancellationSource.Token;
         this.concertRepository
-            .Setup(r => r.GetByIdWithBookingAsync(It.IsAny<int>(), cancellationToken))
+            .Setup(r => r.GetByIdForLifecycleAsync(It.IsAny<int>(), cancellationToken))
             .Returns(Task.FromCanceled<ConcertEntity?>(cancellationToken));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(

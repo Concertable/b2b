@@ -51,11 +51,11 @@ public sealed class DealPayeeResolverTests
             dealType,
             VenueTenantId,
             ArtistTenantId);
-        var booking = StandardBooking.Create(application);
+        var booking = StandardBooking.Create(application.ToAccepted());
         var period = new DateRange(
             new DateTime(2026, 8, 9, 19, 0, 0, DateTimeKind.Utc),
             new DateTime(2026, 8, 9, 22, 0, 0, DateTimeKind.Utc));
-        var concert = ConcertEntity.CreateDraft(booking, 1, 2, period, "Concert", "About", []);
+        var concert = ConcertEntity.CreateDraft(booking.ToConfirmed(2, period), "Concert", "About", []);
         concert.Venue = new VenueReadModel { UserId = VenueUserId };
         concert.Artist = new ArtistReadModel { UserId = ArtistUserId };
         return concert;

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.Errors;
@@ -21,9 +22,12 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public int Id { get; private set; }
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
+    public Guid OperationId { get; private set; }
     public int BookingId { get; private set; }
+    public int ApplicationId { get; private set; }
     public int ArtistId { get; private set; }
     public int VenueId { get; private set; }
+    public DealType DealType { get; private set; }
     public string Name { get; private set; } = null!;
     public string About { get; private set; } = null!;
     public string? BannerUrl { get; private set; }
@@ -34,7 +38,6 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public decimal? DoorRevenue { get; private set; }
     public DateRange Period { get; private set; } = null!;
     public DateTime? DatePosted { get; private set; }
-    public BookingEntity Booking { get; private set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
     public VenueReadModel Venue { get; set; } = null!;
     public List<Genre> Genres { get; private set; } = [];
@@ -47,10 +50,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     private ConcertEntity() { }
 
     public static ConcertEntity CreateDraft(
-        BookingEntity booking,
-        int artistId,
-        int venueId,
-        DateRange period,
+        ConfirmedBooking booking,
         string name,
         string about,
         IEnumerable<Genre> genres)
@@ -61,13 +61,15 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
 
         return new()
         {
-            Booking = booking,
-            BookingId = booking.Id,
+            OperationId = booking.OperationId,
+            BookingId = booking.BookingId,
+            ApplicationId = booking.ApplicationId,
             VenueTenantId = booking.VenueTenantId,
             ArtistTenantId = booking.ArtistTenantId,
-            ArtistId = artistId,
-            VenueId = venueId,
-            Period = period,
+            ArtistId = booking.ArtistId,
+            VenueId = booking.VenueId,
+            DealType = booking.DealType,
+            Period = new DateRange(booking.StartDate, booking.EndDate),
             Name = name,
             About = about,
             Genres = genres.ToList()

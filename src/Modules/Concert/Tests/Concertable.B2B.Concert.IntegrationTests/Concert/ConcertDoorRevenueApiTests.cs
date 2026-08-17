@@ -32,7 +32,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         // Arrange — a past, still-Booked DoorSplit gig awaiting its door take.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.PastDoorSplitApp.Id;
-        var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
         var before = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(before!.Actions!.DeclareDoorRevenue); // offered while ended, Booked, undeclared
@@ -70,7 +70,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
     {
         // Declaring the door take is a venue decision; the artist lacks the permission.
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
         var response = await artistClient.PostAsync($"/api/Concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
 
@@ -84,7 +84,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
     {
         // Arrange — declare, settle, complete.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
         await client.PostAsync($"/api/Concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
         await fixture.FinishConcertAsync(concertId);
         await fixture.StripeClient.SendWebhookAsync();
@@ -100,7 +100,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
     public async Task Declare_ShouldReturnStableProblem_WhenRevenueIsNegative()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
         var response = await client.PostAsync(
             $"/api/Concert/{concertId}/door-revenue",

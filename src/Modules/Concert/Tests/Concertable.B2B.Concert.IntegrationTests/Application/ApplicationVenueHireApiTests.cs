@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Application.Responses;
@@ -194,7 +194,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             .AsNoTracking()
             .SingleAsync(value => value.Id == fixture.SeedState.VenueHireApp.Id);
         Assert.Equal(LifecycleState.PaymentFailed, application.State);
-        var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.VenueHireApp.Id);
+        var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.ApplicationId == fixture.SeedState.VenueHireApp.Id);
         Assert.Null(draft);
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }

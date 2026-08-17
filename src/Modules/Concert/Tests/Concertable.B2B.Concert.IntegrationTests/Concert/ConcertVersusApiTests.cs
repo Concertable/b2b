@@ -28,7 +28,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
     public async Task Finish_ShouldChargeGuaranteePlusDoorShareOffSession_AfterDoorRevenueDeclared()
     {
         // Arrange — the venue declares the door revenue; Versus settles guarantee + a % of it
-        var concert = fixture.SeedState.PastVersusBooking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastVersusBooking);
         var deferred = (DeferredBooking)fixture.SeedState.PastVersusBooking;
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
@@ -53,7 +53,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
     public async Task Finish_ShouldCompleteBooking_WhenSettlementWebhookSucceeds()
     {
         // Arrange
-        var concert = fixture.SeedState.PastVersusBooking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastVersusBooking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
         await fixture.FinishConcertAsync(concert.Id);
 

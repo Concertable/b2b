@@ -18,7 +18,7 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
 
     public async Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId) =>
         await context.Opportunities
-            .ActiveForVenue(venueId, timeProvider.GetUtcNow())
+            .ActiveForVenue(context.Applications, venueId, timeProvider.GetUtcNow())
             .ToListAsync();
 
     public async Task<Guid?> GetOwnerByIdAsync(int opportunityId) =>
@@ -42,8 +42,13 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
 
     public async Task<OpportunityEntity?> GetByApplicationIdAsync(int id) =>
         await context.Opportunities
-            .Where(o => o.Applications.Any(a => a.Id == id))
+            .Where(o => context.Applications.Any(a => a.Id == id && a.OpportunityId == o.Id))
             .FirstOrDefaultAsync();
+
+    public async Task<IReadOnlyList<OpportunityEntity>> GetByIdsAsync(IReadOnlyCollection<int> ids) =>
+        await context.Opportunities
+            .Where(o => ids.Contains(o.Id))
+            .ToListAsync();
 
     public async Task<(string Name, Guid UserId)?> GetVenueSummaryByIdAsync(int opportunityId)
     {

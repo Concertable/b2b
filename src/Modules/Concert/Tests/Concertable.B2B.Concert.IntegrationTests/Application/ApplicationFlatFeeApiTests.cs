@@ -195,7 +195,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
             .AsNoTracking()
             .SingleAsync(value => value.Id == fixture.SeedState.FlatFeeApp.Id);
         Assert.Equal(LifecycleState.PaymentFailed, application.State);
-        var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
+        var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
         Assert.Null(draft);
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }

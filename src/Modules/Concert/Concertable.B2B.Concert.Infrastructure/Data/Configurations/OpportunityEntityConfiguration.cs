@@ -37,8 +37,8 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
         builder.HasIndex(ca => ca.AcceptanceOperationId).IsUnique().HasFilter("[AcceptanceOperationId] IS NOT NULL");
         builder.HasIndex(ca => ca.CancellationOperationId).IsUnique().HasFilter("[CancellationOperationId] IS NOT NULL");
         builder.HasIndex(ca => new { ca.OpportunityId, ca.ArtistId }).IsUnique();
-        builder.HasOne(ca => ca.Opportunity)
-            .WithMany(o => o.Applications)
+        builder.HasOne<OpportunityEntity>()
+            .WithMany()
             .HasForeignKey(ca => ca.OpportunityId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);

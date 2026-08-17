@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
@@ -37,7 +37,7 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/Concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.Unauthorized);
@@ -50,7 +50,7 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/Concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -63,7 +63,7 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.AwaitingPaymentBooking.Concert!.Id}",
+            $"/api/Concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.AwaitingPaymentBooking).Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -78,11 +78,11 @@ public sealed class ConcertApiTests : IAsyncLifetime
     [Fact]
     public async Task Post_ShouldReturn204_WhenPostedSuccessfully()
     {
-        var client = CreateOwningVenueClient(fixture.SeedState.ConfirmedBooking.Concert!.VenueId);
+        var client = CreateOwningVenueClient(fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).VenueId);
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/Concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -91,15 +91,15 @@ public sealed class ConcertApiTests : IAsyncLifetime
     [Fact]
     public async Task Post_ShouldReturn400_WhenAlreadyPosted()
     {
-        var client = CreateOwningVenueClient(fixture.SeedState.ConfirmedBooking.Concert!.VenueId);
+        var client = CreateOwningVenueClient(fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).VenueId);
         var request = BuildPostRequest();
 
         await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/Concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).Id}",
             request);
 
         var response = await client.PutAsync(
-            $"/api/Concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/Concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.BadRequest);

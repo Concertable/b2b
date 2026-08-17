@@ -49,7 +49,7 @@ internal sealed class FinishExecutor : IFinishExecutor
         int concertId,
         CancellationToken ct = default)
     {
-        var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct);
+        var concert = await concertRepository.GetByIdForLifecycleAsync(concertId, ct);
         if (concert is null)
             return new FinishConcertError.ConcertNotFound(concertId);
 
@@ -73,7 +73,7 @@ internal sealed class FinishExecutor : IFinishExecutor
         }
 
         var transition = await transitioner.TransitionAsync<FinishConcertError>(
-            concert.Booking.ApplicationId,
+            concert.ApplicationId,
             Trigger.Finish,
             error => (FinishConcertError)new FinishConcertError.TransitionFailure(error),
             async app =>

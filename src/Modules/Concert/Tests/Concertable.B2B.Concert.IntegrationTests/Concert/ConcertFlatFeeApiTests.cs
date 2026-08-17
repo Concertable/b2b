@@ -27,7 +27,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
     public async Task Finish_ShouldCompleteBookingAndFinishConcert()
     {
         // Arrange
-        var concertId = fixture.SeedState.PastFlatFeeBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking).Id;
 
         // Act
         await fixture.FinishConcertAsync(concertId);
@@ -42,7 +42,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
     public async Task Finish_ShouldFail_WhenConcertNotEnded()
     {
         // Arrange
-        var concertId = fixture.SeedState.UpcomingFlatFeeBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.UpcomingFlatFeeBooking).Id;
 
         // Act & Assert
         var result = await fixture.FinishConcertAsync(concertId);
@@ -57,7 +57,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
     public async Task Finish_ShouldFail_WhenAlreadyFinished()
     {
         // Arrange
-        var concertId = fixture.SeedState.PastFlatFeeBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking).Id;
         await fixture.FinishConcertAsync(concertId);
 
         // Act & Assert

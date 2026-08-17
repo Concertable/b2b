@@ -42,7 +42,7 @@ internal static class ConcertWorkflowExtensions
     private static async Task EnsureSupplierSelfBillingAgreementAsync(this ConcertApiFixture fixture, int concertId)
     {
         using var scope = fixture.Services.CreateScope();
-        var concert = await scope.ServiceProvider.GetRequiredService<IConcertRepository>().GetByIdWithBookingAsync(concertId);
+        var concert = await scope.ServiceProvider.GetRequiredService<IConcertRepository>().GetByIdForLifecycleAsync(concertId);
         if (concert is null)
             return;
 

@@ -24,5 +24,5 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
         await ActiveForVenue(venueId).ToListAsync();
 
     private IQueryable<OpportunityEntity> ActiveForVenue(int venueId) =>
-        context.Opportunities.ActiveForVenue(venueId, timeProvider.GetUtcNow());
+        context.Opportunities.ActiveForVenue(context.Applications, venueId, timeProvider.GetUtcNow());
 }

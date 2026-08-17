@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Api.Responses;
@@ -101,7 +101,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         // Assert — booking created but draft not created until verify webhook fires
         await response.ShouldBe(HttpStatusCode.NoContent);
         var concert = await fixture.ConcertReads.Set<ConcertEntity>()
-            .FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
+            .FirstOrDefaultAsync(c => c.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
         Assert.Null(concert);
     }
 
@@ -154,7 +154,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         // Assert
         Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
         var concertCount = await fixture.ConcertReads.Set<ConcertEntity>()
-            .CountAsync(c => c.Booking.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
+            .CountAsync(c => c.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
         Assert.Equal(1, concertCount);
     }
 
@@ -190,7 +190,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         var beforeAccept = await fixture.ConcertReads.Set<ConcertEntity>()
-            .FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
+            .FirstOrDefaultAsync(c => c.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
         Assert.Null(beforeAccept);
         Assert.Empty(fixture.NotificationService.DraftCreated);
 
@@ -201,7 +201,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         var concert = await fixture.ConcertReads.Set<ConcertEntity>()
-            .FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
+            .FirstOrDefaultAsync(c => c.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
         Assert.NotNull(concert);
         Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
     }

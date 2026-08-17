@@ -36,7 +36,6 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .Where(ca => ca.OpportunityId == id)
             .Include(ca => ca.Artist)
                 .ThenInclude(a => a.Genres)
-            .Include(ca => ca.Opportunity)
             .ToListAsync();
     }
 
@@ -46,26 +45,27 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
     public async Task<IEnumerable<ApplicationEntity>> GetPendingByArtistIdAsync(int artistId)
     {
         return await context.Applications
-            .Include(a => a.Opportunity)
-                .ThenInclude(o => o.Venue)
+            .Include(a => a.Artist)
+                .ThenInclude(a => a.Genres)
             .Where(a =>
                 a.ArtistId == artistId &&
                 !context.Bookings.Any(b => b.ApplicationId == a.Id) &&
-                a.Opportunity.Period.Start > timeProvider.GetUtcNow())
+                context.Opportunities.Any(o => o.Id == a.OpportunityId && o.Period.Start > timeProvider.GetUtcNow()))
             .ToListAsync();
     }
 
     public async Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id)
     {
-        var query = await context.Applications
-            .Where(ca => ca.Id == id)
-            .Include(ca => ca.Artist)
-            .Include(ca => ca.Opportunity)
-                .ThenInclude(o => o.Venue)
+        var query = await (
+            from application in context.Applications
+            join opportunity in context.Opportunities on application.OpportunityId equals opportunity.Id
+            join venue in context.VenueReadModels on opportunity.VenueId equals venue.Id
+            where application.Id == id
+            select new { application.Artist, Venue = venue })
             .FirstOrDefaultAsync();
 
         if (query is null) return null;
-        return (query.Artist, query.Opportunity.Venue);
+        return (query.Artist, query.Venue);
     }
 
     public async Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(int applicationId)
@@ -96,7 +96,6 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .Where(ca => ca.Id == id)
             .Include(ca => ca.Artist)
                 .ThenInclude(a => a.Genres)
-            .Include(ca => ca.Opportunity)
             .FirstOrDefaultAsync(ct);
     }
 
@@ -111,7 +110,10 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
     {
         return context.Applications
             .Where(a => a.Id == applicationId)
-            .Select(a => (int?)a.Opportunity.DealId)
+            .Select(a => context.Opportunities
+                .Where(o => o.Id == a.OpportunityId)
+                .Select(o => (int?)o.DealId)
+                .FirstOrDefault())
             .FirstOrDefaultAsync();
     }
 
@@ -127,21 +129,25 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
     {
         return context.Applications
             .Where(a => a.Id == applicationId)
-            .Select(a => (Guid?)a.Opportunity.Venue.UserId)
+            .Select(a => context.Opportunities
+                .Where(o => o.Id == a.OpportunityId)
+                .Select(o => (Guid?)o.Venue.UserId)
+                .FirstOrDefault())
             .FirstOrDefaultAsync();
     }
 
     public async Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistIdAsync(int artistId)
     {
-        return await context.Applications
-            .Include(a => a.Opportunity)
-                .ThenInclude(o => o.Venue)
-            .Where(a =>
+        return await (
+            from a in context.Applications.Include(a => a.Artist).ThenInclude(a => a.Genres)
+            join opportunity in context.Opportunities on a.OpportunityId equals opportunity.Id
+            where
                 a.ArtistId == artistId &&
                 context.Bookings.Any(b =>
-                    b.Application.OpportunityId == a.OpportunityId &&
-                    b.ApplicationId != a.Id))
-            .OrderByDescending(a => a.Opportunity.Period.End)
+                    b.OpportunityId == a.OpportunityId &&
+                    b.ApplicationId != a.Id)
+            orderby opportunity.Period.End descending
+            select a)
             .Take(5)
             .ToListAsync();
     }

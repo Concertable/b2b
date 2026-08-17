@@ -17,41 +17,43 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
     private readonly ConcertDbContext context;
     private readonly IUpcomingSpecification<OpportunityEntity> opportunityUpcoming;
     private readonly IUpcomingSpecification<ConcertEntity> concertUpcoming;
-    private readonly IEndedAndBookedSpecification endedAndBooked;
+    private readonly IEndedSpecification ended;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
 
     public ConcertDashboardRepository(
         ConcertDbContext context,
         IUpcomingSpecification<OpportunityEntity> opportunityUpcoming,
         IUpcomingSpecification<ConcertEntity> concertUpcoming,
-        IEndedAndBookedSpecification endedAndBooked,
+        IEndedSpecification ended,
         IDoorRevenueOutstandingSpecification doorRevenueOutstanding)
     {
         this.context = context;
         this.opportunityUpcoming = opportunityUpcoming;
         this.concertUpcoming = concertUpcoming;
-        this.endedAndBooked = endedAndBooked;
+        this.ended = ended;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
     }
 
     public Task<VenueDashboardCounts?> GetVenueCountsAsync(int venueId, CancellationToken ct = default)
     {
-        var applications = opportunityUpcoming.ApplyVia(
-            context.Applications
-                .Where(a => a.State == LifecycleState.Applied && a.Opportunity.VenueId == venueId),
-            a => a.Opportunity);
+        var upcomingOpportunityIds = opportunityUpcoming.Apply(context.Opportunities)
+            .Where(o => o.VenueId == venueId)
+            .Select(o => o.Id);
+        var applications = context.Applications.Where(a =>
+            a.State == LifecycleState.Applied && upcomingOpportunityIds.Contains(a.OpportunityId));
 
         var openOpportunities = opportunityUpcoming.Apply(
             context.Opportunities
                 .Where(o => o.VenueId == venueId)
-                .WhereOpen());
+                .WhereOpen(context.Applications));
 
         var upcomingConcerts = concertUpcoming.Apply(
             context.Concerts.Where(c => c.VenueId == venueId));
 
-        var awaitingDoorRevenue = endedAndBooked
+        var awaitingDoorRevenue = ended
             .And(doorRevenueOutstanding)
-            .Apply(context.Concerts.Where(c => c.VenueId == venueId));
+            .Apply(context.Concerts.Where(c => c.VenueId == venueId && context.Applications.Any(a =>
+                a.Id == c.ApplicationId && a.State == LifecycleState.Booked)));
 
         return context.VenueReadModels
             .Where(v => v.Id == venueId)
@@ -64,17 +66,17 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         IReadOnlyCollection<DealType> checkoutCapableDealTypes,
         CancellationToken ct = default)
     {
-        var applications = opportunityUpcoming.ApplyVia(
-            context.Applications
-                .Where(a => a.State == LifecycleState.Applied && a.ArtistId == artistId),
-            a => a.Opportunity);
+        var upcomingOpportunityIds = opportunityUpcoming.Apply(context.Opportunities).Select(o => o.Id);
+        var applications = context.Applications.Where(a =>
+            a.State == LifecycleState.Applied
+            && a.ArtistId == artistId
+            && upcomingOpportunityIds.Contains(a.OpportunityId));
 
-        var acceptedAwaitingCheckout = opportunityUpcoming.ApplyVia(
-            context.Applications
-                .Where(a => a.State == LifecycleState.Accepted
-                    && a.ArtistId == artistId
-                    && checkoutCapableDealTypes.Contains(a.DealType)),
-            a => a.Opportunity);
+        var acceptedAwaitingCheckout = context.Applications.Where(a =>
+            a.State == LifecycleState.Accepted
+            && a.ArtistId == artistId
+            && checkoutCapableDealTypes.Contains(a.DealType)
+            && upcomingOpportunityIds.Contains(a.OpportunityId));
 
         var upcomingConcerts = concertUpcoming.Apply(
             context.Concerts.Where(c => c.ArtistId == artistId));

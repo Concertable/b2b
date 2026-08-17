@@ -28,7 +28,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     public async Task Finish_ShouldChargeArtistDoorShareOffSession_AfterDoorRevenueDeclared()
     {
         // Arrange — the venue declares the night's door revenue; settlement is a % of that
-        var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
         var deferred = (DeferredBooking)fixture.SeedState.PastDoorSplitBooking;
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
@@ -66,7 +66,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     {
         // Arrange
         var booking = fixture.SeedState.PastDoorSplitBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
         await fixture.FinishConcertAsync(concert.Id);
 
@@ -83,7 +83,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     public async Task Finish_ShouldIgnoreDuplicateSettlementWebhookEvent()
     {
         // Arrange
-        var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
         await fixture.FinishConcertAsync(concert.Id);
 

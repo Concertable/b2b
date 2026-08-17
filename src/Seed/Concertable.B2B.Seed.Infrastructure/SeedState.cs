@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Artist.Domain.Entities;
+using Concertable.B2B.Artist.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Seed.Contracts;
@@ -18,6 +18,9 @@ namespace Concertable.B2B.Seed.Infrastructure;
 
 public sealed class SeedState
 {
+    private readonly Dictionary<BookingEntity, ApplicationEntity> bookingApplications =
+        new(ReferenceEqualityComparer.Instance);
+
     public const string TestPassword = "Password11!";
 
     public UserEntity ArtistManager1 { get; }
@@ -364,20 +367,20 @@ public sealed class SeedState
             BookingFactory.Standard(47),
         ];
 
-        ConfirmedApp = ApplicationFactory.Booked(1, 6, Bookings[0]);
-        PostedDoorSplitApp = ApplicationFactory.Booked(1, 53, Bookings[1]);
-        PostedVersusApp = ApplicationFactory.Booked(2, 54, Bookings[2]);
-        PostedFlatFeeApp = ApplicationFactory.Complete(2, 31, Bookings[3]);
-        PostedVenueHireApp = ApplicationFactory.CompletePrepaid(1, 21, Bookings[4]);
-        AwaitingPaymentApp = ApplicationFactory.Accepted(1, 33, Bookings[5]);
-        FinishedDoorSplitApp = ApplicationFactory.Complete(1, 50, Bookings[6]);
-        FinishedVersusApp = ApplicationFactory.Complete(1, 51, Bookings[7]);
-        PastVersusApp = ApplicationFactory.Booked(1, Opportunities[63].Id, Bookings[8]);
-        PastFlatFeeApp = ApplicationFactory.Booked(1, Opportunities[64].Id, Bookings[9]);
-        PastVenueHireApp = ApplicationFactory.BookedPrepaid(1, Opportunities[65].Id, Bookings[10]);
-        PastDoorSplitApp = ApplicationFactory.Booked(1, Opportunities[66].Id, Bookings[11]);
-        UpcomingFlatFeeApp = ApplicationFactory.Booked(2, 58, Bookings[12]);
-        UpcomingVenueHireApp = ApplicationFactory.BookedPrepaid(1, 59, Bookings[13]);
+        ConfirmedApp = Link(Bookings[0], ApplicationFactory.Booked(1, 6));
+        PostedDoorSplitApp = Link(Bookings[1], ApplicationFactory.Booked(1, 53));
+        PostedVersusApp = Link(Bookings[2], ApplicationFactory.Booked(2, 54));
+        PostedFlatFeeApp = Link(Bookings[3], ApplicationFactory.Complete(2, 31));
+        PostedVenueHireApp = Link(Bookings[4], ApplicationFactory.CompletePrepaid(1, 21));
+        AwaitingPaymentApp = Link(Bookings[5], ApplicationFactory.Accepted(1, 33));
+        FinishedDoorSplitApp = Link(Bookings[6], ApplicationFactory.Complete(1, 50));
+        FinishedVersusApp = Link(Bookings[7], ApplicationFactory.Complete(1, 51));
+        PastVersusApp = Link(Bookings[8], ApplicationFactory.Booked(1, Opportunities[63].Id));
+        PastFlatFeeApp = Link(Bookings[9], ApplicationFactory.Booked(1, Opportunities[64].Id));
+        PastVenueHireApp = Link(Bookings[10], ApplicationFactory.BookedPrepaid(1, Opportunities[65].Id));
+        PastDoorSplitApp = Link(Bookings[11], ApplicationFactory.Booked(1, Opportunities[66].Id));
+        UpcomingFlatFeeApp = Link(Bookings[12], ApplicationFactory.Booked(2, 58));
+        UpcomingVenueHireApp = Link(Bookings[13], ApplicationFactory.BookedPrepaid(1, 59));
 
         DoorSplitApp = ApplicationFactory.Create(1, Opportunities[55].Id, Deals[55].DealType);
         VersusApp = ApplicationFactory.Create(1, Opportunities[56].Id, Deals[56].DealType);
@@ -386,32 +389,32 @@ public sealed class SeedState
 
         Applications =
         [
-            ApplicationFactory.Complete(1, 1, Bookings[14]),
-            ApplicationFactory.Complete(2, 1, Bookings[15]),
-            ApplicationFactory.Complete(3, 1, Bookings[16]),
-            ApplicationFactory.Complete(4, 1, Bookings[17]),
-            ApplicationFactory.Complete(1, 2, Bookings[18]),
-            ApplicationFactory.Complete(2, 2, Bookings[19]),
-            ApplicationFactory.Complete(5, 2, Bookings[20]),
-            ApplicationFactory.Complete(6, 2, Bookings[21]),
-            ApplicationFactory.Complete(1, 3, Bookings[22]),
-            ApplicationFactory.Complete(2, 3, Bookings[23]),
-            ApplicationFactory.Complete(7, 3, Bookings[24]),
-            ApplicationFactory.Complete(8, 3, Bookings[25]),
-            ApplicationFactory.Complete(1, 4, Bookings[26]),
-            ApplicationFactory.Complete(2, 4, Bookings[27]),
-            ApplicationFactory.Complete(9, 4, Bookings[28]),
-            ApplicationFactory.Complete(10, 4, Bookings[29]),
-            ApplicationFactory.Complete(1, 5, Bookings[30]),
-            ApplicationFactory.Complete(2, 5, Bookings[31]),
-            ApplicationFactory.Complete(11, 5, Bookings[32]),
-            ApplicationFactory.Complete(12, 5, Bookings[33]),
+            Link(Bookings[14], ApplicationFactory.Complete(1, 1)),
+            Link(Bookings[15], ApplicationFactory.Complete(2, 1)),
+            Link(Bookings[16], ApplicationFactory.Complete(3, 1)),
+            Link(Bookings[17], ApplicationFactory.Complete(4, 1)),
+            Link(Bookings[18], ApplicationFactory.Complete(1, 2)),
+            Link(Bookings[19], ApplicationFactory.Complete(2, 2)),
+            Link(Bookings[20], ApplicationFactory.Complete(5, 2)),
+            Link(Bookings[21], ApplicationFactory.Complete(6, 2)),
+            Link(Bookings[22], ApplicationFactory.Complete(1, 3)),
+            Link(Bookings[23], ApplicationFactory.Complete(2, 3)),
+            Link(Bookings[24], ApplicationFactory.Complete(7, 3)),
+            Link(Bookings[25], ApplicationFactory.Complete(8, 3)),
+            Link(Bookings[26], ApplicationFactory.Complete(1, 4)),
+            Link(Bookings[27], ApplicationFactory.Complete(2, 4)),
+            Link(Bookings[28], ApplicationFactory.Complete(9, 4)),
+            Link(Bookings[29], ApplicationFactory.Complete(10, 4)),
+            Link(Bookings[30], ApplicationFactory.Complete(1, 5)),
+            Link(Bookings[31], ApplicationFactory.Complete(2, 5)),
+            Link(Bookings[32], ApplicationFactory.Complete(11, 5)),
+            Link(Bookings[33], ApplicationFactory.Complete(12, 5)),
             ConfirmedApp,
-            ApplicationFactory.Complete(2, 6, Bookings[34]),
-            ApplicationFactory.Complete(13, 6, Bookings[35]),
-            ApplicationFactory.Complete(14, 6, Bookings[36]),
-            ApplicationFactory.Complete(1, 7, Bookings[37]),
-            ApplicationFactory.Complete(2, 7, Bookings[38]),
+            Link(Bookings[34], ApplicationFactory.Complete(2, 6)),
+            Link(Bookings[35], ApplicationFactory.Complete(13, 6)),
+            Link(Bookings[36], ApplicationFactory.Complete(14, 6)),
+            Link(Bookings[37], ApplicationFactory.Complete(1, 7)),
+            Link(Bookings[38], ApplicationFactory.Complete(2, 7)),
             ApplicationFactory.Create(15, 7),
             ApplicationFactory.Create(16, 7),
             ApplicationFactory.Create(1, 8),
@@ -420,17 +423,17 @@ public sealed class SeedState
             ApplicationFactory.Create(18, 8),
             ApplicationFactory.Create(17, 40),
             ApplicationFactory.Create(18, 41),
-            ApplicationFactory.Booked(1, 14, Bookings[39]),
+            Link(Bookings[39], ApplicationFactory.Booked(1, 14)),
             ApplicationFactory.Create(2, 14),
             ApplicationFactory.Create(3, 14),
             ApplicationFactory.Create(4, 14),
             PostedDoorSplitApp,
             DoorSplitApp,
             ApplicationFactory.Create(7, 15),
-            ApplicationFactory.Booked(8, 15, Bookings[40]),
+            Link(Bookings[40], ApplicationFactory.Booked(8, 15)),
             ApplicationFactory.CreatePrepaid(9, 16),
             ApplicationFactory.CreatePrepaid(10, 16),
-            ApplicationFactory.BookedPrepaid(11, 16, Bookings[41]),
+            Link(Bookings[41], ApplicationFactory.BookedPrepaid(11, 16)),
             ApplicationFactory.CreatePrepaid(12, 16),
             VersusApp,
             ApplicationFactory.Create(14, 17),
@@ -469,20 +472,20 @@ public sealed class SeedState
             PastDoorSplitApp,
             UpcomingFlatFeeApp,
             UpcomingVenueHireApp,
-            ApplicationFactory.Booked(3, 34, Bookings[42]),
+            Link(Bookings[42], ApplicationFactory.Booked(3, 34)),
             ApplicationFactory.Create(4, 34),
             ApplicationFactory.Create(5, 34),
-            ApplicationFactory.Booked(1, 35, Bookings[43]),
+            Link(Bookings[43], ApplicationFactory.Booked(1, 35)),
             ApplicationFactory.Create(2, 35),
             ApplicationFactory.Create(4, 35),
             ApplicationFactory.Create(5, 35),
-            ApplicationFactory.Booked(4, 46, Bookings[44]),
+            Link(Bookings[44], ApplicationFactory.Booked(4, 46)),
             ApplicationFactory.Create(5, 46),
             ApplicationFactory.Create(6, 46),
-            ApplicationFactory.Booked(5, 47, Bookings[45]),
+            Link(Bookings[45], ApplicationFactory.Booked(5, 47)),
             ApplicationFactory.Create(6, 47),
             ApplicationFactory.Create(7, 47),
-            ApplicationFactory.BookedPrepaid(6, 48, Bookings[46]),
+            Link(Bookings[46], ApplicationFactory.BookedPrepaid(6, 48)),
             ApplicationFactory.CreatePrepaid(7, 48),
             ApplicationFactory.CreatePrepaid(8, 48),
         ];
@@ -497,13 +500,45 @@ public sealed class SeedState
                 nameof(ApplicationEntity.VenueTenantId),
                 Opportunities[application.OpportunityId - 1].TenantId);
             application.With(nameof(ApplicationEntity.ArtistTenantId), artistTenantById[application.ArtistId]);
-            if (application.Booking is { } booking)
+            var booking = Bookings.FirstOrDefault(b =>
+                bookingApplications.TryGetValue(b, out var linked) && ReferenceEquals(linked, application));
+            if (booking is not null)
             {
+                booking.With(nameof(BookingEntity.OperationId), application.BeginAcceptance());
+                booking.With(nameof(BookingEntity.OpportunityId), application.OpportunityId);
+                booking.With(nameof(BookingEntity.ArtistId), application.ArtistId);
+                booking.With(nameof(BookingEntity.DealType), application.DealType);
                 booking.With(nameof(BookingEntity.VenueTenantId), application.VenueTenantId);
                 booking.With(nameof(BookingEntity.ArtistTenantId), application.ArtistTenantId);
             }
         }
 
         Concerts = catalog.Concerts.Select(s => ConcertFactory.Create(s, Bookings[s.ConcertId - 1])).ToList();
+    }
+
+    public ConcertEntity ConcertFor(BookingEntity booking) =>
+        Concerts.Single(concert => concert.BookingId == booking.Id);
+
+    public void LinkPersistedApplications()
+    {
+        foreach (var booking in Bookings)
+        {
+            if (!bookingApplications.TryGetValue(booking, out var application))
+                throw new InvalidOperationException($"Seed booking {booking.Id} has no application.");
+            booking.With(nameof(BookingEntity.ApplicationId), application.Id);
+        }
+
+        foreach (var concert in Concerts)
+        {
+            var booking = Bookings.Single(value => value.Id == concert.BookingId);
+            concert.With(nameof(ConcertEntity.ApplicationId), booking.ApplicationId);
+        }
+    }
+
+    private TApplication Link<TApplication>(BookingEntity booking, TApplication application)
+        where TApplication : ApplicationEntity
+    {
+        bookingApplications.Add(booking, application);
+        return application;
     }
 }

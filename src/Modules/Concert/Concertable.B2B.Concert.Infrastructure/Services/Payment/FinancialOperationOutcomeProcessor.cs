@@ -100,7 +100,6 @@ internal sealed class FinancialOperationOutcomeProcessor :
         ProcessAsync(envelope, async () =>
         {
             var application = await context.Applications
-                .Include(value => value.Booking)
                 .SingleOrDefaultAsync(value => value.AcceptanceOperationId == operationId, ct)
                 ?? throw new InvalidOperationException($"Acceptance operation {operationId} has no application.");
             if (application.State is LifecycleState.PaymentFailed or LifecycleState.Cancelled)
@@ -130,10 +129,11 @@ internal sealed class FinancialOperationOutcomeProcessor :
             await transitioner.TransitionAsync(
                 application.Id,
                 Trigger.RefundSucceeded,
-                app =>
+                async app =>
                 {
-                    app.Booking?.Concert?.Cancel();
-                    return Task.CompletedTask;
+                    var concert = await context.Concerts
+                        .FirstOrDefaultAsync(value => value.ApplicationId == app.Id, ct);
+                    concert?.Cancel();
                 },
                 ct).GetValueOrThrowAsync();
         }, ct);
@@ -169,8 +169,6 @@ internal sealed class FinancialOperationOutcomeProcessor :
 
     private async Task<ApplicationEntity> LoadCancellationAsync(Guid operationId, CancellationToken ct) =>
         await context.Applications
-            .Include(value => value.Booking)
-                .ThenInclude(value => value!.Concert)
             .SingleOrDefaultAsync(value => value.CancellationOperationId == operationId, ct)
             ?? throw new InvalidOperationException($"Cancellation operation {operationId} has no application.");
 

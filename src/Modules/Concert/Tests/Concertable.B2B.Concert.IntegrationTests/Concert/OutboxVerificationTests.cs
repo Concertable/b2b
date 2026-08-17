@@ -31,7 +31,7 @@ public sealed class OutboxVerificationTests : IAsyncLifetime
     public async Task PostConcert_WritesOutboxRow_AndOutboxDrainsIt()
     {
         // Arrange — the post goes through the party-filtered booking, so act as the owning venue manager
-        var concert = fixture.SeedState.ConfirmedBooking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
         var client = fixture.CreateClient(fixture.SeedState.VenueManagers.Single(m =>
             m.Id == fixture.SeedState.Venues.Single(v => v.Id == concert.VenueId).UserId));
         var concertId = concert.Id;

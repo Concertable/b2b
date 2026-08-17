@@ -21,11 +21,11 @@ internal sealed class ConcertValidator : IConcertValidator
                     }));
     }
 
-    public ValidationResult CanPost(ConcertEntity concert)
+    public ValidationResult CanPost(ConcertEntity concert, LifecycleState applicationState)
     {
         var errors = new List<KeyValuePair<string, string>>();
 
-        if (concert.Booking.Application.State != LifecycleState.Booked)
+        if (applicationState != LifecycleState.Booked)
             errors.Add(new("booking", "Concert cannot be posted until the booking is confirmed"));
 
         if (concert.DatePosted is not null)

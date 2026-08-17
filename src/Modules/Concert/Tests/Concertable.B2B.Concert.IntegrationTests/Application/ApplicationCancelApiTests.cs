@@ -159,7 +159,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         // Assert
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
         Assert.Equal(2, refunds.Count(command => command.BookingId == booking.Id));
-        var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == appId);
+        var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.ApplicationId == appId);
         Assert.Null(draft);
     }
 

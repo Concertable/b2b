@@ -9,8 +9,8 @@ internal sealed class BookingEntityConfiguration : IEntityTypeConfiguration<Book
     public void Configure(EntityTypeBuilder<BookingEntity> builder)
     {
         builder.ToTable(Schema.Tables.Bookings, Schema.Name);
-        builder.HasOne(b => b.Application)
-            .WithOne(a => a.Booking)
+        builder.HasOne<ApplicationEntity>()
+            .WithOne()
             .HasForeignKey<BookingEntity>(b => b.ApplicationId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);

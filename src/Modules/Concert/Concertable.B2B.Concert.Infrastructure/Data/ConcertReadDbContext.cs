@@ -14,6 +14,7 @@ internal sealed class ConcertReadDbContext(
 {
     IQueryable<ConcertEntity> IConcertReadDbContext.Concerts => Query<ConcertEntity>();
     IQueryable<OpportunityEntity> IConcertReadDbContext.Opportunities => Query<OpportunityEntity>();
+    IQueryable<ApplicationEntity> IConcertReadDbContext.Applications => Query<ApplicationEntity>();
     IQueryable<SelfBillingAgreementEntity> IConcertReadDbContext.SelfBillingAgreements =>
         Query<SelfBillingAgreementEntity>();
     IQueryable<ConcertRatingProjection> IConcertReadDbContext.ConcertRatingProjections =>

@@ -14,8 +14,8 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
             p.Property(x => x.Start).HasColumnName("StartDate");
             p.Property(x => x.End).HasColumnName("EndDate");
         });
-        builder.HasOne(e => e.Booking)
-            .WithOne(b => b.Concert)
+        builder.HasOne<BookingEntity>()
+            .WithOne()
             .HasForeignKey<ConcertEntity>(e => e.BookingId)
             .OnDelete(DeleteBehavior.NoAction);
 

@@ -27,7 +27,7 @@ public sealed class ConcertVenueHireApiTests : IAsyncLifetime
     public async Task Finish_ShouldCompleteBookingAndFinishConcert()
     {
         // Arrange
-        var concertId = fixture.SeedState.PastVenueHireBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastVenueHireBooking).Id;
 
         // Act
         await fixture.FinishConcertAsync(concertId);
@@ -42,7 +42,7 @@ public sealed class ConcertVenueHireApiTests : IAsyncLifetime
     public async Task Finish_ShouldFail_WhenConcertNotEnded()
     {
         // Arrange
-        var concertId = fixture.SeedState.UpcomingVenueHireBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.UpcomingVenueHireBooking).Id;
 
         // Act & Assert
         var result = await fixture.FinishConcertAsync(concertId);

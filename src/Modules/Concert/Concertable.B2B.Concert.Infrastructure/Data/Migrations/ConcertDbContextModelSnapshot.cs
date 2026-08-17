@@ -156,13 +156,25 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("ApplicationId")
                         .HasColumnType("int");
 
+                    b.Property<int>("ArtistId")
+                        .HasColumnType("int");
+
                     b.Property<Guid>("ArtistTenantId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DealType")
+                        .HasColumnType("int");
 
                     b.Property<string>("Discriminator")
                         .IsRequired()
                         .HasMaxLength(21)
                         .HasColumnType("nvarchar(21)");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("OpportunityId")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("VenueTenantId")
                         .HasColumnType("uniqueidentifier");
@@ -191,6 +203,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("ApplicationId")
+                        .HasColumnType("int");
+
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
 
@@ -209,6 +224,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("DatePosted")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("DealType")
+                        .HasColumnType("int");
+
                     b.Property<decimal?>("DoorRevenue")
                         .HasColumnType("decimal(18,2)");
 
@@ -219,6 +237,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -951,26 +972,22 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.OpportunityEntity", "Opportunity")
-                        .WithMany("Applications")
+                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.OpportunityEntity", null)
+                        .WithMany()
                         .HasForeignKey("OpportunityId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Artist");
-
-                    b.Navigation("Opportunity");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.BookingEntity", b =>
                 {
-                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.ApplicationEntity", "Application")
-                        .WithOne("Booking")
+                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.ApplicationEntity", null)
+                        .WithOne()
                         .HasForeignKey("Concertable.B2B.Concert.Domain.Entities.BookingEntity", "ApplicationId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
-
-                    b.Navigation("Application");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ConcertEntity", b =>
@@ -981,8 +998,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.BookingEntity", "Booking")
-                        .WithOne("Concert")
+                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.BookingEntity", null)
+                        .WithOne()
                         .HasForeignKey("Concertable.B2B.Concert.Domain.Entities.ConcertEntity", "BookingId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
@@ -994,8 +1011,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Artist");
-
-                    b.Navigation("Booking");
 
                     b.Navigation("Venue");
                 });
@@ -1024,13 +1039,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.InvoiceEntity", b =>
                 {
-                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.BookingEntity", "Booking")
+                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.BookingEntity", null)
                         .WithOne()
                         .HasForeignKey("Concertable.B2B.Concert.Domain.Entities.InvoiceEntity", "BookingId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
-
-                    b.Navigation("Booking");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.OpportunityEntity", b =>
@@ -1113,24 +1126,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ApplicationEntity", b =>
-                {
-                    b.Navigation("Booking");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.BookingEntity", b =>
-                {
-                    b.Navigation("Concert");
-                });
-
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ConcertEntity", b =>
                 {
                     b.Navigation("Images");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.OpportunityEntity", b =>
-                {
-                    b.Navigation("Applications");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.ReadModels.ArtistReadModel", b =>

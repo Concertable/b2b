@@ -30,6 +30,8 @@
     <ProjectReference Include="..\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Concert.Domain\Concertable.B2B.Concert.Domain.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Concert.Application\Concertable.B2B.Concert.Application.csproj" />
+    <ProjectReference Include="..\..\Application\Concertable.B2B.Application.Contracts\Concertable.B2B.Application.Contracts.csproj" />
+    <ProjectReference Include="..\..\Booking\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Infrastructure\Concertable.B2B.DataAccess.Infrastructure.csproj" />
     <ProjectReference Include="..\..\User\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
     <ProjectReference Include="..\..\Artist\Concertable.B2B.Artist.Domain\Concertable.B2B.Artist.Domain.csproj" />

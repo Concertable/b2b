@@ -11,11 +11,11 @@ internal static class ConcertMappers
     {
         Id = concert.Id,
         Name = concert.Name,
-        ImageUrl = concert.Booking.Application.Artist.Avatar,
-        StartDate = concert.Booking.Application.Opportunity.Period.Start,
-        EndDate = concert.Booking.Application.Opportunity.Period.End,
-        County = concert.Booking.Application.Opportunity.Venue.Address.County,
-        Town = concert.Booking.Application.Opportunity.Venue.Address.Town,
+        ImageUrl = concert.Artist.Avatar,
+        StartDate = concert.Period.Start,
+        EndDate = concert.Period.End,
+        County = concert.Venue.Address.County,
+        Town = concert.Venue.Address.Town,
         DatePosted = concert.DatePosted
     };
 

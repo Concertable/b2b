@@ -39,7 +39,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
 
-        await FinishWithoutGrantingAsync(booking.Concert!.Id);
+        await FinishWithoutGrantingAsync(fixture.SeedState.ConcertFor(booking).Id);
 
         var application = await ApplicationAsync(fixture.SeedState.PastFlatFeeApp.Id);
         Assert.Equal(LifecycleState.Booked, application.State);
@@ -51,7 +51,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
     {
         var booking = fixture.SeedState.PastVenueHireBooking;
 
-        await FinishWithoutGrantingAsync(booking.Concert!.Id);
+        await FinishWithoutGrantingAsync(fixture.SeedState.ConcertFor(booking).Id);
 
         var application = await ApplicationAsync(fixture.SeedState.PastVenueHireApp.Id);
         Assert.Equal(LifecycleState.Booked, application.State);
@@ -62,7 +62,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
     public async Task Finish_SelfHeals_AfterSupplierGrants_AndConsumesNoSequenceNumberAcrossTheDeferral()
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
 
         await FinishWithoutGrantingAsync(concert.Id);
         Assert.Null(await InvoiceForBookingAsync(booking.Id));

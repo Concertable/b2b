@@ -15,5 +15,5 @@ internal sealed class InvoiceRepository : VenueArtistTenantScopedRepository<Invo
 
     public Task<InvoiceEntity?> GetByApplicationIdAsync(int applicationId, CancellationToken ct = default) =>
         context.Invoices
-            .FirstOrDefaultAsync(i => i.Booking.ApplicationId == applicationId, ct);
+            .FirstOrDefaultAsync(i => context.Bookings.Any(b => b.Id == i.BookingId && b.ApplicationId == applicationId), ct);
 }

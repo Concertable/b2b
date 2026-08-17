@@ -23,5 +23,5 @@ internal sealed class DealPayeeResolver : IDealPayeeResolver
         Resolve(concert).ResolveSettlementTenantId(concert);
 
     private IDealPayeeResolver Resolve(ConcertEntity concert) =>
-        resolvers.Create(concert.Booking.Application.DealType);
+        resolvers.Create(concert.DealType);
 }

@@ -18,7 +18,6 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public int BookingId { get; private set; }
-    public BookingEntity Booking { get; private set; } = null!;
 
     /// <summary>The party who made the supply and on whose behalf the invoice is self-billed — the settlement payee.</summary>
     public InvoiceParty Supplier { get; private set; } = null!;
@@ -56,7 +55,6 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
 
         return new()
         {
-            Booking = concert.Booking,
             BookingId = concert.BookingId,
             VenueTenantId = concert.VenueTenantId,
             ArtistTenantId = concert.ArtistTenantId,
@@ -66,7 +64,7 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
             SequenceNumber = sequenceNumber,
             InvoiceNumber = invoiceNumber,
             TaxPointUtc = taxPointUtc,
-            DealType = concert.Booking.Application.DealType,
+            DealType = concert.DealType,
             CreatedAtUtc = createdAtUtc,
             PdfBlobName = $"invoices/{concert.BookingId}-{Guid.NewGuid():N}.pdf"
         };

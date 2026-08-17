@@ -149,7 +149,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped(typeof(ISequenceRepository<>), typeof(SequenceRepository<>));
 
         // Query specifications
-        services.AddScoped<IEndedAndBookedSpecification, EndedAndBookedSpecification>();
+        services.AddScoped<IEndedSpecification, EndedSpecification>();
         services.AddScoped<IDoorRevenueOutstandingSpecification, DoorRevenueOutstandingSpecification>();
 
         // Mappers

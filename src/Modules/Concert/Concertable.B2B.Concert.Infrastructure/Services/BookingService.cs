@@ -1,3 +1,4 @@
+using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Kernel.Exceptions;
 
@@ -14,7 +15,7 @@ internal sealed class BookingService : IBookingService
 
     public async Task<StandardBookingDto> CreateStandardAsync(ApplicationEntity application)
     {
-        var booking = StandardBooking.Create(application);
+        var booking = StandardBooking.Create(ToAcceptedApplication(application));
         await repository.AddAsync(booking);
         await repository.SaveChangesAsync();
         return booking.ToDto();
@@ -22,7 +23,7 @@ internal sealed class BookingService : IBookingService
 
     public async Task<DeferredBookingDto> CreateDeferredAsync(ApplicationEntity application, string paymentMethodId)
     {
-        var booking = DeferredBooking.Create(application, paymentMethodId);
+        var booking = DeferredBooking.Create(ToAcceptedApplication(application), paymentMethodId);
         await repository.AddAsync(booking);
         await repository.SaveChangesAsync();
         return booking.ToDto();
@@ -36,4 +37,14 @@ internal sealed class BookingService : IBookingService
             throw new BadRequestException("Concert finish requires a DeferredBooking");
         return deferred.ToSettlement();
     }
+
+    private static AcceptedApplication ToAcceptedApplication(ApplicationEntity application) =>
+        new(
+            application.BeginAcceptance(),
+            application.Id,
+            application.OpportunityId,
+            application.ArtistId,
+            application.VenueTenantId,
+            application.ArtistTenantId,
+            application.DealType);
 }

@@ -5,11 +5,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 internal sealed class RefundEscrowByApplicationStep : IApplicationCancelStep
 {
     private readonly IBookingRepository bookingRepository;
+    private readonly IApplicationRepository applicationRepository;
     private readonly IBus bus;
 
-    public RefundEscrowByApplicationStep(IBookingRepository bookingRepository, IBus bus)
+    public RefundEscrowByApplicationStep(
+        IBookingRepository bookingRepository,
+        IApplicationRepository applicationRepository,
+        IBus bus)
     {
         this.bookingRepository = bookingRepository;
+        this.applicationRepository = applicationRepository;
         this.bus = bus;
     }
 
@@ -19,9 +24,11 @@ internal sealed class RefundEscrowByApplicationStep : IApplicationCancelStep
     {
         var booking = await bookingRepository.GetByApplicationIdAsync(applicationId)
             ?? throw new InvalidOperationException($"Application {applicationId} has no booking.");
+        var application = await applicationRepository.GetByIdAsync(applicationId, ct)
+            ?? throw new InvalidOperationException($"Application {applicationId} not found.");
 
         await bus.SendAsync(new RefundEscrowCommand(
-            booking.Application.BeginCancellation(),
+            application.BeginCancellation(),
             booking.Id,
             RefundReasonCodes.RequestedByCustomer), ct);
         return new Success();

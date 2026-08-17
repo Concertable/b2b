@@ -19,11 +19,11 @@ public sealed class TenantInheritanceTests
             DealType.FlatFee,
             venueTenantId,
             artistTenantId);
-        var booking = StandardBooking.Create(application);
+        var booking = StandardBooking.Create(application.ToAccepted());
         var period = new DateRange(
             new DateTime(2026, 8, 8, 19, 0, 0, DateTimeKind.Utc),
             new DateTime(2026, 8, 8, 22, 0, 0, DateTimeKind.Utc));
-        var concert = ConcertEntity.CreateDraft(booking, 1, 2, period, "Concert", "About", []);
+        var concert = ConcertEntity.CreateDraft(booking.ToConfirmed(2, period), "Concert", "About", []);
         var signature = new ESignature(
             Guid.NewGuid(),
             DateTime.UtcNow,
@@ -60,10 +60,10 @@ public sealed class TenantInheritanceTests
         AssertScope(concert, venueTenantId, artistTenantId);
         AssertScope(contract, venueTenantId, artistTenantId);
         AssertScope(invoice, venueTenantId, artistTenantId);
-        Assert.Same(application, booking.Application);
-        Assert.Same(booking, concert.Booking);
+        Assert.Equal(application.Id, booking.ApplicationId);
+        Assert.Equal(booking.Id, concert.BookingId);
         Assert.Same(booking, contract.Booking);
-        Assert.Same(booking, invoice.Booking);
+        Assert.Equal(booking.Id, invoice.BookingId);
         Assert.Equal(DealType.FlatFee, application.DealType);
         Assert.Equal(DealType.FlatFee, contract.DealType);
         Assert.Equal(DealType.FlatFee, invoice.DealType);

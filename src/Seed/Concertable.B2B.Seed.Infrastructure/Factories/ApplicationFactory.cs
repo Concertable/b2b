@@ -26,36 +26,31 @@ public static class ApplicationFactory
         => CreatePrepaid(artistId, opportunityId, paymentMethodId)
             .With(nameof(ApplicationEntity.DealType), dealType);
 
-    public static StandardApplication Accepted(int artistId, int opportunityId, BookingEntity booking)
-        => InState<StandardApplication>(artistId, opportunityId, booking, LifecycleState.Accepted);
+    public static StandardApplication Accepted(int artistId, int opportunityId)
+        => InState<StandardApplication>(artistId, opportunityId, LifecycleState.Accepted);
 
-    public static PrepaidApplication AcceptedPrepaid(int artistId, int opportunityId, BookingEntity booking, string paymentMethodId = "pm_card_visa")
-        => InState<PrepaidApplication>(artistId, opportunityId, booking, LifecycleState.Accepted)
+    public static PrepaidApplication AcceptedPrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
+        => InState<PrepaidApplication>(artistId, opportunityId, LifecycleState.Accepted)
             .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
 
-    public static StandardApplication Booked(int artistId, int opportunityId, BookingEntity booking)
-        => InState<StandardApplication>(artistId, opportunityId, booking, LifecycleState.Booked);
+    public static StandardApplication Booked(int artistId, int opportunityId)
+        => InState<StandardApplication>(artistId, opportunityId, LifecycleState.Booked);
 
-    public static PrepaidApplication BookedPrepaid(int artistId, int opportunityId, BookingEntity booking, string paymentMethodId = "pm_card_visa")
-        => InState<PrepaidApplication>(artistId, opportunityId, booking, LifecycleState.Booked)
+    public static PrepaidApplication BookedPrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
+        => InState<PrepaidApplication>(artistId, opportunityId, LifecycleState.Booked)
             .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
 
-    public static StandardApplication Complete(int artistId, int opportunityId, BookingEntity booking)
-        => InState<StandardApplication>(artistId, opportunityId, booking, LifecycleState.Complete);
+    public static StandardApplication Complete(int artistId, int opportunityId)
+        => InState<StandardApplication>(artistId, opportunityId, LifecycleState.Complete);
 
-    public static PrepaidApplication CompletePrepaid(int artistId, int opportunityId, BookingEntity booking, string paymentMethodId = "pm_card_visa")
-        => InState<PrepaidApplication>(artistId, opportunityId, booking, LifecycleState.Complete)
+    public static PrepaidApplication CompletePrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
+        => InState<PrepaidApplication>(artistId, opportunityId, LifecycleState.Complete)
             .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
 
-    private static TApplication InState<TApplication>(int artistId, int opportunityId, BookingEntity booking, LifecycleState state)
-        where TApplication : ApplicationEntity
-    {
-        var app = New<TApplication>()
+    private static TApplication InState<TApplication>(int artistId, int opportunityId, LifecycleState state)
+        where TApplication : ApplicationEntity =>
+        New<TApplication>()
             .With(nameof(ApplicationEntity.ArtistId), artistId)
             .With(nameof(ApplicationEntity.OpportunityId), opportunityId)
             .With(nameof(ApplicationEntity.State), state);
-        app.Accept(booking);
-        booking.With(nameof(BookingEntity.Application), app);
-        return app;
-    }
 }

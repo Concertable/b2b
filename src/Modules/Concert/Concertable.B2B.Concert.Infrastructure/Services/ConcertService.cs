@@ -13,6 +13,7 @@ internal sealed class ConcertService : IConcertService
     private readonly IConcertValidator concertValidator;
     private readonly ICurrentUser currentUser;
     private readonly IApplicationValidator applicationValidator;
+    private readonly IApplicationRepository applicationRepository;
     private readonly IConcertDraftService concertDraftService;
     private readonly ICancelExecutor cancelExecutor;
     private readonly TimeProvider timeProvider;
@@ -25,6 +26,7 @@ internal sealed class ConcertService : IConcertService
         IConcertValidator concertValidator,
         ICurrentUser currentUser,
         IApplicationValidator applicationValidator,
+        IApplicationRepository applicationRepository,
         IConcertDraftService concertDraftService,
         ICancelExecutor cancelExecutor,
         TimeProvider timeProvider,
@@ -36,6 +38,7 @@ internal sealed class ConcertService : IConcertService
         this.concertValidator = concertValidator;
         this.currentUser = currentUser;
         this.applicationValidator = applicationValidator;
+        this.applicationRepository = applicationRepository;
         this.concertDraftService = concertDraftService;
         this.cancelExecutor = cancelExecutor;
         this.timeProvider = timeProvider;
@@ -113,11 +116,13 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<UnitResult<PostConcertError>> PostAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await repository.GetByIdWithBookingAsync(id);
+        var concertEntity = await repository.GetByIdForLifecycleAsync(id);
         if (concertEntity is null)
             return new PostConcertError.ConcertNotFound(id);
 
-        var result = concertValidator.CanPost(concertEntity);
+        var lifecycle = await applicationRepository.GetLifecycleAndPaymentStateAsync(concertEntity.ApplicationId)
+            ?? throw new InvalidOperationException($"Application {concertEntity.ApplicationId} not found for concert {id}.");
+        var result = concertValidator.CanPost(concertEntity, lifecycle.State);
         if (result.TryGetErrors(out var errors))
             return new PostConcertError.Invalid(new ValidationErrors(errors.ToDictionary()));
 
@@ -132,22 +137,20 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueAsync(int id, decimal doorRevenue)
     {
-        var concert = await repository.GetByIdWithBookingAsync(id);
+        var concert = await repository.GetByIdForLifecycleAsync(id);
         if (concert is null)
             return new DeclareDoorRevenueError.ConcertNotFound(id);
 
-        /* Only the concert's own venue may declare its door take. A non-party sees a null (tenant-filtered)
-           Booking; the host/worker path (no HTTP context) bypasses tenant scoping, as elsewhere. */
-        if (!tenantContext.IsHost && concert.Booking?.VenueTenantId != tenantContext.TenantId)
+        if (!tenantContext.IsHost && concert.VenueTenantId != tenantContext.TenantId)
             return new DeclareDoorRevenueError.VenueForbidden();
 
-        /* Only revenue-share settlements (DeferredBooking) take a declared door figure, and only once
-           the gig has ended and before it settles. Re-declarable while Booked; frozen after. */
-        if (concert.Booking is not DeferredBooking)
+        if (concert.DealType is not (DealType.DoorSplit or DealType.Versus))
             return new DeclareDoorRevenueError.WrongDealType();
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
             return new DeclareDoorRevenueError.TooEarly();
-        if (concert.Booking.Application.State != LifecycleState.Booked)
+        var lifecycle = await applicationRepository.GetLifecycleAndPaymentStateAsync(concert.ApplicationId)
+            ?? throw new InvalidOperationException($"Application {concert.ApplicationId} not found for concert {id}.");
+        if (lifecycle.State != LifecycleState.Booked)
             return new DeclareDoorRevenueError.AlreadySettled();
 
         return await concert.DeclareDoorRevenue(doorRevenue)

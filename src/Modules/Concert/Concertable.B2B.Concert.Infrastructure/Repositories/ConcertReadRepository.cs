@@ -20,6 +20,7 @@ internal sealed class ConcertReadRepository : IConcertReadRepository
         return await context.Concerts
             .Where(e => e.Id == id)
             .ToDetails(
+                context.Applications,
                 context.ConcertRatingProjections,
                 context.ArtistRatingProjections,
                 context.VenueRatingProjections)
@@ -38,8 +39,8 @@ internal sealed class ConcertReadRepository : IConcertReadRepository
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await context.Concerts
-            .Where(e => e.Booking.Application.Opportunity.VenueId == venueId
-                        && e.Booking.Application.Opportunity.Period.Start >= now
+            .Where(e => e.VenueId == venueId
+                        && e.Period.Start >= now
                         && e.DatePosted != null)
             .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
             .ToListAsync();
@@ -49,8 +50,8 @@ internal sealed class ConcertReadRepository : IConcertReadRepository
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await context.Concerts
-            .Where(e => e.Booking.Application.ArtistId == artistId
-                        && e.Booking.Application.Opportunity.Period.Start >= now
+            .Where(e => e.ArtistId == artistId
+                        && e.Period.Start >= now
                         && e.DatePosted != null)
             .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
             .ToListAsync();
@@ -60,8 +61,8 @@ internal sealed class ConcertReadRepository : IConcertReadRepository
     {
         var now = timeProvider.GetUtcNow();
         return await context.Concerts
-            .Where(e => e.Booking.Application.Opportunity.VenueId == venueId
-                        && e.Booking.Application.Opportunity.Period.Start < now
+            .Where(e => e.VenueId == venueId
+                        && e.Period.Start < now
                         && e.DatePosted != null)
             .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
             .ToListAsync();
@@ -71,8 +72,8 @@ internal sealed class ConcertReadRepository : IConcertReadRepository
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await context.Concerts
-            .Where(e => e.Booking.Application.ArtistId == artistId
-                        && e.Booking.Application.Opportunity.Period.Start < now
+            .Where(e => e.ArtistId == artistId
+                        && e.Period.Start < now
                         && e.DatePosted != null)
             .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
             .ToListAsync();

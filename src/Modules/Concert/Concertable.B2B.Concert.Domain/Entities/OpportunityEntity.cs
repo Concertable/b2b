@@ -17,7 +17,6 @@ public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opp
     public DateRange Period { get; private set; } = null!;
     public VenueReadModel Venue { get; set; } = null!;
     public int DealId { get; private set; }
-    public HashSet<ApplicationEntity> Applications { get; private set; } = [];
     public List<Genre> Genres { get; private set; } = [];
 
     public static OpportunityEntity Create(int venueId, DateRange period, int dealId, IEnumerable<Genre>? genres = null) =>

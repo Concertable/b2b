@@ -25,21 +25,23 @@ public sealed class ConcertServiceTests
             Guid.NewGuid(),
             Guid.NewGuid());
         application.Transition(LifecycleState.Booked);
-        var booking = DeferredBooking.Create(application, "pm_123");
+        var booking = DeferredBooking.Create(application.ToAccepted(), "pm_123");
+        var period = new DateRange(now.UtcDateTime.AddHours(-3), now.UtcDateTime.AddHours(-1));
         var concert = ConcertEntity.CreateDraft(
-            booking,
-            1,
-            2,
-            new DateRange(now.UtcDateTime.AddHours(-3), now.UtcDateTime.AddHours(-1)),
+            booking.ToConfirmed(2, period),
             "Concert",
             "About",
             []);
         var repository = new Mock<IConcertRepository>();
         repository
-            .Setup(value => value.GetByIdWithBookingAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForLifecycleAsync(42, It.IsAny<CancellationToken>()))
             .ReturnsAsync(concert);
         var tenantContext = new Mock<ITenantContext>();
         tenantContext.SetupGet(context => context.IsHost).Returns(true);
+        var applicationRepository = new Mock<IApplicationRepository>();
+        applicationRepository
+            .Setup(value => value.GetLifecycleAndPaymentStateAsync(application.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((LifecycleState.Booked, PaymentVerification.None));
         var service = new ConcertService(
             repository.Object,
             Mock.Of<IConcertReadRepository>(),
@@ -47,6 +49,7 @@ public sealed class ConcertServiceTests
             Mock.Of<IConcertValidator>(),
             Mock.Of<ICurrentUser>(),
             Mock.Of<IApplicationValidator>(),
+            applicationRepository.Object,
             Mock.Of<IConcertDraftService>(),
             Mock.Of<ICancelExecutor>(),
             new FakeTimeProvider(now),

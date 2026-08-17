@@ -41,14 +41,12 @@ public sealed class DoorRevenueDeclarationTests
             DealType.DoorSplit,
             Guid.NewGuid(),
             Guid.NewGuid());
-        var booking = StandardBooking.Create(application);
+        var booking = StandardBooking.Create(application.ToAccepted());
+        var period = new DateRange(
+            new DateTime(2026, 8, 10, 19, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 8, 10, 22, 0, 0, DateTimeKind.Utc));
         return ConcertEntity.CreateDraft(
-            booking,
-            1,
-            2,
-            new DateRange(
-                new DateTime(2026, 8, 10, 19, 0, 0, DateTimeKind.Utc),
-                new DateTime(2026, 8, 10, 22, 0, 0, DateTimeKind.Utc)),
+            booking.ToConfirmed(2, period),
             "Concert",
             "About",
             [Genre.Rock]);

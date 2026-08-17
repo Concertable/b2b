@@ -47,7 +47,7 @@ public sealed class ConcertValidatorTests
         var concert = CreateConcert();
         concert.Post("Concert", "About", 10m, 100, DateTime.UtcNow);
 
-        var result = this.validator.CanPost(concert);
+        var result = this.validator.CanPost(concert, LifecycleState.Applied);
 
         Assert.True(result.TryGetErrors(out var errors));
         Assert.Equal(
@@ -61,9 +61,8 @@ public sealed class ConcertValidatorTests
     public void CanPost_ConfirmedUnpostedConcert_ReturnsValid()
     {
         var concert = CreateConcert();
-        concert.Booking.Application.Transition(LifecycleState.Booked);
 
-        var result = this.validator.CanPost(concert);
+        var result = this.validator.CanPost(concert, LifecycleState.Booked);
 
         Assert.True(result.IsValid);
     }
@@ -76,15 +75,13 @@ public sealed class ConcertValidatorTests
             DealType.FlatFee,
             Guid.NewGuid(),
             Guid.NewGuid());
-        var booking = StandardBooking.Create(application);
+        var booking = StandardBooking.Create(application.ToAccepted());
+        var period = new DateRange(
+            new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc));
 
         return ConcertEntity.CreateDraft(
-            booking,
-            1,
-            2,
-            new DateRange(
-                new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc),
-                new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc)),
+            booking.ToConfirmed(2, period),
             "Concert",
             "About",
             [Genre.Rock]);

@@ -14,20 +14,21 @@ internal sealed class ConcertAvailability : IConcertAvailability
 
     public Task<bool> OpportunityHasConcertAsync(int opportunityId)
     {
-        return context.Concerts.AnyAsync(e => e.Booking.Application.OpportunityId == opportunityId);
+        return context.Concerts.AnyAsync(e => context.Applications.Any(a =>
+            a.Id == e.ApplicationId && a.OpportunityId == opportunityId));
     }
 
     public async Task<bool> ArtistHasConcertOnDateAsync(int artistId, DateTime date)
     {
         return await context.Concerts
-            .Where(e => e.Booking.Application.ArtistId == artistId)
-            .AnyAsync(e => e.Booking.Application.Opportunity.Period.Start.Date == date.Date);
+            .Where(e => e.ArtistId == artistId)
+            .AnyAsync(e => e.Period.Start.Date == date.Date);
     }
 
     public async Task<bool> VenueHasConcertOnDateAsync(int venueId, DateTime date)
     {
         return await context.Concerts
-            .Where(e => e.Booking.Application.Opportunity.VenueId == venueId)
-            .AnyAsync(e => e.Booking.Application.Opportunity.Period.Start.Date == date.Date);
+            .Where(e => e.VenueId == venueId)
+            .AnyAsync(e => e.Period.Start.Date == date.Date);
     }
 }

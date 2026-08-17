@@ -81,6 +81,10 @@ internal sealed class ConcertTestSeeder : ITestSeeder
             context.Applications.AddRange(seed.Applications);
             await context.SaveChangesAsync(ct);
 
+            seed.LinkPersistedApplications();
+            context.Bookings.AddRange(seed.Bookings);
+            await context.SaveChangesAsync(ct);
+
             context.Concerts.AddRange(seed.Concerts);
             await context.SaveChangesAsync(ct);
         });

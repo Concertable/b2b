@@ -10,7 +10,7 @@ internal sealed class InvoiceEntityConfiguration : IEntityTypeConfiguration<Invo
     {
         builder.ToTable(Schema.Tables.Invoices, Schema.Name);
 
-        builder.HasOne(i => i.Booking)
+        builder.HasOne<BookingEntity>()
             .WithOne()
             .HasForeignKey<InvoiceEntity>(i => i.BookingId)
             .IsRequired()

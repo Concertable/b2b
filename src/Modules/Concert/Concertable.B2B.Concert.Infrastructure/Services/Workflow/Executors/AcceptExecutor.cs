@@ -13,6 +13,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private readonly ILifecycleTransitioner transitioner;
     private readonly IConcertWorkflowFactory workflows;
     private readonly IDealResolver dealResolver;
+    private readonly IOpportunityRepository opportunityRepository;
     private readonly IBookingRepository bookingRepository;
     private readonly IContractIssuer contractIssuer;
     private readonly ITermsFingerprintCalculator termsFingerprint;
@@ -25,6 +26,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
         IDealResolver dealResolver,
+        IOpportunityRepository opportunityRepository,
         IBookingRepository bookingRepository,
         IContractIssuer contractIssuer,
         ITermsFingerprintCalculator termsFingerprint,
@@ -36,6 +38,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.transitioner = transitioner;
         this.workflows = workflows;
         this.dealResolver = dealResolver;
+        this.opportunityRepository = opportunityRepository;
         this.bookingRepository = bookingRepository;
         this.contractIssuer = contractIssuer;
         this.termsFingerprint = termsFingerprint;
@@ -67,7 +70,9 @@ internal sealed class AcceptExecutor : IAcceptExecutor
             async app =>
         {
             var deal = await dealResolver.ResolveByApplicationIdAsync(app.Id);
-            var terms = VerifyTermsUnchanged(app, deal);
+            var opportunity = await opportunityRepository.GetByIdAsync(app.OpportunityId)
+                ?? throw new InvalidOperationException($"Opportunity {app.OpportunityId} not found for application {app.Id}.");
+            var terms = VerifyTermsUnchanged(app, opportunity.Period, deal);
             if (terms.TryGetError(out var termsError))
                 return termsError;
 
@@ -84,7 +89,6 @@ internal sealed class AcceptExecutor : IAcceptExecutor
 
             var booking = await bookingRepository.GetByApplicationIdAsync(app.Id)
                 ?? throw new InvalidOperationException($"Application {app.Id} has no booking after acceptance.");
-            app.Accept(booking);
             await contractIssuer.IssueAsync(app, booking, eSignature);
 
             await taskRunner.RunAsync<IApplicationRepository>(
@@ -102,8 +106,11 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         return result;
     }
 
-    private UnitResult<AcceptApplicationError> VerifyTermsUnchanged(ApplicationEntity app, IDeal deal) =>
-        app.TermsFingerprint == termsFingerprint.Calculate(deal, app.Opportunity.Period)
+    private UnitResult<AcceptApplicationError> VerifyTermsUnchanged(
+        ApplicationEntity app,
+        DateRange period,
+        IDeal deal) =>
+        app.TermsFingerprint == termsFingerprint.Calculate(deal, period)
             ? new Success()
             : new AcceptApplicationError.TermsChanged();
 }

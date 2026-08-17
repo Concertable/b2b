@@ -19,9 +19,7 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
     public int OpportunityId { get; private set; }
     public int ArtistId { get; private set; }
     public DealType DealType { get; private set; }
-    public OpportunityEntity Opportunity { get; set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
-    public BookingEntity? Booking { get; private set; }
     public Guid? AcceptanceOperationId { get; private set; }
     public Guid? CancellationOperationId { get; private set; }
     public string? FinancialFailureCode { get; private set; }
@@ -48,8 +46,6 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
         VenueTenantId = venueTenantId;
         ArtistTenantId = artistTenantId;
     }
-
-    public void Accept(BookingEntity booking) => Booking = booking;
 
     public Guid BeginAcceptance()
     {

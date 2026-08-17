@@ -9,52 +9,35 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
     public BookingRepository(ConcertDbContext context) : base(context) { }
 
     public override async Task<BookingEntity?> GetByIdAsync(int id, CancellationToken ct = default)
-    {
-        return await context.Bookings
-            .Where(b => b.Id == id)
-            .Include(b => b.Application)
-                .ThenInclude(a => a.Artist)
-                    .ThenInclude(a => a.Genres)
-            .Include(b => b.Application)
-                .ThenInclude(a => a.Opportunity)
-                    .ThenInclude(o => o.Venue)
-            .Include(b => b.Application)
-                .ThenInclude(a => a.Opportunity)
-            .Include(b => b.Concert)
-            .FirstOrDefaultAsync(ct);
-    }
+        => await context.Bookings.FirstOrDefaultAsync(b => b.Id == id, ct);
 
     public async Task<BookingEntity?> GetByApplicationIdAsync(int applicationId, CancellationToken ct = default)
-    {
-        return await context.Bookings
-            .Where(b => b.ApplicationId == applicationId)
-            .Include(b => b.Application)
-                .ThenInclude(a => a.Opportunity)
-            .Include(b => b.Concert)
-            .FirstOrDefaultAsync(ct);
-    }
+        => await context.Bookings.FirstOrDefaultAsync(b => b.ApplicationId == applicationId, ct);
+
+    public Task<BookingDraftContext?> GetDraftContextByIdAsync(int bookingId, CancellationToken ct = default) =>
+        (from booking in context.Bookings
+         join artist in context.ArtistReadModels on booking.ArtistId equals artist.Id
+         join opportunity in context.Opportunities on booking.OpportunityId equals opportunity.Id
+         join venue in context.VenueReadModels on opportunity.VenueId equals venue.Id
+         where booking.Id == bookingId
+         select new BookingDraftContext(booking, artist, opportunity, venue))
+        .FirstOrDefaultAsync(ct);
 
     public Task<BookingEntity?> GetByConcertIdAsync(int concertId, CancellationToken ct = default) =>
         context.Bookings
-            .Include(booking => booking.Application)
-            .SingleOrDefaultAsync(booking => booking.Concert!.Id == concertId, ct);
+            .SingleOrDefaultAsync(booking =>
+                context.Concerts.Any(concert => concert.Id == concertId && concert.BookingId == booking.Id), ct);
 
     public async Task<BookingEntity?> GetForSettlementByConcertIdAsync(int concertId)
     {
-        return await context.Bookings
-            .Where(b => b.Concert!.Id == concertId)
-            .Include(b => b.Application)
-                .ThenInclude(a => a.Artist)
-            .Include(b => b.Application)
-                .ThenInclude(a => a.Opportunity)
-                    .ThenInclude(o => o.Venue)
-            .FirstOrDefaultAsync();
+        return await context.Bookings.FirstOrDefaultAsync(b =>
+            context.Concerts.Any(concert => concert.Id == concertId && concert.BookingId == b.Id));
     }
 
     public Task<int?> GetIdByConcertIdAsync(int concertId)
     {
         return context.Bookings
-            .Where(b => b.Concert!.Id == concertId)
+            .Where(b => context.Concerts.Any(concert => concert.Id == concertId && concert.BookingId == b.Id))
             .Select(b => (int?)b.Id)
             .FirstOrDefaultAsync();
     }
@@ -71,7 +54,10 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
     {
         return context.Bookings
             .Where(b => b.Id == bookingId)
-            .Select(b => (int?)b.Application.Opportunity.DealId)
+            .Select(b => context.Opportunities
+                .Where(o => o.Id == b.OpportunityId)
+                .Select(o => (int?)o.DealId)
+                .FirstOrDefault())
             .FirstOrDefaultAsync();
     }
 }

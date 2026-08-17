@@ -36,12 +36,12 @@ internal sealed class CancelExecutor : ICancelExecutor
 
     private async Task<UnitResult<CancelConcertError>> CancelCoreAsync(int concertId, CancellationToken ct)
     {
-        var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct);
+        var concert = await concertRepository.GetByIdForLifecycleAsync(concertId, ct);
         if (concert is null)
             return new CancelConcertError.ConcertNotFound(concertId);
 
         var transition = await transitioner.TransitionAsync<CancelConcertError>(
-            concert.Booking.ApplicationId,
+            concert.ApplicationId,
             Trigger.Cancel,
             error => (CancelConcertError)new CancelConcertError.TransitionFailure(error),
             async app =>

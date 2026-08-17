@@ -9,20 +9,17 @@ namespace Concertable.B2B.Concert.UnitTests.Domain;
 public sealed class BookingEntityTests
 {
     [Fact]
-    public void Confirm_LinksConcert_AndRaisesBookingConfirmedDomainEvent_CarryingTenantsNamesAndPeriod()
+    public void Confirm_RaisesBookingConfirmedDomainEvent_CarryingTenantsNamesAndPeriod()
     {
         var venueTenantId = Guid.NewGuid();
         var artistTenantId = Guid.NewGuid();
         var application = StandardApplication.Create(1, 2, DealType.FlatFee, venueTenantId, artistTenantId);
-        var booking = StandardBooking.Create(application);
+        var booking = StandardBooking.Create(application.ToAccepted());
         var period = new DateRange(
             new DateTime(2035, 1, 1, 19, 0, 0, DateTimeKind.Utc),
             new DateTime(2035, 1, 1, 22, 0, 0, DateTimeKind.Utc));
-        var concert = ConcertEntity.CreateDraft(booking, 1, 2, period, "Concert", "About", []);
+        booking.Confirm(period, "The Venue", "The Artist");
 
-        booking.Confirm(concert, "The Venue", "The Artist");
-
-        Assert.Same(concert, booking.Concert);
         var raised = Assert.IsType<BookingConfirmedDomainEvent>(Assert.Single(booking.DomainEvents));
         Assert.Equal(venueTenantId, raised.VenueTenantId);
         Assert.Equal("The Venue", raised.VenueName);
