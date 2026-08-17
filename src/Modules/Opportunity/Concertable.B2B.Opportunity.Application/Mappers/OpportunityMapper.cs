@@ -27,23 +27,26 @@ internal sealed class OpportunityMapper : IOpportunityMapper
     public async Task<IReadOnlyList<OpportunityDto>> ToDtosAsync(IEnumerable<OpportunityEntity> opportunities)
     {
         var opportunityList = opportunities.ToList();
-        var dealMap = (await dealModule.GetByIdsAsync(opportunityList.Select(o => o.DealId).Distinct()))
-            .ToDictionary(c => c.Id);
+        var deals = await DealsByIdAsync(opportunityList);
 
-        return opportunityList.Select(o =>
-        {
-            if (!dealMap.TryGetValue(o.DealId, out var deal))
-                throw new InvalidOperationException($"Opportunity {o.Id} references missing deal {o.DealId}.");
-            return o.ToDto(deal);
-        }).ToList();
+        return opportunityList.Select(o => ToDto(o, deals)).ToList();
     }
 
     public async Task<IPagination<OpportunityDto>> ToDtosAsync(IPagination<OpportunityEntity> opportunities)
     {
-        // Not IPagination.Map: this projection is async, and Map takes a synchronous selector.
-        var dtos = await ToDtosAsync(opportunities.Data);
-        return new Pagination<OpportunityDto>(dtos.ToList(), opportunities.TotalCount, opportunities.PageNumber, opportunities.PageSize);
+        var deals = await DealsByIdAsync(opportunities.Data);
+
+        return opportunities.Map(o => ToDto(o, deals));
     }
+
+    private async Task<Dictionary<int, IDeal>> DealsByIdAsync(IReadOnlyCollection<OpportunityEntity> opportunities) =>
+        (await dealModule.GetByIdsAsync(opportunities.Select(o => o.DealId).Distinct()))
+            .ToDictionary(deal => deal.Id);
+
+    private static OpportunityDto ToDto(OpportunityEntity opportunity, Dictionary<int, IDeal> deals) =>
+        deals.TryGetValue(opportunity.DealId, out var deal)
+            ? opportunity.ToDto(deal)
+            : throw new InvalidOperationException($"Opportunity {opportunity.Id} references missing deal {opportunity.DealId}.");
 }
 
 internal static class OpportunityMappers
