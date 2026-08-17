@@ -13,7 +13,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(VenueDbContext))]
-    [Migration("20260724223848_InitialCreate")]
+    [Migration("20260816210315_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -69,6 +69,9 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique();
 
                     b.ToTable("Venues", "venue");
                 });

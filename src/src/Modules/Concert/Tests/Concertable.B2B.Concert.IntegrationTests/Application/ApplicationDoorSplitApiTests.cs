@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Api.Responses;
@@ -33,7 +33,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
+        var response = await client.PostAsync($"/api/application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var checkout = await response.Content.ReadAsync<Checkout>();
@@ -48,7 +48,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
-        var response = await client.PostAsync($"/api/Application/opportunity/{fixture.SeedState.DoorSplitApp.OpportunityId}/checkout");
+        var response = await client.PostAsync($"/api/application/opportunity/{fixture.SeedState.DoorSplitApp.OpportunityId}/checkout");
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -58,13 +58,13 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     {
         // Arrange — venue manager creates a fresh DoorSplit opportunity
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var oppResponse = await venueClient.PostAsync("/api/Opportunity",
+        var oppResponse = await venueClient.PostAsync("/api/opportunity",
             BuildRequest(new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 }, fixture.SeedNow));
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies directly with no payment method
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { eSignature = new { signatoryName = "Test Signatory" } });
+        var applyResponse = await artistClient.PostAsync($"/api/application/{opportunity!.Id}", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
@@ -80,10 +80,10 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         var response = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         await response.ShouldBe(HttpStatusCode.Conflict);
     }
@@ -96,7 +96,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         // Act
         var response = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         // Assert — booking created but draft not created until verify webhook fires
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -110,21 +110,21 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
 
         // Act
         var acceptResponse = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var applicationResponse = await client.GetAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}");
+        var applicationResponse = await client.GetAsync($"/api/application/{fixture.SeedState.DoorSplitApp.Id}");
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
 
-        var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.DoorSplitApp.Id}");
+        var concertResponse = await client.GetAsync($"/api/concert/application/{fixture.SeedState.DoorSplitApp.Id}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
         var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(concert);
@@ -142,11 +142,11 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
 
         // Act
         var acceptResponse = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
         await fixture.StripeClient.SendWebhookAsync();
@@ -164,11 +164,11 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         // Arrange
         fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingStripe());
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
 
         // Act
         var acceptResponse = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -186,7 +186,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         // Arrange — the browser confirms the card (firing the verify webhook) just before /accept,
         // so the webhook wins the race and lands while the application is still Applied.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
         await fixture.StripeClient.SendWebhookAsync();
 
         var beforeAccept = await fixture.ConcertReads.Set<ConcertEntity>()
@@ -196,7 +196,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         // Act
         var acceptResponse = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -212,12 +212,12 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         // Arrange
         fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingStripe());
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
         await fixture.StripeClient.SendWebhookAsync();
 
         // Act
         var acceptResponse = await client.PostAsync(
-            $"/api/Application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+            $"/api/application/{fixture.SeedState.DoorSplitApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);

@@ -8,7 +8,7 @@ namespace Concertable.B2B.Tenant.IntegrationTests;
 
 /// <summary>
 /// Phase 4 active-tenant resolution through the real ASP.NET pipeline (resolved by
-/// <c>TenantResolutionMiddleware</c>, since <c>/api/organizations</c> is <c>[Authorize]</c>-only). The
+/// <c>TenantResolutionMiddleware</c>, since <c>/api/organization</c> is <c>[Authorize]</c>-only). The
 /// <c>X-Tenant-Id</c> header names the acting tenant and is validated against membership; a sole membership is
 /// the default; a multi-tenant user without a header fails closed. Multi-membership is arranged per test —
 /// the seed graph only ever holds one membership per operator.
@@ -41,7 +41,7 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
     {
         var manager = fixture.SeedState.VenueManager1;
 
-        var response = await fixture.CreateClient(manager).GetAsync("/api/organizations");
+        var response = await fixture.CreateClient(manager).GetAsync("/api/organization");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var org = await response.Content.ReadAsync<TenantDetails>();
@@ -56,8 +56,8 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
         var tenantB = TenantOf(fixture.SeedState.VenueManager2.Id);
         await fixture.AddOwnerMembershipAsync(tenantB, manager.Id);
 
-        var orgA = await (await ClientWithTenant(tenantA).GetAsync("/api/organizations")).Content.ReadAsync<TenantDetails>();
-        var orgB = await (await ClientWithTenant(tenantB).GetAsync("/api/organizations")).Content.ReadAsync<TenantDetails>();
+        var orgA = await (await ClientWithTenant(tenantA).GetAsync("/api/organization")).Content.ReadAsync<TenantDetails>();
+        var orgB = await (await ClientWithTenant(tenantB).GetAsync("/api/organization")).Content.ReadAsync<TenantDetails>();
 
         Assert.Equal(tenantA, orgA!.Id);
         Assert.Equal(tenantB, orgB!.Id);
@@ -70,7 +70,7 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
         await fixture.AddOwnerMembershipAsync(TenantOf(fixture.SeedState.VenueManager2.Id), manager.Id);
 
         // No header + two memberships → no active tenant → the org read sees nothing.
-        var response = await fixture.CreateClient(manager).GetAsync("/api/organizations");
+        var response = await fixture.CreateClient(manager).GetAsync("/api/organization");
 
         await response.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -81,7 +81,7 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
         // VenueManager1 has no membership in VenueManager2's tenant — naming it in the header resolves nothing.
         var foreignTenant = TenantOf(fixture.SeedState.VenueManager2.Id);
 
-        var response = await ClientWithTenant(foreignTenant).GetAsync("/api/organizations");
+        var response = await ClientWithTenant(foreignTenant).GetAsync("/api/organization");
 
         await response.ShouldBe(HttpStatusCode.NoContent);
     }
