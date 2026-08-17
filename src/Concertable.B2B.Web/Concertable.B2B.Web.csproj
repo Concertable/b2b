@@ -40,11 +40,17 @@
     <ProjectReference Include="..\Modules\Tenant\Concertable.B2B.Tenant.Api\Concertable.B2B.Tenant.Api.csproj" />
     <ProjectReference Include="..\Modules\User\Concertable.B2B.User.Api\Concertable.B2B.User.Api.csproj" />
     <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Api\Concertable.B2B.Artist.Api.csproj" />
+    <ProjectReference Include="..\Modules\Application\Concertable.B2B.Application.Api\Concertable.B2B.Application.Api.csproj" />
+    <ProjectReference Include="..\Modules\Application\Concertable.B2B.Application.Infrastructure\Concertable.B2B.Application.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Booking\Concertable.B2B.Booking.Api\Concertable.B2B.Booking.Api.csproj" />
+    <ProjectReference Include="..\Modules\Booking\Concertable.B2B.Booking.Infrastructure\Concertable.B2B.Booking.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Api\Concertable.B2B.Venue.Api.csproj" />
     <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Infrastructure\Concertable.B2B.Venue.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Api\Concertable.B2B.Concert.Api.csproj" />
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Deal\Concertable.B2B.Deal.Api\Concertable.B2B.Deal.Api.csproj" />
+    <ProjectReference Include="..\Modules\Opportunity\Concertable.B2B.Opportunity.Api\Concertable.B2B.Opportunity.Api.csproj" />
+    <ProjectReference Include="..\Modules\Opportunity\Concertable.B2B.Opportunity.Infrastructure\Concertable.B2B.Opportunity.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Conversations\Concertable.B2B.Conversations.Api\Concertable.B2B.Conversations.Api.csproj" />
     <ProjectReference Include="..\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Infrastructure\Concertable.B2B.Infrastructure.csproj" />

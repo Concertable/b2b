@@ -15,7 +15,7 @@ namespace Concertable.B2B.ArchitectureTests;
 public sealed class ModuleBoundaryTests
 {
     private static readonly string[] Modules =
-        ["Artist", "Concert", "Conversations", "Deal", "Tenant", "User", "Venue"];
+        ["Application", "Artist", "Booking", "Concert", "Conversations", "Deal", "Opportunity", "Tenant", "User", "Venue"];
 
     private static readonly string ModsAlt = string.Join("|", Modules);
 
