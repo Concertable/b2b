@@ -24,43 +24,6 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Concertable.B2B.User.Domain.Entities.AdminInvitationEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("AcceptedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("AcceptedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique()
-                        .HasFilter("[Status] = 1");
-
-                    b.ToTable("AdminInvitations", "user");
-                });
-
             modelBuilder.Entity("Concertable.B2B.User.Domain.Entities.UserEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -83,16 +46,6 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Users", "user");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.User.Infrastructure.Data.AdminProfileEntity", b =>
-                {
-                    b.Property<Guid>("Sub")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Sub");
-
-                    b.ToTable("AdminProfiles", "user");
                 });
 
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>

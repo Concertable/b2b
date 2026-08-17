@@ -21,6 +21,8 @@ using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Api.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
+using Concertable.B2B.Admin.Api.Extensions;
+using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.User.Api.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -180,6 +182,7 @@ if (!builder.Environment.IsIntegration())
     services.AddBlobDevSeeder();
     services.AddUserDevSeeder();
     services.AddTenantDevSeeder();
+    services.AddAdminDevSeeder();
     services.AddArtistDevSeeder();
     services.AddVenueDevSeeder();
     services.AddDealDevSeeder();
@@ -199,6 +202,7 @@ if (!builder.Environment.IsIntegration())
     services.AddPaymentClient(builder.Configuration);
 services.AddQueueHostedService();
 services.AddCurrentUser();
+services.AddAdminApi(builder.Configuration);
 services.AddUserApi(builder.Configuration);
 services.AddAuth(builder.Configuration, builder.Environment);
 services.AddValidation();
