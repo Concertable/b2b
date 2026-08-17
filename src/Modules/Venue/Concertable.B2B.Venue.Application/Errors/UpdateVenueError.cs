@@ -7,9 +7,9 @@ internal abstract partial record UpdateVenueError : IError
 {
     public ErrorDefinition Definition => this switch
     {
-        VenueNotFound(var venueId) =>
+        VenueNotFound =>
             ErrorDefinition.NotFound<VenueNotFound>(
-                $"Venue {venueId} was not found."),
+                "No venue was found for the active tenant."),
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The venue update is invalid.",
@@ -17,7 +17,7 @@ internal abstract partial record UpdateVenueError : IError
     };
 
     [ErrorCode("venue.update_not_found")]
-    public partial record VenueNotFound(int VenueId);
+    public partial record VenueNotFound;
 
     public partial record Invalid(ValidationErrors Errors);
 }

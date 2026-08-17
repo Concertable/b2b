@@ -49,16 +49,28 @@ public sealed class TenantServiceTests
         return tenant;
     }
 
+    #region GetDetailsAsync
+
+    [Fact]
+    public async Task GetDetailsAsync_NoActiveTenant_ReturnsNone()
+    {
+        var result = await service.GetDetailsAsync();
+
+        Assert.True(result.IsNone);
+        repository.Verify(
+            value => value.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    #endregion
+
     #region UpdateAsync
 
     [Fact]
-    public async Task UpdateAsync_NoActiveTenant_ReturnsForbiddenError()
+    public async Task UpdateAsync_NoActiveTenant_ThrowsInvalidOperationException()
     {
-        var result = await service.UpdateAsync(null!);
-
-        Assert.True(result.TryGetError(out var error));
-        Assert.Equal("tenant.update_forbidden", error.Definition.Code);
-        Assert.Equal(ErrorKind.Forbidden, error.Definition.Kind);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateAsync(null!));
+        Assert.Equal("The operation requires an active tenant context.", exception.Message);
     }
 
     [Fact]

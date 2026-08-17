@@ -8,7 +8,7 @@ namespace Concertable.B2B.Venue.Api.Controllers;
 [ApiController]
 [RequiredTenantType(TenantType.Venue)]
 [HasPermission(SharedPermissions.OperationsView)]
-[Route("api/[controller]")]
+[Route("api/venue-dashboard")]
 internal sealed class VenueDashboardController : ControllerBase
 {
     private readonly IVenueDashboardService dashboardService;

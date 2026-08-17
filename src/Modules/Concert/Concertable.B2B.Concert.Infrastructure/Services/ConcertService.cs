@@ -62,14 +62,16 @@ internal sealed class ConcertService : IConcertService
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.NotFound(id));
 
-    public async Task<Result<ConcertDetails, ConcertError>> GetDetailsForCurrentUserAsync(int id)
+    public async Task<Result<ConcertDetails, ConcertError>> GetDetailsAsync(
+        int id,
+        CancellationToken ct = default)
     {
-        return await repository.GetDetailsByIdAsync(id)
+        return await repository.GetDetailsByIdAsync(id, ct)
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.NotFound(id))
             .MapAsync(async details =>
             {
-                var invoice = await invoiceRepository.GetByConcertIdAsync(id);
+                var invoice = await invoiceRepository.GetByConcertIdAsync(id, ct);
                 return WithActions(details with { InvoiceId = invoice?.Id });
             });
     }

@@ -4,36 +4,36 @@ import type { InviteMemberRequest } from "../schemas/inviteMemberRequestSchema";
 
 const membersApi = {
   listMembers: async (): Promise<Member[]> => {
-    const { data } = await apiClient.get<Member[]>("/organizations/members");
+    const { data } = await apiClient.get<Member[]>("/organization/members");
     return data;
   },
 
   listInvitations: async (): Promise<Invitation[]> => {
-    const { data } = await apiClient.get<Invitation[]>("/organizations/invitations");
+    const { data } = await apiClient.get<Invitation[]>("/organization/invitations");
     return data;
   },
 
   invite: async (body: InviteMemberRequest): Promise<Invitation> => {
     const { data } = await apiClient.post<Invitation>(
-      "/organizations/invitations",
+      "/organization/invitations",
       body,
     );
     return data;
   },
 
   revokeInvitation: async (id: string): Promise<void> => {
-    await apiClient.delete(`/organizations/invitations/${id}`);
+    await apiClient.delete(`/organization/invitations/${id}`);
   },
 
   changeRole: async (
     userId: string,
     body: ChangeMemberRoleRequest,
   ): Promise<void> => {
-    await apiClient.put(`/organizations/members/${userId}/role`, body);
+    await apiClient.put(`/organization/members/${userId}/role`, body);
   },
 
   removeMember: async (userId: string): Promise<void> => {
-    await apiClient.delete(`/organizations/members/${userId}`);
+    await apiClient.delete(`/organization/members/${userId}`);
   },
 };
 

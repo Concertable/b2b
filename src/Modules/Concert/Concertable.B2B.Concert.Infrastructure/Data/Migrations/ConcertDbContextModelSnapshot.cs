@@ -780,7 +780,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
+                    b.HasIndex("TenantId")
                         .IsUnique();
 
                     b.ToTable("ArtistReadModels", "concert");
@@ -832,12 +832,15 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
+                    b.HasIndex("TenantId")
                         .IsUnique();
 
                     b.ToTable("VenueReadModels", "concert");

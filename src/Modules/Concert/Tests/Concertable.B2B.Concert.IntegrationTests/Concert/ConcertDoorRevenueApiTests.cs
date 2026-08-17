@@ -34,15 +34,15 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var appId = fixture.SeedState.PastDoorSplitApp.Id;
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
-        var before = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
+        var before = await (await client.GetAsync($"/api/concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(before!.Actions!.DeclareDoorRevenue); // offered while ended, Booked, undeclared
 
         // Act
-        var response = await client.PostAsync($"/api/Concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
+        var response = await client.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
 
         // Assert — persisted; the action clears now the take is declared.
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var after = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
+        var after = await (await client.GetAsync($"/api/concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.Equal(DoorRevenue, after!.DoorRevenue);
         Assert.Null(after.Actions!.DeclareDoorRevenue);
 
@@ -58,10 +58,10 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         // A fixed-fee (VenueHire) booking settles automatically — no door-take declaration.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.VenueHireApp.Id;
-        await client.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.StripeClient.SendWebhookAsync();
 
-        var concert = await (await client.GetAsync($"/api/Concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
+        var concert = await (await client.GetAsync($"/api/concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.Null(concert!.Actions!.DeclareDoorRevenue);
     }
 
@@ -72,7 +72,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
-        var response = await artistClient.PostAsync($"/api/Concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
+        var response = await artistClient.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
@@ -85,12 +85,12 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         // Arrange — declare, settle, complete.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
-        await client.PostAsync($"/api/Concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
+        await client.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
         await fixture.FinishConcertAsync(concertId);
         await fixture.StripeClient.SendWebhookAsync();
 
         // Act — a second declaration once the booking is no longer Booked.
-        var response = await client.PostAsync($"/api/Concert/{concertId}/door-revenue", new { doorRevenue = 500m });
+        var response = await client.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = 500m });
 
         // Assert — frozen after settlement.
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -103,7 +103,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
         var response = await client.PostAsync(
-            $"/api/Concert/{concertId}/door-revenue",
+            $"/api/concert/{concertId}/door-revenue",
             new { doorRevenue = -0.01m });
 
         await response.ShouldBe(HttpStatusCode.BadRequest);

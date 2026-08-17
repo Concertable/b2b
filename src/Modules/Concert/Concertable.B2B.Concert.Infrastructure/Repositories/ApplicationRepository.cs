@@ -39,19 +39,27 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .ToListAsync();
     }
 
-    public Task<bool> ExistsForOpportunityAndArtistAsync(int opportunityId, int artistId) =>
-        context.Applications.AnyAsync(a => a.OpportunityId == opportunityId && a.ArtistId == artistId);
+    public Task<bool> ExistsForOpportunityAndArtistTenantAsync(
+        int opportunityId,
+        Guid artistTenantId,
+        CancellationToken ct = default) =>
+        context.Applications.AnyAsync(
+            a => a.OpportunityId == opportunityId
+                && a.ArtistTenantId == artistTenantId,
+            ct);
 
-    public async Task<IEnumerable<ApplicationEntity>> GetPendingByArtistIdAsync(int artistId)
+    public async Task<IEnumerable<ApplicationEntity>> GetPendingByArtistTenantIdAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default)
     {
         return await context.Applications
             .Include(a => a.Artist)
                 .ThenInclude(a => a.Genres)
             .Where(a =>
-                a.ArtistId == artistId &&
+                a.ArtistTenantId == artistTenantId &&
                 !context.Bookings.Any(b => b.ApplicationId == a.Id) &&
                 context.Opportunities.Any(o => o.Id == a.OpportunityId && o.Period.Start > timeProvider.GetUtcNow()))
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
     public async Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id)
@@ -136,20 +144,22 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .FirstOrDefaultAsync();
     }
 
-    public async Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistIdAsync(int artistId)
+    public async Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistTenantIdAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default)
     {
         return await (
             from a in context.Applications.Include(a => a.Artist).ThenInclude(a => a.Genres)
             join opportunity in context.Opportunities on a.OpportunityId equals opportunity.Id
             where
-                a.ArtistId == artistId &&
+                a.ArtistTenantId == artistTenantId &&
                 context.Bookings.Any(b =>
                     b.OpportunityId == a.OpportunityId &&
                     b.ApplicationId != a.Id)
             orderby opportunity.Period.End descending
             select a)
             .Take(5)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
 }

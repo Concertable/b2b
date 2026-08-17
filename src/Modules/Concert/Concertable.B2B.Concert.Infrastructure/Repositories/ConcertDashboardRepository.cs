@@ -34,55 +34,59 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         this.doorRevenueOutstanding = doorRevenueOutstanding;
     }
 
-    public Task<VenueDashboardCounts?> GetVenueCountsAsync(int venueId, CancellationToken ct = default)
+    public Task<VenueDashboardCounts?> GetVenueCountsAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default)
     {
         var upcomingOpportunityIds = opportunityUpcoming.Apply(context.Opportunities)
-            .Where(o => o.VenueId == venueId)
+            .Where(o => o.TenantId == venueTenantId)
             .Select(o => o.Id);
         var applications = context.Applications.Where(a =>
-            a.State == LifecycleState.Applied && upcomingOpportunityIds.Contains(a.OpportunityId));
+            a.State == LifecycleState.Applied
+            && a.VenueTenantId == venueTenantId
+            && upcomingOpportunityIds.Contains(a.OpportunityId));
 
         var openOpportunities = opportunityUpcoming.Apply(
             context.Opportunities
-                .Where(o => o.VenueId == venueId)
+                .Where(o => o.TenantId == venueTenantId)
                 .WhereOpen(context.Applications));
 
         var upcomingConcerts = concertUpcoming.Apply(
-            context.Concerts.Where(c => c.VenueId == venueId));
+            context.Concerts.Where(c => c.VenueTenantId == venueTenantId));
 
         var awaitingDoorRevenue = ended
             .And(doorRevenueOutstanding)
-            .Apply(context.Concerts.Where(c => c.VenueId == venueId && context.Applications.Any(a =>
+            .Apply(context.Concerts.Where(c => c.VenueTenantId == venueTenantId && context.Applications.Any(a =>
                 a.Id == c.ApplicationId && a.State == LifecycleState.Booked)));
 
         return context.VenueReadModels
-            .Where(v => v.Id == venueId)
+            .Where(v => v.TenantId == venueTenantId)
             .ToVenueCounts(applications, openOpportunities, upcomingConcerts, awaitingDoorRevenue)
             .FirstOrDefaultAsync(ct);
     }
 
     public Task<ArtistDashboardCounts?> GetArtistCountsAsync(
-        int artistId,
+        Guid artistTenantId,
         IReadOnlyCollection<DealType> checkoutCapableDealTypes,
         CancellationToken ct = default)
     {
         var upcomingOpportunityIds = opportunityUpcoming.Apply(context.Opportunities).Select(o => o.Id);
         var applications = context.Applications.Where(a =>
             a.State == LifecycleState.Applied
-            && a.ArtistId == artistId
+            && a.ArtistTenantId == artistTenantId
             && upcomingOpportunityIds.Contains(a.OpportunityId));
 
         var acceptedAwaitingCheckout = context.Applications.Where(a =>
             a.State == LifecycleState.Accepted
-            && a.ArtistId == artistId
+            && a.ArtistTenantId == artistTenantId
             && checkoutCapableDealTypes.Contains(a.DealType)
             && upcomingOpportunityIds.Contains(a.OpportunityId));
 
         var upcomingConcerts = concertUpcoming.Apply(
-            context.Concerts.Where(c => c.ArtistId == artistId));
+            context.Concerts.Where(c => c.ArtistTenantId == artistTenantId));
 
         return context.ArtistReadModels
-            .Where(a => a.Id == artistId)
+            .Where(a => a.TenantId == artistTenantId)
             .ToArtistCounts(applications, acceptedAwaitingCheckout, upcomingConcerts)
             .FirstOrDefaultAsync(ct);
     }

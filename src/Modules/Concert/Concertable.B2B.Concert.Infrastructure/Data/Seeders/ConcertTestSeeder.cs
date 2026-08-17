@@ -43,6 +43,7 @@ internal sealed class ConcertTestSeeder : ITestSeeder
             {
                 Id = v.Id,
                 UserId = v.UserId,
+                TenantId = v.TenantId,
                 Name = v.Name,
                 About = v.About,
                 Address = v.Address,

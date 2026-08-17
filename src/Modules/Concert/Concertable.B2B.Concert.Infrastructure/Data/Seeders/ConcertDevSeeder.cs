@@ -51,6 +51,7 @@ internal sealed class ConcertDevSeeder : IDevSeeder
             {
                 Id = v.Id,
                 UserId = v.UserId,
+                TenantId = v.TenantId,
                 Name = v.Name,
                 About = v.About,
                 Address = v.Address,
