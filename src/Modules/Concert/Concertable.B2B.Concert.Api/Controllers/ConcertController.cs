@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
-[Route("api/concert")]
+[Route("api/[controller]")]
 internal sealed class ConcertController : ControllerBase
 {
     private readonly IConcertService concertService;
