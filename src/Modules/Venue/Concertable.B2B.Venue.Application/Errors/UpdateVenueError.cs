@@ -9,7 +9,7 @@ internal abstract partial record UpdateVenueError : IError
     {
         VenueNotFound =>
             ErrorDefinition.NotFound<VenueNotFound>(
-                "No venue was found for the active tenant."),
+                "The venue profile does not exist."),
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The venue update is invalid.",

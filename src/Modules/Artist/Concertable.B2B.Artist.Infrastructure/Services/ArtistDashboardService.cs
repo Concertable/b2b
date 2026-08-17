@@ -10,20 +10,17 @@ namespace Concertable.B2B.Artist.Infrastructure.Services;
 
 internal sealed class ArtistDashboardService : IArtistDashboardService
 {
-    private readonly IArtistService artistService;
     private readonly IConcertModule concertModule;
     private readonly IManagerPaymentReportingClient paymentReportingClient;
     private readonly ITenantContext tenantContext;
     private readonly TimeProvider timeProvider;
 
     public ArtistDashboardService(
-        IArtistService artistService,
         IConcertModule concertModule,
         IManagerPaymentReportingClient paymentReportingClient,
         ITenantContext tenantContext,
         TimeProvider timeProvider)
     {
-        this.artistService = artistService;
         this.concertModule = concertModule;
         this.paymentReportingClient = paymentReportingClient;
         this.tenantContext = tenantContext;
@@ -32,27 +29,25 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
 
     public async Task<Option<ArtistDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
-        if ((await artistService.GetDetailsAsync(ct)).IsFailure)
-            return null;
         var tenantId = tenantContext.GetTenantId();
+        var counts = await concertModule.GetArtistDashboardCountsAsync(tenantId, ct);
+        if (!counts.TryGetValue(out var dashboardCounts))
+            return null;
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-
-        var countsTask = concertModule.GetArtistDashboardCountsAsync(tenantId, ct);
-        var mtdPayoutsTask = now == monthStart
-            ? Task.FromResult(Money.Gbp(0m))
-            : paymentReportingClient.GetSettlementPayoutsAsync(
+        var mtdPayouts = now == monthStart
+            ? Money.Gbp(0m)
+            : await paymentReportingClient.GetSettlementPayoutsAsync(
                 tenantId,
                 new DateRange(monthStart, now),
                 ct);
-        await Task.WhenAll(countsTask, mtdPayoutsTask);
 
-        return countsTask.Result.Map(counts => new ArtistDashboardKpis(
-            PendingApplications: counts.PendingApplications,
-            AcceptedAwaitingCheckout: counts.AcceptedAwaitingCheckout,
-            UpcomingConcerts: counts.UpcomingConcerts,
-            MtdPayoutsCents: mtdPayoutsTask.Result.ToMinorUnits(),
-            MtdPayoutsDeltaPercent: null));
+        return new ArtistDashboardKpis(
+            PendingApplications: dashboardCounts.PendingApplications,
+            AcceptedAwaitingCheckout: dashboardCounts.AcceptedAwaitingCheckout,
+            UpcomingConcerts: dashboardCounts.UpcomingConcerts,
+            MtdPayoutsCents: mtdPayouts.ToMinorUnits(),
+            MtdPayoutsDeltaPercent: null);
     }
 }
