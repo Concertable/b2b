@@ -59,7 +59,7 @@ internal sealed class ConcertService : IConcertService
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.NotFound(id));
 
-    public async Task<Result<ConcertDetails, ConcertError>> GetDetailsForActiveTenantAsync(
+    public async Task<Result<ConcertDetails, ConcertError>> GetDetailsAsync(
         int id,
         CancellationToken ct = default)
     {

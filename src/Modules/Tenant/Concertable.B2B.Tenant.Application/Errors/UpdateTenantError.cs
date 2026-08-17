@@ -7,9 +7,6 @@ internal abstract partial record UpdateTenantError : IError
 {
     public ErrorDefinition Definition => this switch
     {
-        NoActiveTenant =>
-            ErrorDefinition.Forbidden<NoActiveTenant>(
-                "No active organization was found for the current user."),
         TenantNotFound(var tenantId) =>
             ErrorDefinition.NotFound<TenantNotFound>(
                 $"Organization {tenantId} was not found."),
@@ -18,9 +15,6 @@ internal abstract partial record UpdateTenantError : IError
                 "The organization update is invalid.",
                 errors)
     };
-
-    [ErrorCode("tenant.update_forbidden")]
-    public partial record NoActiveTenant;
 
     [ErrorCode("tenant.update_not_found")]
     public partial record TenantNotFound(Guid TenantId);

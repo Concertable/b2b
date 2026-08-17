@@ -35,10 +35,10 @@ internal sealed class ConcertController : ControllerBase
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("/api/organization/concert/{concertId:int}")]
-    public async Task<ActionResult<MyDetailsResponse>> GetForActiveTenant(
+    public async Task<ActionResult<MyDetailsResponse>> Get(
         int concertId,
         CancellationToken ct) =>
-        (await concertService.GetDetailsForActiveTenantAsync(concertId, ct))
+        (await concertService.GetDetailsAsync(concertId, ct))
             .ToOkOrProblem(concert => concert.ToMyDetailsResponse());
 
     [RequiredTenantType(TenantType.Venue)]

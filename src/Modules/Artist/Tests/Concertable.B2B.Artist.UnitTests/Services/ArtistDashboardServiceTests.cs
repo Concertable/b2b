@@ -3,7 +3,6 @@ using Concertable.B2B.Artist.Application.DTOs;
 using Concertable.B2B.Artist.Application.Errors;
 using Concertable.B2B.Artist.Infrastructure.Services;
 using Concertable.B2B.Concert.Contracts;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
@@ -26,7 +25,7 @@ public sealed class ArtistDashboardServiceTests
     public ArtistDashboardServiceTests()
     {
         artistService
-            .Setup(s => s.GetDetailsForActiveTenantAsync(It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetDetailsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ArtistDetails
             {
                 Name = string.Empty,
@@ -110,20 +109,20 @@ public sealed class ArtistDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsForbidden()
+    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsInvalidOperation()
     {
         timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
         tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
 
-        await Assert.ThrowsAsync<ForbiddenException>(() => service.GetKpisAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetKpisAsync());
     }
 
     [Fact]
     public async Task GetKpisAsync_WithoutArtist_ReturnsNoneWithoutQueries()
     {
         artistService
-            .Setup(s => s.GetDetailsForActiveTenantAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ArtistError.ActiveTenantNotFound());
+            .Setup(s => s.GetDetailsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ArtistError.NotFoundForActiveTenant());
 
         var result = await service.GetKpisAsync();
 

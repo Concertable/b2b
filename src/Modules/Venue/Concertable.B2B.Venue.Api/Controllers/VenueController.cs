@@ -44,27 +44,27 @@ internal sealed class VenueController : ControllerBase
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("/api/organization/venue")]
-    public async Task<ActionResult<DetailsResponse>> GetForActiveTenant(CancellationToken ct) =>
-        (await venueService.GetDetailsForActiveTenantAsync(ct))
+    public async Task<ActionResult<DetailsResponse>> Get(CancellationToken ct) =>
+        (await venueService.GetDetailsAsync(ct))
             .ToOkOrProblem(venue => venue.ToDetailsResponse());
 
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPost("/api/organization/venue")]
-    public async Task<ActionResult<DetailsResponse>> CreateForActiveTenant(
+    public async Task<ActionResult<DetailsResponse>> Create(
         [FromForm] CreateVenueRequest request,
         CancellationToken ct) =>
-        (await venueService.CreateForActiveTenantAsync(request, ct))
+        (await venueService.CreateAsync(request, ct))
             .Map(venue => venue.ToDetailsResponse())
             .ToCreatedOrProblem(venue => $"/api/venue/{venue.Id}");
 
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.ProfileEdit)]
     [HttpPut("/api/organization/venue")]
-    public async Task<ActionResult<DetailsResponse>> UpdateForActiveTenant(
+    public async Task<ActionResult<DetailsResponse>> Update(
         [FromForm] UpdateVenueRequest request,
         CancellationToken ct) =>
-        (await venueService.UpdateForActiveTenantAsync(request, ct))
+        (await venueService.UpdateAsync(request, ct))
             .Map(venue => venue.ToDetailsResponse())
             .ToOkOrProblem();
 }

@@ -50,10 +50,10 @@ public sealed class ArtistApiTests : IAsyncLifetime
 
     #endregion
 
-    #region GetDetailsForActiveTenant
+    #region Get
 
     [Fact]
-    public async Task GetDetailsForActiveTenant_ShouldReturn401_WhenUnauthenticated()
+    public async Task Get_ShouldReturn401_WhenUnauthenticated()
     {
         var client = fixture.CreateClient();
 
@@ -63,7 +63,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetDetailsForActiveTenant_ShouldReturn403_WhenNotArtistManager()
+    public async Task Get_ShouldReturn403_WhenNotArtistManager()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
@@ -73,7 +73,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetDetailsForActiveTenant_ShouldReturn200_WhenArtistExists()
+    public async Task Get_ShouldReturn200_WhenArtistExists()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
@@ -86,7 +86,7 @@ public sealed class ArtistApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetDetailsForActiveTenant_ShouldReturn404_WhenNoArtistExists()
+    public async Task Get_ShouldReturn404_WhenNoArtistExists()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
 

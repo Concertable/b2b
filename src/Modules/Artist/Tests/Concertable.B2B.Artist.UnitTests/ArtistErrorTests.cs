@@ -14,16 +14,10 @@ public sealed class ArtistErrorTests
             ErrorKind.NotFound
         },
         {
-            new ArtistError.ActiveTenantNotFound(),
+            new ArtistError.NotFoundForActiveTenant(),
             "artist.get.active_tenant_not_found",
             "No artist was found for the active tenant.",
             ErrorKind.NotFound
-        },
-        {
-            new CreateArtistError.NoActiveTenant(),
-            "artist.create_forbidden",
-            "No active organization was selected.",
-            ErrorKind.Forbidden
         },
         {
             new CreateArtistError.ActiveTenantAlreadyHasArtist(),
@@ -32,7 +26,7 @@ public sealed class ArtistErrorTests
             ErrorKind.Conflict
         },
         {
-            new UpdateArtistError.ActiveTenantNotFound(),
+            new UpdateArtistError.ArtistNotFound(),
             "artist.update_not_found",
             "No artist was found for the active tenant.",
             ErrorKind.NotFound

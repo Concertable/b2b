@@ -7,9 +7,6 @@ internal abstract partial record CreateVenueError : IError
 {
     public ErrorDefinition Definition => this switch
     {
-        NoActiveTenant =>
-            ErrorDefinition.Forbidden<NoActiveTenant>(
-                "No active organization was selected."),
         ActiveTenantAlreadyHasVenue =>
             ErrorDefinition.Conflict<ActiveTenantAlreadyHasVenue>(
                 "The active organization already has a venue."),
@@ -18,9 +15,6 @@ internal abstract partial record CreateVenueError : IError
                 "The venue is invalid.",
                 errors)
     };
-
-    [ErrorCode("venue.create_forbidden")]
-    public partial record NoActiveTenant;
 
     [ErrorCode("venue.create.active_tenant_already_has_venue")]
     public partial record ActiveTenantAlreadyHasVenue;

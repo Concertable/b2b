@@ -119,12 +119,6 @@ public sealed class TenantErrorTests
             ErrorKind.Conflict
         },
         {
-            new UpdateTenantError.NoActiveTenant(),
-            "tenant.update_forbidden",
-            "No active organization was found for the current user.",
-            ErrorKind.Forbidden
-        },
-        {
             new UpdateTenantError.TenantNotFound(Id),
             "tenant.update_not_found",
             $"Organization {Id} was not found.",

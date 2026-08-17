@@ -51,7 +51,7 @@ public sealed class VenueServiceTests
             Avatar = Mock.Of<IFormFile>()
         };
 
-        var result = await CreateService().CreateForActiveTenantAsync(request);
+        var result = await CreateService().CreateAsync(request);
 
         Assert.True(result.TryGetError(out var error));
         var invalid = Assert.IsType<CreateVenueError.Invalid>(error);
@@ -94,7 +94,7 @@ public sealed class VenueServiceTests
             Banner = Mock.Of<IFormFile>()
         };
 
-        var result = await CreateService().UpdateForActiveTenantAsync(request);
+        var result = await CreateService().UpdateAsync(request);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<UpdateVenueError.Invalid>(error);

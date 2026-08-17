@@ -22,7 +22,7 @@ describe("actionLinkApi", () => {
     });
 
     expect(mocks.request).toHaveBeenCalledWith({
-      url: "/Application/42/withdraw",
+      url: "/application/42/withdraw",
       method: "POST",
     });
   });
@@ -51,7 +51,7 @@ describe("actionLinkApi", () => {
     );
 
     expect(mocks.request).toHaveBeenCalledWith({
-      url: "/Application/42/contract/pdf",
+      url: "/application/42/contract/pdf",
       method: "GET",
       responseType: "blob",
     });

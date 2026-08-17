@@ -9,12 +9,12 @@ internal interface IVenueService
     Task<Result<VenueDetails, VenueError>> GetDetailsByIdAsync(
         int id,
         CancellationToken ct = default);
-    Task<Result<VenueDetails, VenueError>> GetDetailsForActiveTenantAsync(
+    Task<Result<VenueDetails, VenueError>> GetDetailsAsync(
         CancellationToken ct = default);
-    Task<Result<VenueDetails, CreateVenueError>> CreateForActiveTenantAsync(
+    Task<Result<VenueDetails, CreateVenueError>> CreateAsync(
         CreateVenueRequest request,
         CancellationToken ct = default);
-    Task<Result<VenueDetails, UpdateVenueError>> UpdateForActiveTenantAsync(
+    Task<Result<VenueDetails, UpdateVenueError>> UpdateAsync(
         UpdateVenueRequest request,
         CancellationToken ct = default);
     Task<bool> OwnsVenueAsync(int venueId, CancellationToken ct = default);

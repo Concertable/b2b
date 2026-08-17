@@ -3,7 +3,6 @@ using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Application.Errors;
 using Concertable.B2B.Venue.Infrastructure.Services;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
@@ -26,7 +25,7 @@ public sealed class VenueDashboardServiceTests
     public VenueDashboardServiceTests()
     {
         venueService
-            .Setup(s => s.GetDetailsForActiveTenantAsync(It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetDetailsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new VenueDetails
             {
                 Name = string.Empty,
@@ -112,20 +111,20 @@ public sealed class VenueDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsForbidden()
+    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsInvalidOperation()
     {
         timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
         tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
 
-        await Assert.ThrowsAsync<ForbiddenException>(() => service.GetKpisAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetKpisAsync());
     }
 
     [Fact]
     public async Task GetKpisAsync_WithoutVenue_ReturnsNoneWithoutQueries()
     {
         venueService
-            .Setup(s => s.GetDetailsForActiveTenantAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new VenueError.ActiveTenantNotFound());
+            .Setup(s => s.GetDetailsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new VenueError.NotFoundForActiveTenant());
 
         var result = await service.GetKpisAsync();
 

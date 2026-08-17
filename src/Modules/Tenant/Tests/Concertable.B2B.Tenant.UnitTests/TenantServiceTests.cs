@@ -52,13 +52,10 @@ public sealed class TenantServiceTests
     #region UpdateAsync
 
     [Fact]
-    public async Task UpdateAsync_NoActiveTenant_ReturnsForbiddenError()
+    public async Task UpdateAsync_NoActiveTenant_ThrowsInvalidOperationException()
     {
-        var result = await service.UpdateAsync(null!);
-
-        Assert.True(result.TryGetError(out var error));
-        Assert.Equal("tenant.update_forbidden", error.Definition.Code);
-        Assert.Equal(ErrorKind.Forbidden, error.Definition.Kind);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateAsync(null!));
+        Assert.Equal("The operation requires an active tenant context.", exception.Message);
     }
 
     [Fact]
