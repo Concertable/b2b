@@ -5,7 +5,12 @@ namespace Concertable.B2B.User.Infrastructure.Repositories;
 
 internal sealed class AdminRepository : Repository<AdminInvitationEntity>, IAdminRepository
 {
-    public AdminRepository(UserDbContext context) : base(context) { }
+    private readonly UserDbContext context;
+
+    public AdminRepository(UserDbContext context) : base(context)
+    {
+        this.context = context;
+    }
 
     public Task<int> CountAdminsAsync(CancellationToken ct = default) =>
         context.AdminProfiles.CountAsync(ct);
