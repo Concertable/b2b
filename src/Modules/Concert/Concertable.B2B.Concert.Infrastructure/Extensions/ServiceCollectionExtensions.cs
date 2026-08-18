@@ -137,7 +137,6 @@ public static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddConcertDealStrategies(this IServiceCollection services)
     {
-        services.AddScoped<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
         services.AddScoped<IDealPayeeResolver, DealPayeeResolver>();
         services.AddScoped<ISettlementAmountResolver, SettlementAmountResolver>();
 

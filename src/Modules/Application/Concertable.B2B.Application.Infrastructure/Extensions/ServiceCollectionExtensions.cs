@@ -4,6 +4,7 @@ using Concertable.B2B.Application.Application.Renderers;
 using Concertable.B2B.Application.Application.Steps;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Infrastructure.Data;
+using Concertable.B2B.Application.Infrastructure.Data.Seeders;
 using Concertable.B2B.Application.Infrastructure.Repositories;
 using Concertable.B2B.Application.Infrastructure.Services;
 using Concertable.B2B.Application.Infrastructure.Services.Payment;
@@ -18,6 +19,8 @@ using Concertable.Payment.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 
 namespace Concertable.B2B.Application.Infrastructure.Extensions;
 
@@ -33,7 +36,8 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(
                     provider.GetRequiredService<AuditInterceptor>(),
                     provider.GetRequiredService<TenantInterceptor>(),
-                    provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
+                    provider.GetRequiredService<IDomainEventDispatchInterceptor>())
+                .UseSeedingSupport(provider));
 
         services.AddScoped<IUnitOfWork<ApplicationDbContext>, UnitOfWork<ApplicationDbContext>>();
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
@@ -66,6 +70,18 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IEntityTypeConfigurationProvider>(provider =>
             provider.GetRequiredService<ApplicationConfigurationProvider>());
 
+        return services;
+    }
+
+    public static IServiceCollection AddApplicationDevSeeder(this IServiceCollection services)
+    {
+        services.AddScoped<IDevSeeder, ApplicationDevSeeder>();
+        return services;
+    }
+
+    public static IServiceCollection AddApplicationTestSeeder(this IServiceCollection services)
+    {
+        services.AddScoped<ITestSeeder, ApplicationTestSeeder>();
         return services;
     }
 }

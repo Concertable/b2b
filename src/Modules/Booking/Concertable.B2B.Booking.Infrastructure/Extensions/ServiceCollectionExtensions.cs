@@ -3,6 +3,7 @@ using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.Interfaces;
 using Concertable.B2B.Booking.Infrastructure.Events;
 using Concertable.B2B.Booking.Infrastructure.Data;
+using Concertable.B2B.Booking.Infrastructure.Data.Seeders;
 using Concertable.B2B.Booking.Infrastructure.Repositories;
 using Concertable.B2B.Booking.Infrastructure.Services;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -15,6 +16,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 
 namespace Concertable.B2B.Booking.Infrastructure.Extensions;
 
@@ -29,7 +32,8 @@ public static class ServiceCollectionExtensions
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
-                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>())
+                    .UseSeedingSupport(provider));
 
             services.AddScoped<IUnitOfWork<BookingDbContext>, UnitOfWork<BookingDbContext>>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
@@ -65,6 +69,18 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IEntityTypeConfigurationProvider>(provider =>
                 provider.GetRequiredService<BookingConfigurationProvider>());
 
+            return services;
+        }
+
+        public IServiceCollection AddBookingDevSeeder()
+        {
+            services.AddScoped<IDevSeeder, BookingDevSeeder>();
+            return services;
+        }
+
+        public IServiceCollection AddBookingTestSeeder()
+        {
+            services.AddScoped<ITestSeeder, BookingTestSeeder>();
             return services;
         }
     }

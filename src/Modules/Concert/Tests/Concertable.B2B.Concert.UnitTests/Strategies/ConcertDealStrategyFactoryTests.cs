@@ -165,7 +165,6 @@ public sealed class ConcertDealStrategyFactoryTests
     [Theory]
     [InlineData(typeof(IKeyedServiceProvider))]
     [InlineData(typeof(IConcertDealStrategyFactory<>))]
-    [InlineData(typeof(ITermsFingerprintCalculator))]
     [InlineData(typeof(IDealPayeeResolver))]
     [InlineData(typeof(IPaymentAmountMapper))]
     [InlineData(typeof(ISettlementAmountResolver))]

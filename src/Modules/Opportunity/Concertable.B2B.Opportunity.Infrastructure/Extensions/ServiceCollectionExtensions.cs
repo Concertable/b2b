@@ -2,6 +2,7 @@ using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Opportunity.Application.Mappers;
 using Concertable.B2B.Opportunity.Application.Validators;
 using Concertable.B2B.Opportunity.Infrastructure.Data;
+using Concertable.B2B.Opportunity.Infrastructure.Data.Seeders;
 using Concertable.B2B.Opportunity.Infrastructure.Repositories;
 using Concertable.B2B.Opportunity.Infrastructure.Services;
 using Concertable.B2B.Opportunity.Infrastructure.Sync;
@@ -12,6 +13,8 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 
 namespace Concertable.B2B.Opportunity.Infrastructure.Extensions;
 
@@ -27,7 +30,8 @@ public static class ServiceCollectionExtensions
                     sql => sql.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<TenantInterceptor>()));
+                    sp.GetRequiredService<TenantInterceptor>())
+                .UseSeedingSupport(sp));
 
         services.AddDbContext<OpportunityReadDbContext>(options =>
             options.UseSqlServer(
@@ -60,6 +64,18 @@ public static class ServiceCollectionExtensions
 
         services.AddValidatorsFromAssemblyContaining<OpportunityDtoValidator>();
 
+        return services;
+    }
+
+    public static IServiceCollection AddOpportunityDevSeeder(this IServiceCollection services)
+    {
+        services.AddScoped<IDevSeeder, OpportunityDevSeeder>();
+        return services;
+    }
+
+    public static IServiceCollection AddOpportunityTestSeeder(this IServiceCollection services)
+    {
+        services.AddScoped<ITestSeeder, OpportunityTestSeeder>();
         return services;
     }
 }

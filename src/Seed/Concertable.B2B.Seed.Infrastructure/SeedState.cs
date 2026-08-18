@@ -521,7 +521,7 @@ public sealed class SeedState
     public ConcertEntity ConcertFor(BookingEntity booking) =>
         Concerts.Single(concert => concert.BookingId == booking.Id);
 
-    public void LinkPersistedApplications()
+    public void LinkBookingsToPersistedApplications()
     {
         foreach (var booking in Bookings)
         {
@@ -529,7 +529,10 @@ public sealed class SeedState
                 throw new InvalidOperationException($"Seed booking {booking.Id} has no application.");
             booking.With(nameof(BookingEntity.ApplicationId), application.Id);
         }
+    }
 
+    public void LinkConcertsToPersistedBookings()
+    {
         foreach (var concert in Concerts)
         {
             var booking = Bookings.Single(value => value.Id == concert.BookingId);

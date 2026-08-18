@@ -17,6 +17,7 @@
     <ProjectReference Include="..\..\Opportunity\Concertable.B2B.Opportunity.Contracts\Concertable.B2B.Opportunity.Contracts.csproj" />
     <ProjectReference Include="..\..\Venue\Concertable.B2B.Venue.Contracts\Concertable.B2B.Venue.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Infrastructure\Concertable.B2B.DataAccess.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Concertable.DataAccess.Application" />
@@ -27,5 +28,6 @@
     <PackageReference Include="Concertable.Payment.Client" />
     <PackageReference Include="Concertable.Payment.Contracts" />
     <PackageReference Include="Reunion" />
+    <PackageReference Include="Concertable.Seed.Shared" />
   </ItemGroup>
 </Project>
