@@ -2,7 +2,7 @@ import { DetailsLayout, type DetailsSection } from "@concertable/web/components/
 import { DetailsPageSkeleton } from "@concertable/web/components/skeletons/DetailsPageSkeleton";
 import { useVenueById } from "@concertable/shared/features/venues";
 import { VenueHero, venueSections } from "@concertable/web/features/venues";
-import { OpportunitySection } from "@concertable/b2b/features/concerts";
+import { OpportunitySection } from "@concertable/web-b2b/features/concerts";
 
 interface Props {
   id: number;
