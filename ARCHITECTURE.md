@@ -1,7 +1,7 @@
 # Concertable.B2B — Architecture
 
 > Cross-service plan and design rationale: [`api/docs/MICROSERVICES_ARCHITECTURE.md`](../docs/MICROSERVICES_ARCHITECTURE.md)
-> Internal module rules: [`api/agents/MODULE_STRUCTURE.md`](../agents/MODULE_STRUCTURE.md)
+> Internal module rules: the `module-structure` and `concertable-module-structure` skills
 > Outstanding gaps: [`TECH_DEBT.md`](./TECH_DEBT.md)
 
 ---
@@ -99,7 +99,7 @@ No sync calls to Customer or Search. B2B and Customer communicate **exclusively 
 
 ## Internal architecture
 
-B2B is a modular monolith *inside* the service. The `module-structure` skill and `api/agents/MODULE_STRUCTURE.md` apply verbatim:
+B2B is a modular monolith *inside* the service. The `module-structure` and `concertable-module-structure` skills apply verbatim:
 
 - Cross-module calls: `IXModule` facade only (in `<Module>.Contracts`)
 - Per-module `XDbContext` with its own schema; all point at `B2BDb`
