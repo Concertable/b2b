@@ -20,20 +20,3 @@ export interface UpdateVenueRequest {
   banner?: ImageFile;
   avatar?: ImageFile;
 }
-
-export interface VenueEditor {
-  draft: Venue | undefined;
-  editMode: boolean;
-  isDirty: boolean;
-  setName: (name: string) => void;
-  setAbout: (about: string) => void;
-  setLocation: (
-    latitude: number,
-    longitude: number,
-    county: string,
-    town: string,
-  ) => void;
-  setBanner: (file: ImageFile) => void;
-  setAvatar: (file: ImageFile) => void;
-  resetDraft: () => void;
-}
