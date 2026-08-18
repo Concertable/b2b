@@ -1,7 +1,8 @@
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Events;
+using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.Application.Domain.Events;
+using Concertable.B2B.Deal.Contracts.Enums;
 
-namespace Concertable.B2B.Concert.UnitTests.Entities;
+namespace Concertable.B2B.Application.UnitTests;
 
 public sealed class ApplicationEntityNotificationTests
 {
@@ -25,8 +26,7 @@ public sealed class ApplicationEntityNotificationTests
     [Theory]
     [InlineData(ApplicationNotification.Accepted)]
     [InlineData(ApplicationNotification.Rejected)]
-    [InlineData(ApplicationNotification.Cancelled)]
-    public void NotifyCounterparty_VenueDrivenActions_TargetArtist(ApplicationNotification kind)
+    public void NotifyCounterparty_AcceptedOrRejected_TargetsArtist(ApplicationNotification kind)
     {
         var application = CreateApplication();
 

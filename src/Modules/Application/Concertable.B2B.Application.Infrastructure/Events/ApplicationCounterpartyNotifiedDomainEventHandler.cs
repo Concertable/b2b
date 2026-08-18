@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Domain.Events;
+using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel;
@@ -6,7 +6,7 @@ using Concertable.Kernel.Identity;
 using Concertable.Messaging.Contracts;
 using Concertable.Shared.Email.Application;
 
-namespace Concertable.B2B.Concert.Infrastructure.Events;
+namespace Concertable.B2B.Application.Infrastructure.Events;
 
 internal sealed class ApplicationCounterpartyNotifiedDomainEventHandler
     : IPreCommitDomainEventHandler<ApplicationCounterpartyNotifiedDomainEvent>
@@ -47,8 +47,6 @@ internal sealed class ApplicationCounterpartyNotifiedDomainEventHandler
             ("Concert Application Accepted", "Your application was accepted! A concert has been scheduled for you."),
         ApplicationNotification.Rejected =>
             ("Concert Application Update", "Your application was not selected for this concert opportunity."),
-        ApplicationNotification.Cancelled =>
-            ("Concert Application Cancelled", "Your accepted application has been cancelled. Any payment made towards it has been refunded."),
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
     };
 }

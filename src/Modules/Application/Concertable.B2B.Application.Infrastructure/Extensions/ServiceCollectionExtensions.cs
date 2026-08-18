@@ -3,8 +3,10 @@ using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Application.Renderers;
 using Concertable.B2B.Application.Application.Steps;
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Concertable.B2B.Application.Infrastructure.Data.Seeders;
+using Concertable.B2B.Application.Infrastructure.Events;
 using Concertable.B2B.Application.Infrastructure.Repositories;
 using Concertable.B2B.Application.Infrastructure.Services;
 using Concertable.B2B.Application.Infrastructure.Services.Payment;
@@ -50,6 +52,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPaymentVerificationRecorder, PaymentVerificationRecorder>();
         services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, VerifyPaymentProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, VerifyPaymentFailedProcessor>();
+        services.AddScoped<IDomainEventHandler<ApplicationCounterpartyNotifiedDomainEvent>,
+            ApplicationCounterpartyNotifiedDomainEventHandler>();
         services.AddScoped<IApplicationCheckoutService, ApplicationCheckoutService>();
         services.AddScoped(typeof(IStepResolver<>), typeof(StepResolver<>));
         services.AddScoped<IDealTermsSerializer, DealTermsSerializer>();
