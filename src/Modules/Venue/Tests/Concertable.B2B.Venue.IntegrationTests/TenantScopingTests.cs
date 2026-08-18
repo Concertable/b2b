@@ -34,7 +34,9 @@ public sealed class TenantScopingTests : IAsyncLifetime
         var expectedTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == manager.Id).Id;
 
         var client = fixture.CreateClient(manager);
-        var response = await client.PostAsync("/api/venue", await BuildCreateRequest().ToFormContent());
+        var response = await client.PostAsync(
+            "/api/organization/venue",
+            await BuildCreateRequest().ToFormContent());
         await response.ShouldBe(HttpStatusCode.Created);
         var created = await response.Content.ReadAsync<VenueDetails>();
 

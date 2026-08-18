@@ -5,7 +5,7 @@ import {
   requireLocalB2bAuth,
   resolveTenantRoute,
   useTenant,
-} from "@concertable/b2b/features/tenant";
+} from "@concertable/web-b2b/features/tenant";
 import { useVenueNotifications } from "../../features/notifications";
 import { requireVenue } from "../../features/venue";
 import { AppLayout } from "@concertable/web/components/AppLayout";

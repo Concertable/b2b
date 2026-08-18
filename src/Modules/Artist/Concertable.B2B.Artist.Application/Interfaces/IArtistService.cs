@@ -6,10 +6,10 @@ namespace Concertable.B2B.Artist.Application.Interfaces;
 
 internal interface IArtistService
 {
-    Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(
+    Task<Option<ArtistDetails>> GetDetailsByIdAsync(
         int id,
         CancellationToken ct = default);
-    Task<Result<ArtistDetails, ArtistError>> GetDetailsAsync(
+    Task<Option<ArtistDetails>> GetDetailsAsync(
         CancellationToken ct = default);
     Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(
         CreateArtistRequest request,

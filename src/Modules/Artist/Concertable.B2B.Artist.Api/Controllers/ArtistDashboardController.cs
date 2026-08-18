@@ -8,7 +8,7 @@ namespace Concertable.B2B.Artist.Api.Controllers;
 [ApiController]
 [RequiredTenantType(TenantType.Artist)]
 [HasPermission(SharedPermissions.OperationsView)]
-[Route("api/artist-dashboard")]
+[Route("api/[controller]")]
 internal sealed class ArtistDashboardController : ControllerBase
 {
     private readonly IArtistDashboardService dashboardService;
@@ -21,9 +21,6 @@ internal sealed class ArtistDashboardController : ControllerBase
     [HttpGet("kpis")]
     public async Task<ActionResult<ArtistDashboardKpis>> GetKpis(CancellationToken ct)
     {
-        var kpis = await dashboardService.GetKpisAsync(ct);
-        return kpis.Match<ActionResult<ArtistDashboardKpis>>(
-            value => Ok(value),
-            () => NoContent());
+        return (await dashboardService.GetKpisAsync(ct)).ToOkOrNoContent();
     }
 }

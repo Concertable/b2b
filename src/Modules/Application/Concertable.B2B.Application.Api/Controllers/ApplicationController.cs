@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Application.Api.Controllers;
 
 [ApiController]
-[Route("api/application")]
+[Route("api/[controller]")]
 internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;

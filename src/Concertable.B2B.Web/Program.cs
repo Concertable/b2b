@@ -47,6 +47,8 @@ using Concertable.DataAccess.Application;
 using Concertable.Messaging.Application.Extensions;
 using Concertable.Messaging.AzureServiceBus.Extensions;
 using Concertable.Kernel.Extensions;
+using Concertable.B2B.Web.Routing;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,7 +58,8 @@ builder.AddAzureBlobServiceClient("blobs");
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddProblemDetails();
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+    options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseRouteTransformer())))
     .AddApplicationPart(typeof(Concertable.Shared.Api.Controllers.GenreController).Assembly)
 .AddJsonOptions(options =>
 {

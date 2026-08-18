@@ -39,22 +39,18 @@ internal sealed class ArtistService : IArtistService
         this.geometryProvider = geometryProvider;
     }
 
-    public async Task<Result<ArtistDetails, ArtistError>> GetDetailsAsync(
+    public async Task<Option<ArtistDetails>> GetDetailsAsync(
         CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
 
-        return await repository.GetDetailsByTenantIdAsync(tenantId, ct)
-            .ToOption()
-            .OrFailure((ArtistError)new ArtistError.NotFoundForActiveTenant());
+        return await repository.GetDetailsByTenantIdAsync(tenantId, ct);
     }
 
-    public Task<Result<ArtistDetails, ArtistError>> GetDetailsByIdAsync(
+    public async Task<Option<ArtistDetails>> GetDetailsByIdAsync(
         int id,
         CancellationToken ct = default) =>
-        readRepository.GetDetailsByIdAsync(id, ct)
-            .ToOption()
-            .OrFailure(() => (ArtistError)new ArtistError.NotFound(id));
+        await readRepository.GetDetailsByIdAsync(id, ct);
 
     public async Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(
         CreateArtistRequest request,
@@ -63,7 +59,7 @@ internal sealed class ArtistService : IArtistService
         var tenantId = tenantContext.GetTenantId();
 
         if (await repository.ExistsByTenantIdAsync(tenantId, ct))
-            return new CreateArtistError.ActiveTenantAlreadyHasArtist();
+            return new CreateArtistError.ArtistAlreadyExists();
 
         return await ArtistEntity.ValidateProfile(request.Name, request.About)
             .BindAsync(async () =>
@@ -87,7 +83,7 @@ internal sealed class ArtistService : IArtistService
                     {
                         if (!(await repository.TryInsertAsync(artist, ct))
                             .TryGetValue(out var createdArtist))
-                            return new CreateArtistError.ActiveTenantAlreadyHasArtist();
+                            return new CreateArtistError.ArtistAlreadyExists();
 
                         var details = await readRepository.GetDetailsByIdAsync(createdArtist.Id, ct)
                             ?? throw new InvalidOperationException(

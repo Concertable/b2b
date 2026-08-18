@@ -42,12 +42,10 @@ internal sealed class VenueService : IVenueService
         this.geometryProvider = geometryProvider;
     }
 
-    public Task<Result<VenueDetails, VenueError>> GetDetailsByIdAsync(
+    public async Task<Option<VenueDetails>> GetDetailsByIdAsync(
         int id,
         CancellationToken ct = default) =>
-        readRepository.GetDetailsByIdAsync(id, ct)
-            .ToOption()
-            .OrFailure(() => (VenueError)new VenueError.NotFound(id));
+        await readRepository.GetDetailsByIdAsync(id, ct);
 
     public async Task<Result<VenueDetails, CreateVenueError>> CreateAsync(
         CreateVenueRequest request,
@@ -56,7 +54,7 @@ internal sealed class VenueService : IVenueService
         var tenantId = tenantContext.GetTenantId();
 
         if (await repository.ExistsByTenantIdAsync(tenantId, ct))
-            return new CreateVenueError.ActiveTenantAlreadyHasVenue();
+            return new CreateVenueError.VenueAlreadyExists();
 
         return await VenueEntity.ValidateProfile(request.Name, request.About)
             .BindAsync(async () =>
@@ -79,7 +77,7 @@ internal sealed class VenueService : IVenueService
                     {
                         if (!(await repository.TryInsertAsync(venue, ct))
                             .TryGetValue(out var createdVenue))
-                            return new CreateVenueError.ActiveTenantAlreadyHasVenue();
+                            return new CreateVenueError.VenueAlreadyExists();
 
                         var details = await readRepository.GetDetailsByIdAsync(createdVenue.Id, ct)
                             ?? throw new InvalidOperationException(
@@ -128,14 +126,12 @@ internal sealed class VenueService : IVenueService
             }, errors => new UpdateVenueError.Invalid(errors));
     }
 
-    public async Task<Result<VenueDetails, VenueError>> GetDetailsAsync(
+    public async Task<Option<VenueDetails>> GetDetailsAsync(
         CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
 
-        return await repository.GetDetailsByTenantIdAsync(tenantId, ct)
-            .ToOption()
-            .OrFailure((VenueError)new VenueError.NotFoundForActiveTenant());
+        return await repository.GetDetailsByTenantIdAsync(tenantId, ct);
     }
 
     public async Task<bool> OwnsVenueAsync(int venueId, CancellationToken ct = default) =>

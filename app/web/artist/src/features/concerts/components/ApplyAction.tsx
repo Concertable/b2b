@@ -8,8 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@concertable/web/components/ui/dialog";
-import type { Opportunity } from "@concertable/b2b/features/concerts";
-import { ESignaturePanel, useESignature } from "@concertable/b2b/features/concerts";
+import type { Opportunity } from "@concertable/web-b2b/features/concerts";
+import { ESignaturePanel, useESignature } from "@concertable/web-b2b/features/concerts";
 import { useApply } from "../hooks/useApply";
 
 interface Props {
