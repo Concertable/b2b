@@ -1,16 +1,18 @@
-using Concertable.B2B.Concert.Contracts;
-using Concertable.B2B.Deal.Contracts.Enums;
-
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IConcertDashboardRepository
 {
-    Task<VenueDashboardCounts?> GetVenueCountsAsync(
+    Task<VenueConcertDashboardCounts?> GetVenueCountsAsync(
         Guid venueTenantId,
         CancellationToken ct = default);
 
-    Task<ArtistDashboardCounts?> GetArtistCountsAsync(
+    Task<ArtistConcertDashboardCounts?> GetArtistCountsAsync(
         Guid artistTenantId,
-        IReadOnlyCollection<DealType> checkoutCapableDealTypes,
         CancellationToken ct = default);
 }
+
+internal sealed record VenueConcertDashboardCounts(
+    int UpcomingConcerts,
+    int AwaitingDoorRevenue);
+
+internal sealed record ArtistConcertDashboardCounts(int UpcomingConcerts);

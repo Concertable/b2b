@@ -7,10 +7,22 @@ public sealed class FinancialOperationEvidenceTests
 {
     [Fact]
     public void FinancialOperationSucceeded_BlankProviderReference_ThrowsArgumentException() =>
-        Assert.Throws<ArgumentException>(() => new FinancialOperationSucceeded(
+        Assert.Throws<ArgumentException>(() => new VerifyPaymentSucceededEvidence(
             42,
-            FinancialOperation.VerifyPayment,
             " "));
+
+    [Fact]
+    public void AcceptanceFinancialOperationRejected_DoesNotRequireProviderReference()
+    {
+        var rejected = new AcceptanceFinancialOperationRejected(
+            Guid.NewGuid(),
+            42,
+            FinancialOperation.CaptureEscrow,
+            new FinancialOperationError("capture_failed", "Capture failed"));
+
+        Assert.Equal(42, rejected.BookingId);
+        Assert.Equal("capture_failed", rejected.Error.Code);
+    }
 
     [Fact]
     public void FinancialOperationError_BlankCode_ThrowsArgumentException() =>

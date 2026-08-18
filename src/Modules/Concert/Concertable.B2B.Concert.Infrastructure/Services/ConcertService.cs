@@ -1,7 +1,9 @@
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Application.Errors;
-using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Domain.State;
 using Concertable.Kernel.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -11,38 +13,80 @@ internal sealed class ConcertService : IConcertService
     private readonly IConcertReadRepository readRepository;
     private readonly IInvoiceRepository invoiceRepository;
     private readonly IConcertValidator concertValidator;
-    private readonly ICurrentUser currentUser;
-    private readonly IApplicationValidator applicationValidator;
-    private readonly IApplicationRepository applicationRepository;
-    private readonly IConcertDraftService concertDraftService;
-    private readonly ICancelExecutor cancelExecutor;
+    private readonly IArtistReadModelRepository artists;
+    private readonly IVenueReadModelRepository venues;
+    private readonly IConcertNotifier notifier;
+    private readonly BookingConfirmationEmailSender emailSender;
     private readonly TimeProvider timeProvider;
     private readonly ITenantContext tenantContext;
+    private readonly ILogger<ConcertService> logger;
 
     public ConcertService(
         IConcertRepository repository,
         IConcertReadRepository readRepository,
         IInvoiceRepository invoiceRepository,
         IConcertValidator concertValidator,
-        ICurrentUser currentUser,
-        IApplicationValidator applicationValidator,
-        IApplicationRepository applicationRepository,
-        IConcertDraftService concertDraftService,
-        ICancelExecutor cancelExecutor,
+        IArtistReadModelRepository artists,
+        IVenueReadModelRepository venues,
+        IConcertNotifier notifier,
+        BookingConfirmationEmailSender emailSender,
         TimeProvider timeProvider,
-        ITenantContext tenantContext)
+        ITenantContext tenantContext,
+        ILogger<ConcertService> logger)
     {
         this.repository = repository;
         this.readRepository = readRepository;
         this.invoiceRepository = invoiceRepository;
         this.concertValidator = concertValidator;
-        this.currentUser = currentUser;
-        this.applicationValidator = applicationValidator;
-        this.applicationRepository = applicationRepository;
-        this.concertDraftService = concertDraftService;
-        this.cancelExecutor = cancelExecutor;
+        this.artists = artists;
+        this.venues = venues;
+        this.notifier = notifier;
+        this.emailSender = emailSender;
         this.timeProvider = timeProvider;
         this.tenantContext = tenantContext;
+        this.logger = logger;
+    }
+
+    public async Task CreateAsync(ConfirmedBooking booking, CancellationToken ct = default)
+    {
+        logger.CreatingConcertDraft(booking.BookingId);
+
+        if (await repository.GetByBookingIdAsync(booking.BookingId, ct) is not null)
+            return;
+
+        var artist = await artists.GetByTenantIdAsync(booking.ArtistTenantId, ct)
+            ?? throw new InvalidOperationException(
+                $"Artist projection {booking.ArtistTenantId} was not found for booking {booking.BookingId}.");
+        var venue = await venues.GetByTenantIdAsync(booking.VenueTenantId, ct)
+            ?? throw new InvalidOperationException(
+                $"Venue projection {booking.VenueTenantId} was not found for booking {booking.BookingId}.");
+        if (artist.Id != booking.ArtistId || venue.Id != booking.VenueId)
+            throw new InvalidOperationException(
+                $"Booking {booking.BookingId} does not match its artist or venue projection.");
+
+        var artistGenres = artist.Genres.Select(genre => genre.Genre);
+        var matchingGenres = booking.Genres.Count > 0
+            ? artistGenres.Intersect(booking.Genres)
+            : artistGenres;
+        if (!matchingGenres.Any())
+        {
+            logger.ConcertDraftCreationFailed(booking.BookingId, artist.Id, booking.OpportunityId);
+            throw new InvalidOperationException(
+                $"Artist {artist.Id} does not match the genres for booking {booking.BookingId}.");
+        }
+
+        var concert = ConcertEntity.CreateDraft(
+            booking,
+            $"{artist.Name} performing at {venue.Name}",
+            venue.About,
+            matchingGenres);
+        await repository.AddAsync(concert, ct);
+        await repository.SaveChangesAsync(ct);
+
+        logger.ConcertDraftCreated(concert.Id, booking.BookingId, artist.Id, venue.Id);
+        await notifier.ConcertDraftCreatedAsync(artist.UserId.ToString(), concert.Id);
+        await notifier.ConcertDraftCreatedAsync(venue.UserId.ToString(), concert.Id);
+        await emailSender.SendAsync(booking, venue.Name, artist.Name, ct);
     }
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUpcomingByVenueIdAsync(int id) =>
@@ -75,9 +119,6 @@ internal sealed class ConcertService : IConcertService
                 return WithActions(details with { InvoiceId = invoice?.Id });
             });
     }
-
-    public Task<Result<ConcertEntity, CreateConcertDraftError>> CreateDraftAsync(int applicationId) =>
-        concertDraftService.CreateAsync(applicationId);
 
     public async Task<Result<ConcertDetails, ConcertError>> GetDetailsByApplicationIdAsync(int applicationId)
     {
@@ -122,9 +163,7 @@ internal sealed class ConcertService : IConcertService
         if (concertEntity is null)
             return new PostConcertError.ConcertNotFound(id);
 
-        var lifecycle = await applicationRepository.GetLifecycleAndPaymentStateAsync(concertEntity.ApplicationId)
-            ?? throw new InvalidOperationException($"Application {concertEntity.ApplicationId} not found for concert {id}.");
-        var result = concertValidator.CanPost(concertEntity, lifecycle.State);
+        var result = concertValidator.CanPost(concertEntity);
         if (result.TryGetErrors(out var errors))
             return new PostConcertError.Invalid(new ValidationErrors(errors.ToDictionary()));
 
@@ -133,9 +172,6 @@ internal sealed class ConcertService : IConcertService
         await repository.SaveChangesAsync();
         return new Success();
     }
-
-    public Task<UnitResult<CancelConcertError>> CancelAsync(int concertId, CancellationToken ct) =>
-        cancelExecutor.CancelAsync(concertId, ct);
 
     public async Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueAsync(int id, decimal doorRevenue)
     {
@@ -150,9 +186,7 @@ internal sealed class ConcertService : IConcertService
             return new DeclareDoorRevenueError.WrongDealType();
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
             return new DeclareDoorRevenueError.TooEarly();
-        var lifecycle = await applicationRepository.GetLifecycleAndPaymentStateAsync(concert.ApplicationId)
-            ?? throw new InvalidOperationException($"Application {concert.ApplicationId} not found for concert {id}.");
-        if (lifecycle.State != LifecycleState.Booked)
+        if (concert.State is ConcertState.AwaitingSettlement or ConcertState.SettlementFailed or ConcertState.Complete)
             return new DeclareDoorRevenueError.AlreadySettled();
 
         return await concert.DeclareDoorRevenue(doorRevenue)
@@ -168,8 +202,8 @@ internal sealed class ConcertService : IConcertService
 
     private ConcertDetails WithActions(ConcertDetails details) => details with
     {
-        CanCancel = details.State == LifecycleState.Booked,
-        CanDeclareDoorRevenue = details.State == LifecycleState.Booked
+        CanCancel = details.State is ConcertState.Draft or ConcertState.Posted or ConcertState.CancellationFailed,
+        CanDeclareDoorRevenue = details.State is ConcertState.Draft or ConcertState.Posted
             && details.IsRevenueShare
             && details.DoorRevenue is null
             && details.EndDate < timeProvider.GetUtcNow().UtcDateTime

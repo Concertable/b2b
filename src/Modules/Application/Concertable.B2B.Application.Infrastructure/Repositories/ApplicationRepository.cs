@@ -1,5 +1,6 @@
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Application.Models;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -71,4 +72,31 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
                     application => application.State,
                     ApplicationState.Rejected),
                 ct);
+
+    public async Task<IReadOnlyList<ApplicationDashboardProjection>> GetVenueDashboardProjectionsAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default) =>
+        await context.Applications
+            .Where(application =>
+                application.VenueTenantId == venueTenantId &&
+                application.State == ApplicationState.Applied)
+            .Select(application => new ApplicationDashboardProjection(
+                application.OpportunityId,
+                application.State,
+                application.DealType))
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<ApplicationDashboardProjection>> GetArtistDashboardProjectionsAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default) =>
+        await context.Applications
+            .Where(application =>
+                application.ArtistTenantId == artistTenantId &&
+                (application.State == ApplicationState.Applied ||
+                 application.State == ApplicationState.Accepted))
+            .Select(application => new ApplicationDashboardProjection(
+                application.OpportunityId,
+                application.State,
+                application.DealType))
+            .ToListAsync(ct);
 }

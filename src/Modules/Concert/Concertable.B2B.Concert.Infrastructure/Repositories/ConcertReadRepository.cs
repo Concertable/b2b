@@ -20,7 +20,6 @@ internal sealed class ConcertReadRepository : IConcertReadRepository
         return await context.Concerts
             .Where(e => e.Id == id)
             .ToDetails(
-                context.Applications,
                 context.ConcertRatingProjections,
                 context.ArtistRatingProjections,
                 context.VenueRatingProjections)

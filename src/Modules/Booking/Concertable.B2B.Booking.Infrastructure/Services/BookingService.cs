@@ -1,10 +1,13 @@
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.DTOs;
+using Concertable.B2B.Booking.Application.Errors;
 using Concertable.B2B.Booking.Application.Mappers;
 using Concertable.B2B.Booking.Application.Models;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.State;
+using Concertable.Messaging.Contracts;
+using Concertable.Payment.Contracts;
 
 namespace Concertable.B2B.Booking.Infrastructure.Services;
 
@@ -13,17 +16,23 @@ internal sealed class BookingService : IBookingService
     private readonly IBookingRepository bookings;
     private readonly IContractRepository contracts;
     private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IBus bus;
+    private readonly IOutboxUnitOfWorkBehavior outbox;
     private readonly TimeProvider timeProvider;
 
     public BookingService(
         IBookingRepository bookings,
         IContractRepository contracts,
         IUnitOfWorkBehavior unitOfWork,
+        IBus bus,
+        IOutboxUnitOfWorkBehavior outbox,
         TimeProvider timeProvider)
     {
         this.bookings = bookings;
         this.contracts = contracts;
         this.unitOfWork = unitOfWork;
+        this.bus = bus;
+        this.outbox = outbox;
         this.timeProvider = timeProvider;
     }
 
@@ -53,6 +62,29 @@ internal sealed class BookingService : IBookingService
         CancellationToken ct = default) =>
         (await bookings.GetByApplicationIdAsync(applicationId, ct))?.ToDto();
 
+    public Task<UnitResult<CancelBookingError>> CancelAsync(
+        int bookingId,
+        CancellationToken ct = default) =>
+        unitOfWork.ExecuteAsync(
+            () => outbox.ExecuteAsync(async () =>
+            {
+                var booking = await bookings.GetByIdAsync(bookingId, ct);
+                if (booking is null)
+                    return (UnitResult<CancelBookingError>)new CancelBookingError.BookingNotFound(bookingId);
+                if (booking.State is BookingState.Cancelled or BookingState.CancellationPending)
+                    return UnitResult.Success<CancelBookingError>();
+                if (booking.State == BookingState.Confirmed)
+                    return new CancelBookingError.InvalidState(booking.State);
+
+                await bus.SendAsync(new RefundEscrowCommand(
+                    booking.BeginCancellation(),
+                    booking.Id,
+                    RefundReasonCodes.RequestedByCustomer), ct);
+                await bookings.SaveChangesAsync(ct);
+                return UnitResult.Success<CancelBookingError>();
+            }, ct),
+            ct);
+
     public async Task RecordSucceededAsync(
         int bookingId,
         FinancialOperationSucceeded operation,
@@ -60,8 +92,18 @@ internal sealed class BookingService : IBookingService
     {
         var booking = await bookings.GetByIdAsync(bookingId, ct)
             ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
-        Validate(booking, operation);
+        Validate(bookingId, booking, operation);
 
+        if (booking.State == BookingState.CancellationPending)
+        {
+            await bus.SendAsync(new RefundEscrowCommand(
+                booking.CancellationOperationId!.Value,
+                bookingId,
+                RefundReasonCodes.RequestedByCustomer), ct);
+            return;
+        }
+        if (booking.State is BookingState.CancellationFailed or BookingState.Cancelled)
+            return;
         if (booking.State == BookingState.Confirmed)
         {
             EnsureSameProviderReference(booking, operation);
@@ -79,37 +121,77 @@ internal sealed class BookingService : IBookingService
     {
         var booking = await bookings.GetByIdAsync(bookingId, ct)
             ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
-        Validate(booking, operation);
+        Validate(bookingId, booking, operation);
 
         if (booking.State == BookingState.Confirmed)
-        {
-            EnsureSameProviderReference(booking, operation);
             return;
-        }
-        if (booking.State == BookingState.FinancialConfirmationFailed &&
-            booking.FinancialOperationReferenceId == operation.ProviderReferenceId)
+        if (IsDuplicateFailure(booking, operation))
             return;
 
-        booking.RecordFinancialFailure(
-            operation.ProviderReferenceId,
-            operation.Error.Code,
-            operation.Error.Message);
+        switch (operation)
+        {
+            case VerifyPaymentFailedEvidence verified:
+                booking.RecordFinancialFailure(
+                    verified.ProviderReferenceId,
+                    verified.Error.Code,
+                    verified.Error.Message);
+                break;
+            case AcceptanceFinancialOperationRejected rejected:
+                booking.RecordFinancialRejection(rejected.Error.Code, rejected.Error.Message);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
+        }
         await bookings.SaveChangesAsync(ct);
     }
 
-    private static void Validate(BookingEntity booking, FinancialOperationEvidence operation)
+    private static void Validate(
+        int bookingId,
+        BookingEntity booking,
+        FinancialOperationEvidence operation)
     {
-        if (booking.ApplicationId != operation.ApplicationId)
-            throw new InvalidOperationException(
-                $"Financial operation for application {operation.ApplicationId} cannot advance booking {booking.Id} for application {booking.ApplicationId}.");
         if (booking.ExpectedFinancialOperation != operation.Operation)
             throw new InvalidOperationException(
                 $"Booking {booking.Id} expects {booking.ExpectedFinancialOperation}, not {operation.Operation}.");
+
+        switch (operation)
+        {
+            case VerifyPaymentSucceededEvidence verified
+                when booking.ApplicationId != verified.ApplicationId:
+                throw new InvalidOperationException(
+                    $"Financial operation for application {verified.ApplicationId} cannot advance booking {booking.Id} for application {booking.ApplicationId}.");
+            case VerifyPaymentFailedEvidence failed
+                when booking.ApplicationId != failed.ApplicationId:
+                throw new InvalidOperationException(
+                    $"Financial operation for application {failed.ApplicationId} cannot advance booking {booking.Id} for application {booking.ApplicationId}.");
+            case AcceptanceFinancialOperationSucceeded accepted
+                when bookingId != accepted.BookingId || booking.OperationId != accepted.OperationId:
+                throw new InvalidOperationException(
+                    $"Acceptance operation {accepted.OperationId} for booking {accepted.BookingId} cannot advance booking {booking.Id} with operation {booking.OperationId}.");
+            case AcceptanceFinancialOperationRejected accepted
+                when bookingId != accepted.BookingId || booking.OperationId != accepted.OperationId:
+                throw new InvalidOperationException(
+                    $"Acceptance operation {accepted.OperationId} for booking {accepted.BookingId} cannot advance booking {booking.Id} with operation {booking.OperationId}.");
+        }
     }
+
+    private static bool IsDuplicateFailure(
+        BookingEntity booking,
+        FinancialOperationFailed operation) =>
+        booking.State == BookingState.FinancialConfirmationFailed && operation switch
+        {
+            VerifyPaymentFailedEvidence verified =>
+                booking.FinancialOperationReferenceId == verified.ProviderReferenceId,
+            AcceptanceFinancialOperationRejected rejected =>
+                booking.FinancialOperationReferenceId is null &&
+                booking.FinancialFailureCode == rejected.Error.Code &&
+                booking.FinancialFailureMessage == rejected.Error.Message,
+            _ => false
+        };
 
     private static void EnsureSameProviderReference(
         BookingEntity booking,
-        FinancialOperationEvidence operation)
+        FinancialOperationSucceeded operation)
     {
         if (booking.FinancialOperationReferenceId != operation.ProviderReferenceId)
             throw new InvalidOperationException(

@@ -8,6 +8,7 @@
     <ProjectReference Include="..\..\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Reunion" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Lifecycle;
 using Reunion.Validation;
 
 namespace Concertable.B2B.Concert.Infrastructure.Validators;
@@ -21,12 +20,9 @@ internal sealed class ConcertValidator : IConcertValidator
                     }));
     }
 
-    public ValidationResult CanPost(ConcertEntity concert, LifecycleState applicationState)
+    public ValidationResult CanPost(ConcertEntity concert)
     {
         var errors = new List<KeyValuePair<string, string>>();
-
-        if (applicationState != LifecycleState.Booked)
-            errors.Add(new("booking", "Concert cannot be posted until the booking is confirmed"));
 
         if (concert.DatePosted is not null)
             errors.Add(new("datePosted", "Concert has already been posted"));

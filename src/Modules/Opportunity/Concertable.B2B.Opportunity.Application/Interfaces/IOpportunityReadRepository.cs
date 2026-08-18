@@ -14,4 +14,10 @@ internal interface IOpportunityReadRepository
 {
     Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId, IPageParams pageParams);
     Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId);
+    Task<IReadOnlySet<int>> GetUpcomingIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default);
+    Task<int> GetOpenCountAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default);
 }

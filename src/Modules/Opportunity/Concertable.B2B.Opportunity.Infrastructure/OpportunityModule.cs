@@ -7,13 +7,16 @@ internal sealed class OpportunityModule : IOpportunityModule
 {
     private readonly IOpportunityReadDbContext readContext;
     private readonly IOpportunityHandoffRepository handoffRepository;
+    private readonly IOpportunityDashboardService dashboardService;
 
     public OpportunityModule(
         IOpportunityReadDbContext readContext,
-        IOpportunityHandoffRepository handoffRepository)
+        IOpportunityHandoffRepository handoffRepository,
+        IOpportunityDashboardService dashboardService)
     {
         this.readContext = readContext;
         this.handoffRepository = handoffRepository;
+        this.dashboardService = dashboardService;
     }
 
     public async Task<Option<OpportunityDetails>> GetDetailsAsync(
@@ -35,18 +38,19 @@ internal sealed class OpportunityModule : IOpportunityModule
         return details is null ? Option.None<OpportunityDetails>() : Option.Some(details);
     }
 
-    public async Task MarkFilledAsync(
+    public Task<bool> TryClaimAsync(
         int opportunityId,
         Guid venueTenantId,
-        CancellationToken ct = default)
-    {
-        var opportunity = await handoffRepository.GetByIdAsync(opportunityId, ct)
-            ?? throw new InvalidOperationException($"Opportunity {opportunityId} was not found.");
+        CancellationToken ct = default) =>
+        handoffRepository.TryClaimAsync(opportunityId, venueTenantId, ct);
 
-        if (opportunity.TenantId != venueTenantId)
-            throw new InvalidOperationException($"Opportunity {opportunityId} is not owned by tenant {venueTenantId}.");
+    public Task<IReadOnlySet<int>> GetUpcomingIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default) =>
+        dashboardService.GetUpcomingIdsAsync(opportunityIds, ct);
 
-        opportunity.MarkFilled();
-        await handoffRepository.SaveChangesAsync(ct);
-    }
+    public Task<int> GetOpenCountAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default) =>
+        dashboardService.GetOpenCountAsync(venueTenantId, ct);
 }

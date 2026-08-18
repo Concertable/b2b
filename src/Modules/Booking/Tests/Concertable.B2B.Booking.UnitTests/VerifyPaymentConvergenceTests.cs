@@ -30,7 +30,7 @@ public sealed class VerifyPaymentConvergenceTests
             .InSequence(sequence)
             .Setup(service => service.RecordSucceededAsync(
                 7,
-                It.Is<FinancialOperationSucceeded>(operation =>
+                It.Is<VerifyPaymentSucceededEvidence>(operation =>
                     operation.ApplicationId == payment.ApplicationId &&
                     operation.Operation == FinancialOperation.VerifyPayment &&
                     operation.ProviderReferenceId == payment.ProviderTransactionId),
@@ -55,7 +55,7 @@ public sealed class VerifyPaymentConvergenceTests
         this.bookings
             .Setup(service => service.RecordSucceededAsync(
                 7,
-                It.Is<FinancialOperationSucceeded>(operation =>
+                It.Is<VerifyPaymentSucceededEvidence>(operation =>
                     operation.ApplicationId == payment.ApplicationId &&
                     operation.Operation == FinancialOperation.VerifyPayment &&
                     operation.ProviderReferenceId == payment.ProviderTransactionId),

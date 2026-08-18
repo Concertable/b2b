@@ -21,12 +21,3 @@ internal sealed class DoorRevenueRequestValidator : AbstractValidator<DoorRevenu
         RuleFor(x => x.DoorRevenue).GreaterThanOrEqualTo(0);
     }
 }
-
-internal sealed class BookingParamsValidator : AbstractValidator<BookingParams>
-{
-    public BookingParamsValidator()
-    {
-        RuleFor(x => x.PaymentMethodId).NotEmpty().WithMessage("Payment method ID is required");
-        RuleFor(x => x.ApplicationId).GreaterThan(0).WithMessage("Application ID is required");
-    }
-}

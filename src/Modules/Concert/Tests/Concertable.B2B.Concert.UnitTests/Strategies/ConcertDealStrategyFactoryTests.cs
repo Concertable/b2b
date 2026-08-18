@@ -1,6 +1,5 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Mappers;
-using Concertable.B2B.Concert.Application.Renderers;
 using Concertable.B2B.Concert.Application.Resolvers;
 using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
@@ -12,30 +11,6 @@ namespace Concertable.B2B.Concert.UnitTests.Strategies;
 
 public sealed class ConcertDealStrategyFactoryTests
 {
-    [Theory]
-    [InlineData(DealType.FlatFee, typeof(FlatFeeDealTerms))]
-    [InlineData(DealType.DoorSplit, typeof(DoorSplitDealTerms))]
-    [InlineData(DealType.Versus, typeof(VersusDealTerms))]
-    [InlineData(DealType.VenueHire, typeof(VenueHireDealTerms))]
-    public void Create_DealType_ResolvesExpectedStrategyFromRequestScope(
-        DealType dealType,
-        Type expectedType)
-    {
-        var services = CreateServices();
-        services.AddConcertDealStrategies();
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = true
-        });
-        using var scope = provider.CreateScope();
-        var factory = scope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealTerms>>();
-
-        var strategy = factory.Create(dealType);
-
-        Assert.IsType(expectedType, strategy);
-    }
-
     [Theory]
     [InlineData(DealType.FlatFee, typeof(VenuePaysArtistDealPayeeResolver))]
     [InlineData(DealType.DoorSplit, typeof(VenuePaysArtistDealPayeeResolver))]
@@ -121,16 +96,16 @@ public sealed class ConcertDealStrategyFactoryTests
         using var secondScope = provider.CreateScope();
 
         var first = firstScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealTerms>>();
+            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>();
         var sameScope = firstScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealTerms>>();
+            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>();
         var second = secondScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealTerms>>();
+            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>();
 
         Assert.Same(first, sameScope);
         Assert.NotSame(first, second);
         Assert.Throws<InvalidOperationException>(() =>
-            provider.GetRequiredService<IConcertDealStrategyFactory<IDealTerms>>());
+            provider.GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>());
     }
 
     [Fact]
@@ -146,10 +121,10 @@ public sealed class ConcertDealStrategyFactoryTests
         using var secondScope = provider.CreateScope();
 
         var first = firstScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealTerms>>()
+            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>()
             .Create(DealType.FlatFee);
         var second = secondScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealTerms>>()
+            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>()
             .Create(DealType.FlatFee);
 
         Assert.Same(first, second);
@@ -190,8 +165,6 @@ public sealed class ConcertDealStrategyFactoryTests
     [Theory]
     [InlineData(typeof(IKeyedServiceProvider))]
     [InlineData(typeof(IConcertDealStrategyFactory<>))]
-    [InlineData(typeof(IDealTermsRenderer))]
-    [InlineData(typeof(IDealTermsSerializer))]
     [InlineData(typeof(ITermsFingerprintCalculator))]
     [InlineData(typeof(IDealPayeeResolver))]
     [InlineData(typeof(IPaymentAmountMapper))]

@@ -1,185 +1,67 @@
-using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Domain.State;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.Concert.Infrastructure.Services.Workflow;
+using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class FinancialOperationOutcomeProcessor :
-    IIntegrationEventHandler<CaptureEscrowSucceededEvent>,
-    IIntegrationEventHandler<CaptureEscrowRejectedEvent>,
-    IIntegrationEventHandler<DepositEscrowSucceededEvent>,
-    IIntegrationEventHandler<DepositEscrowRejectedEvent>,
     IIntegrationEventHandler<RefundEscrowSucceededEvent>,
-    IIntegrationEventHandler<RefundEscrowRejectedEvent>,
-    IIntegrationEventHandler<RefundEscrowDeferredEvent>
+    IIntegrationEventHandler<RefundEscrowRejectedEvent>
 {
     private readonly ConcertDbContext context;
-    private readonly IEscrowExecutor escrowExecutor;
-    private readonly ILifecycleTransitioner transitioner;
-    private readonly IOutboxUnitOfWorkBehavior outbox;
+    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public FinancialOperationOutcomeProcessor(
         ConcertDbContext context,
-        IEscrowExecutor escrowExecutor,
-        ILifecycleTransitioner transitioner,
-        IOutboxUnitOfWorkBehavior outbox)
+        IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.context = context;
-        this.escrowExecutor = escrowExecutor;
-        this.transitioner = transitioner;
-        this.outbox = outbox;
+        this.outboxBehavior = outboxBehavior;
     }
-
-    public Task HandleAsync(
-        CaptureEscrowSucceededEvent @event,
-        MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        AcceptanceSucceededAsync(@event.OperationId, @event.BookingId, envelope, ct);
-
-    public Task HandleAsync(
-        DepositEscrowSucceededEvent @event,
-        MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        AcceptanceSucceededAsync(@event.OperationId, @event.BookingId, envelope, ct);
-
-    public Task HandleAsync(
-        CaptureEscrowRejectedEvent @event,
-        MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        AcceptanceRejectedAsync(@event.OperationId, @event.Code, @event.Message, envelope, ct);
-
-    public Task HandleAsync(
-        DepositEscrowRejectedEvent @event,
-        MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        AcceptanceRejectedAsync(@event.OperationId, @event.Code, @event.Message, envelope, ct);
 
     public Task HandleAsync(
         RefundEscrowSucceededEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        RefundSucceededAsync(@event.OperationId, envelope, ct);
+        ProcessAsync(@event.OperationId, envelope, concert =>
+        {
+            if (concert.State is ConcertState.Cancelled)
+                return Task.CompletedTask;
+
+            concert.Cancel();
+            return Task.CompletedTask;
+        }, ct);
 
     public Task HandleAsync(
         RefundEscrowRejectedEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        RefundRejectedAsync(@event.OperationId, @event.Code, @event.Message, envelope, ct);
-
-    public Task HandleAsync(
-        RefundEscrowDeferredEvent @event,
-        MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        RecordDeferredAsync(@event.OperationId, envelope, ct);
-
-    private Task AcceptanceSucceededAsync(
-        Guid operationId,
-        int bookingId,
-        MessageEnvelope envelope,
-        CancellationToken ct) =>
-        ProcessAsync(envelope, async () =>
+        ProcessAsync(@event.OperationId, envelope, concert =>
         {
-            var application = await context.Applications
-                .SingleOrDefaultAsync(value => value.AcceptanceOperationId == operationId, ct)
-                ?? throw new InvalidOperationException($"Acceptance operation {operationId} has no application.");
-            if (application.State is LifecycleState.Booked or LifecycleState.Cancelled)
-                return;
+            if (concert.State is ConcertState.CancellationFailed)
+                return Task.CompletedTask;
 
-            await escrowExecutor.SucceededAsync(application.Id, bookingId, ct);
+            concert.RecordCancellationFailure(@event.Code, @event.Message);
+            return Task.CompletedTask;
         }, ct);
 
-    private Task AcceptanceRejectedAsync(
-        Guid operationId,
-        string code,
-        string message,
-        MessageEnvelope envelope,
-        CancellationToken ct) =>
-        ProcessAsync(envelope, async () =>
-        {
-            var application = await context.Applications
-                .SingleOrDefaultAsync(value => value.AcceptanceOperationId == operationId, ct)
-                ?? throw new InvalidOperationException($"Acceptance operation {operationId} has no application.");
-            if (application.State is LifecycleState.PaymentFailed or LifecycleState.Cancelled)
-                return;
-
-            if (application.State == LifecycleState.CancellationPending)
-            {
-                await transitioner.TransitionAsync(application.Id, Trigger.RefundSucceeded, ct: ct)
-                    .GetValueOrThrowAsync();
-                return;
-            }
-
-            application.RecordFinancialFailure(code, message);
-            await escrowExecutor.FailedAsync(application.Id, ct);
-        }, ct);
-
-    private Task RefundSucceededAsync(
+    private Task ProcessAsync(
         Guid operationId,
         MessageEnvelope envelope,
+        Func<ConcertEntity, Task> action,
         CancellationToken ct) =>
-        ProcessAsync(envelope, async () =>
-        {
-            var application = await LoadCancellationAsync(operationId, ct);
-            if (application.State == LifecycleState.Cancelled)
-                return;
-
-            await transitioner.TransitionAsync(
-                application.Id,
-                Trigger.RefundSucceeded,
-                async app =>
-                {
-                    var concert = await context.Concerts
-                        .FirstOrDefaultAsync(value => value.ApplicationId == app.Id, ct);
-                    concert?.Cancel();
-                },
-                ct).GetValueOrThrowAsync();
-        }, ct);
-
-    private Task RefundRejectedAsync(
-        Guid operationId,
-        string code,
-        string message,
-        MessageEnvelope envelope,
-        CancellationToken ct) =>
-        ProcessAsync(envelope, async () =>
-        {
-            var application = await LoadCancellationAsync(operationId, ct);
-            if (application.State == LifecycleState.CancellationFailed)
-                return;
-
-            application.RecordFinancialFailure(code, message);
-            await transitioner.TransitionAsync(application.Id, Trigger.RefundFailed, ct: ct)
-                .GetValueOrThrowAsync();
-        }, ct);
-
-    private Task RecordDeferredAsync(
-        Guid operationId,
-        MessageEnvelope envelope,
-        CancellationToken ct) =>
-        ProcessAsync(envelope, async () =>
-        {
-            var application = await LoadCancellationAsync(operationId, ct);
-            if (application.State != LifecycleState.CancellationPending)
-                throw new InvalidOperationException(
-                    $"Deferred refund {operationId} found application {application.Id} in {application.State}.");
-        }, ct);
-
-    private async Task<ApplicationEntity> LoadCancellationAsync(Guid operationId, CancellationToken ct) =>
-        await context.Applications
-            .SingleOrDefaultAsync(value => value.CancellationOperationId == operationId, ct)
-            ?? throw new InvalidOperationException($"Cancellation operation {operationId} has no application.");
-
-    private Task ProcessAsync(MessageEnvelope envelope, Func<Task> action, CancellationToken ct) =>
-        outbox.ExecuteAsync(async () =>
+        outboxBehavior.ExecuteAsync(async () =>
         {
             var handler = nameof(FinancialOperationOutcomeProcessor);
             if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))
                 return;
 
             context.AddInboxMessage(envelope, handler);
-            await action();
+            var concert = await context.Concerts
+                .SingleOrDefaultAsync(value => value.CancellationOperationId == operationId, ct)
+                ?? throw new InvalidOperationException($"Cancellation operation {operationId} has no concert.");
+            await action(concert);
         }, ct);
 }

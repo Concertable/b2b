@@ -34,11 +34,11 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
             Checkout: isPending && applications.RequiresAcceptCheckout(dto.Opportunity.Deal.DealType)
                 ? new ActionLink($"/api/application/{dto.Id}/checkout", HttpMethods.Post)
                 : null,
-            Withdraw: isPending || isCancellable
+            Withdraw: isPending
                 ? new ActionLink($"/api/application/{dto.Id}/withdraw", HttpMethods.Post)
                 : null,
             Reject: isPending ? new ActionLink($"/api/application/{dto.Id}/reject", HttpMethods.Post) : null,
-            Cancel: isCancellable ? new ActionLink($"/api/application/{dto.Id}/cancel", HttpMethods.Post) : null,
+            Cancel: isCancellable ? new ActionLink($"/api/booking/{booking!.BookingId}/cancel", HttpMethods.Post) : null,
             Contract: booking is not null
                 ? new ActionLink($"/api/application/{dto.Id}/contract", HttpMethods.Get)
                 : null);

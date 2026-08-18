@@ -11,6 +11,7 @@
     <ProjectReference Include="..\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Booking.Application\Concertable.B2B.Booking.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Booking.Infrastructure\Concertable.B2B.Booking.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Concertable.Shared.Api" />

@@ -13,6 +13,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel;
+using Concertable.Messaging.Contracts;
+using Concertable.Payment.Contracts;
 
 namespace Concertable.B2B.Booking.Infrastructure.Extensions;
 
@@ -49,6 +51,15 @@ public static class ServiceCollectionExtensions
                 VerifyPaymentSucceededHandler>();
             services.AddScoped<IPreCommitDomainEventHandler<VerifyPaymentFailed>,
                 VerifyPaymentFailedHandler>();
+            services.AddScoped<AcceptanceFinancialOperationOutcomeProcessor>();
+            services.AddScoped<IIntegrationEventHandler<CaptureEscrowSucceededEvent>>(provider =>
+                provider.GetRequiredService<AcceptanceFinancialOperationOutcomeProcessor>());
+            services.AddScoped<IIntegrationEventHandler<CaptureEscrowRejectedEvent>>(provider =>
+                provider.GetRequiredService<AcceptanceFinancialOperationOutcomeProcessor>());
+            services.AddScoped<IIntegrationEventHandler<DepositEscrowSucceededEvent>>(provider =>
+                provider.GetRequiredService<AcceptanceFinancialOperationOutcomeProcessor>());
+            services.AddScoped<IIntegrationEventHandler<DepositEscrowRejectedEvent>>(provider =>
+                provider.GetRequiredService<AcceptanceFinancialOperationOutcomeProcessor>());
 
             services.AddSingleton<BookingConfigurationProvider>();
             services.AddSingleton<IEntityTypeConfigurationProvider>(provider =>

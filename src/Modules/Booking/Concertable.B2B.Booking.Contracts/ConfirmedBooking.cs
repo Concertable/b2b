@@ -1,4 +1,5 @@
 using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.Contracts.Enums;
 
 namespace Concertable.B2B.Booking.Contracts;
 
@@ -14,4 +15,6 @@ public sealed record ConfirmedBooking(
     DealType DealType,
     bool RequiresDoorRevenue,
     DateTime StartDate,
-    DateTime EndDate);
+    DateTime EndDate,
+    IReadOnlyList<Genre> Genres,
+    ConfirmedBookingTerms Terms);

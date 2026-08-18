@@ -1,5 +1,5 @@
 using System.Globalization;
-using Concertable.B2B.Concert.Domain.Events;
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
@@ -8,12 +8,6 @@ using Concertable.Shared.Email.Application;
 
 namespace Concertable.B2B.Concert.Infrastructure.Emails;
 
-/// <summary>
-/// Builds the booking-confirmation email and stages one <see cref="SendEmailCommand"/> per member of both
-/// tenants on the outbox. Resolves each party's legal trading details (VAT/address absent until tax-compliance
-/// setup) and renders the shared MJML template. Called by the pre-commit domain-event handler, so the sends
-/// commit with the booking and are retried by the outbox.
-/// </summary>
 internal sealed class BookingConfirmationEmailSender
 {
     private readonly ITenantModule tenantModule;
@@ -33,16 +27,20 @@ internal sealed class BookingConfirmationEmailSender
         this.bus = bus;
     }
 
-    public async Task SendAsync(BookingConfirmedDomainEvent e, CancellationToken ct = default)
+    public async Task SendAsync(
+        ConfirmedBooking booking,
+        string venueName,
+        string artistName,
+        CancellationToken ct = default)
     {
-        var venue = await BuildPartyAsync(e.VenueTenantId, e.VenueName, ct);
-        var artist = await BuildPartyAsync(e.ArtistTenantId, e.ArtistName, ct);
-        var when = e.Period.Start.ToString("dddd d MMMM yyyy", CultureInfo.InvariantCulture);
+        var venue = await BuildPartyAsync(booking.VenueTenantId, venueName, ct);
+        var artist = await BuildPartyAsync(booking.ArtistTenantId, artistName, ct);
+        var when = booking.StartDate.ToString("dddd d MMMM yyyy", CultureInfo.InvariantCulture);
 
         var email = emailRenderer.Render(new BookingConfirmationEmailContent(venue, artist, when));
 
-        await StageToMembersAsync(e.VenueTenantId, email, ct);
-        await StageToMembersAsync(e.ArtistTenantId, email, ct);
+        await StageToMembersAsync(booking.VenueTenantId, email, ct);
+        await StageToMembersAsync(booking.ArtistTenantId, email, ct);
     }
 
     private async Task<EmailParty> BuildPartyAsync(Guid tenantId, string displayName, CancellationToken ct)

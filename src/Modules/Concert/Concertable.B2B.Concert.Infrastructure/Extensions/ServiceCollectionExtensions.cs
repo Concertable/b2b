@@ -7,18 +7,12 @@ using Concertable.B2B.Concert.Application.Mappers;
 using Concertable.B2B.Concert.Application.Renderers;
 using Concertable.B2B.Concert.Application.Resolvers;
 using Concertable.B2B.Concert.Application.Strategies;
+using Concertable.B2B.Concert.Application.Executors;
+using Concertable.B2B.Concert.Application.Steps;
 using Concertable.B2B.Concert.Application.Validators;
-using Concertable.B2B.Concert.Application.Workflow;
-using Concertable.B2B.Concert.Application.Workflow.Executors;
-using Concertable.B2B.Concert.Application.Workflow.Steps;
-using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Dispatchers;
-using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
-using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
-using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Workflows;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.Events;
-using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Data.Seeders;
 using Concertable.B2B.Concert.Infrastructure.Emails;
@@ -27,8 +21,8 @@ using Concertable.B2B.Concert.Infrastructure.Handlers;
 using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Services;
+using Concertable.B2B.Concert.Infrastructure.Services.Executors;
 using Concertable.B2B.Concert.Infrastructure.Services.Strategies;
-using Concertable.B2B.Concert.Infrastructure.Services.Workflow;
 using Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
 using Concertable.B2B.Concert.Infrastructure.Services.Payment;
@@ -45,7 +39,6 @@ using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Concertable.Kernel;
-using static Concertable.B2B.Concert.Domain.Lifecycle.LifecycleState;
 
 namespace Concertable.B2B.Concert.Infrastructure.Extensions;
 
@@ -77,23 +70,14 @@ public static class ServiceCollectionExtensions
 
         // Services
         services.AddScoped<IConcertService, ConcertService>();
-        services.AddScoped<IConcertDraftService, ConcertDraftService>();
-        services.AddScoped<IBookingService, BookingService>();
+        services.AddScoped<ICancelExecutor, CancelExecutor>();
+        services.AddScoped<ICompleteExecutor, CompleteExecutor>();
         services.AddScoped<IConcertNotifier, ConcertNotifier>();
         services.AddScoped<BookingConfirmationEmailSender>();
-        services.AddScoped<IOpportunityService, OpportunityService>();
-        services.AddScoped<IOpportunitySyncer>(sp => new Sync.OpportunitySyncer(
-            sp.GetRequiredService<IOpportunityRepository>(),
-            sp.GetRequiredService<IDealModule>()));
-        services.AddScoped<IApplicationService, ApplicationService>();
-        services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
         services.Configure<LegalSettings>(configuration.GetSection(LegalSettings.SectionName));
         services.AddScoped<IPdfBlobCache, PdfBlobCache>();
-        services.AddScoped<IContractIssuer, ContractIssuer>();
-        services.AddScoped<IContractService, ContractService>();
-        services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
         services.AddScoped<IInvoiceIssuer, InvoiceIssuer>();
         services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IInvoicePdfRenderer, InvoicePdfRenderer>();
@@ -101,10 +85,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISelfBillingAgreementGate, SelfBillingAgreementGate>();
         services.AddScoped<IClientContext, ClientContextAccessor>();
         services.AddConcertDealStrategies();
-
-        services.AddScoped<DealAccessor>();
-        services.AddScoped<IDealAccessor>(sp => sp.GetRequiredService<DealAccessor>());
-        services.AddScoped<IDealResolver>(sp => sp.GetRequiredService<DealAccessor>());
 
         // Business-rule validators (interfaces in Concert.Application, impls in Concert.Infrastructure.Validators)
         services.AddSingleton<IConcertValidator, ConcertValidator>();
@@ -114,34 +94,12 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton(typeof(IScoped<>), typeof(Scoped<>));
         services.AddScoped<IConcertCompletionRunner, ConcertCompletionRunner>();
 
-        services.AddScoped<ILifecycleTransitioner, LifecycleTransitioner>();
-        services.AddScoped<IConcertWorkflowFactory, ConcertWorkflowFactory>();
-
-        services.AddScoped<IApplyExecutor, ApplyExecutor>();
-        services.AddScoped<IAcceptExecutor, AcceptExecutor>();
-        services.AddScoped<IEscrowExecutor, EscrowExecutor>();
-        services.AddScoped<ISettlementExecutor, SettlementExecutor>();
-        services.AddScoped<IFinishExecutor, FinishExecutor>();
-        services.AddScoped<ICancelExecutor, CancelExecutor>();
-        services.AddScoped<IWithdrawExecutor, WithdrawExecutor>();
-        services.AddScoped<IRejectExecutor, RejectExecutor>();
-        services.AddScoped<ICancelApplicationExecutor, CancelApplicationExecutor>();
-        services.AddScoped<IApplicationExecutor, ApplicationExecutor>();
-        services.AddScoped<IApplicationCancelStep, RefundEscrowByApplicationStep>();
-
-        services.AddScoped<ICheckoutDispatcher, CheckoutDispatcher>();
-
         // Repositories
         services.AddScoped<IConcertRepository, ConcertRepository>();
         services.AddScoped<IConcertReadRepository, ConcertReadRepository>();
-        services.AddScoped<IOpportunityRepository, OpportunityRepository>();
-        services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
-        services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IArtistReadModelRepository, ArtistReadModelRepository>();
         services.AddScoped<IVenueReadModelRepository, VenueReadModelRepository>();
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
-        services.AddScoped<IBookingRepository, BookingRepository>();
-        services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<ISelfBillingAgreementRepository, SelfBillingAgreementRepository>();
         services.AddScoped(typeof(ISequenceRepository<>), typeof(SequenceRepository<>));
@@ -151,9 +109,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDoorRevenueOutstandingSpecification, DoorRevenueOutstandingSpecification>();
 
         // Mappers
-        services.AddScoped<IOpportunityMapper, OpportunityMapper>();
-        services.AddScoped<IApplicationMapper, ApplicationMapper>();
-
         // Module facades
         services.AddScoped<IConcertModule, ConcertModule>();
 
@@ -162,23 +117,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDomainEventHandler<ConcertPostedDomainEvent>, ConcertPostedDomainEventHandler>();
         services.AddScoped<IDomainEventHandler<ConcertCancelledDomainEvent>, ConcertCancelledDomainEventHandler>();
         services.AddScoped<IDomainEventHandler<BookingConfirmedDomainEvent>, BookingConfirmedDomainEventHandler>();
-        services.AddScoped<IDomainEventHandler<ApplicationCounterpartyNotifiedDomainEvent>, ApplicationCounterpartyNotifiedDomainEventHandler>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistReadModelProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueReadModelProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ConcertReviewProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, SettlementPaymentProcessor>();
-        services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, EscrowPaymentProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, TicketSaleProcessor>();
-        services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, EscrowPaymentFailedProcessor>();
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, SettlementPaymentFailedProcessor>();
         services.AddScoped<FinancialOperationOutcomeProcessor>();
-        services.AddScoped<IIntegrationEventHandler<CaptureEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
-        services.AddScoped<IIntegrationEventHandler<CaptureEscrowRejectedEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
-        services.AddScoped<IIntegrationEventHandler<DepositEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
-        services.AddScoped<IIntegrationEventHandler<DepositEscrowRejectedEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
         services.AddScoped<IIntegrationEventHandler<RefundEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
         services.AddScoped<IIntegrationEventHandler<RefundEscrowRejectedEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
-        services.AddScoped<IIntegrationEventHandler<RefundEscrowDeferredEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());
 
         services.AddSingleton<ConcertConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConcertConfigurationProvider>());
@@ -191,81 +138,39 @@ public static class ServiceCollectionExtensions
     internal static IServiceCollection AddConcertDealStrategies(this IServiceCollection services)
     {
         services.AddScoped<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
-        services.AddScoped<IDealTermsRenderer, DealTermsRenderer>();
-        services.AddScoped<IDealTermsSerializer, DealTermsSerializer>();
         services.AddScoped<IDealPayeeResolver, DealPayeeResolver>();
-        services.AddScoped<IPaymentAmountMapper, PaymentAmountMapper>();
         services.AddScoped<ISettlementAmountResolver, SettlementAmountResolver>();
 
         return services.AddConcertDealStrategies(strategies =>
         {
             strategies.For(DealType.FlatFee)
-                .AddSingleton<IDealTerms, FlatFeeDealTerms>()
                 .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
-                .AddSingleton<IPaymentAmountMapper, FlatFeePaymentAmountMapper>()
                 .AddSingleton<ISettlementAmountResolver, FlatFeeSettlementAmount>()
-                .AddWorkflow<FlatFeeWorkflow>(workflow => workflow
-                    .WithApply<SimpleApplyStep>()
-                    .WithCheckout<HoldCheckoutStep>()
-                    .WithAccept<CaptureEscrowAcceptStep>()
-                    .WithEscrowPayment()
-                    .WithBook<CreateConcertDraftStep>()
-                    .WithFinish<ReleaseEscrowFinishStep>(Complete)
-                    .WithCancel<RefundEscrowStep>()
-                    .WithApplicationCancel());
+                .AddScoped<ICancelStep, RefundEscrowCancelStep>()
+                .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>();
 
             strategies.For(DealType.DoorSplit)
-                .AddSingleton<IDealTerms, DoorSplitDealTerms>()
                 .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
-                .AddSingleton<IPaymentAmountMapper, DoorSplitPaymentAmountMapper>()
                 .AddScoped<ISettlementAmountResolver, DoorSplitSettlementAmount>()
-                .AddWorkflow<DoorSplitWorkflow>(workflow => workflow
-                    .WithApply<SimpleApplyStep>()
-                    .WithCheckout<VerifyCheckoutStep>()
-                    .WithAccept<PaidAcceptStep>()
-                    .WithVerifiedPayment()
-                    .WithBook<CreateConcertDraftStep>()
-                    .WithFinish<PayoutFinishStep>(AwaitingSettlement)
-                    .WithSettlement()
-                    .WithCancel<RefundEscrowStep>()
-                    .WithApplicationCancel());
+                .AddScoped<ICancelStep, RefundEscrowCancelStep>()
+                .AddScoped<ICompleteStep, PayoutCompleteStep>();
 
             strategies.For(DealType.Versus)
-                .AddSingleton<IDealTerms, VersusDealTerms>()
                 .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
-                .AddSingleton<IPaymentAmountMapper, VersusPaymentAmountMapper>()
                 .AddScoped<ISettlementAmountResolver, VersusSettlementAmount>()
-                .AddWorkflow<VersusWorkflow>(workflow => workflow
-                    .WithApply<SimpleApplyStep>()
-                    .WithCheckout<VerifyCheckoutStep>()
-                    .WithAccept<PaidAcceptStep>()
-                    .WithVerifiedPayment()
-                    .WithBook<CreateConcertDraftStep>()
-                    .WithFinish<PayoutFinishStep>(AwaitingSettlement)
-                    .WithSettlement()
-                    .WithCancel<RefundEscrowStep>()
-                    .WithApplicationCancel());
+                .AddScoped<ICancelStep, RefundEscrowCancelStep>()
+                .AddScoped<ICompleteStep, PayoutCompleteStep>();
 
             strategies.For(DealType.VenueHire)
-                .AddSingleton<IDealTerms, VenueHireDealTerms>()
                 .AddSingleton<IDealPayeeResolver, ArtistPaysVenueDealPayeeResolver>()
-                .AddSingleton<IPaymentAmountMapper, VenueHirePaymentAmountMapper>()
                 .AddSingleton<ISettlementAmountResolver, VenueHireSettlementAmount>()
-                .AddWorkflow<VenueHireWorkflow>(workflow => workflow
-                    .WithCheckout<SetupCheckoutStep>()
-                    .WithApply<PaidApplyStep>()
-                    .WithAccept<DepositEscrowAcceptStep>()
-                    .WithEscrowPayment()
-                    .WithBook<CreateConcertDraftStep>()
-                    .WithFinish<ReleaseEscrowFinishStep>(Complete)
-                    .WithCancel<RefundEscrowStep>()
-                    .WithApplicationCancel());
+                .AddScoped<ICancelStep, RefundEscrowCancelStep>()
+                .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>();
 
-            strategies.RequireAll<IDealTerms>();
             strategies.RequireAll<IDealPayeeResolver>();
-            strategies.RequireAll<IPaymentAmountMapper>();
             strategies.RequireAll<ISettlementAmountResolver>();
-            strategies.RequireAll<IConcertWorkflow>();
+            strategies.RequireAll<ICancelStep>();
+            strategies.RequireAll<ICompleteStep>();
         });
     }
 

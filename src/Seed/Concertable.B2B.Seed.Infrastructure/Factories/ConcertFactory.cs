@@ -21,9 +21,25 @@ public static class ConcertFactory
                     booking.VenueTenantId,
                     booking.ArtistTenantId,
                     booking.DealType,
-                    booking is DeferredBooking,
+                    booking.RequiresDoorRevenue,
                     spec.Period.Start,
-                    spec.Period.End),
+                    spec.Period.End,
+                    booking.Genres,
+                    booking switch
+                    {
+                        StandardBooking when booking.DealType == DealType.FlatFee =>
+                            new FlatFeeBookingTerms(((StandardBooking)booking).Amount),
+                        StandardBooking =>
+                            new VenueHireBookingTerms(((StandardBooking)booking).Amount),
+                        DeferredBooking deferred when booking.DealType == DealType.DoorSplit =>
+                            new DoorSplitBookingTerms(deferred.ArtistDoorPercent, deferred.PaymentMethodId),
+                        DeferredBooking deferred =>
+                            new VersusBookingTerms(
+                                deferred.Guarantee,
+                                deferred.ArtistDoorPercent,
+                                deferred.PaymentMethodId),
+                        _ => throw new ArgumentOutOfRangeException(nameof(booking), booking, null)
+                    }),
                 spec.Name,
                 spec.About,
                 spec.Genres)

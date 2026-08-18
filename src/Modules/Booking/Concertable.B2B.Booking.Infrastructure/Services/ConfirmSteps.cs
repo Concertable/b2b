@@ -151,16 +151,14 @@ internal static class VerifyPaymentAdvancer
     {
         VerifyPaymentSucceeded succeeded => bookings.RecordSucceededAsync(
             bookingId,
-            new FinancialOperationSucceeded(
+            new VerifyPaymentSucceededEvidence(
                 succeeded.ApplicationId,
-                FinancialOperation.VerifyPayment,
                 succeeded.ProviderTransactionId),
             ct),
         VerifyPaymentFailed failed => bookings.RecordFailedAsync(
             bookingId,
-            new FinancialOperationFailed(
+            new VerifyPaymentFailedEvidence(
                 failed.ApplicationId,
-                FinancialOperation.VerifyPayment,
                 failed.ProviderTransactionId,
                 new FinancialOperationError(failed.Error.Code, failed.Error.Message)),
             ct),

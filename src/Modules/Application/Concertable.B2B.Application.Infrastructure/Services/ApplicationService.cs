@@ -289,6 +289,7 @@ internal sealed class ApplicationService : IApplicationService
             deal.PaymentMethod,
             opportunity.StartDate,
             opportunity.EndDate,
+            opportunity.Genres,
             artist.Name,
             venue.Name,
             termsRenderer.Render(deal),
@@ -307,6 +308,12 @@ internal sealed class ApplicationService : IApplicationService
             return acceptanceError;
         if (!accepted.TryGetValue(out var acceptedApplication))
             throw new InvalidOperationException("Acceptance succeeded without an accepted application fact.");
+
+        if (!await opportunities.TryClaimAsync(
+                application.OpportunityId,
+                application.VenueTenantId,
+                ct))
+            return new AcceptApplicationError.OpportunityUnavailable(application.OpportunityId);
 
         application.Accept(acceptedApplication);
         application.NotifyCounterparty(ApplicationNotification.Accepted);

@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Domain.State;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -9,17 +10,17 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
-    private readonly ISettlementExecutor settlementExecutor;
     private readonly ConcertDbContext context;
+    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
     private readonly ILogger<SettlementPaymentFailedProcessor> logger;
 
     public SettlementPaymentFailedProcessor(
-        ISettlementExecutor settlementExecutor,
         ConcertDbContext context,
+        IOutboxUnitOfWorkBehavior outboxBehavior,
         ILogger<SettlementPaymentFailedProcessor> logger)
     {
-        this.settlementExecutor = settlementExecutor;
         this.context = context;
+        this.outboxBehavior = outboxBehavior;
         this.logger = logger;
     }
 
@@ -28,17 +29,33 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
         if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Settlement)
             return;
 
-        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(SettlementPaymentFailedProcessor), ct))
-            return;
-
         var bookingId = @event.Metadata.GetValueAs<int>(PaymentMetadataKeys.BookingId);
         logger.BookingPaymentFailed(bookingId, @event.FailureCode, @event.FailureMessage);
 
-        context.AddInboxMessage(envelope, nameof(SettlementPaymentFailedProcessor));
-
         try
         {
-            await settlementExecutor.FailedAsync(bookingId, ct);
+            await outboxBehavior.ExecuteAsync(async () =>
+            {
+                if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(SettlementPaymentFailedProcessor), ct))
+                    return;
+
+                context.AddInboxMessage(envelope, nameof(SettlementPaymentFailedProcessor));
+                var concert = await context.Concerts.SingleOrDefaultAsync(value => value.BookingId == bookingId, ct)
+                    ?? throw new InvalidOperationException($"Settlement booking {bookingId} has no concert.");
+
+                if (concert.State is ConcertState.SettlementFailed)
+                {
+                    if (concert.FinancialOperationReferenceId != @event.TransactionId)
+                        throw new InvalidOperationException(
+                            $"Concert {concert.Id} failed settlement {concert.FinancialOperationReferenceId}, not {@event.TransactionId}.");
+                    return;
+                }
+
+                concert.RecordSettlementFailure(
+                    @event.TransactionId,
+                    @event.FailureCode ?? "unknown",
+                    @event.FailureMessage ?? "Settlement payment failed.");
+            }, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

@@ -1,4 +1,5 @@
-using Concertable.B2B.Concert.Application.Workflow.Executors;
+using Concertable.B2B.Concert.Application.Models;
+using Concertable.B2B.Concert.Application.Executors;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.DataAccess.Application;
 using Microsoft.Extensions.Logging;
@@ -7,18 +8,18 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Completion;
 
 internal sealed class ConcertCompletionRunner(
     IConcertRepository concertRepository,
-    IScoped<IFinishExecutor> completion,
+    IScoped<ICompleteExecutor> completion,
     ILogger<ConcertCompletionRunner> logger) : IConcertCompletionRunner
 {
     public async Task RunAsync(CancellationToken ct = default)
     {
-        var concertIds = (await concertRepository.GetEndedConfirmedIdsAsync()).ToList();
+        var concertIds = await concertRepository.GetEndedPendingCompletionIdsAsync(ct);
 
         logger.FoundConcertsToSettle(concertIds.Count);
 
         foreach (var concertId in concertIds)
         {
-            var result = await completion.RunAsync(executor => executor.FinishAsync(concertId, ct));
+            var result = await completion.RunAsync(executor => executor.CompleteAsync(concertId, ct));
 
             if (result.TryGetError(out var error))
                 logger.ConcertCompletionRefused(

@@ -1,5 +1,6 @@
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Application.Models;
 using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Application.Application.Interfaces;
@@ -26,5 +27,11 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
     Task RejectAllExceptAsync(
         int opportunityId,
         int applicationId,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationDashboardProjection>> GetVenueDashboardProjectionsAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationDashboardProjection>> GetArtistDashboardProjectionsAsync(
+        Guid artistTenantId,
         CancellationToken ct = default);
 }

@@ -1,4 +1,5 @@
 using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.Contracts.Enums;
 
 namespace Concertable.B2B.Application.Contracts;
 
@@ -15,6 +16,7 @@ public abstract record AcceptedApplication(
     PaymentMethod PaymentMethod,
     DateTime StartDate,
     DateTime EndDate,
+    IReadOnlyList<Genre> Genres,
     string ArtistName,
     string VenueName,
     string TermsText,
@@ -33,6 +35,7 @@ public sealed record FlatFeeAcceptedApplication(
     PaymentMethod PaymentMethod,
     DateTime StartDate,
     DateTime EndDate,
+    IReadOnlyList<Genre> Genres,
     string ArtistName,
     string VenueName,
     string TermsText,
@@ -43,7 +46,7 @@ public sealed record FlatFeeAcceptedApplication(
     : AcceptedApplication(
         OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
         VenueTenantId, ArtistTenantId, DealType.FlatFee, false, PaymentMethod,
-        StartDate, EndDate, ArtistName, VenueName, TermsText, PlatformTermsVersion,
+        StartDate, EndDate, Genres, ArtistName, VenueName, TermsText, PlatformTermsVersion,
         ArtistSignature, VenueSignature);
 
 public sealed record DoorSplitAcceptedApplication(
@@ -57,6 +60,7 @@ public sealed record DoorSplitAcceptedApplication(
     PaymentMethod PaymentMethod,
     DateTime StartDate,
     DateTime EndDate,
+    IReadOnlyList<Genre> Genres,
     string ArtistName,
     string VenueName,
     string TermsText,
@@ -69,7 +73,7 @@ public sealed record DoorSplitAcceptedApplication(
     : AcceptedApplication(
         OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
         VenueTenantId, ArtistTenantId, DealType.DoorSplit, true, PaymentMethod,
-        StartDate, EndDate, ArtistName, VenueName, TermsText, PlatformTermsVersion,
+        StartDate, EndDate, Genres, ArtistName, VenueName, TermsText, PlatformTermsVersion,
         ArtistSignature, VenueSignature);
 
 public sealed record VersusAcceptedApplication(
@@ -83,6 +87,7 @@ public sealed record VersusAcceptedApplication(
     PaymentMethod PaymentMethod,
     DateTime StartDate,
     DateTime EndDate,
+    IReadOnlyList<Genre> Genres,
     string ArtistName,
     string VenueName,
     string TermsText,
@@ -96,7 +101,7 @@ public sealed record VersusAcceptedApplication(
     : AcceptedApplication(
         OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
         VenueTenantId, ArtistTenantId, DealType.Versus, true, PaymentMethod,
-        StartDate, EndDate, ArtistName, VenueName, TermsText, PlatformTermsVersion,
+        StartDate, EndDate, Genres, ArtistName, VenueName, TermsText, PlatformTermsVersion,
         ArtistSignature, VenueSignature);
 
 public sealed record VenueHireAcceptedApplication(
@@ -110,6 +115,7 @@ public sealed record VenueHireAcceptedApplication(
     PaymentMethod PaymentMethod,
     DateTime StartDate,
     DateTime EndDate,
+    IReadOnlyList<Genre> Genres,
     string ArtistName,
     string VenueName,
     string TermsText,
@@ -121,5 +127,5 @@ public sealed record VenueHireAcceptedApplication(
     : AcceptedApplication(
         OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
         VenueTenantId, ArtistTenantId, DealType.VenueHire, false, PaymentMethod,
-        StartDate, EndDate, ArtistName, VenueName, TermsText, PlatformTermsVersion,
+        StartDate, EndDate, Genres, ArtistName, VenueName, TermsText, PlatformTermsVersion,
         ArtistSignature, VenueSignature);

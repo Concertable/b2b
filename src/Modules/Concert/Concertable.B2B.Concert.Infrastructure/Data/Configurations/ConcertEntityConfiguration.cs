@@ -9,15 +9,19 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
     public void Configure(EntityTypeBuilder<ConcertEntity> builder)
     {
         builder.ToTable(Schema.Tables.Concerts, Schema.Name);
+        builder.Property(e => e.State).IsRequired();
+        builder.Property(e => e.FinancialOperationReferenceId).HasMaxLength(255);
+        builder.Property(e => e.FinancialFailureCode).HasMaxLength(100);
+        builder.Property(e => e.FinancialFailureMessage).HasMaxLength(1000);
         builder.ComplexProperty(e => e.Period, p =>
         {
             p.Property(x => x.Start).HasColumnName("StartDate");
             p.Property(x => x.End).HasColumnName("EndDate");
         });
-        builder.HasOne<BookingEntity>()
-            .WithOne()
-            .HasForeignKey<ConcertEntity>(e => e.BookingId)
-            .OnDelete(DeleteBehavior.NoAction);
+        builder.HasIndex(e => e.BookingId).IsUnique();
+        builder.HasIndex(e => e.CancellationOperationId)
+            .IsUnique()
+            .HasFilter("[CancellationOperationId] IS NOT NULL");
 
         builder.HasOne(e => e.Artist)
             .WithMany()

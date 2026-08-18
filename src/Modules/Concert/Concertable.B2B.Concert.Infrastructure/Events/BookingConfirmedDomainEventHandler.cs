@@ -1,16 +1,17 @@
-using Concertable.B2B.Concert.Domain.Events;
-using Concertable.B2B.Concert.Infrastructure.Emails;
+using Concertable.B2B.Booking.Contracts;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Concert.Infrastructure.Events;
 
-/// <summary>Pre-commit so the staged sends enlist in the booking's transaction; delegates composition and
-/// outbox staging to <see cref="BookingConfirmationEmailSender"/>.</summary>
 internal sealed class BookingConfirmedDomainEventHandler : IPreCommitDomainEventHandler<BookingConfirmedDomainEvent>
 {
-    private readonly BookingConfirmationEmailSender sender;
+    private readonly IConcertService concerts;
 
-    public BookingConfirmedDomainEventHandler(BookingConfirmationEmailSender sender) => this.sender = sender;
+    public BookingConfirmedDomainEventHandler(IConcertService concerts)
+    {
+        this.concerts = concerts;
+    }
 
-    public Task HandleAsync(BookingConfirmedDomainEvent e, CancellationToken ct = default) => sender.SendAsync(e, ct);
+    public async Task HandleAsync(BookingConfirmedDomainEvent e, CancellationToken ct = default) =>
+        await concerts.CreateAsync(e.Booking, ct);
 }

@@ -1,6 +1,7 @@
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
+using Concertable.Contracts.Enums;
 
 namespace Concertable.B2B.Application.Application.Steps;
 
@@ -15,6 +16,7 @@ internal sealed record AcceptedApplicationFacts(
     PaymentMethod PaymentMethod,
     DateTime StartDate,
     DateTime EndDate,
+    IReadOnlyList<Genre> Genres,
     string ArtistName,
     string VenueName,
     string TermsText,
@@ -43,7 +45,7 @@ internal sealed class FlatFeeAcceptStep : IAcceptStep
         return new FlatFeeAcceptedApplication(
             facts.OperationId, facts.ApplicationId, facts.OpportunityId, facts.ArtistId,
             facts.VenueId, facts.VenueTenantId, facts.ArtistTenantId, facts.PaymentMethod,
-            facts.StartDate, facts.EndDate, facts.ArtistName, facts.VenueName, facts.TermsText,
+            facts.StartDate, facts.EndDate, facts.Genres, facts.ArtistName, facts.VenueName, facts.TermsText,
             facts.PlatformTermsVersion, facts.ArtistSignature, facts.VenueSignature, terms.Fee);
     }
 }
@@ -62,7 +64,7 @@ internal sealed class DoorSplitAcceptStep : IAcceptStep
         return new DoorSplitAcceptedApplication(
             facts.OperationId, facts.ApplicationId, facts.OpportunityId, facts.ArtistId,
             facts.VenueId, facts.VenueTenantId, facts.ArtistTenantId, facts.PaymentMethod,
-            facts.StartDate, facts.EndDate, facts.ArtistName, facts.VenueName, facts.TermsText,
+            facts.StartDate, facts.EndDate, facts.Genres, facts.ArtistName, facts.VenueName, facts.TermsText,
             facts.PlatformTermsVersion, facts.ArtistSignature, facts.VenueSignature,
             terms.ArtistDoorPercent, paymentMethodId, application.Verification);
     }
@@ -82,7 +84,7 @@ internal sealed class VersusAcceptStep : IAcceptStep
         return new VersusAcceptedApplication(
             facts.OperationId, facts.ApplicationId, facts.OpportunityId, facts.ArtistId,
             facts.VenueId, facts.VenueTenantId, facts.ArtistTenantId, facts.PaymentMethod,
-            facts.StartDate, facts.EndDate, facts.ArtistName, facts.VenueName, facts.TermsText,
+            facts.StartDate, facts.EndDate, facts.Genres, facts.ArtistName, facts.VenueName, facts.TermsText,
             facts.PlatformTermsVersion, facts.ArtistSignature, facts.VenueSignature,
             terms.Guarantee, terms.ArtistDoorPercent, paymentMethodId, application.Verification);
     }
@@ -102,7 +104,7 @@ internal sealed class VenueHireAcceptStep : IAcceptStep
         return new VenueHireAcceptedApplication(
             facts.OperationId, facts.ApplicationId, facts.OpportunityId, facts.ArtistId,
             facts.VenueId, facts.VenueTenantId, facts.ArtistTenantId, facts.PaymentMethod,
-            facts.StartDate, facts.EndDate, facts.ArtistName, facts.VenueName, facts.TermsText,
+            facts.StartDate, facts.EndDate, facts.Genres, facts.ArtistName, facts.VenueName, facts.TermsText,
             facts.PlatformTermsVersion, facts.ArtistSignature, facts.VenueSignature,
             terms.HireFee, prepaid.PaymentMethodId);
     }

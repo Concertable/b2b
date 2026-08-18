@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Domain.State;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
@@ -23,6 +23,11 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         this.ended = ended;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
     }
+
+    public Task<ConcertEntity?> GetByBookingIdAsync(
+        int bookingId,
+        CancellationToken ct = default) =>
+        context.Concerts.SingleOrDefaultAsync(concert => concert.BookingId == bookingId, ct);
 
     public async Task<ConcertEntity?> GetByIdWithArtistAndVenueAsync(int id)
     {
@@ -48,15 +53,13 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .FirstOrDefaultAsync(ct);
     }
 
-    // Bookings is tenant-filtered; omitting this predicate exposes Concert details to non-parties.
     public async Task<ConcertDetails?> GetDetailsByIdAsync(
         int id,
         CancellationToken ct = default)
     {
         return await context.Concerts
-            .Where(e => e.Id == id && context.Bookings.Any(b => b.Id == e.BookingId))
+            .Where(e => e.Id == id)
             .ToDetails(
-                context.Applications,
                 context.ConcertRatingProjections,
                 context.ArtistRatingProjections,
                 context.VenueRatingProjections)
@@ -68,7 +71,6 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         return await context.Concerts
             .Where(e => e.ApplicationId == applicationId)
             .ToDetails(
-                context.Applications,
                 context.ConcertRatingProjections,
                 context.ArtistRatingProjections,
                 context.VenueRatingProjections)
@@ -91,26 +93,15 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .ToListAsync();
     }
 
-    public Task<int?> GetDealIdByIdAsync(int concertId)
-    {
-        return context.Concerts
-            .Where(c => c.Id == concertId)
-            .Select(c => context.Applications
-                .Where(a => a.Id == c.ApplicationId)
-                .Select(a => context.Opportunities
-                    .Where(o => o.Id == a.OpportunityId)
-                    .Select(o => (int?)o.DealId)
-                    .FirstOrDefault())
-                .FirstOrDefault())
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task<IEnumerable<int>> GetEndedConfirmedIdsAsync() =>
+    public async Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(
+        CancellationToken ct = default) =>
         await ended.And(doorRevenueOutstanding.Not())
-            .Apply(context.Concerts.Where(c => context.Applications.Any(a =>
-                a.Id == c.ApplicationId && a.State == LifecycleState.Booked)))
+            .Apply(context.Concerts.Where(concert =>
+                concert.State == ConcertState.Draft ||
+                concert.State == ConcertState.Posted ||
+                concert.State == ConcertState.SettlementFailed))
             .Select(c => c.Id)
-            .ToListAsync();
+            .ToListAsync(ct);
 
     public Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId) =>
         context.Concerts

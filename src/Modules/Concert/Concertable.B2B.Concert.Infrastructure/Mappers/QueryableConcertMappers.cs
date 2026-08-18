@@ -9,12 +9,10 @@ internal static class QueryableConcertMappers
 {
     public static IQueryable<ConcertDetails> ToDetails(
         this IQueryable<ConcertEntity> query,
-        IQueryable<ApplicationEntity> applications,
         IQueryable<ConcertRatingProjection> concertRatings,
         IQueryable<ArtistRatingProjection> artistRatings,
         IQueryable<VenueRatingProjection> venueRatings) =>
         from c in query
-        join application in applications on c.ApplicationId equals application.Id
         join cr in concertRatings on c.Id equals cr.ConcertId into crg
         from concertRating in crg.DefaultIfEmpty()
         join ar in artistRatings on c.ArtistId equals ar.ArtistId into arg
@@ -35,7 +33,7 @@ internal static class QueryableConcertMappers
             DatePosted = c.DatePosted,
             StartDate = c.Period.Start,
             EndDate = c.Period.End,
-            State = application.State,
+            State = c.State,
             IsRevenueShare = c.RequiresDoorRevenue,
             TicketsSold = c.TicketsSold,
             DoorRevenue = c.DoorRevenue,

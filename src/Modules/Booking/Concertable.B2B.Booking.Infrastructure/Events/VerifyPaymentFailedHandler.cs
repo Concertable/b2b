@@ -23,9 +23,8 @@ internal sealed class VerifyPaymentFailedHandler : IPreCommitDomainEventHandler<
 
         await bookings.RecordFailedAsync(
             booking.Id,
-            new FinancialOperationFailed(
+            new VerifyPaymentFailedEvidence(
                 payment.ApplicationId,
-                FinancialOperation.VerifyPayment,
                 payment.ProviderTransactionId,
                 new FinancialOperationError(payment.Error.Code, payment.Error.Message)),
             ct);

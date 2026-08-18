@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IApplicationService, ApplicationService>();
+        services.AddScoped<IApplicationDashboardService, ApplicationDashboardService>();
         services.AddScoped<IApplicationMapper, ApplicationMapper>();
         services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
         services.AddScoped<IApplicationValidator, ApplicationValidator>();

@@ -6,26 +6,17 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class InvoiceIssuer : IInvoiceIssuer
 {
-    private readonly ISettlementAmountResolver settlementAmountResolver;
-    private readonly IDealPayeeResolver dealPayeeResolver;
-    private readonly IDealAccessor dealAccessor;
     private readonly ITenantModule tenantModule;
     private readonly IInvoiceRepository invoiceRepository;
     private readonly ISequenceRepository<InvoiceSequenceEntity> sequenceRepository;
     private readonly TimeProvider timeProvider;
 
     public InvoiceIssuer(
-        ISettlementAmountResolver settlementAmountResolver,
-        IDealPayeeResolver dealPayeeResolver,
-        IDealAccessor dealAccessor,
         ITenantModule tenantModule,
         IInvoiceRepository invoiceRepository,
         ISequenceRepository<InvoiceSequenceEntity> sequenceRepository,
         TimeProvider timeProvider)
     {
-        this.settlementAmountResolver = settlementAmountResolver;
-        this.dealPayeeResolver = dealPayeeResolver;
-        this.dealAccessor = dealAccessor;
         this.tenantModule = tenantModule;
         this.invoiceRepository = invoiceRepository;
         this.sequenceRepository = sequenceRepository;
@@ -34,10 +25,10 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
 
     public async Task IssueAsync(ConcertEntity concert, CancellationToken ct = default)
     {
-        var gross = await settlementAmountResolver.ResolveGrossAsync(concert.Id, dealAccessor.Deal, ct);
+        var gross = Money.Gbp(concert.CalculateSettlementGross());
 
-        var supplierTenantId = dealPayeeResolver.ResolveSettlementTenantId(concert);
-        var customerTenantId = dealPayeeResolver.ResolveTicketTenantId(concert);
+        var supplierTenantId = concert.SettlementPayeeTenantId;
+        var customerTenantId = concert.SettlementPayerTenantId;
 
         var supplierTax = (await tenantModule.GetTaxComplianceAsync(supplierTenantId, ct)).Match(
             value => value,

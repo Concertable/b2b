@@ -49,6 +49,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
         services.AddScoped<IOpportunityHandoffRepository, OpportunityHandoffRepository>();
         services.AddScoped<IOpportunityService, OpportunityService>();
+        services.AddScoped<IOpportunityDashboardService, OpportunityDashboardService>();
         services.AddScoped<IOpportunityMapper, OpportunityMapper>();
         services.AddScoped<IOpportunitySyncer, OpportunitySyncer>();
         services.AddScoped<IOpportunityModule, OpportunityModule>();
