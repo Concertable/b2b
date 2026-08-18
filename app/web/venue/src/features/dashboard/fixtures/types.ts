@@ -6,7 +6,7 @@ import type {
   ReviewExcerpt,
   Settlement,
 } from "@concertable/shared/features/dashboard";
-import type { OpportunityWithCounts } from "@concertable/b2b/features/dashboard";
+import type { OpportunityWithCounts } from "@concertable/web-b2b/features/dashboard";
 import type {
   Application,
   VenueDashboardKpis,

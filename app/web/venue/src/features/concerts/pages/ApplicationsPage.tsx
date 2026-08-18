@@ -2,7 +2,7 @@ import { useParams } from "@tanstack/react-router";
 import {
   useApplicationsByOpportunityQuery,
   ConfirmActionDialog,
-} from "@concertable/b2b/features/concerts";
+} from "@concertable/web-b2b/features/concerts";
 import { ApplicationCard } from "../components/ApplicationCard";
 import { useDenyApplication } from "../hooks/useDenyApplication";
 import { useCancelApplication } from "../hooks/useCancelApplication";

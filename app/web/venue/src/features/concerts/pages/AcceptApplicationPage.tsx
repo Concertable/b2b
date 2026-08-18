@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "@tanstack/react-router";
-import { usePayoutAccountStatusQuery, StripeOnboardingBanner } from "@concertable/b2b/features/payments";
+import { usePayoutAccountStatusQuery, StripeOnboardingBanner } from "@concertable/web-b2b/features/payments";
 import { Button } from "@concertable/web/components/ui/button";
 import dayjs from "dayjs";
 import {
@@ -9,7 +9,7 @@ import {
   AcceptDealSummary,
   ESignaturePanel,
   useESignature,
-} from "@concertable/b2b/features/concerts";
+} from "@concertable/web-b2b/features/concerts";
 import { VenueAcceptCheckoutFlow } from "./VenueAcceptCheckoutPage";
 
 export function AcceptApplicationPage() {
