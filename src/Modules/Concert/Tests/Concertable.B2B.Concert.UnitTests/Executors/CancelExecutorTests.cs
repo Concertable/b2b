@@ -1,10 +1,11 @@
-using Concertable.B2B.Concert.Application.Workflow;
+using Concertable.B2B.Concert.Application.Steps;
+using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
-using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
+using Concertable.B2B.Concert.Infrastructure.Services.Executors;
 using Moq;
 
-namespace Concertable.B2B.Concert.UnitTests.Workflow.Executors;
+namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class CancelExecutorTests
 {
@@ -15,10 +16,8 @@ public sealed class CancelExecutorTests
     {
         var behavior = new ImmediateBehavior();
         this.executor = new CancelExecutor(
-            Mock.Of<ILifecycleTransitioner>(),
-            Mock.Of<IConcertWorkflowFactory>(),
-            Mock.Of<IDealResolver>(),
             this.concertRepository.Object,
+            Mock.Of<IConcertDealStrategyFactory<ICancelStep>>(),
             behavior,
             behavior);
     }
@@ -30,7 +29,7 @@ public sealed class CancelExecutorTests
         await cancellationSource.CancelAsync();
         var cancellationToken = cancellationSource.Token;
         this.concertRepository
-            .Setup(r => r.GetByIdForLifecycleAsync(It.IsAny<int>(), cancellationToken))
+            .Setup(repository => repository.GetByIdForLifecycleAsync(It.IsAny<int>(), cancellationToken))
             .Returns(Task.FromCanceled<ConcertEntity?>(cancellationToken));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(

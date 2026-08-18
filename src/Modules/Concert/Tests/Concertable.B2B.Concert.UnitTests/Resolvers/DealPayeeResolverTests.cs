@@ -1,11 +1,11 @@
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
-using Concertable.Kernel.ValueObjects;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
-namespace Concertable.B2B.Concert.UnitTests.Resolvers;
+namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class DealPayeeResolverTests
 {
@@ -45,17 +45,30 @@ public sealed class DealPayeeResolverTests
 
     private static ConcertEntity CreateConcert(DealType dealType)
     {
-        var application = StandardApplication.Create(
+        ConfirmedBookingTerms terms = dealType switch
+        {
+            DealType.FlatFee => new FlatFeeBookingTerms(100m),
+            DealType.DoorSplit => new DoorSplitBookingTerms(50m, "pm_123"),
+            DealType.Versus => new VersusBookingTerms(100m, 50m, "pm_123"),
+            DealType.VenueHire => new VenueHireBookingTerms(100m),
+            _ => throw new ArgumentOutOfRangeException(nameof(dealType), dealType, null)
+        };
+        var booking = new ConfirmedBooking(
+            Guid.NewGuid(),
             1,
             2,
-            dealType,
+            3,
+            4,
+            5,
             VenueTenantId,
-            ArtistTenantId);
-        var booking = StandardBooking.Create(application.ToAccepted());
-        var period = new DateRange(
+            ArtistTenantId,
+            dealType,
+            dealType is DealType.DoorSplit or DealType.Versus,
             new DateTime(2026, 8, 9, 19, 0, 0, DateTimeKind.Utc),
-            new DateTime(2026, 8, 9, 22, 0, 0, DateTimeKind.Utc));
-        var concert = ConcertEntity.CreateDraft(booking.ToConfirmed(2, period), "Concert", "About", []);
+            new DateTime(2026, 8, 9, 22, 0, 0, DateTimeKind.Utc),
+            [],
+            terms);
+        var concert = ConcertEntity.CreateDraft(booking, "Concert", "About", []);
         concert.Venue = new VenueReadModel { UserId = VenueUserId };
         concert.Artist = new ArtistReadModel { UserId = ArtistUserId };
         return concert;

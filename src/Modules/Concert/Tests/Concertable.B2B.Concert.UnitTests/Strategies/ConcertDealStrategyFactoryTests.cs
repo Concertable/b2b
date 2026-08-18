@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Application.Interfaces;
-using Concertable.B2B.Concert.Application.Mappers;
 using Concertable.B2B.Concert.Application.Resolvers;
 using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
@@ -7,7 +6,7 @@ using Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
-namespace Concertable.B2B.Concert.UnitTests.Strategies;
+namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class ConcertDealStrategyFactoryTests
 {
@@ -29,30 +28,6 @@ public sealed class ConcertDealStrategyFactoryTests
         using var scope = provider.CreateScope();
         var factory = scope.ServiceProvider
             .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>();
-
-        var strategy = factory.Create(dealType);
-
-        Assert.IsType(expectedType, strategy);
-    }
-
-    [Theory]
-    [InlineData(DealType.FlatFee, typeof(FlatFeePaymentAmountMapper))]
-    [InlineData(DealType.DoorSplit, typeof(DoorSplitPaymentAmountMapper))]
-    [InlineData(DealType.Versus, typeof(VersusPaymentAmountMapper))]
-    [InlineData(DealType.VenueHire, typeof(VenueHirePaymentAmountMapper))]
-    public void Create_PaymentAmountType_ResolvesExpectedStrategyFromRequestScope(
-        DealType dealType,
-        Type expectedType)
-    {
-        var services = CreateServices();
-        services.AddConcertDealStrategies();
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = true
-        });
-        using var scope = provider.CreateScope();
-        var factory = scope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IPaymentAmountMapper>>();
 
         var strategy = factory.Create(dealType);
 
@@ -166,7 +141,6 @@ public sealed class ConcertDealStrategyFactoryTests
     [InlineData(typeof(IKeyedServiceProvider))]
     [InlineData(typeof(IConcertDealStrategyFactory<>))]
     [InlineData(typeof(IDealPayeeResolver))]
-    [InlineData(typeof(IPaymentAmountMapper))]
     [InlineData(typeof(ISettlementAmountResolver))]
     public void AddConcertDealStrategies_ScopeCapturingServices_RegistersScoped(Type serviceType)
     {

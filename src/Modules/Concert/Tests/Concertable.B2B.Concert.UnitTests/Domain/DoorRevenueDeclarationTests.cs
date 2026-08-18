@@ -1,10 +1,9 @@
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Errors;
-using Concertable.Contracts;
 using Concertable.Contracts.Enums;
-using Concertable.Kernel.ValueObjects;
 
-namespace Concertable.B2B.Concert.UnitTests.Domain;
+namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class DoorRevenueDeclarationTests
 {
@@ -35,18 +34,23 @@ public sealed class DoorRevenueDeclarationTests
 
     private static ConcertEntity CreateConcert()
     {
-        var application = StandardApplication.Create(
+        var booking = new ConfirmedBooking(
+            Guid.NewGuid(),
             1,
             2,
-            DealType.DoorSplit,
+            3,
+            4,
+            5,
             Guid.NewGuid(),
-            Guid.NewGuid());
-        var booking = StandardBooking.Create(application.ToAccepted());
-        var period = new DateRange(
+            Guid.NewGuid(),
+            DealType.DoorSplit,
+            true,
             new DateTime(2026, 8, 10, 19, 0, 0, DateTimeKind.Utc),
-            new DateTime(2026, 8, 10, 22, 0, 0, DateTimeKind.Utc));
+            new DateTime(2026, 8, 10, 22, 0, 0, DateTimeKind.Utc),
+            [Genre.Rock],
+            new DoorSplitBookingTerms(50m, "pm_123"));
         return ConcertEntity.CreateDraft(
-            booking.ToConfirmed(2, period),
+            booking,
             "Concert",
             "About",
             [Genre.Rock]);
