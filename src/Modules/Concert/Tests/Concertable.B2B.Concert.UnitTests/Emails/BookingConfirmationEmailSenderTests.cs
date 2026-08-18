@@ -1,8 +1,8 @@
-using Concertable.B2B.Concert.Domain.Events;
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Infrastructure.Emails;
+using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
-using Concertable.Kernel.ValueObjects;
 using Reunion;
 using Concertable.Messaging.Contracts;
 using Concertable.Shared.Email.Application;
@@ -17,7 +17,7 @@ public sealed class BookingConfirmationEmailSenderTests
     private static readonly Guid ArtistTenant = Guid.NewGuid();
 
     [Fact]
-    public async Task Stages_OneEmailPerMemberOfBothTenants_ResolvingLegalDetailsPerTaxCompliance()
+    public async Task SendAsync_MembersOfBothTenants_StagesOneEmailPerMemberWithLegalDetails()
     {
         var venueMember1 = Guid.NewGuid();
         var venueMember2 = Guid.NewGuid();
@@ -77,12 +77,25 @@ public sealed class BookingConfirmationEmailSenderTests
 
         var sender = new BookingConfirmationEmailSender(tenant.Object, user.Object, renderer.Object, bus.Object);
 
-        var period = new DateRange(
-            new DateTime(2035, 1, 1, 19, 0, 0, DateTimeKind.Utc),
-            new DateTime(2035, 1, 1, 22, 0, 0, DateTimeKind.Utc));
-        await sender.SendAsync(new BookingConfirmedDomainEvent(VenueTenant, "The Venue", ArtistTenant, "The Artist", period));
+        var startDate = new DateTime(2035, 1, 1, 19, 0, 0, DateTimeKind.Utc);
+        var booking = new ConfirmedBooking(
+            Guid.NewGuid(),
+            1,
+            2,
+            3,
+            4,
+            5,
+            VenueTenant,
+            ArtistTenant,
+            DealType.FlatFee,
+            false,
+            startDate,
+            startDate.AddHours(3),
+            [],
+            new FlatFeeBookingTerms(100m));
 
-        // One staged send per member across both tenants.
+        await sender.SendAsync(booking, "The Venue", "The Artist");
+
         Assert.Equal(3, staged.Count);
         Assert.Equal(
             new[] { "a1@example.com", "v1@example.com", "v2@example.com" },
@@ -90,7 +103,6 @@ public sealed class BookingConfirmationEmailSenderTests
         Assert.All(staged, c => Assert.Equal("Booking confirmed: The Artist at The Venue", c.Subject));
         Assert.All(staged, c => Assert.Equal("<html>rendered</html>", c.Body));
 
-        // Legal details resolved per tax compliance: venue fully populated, artist name-only.
         Assert.NotNull(captured);
         Assert.Equal("Venue Legal Ltd", captured!.Venue.LegalName);
         Assert.Equal("GB123456789", captured.Venue.Vat);

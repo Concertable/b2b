@@ -1,5 +1,6 @@
 using System.Globalization;
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
@@ -8,7 +9,7 @@ using Concertable.Shared.Email.Application;
 
 namespace Concertable.B2B.Concert.Infrastructure.Emails;
 
-internal sealed class BookingConfirmationEmailSender
+internal sealed class BookingConfirmationEmailSender : IBookingConfirmationEmailSender
 {
     private readonly ITenantModule tenantModule;
     private readonly IUserModule userModule;

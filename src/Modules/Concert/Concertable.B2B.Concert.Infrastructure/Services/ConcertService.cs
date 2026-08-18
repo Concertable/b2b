@@ -16,7 +16,7 @@ internal sealed class ConcertService : IConcertService
     private readonly IArtistReadModelRepository artists;
     private readonly IVenueReadModelRepository venues;
     private readonly IConcertNotifier notifier;
-    private readonly BookingConfirmationEmailSender emailSender;
+    private readonly IBookingConfirmationEmailSender emailSender;
     private readonly TimeProvider timeProvider;
     private readonly ITenantContext tenantContext;
     private readonly ILogger<ConcertService> logger;
@@ -29,7 +29,7 @@ internal sealed class ConcertService : IConcertService
         IArtistReadModelRepository artists,
         IVenueReadModelRepository venues,
         IConcertNotifier notifier,
-        BookingConfirmationEmailSender emailSender,
+        IBookingConfirmationEmailSender emailSender,
         TimeProvider timeProvider,
         ITenantContext tenantContext,
         ILogger<ConcertService> logger)

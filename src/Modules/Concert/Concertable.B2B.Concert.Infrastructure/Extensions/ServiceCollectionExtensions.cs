@@ -10,6 +10,7 @@ using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Application.Executors;
 using Concertable.B2B.Concert.Application.Steps;
 using Concertable.B2B.Concert.Application.Validators;
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.Events;
@@ -29,7 +30,6 @@ using Concertable.B2B.Concert.Infrastructure.Services.Payment;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
 using Concertable.B2B.Concert.Infrastructure.Validators;
 using Concertable.B2B.Venue.Contracts.Events;
-using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,7 +73,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICancelExecutor, CancelExecutor>();
         services.AddScoped<ICompleteExecutor, CompleteExecutor>();
         services.AddScoped<IConcertNotifier, ConcertNotifier>();
-        services.AddScoped<BookingConfirmationEmailSender>();
+        services.AddScoped<IBookingConfirmationEmailSender, BookingConfirmationEmailSender>();
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
         services.Configure<LegalSettings>(configuration.GetSection(LegalSettings.SectionName));
@@ -88,7 +88,6 @@ public static class ServiceCollectionExtensions
 
         // Business-rule validators (interfaces in Concert.Application, impls in Concert.Infrastructure.Validators)
         services.AddSingleton<IConcertValidator, ConcertValidator>();
-        services.AddScoped<IApplicationValidator, ApplicationValidator>();
         services.AddScoped<IConcertAvailability, ConcertAvailability>();
 
         services.TryAddSingleton(typeof(IScoped<>), typeof(Scoped<>));
@@ -116,7 +115,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDomainEventHandler<ConcertChangedDomainEvent>, ConcertChangedDomainEventHandler>();
         services.AddScoped<IDomainEventHandler<ConcertPostedDomainEvent>, ConcertPostedDomainEventHandler>();
         services.AddScoped<IDomainEventHandler<ConcertCancelledDomainEvent>, ConcertCancelledDomainEventHandler>();
-        services.AddScoped<IDomainEventHandler<BookingConfirmedDomainEvent>, BookingConfirmedDomainEventHandler>();
+        services.AddScoped<IPreCommitDomainEventHandler<BookingConfirmedDomainEvent>, BookingConfirmedDomainEventHandler>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistReadModelProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueReadModelProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ConcertReviewProjectionHandler>();
@@ -129,8 +128,6 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<ConcertConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConcertConfigurationProvider>());
-
-        services.AddValidatorsFromAssemblyContaining<OpportunityDtoValidator>();
 
         return services;
     }
