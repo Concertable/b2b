@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Venue.Api.Controllers;
 
 [ApiController]
-[Route("api/venue")]
+[Route("api/[controller]")]
 internal sealed class VenueController : ControllerBase
 {
     private readonly IVenueService venueService;
@@ -25,7 +25,7 @@ internal sealed class VenueController : ControllerBase
         CancellationToken ct)
     {
         return (await venueService.GetDetailsByIdAsync(venueId, ct))
-            .ToOkOrProblem(venue => venue.ToDetailsResponse());
+            .ToOkOrNotFound(venue => venue.ToDetailsResponse());
     }
 
     [Admin]
@@ -43,38 +43,28 @@ internal sealed class VenueController : ControllerBase
 
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.OperationsView)]
-    [HttpGet("/api/organization/venue")]
-    public async Task<ActionResult<DetailsResponse>> Get(CancellationToken ct) =>
+    [HttpGet("/api/organization/[controller]")]
+    public async Task<ActionResult<DetailsResponse>> GetDetails(CancellationToken ct) =>
         (await venueService.GetDetailsAsync(ct))
-            .ToOkOrProblem(venue => venue.ToDetailsResponse());
-
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(SharedPermissions.OperationsView)]
-    [HttpGet("user")]
-    public async Task<ActionResult<DetailsResponse>> GetLegacy(CancellationToken ct) =>
-        (await venueService.GetDetailsAsync(ct)).Match<ActionResult<DetailsResponse>>(
-            venue => Ok(venue.ToDetailsResponse()),
-            _ => NoContent());
+            .ToOkOrNoContent(venue => venue.ToDetailsResponse());
 
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPost]
-    [HttpPost("/api/organization/venue")]
+    [HttpPost("/api/organization/[controller]")]
     public async Task<ActionResult<DetailsResponse>> Create(
         [FromForm] CreateVenueRequest request,
         CancellationToken ct) =>
         (await venueService.CreateAsync(request, ct))
-            .Map(venue => venue.ToDetailsResponse())
-            .ToCreatedOrProblem(venue => $"/api/venue/{venue.Id}");
+            .ToCreatedOrProblem(
+                venue => venue.ToDetailsResponse(),
+                venue => $"/api/venue/{venue.Id}");
 
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPut("{venueId:int}")]
-    [HttpPut("/api/organization/venue")]
+    [HttpPut("/api/organization/[controller]")]
     public async Task<ActionResult<DetailsResponse>> Update(
         [FromForm] UpdateVenueRequest request,
         CancellationToken ct) =>
         (await venueService.UpdateAsync(request, ct))
-            .Map(venue => venue.ToDetailsResponse())
-            .ToOkOrProblem();
+            .ToOkOrProblem(venue => venue.ToDetailsResponse());
 }
