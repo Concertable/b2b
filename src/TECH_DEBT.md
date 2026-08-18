@@ -234,3 +234,17 @@ pair, so neither the foreign key nor the tenancy shape fits.
 deliberately between a polymorphic `(ContentType, ContentId)` report with per-type tenancy resolution,
 or a per-module report entity behind a shared triage view. Do not pre-build either before the second
 case exists.
+
+### `MessageRepository` owns `ThreadReadStateEntity`, which has no repository of its own
+
+`Concertable.B2B.Conversations.Infrastructure/Repositories/MessageRepository.cs:27`, `:46`, `:55` join,
+read and `AddAsync` `context.ThreadReadStates`. That is the anti-pattern
+[`api/agents/CODE_PATTERNS.md`](../agents/CODE_PATTERNS.md) names in its own heading - "never fold a
+satellite entity into another entity's repository" - and the doc cites Conversations as the *precedent*
+for the rule it breaks. `Concert/ConcertImageEntity` is the same shape (a `DbSet` with no repository).
+
+Either give each its own repository, or state the exception the rule needs for an owned child collection
+that is never queried independently. Do not leave the rule absolute while the code contradicts it.
+
+Resolves when: `grep -n "ThreadReadStates" MessageRepository.cs` returns nothing, or the rule in
+`CODE_PATTERNS.md` states the child-collection exception explicitly.
