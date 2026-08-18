@@ -14,7 +14,7 @@ import { ThemeProvider } from "@concertable/web/providers/ThemeProvider";
 import { TooltipProvider } from "@concertable/web/components/ui/tooltip";
 import { ConsentProvider } from "@concertable/web/providers/ConsentProvider";
 import { CookieConsentBanner } from "@concertable/web/components/CookieConsentBanner";
-import "@concertable/b2b/lib/b2bClient";
+import "@concertable/web-b2b/lib/b2bClient";
 import "@concertable/web/lib/searchClient";
 import "@concertable/web/lib/geocoding";
 import "@concertable/web/index.css";
