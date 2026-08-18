@@ -43,6 +43,7 @@ using Concertable.B2B.Web.Middleware;
 using Concertable.Shared.Notification.Infrastructure.Hubs;
 using Concertable.Shared.Notification.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
 using Concertable.ServiceDefaults;
 using Concertable.DataAccess.Application;
 using Concertable.Messaging.Application.Extensions;
@@ -54,7 +55,16 @@ using Microsoft.AspNetCore.Mvc.ApplicationModels;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddDefaultRateLimiting();
 builder.AddAzureBlobServiceClient("blobs");
+
+if (builder.Environment.IsDevelopment())
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
 
 builder.Configuration.AddEnvironmentVariables();
 
@@ -212,10 +222,12 @@ builder.Services.AddScoped<TenantResolutionMiddleware>();
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseCors();
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();
+app.UseDefaultRateLimiting();
 app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();

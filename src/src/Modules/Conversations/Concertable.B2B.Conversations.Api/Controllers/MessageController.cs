@@ -4,7 +4,9 @@ using Concertable.B2B.Conversations.Api.Responses;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.ServiceDefaults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Reunion.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Conversations.Api.Controllers;
@@ -39,6 +41,7 @@ internal sealed class MessageController : ControllerBase
     }
 
     [HttpPost("{id}/report")]
+    [EnableRateLimiting(RateLimitPolicies.Messaging)]
     public async Task<ActionResult> Report(int id, [FromBody] ReportMessageRequest request) =>
         (await contentReportService.SubmitAsync(id, request)).ToNoContentOrProblem();
 }
