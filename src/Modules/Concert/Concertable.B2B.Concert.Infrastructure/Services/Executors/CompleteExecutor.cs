@@ -44,7 +44,7 @@ internal sealed class CompleteExecutor : ICompleteExecutor
     public Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
         int concertId,
         CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(async () =>
+        unitOfWork.ExecuteAsync<Result<SettlementOutcome, FinishConcertError>>(async () =>
         {
             var concert = await concerts.GetByIdForLifecycleAsync(concertId, ct);
             if (concert is null)
