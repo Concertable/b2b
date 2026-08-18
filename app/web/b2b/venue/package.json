@@ -12,7 +12,7 @@
   "dependencies": {
     "@concertable/shared": "*",
     "@concertable/web": "*",
-    "@concertable/b2b": "*",
+    "@concertable/web-b2b": "*",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-router": "^1",
     "@tanstack/react-table": "^8.21.3",

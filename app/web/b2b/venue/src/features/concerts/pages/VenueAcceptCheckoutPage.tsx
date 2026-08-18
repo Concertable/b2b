@@ -10,8 +10,8 @@ import {
   useAcceptCheckoutQuery,
   useApplicationQuery,
   useESignature,
-} from "@concertable/b2b/features/concerts";
-import type { Application } from "@concertable/b2b/features/concerts";
+} from "@concertable/web-b2b/features/concerts";
+import type { Application } from "@concertable/web-b2b/features/concerts";
 import type { Checkout } from "@concertable/web/features/concerts";
 import { CheckoutLayout } from "@concertable/web/features/concerts/components/checkout/CheckoutLayout";
 import { CheckoutSection } from "@concertable/web/features/concerts/components/checkout/CheckoutSection";
@@ -19,7 +19,7 @@ import { CheckoutEventBanner } from "@concertable/web/features/concerts/componen
 import { OrderSummaryCard } from "@concertable/web/features/concerts/components/checkout/OrderSummaryCard";
 import { CheckoutAwaiting } from "@concertable/web/features/concerts/components/checkout/CheckoutAwaiting";
 import { StripePaymentForm } from "@concertable/web/features/concerts/components/checkout/StripePaymentForm";
-import { summaryFor } from "@concertable/b2b/features/concerts/utils/acceptCheckoutFormat";
+import { summaryFor } from "@concertable/web-b2b/features/concerts/utils/acceptCheckoutFormat";
 import { useConcertByApplicationQuery } from "../hooks/useConcertByApplicationQuery";
 
 export function VenueAcceptCheckoutPage() {

@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { Skeleton } from "@concertable/web/components/ui/skeleton";
-import { ESignaturePanel, useApplyCheckoutQuery, useESignature } from "@concertable/b2b/features/concerts";
+import { ESignaturePanel, useApplyCheckoutQuery, useESignature } from "@concertable/web-b2b/features/concerts";
 import type { Checkout } from "@concertable/web/features/concerts";
-import applicationApi from "@concertable/b2b/features/concerts/api/applicationApi";
+import applicationApi from "@concertable/web-b2b/features/concerts/api/applicationApi";
 import { CheckoutAwaiting } from "@concertable/web/features/concerts/components/checkout/CheckoutAwaiting";
 import { CheckoutLayout } from "@concertable/web/features/concerts/components/checkout/CheckoutLayout";
 import { CheckoutSection } from "@concertable/web/features/concerts/components/checkout/CheckoutSection";
@@ -12,7 +12,7 @@ import { CheckoutEventBanner } from "@concertable/web/features/concerts/componen
 import { OrderSummaryCard } from "@concertable/web/features/concerts/components/checkout/OrderSummaryCard";
 import { CheckoutSuccess } from "@concertable/web/features/concerts/components/checkout/CheckoutSuccess";
 import { StripePaymentForm } from "@concertable/web/features/concerts/components/checkout/StripePaymentForm";
-import { summaryFor } from "@concertable/b2b/features/concerts/utils/acceptCheckoutFormat";
+import { summaryFor } from "@concertable/web-b2b/features/concerts/utils/acceptCheckoutFormat";
 
 export function ArtistApplyCheckoutPage() {
   const { opportunityId } = useParams({ strict: false }) as {
