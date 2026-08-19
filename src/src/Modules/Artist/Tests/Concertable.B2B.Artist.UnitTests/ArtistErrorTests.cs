@@ -8,27 +8,15 @@ public sealed class ArtistErrorTests
     public static TheoryData<IError, string, string, ErrorKind> Cases => new()
     {
         {
-            new ArtistError.NotFound(42),
-            "artist.get.not_found",
-            "Artist 42 was not found.",
-            ErrorKind.NotFound
-        },
-        {
-            new ArtistError.NotFoundForActiveTenant(),
-            "artist.get.active_tenant_not_found",
-            "No artist was found for the active tenant.",
-            ErrorKind.NotFound
-        },
-        {
-            new CreateArtistError.ActiveTenantAlreadyHasArtist(),
+            new CreateArtistError.ArtistAlreadyExists(),
             "artist.create.active_tenant_already_has_artist",
-            "The active organization already has an artist.",
+            "An artist profile already exists.",
             ErrorKind.Conflict
         },
         {
             new UpdateArtistError.ArtistNotFound(),
             "artist.update_not_found",
-            "No artist was found for the active tenant.",
+            "The artist profile does not exist.",
             ErrorKind.NotFound
         }
     };

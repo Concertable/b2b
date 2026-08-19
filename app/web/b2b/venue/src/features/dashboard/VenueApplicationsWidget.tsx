@@ -9,7 +9,7 @@ import {
 } from "./applicationActions";
 import type { Application } from "./types";
 import type { DashboardApplicationStatus } from "@concertable/shared/features/dashboard";
-import { dealSummary } from "@concertable/b2b/features/deals";
+import { dealSummary } from "@concertable/web-b2b/features/deals";
 import { Button } from "@concertable/web/components/ui/button";
 import { DataTable } from "@concertable/web/components/ui/data-table";
 import {
