@@ -2,9 +2,7 @@ using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Requests;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.ServiceDefaults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
 
@@ -35,7 +33,6 @@ internal sealed class ApplicationController : ControllerBase
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
-    [EnableRateLimiting(RateLimitPolicies.Apply)]
     [HttpPost("{opportunityId}")]
     public async Task<ActionResult<ApplicationResponse>> Apply(int opportunityId, [FromBody] ApplyRequest request)
     {
