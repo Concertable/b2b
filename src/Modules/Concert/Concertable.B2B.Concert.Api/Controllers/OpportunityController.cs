@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
-[Route("api/opportunity")]
+[Route("api/[controller]")]
 [RequiredTenantType(TenantType.Venue)]
 internal sealed class OpportunityController : ControllerBase
 {
