@@ -1,4 +1,5 @@
 using Concertable.B2B.Tenant.Infrastructure.Data;
+using Concertable.B2B.Tenant.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
@@ -13,10 +14,16 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
     }
 
     public Task<UserMembership?> GetMembershipAsync(Guid userId, Guid tenantId, CancellationToken ct = default) =>
-        Project(context.Memberships.Where(m => m.UserId == userId && m.TenantId == tenantId)).FirstOrDefaultAsync(ct);
+        context.Memberships
+            .Where(m => m.UserId == userId && m.TenantId == tenantId)
+            .ToUserMemberships(context.Tenants)
+            .FirstOrDefaultAsync(ct);
 
     public async Task<IReadOnlyList<UserMembership>> GetMembershipsAsync(Guid userId, CancellationToken ct = default) =>
-        await Project(context.Memberships.Where(m => m.UserId == userId)).ToListAsync(ct);
+        await context.Memberships
+            .Where(m => m.UserId == userId)
+            .ToUserMemberships(context.Tenants)
+            .ToListAsync(ct);
 
     public async Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
         await context.Memberships.Where(m => m.TenantId == tenantId).ToListAsync(ct);
@@ -29,13 +36,4 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
 
     public Task<bool> IsMemberAsync(Guid tenantId, Guid userId, CancellationToken ct = default) =>
         context.Memberships.AnyAsync(m => m.TenantId == tenantId && m.UserId == userId, ct);
-
-    // Filter on the membership entity's own columns before projecting — a predicate over the projected
-    // record doesn't translate, so any Where must sit on TenantMembershipEntity.
-    private IQueryable<UserMembership> Project(IQueryable<TenantMembershipEntity> memberships) =>
-        memberships.Join(
-            context.Tenants,
-            m => m.TenantId,
-            t => t.Id,
-            (m, t) => new UserMembership(m.TenantId, t.LegalName, t.Type, m.Role));
 }
