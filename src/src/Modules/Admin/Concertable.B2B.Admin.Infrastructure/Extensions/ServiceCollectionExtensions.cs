@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddAdminModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<AdminProvisioningDbContext>((sp, opts) =>
+        services.AddDbContext<AdminDbContext>((sp, opts) =>
             opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),

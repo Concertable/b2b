@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Admin.Infrastructure.Data;
 
-internal sealed class AdminProvisioningDbContext(
-    DbContextOptions<AdminProvisioningDbContext> options,
+internal sealed class AdminDbContext(
+    DbContextOptions<AdminDbContext> options,
     AdminConfigurationProvider provider)
     : DbContextBase(options)
 {

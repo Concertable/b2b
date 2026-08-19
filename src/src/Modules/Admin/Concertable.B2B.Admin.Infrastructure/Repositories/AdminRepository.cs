@@ -5,9 +5,9 @@ namespace Concertable.B2B.Admin.Infrastructure.Repositories;
 
 internal sealed class AdminRepository : Repository<AdminInvitationEntity>, IAdminRepository
 {
-    private readonly AdminProvisioningDbContext context;
+    private readonly AdminDbContext context;
 
-    public AdminRepository(AdminProvisioningDbContext context) : base(context)
+    public AdminRepository(AdminDbContext context) : base(context)
     {
         this.context = context;
     }
