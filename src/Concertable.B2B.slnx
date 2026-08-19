@@ -22,6 +22,17 @@
     <Project Path="src/Seed/Concertable.B2B.Seed.Infrastructure/Concertable.B2B.Seed.Infrastructure.csproj" />
     <Project Path="src/Seed/Concertable.B2B.Seed.Simulator/Concertable.B2B.Seed.Simulator.csproj" />
   </Folder>
+  <Folder Name="/Modules/Admin/">
+    <Project Path="src/Modules/Admin/Concertable.B2B.Admin.Api/Concertable.B2B.Admin.Api.csproj" />
+    <Project Path="src/Modules/Admin/Concertable.B2B.Admin.Application/Concertable.B2B.Admin.Application.csproj" />
+    <Project Path="src/Modules/Admin/Concertable.B2B.Admin.Contracts/Concertable.B2B.Admin.Contracts.csproj" />
+    <Project Path="src/Modules/Admin/Concertable.B2B.Admin.Domain/Concertable.B2B.Admin.Domain.csproj" />
+    <Project Path="src/Modules/Admin/Concertable.B2B.Admin.Infrastructure/Concertable.B2B.Admin.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Admin/Tests/">
+    <Project Path="src/Modules/Admin/Tests/Concertable.B2B.Admin.IntegrationTests/Concertable.B2B.Admin.IntegrationTests.csproj" />
+    <Project Path="src/Modules/Admin/Tests/Concertable.B2B.Admin.UnitTests/Concertable.B2B.Admin.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/Modules/Artist/">
     <Project Path="src/Modules/Artist/Concertable.B2B.Artist.Api/Concertable.B2B.Artist.Api.csproj" />
     <Project Path="src/Modules/Artist/Concertable.B2B.Artist.Application/Concertable.B2B.Artist.Application.csproj" />
