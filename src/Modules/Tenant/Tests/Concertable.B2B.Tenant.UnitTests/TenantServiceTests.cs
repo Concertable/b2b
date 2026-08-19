@@ -16,14 +16,23 @@ namespace Concertable.B2B.Tenant.UnitTests;
 public sealed class TenantServiceTests
 {
     private readonly Mock<ITenantRepository> repository;
+    private readonly Mock<IMembershipRepository> membershipRepository;
+    private readonly Mock<IInvitationRepository> invitationRepository;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly TenantService service;
 
     public TenantServiceTests()
     {
         this.repository = new Mock<ITenantRepository>();
+        this.membershipRepository = new Mock<IMembershipRepository>();
+        this.invitationRepository = new Mock<IInvitationRepository>();
         this.tenantContext = new Mock<ITenantContext>();
-        this.service = new TenantService(repository.Object, tenantContext.Object, new VatPolicy(new UkVatCalculator()));
+        this.service = new TenantService(
+            repository.Object,
+            membershipRepository.Object,
+            invitationRepository.Object,
+            tenantContext.Object,
+            new VatPolicy(new UkVatCalculator()));
     }
 
     private static TenantEntity Bare() =>

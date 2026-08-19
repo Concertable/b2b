@@ -46,6 +46,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IVatPolicy, VatPolicy>();
 
         services.AddScoped<ITenantRepository, TenantRepository>();
+        services.AddScoped<IMembershipRepository, MembershipRepository>();
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IMembershipService, MembershipService>();
         services.AddScoped<IInvitationService, InvitationService>();
