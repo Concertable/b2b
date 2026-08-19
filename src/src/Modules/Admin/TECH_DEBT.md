@@ -7,8 +7,8 @@
 `IAdminRepository`/`AdminRepository` extends `IRepository<AdminInvitationEntity, Guid>` (the generic
 base entity bound as `TEntity`) but also hand-implements `CountAdminsAsync`/`ListAdminSubsAsync`/
 `IsAdminAsync`/`GrantAdmin`/`RemoveAdmin`, all of which query the unrelated `AdminProfileEntity` via
-`context.AdminProfiles` directly. This is exactly the anti-pattern `api/agents/CODE_PATTERNS.md`'s "One
-repository per entity" section names: an interface mixing queries for two unrelated entity types.
+`context.AdminProfiles` directly. This is exactly the anti-pattern the `dotnet:persistence` skill's
+one-repository-per-entity rule names: an interface mixing queries for two unrelated entity types.
 
 Carried over unchanged from the pre-extraction `Concertable.B2B.User` module (where the same shape
 already existed under `IUserRepository`'s admin-adjacent members before that copy was split out into
