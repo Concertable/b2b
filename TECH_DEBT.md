@@ -167,10 +167,11 @@ in one mechanical sweep (no behaviour change).
 
 ### The `[Admin]` authorization seam is thin, and there is no admin UI for moderation
 
-`AdminAttribute` (`User.Api/Authorization`) resolves an `AdminProfileEntity` — a bare `Sub` column with
-no roles and no scoping — through `AdminProfileHandler`, which issues an **uncached `UserDbContext`
+`AdminAttribute` (`Admin.Api/Authorization`) resolves an `AdminProfileEntity` — a bare `Sub` column with
+no roles and no scoping — through `AdminProfileHandler`, which issues an **uncached `AdminDbContext`
 query on every request** to every `[Admin]` endpoint. Admin provisioning only happens via registration
-through the `admin` client-id (`CredentialRegisteredHandler`) or `UserTestSeeder`. Until the OSA
+through the `admin` client-id (`CredentialRegisteredHandler` calling `IAdminModule.GrantIfEligibleAsync`)
+or `AdminTestSeeder`. Until the OSA
 report-content work it was applied in exactly one place (`VenueController.Approve`); it now also gates
 `ModerationController` (hide / restore / resolve / triage queue).
 
