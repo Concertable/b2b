@@ -24,7 +24,7 @@ public sealed class ApplicationRateLimitApiTests : IAsyncLifetime
     {
         // The shared host disables rate limiting; re-enable Apply on an isolated host so the throttle is
         // provable, and a fresh sub gives its own per-user partition.
-        var client = fixture.CreateClient(o => o.UseApplyRateLimit(10));
+        var client = fixture.CreateClientWithApplyRateLimit(10);
         client.DefaultRequestHeaders.Add("X-Test-Sub", Guid.NewGuid().ToString());
 
         for (var i = 1; i <= 10; i++)

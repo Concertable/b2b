@@ -1,3 +1,4 @@
+using System.Globalization;
 using Concertable.Kernel.Notifications;
 using Concertable.Kernel.DependencyInjection;
 using Concertable.Payment.Contracts;
@@ -47,7 +48,18 @@ namespace Concertable.B2B.IntegrationTests.Fixtures;
 
 public class ApiFixture : IAsyncLifetime
 {
+    // Disabled via env vars, not ConfigureAppConfiguration: AddDefaultRateLimiting binds config eagerly
+    // at build (too early for the latter), and the limiter's partitions persist across the shared host.
+    internal const string ApplyPermitLimitEnvVar = "RateLimiting__Apply__PermitLimit";
     private const string UnlimitedPermits = "1000000";
+    private static readonly string[] RateLimitPolicyEnvVars =
+    [
+        "RateLimiting__Global__PermitLimit",
+        ApplyPermitLimitEnvVar,
+        "RateLimiting__Messaging__PermitLimit",
+        "RateLimiting__Upload__PermitLimit",
+        "RateLimiting__Login__PermitLimit",
+    ];
 
     private SqlFixture sqlFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
@@ -78,6 +90,7 @@ public class ApiFixture : IAsyncLifetime
     {
         sqlFixture = new SqlFixture();
         await sqlFixture.InitializeAsync();
+        var previousRateLimits = SetRateLimitEnv(UnlimitedPermits);
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment(Environments.Integration);
@@ -92,13 +105,6 @@ public class ApiFixture : IAsyncLifetime
                     ["Urls:Frontends:Venue"] = "https://localhost:5175",
                     ["Urls:Frontends:Artist"] = "https://localhost:5176",
                     ["BlobStorage:ContainerName"] = "images",
-                    // The in-memory limiter's partitions persist across the shared host and survive
-                    // Respawn, so real limits would accumulate and 429 unrelated tests. ApplicationRateLimitApiTests re-enables Apply on its own host.
-                    ["RateLimiting:Global:PermitLimit"] = UnlimitedPermits,
-                    ["RateLimiting:Apply:PermitLimit"] = UnlimitedPermits,
-                    ["RateLimiting:Messaging:PermitLimit"] = UnlimitedPermits,
-                    ["RateLimiting:Upload:PermitLimit"] = UnlimitedPermits,
-                    ["RateLimiting:Login:PermitLimit"] = UnlimitedPermits,
                 });
             });
 
@@ -141,7 +147,14 @@ public class ApiFixture : IAsyncLifetime
             });
         });
 
-        _ = factory.Services;
+        try
+        {
+            _ = factory.Services;
+        }
+        finally
+        {
+            RestoreRateLimitEnv(previousRateLimits);
+        }
 
         await sqlFixture.InitializeRespawnerAsync();
         StripeClient = factory.Services.GetRequiredService<IWebhookSimulator>();
@@ -245,16 +258,6 @@ public class ApiFixture : IAsyncLifetime
 
     public HttpClient CreateClient(UserEntity user, Action<TestClientOptions> configure)
     {
-        var client = BuildCustomClient(configure);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
-        return client;
-    }
-
-    public HttpClient CreateClient(Action<TestClientOptions> configure) => BuildCustomClient(configure);
-
-    private HttpClient BuildCustomClient(Action<TestClientOptions> configure)
-    {
         var options = new TestClientOptions();
         configure(options);
 
@@ -268,8 +271,47 @@ public class ApiFixture : IAsyncLifetime
 
         StripeClient = customFactory.Services.GetRequiredService<IWebhookSimulator>();
 
-        return customFactory.CreateClient();
+        var client = customFactory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
+        return client;
     }
 
     public HttpClient CreateClient() => factory.CreateClient();
+
+    /// <summary>A client on an isolated host whose <c>Apply</c> policy keeps the given limit, so the
+    /// throttle is provable while the shared host has it disabled. Env var, not config: the limiter
+    /// binds config eagerly at host build. Sequential collection makes the scoped mutation safe.</summary>
+    public HttpClient CreateClientWithApplyRateLimit(int permitLimit)
+    {
+        var previous = Environment.GetEnvironmentVariable(ApplyPermitLimitEnvVar);
+        Environment.SetEnvironmentVariable(ApplyPermitLimitEnvVar, permitLimit.ToString(CultureInfo.InvariantCulture));
+        try
+        {
+            var customFactory = factory.WithWebHostBuilder(_ => { });
+            StripeClient = customFactory.Services.GetRequiredService<IWebhookSimulator>();
+            return customFactory.CreateClient();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(ApplyPermitLimitEnvVar, previous);
+        }
+    }
+
+    private static Dictionary<string, string?> SetRateLimitEnv(string permitLimit)
+    {
+        var previous = new Dictionary<string, string?>();
+        foreach (var name in RateLimitPolicyEnvVars)
+        {
+            previous[name] = Environment.GetEnvironmentVariable(name);
+            Environment.SetEnvironmentVariable(name, permitLimit);
+        }
+        return previous;
+    }
+
+    private static void RestoreRateLimitEnv(Dictionary<string, string?> previous)
+    {
+        foreach (var (name, value) in previous)
+            Environment.SetEnvironmentVariable(name, value);
+    }
 }
