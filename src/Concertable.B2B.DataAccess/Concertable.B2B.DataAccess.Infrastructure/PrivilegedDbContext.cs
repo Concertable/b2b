@@ -12,12 +12,12 @@ namespace Concertable.B2B.DataAccess.Infrastructure;
 /// module isolation. The unfiltered read-only counterpart is <see cref="ReadDbContext"/>; the
 /// tenant-filtered, writable one is <see cref="TenantScopedDbContext"/>.
 /// </summary>
-public abstract class UnscopedDbContext : DbContextBase
+public abstract class PrivilegedDbContext : DbContextBase
 {
     private readonly IEntityTypeConfigurationProvider provider;
     private readonly string defaultSchema;
 
-    protected UnscopedDbContext(DbContextOptions options, IEntityTypeConfigurationProvider provider, string defaultSchema)
+    protected PrivilegedDbContext(DbContextOptions options, IEntityTypeConfigurationProvider provider, string defaultSchema)
         : base(options)
     {
         this.provider = provider;

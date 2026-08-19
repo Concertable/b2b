@@ -11,7 +11,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data;
 internal sealed class ConversationsAdminDbContext(
     DbContextOptions<ConversationsAdminDbContext> options,
     ConversationsConfigurationProvider provider)
-    : UnscopedDbContext(options, provider, Schema.Name)
+    : PrivilegedDbContext(options, provider, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
