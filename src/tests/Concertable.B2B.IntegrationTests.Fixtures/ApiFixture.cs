@@ -47,6 +47,8 @@ namespace Concertable.B2B.IntegrationTests.Fixtures;
 
 public class ApiFixture : IAsyncLifetime
 {
+    private const string UnlimitedPermits = "1000000";
+
     private SqlFixture sqlFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
     private IServiceScope? scope;
@@ -90,6 +92,13 @@ public class ApiFixture : IAsyncLifetime
                     ["Urls:Frontends:Venue"] = "https://localhost:5175",
                     ["Urls:Frontends:Artist"] = "https://localhost:5176",
                     ["BlobStorage:ContainerName"] = "images",
+                    // The in-memory limiter's partitions persist across the shared host and survive
+                    // Respawn, so real limits would accumulate and 429 unrelated tests. ApplicationRateLimitApiTests re-enables Apply on its own host.
+                    ["RateLimiting:Global:PermitLimit"] = UnlimitedPermits,
+                    ["RateLimiting:Apply:PermitLimit"] = UnlimitedPermits,
+                    ["RateLimiting:Messaging:PermitLimit"] = UnlimitedPermits,
+                    ["RateLimiting:Upload:PermitLimit"] = UnlimitedPermits,
+                    ["RateLimiting:Login:PermitLimit"] = UnlimitedPermits,
                 });
             });
 
@@ -236,6 +245,16 @@ public class ApiFixture : IAsyncLifetime
 
     public HttpClient CreateClient(UserEntity user, Action<TestClientOptions> configure)
     {
+        var client = BuildCustomClient(configure);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
+        return client;
+    }
+
+    public HttpClient CreateClient(Action<TestClientOptions> configure) => BuildCustomClient(configure);
+
+    private HttpClient BuildCustomClient(Action<TestClientOptions> configure)
+    {
         var options = new TestClientOptions();
         configure(options);
 
@@ -249,10 +268,7 @@ public class ApiFixture : IAsyncLifetime
 
         StripeClient = customFactory.Services.GetRequiredService<IWebhookSimulator>();
 
-        var client = customFactory.CreateClient();
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
-        return client;
+        return customFactory.CreateClient();
     }
 
     public HttpClient CreateClient() => factory.CreateClient();

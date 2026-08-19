@@ -1,3 +1,4 @@
+using System.Globalization;
 using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Mocks;
 using Concertable.Payment.Client;
@@ -29,6 +30,15 @@ public sealed class TestClientOptions
     public TestClientOptions UseFailingGeocoding()
     {
         Services += services => services.Replace(ServiceDescriptor.Scoped<IGeocodingClient, MockGeocodingClientFail>());
+        return this;
+    }
+
+    public TestClientOptions UseApplyRateLimit(int permitLimit)
+    {
+        Configure += config => config.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["RateLimiting:Apply:PermitLimit"] = permitLimit.ToString(CultureInfo.InvariantCulture)
+        });
         return this;
     }
 }
