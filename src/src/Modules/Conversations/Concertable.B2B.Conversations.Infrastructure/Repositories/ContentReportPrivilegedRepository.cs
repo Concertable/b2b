@@ -4,11 +4,11 @@ using Concertable.DataAccess.Infrastructure;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Repositories;
 
-internal sealed class ContentReportAdminRepository : Repository<ContentReportEntity, int>, IContentReportAdminRepository
+internal sealed class ContentReportPrivilegedRepository : Repository<ContentReportEntity, int>, IContentReportPrivilegedRepository
 {
-    private readonly ConversationsAdminDbContext context;
+    private readonly ConversationsPrivilegedDbContext context;
 
-    public ContentReportAdminRepository(ConversationsAdminDbContext context) : base(context)
+    public ContentReportPrivilegedRepository(ConversationsPrivilegedDbContext context) : base(context)
     {
         this.context = context;
     }

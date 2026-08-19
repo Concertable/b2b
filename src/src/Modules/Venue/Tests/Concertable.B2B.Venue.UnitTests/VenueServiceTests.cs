@@ -18,7 +18,7 @@ public sealed class VenueServiceTests
 {
     private readonly Mock<IVenueRepository> repository = new();
     private readonly Mock<IVenueReadRepository> readRepository = new();
-    private readonly Mock<IVenueAdminRepository> adminRepository = new();
+    private readonly Mock<IVenuePrivilegedRepository> adminRepository = new();
     private readonly Mock<IImageService> imageService = new();
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<ITenantContext> tenantContext = new();
