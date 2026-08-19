@@ -8,9 +8,9 @@ internal sealed class AdminDevSeeder : IDevSeeder
 {
     public int Order => 1;
 
-    private readonly AdminProvisioningDbContext context;
+    private readonly AdminDbContext context;
 
-    public AdminDevSeeder(AdminProvisioningDbContext context)
+    public AdminDevSeeder(AdminDbContext context)
     {
         this.context = context;
     }

@@ -6,7 +6,7 @@ namespace Concertable.B2B.Venue.Infrastructure.Data;
 internal sealed class VenueAdminDbContext(
     DbContextOptions<VenueAdminDbContext> options,
     VenueConfigurationProvider provider)
-    : AdminDbContext(options, provider, Schema.Name)
+    : UnscopedDbContext(options, provider, Schema.Name)
 {
     public DbSet<VenueEntity> Venues => Set<VenueEntity>();
 }

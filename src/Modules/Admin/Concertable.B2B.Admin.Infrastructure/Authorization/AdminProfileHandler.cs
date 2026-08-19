@@ -8,9 +8,9 @@ internal sealed class AdminProfileRequirement : IAuthorizationRequirement { }
 
 internal sealed class AdminProfileHandler : AuthorizationHandler<AdminProfileRequirement>
 {
-    private readonly AdminProvisioningDbContext db;
+    private readonly AdminDbContext db;
 
-    public AdminProfileHandler(AdminProvisioningDbContext db)
+    public AdminProfileHandler(AdminDbContext db)
     {
         this.db = db;
     }
