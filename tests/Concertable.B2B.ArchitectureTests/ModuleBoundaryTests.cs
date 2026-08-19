@@ -8,7 +8,7 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 namespace Concertable.B2B.ArchitectureTests;
 
 /// <summary>
-/// Enforces the modular-monolith rules (api/agents/MODULE_STRUCTURE.md) that the compiler alone
+/// Enforces the modular-monolith rules (the `dotnet-standards:module-structure` skill) that the compiler alone
 /// can't: cross-module isolation once a type is <c>public</c>, plus the layer reference graph as
 /// defense-in-depth. ArchUnitNET reads compiled IL, so it sees <c>internal</c> types too.
 /// </summary>
