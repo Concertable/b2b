@@ -73,7 +73,7 @@ a one-off.
 **Resolves when:** each of the six call sites above is checked — if the `Add`/`AddInvitation`/etc. call
 really is the sole staged write before its `SaveChangesAsync`, collapse it to one `InsertAsync` call;
 if another write is staged in between (making the two-call form correct), leave it and note why inline.
-Consider whether the `concertable-persistence` skill's repository section should call out the `InsertAsync`
+Consider whether the `persistence` skill's repository section should call out the `InsertAsync`
 vs `AddAsync` choice explicitly, since this is the second time an agent session has written the
 worse form without being told — a one-line rule here might be cheaper than repeatedly catching it in
 review.
@@ -91,7 +91,7 @@ no event round-trip and no dependency on a Payment seed simulator (which no long
 divergence-from-production concern is accepted here because past-dated ticket sales are **inherently
 unreproducible** — real Payment only emits `PaymentSucceededEvent` for live Stripe webhooks, and you
 can't buy a ticket to a concert that already happened. Documented as a sanctioned exception in
-the `concertable-seeding` skill. The settlement E2E (`ConcertFinishedTests`) reads these via
+the `seeding` skill. The settlement E2E (`ConcertFinishedTests`) reads these via
 `TicketsSold * Price`: Past DoorSplit (id 12) and Past Versus (id 9) are seeded `ticketsSold: 1` —
 the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) omitted.
 
@@ -239,7 +239,7 @@ case exists.
 
 `Concertable.B2B.Conversations.Infrastructure/Repositories/MessageRepository.cs:27`, `:46`, `:55` join,
 read and `AddAsync` `context.ThreadReadStates`. That is the anti-pattern
-the `concertable-persistence` skill names in its own heading - "never fold a
+the `persistence` skill names in its own heading - "never fold a
 satellite entity into another entity's repository" - and the doc cites Conversations as the *precedent*
 for the rule it breaks. `Concert/ConcertImageEntity` is the same shape (a `DbSet` with no repository).
 
