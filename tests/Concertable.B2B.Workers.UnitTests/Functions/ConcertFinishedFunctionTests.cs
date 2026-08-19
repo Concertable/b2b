@@ -1,5 +1,6 @@
-using Concertable.B2B.Concert.Application.Workflow.Executors;
+using Concertable.B2B.Concert.Application.Executors;
 using Concertable.B2B.Concert.Application.Errors;
+using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
 using Concertable.DataAccess.Application;
 using Reunion;
@@ -13,81 +14,87 @@ namespace Concertable.B2B.Workers.UnitTests.Functions;
 public sealed class ConcertCompletionRunnerTests
 {
     private readonly Mock<IConcertRepository> concertRepository;
-    private readonly Mock<IFinishExecutor> finishExecutor;
-    private readonly Mock<IScoped<IFinishExecutor>> completion;
+    private readonly Mock<ICompleteExecutor> completeExecutor;
+    private readonly Mock<IScoped<ICompleteExecutor>> completion;
     private readonly Mock<ILogger<ConcertCompletionRunner>> logger;
     private readonly ConcertCompletionRunner sut;
 
     public ConcertCompletionRunnerTests()
     {
-        concertRepository = new Mock<IConcertRepository>();
-        finishExecutor = new Mock<IFinishExecutor>();
-        completion = new Mock<IScoped<IFinishExecutor>>();
-        logger = new Mock<ILogger<ConcertCompletionRunner>>();
-        sut = new ConcertCompletionRunner(concertRepository.Object, completion.Object, logger.Object);
+        this.concertRepository = new Mock<IConcertRepository>();
+        this.completeExecutor = new Mock<ICompleteExecutor>();
+        this.completion = new Mock<IScoped<ICompleteExecutor>>();
+        this.logger = new Mock<ILogger<ConcertCompletionRunner>>();
+        this.sut = new ConcertCompletionRunner(
+            this.concertRepository.Object,
+            this.completion.Object,
+            this.logger.Object);
 
-        finishExecutor.Setup(p => p.FinishAsync(It.IsAny<int>())).ReturnsAsync(
-            Result.Success<SettlementOutcome, FinishConcertError>(SettlementOutcome.Settled));
-        completion
-            .Setup(s => s.RunAsync(It.IsAny<Func<IFinishExecutor, Task<Result<SettlementOutcome, FinishConcertError>>>>()))
-            .Returns<Func<IFinishExecutor, Task<Result<SettlementOutcome, FinishConcertError>>>>(
-                action => action(finishExecutor.Object));
+        this.completeExecutor
+            .Setup(p => p.CompleteAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<SettlementOutcome, FinishConcertError>(SettlementOutcome.Settled));
+        this.completion
+            .Setup(s => s.RunAsync(It.IsAny<Func<ICompleteExecutor, Task<Result<SettlementOutcome, FinishConcertError>>>>()))
+            .Returns<Func<ICompleteExecutor, Task<Result<SettlementOutcome, FinishConcertError>>>>(
+                action => action(this.completeExecutor.Object));
     }
 
     [Fact]
-    public async Task RunAsync_ShouldCallFinishAsync_ForEachEndedConcert()
+    public async Task RunAsync_EndedConcerts_CompletesEachConcert()
     {
-        concertRepository.Setup(r => r.GetEndedConfirmedIdsAsync()).ReturnsAsync([1, 2, 3]);
+        this.concertRepository.Setup(r => r.GetEndedPendingCompletionIdsAsync(default)).ReturnsAsync([1, 2, 3]);
 
-        await sut.RunAsync();
+        await this.sut.RunAsync();
 
-        finishExecutor.Verify(p => p.FinishAsync(1), Times.Once);
-        finishExecutor.Verify(p => p.FinishAsync(2), Times.Once);
-        finishExecutor.Verify(p => p.FinishAsync(3), Times.Once);
+        this.completeExecutor.Verify(p => p.CompleteAsync(1, default), Times.Once);
+        this.completeExecutor.Verify(p => p.CompleteAsync(2, default), Times.Once);
+        this.completeExecutor.Verify(p => p.CompleteAsync(3, default), Times.Once);
     }
 
     [Fact]
-    public async Task RunAsync_ShouldContinueProcessing_WhenOneFinishFails()
+    public async Task RunAsync_OneCompletionRefused_ContinuesProcessing()
     {
-        concertRepository.Setup(r => r.GetEndedConfirmedIdsAsync()).ReturnsAsync([1, 2, 3]);
-        finishExecutor.Setup(p => p.FinishAsync(2)).ReturnsAsync(
+        this.concertRepository.Setup(r => r.GetEndedPendingCompletionIdsAsync(default)).ReturnsAsync([1, 2, 3]);
+        this.completeExecutor.Setup(p => p.CompleteAsync(2, default)).ReturnsAsync(
             Result.Failure<SettlementOutcome, FinishConcertError>(new FinishConcertError.ConcertNotEnded()));
 
-        await sut.RunAsync();
+        await this.sut.RunAsync();
 
-        finishExecutor.Verify(p => p.FinishAsync(1), Times.Once);
-        finishExecutor.Verify(p => p.FinishAsync(2), Times.Once);
-        finishExecutor.Verify(p => p.FinishAsync(3), Times.Once);
+        this.completeExecutor.Verify(p => p.CompleteAsync(1, default), Times.Once);
+        this.completeExecutor.Verify(p => p.CompleteAsync(2, default), Times.Once);
+        this.completeExecutor.Verify(p => p.CompleteAsync(3, default), Times.Once);
     }
 
     [Fact]
-    public async Task RunAsync_ShouldPropagateInfrastructureFailure()
+    public async Task RunAsync_CompleteThrows_PropagatesInfrastructureFailure()
     {
-        concertRepository.Setup(r => r.GetEndedConfirmedIdsAsync()).ReturnsAsync([1, 2, 3]);
-        finishExecutor.Setup(p => p.FinishAsync(2)).ThrowsAsync(new InvalidOperationException());
+        this.concertRepository.Setup(r => r.GetEndedPendingCompletionIdsAsync(default)).ReturnsAsync([1, 2, 3]);
+        this.completeExecutor.Setup(p => p.CompleteAsync(2, default)).ThrowsAsync(new InvalidOperationException());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.RunAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => this.sut.RunAsync());
 
-        finishExecutor.Verify(p => p.FinishAsync(1), Times.Once);
-        finishExecutor.Verify(p => p.FinishAsync(2), Times.Once);
-        finishExecutor.Verify(p => p.FinishAsync(3), Times.Never);
+        this.completeExecutor.Verify(p => p.CompleteAsync(1, default), Times.Once);
+        this.completeExecutor.Verify(p => p.CompleteAsync(2, default), Times.Once);
+        this.completeExecutor.Verify(p => p.CompleteAsync(3, default), Times.Never);
     }
 
     [Fact]
-    public async Task RunAsync_ShouldNotCallFinishAsync_WhenNoEndedConcerts()
+    public async Task RunAsync_NoEndedConcerts_DoesNotCompleteAnyConcert()
     {
-        concertRepository.Setup(r => r.GetEndedConfirmedIdsAsync()).ReturnsAsync([]);
+        this.concertRepository.Setup(r => r.GetEndedPendingCompletionIdsAsync(default)).ReturnsAsync([]);
 
-        await sut.RunAsync();
+        await this.sut.RunAsync();
 
-        finishExecutor.Verify(p => p.FinishAsync(It.IsAny<int>()), Times.Never);
+        this.completeExecutor.Verify(
+            p => p.CompleteAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }
 
 public sealed class ConcertFinishedFunctionTests
 {
     [Fact]
-    public async Task Run_ShouldDelegateToRunner()
+    public async Task Run_Always_DelegatesToRunner()
     {
         var runner = new Mock<IConcertCompletionRunner>();
         var sut = new ConcertFinishedFunction(runner.Object);

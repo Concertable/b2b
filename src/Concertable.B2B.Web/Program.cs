@@ -184,10 +184,6 @@ if (!builder.Environment.IsIntegration())
     services.AddArtistDevSeeder();
     services.AddVenueDevSeeder();
     services.AddDealDevSeeder();
-    services.AddOpportunityDevSeeder();
-    services.AddApplicationDevSeeder();
-    services.AddBookingDevSeeder();
-    services.AddConcertDevSeeder();
     services.AddConversationsDevSeeder();
 }
 services.AddServices(builder.Configuration);

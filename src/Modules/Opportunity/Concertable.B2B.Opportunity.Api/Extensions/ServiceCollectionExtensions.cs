@@ -14,13 +14,10 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddOpportunityApi(IConfiguration configuration)
         {
             services.AddOpportunityModule(configuration);
+            services.AddOpportunityDevSeeder();
             services.AddScoped<IOpportunityResponseMapper, OpportunityResponseMapper>();
             services.AddControllers().AddInternalControllers(typeof(OpportunityController).Assembly);
             return services;
         }
-
-        public IServiceCollection AddOpportunityDevSeeder() =>
-            Concertable.B2B.Opportunity.Infrastructure.Extensions.ServiceCollectionExtensions
-                .AddOpportunityDevSeeder(services);
     }
 }

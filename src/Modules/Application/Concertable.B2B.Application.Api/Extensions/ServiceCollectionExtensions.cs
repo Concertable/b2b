@@ -16,14 +16,11 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddApplicationApi(IConfiguration configuration)
         {
             services.AddApplicationModule(configuration);
+            services.AddApplicationDevSeeder();
             services.AddScoped<IApplicationResponseMapper, ApplicationResponseMapper>();
             services.AddValidatorsFromAssemblyContaining<ApplyRequestValidator>(includeInternalTypes: true);
             services.AddControllers().AddInternalControllers(typeof(ApplicationController).Assembly);
             return services;
         }
-
-        public IServiceCollection AddApplicationDevSeeder() =>
-            Concertable.B2B.Application.Infrastructure.Extensions.ServiceCollectionExtensions
-                .AddApplicationDevSeeder(services);
     }
 }
