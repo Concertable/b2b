@@ -17,7 +17,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
-using AdminDbContext = Concertable.B2B.Admin.Infrastructure.Data.AdminDbContext;
 
 namespace Concertable.B2B.Admin.Infrastructure.Extensions;
 
@@ -25,7 +24,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddAdminModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<AdminDbContext>((sp, opts) =>
+        services.AddDbContext<AdminProvisioningDbContext>((sp, opts) =>
             opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),

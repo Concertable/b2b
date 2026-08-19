@@ -16,13 +16,13 @@ namespace Concertable.B2B.Admin.Infrastructure.Events;
 /// FK is a plain <see cref="Guid"/>, so this needs no ordering guarantee against it.</summary>
 internal sealed class AdminProvisioningHandler : IIntegrationEventHandler<CredentialRegisteredEvent>
 {
-    private readonly AdminDbContext context;
+    private readonly AdminProvisioningDbContext context;
     private readonly TimeProvider timeProvider;
     private readonly AdminOptions adminOptions;
     private readonly ILogger<AdminProvisioningHandler> logger;
 
     public AdminProvisioningHandler(
-        AdminDbContext context,
+        AdminProvisioningDbContext context,
         TimeProvider timeProvider,
         IOptions<AdminOptions> adminOptions,
         ILogger<AdminProvisioningHandler> logger)

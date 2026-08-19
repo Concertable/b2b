@@ -10,10 +10,10 @@ internal sealed class AdminTestSeeder : ITestSeeder
 {
     public int Order => 1;
 
-    private readonly AdminDbContext context;
+    private readonly AdminProvisioningDbContext context;
     private readonly SeedState seedData;
 
-    public AdminTestSeeder(AdminDbContext context, SeedState seedData)
+    public AdminTestSeeder(AdminProvisioningDbContext context, SeedState seedData)
     {
         this.context = context;
         this.seedData = seedData;

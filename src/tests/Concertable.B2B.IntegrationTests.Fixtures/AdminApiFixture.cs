@@ -12,7 +12,7 @@ namespace Concertable.B2B.IntegrationTests.Fixtures;
 /// </summary>
 public sealed class AdminApiFixture : ApiFixture
 {
-    private AdminDbContext adminDb = null!;
+    private AdminProvisioningDbContext adminDb = null!;
 
     public IQueryable<AdminInvitationEntity> AdminInvitations => adminDb.AdminInvitations.AsNoTracking();
 
@@ -42,6 +42,6 @@ public sealed class AdminApiFixture : ApiFixture
 
     protected override void OnReset(IServiceScope scope)
     {
-        adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+        adminDb = scope.ServiceProvider.GetRequiredService<AdminProvisioningDbContext>();
     }
 }
