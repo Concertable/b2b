@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.Requests;
+using Concertable.B2B.Opportunity.Application.Requests;
 using Concertable.Testing.Integration;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.Deal.Contracts;
