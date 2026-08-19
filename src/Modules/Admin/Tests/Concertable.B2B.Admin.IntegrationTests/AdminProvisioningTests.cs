@@ -1,5 +1,6 @@
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
+using Concertable.B2B.Admin.Domain.Entities;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.User.Domain.Entities;
 using Concertable.Messaging.Contracts;
