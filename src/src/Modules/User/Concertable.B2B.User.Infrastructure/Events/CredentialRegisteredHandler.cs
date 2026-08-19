@@ -1,5 +1,6 @@
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
+using Concertable.B2B.Admin.Contracts;
 using Concertable.B2B.User.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -19,11 +20,19 @@ internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<Cre
     };
 
     private readonly UserDbContext context;
+    private readonly IUnitOfWorkBehavior uowBehavior;
+    private readonly IAdminModule adminModule;
     private readonly ILogger<CredentialRegisteredHandler> logger;
 
-    public CredentialRegisteredHandler(UserDbContext context, ILogger<CredentialRegisteredHandler> logger)
+    public CredentialRegisteredHandler(
+        UserDbContext context,
+        IUnitOfWorkBehavior uowBehavior,
+        IAdminModule adminModule,
+        ILogger<CredentialRegisteredHandler> logger)
     {
         this.context = context;
+        this.uowBehavior = uowBehavior;
+        this.adminModule = adminModule;
         this.logger = logger;
     }
 
@@ -49,12 +58,19 @@ internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<Cre
             return;
         }
 
-        context.AddInboxMessage(envelope, nameof(CredentialRegisteredHandler));
+        // User creation and (for the admin client) admin granting share one ambient transaction here so
+        // GET /api/auth/me can never observe one committed without the other — see IAdminModule.GrantIfEligibleAsync.
+        await uowBehavior.ExecuteAsync(async () =>
+        {
+            context.AddInboxMessage(envelope, nameof(CredentialRegisteredHandler));
 
-        var user = UserEntity.FromRegistration(e.UserId, e.Email);
-        context.Users.Add(user);
+            var user = UserEntity.FromRegistration(e.UserId, e.Email);
+            context.Users.Add(user);
 
-        await context.SaveChangesAsync(ct);
+            if (e.ClientId == ClientIds.Admin)
+                await adminModule.GrantIfEligibleAsync(e.UserId, e.Email, ct);
+        }, ct);
+
         logger.WroteUserFromCredentialRegistered(e.UserId);
     }
 }

@@ -21,6 +21,8 @@ internal sealed class AdminRepository : Repository<AdminInvitationEntity>, IAdmi
     public Task<bool> IsAdminAsync(Guid sub, CancellationToken ct = default) =>
         context.AdminProfiles.AnyAsync(p => p.Sub == sub, ct);
 
+    public void GrantAdmin(Guid sub) => context.AdminProfiles.Add(new AdminProfileEntity(sub));
+
     public void RemoveAdmin(Guid sub) => context.AdminProfiles.Remove(new AdminProfileEntity(sub));
 
     public async Task<IReadOnlyList<AdminInvitationEntity>> ListPendingInvitationsAsync(DateTime now, CancellationToken ct = default) =>

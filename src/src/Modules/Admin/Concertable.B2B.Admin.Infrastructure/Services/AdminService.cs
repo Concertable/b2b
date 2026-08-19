@@ -1,7 +1,10 @@
 using Concertable.B2B.Admin.Application.DTOs;
 using Concertable.B2B.Admin.Application.Mappers;
 using Concertable.B2B.Admin.Application.Requests;
+using Concertable.B2B.Admin.Infrastructure.Settings;
 using Concertable.B2B.User.Contracts;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Admin.Infrastructure.Services;
 
@@ -13,28 +16,39 @@ internal sealed class AdminService : IAdminService
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
     private readonly TimeProvider timeProvider;
+    private readonly AdminOptions adminOptions;
+    private readonly ILogger<AdminService> logger;
 
     public AdminService(
         IAdminRepository repository,
         ICurrentUser currentUser,
         IUserModule userModule,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IOptions<AdminOptions> adminOptions,
+        ILogger<AdminService> logger)
     {
         this.repository = repository;
         this.currentUser = currentUser;
         this.userModule = userModule;
         this.timeProvider = timeProvider;
+        this.adminOptions = adminOptions.Value;
+        this.logger = logger;
+    }
+
+    private async Task<IReadOnlyList<AdminDto>> ListAdminsAsync(CancellationToken ct)
+    {
+        var subs = await repository.ListAdminSubsAsync(ct);
+        var emails = await userModule.GetEmailsByIdsAsync(subs);
+        return subs
+            .Select(sub => new AdminDto(sub, emails.GetValueOrDefault(sub, string.Empty)))
+            .ToList();
     }
 
     public async Task<AdminOverview> GetOverviewAsync(CancellationToken ct = default)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
-        var subs = await repository.ListAdminSubsAsync(ct);
-        var emails = await userModule.GetEmailsByIdsAsync(subs);
-        var admins = subs
-            .Select(sub => new AdminDto(sub, emails.GetValueOrDefault(sub, string.Empty)))
-            .ToList();
+        var admins = await ListAdminsAsync(ct);
 
         var invitations = await repository.ListPendingInvitationsAsync(now, ct);
         var pending = invitations.Select(i => i.ToDto()).ToList();
@@ -49,9 +63,8 @@ internal sealed class AdminService : IAdminService
         var email = request.Email.Trim().ToLowerInvariant();
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
-        var subs = await repository.ListAdminSubsAsync(ct);
-        var emails = await userModule.GetEmailsByIdsAsync(subs);
-        if (emails.Values.Any(e => string.Equals(e, email, StringComparison.OrdinalIgnoreCase)))
+        var admins = await ListAdminsAsync(ct);
+        if (admins.Any(a => string.Equals(a.Email, email, StringComparison.OrdinalIgnoreCase)))
             return new InviteAdminError.AlreadyAdmin();
 
         var existing = await repository.GetPendingInvitationByEmailAsync(email, ct);
@@ -104,4 +117,28 @@ internal sealed class AdminService : IAdminService
 
     public Task<bool> IsCurrentUserAdminAsync(CancellationToken ct = default) =>
         currentUser.Id is { } id ? repository.IsAdminAsync(id, ct) : Task.FromResult(false);
+
+    public async Task GrantIfEligibleAsync(Guid sub, string email, CancellationToken ct = default)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+
+        var invitation = await repository.GetPendingInvitationByEmailAsync(normalizedEmail, ct);
+        if (invitation is not null && invitation.IsActive(now))
+        {
+            invitation.Accept(sub, now);
+            repository.GrantAdmin(sub);
+            logger.GrantedAdminProfile(sub, "invitation");
+            await repository.SaveChangesAsync(ct);
+            return;
+        }
+
+        if (string.Equals(normalizedEmail, adminOptions.BootstrapEmail, StringComparison.OrdinalIgnoreCase) &&
+            await repository.CountAdminsAsync(ct) == 0)
+        {
+            repository.GrantAdmin(sub);
+            logger.GrantedAdminProfile(sub, "bootstrap");
+            await repository.SaveChangesAsync(ct);
+        }
+    }
 }
