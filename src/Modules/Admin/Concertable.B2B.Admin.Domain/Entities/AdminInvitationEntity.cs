@@ -7,7 +7,7 @@ namespace Concertable.B2B.Admin.Domain.Entities;
 /// <summary>
 /// An outstanding invitation for an email to become a Concertable admin. Unlike
 /// <c>TenantInvitationEntity</c> there is no accept endpoint — acceptance is implicit when
-/// <c>AdminProvisioningHandler</c> sees a matching, active invitation at registration time.
+/// <c>AdminService.GrantIfEligibleAsync</c> sees a matching, active invitation at registration time.
 /// <see cref="Email"/> is stored normalized (trimmed, lower-cased) so that lookup agrees with the
 /// filtered-unique index.
 /// </summary>

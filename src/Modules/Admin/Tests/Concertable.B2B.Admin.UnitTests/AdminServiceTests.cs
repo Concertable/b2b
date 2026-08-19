@@ -4,8 +4,11 @@ using Concertable.B2B.Admin.Application.Requests;
 using Concertable.B2B.Admin.Domain.Entities;
 using Concertable.B2B.Admin.Domain.Errors;
 using Concertable.B2B.Admin.Infrastructure.Services;
+using Concertable.B2B.Admin.Infrastructure.Settings;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace Concertable.B2B.Admin.UnitTests;
@@ -211,5 +214,7 @@ public sealed class AdminServiceTests
         repository.Object,
         currentUser.Object,
         userModule.Object,
-        TimeProvider.System);
+        TimeProvider.System,
+        Options.Create(new AdminOptions()),
+        NullLogger<AdminService>.Instance);
 }

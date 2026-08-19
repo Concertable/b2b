@@ -1,5 +1,4 @@
 using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Admin.Application.Validators;
 using Concertable.B2B.Admin.Domain.Events;
 using Concertable.B2B.Admin.Infrastructure.Authorization;
@@ -51,7 +50,6 @@ public static class ServiceCollectionExtensions
         });
         services.AddScoped<IAuthorizationHandler, AdminProfileHandler>();
 
-        services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, AdminProvisioningHandler>();
         services.AddScoped<IDomainEventHandler<AdminInvitationCreatedDomainEvent>, AdminInvitationCreatedDomainEventHandler>();
 
         services.AddValidatorsFromAssemblyContaining<CreateAdminInvitationRequestValidator>(includeInternalTypes: true);

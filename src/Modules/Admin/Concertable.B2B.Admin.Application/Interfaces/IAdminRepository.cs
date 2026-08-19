@@ -12,6 +12,8 @@ internal interface IAdminRepository : IRepository<AdminInvitationEntity, Guid>
 
     Task<bool> IsAdminAsync(Guid sub, CancellationToken ct = default);
 
+    void GrantAdmin(Guid sub);
+
     void RemoveAdmin(Guid sub);
 
     /// <summary>Live (pending and unexpired at <paramref name="now"/>) admin invitations — the provisioning

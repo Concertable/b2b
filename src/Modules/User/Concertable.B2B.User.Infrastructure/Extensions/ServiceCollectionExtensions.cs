@@ -14,6 +14,8 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.DataAccess.Application;
+using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 
@@ -36,6 +38,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserModule, UserModule>();
+
+        services.AddScoped<IUnitOfWork<UserDbContext>, UnitOfWork<UserDbContext>>();
+        services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
 
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, CredentialRegisteredHandler>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistManagerSyncHandler>();
