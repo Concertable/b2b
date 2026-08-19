@@ -17,6 +17,7 @@ internal sealed class ConcertService : IConcertService
     private readonly IVenueReadModelRepository venues;
     private readonly IConcertNotifier notifier;
     private readonly IBookingConfirmationEmailSender emailSender;
+    private readonly IBookingModule bookingModule;
     private readonly TimeProvider timeProvider;
     private readonly ITenantContext tenantContext;
     private readonly ILogger<ConcertService> logger;
@@ -30,6 +31,7 @@ internal sealed class ConcertService : IConcertService
         IVenueReadModelRepository venues,
         IConcertNotifier notifier,
         IBookingConfirmationEmailSender emailSender,
+        IBookingModule bookingModule,
         TimeProvider timeProvider,
         ITenantContext tenantContext,
         ILogger<ConcertService> logger)
@@ -42,6 +44,7 @@ internal sealed class ConcertService : IConcertService
         this.venues = venues;
         this.notifier = notifier;
         this.emailSender = emailSender;
+        this.bookingModule = bookingModule;
         this.timeProvider = timeProvider;
         this.tenantContext = tenantContext;
         this.logger = logger;
@@ -118,6 +121,20 @@ internal sealed class ConcertService : IConcertService
                 var invoice = await invoiceRepository.GetByConcertIdAsync(id, ct);
                 return WithActions(details with { InvoiceId = invoice?.Id });
             });
+    }
+
+    public async Task<Result<FileDownload, ConcertError>> GetContractPdfAsync(
+        int id,
+        CancellationToken ct = default)
+    {
+        var concert = await repository.GetByIdForLifecycleAsync(id, ct);
+        if (concert is null)
+            return new ConcertError.NotFound(id);
+
+        var contractPdf = await bookingModule.GetContractPdfByBookingIdAsync(concert.BookingId, ct);
+        return contractPdf.TryGetValue(out var pdf)
+            ? new FileDownload(pdf.Content, pdf.FileName, pdf.ContentType)
+            : new ConcertError.NotFound(id);
     }
 
     public async Task<Result<ConcertDetails, ConcertError>> GetDetailsByApplicationIdAsync(int applicationId)

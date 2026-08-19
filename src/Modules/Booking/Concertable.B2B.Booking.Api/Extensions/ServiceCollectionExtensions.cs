@@ -16,5 +16,9 @@ public static class ServiceCollectionExtensions
             services.AddControllers().AddInternalControllers(typeof(ContractController).Assembly);
             return services;
         }
+
+        public IServiceCollection AddBookingDevSeeder() =>
+            Concertable.B2B.Booking.Infrastructure.Extensions.ServiceCollectionExtensions
+                .AddBookingDevSeeder(services);
     }
 }

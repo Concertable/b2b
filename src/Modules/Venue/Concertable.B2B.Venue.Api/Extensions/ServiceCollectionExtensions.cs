@@ -15,4 +15,8 @@ public static class ServiceCollectionExtensions
             .AddInternalControllers(typeof(VenueController).Assembly);
         return services;
     }
+
+    public static IServiceCollection AddVenueDevSeeder(this IServiceCollection services) =>
+        Concertable.B2B.Venue.Infrastructure.Extensions.ServiceCollectionExtensions
+            .AddVenueDevSeeder(services);
 }

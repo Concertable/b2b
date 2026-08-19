@@ -21,5 +21,9 @@ public static class ServiceCollectionExtensions
             services.AddControllers().AddInternalControllers(typeof(ApplicationController).Assembly);
             return services;
         }
+
+        public IServiceCollection AddApplicationDevSeeder() =>
+            Concertable.B2B.Application.Infrastructure.Extensions.ServiceCollectionExtensions
+                .AddApplicationDevSeeder(services);
     }
 }

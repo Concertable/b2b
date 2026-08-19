@@ -18,5 +18,9 @@ public static class ServiceCollectionExtensions
             services.AddControllers().AddInternalControllers(typeof(OpportunityController).Assembly);
             return services;
         }
+
+        public IServiceCollection AddOpportunityDevSeeder() =>
+            Concertable.B2B.Opportunity.Infrastructure.Extensions.ServiceCollectionExtensions
+                .AddOpportunityDevSeeder(services);
     }
 }

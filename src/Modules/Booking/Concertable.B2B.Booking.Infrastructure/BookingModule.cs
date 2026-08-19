@@ -3,10 +3,22 @@ using Concertable.B2B.Booking.Domain.State;
 
 namespace Concertable.B2B.Booking.Infrastructure;
 
-internal sealed class BookingModule(
-    IBookingRepository bookings,
-    IContractRepository contracts) : IBookingModule
+internal sealed class BookingModule : IBookingModule
 {
+    private readonly IBookingRepository bookings;
+    private readonly IContractRepository contracts;
+    private readonly IContractService contractService;
+
+    public BookingModule(
+        IBookingRepository bookings,
+        IContractRepository contracts,
+        IContractService contractService)
+    {
+        this.bookings = bookings;
+        this.contracts = contracts;
+        this.contractService = contractService;
+    }
+
     public async Task<Option<BookingSummary>> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default)
@@ -24,6 +36,16 @@ internal sealed class BookingModule(
         int applicationId,
         CancellationToken ct = default) =>
         (await contracts.GetIdByApplicationIdAsync(applicationId, ct)).ToOption();
+
+    public async Task<Option<ContractPdf>> GetContractPdfByBookingIdAsync(
+        int bookingId,
+        CancellationToken ct = default)
+    {
+        var result = await contractService.GetPdfByBookingIdAsync(bookingId, ct);
+        return result.TryGetValue(out var pdf)
+            ? Option.Some(new ContractPdf(pdf.Content, pdf.FileName, pdf.ContentType))
+            : Option.None<ContractPdf>();
+    }
 
     private static BookingStatus Map(BookingState state) => state switch
     {

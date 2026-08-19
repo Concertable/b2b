@@ -15,4 +15,8 @@ public static class ServiceCollectionExtensions
             .AddInternalControllers(typeof(ConcertController).Assembly);
         return services;
     }
+
+    public static IServiceCollection AddConcertDevSeeder(this IServiceCollection services) =>
+        Concertable.B2B.Concert.Infrastructure.Extensions.ServiceCollectionExtensions
+            .AddConcertDevSeeder(services);
 }

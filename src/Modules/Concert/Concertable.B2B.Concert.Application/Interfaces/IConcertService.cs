@@ -13,6 +13,9 @@ internal interface IConcertService
     Task<Result<ConcertDetails, ConcertError>> GetDetailsAsync(
         int id,
         CancellationToken ct = default);
+    Task<Result<FileDownload, ConcertError>> GetContractPdfAsync(
+        int id,
+        CancellationToken ct = default);
     Task<Result<ConcertDetails, ConcertError>> GetDetailsByApplicationIdAsync(int applicationId);
     Task<IReadOnlyList<ConcertSummary>> GetUpcomingByVenueIdAsync(int id);
     Task<IReadOnlyList<ConcertSummary>> GetUpcomingByArtistIdAsync(int id);

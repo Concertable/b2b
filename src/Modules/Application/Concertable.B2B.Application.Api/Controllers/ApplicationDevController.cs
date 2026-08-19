@@ -1,4 +1,3 @@
-using Concertable.B2B.Application.Api.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

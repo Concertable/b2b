@@ -15,4 +15,8 @@ public static class ServiceCollectionExtensions
             .AddInternalControllers(typeof(ArtistController).Assembly);
         return services;
     }
+
+    public static IServiceCollection AddArtistDevSeeder(this IServiceCollection services) =>
+        Concertable.B2B.Artist.Infrastructure.Extensions.ServiceCollectionExtensions
+            .AddArtistDevSeeder(services);
 }
