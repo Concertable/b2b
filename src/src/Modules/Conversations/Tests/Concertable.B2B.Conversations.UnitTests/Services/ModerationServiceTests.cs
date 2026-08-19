@@ -21,8 +21,8 @@ public sealed class ModerationServiceTests
             ReportCategory.IllegalContent, null, new DateTime(2026, 8, 14));
 
     private static ModerationService Service(
-        Mock<IMessageAdminRepository> messages,
-        Mock<IContentReportAdminRepository> reports)
+        Mock<IMessagePrivilegedRepository> messages,
+        Mock<IContentReportPrivilegedRepository> reports)
     {
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(u => u.Id).Returns(AdminUserId);
@@ -33,10 +33,10 @@ public sealed class ModerationServiceTests
     [Fact]
     public async Task Hide_UnknownMessage_IsNotFound_AndSavesNothing()
     {
-        var messages = new Mock<IMessageAdminRepository>();
+        var messages = new Mock<IMessagePrivilegedRepository>();
         messages.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((MessageEntity?)null);
-        var reports = new Mock<IContentReportAdminRepository>();
+        var reports = new Mock<IContentReportPrivilegedRepository>();
 
         var result = await Service(messages, reports).HideMessageAsync(404);
 
@@ -48,10 +48,10 @@ public sealed class ModerationServiceTests
     [Fact]
     public async Task Restore_UnknownMessage_IsNotFound_AndSavesNothing()
     {
-        var messages = new Mock<IMessageAdminRepository>();
+        var messages = new Mock<IMessagePrivilegedRepository>();
         messages.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((MessageEntity?)null);
-        var reports = new Mock<IContentReportAdminRepository>();
+        var reports = new Mock<IContentReportPrivilegedRepository>();
 
         var result = await Service(messages, reports).RestoreMessageAsync(404);
 
@@ -65,9 +65,9 @@ public sealed class ModerationServiceTests
     {
         var message = Message();
         message.Hide(Guid.NewGuid(), new DateTime(2026, 8, 15));
-        var messages = new Mock<IMessageAdminRepository>();
+        var messages = new Mock<IMessagePrivilegedRepository>();
         messages.Setup(r => r.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(message);
-        var reports = new Mock<IContentReportAdminRepository>();
+        var reports = new Mock<IContentReportPrivilegedRepository>();
 
         var result = await Service(messages, reports).RestoreMessageAsync(7);
 
@@ -81,9 +81,9 @@ public sealed class ModerationServiceTests
     public async Task Hide_StampsTheActingAdmin_AndSavesOnce()
     {
         var message = Message();
-        var messages = new Mock<IMessageAdminRepository>();
+        var messages = new Mock<IMessagePrivilegedRepository>();
         messages.Setup(r => r.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(message);
-        var reports = new Mock<IContentReportAdminRepository>();
+        var reports = new Mock<IContentReportPrivilegedRepository>();
 
         var result = await Service(messages, reports).HideMessageAsync(7);
 
@@ -96,8 +96,8 @@ public sealed class ModerationServiceTests
     [Fact]
     public async Task Resolve_UnknownReport_IsNotFound_AndSavesNothing()
     {
-        var messages = new Mock<IMessageAdminRepository>();
-        var reports = new Mock<IContentReportAdminRepository>();
+        var messages = new Mock<IMessagePrivilegedRepository>();
+        var reports = new Mock<IContentReportPrivilegedRepository>();
         reports.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((ContentReportEntity?)null);
 
@@ -115,8 +115,8 @@ public sealed class ModerationServiceTests
         var report = Report();
         report.Resolve(ReportOutcome.ContentRemoved, Guid.NewGuid(), null, new DateTime(2026, 8, 15));
 
-        var messages = new Mock<IMessageAdminRepository>();
-        var reports = new Mock<IContentReportAdminRepository>();
+        var messages = new Mock<IMessagePrivilegedRepository>();
+        var reports = new Mock<IContentReportPrivilegedRepository>();
         reports.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(report);
 
         var result = await Service(messages, reports)
