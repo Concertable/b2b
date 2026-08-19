@@ -8,9 +8,9 @@ internal abstract partial record CreateArtistError : IError
 {
     public ErrorDefinition Definition => this switch
     {
-        ActiveTenantAlreadyHasArtist =>
-            ErrorDefinition.Conflict<ActiveTenantAlreadyHasArtist>(
-                "The active organization already has an artist."),
+        ArtistAlreadyExists =>
+            ErrorDefinition.Conflict<ArtistAlreadyExists>(
+                "An artist profile already exists."),
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The artist is invalid.",
@@ -18,7 +18,7 @@ internal abstract partial record CreateArtistError : IError
     };
 
     [ErrorCode("artist.create.active_tenant_already_has_artist")]
-    public partial record ActiveTenantAlreadyHasArtist;
+    public partial record ArtistAlreadyExists;
 
     public partial record Invalid(ValidationErrors Errors);
 }

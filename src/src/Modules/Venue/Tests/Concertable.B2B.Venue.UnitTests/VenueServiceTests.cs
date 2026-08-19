@@ -1,4 +1,5 @@
 using Concertable.B2B.Venue.Application.Errors;
+using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Application.Requests;
 using Concertable.B2B.Venue.Domain.Entities;
@@ -24,6 +25,20 @@ public sealed class VenueServiceTests
     private readonly Mock<ITenantContext> tenantContext = new();
     private readonly Mock<IGeocodingClient> geocodingClient = new();
     private readonly Mock<IGeometryProvider> geometryProvider = new();
+
+    [Fact]
+    public async Task GetDetailsAsync_ProfileMissing_ReturnsNone()
+    {
+        var tenantId = Guid.NewGuid();
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
+        repository
+            .Setup(value => value.GetDetailsByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((VenueDetails?)null);
+
+        var result = await CreateService().GetDetailsAsync();
+
+        Assert.True(result.IsNone);
+    }
 
     [Fact]
     public async Task CreateAsync_InvalidProfile_MapsStructuredDomainFailure()

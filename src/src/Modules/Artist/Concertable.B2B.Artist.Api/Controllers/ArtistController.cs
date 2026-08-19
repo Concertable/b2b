@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Artist.Api.Controllers;
 
 [ApiController]
-[Route("api/artist")]
+[Route("api/[controller]")]
 internal sealed class ArtistController : ControllerBase
 {
     private readonly IArtistService artistService;
@@ -22,43 +22,33 @@ internal sealed class ArtistController : ControllerBase
         CancellationToken ct)
     {
         return (await artistService.GetDetailsByIdAsync(artistId, ct))
-            .ToOkOrProblem(artist => artist.ToDetailsResponse());
+            .ToOkOrNotFound(artist => artist.ToDetailsResponse());
     }
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.OperationsView)]
-    [HttpGet("/api/organization/artist")]
-    public async Task<ActionResult<DetailsResponse>> Get(CancellationToken ct) =>
+    [HttpGet("/api/organization/[controller]")]
+    public async Task<ActionResult<DetailsResponse>> GetDetails(CancellationToken ct) =>
         (await artistService.GetDetailsAsync(ct))
-            .ToOkOrProblem(artist => artist.ToDetailsResponse());
-
-    [RequiredTenantType(TenantType.Artist)]
-    [HasPermission(SharedPermissions.OperationsView)]
-    [HttpGet("user")]
-    public async Task<ActionResult<DetailsResponse>> GetLegacy(CancellationToken ct) =>
-        (await artistService.GetDetailsAsync(ct)).Match<ActionResult<DetailsResponse>>(
-            artist => Ok(artist.ToDetailsResponse()),
-            _ => NoContent());
+            .ToOkOrNoContent(artist => artist.ToDetailsResponse());
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPost]
-    [HttpPost("/api/organization/artist")]
+    [HttpPost("/api/organization/[controller]")]
     public async Task<ActionResult<DetailsResponse>> Create(
         [FromForm] CreateArtistRequest request,
         CancellationToken ct) =>
         (await artistService.CreateAsync(request, ct))
-            .Map(artist => artist.ToDetailsResponse())
-            .ToCreatedOrProblem(artist => $"/api/artist/{artist.Id}");
+            .ToCreatedOrProblem(
+                artist => artist.ToDetailsResponse(),
+                artist => $"/api/artist/{artist.Id}");
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPut("{artistId:int}")]
-    [HttpPut("/api/organization/artist")]
+    [HttpPut("/api/organization/[controller]")]
     public async Task<ActionResult<DetailsResponse>> Update(
         [FromForm] UpdateArtistRequest request,
         CancellationToken ct) =>
         (await artistService.UpdateAsync(request, ct))
-            .Map(artist => artist.ToDetailsResponse())
-            .ToOkOrProblem();
+            .ToOkOrProblem(artist => artist.ToDetailsResponse());
 }

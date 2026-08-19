@@ -14,27 +14,15 @@ public sealed class VenueErrorTests
             ErrorKind.NotFound
         },
         {
-            new CreateVenueError.ActiveTenantAlreadyHasVenue(),
+            new CreateVenueError.VenueAlreadyExists(),
             "venue.create.active_tenant_already_has_venue",
-            "The active organization already has a venue.",
+            "A venue profile already exists.",
             ErrorKind.Conflict
         },
         {
             new UpdateVenueError.VenueNotFound(),
             "venue.update_not_found",
-            "No venue was found for the active tenant.",
-            ErrorKind.NotFound
-        },
-        {
-            new VenueError.NotFound(42),
-            "venue.get.not_found",
-            "Venue 42 was not found.",
-            ErrorKind.NotFound
-        },
-        {
-            new VenueError.NotFoundForActiveTenant(),
-            "venue.get.active_tenant_not_found",
-            "No venue was found for the active tenant.",
+            "The venue profile does not exist.",
             ErrorKind.NotFound
         }
     };
