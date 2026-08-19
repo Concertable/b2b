@@ -77,6 +77,7 @@ public sealed class ConcertServiceCreateTests
             venues.Object,
             Mock.Of<IConcertNotifier>(),
             Mock.Of<IBookingConfirmationEmailSender>(),
+            Mock.Of<IBookingModule>(),
             TimeProvider.System,
             Mock.Of<ITenantContext>(),
             Mock.Of<ILogger<ConcertService>>());

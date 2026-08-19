@@ -52,6 +52,7 @@ public sealed class ConcertServiceTests
             Mock.Of<IVenueReadModelRepository>(),
             Mock.Of<IConcertNotifier>(),
             Mock.Of<IBookingConfirmationEmailSender>(),
+            Mock.Of<IBookingModule>(),
             new FakeTimeProvider(now),
             tenantContext.Object,
             Mock.Of<ILogger<ConcertService>>());
