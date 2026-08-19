@@ -20,7 +20,7 @@
     <ProjectReference Include="..\Concertable.B2B.Conversations.Application\Concertable.B2B.Conversations.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Conversations.Infrastructure\Concertable.B2B.Conversations.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
-    <ProjectReference Include="..\..\User\Concertable.B2B.User.Api\Concertable.B2B.User.Api.csproj" />
+    <ProjectReference Include="..\..\Admin\Concertable.B2B.Admin.Api\Concertable.B2B.Admin.Api.csproj" />
   </ItemGroup>
 
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
