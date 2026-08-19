@@ -1,12 +1,20 @@
+using Concertable.B2B.Application.Infrastructure.Data;
+using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
 public sealed class ConcertApiFixture : ApiFixture
 {
+    private ApplicationDbContext applicationReads = null!;
+    private BookingDbContext bookingReads = null!;
     private ConcertReadDbContext concertReads = null!;
+
+    public DbContext ApplicationReads => applicationReads;
+    public DbContext BookingReads => bookingReads;
 
     /// <summary>
     /// The Concert module's unfiltered, read-only read stance — sees every tenant's rows, so
@@ -16,6 +24,8 @@ public sealed class ConcertApiFixture : ApiFixture
 
     protected override void OnReset(IServiceScope scope)
     {
+        applicationReads = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        bookingReads = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
         concertReads = scope.ServiceProvider.GetRequiredService<ConcertReadDbContext>();
     }
 }
