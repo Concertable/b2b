@@ -20,5 +20,5 @@ the base entity's lifecycle — never spread across three unrelated entities on 
 **Resolves when:** split `ITenantRepository` into `ITenantRepository` (TenantEntity only, base CRUD),
 `IMembershipRepository` (TenantMembershipEntity), and `IInvitationRepository` (TenantInvitationEntity),
 updating `InvitationService`/`MembershipService`/`TenantService` and their tests to depend on the
-narrower interfaces. Coordinate with the `concertable-persistence` skill's "One repository per entity" rule
+narrower interfaces. Coordinate with the `persistence` skill's "One repository per entity" rule
 once added.
