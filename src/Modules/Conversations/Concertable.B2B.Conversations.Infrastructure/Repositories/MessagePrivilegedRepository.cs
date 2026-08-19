@@ -3,5 +3,5 @@ using Concertable.DataAccess.Infrastructure;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Repositories;
 
-internal sealed class MessageAdminRepository(ConversationsAdminDbContext context)
-    : Repository<MessageEntity, int>(context), IMessageAdminRepository;
+internal sealed class MessagePrivilegedRepository(ConversationsPrivilegedDbContext context)
+    : Repository<MessageEntity, int>(context), IMessagePrivilegedRepository;

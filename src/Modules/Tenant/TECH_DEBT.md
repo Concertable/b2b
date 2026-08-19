@@ -8,11 +8,11 @@
 base) plus hand-written CRUD for `TenantMembershipEntity` and `TenantInvitationEntity` bolted on as
 extra interface members. This is the *minority* shape in the codebase: Concert (`ApplicationRepository`,
 `BookingRepository`, `ConcertRepository`, `ContractRepository`, `InvoiceRepository`,
-`OpportunityRepository`) and Conversations (`MessageRepository`, `MessageAdminRepository`,
-`ContentReportRepository`, `ContentReportAdminRepository`) both give every entity — including
+`OpportunityRepository`) and Conversations (`MessageRepository`, `MessagePrivilegedRepository`,
+`ContentReportRepository`, `ContentReportPrivilegedRepository`) both give every entity — including
 closely-related ones in the same module and DbContext — its own repository. `ITenantRepository`
 predates that pattern and was the precedent `IUserRepository` mirrored for `AdminInvitationEntity`
-before that copy was corrected (see the User module's `AdminRepository` for the one-repository-
+before that copy was corrected (see the Admin module's `AdminRepository` for the one-repository-
 per-entity shape this should converge on: base-CRUD entity via the generic `Repository<T>`, satellite
 entity's queries hand-written on the *same* repository only when they're small and tightly coupled to
 the base entity's lifecycle — never spread across three unrelated entities on one interface).
