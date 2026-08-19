@@ -19,7 +19,7 @@ Three buckets, three homes:
   ticket surfaces to customer. Two consumers is the minimum bar for this folder — "venue uses it
   and artist might later" is single-app code.
 
-Rules inherited from `app/web/shared/CLAUDE.md` still apply, scoped to the two manager apps:
+Rules inherited from [`app/web/shared/AGENTS.md`](../../shared/AGENTS.md) still apply, scoped to the two manager apps:
 
 - **Route rule** — only literals BOTH manager apps register (`/`, `/my`,
   `/my/concerts/concert/$id`, `/find`, `/find/{artist,venue,concert}/$id`, `/create`,
