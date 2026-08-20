@@ -12,6 +12,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Debug, Message = "Escrow webhook received: payment intent {TransactionId} for booking {BookingId}")]
     internal static partial void EscrowWebhookReceived(this ILogger logger, string transactionId, int bookingId);
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Booking {BookingId} referenced by an escrow payment event was not found; skipping")]
+    internal static partial void BookingNotFoundForEscrowPayment(this ILogger logger, int bookingId);
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "Verify webhook received: payment intent {TransactionId} for application {ApplicationId}")]
     internal static partial void VerifyWebhookReceived(this ILogger logger, string transactionId, int applicationId);
 

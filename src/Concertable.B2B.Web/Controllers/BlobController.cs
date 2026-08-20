@@ -1,6 +1,8 @@
 ﻿using Concertable.Shared.Blob.Application;
 using Concertable.Shared.Imaging.Application;
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.StaticFiles;
 
 namespace Concertable.B2B.Web.Controllers;
@@ -18,6 +20,7 @@ public sealed class BlobController : ControllerBase
         this.imageService = imageService;
     }
 
+    [EnableRateLimiting(RateLimitPolicies.Upload)]
     [HttpPost("upload")]
     public async Task<IActionResult> Upload([FromForm] IFormFile file)
     {

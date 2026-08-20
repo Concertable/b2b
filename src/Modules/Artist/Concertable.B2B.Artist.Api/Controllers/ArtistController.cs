@@ -2,12 +2,12 @@ using Concertable.B2B.Artist.Api.Mappers;
 using Concertable.B2B.Artist.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Artist.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[RequiredTenantType(TenantType.Artist)]
 internal sealed class ArtistController : ControllerBase
 {
     private readonly IArtistService artistService;
@@ -17,29 +17,42 @@ internal sealed class ArtistController : ControllerBase
         this.artistService = artistService;
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
+    [HttpGet("{artistId:int}")]
+    public async Task<ActionResult<DetailsResponse>> GetDetailsById(
+        int artistId,
+        CancellationToken ct)
     {
-        return (await artistService.GetDetailsByIdAsync(id))
-            .ToOkOrProblem(artist => artist.ToDetailsResponse());
+        return (await artistService.GetDetailsByIdAsync(artistId, ct))
+            .ToOkOrNotFound(artist => artist.ToDetailsResponse());
     }
 
+    [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.OperationsView)]
-    [HttpGet("user")]
-    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser() =>
-        (await artistService.GetDetailsForCurrentUserAsync())
+    [HttpGet("/api/organization/[controller]")]
+    public async Task<ActionResult<DetailsResponse>> GetDetails(CancellationToken ct) =>
+        (await artistService.GetDetailsAsync(ct))
+            .ToOkOrNoContent(artist => artist.ToDetailsResponse());
+
+    [RequiredTenantType(TenantType.Artist)]
+    [HasPermission(SharedPermissions.ProfileEdit)]
+    [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
+    [HttpPost("/api/organization/[controller]")]
+    public async Task<ActionResult<DetailsResponse>> Create(
+        [FromForm] CreateArtistRequest request,
+        CancellationToken ct) =>
+        (await artistService.CreateAsync(request, ct))
+            .ToCreatedOrProblem(
+                artist => artist.ToDetailsResponse(),
+                artist => $"/api/artist/{artist.Id}");
+
+    [RequiredTenantType(TenantType.Artist)]
+    [HasPermission(SharedPermissions.ProfileEdit)]
+    [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
+    [HttpPut("/api/organization/[controller]")]
+    public async Task<ActionResult<DetailsResponse>> Update(
+        [FromForm] UpdateArtistRequest request,
+        CancellationToken ct) =>
+        (await artistService.UpdateAsync(request, ct))
             .ToOkOrProblem(artist => artist.ToDetailsResponse());
-
-    [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPost]
-    public async Task<ActionResult<ArtistDetails>> Create([FromForm] CreateArtistRequest request) =>
-        (await artistService.CreateAsync(request))
-            .ToCreatedOrProblem(artist => $"/api/Artist/{artist.Id}");
-
-    [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPut("{id}")]
-    public async Task<ActionResult<ArtistDetails>> Update(int id, [FromForm] UpdateArtistRequest request)
-    {
-        return (await artistService.UpdateAsync(id, request)).ToOkOrProblem();
-    }
 }

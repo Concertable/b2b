@@ -21,9 +21,6 @@ internal sealed class ArtistDashboardController : ControllerBase
     [HttpGet("kpis")]
     public async Task<ActionResult<ArtistDashboardKpis>> GetKpis(CancellationToken ct)
     {
-        var kpis = await dashboardService.GetKpisAsync(ct);
-        return kpis.Match<ActionResult<ArtistDashboardKpis>>(
-            value => Ok(value),
-            () => NoContent());
+        return (await dashboardService.GetKpisAsync(ct)).ToOkOrNoContent();
     }
 }

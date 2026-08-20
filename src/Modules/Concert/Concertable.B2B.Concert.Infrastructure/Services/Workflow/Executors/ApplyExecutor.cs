@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Workflow.Capabilities;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Events;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -99,6 +100,7 @@ internal sealed class ApplyExecutor : IApplyExecutor
                 eSignature.DrawnSignatureImage),
             termsFingerprint.Calculate(deal, period));
 
+        application.NotifyCounterparty(ApplicationNotification.Applied);
         await applicationRepository.AddAsync(application);
         try
         {

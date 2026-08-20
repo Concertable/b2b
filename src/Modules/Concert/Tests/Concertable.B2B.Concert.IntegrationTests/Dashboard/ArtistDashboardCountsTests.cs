@@ -22,26 +22,26 @@ public sealed class ArtistDashboardCountsTests : IAsyncLifetime
     [Fact]
     public async Task GetArtistDashboardCounts_CountsAcceptedCheckoutCapableApplication_AfterVenueAccepts()
     {
-        var artistId = fixture.SeedState.FlatFeeApp.ArtistId;
-        var before = await GetAcceptedAwaitingCheckoutAsync(artistId);
+        var artistTenantId = fixture.SeedState.FlatFeeApp.ArtistTenantId;
+        var before = await GetAcceptedAwaitingCheckoutAsync(artistTenantId);
 
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await venueClient.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
+        await venueClient.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
         var acceptResponse = await venueClient.PostAsync(
-            $"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept",
+            $"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var after = await GetAcceptedAwaitingCheckoutAsync(artistId);
+        var after = await GetAcceptedAwaitingCheckoutAsync(artistTenantId);
 
         Assert.Equal(before + 1, after);
     }
 
-    private async Task<int> GetAcceptedAwaitingCheckoutAsync(int artistId)
+    private async Task<int> GetAcceptedAwaitingCheckoutAsync(Guid artistTenantId)
     {
         using var scope = fixture.Services.CreateScope();
         var concertModule = scope.ServiceProvider.GetRequiredService<IConcertModule>();
-        var counts = await concertModule.GetArtistDashboardCountsAsync(artistId);
+        var counts = await concertModule.GetArtistDashboardCountsAsync(artistTenantId);
         Assert.True(counts.TryGetValue(out var value));
         return value.AcceptedAwaitingCheckout;
     }

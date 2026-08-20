@@ -1,0 +1,18 @@
+<mjml>
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text font-size="20px" font-weight="bold">Booking confirmed</mj-text>
+        <mj-text>{{ Artist.DisplayName | html.escape }} is confirmed to perform at {{ Venue.DisplayName | html.escape }} on {{ When | html.escape }}.</mj-text>
+
+        <mj-text font-size="16px" font-weight="bold">Legal trading details</mj-text>
+
+        <mj-text font-weight="bold">Venue</mj-text>
+        <mj-text>{{ Venue.LegalName | html.escape }}{{ if Venue.Address }}<br />{{ Venue.Address | html.escape }}{{ end }}{{ if Venue.Vat }}<br />VAT number: {{ Venue.Vat | html.escape }}{{ end }}</mj-text>
+
+        <mj-text font-weight="bold">Artist</mj-text>
+        <mj-text>{{ Artist.LegalName | html.escape }}{{ if Artist.Address }}<br />{{ Artist.Address | html.escape }}{{ end }}{{ if Artist.Vat }}<br />VAT number: {{ Artist.Vat | html.escape }}{{ end }}</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
