@@ -1,6 +1,6 @@
 import type { ActionLink } from "@concertable/shared/types/common";
 
-export type SelfBillingAgreementStatus = "None" | "Active" | "Expired";
+export type SelfBillingAgreementStatus = "none" | "active" | "expired";
 
 export interface SelfBillingAgreementActions {
   grant?: ActionLink | null;

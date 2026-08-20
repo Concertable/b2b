@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Concertable.B2B.Conversations.Application.DTOs;
 
 internal sealed record MessageDto
@@ -11,7 +9,6 @@ internal sealed record MessageDto
     public required string Content { get; init; }
 }
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
 internal enum MessageSenderKind
 {
     Org,

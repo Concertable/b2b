@@ -34,9 +34,9 @@ describe("useAcceptApplicationMutation", () => {
       expect.any(Function),
     );
     const update = mocks.setQueryData.mock.calls[0][1];
-    expect(update({ id: 42, status: "AwaitingPayment" })).toEqual({
+    expect(update({ id: 42, status: "awaitingPayment" })).toEqual({
       id: 42,
-      status: "Accepted",
+      status: "accepted",
     });
     expect(mocks.invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["applications", "opportunity", 11],
