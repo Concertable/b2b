@@ -4,10 +4,16 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Deal.Infrastructure.Services.Strategies;
 
-internal sealed class DealStrategyFactory<TStrategy>(IKeyedServiceProvider services)
-    : IDealStrategyFactory<TStrategy>
+internal sealed class DealStrategyFactory<TStrategy> : IDealStrategyFactory<TStrategy>
     where TStrategy : class, IDealStrategy
 {
+    private readonly IKeyedServiceProvider services;
+
+    public DealStrategyFactory(IKeyedServiceProvider services)
+    {
+        this.services = services;
+    }
+
     public TStrategy Create(DealDto deal) =>
         services.GetRequiredKeyedService<TStrategy>(deal.DealType);
 
