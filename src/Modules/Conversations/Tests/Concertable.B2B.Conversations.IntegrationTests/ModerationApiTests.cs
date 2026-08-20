@@ -108,7 +108,7 @@ public sealed class ModerationApiTests : IAsyncLifetime
     private async Task<int> SubmitReportAsync(HttpClient client, int messageId)
     {
         var response = await client.PostAsync($"/api/Message/{messageId}/report",
-            new { category = "IllegalContent", details = "unlawful" });
+            new { category = "illegalContent", details = "unlawful" });
         await response.ShouldBe(HttpStatusCode.NoContent);
 
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
