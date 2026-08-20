@@ -49,7 +49,7 @@ public sealed class VenueDashboardResourceTests : IAsyncLifetime
         await context.SaveChangesAsync();
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        var response = await client.GetAsync("/api/venues/current/reviews/recent");
+        var response = await client.GetAsync("/api/organization/venue/review/recent");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var reviews = await response.Content.ReadAsync<List<RecentReviewResponse>>();

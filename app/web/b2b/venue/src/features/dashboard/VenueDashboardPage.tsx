@@ -1,5 +1,5 @@
-import { TaxDetailsBanner } from "@concertable/b2b/features/organizations";
-import { SelfBillingAgreementBanner } from "@concertable/b2b/features/selfBilling";
+import { TaxDetailsBanner } from "@concertable/web-b2b/features/organizations";
+import { SelfBillingAgreementBanner } from "@concertable/web-b2b/features/selfBilling";
 import { SectionGrid } from "@concertable/web/features/dashboard";
 import { VenueActivityWidget } from "./VenueActivityWidget";
 import { VenueApplicationsWidget } from "./VenueApplicationsWidget";

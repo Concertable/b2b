@@ -5,21 +5,26 @@ using System.Linq.Expressions;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Repositories;
 
-internal sealed class MessageRepository(ConversationsDbContext context)
-    : Repository<MessageEntity>(context), IMessageRepository
+internal sealed class MessageRepository : Repository<MessageEntity>, IMessageRepository
 {
     private static readonly Expression<Func<MessageEntity, bool>> NotHidden =
         m => m.HiddenAt == null || (m.RestoredAt != null && m.RestoredAt > m.HiddenAt);
+    private readonly ConversationsDbContext context;
+
+    public MessageRepository(ConversationsDbContext context) : base(context)
+    {
+        this.context = context;
+    }
 
     public Task<IPagination<MessageEntity>> GetByTenantIdAsync(Guid tenantId, IPageParams pageParams) =>
-        base.context.Messages
+        context.Messages
             .Where(NotHidden)
             .OrderByDescending(m => m.SentDate)
             .ToPaginationAsync(pageParams);
 
     public Task<int> GetUnreadCountByTenantIdAsync(Guid tenantId, Guid userId) =>
-        (from m in base.context.Messages.Where(m => m.SenderTenantId != tenantId).Where(NotHidden)
-         join p in base.context.ThreadReadStates.Where(p => p.UserId == userId)
+        (from m in context.Messages.Where(m => m.SenderTenantId != tenantId).Where(NotHidden)
+         join p in context.ThreadReadStates.Where(p => p.UserId == userId)
              on new { m.VenueTenantId, m.ArtistTenantId } equals new { p.VenueTenantId, p.ArtistTenantId } into pointers
          from p in pointers.DefaultIfEmpty()
          where p == null || m.SentDate > p.LastReadAt
@@ -63,14 +68,19 @@ internal sealed class MessageRepository(ConversationsDbContext context)
             .ToListAsync();
     }
 
+    public async Task<IReadOnlyDictionary<Guid, ParticipantProfile>> GetParticipantProfilesAsync(IReadOnlySet<Guid> tenantIds) =>
+        await context.ParticipantProfiles
+            .Where(p => tenantIds.Contains(p.TenantId))
+            .ToDictionaryAsync(p => p.TenantId);
+
     public async Task AdvanceReadPointersAsync(Guid tenantId, Guid userId, DateTime readAt)
     {
-        var pairs = await base.context.Messages
+        var pairs = await context.Messages
             .Select(m => new { m.VenueTenantId, m.ArtistTenantId })
             .Distinct()
             .ToListAsync();
 
-        var pointers = await base.context.ThreadReadStates
+        var pointers = await context.ThreadReadStates
             .Where(p => p.UserId == userId)
             .ToDictionaryAsync(p => (p.VenueTenantId, p.ArtistTenantId));
 
@@ -79,10 +89,10 @@ internal sealed class MessageRepository(ConversationsDbContext context)
             if (pointers.TryGetValue((pair.VenueTenantId, pair.ArtistTenantId), out var pointer))
                 pointer.Advance(readAt);
             else
-                await base.context.ThreadReadStates.AddAsync(
+                await context.ThreadReadStates.AddAsync(
                     ThreadReadStateEntity.Create(pair.VenueTenantId, pair.ArtistTenantId, userId, readAt));
         }
 
-        await base.context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }

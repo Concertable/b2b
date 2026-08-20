@@ -1,6 +1,5 @@
 using Concertable.Contracts;
 using Concertable.B2B.Venue.Application.DTOs;
-using Concertable.B2B.Venue.Application.Errors;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Infrastructure.Mappers;
 
@@ -23,17 +22,16 @@ internal sealed class VenueReviewService : IVenueReviewService
         (await reviewRepository.GetRatingByVenueIdAsync(venueId, ct)).ToReviewSummary();
 
     public async Task<IPagination<ReviewDto>> GetPagedAsync(int venueId, IPageParams pageParams) =>
-        (await reviewRepository.GetPagedByVenueIdAsync(venueId, pageParams)).Select(review => review.ToReviewDto());
+        (await reviewRepository.GetPagedByVenueIdAsync(venueId, pageParams)).Map(review => review.ToReviewDto());
 
-    public async Task<Result<IReadOnlyList<VenueReview>, VenueError>> GetRecentForCurrentAsync(
+    public async Task<Option<IReadOnlyList<VenueReview>>> GetRecentForCurrentAsync(
         int take,
         CancellationToken ct = default)
     {
-        var venue = await venueService.GetIdForCurrentTenantAsync();
-        if (!venue.TryGetValue(out var venueId))
-            return new VenueError.CurrentTenantNotFound();
+        var venue = await venueService.GetDetailsAsync(ct);
+        if (!venue.TryGetValue(out var details))
+            return null;
 
-        return new Success<IReadOnlyList<VenueReview>>(
-            await reviewRepository.GetRecentByVenueIdAsync(venueId, take, ct));
+        return Option.Some(await reviewRepository.GetRecentByVenueIdAsync(details.Id, take, ct));
     }
 }

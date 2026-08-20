@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Workflow;
@@ -25,13 +25,13 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
             dto.Status,
             new VenueApplicationActions(
                 Accept: isPending
-                    ? new ActionLink($"/api/Application/{dto.Id}/accept", HttpMethods.Post)
+                    ? new ActionLink($"/api/application/{dto.Id}/accept", HttpMethods.Post)
                     : null,
                 Checkout: isPending && registry.Has<IAcceptsCheckout>(dto.Opportunity.Deal.DealType)
-                    ? new ActionLink($"/api/Application/{dto.Id}/checkout", HttpMethods.Post)
+                    ? new ActionLink($"/api/application/{dto.Id}/checkout", HttpMethods.Post)
                     : null,
-                Decline: isPending ? new ActionLink($"/api/Application/{dto.Id}/reject", HttpMethods.Post) : null,
-                Cancel: isCancellable ? new ActionLink($"/api/Application/{dto.Id}/cancel", HttpMethods.Post) : null,
+                Decline: isPending ? new ActionLink($"/api/application/{dto.Id}/reject", HttpMethods.Post) : null,
+                Cancel: isCancellable ? new ActionLink($"/api/application/{dto.Id}/cancel", HttpMethods.Post) : null,
                 Contract: ContractAction(dto)));
     }
 
@@ -56,7 +56,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
             status,
             new ArtistApplicationActions(
                 Withdraw: canWithdraw
-                    ? new ActionLink($"/api/Application/{dto.Id}/withdraw", HttpMethods.Post)
+                    ? new ActionLink($"/api/application/{dto.Id}/withdraw", HttpMethods.Post)
                     : null,
                 Contract: ContractAction(dto)));
     }
@@ -84,6 +84,6 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
 
     private static ActionLink? ContractAction(ApplicationDto dto) =>
         dto.ContractId is not null
-            ? new ActionLink($"/api/Application/{dto.Id}/contract/pdf", HttpMethods.Get)
+            ? new ActionLink($"/api/application/{dto.Id}/contract/pdf", HttpMethods.Get)
             : null;
 }

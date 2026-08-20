@@ -10,11 +10,5 @@ internal sealed class VenueModule : IVenueModule
     }
 
     public Task<Option<VenueSummary>> GetSummaryAsync(int venueId, CancellationToken ct = default) =>
-        venueService.GetSummaryAsync(venueId);
-
-    public Task<Option<int>> GetVenueIdForCurrentTenantAsync(CancellationToken ct = default) =>
-        venueService.GetIdForCurrentTenantAsync();
-
-    public Task<Option<VenueOrgIdentity>> GetOrgIdentityByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
-        venueService.GetOrgIdentityByTenantIdAsync(tenantId);
+        venueService.GetSummaryAsync(venueId, ct);
 }

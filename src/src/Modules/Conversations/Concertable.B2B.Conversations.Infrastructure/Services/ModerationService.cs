@@ -7,14 +7,14 @@ namespace Concertable.B2B.Conversations.Infrastructure.Services;
 
 internal sealed class ModerationService : IModerationService
 {
-    private readonly IAdminMessageRepository messageRepository;
-    private readonly IAdminContentReportRepository reportRepository;
+    private readonly IMessageAdminRepository messageRepository;
+    private readonly IContentReportAdminRepository reportRepository;
     private readonly ICurrentUser currentUser;
     private readonly TimeProvider timeProvider;
 
     public ModerationService(
-        IAdminMessageRepository messageRepository,
-        IAdminContentReportRepository reportRepository,
+        IMessageAdminRepository messageRepository,
+        IContentReportAdminRepository reportRepository,
         ICurrentUser currentUser,
         TimeProvider timeProvider)
     {
@@ -25,7 +25,7 @@ internal sealed class ModerationService : IModerationService
     }
 
     public async Task<IPagination<ContentReportDto>> GetQueueAsync(IPageParams pageParams) =>
-        (await reportRepository.GetQueueAsync(pageParams)).Select(r => r.ToDto());
+        (await reportRepository.GetQueueAsync(pageParams)).Map(r => r.ToDto());
 
     public Task<UnitResult<ModerationError>> HideMessageAsync(int messageId) =>
         MutateMessageAsync(messageId, message => message.Hide(currentUser.GetId(), timeProvider.GetUtcNow().DateTime));

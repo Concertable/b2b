@@ -20,4 +20,5 @@ internal interface IMessageRepository : IRepository<MessageEntity>
     /// <summary>Advance (or create) the member's read pointer to <paramref name="readAt"/> for every thread the
     /// tenant is party to — marking the whole inbox read for that member.</summary>
     Task AdvanceReadPointersAsync(Guid tenantId, Guid userId, DateTime readAt);
+    Task<IReadOnlyDictionary<Guid, ParticipantProfile>> GetParticipantProfilesAsync(IReadOnlySet<Guid> tenantIds);
 }

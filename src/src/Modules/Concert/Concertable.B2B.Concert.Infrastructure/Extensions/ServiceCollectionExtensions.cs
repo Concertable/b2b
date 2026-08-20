@@ -21,6 +21,7 @@ using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Data.Seeders;
+using Concertable.B2B.Concert.Infrastructure.Emails;
 using Concertable.B2B.Concert.Infrastructure.Events;
 using Concertable.B2B.Concert.Infrastructure.Handlers;
 using Concertable.B2B.Concert.Infrastructure.Pdf;
@@ -63,11 +64,12 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
-        services.AddDbContext<PublicConcertDbContext>((sp, opts) =>
+        services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
             opts.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sql => sql.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<IConcertReadDbContext>(sp => sp.GetRequiredService<ConcertReadDbContext>());
 
         services.AddScoped<IUnitOfWork<ConcertDbContext>, UnitOfWork<ConcertDbContext>>();
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
@@ -78,6 +80,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConcertDraftService, ConcertDraftService>();
         services.AddScoped<IBookingService, BookingService>();
         services.AddScoped<IConcertNotifier, ConcertNotifier>();
+        services.AddScoped<BookingConfirmationEmailSender>();
         services.AddScoped<IOpportunityService, OpportunityService>();
         services.AddScoped<IOpportunityDashboardService, OpportunityDashboardService>();
         services.AddScoped<IOpportunitySyncer>(sp => new Sync.OpportunitySyncer(
@@ -85,7 +88,6 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<IDealModule>()));
         services.AddScoped<IApplicationService, ApplicationService>();
         services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
-        services.AddScoped<IMessenger, Messenger>();
         services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
         services.Configure<LegalSettings>(configuration.GetSection(LegalSettings.SectionName));
@@ -136,13 +138,14 @@ public static class ServiceCollectionExtensions
 
         // Repositories
         services.AddScoped<IConcertRepository, ConcertRepository>();
-        services.AddScoped<IPublicConcertRepository, PublicConcertRepository>();
+        services.AddScoped<IConcertReadRepository, ConcertReadRepository>();
         services.AddScoped<IOpportunityRepository, OpportunityRepository>();
-        services.AddScoped<IPublicOpportunityRepository, PublicOpportunityRepository>();
+        services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
+        services.AddScoped<IArtistReadModelRepository, ArtistReadModelRepository>();
+        services.AddScoped<IVenueReadModelRepository, VenueReadModelRepository>();
         services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
-        services.AddScoped<IPublicBookingRepository, PublicBookingRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<ISelfBillingAgreementRepository, SelfBillingAgreementRepository>();
@@ -163,6 +166,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDomainEventHandler<ConcertChangedDomainEvent>, ConcertChangedDomainEventHandler>();
         services.AddScoped<IDomainEventHandler<ConcertPostedDomainEvent>, ConcertPostedDomainEventHandler>();
         services.AddScoped<IDomainEventHandler<ConcertCancelledDomainEvent>, ConcertCancelledDomainEventHandler>();
+        services.AddScoped<IDomainEventHandler<BookingConfirmedDomainEvent>, BookingConfirmedDomainEventHandler>();
+        services.AddScoped<IDomainEventHandler<ApplicationCounterpartyNotifiedDomainEvent>, ApplicationCounterpartyNotifiedDomainEventHandler>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistReadModelProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueReadModelProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ConcertReviewProjectionHandler>();

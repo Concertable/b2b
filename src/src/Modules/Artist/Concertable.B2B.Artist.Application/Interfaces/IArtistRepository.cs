@@ -5,6 +5,7 @@ namespace Concertable.B2B.Artist.Application.Interfaces;
 
 internal interface IArtistRepository : ITenantScopedRepository<ArtistEntity>
 {
-    Task<int?> GetIdForCurrentTenantAsync();
-    Task<ArtistDetails?> GetDetailsForCurrentTenantAsync();
+    Task<ArtistEntity?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+    Task<ArtistDetails?> GetDetailsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+    Task<bool> ExistsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

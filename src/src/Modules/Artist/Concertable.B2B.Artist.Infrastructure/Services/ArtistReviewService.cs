@@ -1,6 +1,5 @@
 using Concertable.B2B.Artist.Application.Interfaces;
 using Concertable.B2B.Artist.Application.DTOs;
-using Concertable.B2B.Artist.Application.Errors;
 using Concertable.B2B.Artist.Infrastructure.Mappers;
 using Concertable.Contracts;
 
@@ -23,17 +22,16 @@ internal sealed class ArtistReviewService : IArtistReviewService
         (await reviewRepository.GetRatingByArtistIdAsync(artistId, ct)).ToReviewSummary();
 
     public async Task<IPagination<ReviewDto>> GetPagedAsync(int artistId, IPageParams pageParams) =>
-        (await reviewRepository.GetPagedByArtistIdAsync(artistId, pageParams)).Select(review => review.ToReviewDto());
+        (await reviewRepository.GetPagedByArtistIdAsync(artistId, pageParams)).Map(review => review.ToReviewDto());
 
-    public async Task<Result<IReadOnlyList<ArtistReview>, ArtistError>> GetRecentForCurrentAsync(
+    public async Task<Option<IReadOnlyList<ArtistReview>>> GetRecentForCurrentAsync(
         int take,
         CancellationToken ct = default)
     {
-        var artist = await artistService.GetIdForCurrentTenantAsync();
-        if (!artist.TryGetValue(out var artistId))
-            return new ArtistError.CurrentTenantNotFound();
+        var artist = await artistService.GetDetailsAsync(ct);
+        if (!artist.TryGetValue(out var details))
+            return null;
 
-        return new Success<IReadOnlyList<ArtistReview>>(
-            await reviewRepository.GetRecentByArtistIdAsync(artistId, take, ct));
+        return Option.Some(await reviewRepository.GetRecentByArtistIdAsync(details.Id, take, ct));
     }
 }

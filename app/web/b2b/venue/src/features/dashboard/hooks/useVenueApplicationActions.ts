@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { actionLinkApi } from "@concertable/b2b/features/concerts";
+import { actionLinkApi } from "@concertable/web-b2b/features/concerts";
 import type { ApplicationActionName } from "../applicationActions";
 import type { Application } from "../types";
 

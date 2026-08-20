@@ -50,37 +50,49 @@ See [`plans/platform/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/platform/SPLIT_TIM
 
 ## MED
 
-### B2B counterparty email (`Messenger`) is still synchronous inline — not on the transactional outbox
+### Venue opportunity counts are exposed by the write repository
 
-The async-email-outbox refactor put Auth (verification/reset), Customer (ticket receipt), and **B2B's
-org-invitation email** on the transactional outbox: an `IPreCommitDomainEventHandler` stages a
-`SendEmailCommand` on the same transaction as the business change (the `TicketPurchasedDomainEventHandler`
-pattern). `Tenant.Infrastructure/Services/InvitationService` now raises `TenantInvitationCreatedDomainEvent`
-whose pre-commit handler stages the invite mail, anchored on the invitation save — done.
+`IOpportunityRepository.GetOpenWithApplicationCountsByVenueTenantIdAsync` is a read-only dashboard
+projection, but it currently lives on the write repository and queries `ConcertDbContext` with
+`AsNoTracking`. That is behaviourally safe, but it blurs the repository permission boundary and makes
+`OpportunityDashboardService` depend on the write surface for a query. The projection belongs on
+`IOpportunityReadRepository`, implemented by `OpportunityReadRepository` against
+`IConcertReadDbContext`; the read context already provides the correct no-tracking stance, so this
+should not be solved by restoring a general-purpose `Query` escape hatch.
 
-One B2B producer remains synchronous through `IEmailTransport` (the raw SMTP/fake send), so a transient
-failure still loses the mail and the send isn't atomic with the business change:
-
-- `Concert.Infrastructure/Services/Messenger` — the counterparty email on a conversation message/action.
-
-`Messenger` has no clean transactional anchor of its own — it fires a conversation *action*, not a persisted
-lifecycle transition, so it can't simply mirror the invitation fix. The lifecycle executors that drive it
-(`ApplicationCancel`/`ApplicationWithdrawReject`) *do* persist a transition, so the anchor is that
-transition's domain event, not `Messenger` itself. Their `EmailSender.Sent` integration assertions still
-observe a synchronous send.
-
-**Resolves when:** the concert-lifecycle transition raises a domain event whose pre-commit handler stages
-the counterparty `SendEmailCommand` on the same transaction, making it transactional/retried like the
-invitation email — with the `ApplicationCancel`/`ApplicationWithdrawReject` email assertions moved to
-asserting the staged command (`fixture.GetStagedEmailsAsync()`) rather than a synchronous `Sent` list.
+**Resolves when:** the projection and its tests move to `IOpportunityReadRepository` /
+`OpportunityReadRepository`, `OpportunityDashboardService` reads it through that interface, and
+`IOpportunityRepository` no longer exposes the query.
 
 ---
 
-### `DELETE api/organizations` is a local hard-delete with no cross-module / cross-service teardown
+### `DELETE api/organization` is a local hard-delete with no cross-module / cross-service teardown
 
-`TenantService.DeleteCurrentTenantAsync` deletes the tenant row and cascades only the Tenant module's own children (memberships, invitations). It emits **no `TenantDeletedEvent`** and touches nothing outside the `tenant` schema, so deleting an organization silently **orphans** everything provisioned off it: the Payment Stripe payout account (provisioned by `CredentialRegisteredHandler`), the venues/artists/concerts owned by the tenant (separate modules/contexts, no cross-schema FK — so no error, just dangling rows), and downstream Search projections. The create path deliberately re-raises `TenantCreatedEvent` via `Announce()` for exactly this cross-service reason; delete has no symmetric path. Landed as a simple synchronous endpoint in the member-management phase (Phase 6.2); the full teardown is its own design (a new integration event + a Payment consumer that deactivates the connected account + module-owned cleanup of venue/artist/concert data).
+`TenantService.DeleteAsync` deletes the tenant row and cascades only the Tenant module's own children (memberships, invitations). It emits **no `TenantDeletedEvent`** and touches nothing outside the `tenant` schema, so deleting an organization silently **orphans** everything provisioned off it: the Payment Stripe payout account (provisioned by `CredentialRegisteredHandler`), the venues/artists/concerts owned by the tenant (separate modules/contexts, no cross-schema FK — so no error, just dangling rows), and downstream Search projections. The create path deliberately re-raises `TenantCreatedEvent` via `Announce()` for exactly this cross-service reason; delete has no symmetric path. Landed as a simple synchronous endpoint in the member-management phase (Phase 6.2); the full teardown is its own design (a new integration event + a Payment consumer that deactivates the connected account + module-owned cleanup of venue/artist/concert data).
 
 **Resolves when:** tenant deletion publishes a `TenantDeletedEvent` (registered `Publishes<>`), Payment deactivates/closes the connected Stripe account on it, the Venue/Artist/Concert modules clean up (or soft-delete) their tenant-owned rows via their own handlers, and Search drops the corresponding projections — no owned data outlives the tenant.
+
+---
+
+### `Add(entity); await SaveChangesAsync(ct);` used where `InsertAsync` is the one-call form
+
+`IWriteRepository<TEntity>` exposes both `AddAsync` (stage only, defer save — for a unit of work that
+stages more than one write before a single save) and `InsertAsync` (stage + save in one call — for the
+common case where the add is the *only* write in that method). Six services currently write the two-call
+form as the last two statements of a method with nothing else staged in between, where `InsertAsync`
+is the exact, simpler fit: `VenueService`, `MessageService`, `ArtistService`, `InvitationService`,
+`SelfBillingAgreementService`, `BookingService` (found via `grep -rP 'repository\.Add\w*\([^)]*\);\s*\n\s*await
+repository\.SaveChangesAsync' api/`). `AdminService` (User module) had the identical shape and was fixed
+to `InsertAsync` when caught in review — the same review is what surfaced this as recurring rather than
+a one-off.
+
+**Resolves when:** each of the six call sites above is checked — if the `Add`/`AddInvitation`/etc. call
+really is the sole staged write before its `SaveChangesAsync`, collapse it to one `InsertAsync` call;
+if another write is staged in between (making the two-call form correct), leave it and note why inline.
+Consider whether `api/agents/CODE_CONVENTIONS.md`'s repository section should call out the `InsertAsync`
+vs `AddAsync` choice explicitly, since this is the second time an agent session has written the
+worse form without being told — a one-line rule here might be cheaper than repeatedly catching it in
+review.
 
 ---
 

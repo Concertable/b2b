@@ -1,8 +1,6 @@
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
-using Concertable.B2B.Artist.Contracts;
-using Concertable.B2B.Venue.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Services;
@@ -44,7 +42,7 @@ public sealed class ConcertServiceTests
         tenantContext.SetupGet(context => context.IsHost).Returns(true);
         var service = new ConcertService(
             repository.Object,
-            Mock.Of<IPublicConcertRepository>(),
+            Mock.Of<IConcertReadRepository>(),
             Mock.Of<IInvoiceRepository>(),
             Mock.Of<IConcertValidator>(),
             Mock.Of<ICurrentUser>(),
@@ -52,9 +50,7 @@ public sealed class ConcertServiceTests
             Mock.Of<IConcertDraftService>(),
             Mock.Of<ICancelExecutor>(),
             new FakeTimeProvider(now),
-            tenantContext.Object,
-            Mock.Of<IVenueModule>(),
-            Mock.Of<IArtistModule>());
+            tenantContext.Object);
 
         var result = await service.DeclareDoorRevenueAsync(42, -0.01m);
 

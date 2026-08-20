@@ -32,7 +32,7 @@ public sealed class ArtistDashboardResourceTests : IAsyncLifetime
         await SubmitReviewAsync(handler, "newer@example.com", 5, "Newer", new(2026, 8, 13, 12, 0, 0, TimeSpan.Zero));
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
-        var response = await client.GetAsync("/api/artists/current/reviews/recent");
+        var response = await client.GetAsync("/api/organization/artist/review/recent");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var reviews = await response.Content.ReadAsync<List<RecentReviewResponse>>();

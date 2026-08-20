@@ -68,7 +68,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         var request = BuildRequest(deal, fixture.SeedNow);
 
         // Act
-        var response = await client.PostAsync("/api/Opportunity", request);
+        var response = await client.PostAsync("/api/opportunity", request);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Created);
@@ -78,7 +78,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         Assert.Equal(request.StartDate, opportunity.StartDate);
         Assert.Equal(request.EndDate, opportunity.EndDate);
         Assert.Contains(Genre.Rock, opportunity.Genres);
-        Assert.Equal($"/api/Opportunity/{opportunity.Id}", response.Headers.Location?.OriginalString);
+        Assert.Equal($"/api/opportunity/{opportunity.Id}", response.Headers.Location?.OriginalString);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync("/api/Opportunity", BuildDefaultRequest(fixture.SeedNow));
+        var response = await client.PostAsync("/api/opportunity", BuildDefaultRequest(fixture.SeedNow));
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -101,7 +101,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         var client = fixture.CreateClient();
 
         // Act
-        var response = await client.PostAsync("/api/Opportunity", BuildDefaultRequest(fixture.SeedNow));
+        var response = await client.PostAsync("/api/opportunity", BuildDefaultRequest(fixture.SeedNow));
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Unauthorized);
@@ -118,7 +118,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
             ArtistDoorPercent = 101
         }, fixture.SeedNow);
 
-        var response = await client.PostAsync("/api/Opportunity", request);
+        var response = await client.PostAsync("/api/opportunity", request);
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
@@ -149,7 +149,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         };
 
         var response = await client.PutAsync(
-            $"/api/Venue/{fixture.SeedState.Venue.Id}/opportunities",
+            $"/api/venue/{fixture.SeedState.Venue.Id}/opportunities",
             new[] { request });
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -172,7 +172,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
 
         // Act
         var response = await client.GetAsync(
-            $"/api/Opportunity/active/venue/{fixture.SeedState.Venue.Id}");
+            $"/api/opportunity/active/venue/{fixture.SeedState.Venue.Id}");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);

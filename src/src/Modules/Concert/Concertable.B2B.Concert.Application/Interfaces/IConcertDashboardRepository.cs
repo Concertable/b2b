@@ -5,10 +5,12 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IConcertDashboardRepository
 {
-    Task<VenueDashboardCounts?> GetVenueCountsAsync(int venueId, CancellationToken ct = default);
+    Task<VenueDashboardCounts?> GetVenueCountsAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default);
 
     Task<ArtistDashboardCounts?> GetArtistCountsAsync(
-        int artistId,
+        Guid artistTenantId,
         IReadOnlyCollection<DealType> checkoutCapableDealTypes,
         CancellationToken ct = default);
 

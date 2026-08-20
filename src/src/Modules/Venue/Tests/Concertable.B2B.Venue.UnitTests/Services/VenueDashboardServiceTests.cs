@@ -30,7 +30,6 @@ public sealed class VenueDashboardServiceTests
 
     public VenueDashboardServiceTests()
     {
-        venueService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(42);
         tenantContext.SetupGet(t => t.TenantId).Returns(tenantId);
         reviewService.Setup(s => s.GetSummaryAsync(It.IsAny<int>())).ReturnsAsync(new ReviewSummary(0, null));
         payoutAccountClient
@@ -72,7 +71,8 @@ public sealed class VenueDashboardServiceTests
     [Fact]
     public async Task GetOverviewAsync_CompleteProfile_CombinesProfilePaymentAndReview()
     {
-        venueService.Setup(s => s.GetDetailsForCurrentUserAsync()).ReturnsAsync(VenueDetails());
+        venueService.Setup(s => s.GetDetailsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Option.Some(VenueDetails()));
         reviewService.Setup(s => s.GetSummaryAsync(42)).ReturnsAsync(new ReviewSummary(12, 4.75));
 
         var result = await service.GetOverviewAsync();
@@ -93,7 +93,7 @@ public sealed class VenueDashboardServiceTests
     public async Task GetKpisAsync_QueriesTenantMonthToDateRevenue_AndMapsToCents()
     {
         concertModule
-            .Setup(m => m.GetVenueDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetVenueDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new VenueDashboardCounts(
                 ApplicationsToReview: 3, OpenOpportunities: 2, UpcomingConcerts: 5, AwaitingDoorRevenue: 1));
 
@@ -119,15 +119,18 @@ public sealed class VenueDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_ReturnsNull_WhenCountsUnavailable()
+    public async Task GetKpisAsync_CountsUnavailable_ReturnsNoneAfterConcurrentReportingCall()
     {
         concertModule
-            .Setup(m => m.GetVenueDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetVenueDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Option.None<VenueDashboardCounts>());
 
         var result = await service.GetKpisAsync();
 
         Assert.False(result.TryGetValue(out _));
+        reportingClient.Verify(
+            r => r.GetTicketRevenueAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -135,7 +138,7 @@ public sealed class VenueDashboardServiceTests
     {
         timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
         concertModule
-            .Setup(m => m.GetVenueDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetVenueDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new VenueDashboardCounts(
                 ApplicationsToReview: 3, OpenOpportunities: 2, UpcomingConcerts: 5, AwaitingDoorRevenue: 1));
 
@@ -149,28 +152,12 @@ public sealed class VenueDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsForbidden()
+    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsInvalidOperation()
     {
         timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
         tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
 
-        await Assert.ThrowsAsync<ForbiddenException>(() => service.GetKpisAsync());
-    }
-
-    [Fact]
-    public async Task GetKpisAsync_WithoutVenue_ReturnsNoneWithoutQueries()
-    {
-        venueService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(default(Option<int>));
-
-        var result = await service.GetKpisAsync();
-
-        Assert.False(result.TryGetValue(out _));
-        concertModule.Verify(
-            m => m.GetVenueDashboardCountsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        reportingClient.Verify(
-            r => r.GetTicketRevenueAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetKpisAsync());
     }
 
     #endregion

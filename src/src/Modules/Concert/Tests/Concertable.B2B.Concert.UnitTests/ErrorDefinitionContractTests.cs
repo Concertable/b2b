@@ -284,6 +284,36 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.Conflict
         },
         {
+            new GrantSelfBillingAgreementError.MissingTenant(),
+            "self_billing.grant.missing_tenant",
+            "No active organization was found for the current user.",
+            ErrorKind.Forbidden
+        },
+        {
+            new GrantSelfBillingAgreementError.TenantNotFound(Guid.Empty),
+            "self_billing.grant.tenant_not_found",
+            $"Tenant {Guid.Empty} was not found.",
+            ErrorKind.NotFound
+        },
+        {
+            new GrantSelfBillingAgreementError.MissingTaxCompliance(),
+            "self_billing.grant.missing_tax_compliance",
+            "Complete your tax details before granting a self-billing agreement.",
+            ErrorKind.Invalid
+        },
+        {
+            new GrantSelfBillingAgreementError.MissingUser(),
+            "self_billing.grant.missing_user",
+            "No user was found for the current request.",
+            ErrorKind.Forbidden
+        },
+        {
+            new SelfBillingAgreementPdfError.NotFound(),
+            "self_billing.pdf.not_found",
+            "Self-Billing Agreement not found",
+            ErrorKind.NotFound
+        },
+        {
             new OpportunityError.NotFound(42),
             "opportunity.get.not_found",
             "Opportunity 42 was not found.",
