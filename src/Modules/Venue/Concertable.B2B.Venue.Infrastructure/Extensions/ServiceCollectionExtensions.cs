@@ -42,7 +42,7 @@ public static class ServiceCollectionExtensions
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
         services.AddScoped<IVenueReadDbContext>(sp => sp.GetRequiredService<VenueReadDbContext>());
 
-        services.AddDbContext<VenueAdminDbContext>((sp, opt) =>
+        services.AddDbContext<VenuePrivilegedDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
@@ -57,7 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVenueRepository, VenueRepository>();
         services.AddScoped<IVenueReviewRepository, VenueReviewRepository>();
         services.AddScoped<IVenueReadRepository, VenueReadRepository>();
-        services.AddScoped<IVenueAdminRepository, VenueAdminRepository>();
+        services.AddScoped<IVenuePrivilegedRepository, VenuePrivilegedRepository>();
         services.AddScoped<IVenueModule, VenueModule>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, VenueReviewProjectionHandler>();

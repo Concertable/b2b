@@ -89,7 +89,7 @@ a one-off.
 **Resolves when:** each of the six call sites above is checked — if the `Add`/`AddInvitation`/etc. call
 really is the sole staged write before its `SaveChangesAsync`, collapse it to one `InsertAsync` call;
 if another write is staged in between (making the two-call form correct), leave it and note why inline.
-Consider whether `api/agents/CODE_CONVENTIONS.md`'s repository section should call out the `InsertAsync`
+Consider whether the `persistence` skill's repository section should call out the `InsertAsync`
 vs `AddAsync` choice explicitly, since this is the second time an agent session has written the
 worse form without being told — a one-line rule here might be cheaper than repeatedly catching it in
 review.
@@ -107,7 +107,7 @@ no event round-trip and no dependency on a Payment seed simulator (which no long
 divergence-from-production concern is accepted here because past-dated ticket sales are **inherently
 unreproducible** — real Payment only emits `PaymentSucceededEvent` for live Stripe webhooks, and you
 can't buy a ticket to a concert that already happened. Documented as a sanctioned exception in
-`agents/SEEDING_CONVENTIONS.md`. The settlement E2E (`ConcertFinishedTests`) reads these via
+the `seeding` skill. The settlement E2E (`ConcertFinishedTests`) reads these via
 `TicketsSold * Price`: Past DoorSplit (id 12) and Past Versus (id 9) are seeded `ticketsSold: 1` —
 the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) omitted.
 
@@ -198,10 +198,11 @@ in one mechanical sweep (no behaviour change).
 
 ### The `[Admin]` authorization seam is thin, and there is no admin UI for moderation
 
-`AdminAttribute` (`User.Api/Authorization`) resolves an `AdminProfileEntity` — a bare `Sub` column with
-no roles and no scoping — through `AdminProfileHandler`, which issues an **uncached `UserDbContext`
+`AdminAttribute` (`Admin.Api/Authorization`) resolves an `AdminProfileEntity` — a bare `Sub` column with
+no roles and no scoping — through `AdminProfileHandler`, which issues an **uncached `AdminDbContext`
 query on every request** to every `[Admin]` endpoint. Admin provisioning only happens via registration
-through the `admin` client-id (`CredentialRegisteredHandler`) or `UserTestSeeder`. Until the OSA
+through the `admin` client-id (`CredentialRegisteredHandler` calling `IAdminModule.GrantIfEligibleAsync`)
+or `AdminTestSeeder`. Until the OSA
 report-content work it was applied in exactly one place (`VenueController.Approve`); it now also gates
 `ModerationController` (hide / restore / resolve / triage queue).
 
@@ -265,3 +266,17 @@ pair, so neither the foreign key nor the tenancy shape fits.
 deliberately between a polymorphic `(ContentType, ContentId)` report with per-type tenancy resolution,
 or a per-module report entity behind a shared triage view. Do not pre-build either before the second
 case exists.
+
+### `MessageRepository` owns `ThreadReadStateEntity`, which has no repository of its own
+
+`Concertable.B2B.Conversations.Infrastructure/Repositories/MessageRepository.cs:27`, `:46`, `:55` join,
+read and `AddAsync` `context.ThreadReadStates`. That is the anti-pattern
+the `persistence` skill names in its own heading - "never fold a
+satellite entity into another entity's repository" - and the doc cites Conversations as the *precedent*
+for the rule it breaks. `Concert/ConcertImageEntity` is the same shape (a `DbSet` with no repository).
+
+Either give each its own repository, or state the exception the rule needs for an owned child collection
+that is never queried independently. Do not leave the rule absolute while the code contradicts it.
+
+Resolves when: `grep -n "ThreadReadStates" MessageRepository.cs` returns nothing, or the rule in
+`CODE_PATTERNS.md` states the child-collection exception explicitly.

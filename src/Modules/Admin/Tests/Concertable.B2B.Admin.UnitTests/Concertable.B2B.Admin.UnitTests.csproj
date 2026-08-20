@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Concertable.B2B.Admin.Domain\Concertable.B2B.Admin.Domain.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Admin.Application\Concertable.B2B.Admin.Application.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Admin.Infrastructure\Concertable.B2B.Admin.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\User\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

@@ -30,7 +30,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         var page = await GetInboxAsync(venue);
 
         var inbound = page.Data.Single(m => m.Content == "Test inbox message — artist to venue.");
-        Assert.Equal("Org", inbound.Sender.Kind);
+        Assert.Equal("org", inbound.Sender.Kind);
         Assert.Equal("The Rockers", inbound.Sender.DisplayName);
         Assert.Equal("Loughborough", inbound.Sender.Town);
     }
@@ -43,7 +43,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         var page = await GetInboxAsync(venue);
 
         var outbound = page.Data.Single(m => m.Content == "Test inbox message — venue to artist.");
-        Assert.Equal("Member", outbound.Sender.Kind);
+        Assert.Equal("member", outbound.Sender.Kind);
         Assert.Equal(SeedUsers.VenueManagerEmail(1), outbound.Sender.DisplayName);
     }
 
@@ -55,7 +55,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         var page = await GetInboxAsync(artist);
 
         var inbound = page.Data.Single(m => m.Content == "Test inbox message — venue to artist.");
-        Assert.Equal("Org", inbound.Sender.Kind);
+        Assert.Equal("org", inbound.Sender.Kind);
         Assert.Equal("The Grand Venue", inbound.Sender.DisplayName);
     }
 

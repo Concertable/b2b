@@ -1,0 +1,14 @@
+global using Concertable.Kernel;
+global using Reunion;
+global using Concertable.Kernel.ValueObjects;
+global using Concertable.Contracts;
+global using Concertable.Contracts.Enums;
+global using Concertable.Messaging;
+global using Concertable.DataAccess;
+global using Concertable.Kernel.Identity;
+global using Concertable.B2B.Admin.Contracts;
+global using Concertable.B2B.Admin.Domain.Entities;
+global using Concertable.B2B.Admin.Application.Interfaces;
+global using Concertable.B2B.Admin.Application.Errors;
+global using Concertable.B2B.Admin.Infrastructure.Repositories;
+global using Concertable.B2B.Admin.Infrastructure.Services;

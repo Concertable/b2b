@@ -6,11 +6,11 @@ namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
 internal sealed class MembershipService : IMembershipService
 {
-    private readonly ITenantRepository repository;
+    private readonly IMembershipRepository repository;
     private readonly ITenantContext tenantContext;
     private readonly IUserModule userModule;
 
-    public MembershipService(ITenantRepository repository, ITenantContext tenantContext, IUserModule userModule)
+    public MembershipService(IMembershipRepository repository, ITenantContext tenantContext, IUserModule userModule)
     {
         this.repository = repository;
         this.tenantContext = tenantContext;
@@ -61,7 +61,7 @@ internal sealed class MembershipService : IMembershipService
         if (membership.Role == TenantRole.Owner && await IsLastOwnerAsync(tenantId, ct))
             return new RemoveMemberError.LastOwner();
 
-        repository.RemoveMembership(membership);
+        repository.Remove(membership);
         await repository.SaveChangesAsync(ct);
         return new Success();
     }

@@ -1,10 +1,11 @@
 using Concertable.B2B.Venue.Api.Mappers;
 using Concertable.B2B.Venue.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.User.Api.Authorization;
+using Concertable.B2B.Admin.Api.Authorization;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Application.Requests;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Venue.Api.Controllers;
 
@@ -21,6 +22,7 @@ internal sealed class VenueController : ControllerBase
         this.venueService = venueService;
     }
 
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
     [HttpGet("{venueId:int}")]
     public async Task<ActionResult<DetailsResponse>> GetDetailsById(
         int venueId,
@@ -52,6 +54,7 @@ internal sealed class VenueController : ControllerBase
 
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.ProfileEdit)]
+    [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
     [HttpPost($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> Create(
         [FromForm] CreateVenueRequest request,
@@ -63,6 +66,7 @@ internal sealed class VenueController : ControllerBase
 
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.ProfileEdit)]
+    [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
     [HttpPut($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> Update(
         [FromForm] UpdateVenueRequest request,

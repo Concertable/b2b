@@ -3,6 +3,7 @@ using Concertable.B2B.Artist.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Artist.Api.Controllers;
 
@@ -19,12 +20,14 @@ internal sealed class ArtistReviewController : ControllerBase
         this.reviewService = reviewService;
     }
 
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
     [HttpGet]
     public async Task<ActionResult<IPagination<ReviewDto>>> GetReviews(
         int artistId,
         [FromQuery] PageParams pageParams) =>
         Ok(await reviewService.GetPagedAsync(artistId, pageParams));
 
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
     [HttpGet("summary")]
     public async Task<ActionResult<ReviewSummary>> GetSummary(int artistId) =>
         Ok(await reviewService.GetSummaryAsync(artistId));

@@ -6,6 +6,7 @@ using Concertable.Payment.Client;
 using Concertable.B2B.User.Contracts;
 using Concertable.B2B.User.Domain.Entities;
 using Concertable.Kernel;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Logging;
 using Concertable.Testing.Integration.Mocks;
@@ -13,6 +14,7 @@ using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
+using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
@@ -91,6 +93,7 @@ public class ApiFixture : IAsyncLifetime
                     ["Urls:Frontends:Artist"] = "https://localhost:5176",
                     ["BlobStorage:ContainerName"] = "images",
                 });
+                config.RelaxRateLimiting(RateLimitPolicies.All);
             });
 
             builder.ConfigureTestServices(services =>
@@ -122,6 +125,7 @@ public class ApiFixture : IAsyncLifetime
                 services.AddScoped<SeedState>();
                 services.AddUserTestSeeder();
                 services.AddTenantTestSeeder();
+                services.AddAdminTestSeeder();
                 services.AddArtistTestSeeder();
                 services.AddVenueTestSeeder();
                 services.AddDealTestSeeder();

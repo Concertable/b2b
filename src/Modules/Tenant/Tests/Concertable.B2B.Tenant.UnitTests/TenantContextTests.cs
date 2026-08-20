@@ -11,7 +11,7 @@ public sealed class TenantContextTests
 {
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<IHttpContextAccessor> httpContextAccessor = new();
-    private readonly Mock<ITenantRepository> repository = new();
+    private readonly Mock<IMembershipRepository> repository = new();
     private readonly DefaultHttpContext httpContext = new();
     private static readonly IPermissionCatalog Catalog = BuildCatalog();
 
