@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Aspire.Azure.Storage.Blobs" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
@@ -37,6 +38,7 @@
     <PackageReference Include="Concertable.Messaging.Infrastructure" />
     <PackageReference Include="Concertable.Payment.Client" />
     <PackageReference Include="Concertable.Seed.Shared" />
+    <PackageReference Include="Concertable.ServiceDefaults" />
     <PackageReference Include="Concertable.Shared.Blob.Infrastructure" />
     <PackageReference Include="Concertable.Shared.Email.Infrastructure" />
     <PackageReference Include="Concertable.Shared.Geocoding.Infrastructure" />
