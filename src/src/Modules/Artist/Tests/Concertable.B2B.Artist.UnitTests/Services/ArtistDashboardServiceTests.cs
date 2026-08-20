@@ -1,7 +1,5 @@
-using Concertable.B2B.Artist.Application.Interfaces;
 using Concertable.B2B.Artist.Infrastructure.Services;
 using Concertable.B2B.Concert.Contracts;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
@@ -13,7 +11,6 @@ namespace Concertable.B2B.Artist.UnitTests.Services;
 
 public sealed class ArtistDashboardServiceTests
 {
-    private readonly Mock<IArtistService> artistService = new();
     private readonly Mock<IConcertModule> concertModule = new();
     private readonly Mock<IManagerPaymentReportingClient> reportingClient = new();
     private readonly Mock<ITenantContext> tenantContext = new();
@@ -23,14 +20,12 @@ public sealed class ArtistDashboardServiceTests
 
     public ArtistDashboardServiceTests()
     {
-        artistService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(42);
         tenantContext.SetupGet(t => t.TenantId).Returns(tenantId);
         reportingClient
             .Setup(r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Money.Gbp(0m));
 
         service = new ArtistDashboardService(
-            artistService.Object,
             concertModule.Object,
             reportingClient.Object,
             tenantContext.Object,
@@ -41,7 +36,7 @@ public sealed class ArtistDashboardServiceTests
     public async Task GetKpisAsync_QueriesTenantMonthToDatePayouts_AndMapsToCents()
     {
         concertModule
-            .Setup(m => m.GetArtistDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetArtistDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ArtistDashboardCounts(
                 PendingApplications: 4, AcceptedAwaitingCheckout: 2, UpcomingConcerts: 6));
 
@@ -67,15 +62,18 @@ public sealed class ArtistDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_ReturnsNull_WhenCountsUnavailable()
+    public async Task GetKpisAsync_CountsUnavailable_ReturnsNoneWithoutReportingCall()
     {
         concertModule
-            .Setup(m => m.GetArtistDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetArtistDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Option.None<ArtistDashboardCounts>());
 
         var result = await service.GetKpisAsync();
 
         Assert.False(result.TryGetValue(out _));
+        reportingClient.Verify(
+            r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -83,7 +81,7 @@ public sealed class ArtistDashboardServiceTests
     {
         timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
         concertModule
-            .Setup(m => m.GetArtistDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetArtistDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ArtistDashboardCounts(
                 PendingApplications: 4, AcceptedAwaitingCheckout: 2, UpcomingConcerts: 6));
 
@@ -97,27 +95,11 @@ public sealed class ArtistDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsForbidden()
+    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsInvalidOperation()
     {
         timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
         tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
 
-        await Assert.ThrowsAsync<ForbiddenException>(() => service.GetKpisAsync());
-    }
-
-    [Fact]
-    public async Task GetKpisAsync_WithoutArtist_ReturnsNoneWithoutQueries()
-    {
-        artistService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(default(Option<int>));
-
-        var result = await service.GetKpisAsync();
-
-        Assert.False(result.TryGetValue(out _));
-        concertModule.Verify(
-            m => m.GetArtistDashboardCountsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        reportingClient.Verify(
-            r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetKpisAsync());
     }
 }

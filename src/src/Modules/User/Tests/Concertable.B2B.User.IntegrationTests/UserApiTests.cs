@@ -13,9 +13,9 @@ namespace Concertable.B2B.User.IntegrationTests;
 
 public sealed class UserApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly UserApiFixture fixture;
 
-    public UserApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public UserApiTests(UserApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -94,6 +94,36 @@ public sealed class UserApiTests : IAsyncLifetime
         Assert.NotNull(user);
         Assert.NotNull(user.Latitude);
         Assert.NotNull(user.Longitude);
+    }
+
+    #endregion
+
+    #region Me
+
+    [Fact]
+    public async Task Me_ReturnsIsAdminTrue_WhenCallerIsAdmin()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.Admin);
+
+        var response = await client.GetAsync("/api/auth/me");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var user = await response.Content.ReadAsync<UserDto>();
+        Assert.NotNull(user);
+        Assert.True(user.IsAdmin);
+    }
+
+    [Fact]
+    public async Task Me_ReturnsIsAdminFalse_WhenCallerIsNotAdmin()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync("/api/auth/me");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var user = await response.Content.ReadAsync<UserDto>();
+        Assert.NotNull(user);
+        Assert.False(user.IsAdmin);
     }
 
     #endregion

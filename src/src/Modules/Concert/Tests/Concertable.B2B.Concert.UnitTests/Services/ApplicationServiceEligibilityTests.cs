@@ -1,10 +1,12 @@
-using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Services;
+using Concertable.Contracts;
+using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Moq;
 using Reunion;
@@ -22,11 +24,16 @@ public sealed class ApplicationServiceEligibilityTests
     private readonly Mock<IApplicationValidator> validator;
     private readonly Mock<IOpportunityRepository> opportunityRepository;
     private readonly Mock<IOpportunityService> opportunityService;
-    private readonly Mock<IArtistModule> artistModule;
+    private readonly Mock<IArtistReadModelRepository> artistRepository;
+    private readonly Mock<ITenantContext> tenantContext;
+    private readonly Mock<IApplicationExecutor> executor;
+    private readonly Mock<IApplicationNotifier> notifier;
     private readonly Mock<ICheckoutDispatcher> checkoutDispatcher;
+    private readonly Mock<IApplicationMapper> mapper;
     private readonly ApplicationService service;
     private readonly OpportunityEntity opportunity;
     private readonly ApplicationEntity application;
+    private readonly Guid artistTenantId;
 
     public ApplicationServiceEligibilityTests()
     {
@@ -34,8 +41,12 @@ public sealed class ApplicationServiceEligibilityTests
         this.validator = new Mock<IApplicationValidator>();
         this.opportunityRepository = new Mock<IOpportunityRepository>();
         this.opportunityService = new Mock<IOpportunityService>();
-        this.artistModule = new Mock<IArtistModule>();
+        this.artistRepository = new Mock<IArtistReadModelRepository>();
+        this.tenantContext = new Mock<ITenantContext>();
+        this.executor = new Mock<IApplicationExecutor>();
+        this.notifier = new Mock<IApplicationNotifier>();
         this.checkoutDispatcher = new Mock<ICheckoutDispatcher>();
+        this.mapper = new Mock<IApplicationMapper>();
         this.opportunity = OpportunityEntity.Create(
             1,
             new DateRange(
@@ -43,6 +54,7 @@ public sealed class ApplicationServiceEligibilityTests
                 new DateTime(2026, 9, 1, 23, 0, 0, DateTimeKind.Utc)),
             1);
         this.opportunity.TenantId = Guid.NewGuid();
+        this.artistTenantId = Guid.NewGuid();
         this.application = StandardApplication.Create(
             ArtistId,
             OpportunityId,
@@ -50,9 +62,19 @@ public sealed class ApplicationServiceEligibilityTests
             this.opportunity.TenantId,
             Guid.NewGuid());
 
-        this.artistModule
-            .Setup(module => module.GetIdForCurrentTenantAsync())
-            .ReturnsAsync(Option.Some(ArtistId));
+        this.tenantContext
+            .SetupGet(context => context.TenantId)
+            .Returns(this.artistTenantId);
+        this.artistRepository
+            .Setup(value => value.GetByTenantIdAsync(
+                this.artistTenantId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ArtistReadModel
+            {
+                Id = ArtistId,
+                TenantId = this.artistTenantId,
+                Genres = []
+            });
         this.opportunityRepository
             .Setup(value => value.GetByIdAsync(OpportunityId))
             .ReturnsAsync(this.opportunity);
@@ -72,13 +94,14 @@ public sealed class ApplicationServiceEligibilityTests
         this.service = new ApplicationService(
             this.repository.Object,
             this.validator.Object,
-            Mock.Of<IApplicationNotifier>(),
+            this.notifier.Object,
             this.opportunityService.Object,
             this.opportunityRepository.Object,
-            this.artistModule.Object,
-            Mock.Of<IApplicationExecutor>(),
+            this.artistRepository.Object,
+            this.tenantContext.Object,
+            this.executor.Object,
             this.checkoutDispatcher.Object,
-            Mock.Of<IApplicationMapper>());
+            this.mapper.Object);
     }
 
     [Fact]
@@ -92,9 +115,11 @@ public sealed class ApplicationServiceEligibilityTests
     [Fact]
     public async Task CanApplyAsync_MissingArtist_ReturnsFalse()
     {
-        this.artistModule
-            .Setup(module => module.GetIdForCurrentTenantAsync())
-            .ReturnsAsync(Option.None<int>());
+        this.artistRepository
+            .Setup(value => value.GetByTenantIdAsync(
+                this.artistTenantId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ArtistReadModel?)null);
 
         var result = await this.service.CanApplyAsync(OpportunityId);
 
@@ -144,6 +169,28 @@ public sealed class ApplicationServiceEligibilityTests
     }
 
     [Fact]
+    public async Task ApplyAsync_ExecutorFailure_ReturnsErrorWithoutCompletingApplication()
+    {
+        var expected = new ApplyApplicationError.UnsupportedDeal(DealType.FlatFee);
+        this.executor
+            .Setup(value => value.ApplyAsync(
+                OpportunityId,
+                ArtistId,
+                null,
+                It.IsAny<ESignatureRequest>()))
+            .ReturnsAsync(Result.Failure<ApplicationEntity, ApplyApplicationError>(expected));
+
+        var result = await this.service.ApplyAsync(
+            OpportunityId,
+            new ESignatureRequest { SignatoryName = "Test Signatory" });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Same(expected, error);
+        this.notifier.Verify(value => value.AppliedAsync(It.IsAny<int>()), Times.Never);
+        this.mapper.Verify(value => value.ToDtoAsync(It.IsAny<ApplicationEntity>()), Times.Never);
+    }
+
+    [Fact]
     public async Task AcceptAsync_InvalidValidation_MapsStructuredErrors()
     {
         this.validator
@@ -175,9 +222,11 @@ public sealed class ApplicationServiceEligibilityTests
     [Fact]
     public async Task GetPendingForArtistAsync_MissingArtist_ReturnsForbidden()
     {
-        this.artistModule
-            .Setup(module => module.GetIdForCurrentTenantAsync())
-            .ReturnsAsync(Option.None<int>());
+        this.artistRepository
+            .Setup(value => value.GetByTenantIdAsync(
+                this.artistTenantId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ArtistReadModel?)null);
 
         var result = await this.service.GetPendingForArtistAsync();
 
@@ -188,9 +237,11 @@ public sealed class ApplicationServiceEligibilityTests
     [Fact]
     public async Task ApplyCheckoutAsync_Ineligible_ReturnsTypedErrorWithoutDispatching()
     {
-        this.artistModule
-            .Setup(module => module.GetIdForCurrentTenantAsync())
-            .ReturnsAsync(Option.None<int>());
+        this.artistRepository
+            .Setup(value => value.GetByTenantIdAsync(
+                this.artistTenantId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ArtistReadModel?)null);
 
         var result = await this.service.ApplyCheckoutAsync(OpportunityId);
 

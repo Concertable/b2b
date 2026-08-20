@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Api.Requests;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
 
@@ -33,6 +34,7 @@ internal sealed class ApplicationController : ControllerBase
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
+    [EnableRateLimiting(RateLimitPolicies.Apply)]
     [HttpPost("{opportunityId}")]
     public async Task<ActionResult<ApplicationResponse>> Apply(int opportunityId, [FromBody] ApplyRequest request)
     {
@@ -41,7 +43,7 @@ internal sealed class ApplicationController : ControllerBase
             : await applicationService.ApplyAsync(opportunityId, request.ESignature);
         return result.ToCreatedOrProblem(
             mapper.ToResponse,
-            application => $"/api/Application/{application.Id}");
+            application => $"/api/application/{application.Id}");
     }
 
     [HttpGet("artist/pending")]
@@ -99,6 +101,7 @@ internal sealed class ApplicationController : ControllerBase
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
+    [EnableRateLimiting(RateLimitPolicies.Checkout)]
     [HttpPost("opportunity/{opportunityId}/checkout")]
     public async Task<ActionResult<Checkout>> ApplyCheckout(int opportunityId)
     {

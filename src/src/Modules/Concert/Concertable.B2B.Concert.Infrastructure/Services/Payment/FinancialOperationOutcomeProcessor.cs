@@ -88,7 +88,7 @@ internal sealed class FinancialOperationOutcomeProcessor :
             if (application.State is LifecycleState.Booked or LifecycleState.Cancelled)
                 return;
 
-            await escrowExecutor.SucceededAsync(bookingId, ct);
+            await escrowExecutor.SucceededAsync(application.Id, bookingId, ct);
         }, ct);
 
     private Task AcceptanceRejectedAsync(
@@ -114,8 +114,7 @@ internal sealed class FinancialOperationOutcomeProcessor :
             }
 
             application.RecordFinancialFailure(code, message);
-            await escrowExecutor.FailedAsync(application.Booking?.Id
-                ?? throw new InvalidOperationException($"Acceptance operation {operationId} has no booking."), ct);
+            await escrowExecutor.FailedAsync(application.Id, ct);
         }, ct);
 
     private Task RefundSucceededAsync(

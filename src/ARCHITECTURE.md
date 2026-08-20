@@ -1,7 +1,7 @@
 # Concertable.B2B — Architecture
 
 > Cross-service plan and design rationale: [`api/docs/MICROSERVICES_ARCHITECTURE.md`](../docs/MICROSERVICES_ARCHITECTURE.md)
-> Internal module rules: [`api/agents/CONVENTIONS.md`](../agents/CONVENTIONS.md)
+> Internal module rules: the `dotnet-standards:module-structure` and `dotnet:module-structure` skills
 > Outstanding gaps: [`TECH_DEBT.md`](./TECH_DEBT.md)
 
 ---
@@ -21,7 +21,9 @@ B2B owns the venue/artist side of Concertable: opportunities, applications, book
 | `Concertable.B2B.DataAccess` | Shared csproj | Shared data-access primitives: tenant query filters, the per-stance DbContext base classes, and repositories. |
 | `Concertable.B2B.AppHost` | Aspire AppHost | Local-dev orchestrator only. |
 
-**Database:** `B2BDb` (SQL Server). Per-module DbContexts for writes; each module's read-only `Public<Module>DbContext` (e.g. `PublicConcertDbContext`) for unfiltered / cross-tenant reads.
+**Database:** `B2BDb` (SQL Server). Artist, Venue, and Concert each use a tenant-bound tracked/write
+`<Module>DbContext` plus a tenant-independent read-only `<Module>ReadDbContext`. Venue also has
+`VenuePrivilegedDbContext` for tenant-independent administrative writes.
 
 ---
 
@@ -34,12 +36,14 @@ All modules live under `Modules/`. Each follows the `Concertable.B2B.<Module>.*`
 | **Artist** | `ArtistEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
 | **Concert** | `ConcertEntity` (workflow: stage, BookingId; deal type derives through Booking → Application), `OpportunityEntity`, `ApplicationEntity`, `BookingEntity`, `SettlementTransactionEntity`, `TicketTransactionEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
 | **Contract** | `DealEntity` (TPH: `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity`), `EscrowEntity` | Api, Application, Contracts, Domain, Infrastructure, UnitTests |
-| **Conversations** | `MessageEntity` | Api, Application, Contracts, Domain, Infrastructure |
-| **Tenant** | `TenantEntity` (org legal/VAT/Stripe identity; owns venues; settlement payee — the renamed `OrganizationEntity`) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
+| **Conversations** | `MessageEntity`, `ParticipantProfile` (local sender-display projection) | Api, Application, Contracts, Domain, Infrastructure |
+| **Tenant** | `TenantEntity` (business account, membership boundary, legal/VAT/Stripe identity, settlement payee) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
 | **User** | `UserEntity` (flat) + standalone `AdminProfileEntity` — no TPH, no manager-profile subtypes | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
 | **Venue** | `VenueEntity`, `VenueImageEntity`, `PayoutAccountEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
 
 Cross-module calls go through `IXModule` facades in `Concertable.B2B.<Module>.Contracts` only. No direct entity reach-in between modules.
+
+`Tenant` is the canonical backend concept. In the current one-to-one model it is both the isolation boundary and the business/legal account; there is no separate organisation aggregate or identifier. Artist and Venue are tenant-owned marketplace profiles. Organisation wording belongs only at presentation boundaries.
 
 ---
 
@@ -58,6 +62,8 @@ All event types implement `IIntegrationEvent` from `Concertable.Messaging.Contra
 | `ConcertChangedEvent` | `Concertable.B2B.Concert.Contracts.Events` | Concert edited / stage changed |
 | `ConcertPostedEvent` | `Concertable.B2B.Concert.Contracts.Events` | Concert moves to Posted stage |
 | `ConcertRatingUpdatedEvent` | `Concertable.B2B.Concert.Contracts.Events` | Rating projection updated |
+
+The B2B host also dispatches published integration events to registered local handlers. Conversations consumes `ArtistChangedEvent` and `VenueChangedEvent` locally to maintain its `ParticipantProfile` projection keyed by `TenantId`; sender rendering never reaches into Artist or Venue storage synchronously.
 
 ### Consumed
 
@@ -93,7 +99,7 @@ No sync calls to Customer or Search. B2B and Customer communicate **exclusively 
 
 ## Internal architecture
 
-B2B is a modular monolith *inside* the service. Rules in `api/agents/CONVENTIONS.md` apply verbatim:
+B2B is a modular monolith *inside* the service. The `dotnet-standards:module-structure` and `dotnet:module-structure` skills apply verbatim:
 
 - Cross-module calls: `IXModule` facade only (in `<Module>.Contracts`)
 - Per-module `XDbContext` with its own schema; all point at `B2BDb`

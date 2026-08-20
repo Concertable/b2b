@@ -35,6 +35,10 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
     public Task CompleteLatestAsync(IServiceScopeFactory scopeFactory) =>
         CompleteLatestAsync(scopeFactory, _ => true);
 
+    public Task CompleteLatestAsync<TCommand>(IServiceScopeFactory scopeFactory)
+        where TCommand : IIntegrationCommand =>
+        CompleteLatestAsync(scopeFactory, command => command is TCommand);
+
     public Task CompleteLatestAcceptanceAsync(IServiceScopeFactory scopeFactory) =>
         CompleteLatestAsync(scopeFactory, command => command is CaptureEscrowCommand or DepositEscrowCommand);
 

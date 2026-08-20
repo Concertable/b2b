@@ -7,6 +7,5 @@ internal static class Schema
     public static class Tables
     {
         public const string Users = "Users";
-        public const string AdminProfiles = "AdminProfiles";
     }
 }

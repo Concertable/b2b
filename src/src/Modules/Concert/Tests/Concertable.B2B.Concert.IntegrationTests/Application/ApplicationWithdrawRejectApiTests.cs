@@ -35,13 +35,13 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/withdraw", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
         Assert.Equal(LifecycleState.Withdrawn, application.State);
-        Assert.Contains(fixture.EmailSender.Sent, e =>
+        Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
             e.To == fixture.SeedState.VenueManager1.Email && e.Subject == "Concert Application Withdrawn");
     }
 
@@ -53,7 +53,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/withdraw", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -69,7 +69,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/withdraw", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NotFound);
@@ -83,9 +83,9 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var firstResponse = await client.PostAsync($"/api/Application/{appId}/withdraw", (object?)null);
+        var firstResponse = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
-        var response = await client.PostAsync($"/api/Application/{appId}/withdraw", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -100,11 +100,11 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
 
         // Act
-        var withdrawResponse = await client.PostAsync($"/api/Application/{appId}/withdraw", (object?)null);
+        var withdrawResponse = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
 
         // Assert
         await withdrawResponse.ShouldBe(HttpStatusCode.NoContent);
-        var opportunitiesResponse = await client.GetAsync($"/api/Venue/{fixture.SeedState.Venue.Id}/opportunities");
+        var opportunitiesResponse = await client.GetAsync($"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
         await opportunitiesResponse.ShouldBe(HttpStatusCode.OK);
         var opportunities = await opportunitiesResponse.Content.ReadAsync<IEnumerable<OpportunityResponse>>();
         Assert.Contains(opportunities!, o => o.Id == opportunityId);
@@ -122,13 +122,13 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/reject", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
         var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
         Assert.Equal(LifecycleState.Rejected, application.State);
-        Assert.Contains(fixture.EmailSender.Sent, e =>
+        Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
             e.To == fixture.SeedState.ArtistManager1.Email && e.Subject == "Concert Application Update");
     }
 
@@ -140,7 +140,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/reject", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -156,7 +156,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/reject", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NotFound);
@@ -170,7 +170,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.AwaitingPaymentApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/reject", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -188,7 +188,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
-        var beforeResponse = await client.GetAsync($"/api/Application/{appId}");
+        var beforeResponse = await client.GetAsync($"/api/application/{appId}");
         await beforeResponse.ShouldBe(HttpStatusCode.OK);
         var before = await beforeResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Pending, before!.Status);
@@ -196,11 +196,11 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         Assert.NotNull(before.Actions.Reject);
 
         // Act
-        var rejectResponse = await client.PostAsync($"/api/Application/{appId}/reject", (object?)null);
+        var rejectResponse = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
 
         // Assert
         await rejectResponse.ShouldBe(HttpStatusCode.NoContent);
-        var afterResponse = await client.GetAsync($"/api/Application/{appId}");
+        var afterResponse = await client.GetAsync($"/api/application/{appId}");
         await afterResponse.ShouldBe(HttpStatusCode.OK);
         var after = await afterResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Rejected, after!.Status);

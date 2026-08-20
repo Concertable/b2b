@@ -6,16 +6,16 @@ using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.User.Application.Validators;
-using Concertable.B2B.User.Infrastructure.Authorization;
 using Concertable.B2B.User.Infrastructure.Data;
 using Concertable.B2B.User.Infrastructure.Data.Seeders;
 using Concertable.B2B.User.Infrastructure.Events;
 using Concertable.B2B.Venue.Contracts.Events;
 using FluentValidation;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Concertable.DataAccess.Application;
+using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 
@@ -39,6 +39,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserModule, UserModule>();
 
+        services.AddScoped<IUnitOfWork<UserDbContext>, UnitOfWork<UserDbContext>>();
+        services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, CredentialRegisteredHandler>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistManagerSyncHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueManagerSyncHandler>();
@@ -48,13 +51,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<UserConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<UserConfigurationProvider>());
 
-        services.AddValidatorsFromAssemblyContaining<UpdateLocationRequestValidator>();
-
-        services.AddAuthorization(options =>
-        {
-            options.AddPolicy("Admin", p => p.AddRequirements(new AdminProfileRequirement()));
-        });
-        services.AddScoped<IAuthorizationHandler, AdminProfileHandler>();
+        services.AddValidatorsFromAssemblyContaining<UpdateLocationRequestValidator>(includeInternalTypes: true);
 
         return services;
     }

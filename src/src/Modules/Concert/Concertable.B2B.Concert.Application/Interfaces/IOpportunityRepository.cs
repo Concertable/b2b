@@ -9,7 +9,7 @@ internal interface IOpportunityRepository : ITenantScopedRepository<OpportunityE
     /// <summary>
     /// Active opportunities for a venue, read <b>tracked</b> through the writing context — the
     /// management/sync path mutates these entities, so they must be change-tracked (unlike the
-    /// read-only <see cref="IPublicOpportunityRepository"/> projection).
+    /// read-only <see cref="IOpportunityReadRepository"/> projection).
     /// </summary>
     Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId);
     Task<OpportunityEntity?> GetByApplicationIdAsync(int id);
