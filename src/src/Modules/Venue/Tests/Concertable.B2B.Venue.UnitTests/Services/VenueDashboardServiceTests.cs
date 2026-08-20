@@ -1,7 +1,5 @@
 using Concertable.B2B.Concert.Contracts;
-using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Infrastructure.Services;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
@@ -13,7 +11,6 @@ namespace Concertable.B2B.Venue.UnitTests.Services;
 
 public sealed class VenueDashboardServiceTests
 {
-    private readonly Mock<IVenueService> venueService = new();
     private readonly Mock<IConcertModule> concertModule = new();
     private readonly Mock<IManagerPaymentReportingClient> reportingClient = new();
     private readonly Mock<ITenantContext> tenantContext = new();
@@ -23,14 +20,12 @@ public sealed class VenueDashboardServiceTests
 
     public VenueDashboardServiceTests()
     {
-        venueService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(42);
         tenantContext.SetupGet(t => t.TenantId).Returns(tenantId);
         reportingClient
             .Setup(r => r.GetTicketRevenueAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Money.Gbp(0m));
 
         service = new VenueDashboardService(
-            venueService.Object,
             concertModule.Object,
             reportingClient.Object,
             tenantContext.Object,
@@ -41,7 +36,7 @@ public sealed class VenueDashboardServiceTests
     public async Task GetKpisAsync_QueriesTenantMonthToDateRevenue_AndMapsToCents()
     {
         concertModule
-            .Setup(m => m.GetVenueDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetVenueDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new VenueDashboardCounts(
                 ApplicationsToReview: 3, OpenOpportunities: 2, UpcomingConcerts: 5, AwaitingDoorRevenue: 1));
 
@@ -67,15 +62,18 @@ public sealed class VenueDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_ReturnsNull_WhenCountsUnavailable()
+    public async Task GetKpisAsync_CountsUnavailable_ReturnsNoneWithoutReportingCall()
     {
         concertModule
-            .Setup(m => m.GetVenueDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetVenueDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Option.None<VenueDashboardCounts>());
 
         var result = await service.GetKpisAsync();
 
         Assert.False(result.TryGetValue(out _));
+        reportingClient.Verify(
+            r => r.GetTicketRevenueAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -83,7 +81,7 @@ public sealed class VenueDashboardServiceTests
     {
         timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
         concertModule
-            .Setup(m => m.GetVenueDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetVenueDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new VenueDashboardCounts(
                 ApplicationsToReview: 3, OpenOpportunities: 2, UpcomingConcerts: 5, AwaitingDoorRevenue: 1));
 
@@ -97,27 +95,11 @@ public sealed class VenueDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsForbidden()
+    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsInvalidOperation()
     {
         timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
         tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
 
-        await Assert.ThrowsAsync<ForbiddenException>(() => service.GetKpisAsync());
-    }
-
-    [Fact]
-    public async Task GetKpisAsync_WithoutVenue_ReturnsNoneWithoutQueries()
-    {
-        venueService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(default(Option<int>));
-
-        var result = await service.GetKpisAsync();
-
-        Assert.False(result.TryGetValue(out _));
-        concertModule.Verify(
-            m => m.GetVenueDashboardCountsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        reportingClient.Verify(
-            r => r.GetTicketRevenueAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetKpisAsync());
     }
 }

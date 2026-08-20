@@ -26,7 +26,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     private Guid TenantOf(Guid userId) => fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
 
     private static Task<HttpResponseMessage> PutRole(HttpClient client, Guid userId, TenantRole role) =>
-        client.PutAsJsonAsync($"/api/organizations/members/{userId}/role", new { role = role.ToString() });
+        client.PutAsJsonAsync($"/api/organization/members/{userId}/role", new { role = role.ToString() });
 
     // A member who owns another tenant must name the acting tenant explicitly, or resolution fails closed.
     private HttpClient ClientInTenant(UserEntity user, Guid tenantId)
@@ -45,7 +45,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var second = fixture.SeedState.VenueManagerNoVenue;
         await fixture.AddMembershipAsync(TenantOf(owner.Id), second.Id, TenantRole.Staff);
 
-        var response = await fixture.CreateClient(owner).GetAsync("/api/organizations/members");
+        var response = await fixture.CreateClient(owner).GetAsync("/api/organization/members");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var members = await response.Content.ReadAsync<List<MemberDto>>();
@@ -61,7 +61,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var tenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
         await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
 
-        var response = await ClientInTenant(manager, tenantId).GetAsync("/api/organizations/members");
+        var response = await ClientInTenant(manager, tenantId).GetAsync("/api/organization/members");
 
         await response.ShouldBe(HttpStatusCode.OK);
     }
@@ -132,7 +132,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var member = fixture.SeedState.VenueManagerNoVenue;
         await fixture.AddMembershipAsync(tenantId, member.Id, TenantRole.Staff);
 
-        var response = await fixture.CreateClient(owner).DeleteAsync($"/api/organizations/members/{member.Id}");
+        var response = await fixture.CreateClient(owner).DeleteAsync($"/api/organization/members/{member.Id}");
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         Assert.DoesNotContain(fixture.Memberships, m => m.TenantId == tenantId && m.UserId == member.Id);
@@ -146,7 +146,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var tenantId = TenantOf(owner.Id);
         await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
 
-        var response = await ClientInTenant(manager, tenantId).DeleteAsync($"/api/organizations/members/{owner.Id}");
+        var response = await ClientInTenant(manager, tenantId).DeleteAsync($"/api/organization/members/{owner.Id}");
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -157,7 +157,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var owner = fixture.SeedState.VenueManager1; // the only Owner
         var tenantId = TenantOf(owner.Id);
 
-        var response = await fixture.CreateClient(owner).DeleteAsync($"/api/organizations/members/{owner.Id}");
+        var response = await fixture.CreateClient(owner).DeleteAsync($"/api/organization/members/{owner.Id}");
 
         await response.ShouldBe(HttpStatusCode.Conflict);
         Assert.Contains(fixture.Memberships, m => m.TenantId == tenantId && m.UserId == owner.Id);
@@ -172,7 +172,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var coOwner = fixture.SeedState.VenueManagerNoVenue;
         await fixture.AddOwnerMembershipAsync(tenantId, coOwner.Id);
 
-        var response = await fixture.CreateClient(owner).DeleteAsync($"/api/organizations/members/{owner.Id}");
+        var response = await fixture.CreateClient(owner).DeleteAsync($"/api/organization/members/{owner.Id}");
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         Assert.DoesNotContain(fixture.Memberships, m => m.TenantId == tenantId && m.UserId == owner.Id);
@@ -181,7 +181,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
 
     #endregion
 
-    #region DeleteCurrentTenant
+    #region DeleteActiveTenant
 
     [Fact]
     public async Task DeleteTenant_AsOwner_DeletesTenantAndMemberships()
@@ -190,7 +190,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var tenantId = TenantOf(owner.Id);
         await fixture.AddMembershipAsync(tenantId, fixture.SeedState.VenueManagerNoVenue.Id, TenantRole.Staff);
 
-        var response = await fixture.CreateClient(owner).DeleteAsync("/api/organizations");
+        var response = await fixture.CreateClient(owner).DeleteAsync("/api/organization");
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         Assert.DoesNotContain(fixture.Tenants, t => t.Id == tenantId);
@@ -205,7 +205,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var tenantId = TenantOf(owner.Id);
         await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
 
-        var response = await ClientInTenant(manager, tenantId).DeleteAsync("/api/organizations");
+        var response = await ClientInTenant(manager, tenantId).DeleteAsync("/api/organization");
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -222,7 +222,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var member = fixture.SeedState.ArtistManagerNoArtist;
         await fixture.AddMembershipAsync(tenantId, member.Id, TenantRole.Staff);
 
-        var list = await fixture.CreateClient(owner).GetAsync("/api/organizations/members");
+        var list = await fixture.CreateClient(owner).GetAsync("/api/organization/members");
         await list.ShouldBe(HttpStatusCode.OK);
         Assert.Contains(await list.Content.ReadAsync<List<MemberDto>>() ?? [], m => m.UserId == member.Id);
 

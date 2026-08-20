@@ -1,6 +1,4 @@
-using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Venue.Contracts;
 using Concertable.Contracts;
 using Concertable.Kernel.Identity;
 
@@ -8,7 +6,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Services;
 
 internal sealed class MessageService : IMessageService
 {
-    private const string UnknownOrg = "Unknown";
+    private const string UnknownSender = "Unknown";
 
     private readonly IMessageRepository repository;
     private readonly IConversationsNotifier notifier;
@@ -16,8 +14,6 @@ internal sealed class MessageService : IMessageService
     private readonly ITenantContext tenantContext;
     private readonly ITenantModule tenantModule;
     private readonly IUserModule userModule;
-    private readonly IVenueModule venueModule;
-    private readonly IArtistModule artistModule;
     private readonly TimeProvider timeProvider;
 
     public MessageService(
@@ -27,8 +23,6 @@ internal sealed class MessageService : IMessageService
         ITenantContext tenantContext,
         ITenantModule tenantModule,
         IUserModule userModule,
-        IVenueModule venueModule,
-        IArtistModule artistModule,
         TimeProvider timeProvider)
     {
         this.repository = repository;
@@ -37,8 +31,6 @@ internal sealed class MessageService : IMessageService
         this.tenantContext = tenantContext;
         this.tenantModule = tenantModule;
         this.userModule = userModule;
-        this.venueModule = venueModule;
-        this.artistModule = artistModule;
         this.timeProvider = timeProvider;
     }
 
@@ -56,7 +48,7 @@ internal sealed class MessageService : IMessageService
         await repository.SaveChangesAsync();
 
         var recipientTenantId = senderTenantId == venueTenantId ? artistTenantId : venueTenantId;
-        var payload = message.ToDto(await ResolveOrgSenderAsync(senderTenantId, senderTenantId == venueTenantId), senderTenantId);
+        var payload = message.ToDto(await ResolveParticipantAsync(senderTenantId), senderTenantId);
 
         foreach (var memberId in await tenantModule.GetMemberUserIdsAsync(recipientTenantId))
             await notifier.MessageReceivedAsync(memberId.ToString(), payload);
@@ -74,15 +66,11 @@ internal sealed class MessageService : IMessageService
     public Task MarkInboxReadAsync() =>
         repository.AdvanceReadPointersAsync(tenantContext.GetTenantId(), currentUser.GetId(), timeProvider.GetUtcNow().DateTime);
 
-    private async Task<Pagination<MessageDto>> ToPaginationAsync(IPagination<MessageEntity> messages)
+    private async Task<IPagination<MessageDto>> ToPaginationAsync(IPagination<MessageEntity> messages)
     {
         var activeTenantId = tenantContext.GetTenantId();
         var senders = await ResolveSendersAsync(messages.Data, activeTenantId);
-        return new Pagination<MessageDto>(
-            messages.Data.Select(m => m.ToDto(senders[m.Id], CounterpartOf(m, activeTenantId))).ToList(),
-            messages.TotalCount,
-            messages.PageNumber,
-            messages.PageSize);
+        return messages.Map(m => m.ToDto(senders[m.Id], CounterpartOf(m, activeTenantId)));
     }
 
     private static Guid CounterpartOf(MessageEntity message, Guid activeTenantId) =>
@@ -91,13 +79,13 @@ internal sealed class MessageService : IMessageService
     private async Task<Dictionary<int, MessageSender>> ResolveSendersAsync(IReadOnlyList<MessageEntity> messages, Guid activeTenantId)
     {
         var emails = await ResolveMemberEmailsAsync(messages, activeTenantId);
-        var orgs = await ResolveCounterpartyOrgsAsync(messages, activeTenantId);
+        var profiles = await ResolveCounterpartyProfilesAsync(messages, activeTenantId);
 
         return messages.ToDictionary(
             m => m.Id,
             m => m.SenderTenantId == activeTenantId
-                ? MessageSender.Member(emails.GetValueOrDefault(m.SentByUserId, UnknownOrg))
-                : orgs[m.SenderTenantId]);
+                ? MessageSender.Member(emails.GetValueOrDefault(m.SentByUserId, UnknownSender))
+                : profiles[m.SenderTenantId]);
     }
 
     private async Task<IReadOnlyDictionary<Guid, string>> ResolveMemberEmailsAsync(IReadOnlyList<MessageEntity> messages, Guid activeTenantId)
@@ -115,39 +103,32 @@ internal sealed class MessageService : IMessageService
         return members.ToDictionary(u => u.Id, u => u.Email);
     }
 
-    private async Task<Dictionary<Guid, MessageSender>> ResolveCounterpartyOrgsAsync(IReadOnlyList<MessageEntity> messages, Guid activeTenantId)
+    private async Task<Dictionary<Guid, MessageSender>> ResolveCounterpartyProfilesAsync(IReadOnlyList<MessageEntity> messages, Guid activeTenantId)
     {
-        var counterparties = messages
+        var tenantIds = messages
             .Where(m => m.SenderTenantId != activeTenantId)
-            .Select(m => (TenantId: m.SenderTenantId, IsVenue: m.SenderTenantId == m.VenueTenantId))
-            .Distinct()
-            .ToList();
+            .Select(m => m.SenderTenantId)
+            .ToHashSet();
 
-        var orgs = new Dictionary<Guid, MessageSender>();
-        foreach (var (tenantId, isVenue) in counterparties)
-            orgs[tenantId] = await ResolveOrgSenderAsync(tenantId, isVenue);
+        var profiles = await repository.GetParticipantProfilesAsync(tenantIds);
+        var senders = profiles.ToDictionary(
+            pair => pair.Key,
+            pair => MessageSender.Org(pair.Value.Name, pair.Value.Address.County, pair.Value.Address.Town));
 
-        return orgs;
+        foreach (var tenantId in tenantIds.Where(id => !profiles.ContainsKey(id)))
+            senders[tenantId] = MissingParticipant();
+
+        return senders;
     }
 
-    private async Task<MessageSender> ResolveOrgSenderAsync(Guid tenantId, bool isVenue)
+    private async Task<MessageSender> ResolveParticipantAsync(Guid tenantId)
     {
-        if (isVenue)
-        {
-            var venue = await venueModule.GetOrgIdentityByTenantIdAsync(tenantId);
-            if (venue.TryGetValue(out var value))
-                return MessageSender.Org(value.Name, value.County, value.Town);
-        }
-        else
-        {
-            var artist = await artistModule.GetOrgIdentityByTenantIdAsync(tenantId);
-            if (artist.TryGetValue(out var value))
-                return MessageSender.Org(value.Name, value.County, value.Town);
-        }
+        var profiles = await repository.GetParticipantProfilesAsync(new HashSet<Guid> { tenantId });
+        if (profiles.TryGetValue(tenantId, out var profile))
+            return MessageSender.Org(profile.Name, profile.Address.County, profile.Address.Town);
 
-        var tenant = await tenantModule.GetByIdAsync(tenantId);
-        return tenant.Match(
-            value => MessageSender.Org(value.LegalName, null, null),
-            () => MessageSender.Org(UnknownOrg, null, null));
+        return MissingParticipant();
     }
+
+    private static MessageSender MissingParticipant() => MessageSender.Org(UnknownSender, null, null);
 }

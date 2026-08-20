@@ -7,7 +7,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class InvoiceRepository : VenueArtistTenantScopedRepository<InvoiceEntity>, IInvoiceRepository
 {
-    public InvoiceRepository(ConcertDbContext context) : base(context) { }
+    private readonly ConcertDbContext context;
+
+    public InvoiceRepository(ConcertDbContext context) : base(context)
+    {
+        this.context = context;
+    }
 
     public Task<InvoiceEntity?> GetByConcertIdAsync(int concertId, CancellationToken ct = default) =>
         context.Invoices

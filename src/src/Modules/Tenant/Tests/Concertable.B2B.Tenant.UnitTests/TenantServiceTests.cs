@@ -16,14 +16,23 @@ namespace Concertable.B2B.Tenant.UnitTests;
 public sealed class TenantServiceTests
 {
     private readonly Mock<ITenantRepository> repository;
+    private readonly Mock<IMembershipRepository> membershipRepository;
+    private readonly Mock<IInvitationRepository> invitationRepository;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly TenantService service;
 
     public TenantServiceTests()
     {
         this.repository = new Mock<ITenantRepository>();
+        this.membershipRepository = new Mock<IMembershipRepository>();
+        this.invitationRepository = new Mock<IInvitationRepository>();
         this.tenantContext = new Mock<ITenantContext>();
-        this.service = new TenantService(repository.Object, tenantContext.Object, new VatPolicy(new UkVatCalculator()));
+        this.service = new TenantService(
+            repository.Object,
+            membershipRepository.Object,
+            invitationRepository.Object,
+            tenantContext.Object,
+            new VatPolicy(new UkVatCalculator()));
     }
 
     private static TenantEntity Bare() =>
@@ -49,16 +58,28 @@ public sealed class TenantServiceTests
         return tenant;
     }
 
+    #region GetDetailsAsync
+
+    [Fact]
+    public async Task GetDetailsAsync_NoActiveTenant_ReturnsNone()
+    {
+        var result = await service.GetDetailsAsync();
+
+        Assert.True(result.IsNone);
+        repository.Verify(
+            value => value.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    #endregion
+
     #region UpdateAsync
 
     [Fact]
-    public async Task UpdateAsync_NoActiveTenant_ReturnsForbiddenError()
+    public async Task UpdateAsync_NoActiveTenant_ThrowsInvalidOperationException()
     {
-        var result = await service.UpdateAsync(null!);
-
-        Assert.True(result.TryGetError(out var error));
-        Assert.Equal("tenant.update_forbidden", error.Definition.Code);
-        Assert.Equal(ErrorKind.Forbidden, error.Definition.Kind);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateAsync(null!));
+        Assert.Equal("The operation requires an active tenant context.", exception.Message);
     }
 
     [Fact]

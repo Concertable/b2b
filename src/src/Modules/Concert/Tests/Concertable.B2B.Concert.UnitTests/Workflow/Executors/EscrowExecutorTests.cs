@@ -19,7 +19,6 @@ public sealed class EscrowExecutorTests
 
     private readonly Mock<IApplicationRepository> applicationRepository = new();
     private readonly Mock<IConcertStateMachineRegistry> registry = new();
-    private readonly Mock<IBookingRepository> bookingRepository = new();
     private readonly Mock<IApplicationCancelStep> cancelStep = new();
     private readonly EscrowExecutor executor;
 
@@ -31,8 +30,6 @@ public sealed class EscrowExecutorTests
         this.executor = new EscrowExecutor(
             transitioner,
             Mock.Of<IConcertWorkflowFactory>(),
-            this.bookingRepository.Object,
-            Mock.Of<IPublicBookingRepository>(),
             this.cancelStep.Object);
     }
 
@@ -48,9 +45,6 @@ public sealed class EscrowExecutorTests
             Guid.NewGuid(),
             Guid.NewGuid());
         application.Transition(LifecycleState.CancellationPending);
-        this.bookingRepository
-            .Setup(repository => repository.GetApplicationIdByIdAsync(BookingId, cancellationToken))
-            .ReturnsAsync(ApplicationId);
         this.applicationRepository
             .Setup(repository => repository.GetByIdAsync(ApplicationId, cancellationToken))
             .ReturnsAsync(application);
@@ -67,7 +61,7 @@ public sealed class EscrowExecutorTests
                     new EscrowRefundError.EscrowNotRefundable()))));
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => this.executor.SucceededAsync(BookingId, cancellationToken));
+            () => this.executor.SucceededAsync(ApplicationId, BookingId, cancellationToken));
 
         Assert.Contains("escrow.refund_not_allowed", exception.Message);
         Assert.Equal(LifecycleState.CancellationPending, application.State);

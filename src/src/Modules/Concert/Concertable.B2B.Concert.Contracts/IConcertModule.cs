@@ -4,6 +4,10 @@ namespace Concertable.B2B.Concert.Contracts;
 
 public interface IConcertModule
 {
-    Task<Option<VenueDashboardCounts>> GetVenueDashboardCountsAsync(int venueId, CancellationToken ct = default);
-    Task<Option<ArtistDashboardCounts>> GetArtistDashboardCountsAsync(int artistId, CancellationToken ct = default);
+    Task<Option<VenueDashboardCounts>> GetVenueDashboardCountsAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default);
+    Task<Option<ArtistDashboardCounts>> GetArtistDashboardCountsAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
 }
