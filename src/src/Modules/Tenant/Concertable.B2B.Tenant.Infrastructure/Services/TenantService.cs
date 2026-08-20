@@ -9,12 +9,21 @@ namespace Concertable.B2B.Tenant.Infrastructure.Services;
 internal sealed class TenantService : ITenantService
 {
     private readonly ITenantRepository repository;
+    private readonly IMembershipRepository membershipRepository;
+    private readonly IInvitationRepository invitationRepository;
     private readonly ITenantContext tenantContext;
     private readonly IVatPolicy vatPolicy;
 
-    public TenantService(ITenantRepository repository, ITenantContext tenantContext, IVatPolicy vatPolicy)
+    public TenantService(
+        ITenantRepository repository,
+        IMembershipRepository membershipRepository,
+        IInvitationRepository invitationRepository,
+        ITenantContext tenantContext,
+        IVatPolicy vatPolicy)
     {
         this.repository = repository;
+        this.membershipRepository = membershipRepository;
+        this.invitationRepository = invitationRepository;
         this.tenantContext = tenantContext;
         this.vatPolicy = vatPolicy;
     }
@@ -24,7 +33,7 @@ internal sealed class TenantService : ITenantService
 
     public async Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default)
     {
-        var memberships = await repository.GetMembershipsAsync(userId, ct);
+        var memberships = await membershipRepository.GetMembershipsAsync(userId, ct);
         return memberships
             .Select(m => new MembershipDto(m.TenantId, m.LegalName, m.Type, m.Role))
             .ToList();
@@ -32,7 +41,7 @@ internal sealed class TenantService : ITenantService
 
     public async Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default)
     {
-        var memberships = await repository.ListMembershipsByTenantAsync(tenantId, ct);
+        var memberships = await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct);
         return memberships.Select(m => m.UserId).ToList();
     }
 
@@ -70,11 +79,11 @@ internal sealed class TenantService : ITenantService
         if (tenant is null)
             return new DeleteTenantError.TenantNotFound(tenantId);
 
-        foreach (var membership in await repository.ListMembershipsByTenantAsync(tenantId, ct))
-            repository.RemoveMembership(membership);
+        foreach (var membership in await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct))
+            membershipRepository.Remove(membership);
 
-        foreach (var invitation in await repository.ListInvitationsByTenantAsync(tenantId, ct))
-            repository.RemoveInvitation(invitation);
+        foreach (var invitation in await invitationRepository.ListInvitationsByTenantAsync(tenantId, ct))
+            invitationRepository.Remove(invitation);
 
         repository.Remove(tenant);
         await repository.SaveChangesAsync(ct);

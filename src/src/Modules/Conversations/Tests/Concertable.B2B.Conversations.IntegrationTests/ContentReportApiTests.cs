@@ -32,7 +32,7 @@ public sealed class ContentReportApiTests : IAsyncLifetime
         var messageId = await InboundMessageIdAsync(venue);
 
         var response = await venue.PostAsync($"/api/Message/{messageId}/report",
-            new { category = "IllegalContent", details = "This message is unlawful." });
+            new { category = "illegalContent", details = "This message is unlawful." });
 
         await response.ShouldBe(HttpStatusCode.NoContent);
 
@@ -53,7 +53,7 @@ public sealed class ContentReportApiTests : IAsyncLifetime
         var otherVenue = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
         var response = await otherVenue.PostAsync($"/api/Message/{messageId}/report",
-            new { category = "IllegalContent", details = (string?)null });
+            new { category = "illegalContent", details = (string?)null });
 
         await response.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.EmailSender.Sent);
@@ -65,7 +65,7 @@ public sealed class ContentReportApiTests : IAsyncLifetime
         var anonymous = fixture.CreateClient();
 
         var response = await anonymous.PostAsync("/api/Message/1/report",
-            new { category = "IllegalContent" });
+            new { category = "illegalContent" });
 
         await response.ShouldBe(HttpStatusCode.Unauthorized);
     }
@@ -79,7 +79,7 @@ public sealed class ContentReportApiTests : IAsyncLifetime
         var messageId = await InboundMessageIdAsync(venue);
 
         var response = await venue.PostAsync($"/api/Message/{messageId}/report",
-            new { category = "IllegalContent", details = new string('x', 2001) });
+            new { category = "illegalContent", details = new string('x', 2001) });
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadAsync<ValidationProblem>();

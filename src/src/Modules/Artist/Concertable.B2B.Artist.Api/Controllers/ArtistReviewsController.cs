@@ -1,10 +1,13 @@
 using Concertable.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Artist.Api.Controllers;
 
 [ApiController]
 [Route("api/artists/{artistId}/reviews")]
+[EnableRateLimiting(RateLimitPolicies.PublicRead)]
 internal sealed class ArtistReviewsController : ControllerBase
 {
     private readonly IArtistReviewService reviewService;

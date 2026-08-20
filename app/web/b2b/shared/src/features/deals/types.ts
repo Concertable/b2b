@@ -1,4 +1,4 @@
-export type PaymentMethod = "Cash" | "Transfer";
+export type PaymentMethod = "cash" | "transfer";
 
 interface DealBase {
   id?: number;
