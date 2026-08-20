@@ -4,5 +4,5 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IDealAccessor
 {
-    IDeal Deal { get; }
+    DealDto Deal { get; }
 }

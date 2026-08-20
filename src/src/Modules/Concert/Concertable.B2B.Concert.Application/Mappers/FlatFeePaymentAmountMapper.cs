@@ -5,9 +5,9 @@ namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal sealed class FlatFeePaymentAmountMapper : IPaymentAmountMapper
 {
-    public IPaymentAmount ToPaymentAmount(IDeal deal)
+    public IPaymentAmount ToPaymentAmount(DealDto deal)
     {
-        var c = (FlatFeeDeal)deal;
+        var c = (FlatFeeDealDto)deal;
         return new FlatPayment(c.Fee);
     }
 }

@@ -6,6 +6,7 @@ using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Application.Mappers;
 using Concertable.B2B.Deal.Application.Services;
 using Concertable.B2B.Deal.Application.Strategies;
+using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Deal.Infrastructure.Data;
 using Concertable.B2B.Deal.Infrastructure.Data.Seeders;
 using Concertable.B2B.Deal.Infrastructure.Repositories;
@@ -47,35 +48,14 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IDealMapper, DealMapper>();
         services.AddScoped<IDealUpdater, DealUpdater>();
-
-        return services.AddDealStrategies(strategies =>
-        {
-            strategies.For(DealType.FlatFee)
-                .AddSingleton<IDealMapper, FlatFeeDealMapper>()
-                .AddSingleton<IDealUpdater, FlatFeeDealUpdater>();
-            strategies.For(DealType.DoorSplit)
-                .AddSingleton<IDealMapper, DoorSplitDealMapper>()
-                .AddSingleton<IDealUpdater, DoorSplitDealUpdater>();
-            strategies.For(DealType.Versus)
-                .AddSingleton<IDealMapper, VersusDealMapper>()
-                .AddSingleton<IDealUpdater, VersusDealUpdater>();
-            strategies.For(DealType.VenueHire)
-                .AddSingleton<IDealMapper, VenueHireDealMapper>()
-                .AddSingleton<IDealUpdater, VenueHireDealUpdater>();
-
-            strategies.RequireAll<IDealMapper>();
-            strategies.RequireAll<IDealUpdater>();
-        });
-    }
-
-    internal static IServiceCollection AddDealStrategies(
-        this IServiceCollection services,
-        Action<DealStrategyBuilder> configure)
-    {
-        var builder = new DealStrategyBuilder(services);
-        configure(builder);
-        builder.Build();
-
+        services.AddKeyedSingleton<IDealMapper, FlatFeeDealMapper>(DealType.FlatFee);
+        services.AddKeyedSingleton<IDealMapper, DoorSplitDealMapper>(DealType.DoorSplit);
+        services.AddKeyedSingleton<IDealMapper, VersusDealMapper>(DealType.Versus);
+        services.AddKeyedSingleton<IDealMapper, VenueHireDealMapper>(DealType.VenueHire);
+        services.AddKeyedSingleton<IDealUpdater, FlatFeeDealUpdater>(DealType.FlatFee);
+        services.AddKeyedSingleton<IDealUpdater, DoorSplitDealUpdater>(DealType.DoorSplit);
+        services.AddKeyedSingleton<IDealUpdater, VersusDealUpdater>(DealType.Versus);
+        services.AddKeyedSingleton<IDealUpdater, VenueHireDealUpdater>(DealType.VenueHire);
         services.TryAddScoped<IKeyedServiceProvider>(sp => (IKeyedServiceProvider)sp);
         services.TryAddScoped(typeof(IDealStrategyFactory<>), typeof(DealStrategyFactory<>));
         return services;

@@ -38,7 +38,7 @@ public sealed class TenantInheritanceTests
             1,
             "Artist",
             period,
-            new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 100m },
+            new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 100m },
             "Terms",
             "2026-08",
             signature,

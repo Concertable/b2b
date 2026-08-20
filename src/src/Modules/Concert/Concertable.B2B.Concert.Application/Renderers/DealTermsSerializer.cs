@@ -12,6 +12,6 @@ internal sealed class DealTermsSerializer : IDealTermsSerializer
         this.terms = terms;
     }
 
-    public string Serialize(IDeal deal) =>
+    public string Serialize(DealDto deal) =>
         terms.Create(deal.DealType).Serialize(deal);
 }

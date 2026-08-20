@@ -34,29 +34,29 @@ public sealed class DealTermsTests : IDisposable
         this.fingerprint = this.scope.ServiceProvider.GetRequiredService<ITermsFingerprintCalculator>();
     }
 
-    public static TheoryData<IDeal, string, string, string> Characterizations =>
+    public static TheoryData<DealDto, string, string, string> Characterizations =>
         new()
         {
         {
-            new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m },
+            new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m },
             "The venue pays the artist a flat fee of £500.00.",
             "Fee=500",
             "B360CD844AEAEC445D368309962F18A1EA0DACA28173D69D98F036798A92B91B"
         },
         {
-            new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m },
+            new DoorSplitDealDto { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m },
             "The artist receives 70% of door revenue.",
             "ArtistDoorPercent=70",
             "6BE40145D99051414DC909ACA69EA7F1EE973415730E879D5789426FECF8257B"
         },
         {
-            new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200m, ArtistDoorPercent = 62.5m },
+            new VersusDealDto { PaymentMethod = PaymentMethod.Cash, Guarantee = 200m, ArtistDoorPercent = 62.5m },
             "The artist receives a guarantee of £200.00 plus 62.5% of door revenue.",
             "Guarantee=200;ArtistDoorPercent=62.5",
             "7D2BBA1ABF4667137742D7AE6701F66F85DD08F3547BD4DE99AE078C3CA9971A"
         },
         {
-            new VenueHireDeal { PaymentMethod = PaymentMethod.Transfer, HireFee = 300m },
+            new VenueHireDealDto { PaymentMethod = PaymentMethod.Transfer, HireFee = 300m },
             "The artist pays the venue a hire fee of £300.00.",
             "HireFee=300",
             "AE65DDB78BDBEB8C6E15800800771C61A3F38370BBBB435877140D8AF28B35D8"
@@ -66,7 +66,7 @@ public sealed class DealTermsTests : IDisposable
     [Theory]
     [MemberData(nameof(Characterizations))]
     public void Render_DealType_ReturnsPinnedPresentation(
-        IDeal deal,
+        DealDto deal,
         string expectedPresentation,
         string expectedSerialization,
         string expectedFingerprint)
@@ -79,7 +79,7 @@ public sealed class DealTermsTests : IDisposable
     [Theory]
     [MemberData(nameof(Characterizations))]
     public void Serialize_DealType_ReturnsPinnedCanonicalValue(
-        IDeal deal,
+        DealDto deal,
         string expectedPresentation,
         string expectedSerialization,
         string expectedFingerprint)
@@ -92,7 +92,7 @@ public sealed class DealTermsTests : IDisposable
     [Theory]
     [MemberData(nameof(Characterizations))]
     public void Calculate_DealType_ReturnsPinnedFingerprint(
-        IDeal deal,
+        DealDto deal,
         string expectedPresentation,
         string expectedSerialization,
         string expectedFingerprint)

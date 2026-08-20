@@ -16,6 +16,15 @@ internal sealed class DealUpdater : IDealUpdater
         this.strategies = strategies;
     }
 
-    public UnitResult<ValidationErrors> Apply(DealEntity existing, IDeal source) =>
-        strategies.Create(source.DealType).Apply(existing, source);
+    public UnitResult<ValidationErrors> Apply(DealEntity existing, DealDto source)
+    {
+        if (existing.DealType != source.DealType)
+        {
+            return new ValidationErrors([
+                new(nameof(source.DealType), $"A {source.DealType} deal cannot update a {existing.DealType} deal.")
+            ]);
+        }
+
+        return strategies.Create(source).Apply(existing, source);
+    }
 }
