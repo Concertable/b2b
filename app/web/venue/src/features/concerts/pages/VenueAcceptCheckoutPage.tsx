@@ -35,7 +35,7 @@ export function VenueAcceptCheckoutPage() {
   if (isLoading) return <CheckoutSkeleton />;
   if (isError || !application)
     return <div className="text-destructive p-6">Application not found.</div>;
-  if (application.status === "Accepted")
+  if (application.status === "accepted")
     return <VenueAcceptCheckoutFlow applicationId={applicationId} />;
 
   return (

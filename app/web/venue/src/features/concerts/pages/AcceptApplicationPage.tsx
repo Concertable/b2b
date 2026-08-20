@@ -83,7 +83,7 @@ export function AcceptApplicationPage() {
           Cancel
         </Button>
         <Button
-          disabled={accountStatus !== "Verified" || acceptMutation.isPending || (!requiresCheckout && !isValid)}
+          disabled={accountStatus !== "verified" || acceptMutation.isPending || (!requiresCheckout && !isValid)}
           onClick={handleConfirm}
           data-testid="confirm"
         >
