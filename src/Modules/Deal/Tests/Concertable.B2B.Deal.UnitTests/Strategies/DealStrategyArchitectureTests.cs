@@ -173,6 +173,14 @@ public sealed class DealStrategyArchitectureTests
     public static TheoryData<string, string> RequiredCoverageDeclarations { get; } = new()
     {
         {
+            "Concertable.B2B/src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
+            "strategies.RequireAll<IDealMapper>();"
+        },
+        {
+            "Concertable.B2B/src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
+            "strategies.RequireAll<IDealUpdater>();"
+        },
+        {
             "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
             "strategies.RequireAll<IDealTerms>();"
         },
