@@ -21,6 +21,8 @@ using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Api.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
+using Concertable.B2B.Admin.Api.Extensions;
+using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.User.Api.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -45,10 +47,14 @@ using Concertable.Shared.Notification.Infrastructure.Hubs;
 using Concertable.Shared.Notification.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Concertable.ServiceDefaults;
+using Concertable.B2B.Tenant.Contracts;
+using Microsoft.AspNetCore.HttpOverrides;
 using Concertable.DataAccess.Application;
 using Concertable.Messaging.Application.Extensions;
 using Concertable.Messaging.AzureServiceBus.Extensions;
 using Concertable.Kernel.Extensions;
+using Concertable.B2B.Web.Routing;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,7 +64,8 @@ builder.AddAzureBlobServiceClient("blobs");
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddProblemDetails();
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+    options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseRouteTransformer())))
     .AddApplicationPart(typeof(Concertable.Shared.Api.Controllers.GenreController).Assembly)
     .AddApplicationJson(options =>
     {
@@ -180,6 +187,7 @@ if (!builder.Environment.IsIntegration())
     services.AddBlobDevSeeder();
     services.AddUserDevSeeder();
     services.AddTenantDevSeeder();
+    services.AddAdminDevSeeder();
     services.AddArtistDevSeeder();
     services.AddVenueDevSeeder();
     services.AddDealDevSeeder();
@@ -199,6 +207,7 @@ if (!builder.Environment.IsIntegration())
     services.AddPaymentClient(builder.Configuration);
 services.AddQueueHostedService();
 services.AddCurrentUser();
+services.AddAdminApi(builder.Configuration);
 services.AddUserApi(builder.Configuration);
 services.AddAuth(builder.Configuration, builder.Environment);
 services.AddValidation();
@@ -207,13 +216,26 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddScoped<TenantResolutionMiddleware>();
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
+
+builder.AddDefaultRateLimiting();
+builder.AddRateLimitPolicy(RateLimitPolicies.PublicRead, new RateLimitWindow { PermitLimit = 100, WindowSeconds = 60 }, perUser: false);
+builder.AddRateLimitPolicy(RateLimitPolicies.Upload, new RateLimitWindow { PermitLimit = 20, WindowSeconds = 60 }, perUser: false);
+builder.AddRateLimitPolicy(RateLimitPolicies.Apply, new RateLimitWindow { PermitLimit = 20, WindowSeconds = 60 }, perUser: true);
+builder.AddRateLimitPolicy(RateLimitPolicies.Messaging, new RateLimitWindow { PermitLimit = 20, WindowSeconds = 60 }, perUser: true);
+builder.AddRateLimitPolicy(RateLimitPolicies.Checkout, new RateLimitWindow { PermitLimit = 10, WindowSeconds = 60 }, perUser: true);
+builder.AddRateLimitPolicy(RateLimitPolicies.ProfileImage, new RateLimitWindow { PermitLimit = 20, WindowSeconds = 60 }, perUser: true);
+
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseCors();
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
+app.UseDefaultRateLimiting();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 

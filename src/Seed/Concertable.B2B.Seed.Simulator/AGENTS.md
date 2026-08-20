@@ -14,7 +14,7 @@ Concertable is a multi-microservice system. Customer (and other downstream servi
 
 This means `Concertable.Customer.AppHost` runs standalone with Auth + Customer.Web + Search + Payment + SPAs but **without B2B**. With no B2B running, Customer's projection event handlers receive nothing. Customer's projection tables (`[concert].[Concerts]`, `[venue].[Venues]`, `[artist].[Artists]`) stay empty. The Customer SPA shows nothing. Dev experience is unusable.
 
-The seeding convention (`api/agents/SEEDING_CONVENTIONS.md`) forbids the obvious hack — direct `context.XReadModels.AddRange(...)` — because read-models in production are written only by event handlers, never directly. Bypassing that flow in seeders would mean the seeding code path differs from production, which is exactly the bug-multiplier the convention exists to prevent.
+The seeding convention (the `dotnet-standards:seeding` and `dotnet:seeding` skills) forbids the obvious hack — direct `context.XReadModels.AddRange(...)` — because read-models in production are written only by event handlers, never directly. Bypassing that flow in seeders would mean the seeding code path differs from production, which is exactly the bug-multiplier the convention exists to prevent.
 
 The simulator is the convention-compliant answer. It runs as a Worker, publishes the same events real B2B would publish, exits. Customer's projection handlers do their normal work and populate the tables. Identical code path to production.
 
@@ -143,7 +143,7 @@ If you're not sure you've kept things on the right side of the line, these grep 
 ## Related docs
 
 - [`api/ARCHITECTURE.md`](../../../../ARCHITECTURE.md) — microservice premise.
-- [`api/agents/SEEDING_CONVENTIONS.md`](../../../../agents/SEEDING_CONVENTIONS.md) — the no-direct-projection-seeding rule and the rest of the seeding conventions.
+- The `dotnet-standards:seeding` and `dotnet:seeding` skills — the no-direct-projection-seeding rule and this system's forbidden-table roster.
 - `api/Concertable.B2B/src/Seed/Concertable.B2B.Seed.Infrastructure/` — B2B's own SeedState (consumes the catalog for venues/artists/concerts) plus the `Factories/` (`VenueFactory`/`ArtistFactory`/`ConcertFactory`).
 - `api/Concertable.B2B/src/Seed/Concertable.B2B.Seed.Contracts/` — the canonical `XSeedSpec` records and their `ToChangedEvent()` conversion.
 - `api/Concertable.Customer/Concertable.Customer.AppHost/Program.cs` — where the simulator is registered.

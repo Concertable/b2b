@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Kernel.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -38,13 +39,13 @@ public sealed class TenantScopingTests : IAsyncLifetime
     {
         // Arrange — venue manager creates a fresh FlatFee opportunity
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var oppResponse = await venueClient.PostAsync("/api/Opportunity",
+        var oppResponse = await venueClient.PostAsync("/api/opportunity",
             BuildRequest(new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 }, fixture.SeedNow));
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { eSignature = new { signatoryName = "Test Signatory" } });
+        var applyResponse = await artistClient.PostAsync($"/api/application/{opportunity!.Id}", new { eSignature = new { signatoryName = "Test Signatory" } });
         await applyResponse.ShouldBe(HttpStatusCode.Created);
 
         // Assert — the row carries the frozen pair
@@ -63,8 +64,8 @@ public sealed class TenantScopingTests : IAsyncLifetime
     {
         // Arrange + Act — full FlatFee accept flow
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
-        var acceptResponse = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
+        var acceptResponse = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -93,13 +94,13 @@ public sealed class TenantScopingTests : IAsyncLifetime
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
 
         var venueParty = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await (await venueParty.GetAsync($"/api/Application/{applicationId}")).ShouldBe(HttpStatusCode.OK);
+        await (await venueParty.GetAsync($"/api/application/{applicationId}")).ShouldBe(HttpStatusCode.OK);
 
         var artistParty = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        await (await artistParty.GetAsync($"/api/Application/{applicationId}")).ShouldBe(HttpStatusCode.OK);
+        await (await artistParty.GetAsync($"/api/application/{applicationId}")).ShouldBe(HttpStatusCode.OK);
 
         var thirdParty = fixture.CreateClient(fixture.SeedState.VenueManager2);
-        await (await thirdParty.GetAsync($"/api/Application/{applicationId}")).ShouldBe(HttpStatusCode.NotFound);
+        await (await thirdParty.GetAsync($"/api/application/{applicationId}")).ShouldBe(HttpStatusCode.NotFound);
     }
 
     /// <summary>
@@ -112,70 +113,65 @@ public sealed class TenantScopingTests : IAsyncLifetime
         var postedConcert = fixture.SeedState.Concerts.First(c => c.DatePosted is not null);
 
         var thirdParty = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
-        await (await thirdParty.GetAsync($"/api/Concert/{postedConcert.Id}")).ShouldBe(HttpStatusCode.OK);
+        await (await thirdParty.GetAsync($"/api/concert/{postedConcert.Id}")).ShouldBe(HttpStatusCode.OK);
     }
 
     /// <summary>
-    /// The current-user concert read (<c>GET /concert/user/{id}</c>) is tenant-scoped: both parties read
+    /// The organization concert read (<c>GET /organization/concert/{id}</c>) is tenant-scoped: both parties read
     /// it and receive the party-only action links; a third-party tenant sees 404, not 403 — the deal
     /// never reveals its existence. The public read (<c>GET /concert/{id}</c>) carries no actions, so
     /// those party affordances never leak to the marketplace.
     /// </summary>
     [Fact]
-    public async Task CurrentUserConcertRead_ScopesActionsToPartiesAndKeepsPublicReadActionFree()
+    public async Task OrganizationConcertRead_ScopesActionsToPartiesAndKeepsPublicReadActionFree()
     {
         // Arrange — drive FlatFee to Booked so a concert (with a frozen contract) exists.
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await venueClient.PostAsync($"/api/Application/{appId}/checkout");
-        await venueClient.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        await venueClient.PostAsync($"/api/application/{appId}/checkout");
+        await venueClient.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.StripeClient.SendWebhookAsync();
 
         var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
         var concertId = (await fixture.ConcertReads.Set<ConcertEntity>().FirstAsync(c => c.BookingId == booking.Id)).Id;
 
         // Venue party — owner read succeeds and carries the action links.
-        var venueRead = await venueClient.GetAsync($"/api/Concert/user/{concertId}");
+        var venueRead = await venueClient.GetAsync($"/api/organization/concert/{concertId}");
         await venueRead.ShouldBe(HttpStatusCode.OK);
         var venueConcert = await venueRead.Content.ReadAsync<MyDetailsResponse>();
-        Assert.Equal($"/api/Concert/{concertId}/contract/pdf", venueConcert!.Actions.Contract!.Href);
+        Assert.Equal($"/api/concert/{concertId}/contract/pdf", venueConcert!.Actions.Contract!.Href);
         Assert.NotNull(venueConcert.Actions.Cancel); // Booked
 
         // Artist party — the other side of the deal reads it too, with the contract link.
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var artistRead = await artistClient.GetAsync($"/api/Concert/user/{concertId}");
+        var artistRead = await artistClient.GetAsync($"/api/organization/concert/{concertId}");
         await artistRead.ShouldBe(HttpStatusCode.OK);
         var artistConcert = await artistRead.Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(artistConcert!.Actions.Contract);
 
         // Stranger tenant — the deal document does not exist for them (404, not 403).
         var stranger = fixture.CreateClient(fixture.SeedState.VenueManager2);
-        await (await stranger.GetAsync($"/api/Concert/user/{concertId}")).ShouldBe(HttpStatusCode.NotFound);
+        await (await stranger.GetAsync($"/api/organization/concert/{concertId}")).ShouldBe(HttpStatusCode.NotFound);
 
         // Public marketplace read — same concert, but a distinct response type that structurally
         // carries no owner affordances (DetailsResponse has no Actions/TicketsSold/DoorRevenue).
-        var publicRead = await stranger.GetAsync($"/api/Concert/{concertId}");
+        var publicRead = await stranger.GetAsync($"/api/concert/{concertId}");
         await publicRead.ShouldBe(HttpStatusCode.OK);
         var publicConcert = await publicRead.Content.ReadAsync<DetailsResponse>();
         Assert.Equal(concertId, publicConcert!.Id);
     }
 
-    /// <summary>
-    /// The public booking stance is unfiltered by tenant: the escrow payment-webhook path (which runs
-    /// with no tenant context) reads existence through <c>IPublicBookingRepository</c> to tell a
-    /// tenant-filter-hidden row from a genuinely-absent one. A tenant filter creeping onto this read
-    /// would silently break that diagnostic — so assert it sees a booking without any tenant context,
-    /// and reports an absent id as false.
-    /// </summary>
     [Fact]
-    public async Task PublicBookingExistence_SeesBookingsWithoutTenantContext()
+    public async Task BookingRepository_ResolvesBookingsWithoutTenantContext()
     {
-        var bookingId = (await fixture.ConcertReads.Set<BookingEntity>().FirstAsync()).Id;
+        var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync();
 
-        using var scope = fixture.Services.CreateScope();
-        var publicBookings = scope.ServiceProvider.GetRequiredService<IPublicBookingRepository>();
+        var scoped = fixture.Services.GetRequiredService<IScoped<IBookingRepository>>();
+        var applicationId = await scoped.RunAsync(repository => repository.GetApplicationIdByIdAsync(booking.Id));
+        var missingApplicationId = await scoped.RunAsync(
+            repository => repository.GetApplicationIdByIdAsync(booking.Id + 100_000));
 
-        Assert.True(await publicBookings.ExistsAsync(bookingId));
-        Assert.False(await publicBookings.ExistsAsync(bookingId + 100_000));
+        Assert.Equal(booking.ApplicationId, applicationId);
+        Assert.Null(missingApplicationId);
     }
 }

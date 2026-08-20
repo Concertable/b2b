@@ -42,7 +42,7 @@ public sealed class ConcertServiceTests
         tenantContext.SetupGet(context => context.IsHost).Returns(true);
         var service = new ConcertService(
             repository.Object,
-            Mock.Of<IPublicConcertRepository>(),
+            Mock.Of<IConcertReadRepository>(),
             Mock.Of<IInvoiceRepository>(),
             Mock.Of<IConcertValidator>(),
             Mock.Of<ICurrentUser>(),

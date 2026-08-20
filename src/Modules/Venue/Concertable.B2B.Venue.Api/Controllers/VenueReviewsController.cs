@@ -1,10 +1,13 @@
 using Concertable.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Venue.Api.Controllers;
 
 [ApiController]
 [Route("api/venues/{venueId}/reviews")]
+[EnableRateLimiting(RateLimitPolicies.PublicRead)]
 internal sealed class VenueReviewsController : ControllerBase
 {
     private readonly IVenueReviewService reviewService;

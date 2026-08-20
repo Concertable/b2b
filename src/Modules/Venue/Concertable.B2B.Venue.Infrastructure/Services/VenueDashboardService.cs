@@ -10,20 +10,17 @@ namespace Concertable.B2B.Venue.Infrastructure.Services;
 
 internal sealed class VenueDashboardService : IVenueDashboardService
 {
-    private readonly IVenueService venueService;
     private readonly IConcertModule concertModule;
     private readonly IManagerPaymentReportingClient paymentReportingClient;
     private readonly ITenantContext tenantContext;
     private readonly TimeProvider timeProvider;
 
     public VenueDashboardService(
-        IVenueService venueService,
         IConcertModule concertModule,
         IManagerPaymentReportingClient paymentReportingClient,
         ITenantContext tenantContext,
         TimeProvider timeProvider)
     {
-        this.venueService = venueService;
         this.concertModule = concertModule;
         this.paymentReportingClient = paymentReportingClient;
         this.tenantContext = tenantContext;
@@ -32,30 +29,27 @@ internal sealed class VenueDashboardService : IVenueDashboardService
 
     public async Task<Option<VenueDashboardKpis>> GetKpisAsync(CancellationToken ct = default)
     {
-        var venueIdOption = await venueService.GetIdForCurrentTenantAsync();
-        if (!venueIdOption.TryGetValue(out var venueId))
-            return null;
         var tenantId = tenantContext.GetTenantId();
+        var countsOption = await concertModule.GetVenueDashboardCountsAsync(tenantId, ct);
+        if (!countsOption.TryGetValue(out var counts))
+            return null;
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-
-        var countsTask = concertModule.GetVenueDashboardCountsAsync(venueId, ct);
-        var mtdRevenueTask = now == monthStart
-            ? Task.FromResult(Money.Gbp(0m))
-            : paymentReportingClient.GetTicketRevenueAsync(
+        var mtdRevenue = now == monthStart
+            ? Money.Gbp(0m)
+            : await paymentReportingClient.GetTicketRevenueAsync(
                 tenantId,
                 new DateRange(monthStart, now),
                 ct);
-        await Task.WhenAll(countsTask, mtdRevenueTask);
 
-        return countsTask.Result.Map(counts => new VenueDashboardKpis(
+        return new VenueDashboardKpis(
             ApplicationsToReview: counts.ApplicationsToReview,
             ApplicationsToReviewDelta: null,
             OpenOpportunities: counts.OpenOpportunities,
             UpcomingConcerts: counts.UpcomingConcerts,
             AwaitingDoorRevenue: counts.AwaitingDoorRevenue,
-            MtdRevenueCents: mtdRevenueTask.Result.ToMinorUnits(),
-            MtdRevenueDeltaPercent: null));
+            MtdRevenueCents: mtdRevenue.ToMinorUnits(),
+            MtdRevenueDeltaPercent: null);
     }
 }

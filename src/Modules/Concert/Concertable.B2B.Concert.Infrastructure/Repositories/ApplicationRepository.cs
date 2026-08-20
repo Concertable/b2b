@@ -9,10 +9,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<ApplicationEntity>, IApplicationRepository
 {
+    private readonly ConcertDbContext context;
     private readonly TimeProvider timeProvider;
 
     public ApplicationRepository(ConcertDbContext context, TimeProvider timeProvider) : base(context)
     {
+        this.context = context;
         this.timeProvider = timeProvider;
     }
 
@@ -40,19 +42,27 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .ToListAsync();
     }
 
-    public Task<bool> ExistsForOpportunityAndArtistAsync(int opportunityId, int artistId) =>
-        context.Applications.AnyAsync(a => a.OpportunityId == opportunityId && a.ArtistId == artistId);
+    public Task<bool> ExistsForOpportunityAndArtistTenantAsync(
+        int opportunityId,
+        Guid artistTenantId,
+        CancellationToken ct = default) =>
+        context.Applications.AnyAsync(
+            a => a.OpportunityId == opportunityId
+                && a.ArtistTenantId == artistTenantId,
+            ct);
 
-    public async Task<IEnumerable<ApplicationEntity>> GetPendingByArtistIdAsync(int artistId)
+    public async Task<IEnumerable<ApplicationEntity>> GetPendingByArtistTenantIdAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default)
     {
         return await context.Applications
             .Include(a => a.Opportunity)
                 .ThenInclude(o => o.Venue)
             .Where(a =>
-                a.ArtistId == artistId &&
+                a.ArtistTenantId == artistTenantId &&
                 !context.Bookings.Any(b => b.ApplicationId == a.Id) &&
                 a.Opportunity.Period.Start > timeProvider.GetUtcNow())
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
     public async Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id)
@@ -131,19 +141,21 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .FirstOrDefaultAsync();
     }
 
-    public async Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistIdAsync(int artistId)
+    public async Task<IEnumerable<ApplicationEntity>> GetRecentDeniedByArtistTenantIdAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default)
     {
         return await context.Applications
             .Include(a => a.Opportunity)
                 .ThenInclude(o => o.Venue)
             .Where(a =>
-                a.ArtistId == artistId &&
+                a.ArtistTenantId == artistTenantId &&
                 context.Bookings.Any(b =>
                     b.Application.OpportunityId == a.OpportunityId &&
                     b.ApplicationId != a.Id))
             .OrderByDescending(a => a.Opportunity.Period.End)
             .Take(5)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
 }

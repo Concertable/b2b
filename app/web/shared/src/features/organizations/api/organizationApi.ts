@@ -4,12 +4,12 @@ import type { UpdateOrganizationRequest } from "../schemas/updateOrganizationReq
 
 const organizationApi = {
   get: async (): Promise<Organization | null> => {
-    const { data, status } = await apiClient.get<Organization>("/organizations");
+    const { data, status } = await apiClient.get<Organization>("/organization");
     return status === 204 ? null : data;
   },
 
   update: async (body: UpdateOrganizationRequest): Promise<Organization> => {
-    const { data } = await apiClient.put<Organization>("/organizations", body);
+    const { data } = await apiClient.put<Organization>("/organization", body);
     return data;
   },
 };

@@ -10,7 +10,7 @@ marketplace is a later, optional add-on (that separation is the whole reason the
 was split). So this doc covers *only* venue↔artist obligations. Fan / ticket-buyer
 obligations (consumer refund rights, all-in pricing, fake-review controls, ticket-sale VAT
 posture) live in the separate Customer doc:
-[`../../../Concertable.Customer/LEGAL_REQUIREMENTS.md`](../../../Concertable.Customer/LEGAL_REQUIREMENTS.md).
+[`../../../../Concertable.Customer/LEGAL_REQUIREMENTS.md`](../../../../Concertable.Customer/LEGAL_REQUIREMENTS.md).
 Do not merge the two — they are two separate systems.
 
 ## The product these obligations protect: the contract engine

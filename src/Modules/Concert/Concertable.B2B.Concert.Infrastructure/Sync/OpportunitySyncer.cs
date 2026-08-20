@@ -18,9 +18,9 @@ internal sealed class OpportunitySyncer
     protected override async Task<OpportunityEntity> CreateAsync(int venueId, OpportunityRequest dto)
     {
         var result = await dealModule.CreateAsync(dto.Deal);
-        var dealId = result.Match(
-            id => id,
-            _ => throw new InvalidOperationException("Deal creation failed after successful validation."));
+        if (!result.TryGetValue(out var dealId))
+            throw new InvalidOperationException("Deal creation failed after successful validation.");
+
         return OpportunityEntity.Create(
             venueId,
             new DateRange(dto.StartDate, dto.EndDate),

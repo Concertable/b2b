@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
@@ -29,7 +29,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         var response = await client.GetAsync(
-            $"/api/Application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/eligibility");
+            $"/api/application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/eligibility");
 
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.True(await response.Content.ReadAsync<bool>());
@@ -41,7 +41,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
 
         var response = await client.GetAsync(
-            $"/api/Application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/eligibility");
+            $"/api/application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/eligibility");
 
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.False(await response.Content.ReadAsync<bool>());
@@ -53,7 +53,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.GetAsync(
-            $"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/eligibility");
+            $"/api/application/{fixture.SeedState.FlatFeeApp.Id}/eligibility");
 
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.True(await response.Content.ReadAsync<bool>());
@@ -64,7 +64,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        var response = await client.GetAsync("/api/Application/2147483647/eligibility");
+        var response = await client.GetAsync("/api/application/2147483647/eligibility");
 
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.False(await response.Content.ReadAsync<bool>());
@@ -76,7 +76,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
         var response = await client.GetAsync(
-            $"/api/Application/opportunity/{fixture.SeedState.FlatFeeApp.OpportunityId}");
+            $"/api/application/opportunity/{fixture.SeedState.FlatFeeApp.OpportunityId}");
 
         await AssertProblemCodeAsync(
             response,
@@ -85,8 +85,8 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("/api/Application/artist/pending")]
-    [InlineData("/api/Application/artist/recently-denied")]
+    [InlineData("/api/application/artist/pending")]
+    [InlineData("/api/application/artist/recently-denied")]
     public async Task ArtistQueries_MissingArtist_ReturnForbiddenProblem(string path)
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
@@ -102,7 +102,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
 
         var response = await client.PostAsync(
-            $"/api/Application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/checkout",
+            $"/api/application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/checkout",
             null);
 
         await AssertProblemCodeAsync(response, HttpStatusCode.Forbidden, "application.eligibility.missing_artist");
@@ -119,7 +119,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        var response = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -132,7 +132,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        var response = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NotFound);
@@ -149,11 +149,11 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
-        var withdraw = await client.PostAsync($"/api/Application/{appId}/withdraw", (object?)null);
+        var withdraw = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
         await withdraw.ShouldBe(HttpStatusCode.NoContent);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{opportunityId}", new { eSignature = new { signatoryName = "Aretha Artist" } });
+        var response = await client.PostAsync($"/api/application/{opportunityId}", new { eSignature = new { signatoryName = "Aretha Artist" } });
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
