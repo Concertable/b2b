@@ -21,15 +21,15 @@ export function PayoutAccountSection() {
         <div className="flex items-center gap-3 pt-2">
           {isLoading ? (
             <div className="text-muted-foreground size-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          ) : accountStatus === "Verified" ? (
+          ) : accountStatus === "verified" ? (
             <span className="flex items-center gap-1 text-sm text-green-600">
               <CheckCircle className="size-4" /> Verified
             </span>
-          ) : accountStatus === "Pending" ? (
+          ) : accountStatus === "pending" ? (
             <span className="flex items-center gap-1 text-sm text-amber-500">
               <Clock className="size-4" /> Pending verification
             </span>
-          ) : accountStatus === "NotVerified" ? (
+          ) : accountStatus === "notVerified" ? (
             <span className="text-destructive flex items-center gap-1 text-sm">
               <XCircle className="size-4" /> Not verified
             </span>
@@ -38,7 +38,7 @@ export function PayoutAccountSection() {
             <ExternalLink className="size-4" />
             {isBusy
               ? "Loading..."
-              : accountStatus === "Verified"
+              : accountStatus === "verified"
                 ? "Manage Payout Account"
                 : "Set up Payout Account"}
           </Button>

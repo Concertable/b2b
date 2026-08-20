@@ -27,10 +27,10 @@ export function SelfBillingAgreementPage() {
       </div>
 
       <div className="border-border bg-card space-y-3 rounded-xl border p-4">
-        {agreement.status === "None" && (
+        {agreement.status === "none" && (
           <p className="text-sm">You don't have a self-billing agreement yet.</p>
         )}
-        {agreement.status === "Active" && (
+        {agreement.status === "active" && (
           <p className="text-sm">
             In force until{" "}
             <span className="font-medium">
@@ -39,7 +39,7 @@ export function SelfBillingAgreementPage() {
             .
           </p>
         )}
-        {agreement.status === "Expired" && (
+        {agreement.status === "expired" && (
           <p className="text-sm">
             Expired on{" "}
             <span className="font-medium">
@@ -75,7 +75,7 @@ export function SelfBillingAgreementPage() {
             onClick={() => grant.mutate(signature)}
             data-testid="grant-self-billing"
           >
-            {agreement.status === "None" ? "Sign agreement" : "Renew agreement"}
+            {agreement.status === "none" ? "Sign agreement" : "Renew agreement"}
           </Button>
         </>
       )}

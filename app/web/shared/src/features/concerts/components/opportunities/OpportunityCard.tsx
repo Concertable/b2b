@@ -163,8 +163,8 @@ export function OpportunityEditCard({ opportunity, onRemove, onSetDates, onSetDe
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Cash">Cash</SelectItem>
-                <SelectItem value="Transfer">Transfer</SelectItem>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="transfer">Transfer</SelectItem>
               </SelectContent>
             </Select>
           </div>

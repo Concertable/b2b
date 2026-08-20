@@ -42,6 +42,7 @@ using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.ServiceDefaults;
 using Concertable.Shared.Api.Exceptions;
+using Concertable.Shared.Api.Extensions;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
 using Concertable.Shared.Email.Application;
 using Concertable.Shared.Email.Infrastructure.Extensions;
@@ -69,13 +70,12 @@ public static class B2BWebHostExtensions
             builder.Services.AddControllers(options =>
                     options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseRouteTransformer())))
                 .AddApplicationPart(typeof(Concertable.Shared.Api.Controllers.GenreController).Assembly)
-                .AddJsonOptions(options =>
+                .AddApplicationJson(options =>
                 {
-                    options.JsonSerializerOptions.IncludeFields = true;
-                    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-                    options.JsonSerializerOptions.WriteIndented = true;
-                    options.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
-                    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+                    options.IncludeFields = true;
+                    options.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                    options.WriteIndented = true;
+                    options.Converters.Add(new TimeOnlyJsonConverter());
                 })
                 .AddControllersAsServices();
             builder.Services.AddHttpContextAccessor();
