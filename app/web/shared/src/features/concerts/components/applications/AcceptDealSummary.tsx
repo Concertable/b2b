@@ -6,6 +6,7 @@ import type {
   VersusDeal,
   VenueHireDeal,
 } from "@b2b/features/deals";
+import { PAYMENT_METHOD_LABELS } from "@b2b/features/deals";
 
 function FlatFeeSummary({ deal }: { deal: FlatFeeDeal }) {
   return (
@@ -15,7 +16,7 @@ function FlatFeeSummary({ deal }: { deal: FlatFeeDeal }) {
       </p>
       <p className="text-2xl font-semibold">£{deal.fee}</p>
       <p className="text-muted-foreground text-sm">
-        via {deal.paymentMethod}
+        via {PAYMENT_METHOD_LABELS[deal.paymentMethod]}
       </p>
     </div>
   );
@@ -29,7 +30,7 @@ function DoorSplitSummary({ deal }: { deal: DoorSplitDeal }) {
         {deal.artistDoorPercent}% of door revenue
       </p>
       <p className="text-muted-foreground text-sm">
-        settled after the event via {deal.paymentMethod}
+        settled after the event via {PAYMENT_METHOD_LABELS[deal.paymentMethod]}
       </p>
     </div>
   );
@@ -42,7 +43,7 @@ function VersusSummary({ deal }: { deal: VersusDeal }) {
       <p className="text-2xl font-semibold">£{deal.guarantee}</p>
       <p className="text-muted-foreground text-sm">
         or {deal.artistDoorPercent}% of door — whichever is greater, settled
-        via {deal.paymentMethod}
+        via {PAYMENT_METHOD_LABELS[deal.paymentMethod]}
       </p>
     </div>
   );
@@ -56,7 +57,7 @@ function VenueHireSummary({ deal }: { deal: VenueHireDeal }) {
       </p>
       <p className="text-2xl font-semibold">£{deal.hireFee}</p>
       <p className="text-muted-foreground text-sm">
-        via {deal.paymentMethod}
+        via {PAYMENT_METHOD_LABELS[deal.paymentMethod]}
       </p>
     </div>
   );

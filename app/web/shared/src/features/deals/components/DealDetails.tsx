@@ -6,6 +6,7 @@ import type {
   VersusDeal,
   VenueHireDeal,
 } from "../types";
+import { PAYMENT_METHOD_LABELS } from "../defaults";
 
 function FlatFeeDetails({ deal }: { deal: FlatFeeDeal }) {
   return (
@@ -15,7 +16,7 @@ function FlatFeeDetails({ deal }: { deal: FlatFeeDeal }) {
       <p className="text-muted-foreground mt-2 text-sm">Fee</p>
       <p className="font-medium">£{deal.fee}</p>
       <p className="text-muted-foreground mt-2 text-sm">Payment</p>
-      <p className="font-medium">{deal.paymentMethod}</p>
+      <p className="font-medium">{PAYMENT_METHOD_LABELS[deal.paymentMethod]}</p>
     </div>
   );
 }
@@ -28,7 +29,7 @@ function DoorSplitDetails({ deal }: { deal: DoorSplitDeal }) {
       <p className="text-muted-foreground mt-2 text-sm">Artist Door %</p>
       <p className="font-medium">{deal.artistDoorPercent}%</p>
       <p className="text-muted-foreground mt-2 text-sm">Payment</p>
-      <p className="font-medium">{deal.paymentMethod}</p>
+      <p className="font-medium">{PAYMENT_METHOD_LABELS[deal.paymentMethod]}</p>
     </div>
   );
 }
@@ -43,7 +44,7 @@ function VersusDetails({ deal }: { deal: VersusDeal }) {
       <p className="text-muted-foreground mt-2 text-sm">Artist Door %</p>
       <p className="font-medium">{deal.artistDoorPercent}%</p>
       <p className="text-muted-foreground mt-2 text-sm">Payment</p>
-      <p className="font-medium">{deal.paymentMethod}</p>
+      <p className="font-medium">{PAYMENT_METHOD_LABELS[deal.paymentMethod]}</p>
     </div>
   );
 }
@@ -56,7 +57,7 @@ function VenueHireDetails({ deal }: { deal: VenueHireDeal }) {
       <p className="text-muted-foreground mt-2 text-sm">Hire Fee</p>
       <p className="font-medium">£{deal.hireFee}</p>
       <p className="text-muted-foreground mt-2 text-sm">Payment</p>
-      <p className="font-medium">{deal.paymentMethod}</p>
+      <p className="font-medium">{PAYMENT_METHOD_LABELS[deal.paymentMethod]}</p>
     </div>
   );
 }

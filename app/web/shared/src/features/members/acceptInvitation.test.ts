@@ -7,8 +7,8 @@ describe("invitation acceptance", () => {
     const membership: Membership = {
       tenantId: "accepted-tenant",
       legalName: "Accepted Venue",
-      type: "Venue",
-      role: "Staff",
+      type: "venue",
+      role: "staff",
     };
     let completeSelection: (() => void) | undefined;
     const selection = new Promise<void>((resolve) => {
