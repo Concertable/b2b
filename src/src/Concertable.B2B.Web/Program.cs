@@ -33,6 +33,7 @@ using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
 using Concertable.Shared.Api.Exceptions;
+using Concertable.Shared.Api.Extensions;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Infrastructure;
@@ -66,14 +67,13 @@ builder.Services.AddProblemDetails();
 builder.Services.AddControllers(options =>
     options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseRouteTransformer())))
     .AddApplicationPart(typeof(Concertable.Shared.Api.Controllers.GenreController).Assembly)
-.AddJsonOptions(options =>
-{
-    options.JsonSerializerOptions.IncludeFields = true;
-    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-    options.JsonSerializerOptions.WriteIndented = true;
-    options.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
-    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-});
+    .AddApplicationJson(options =>
+    {
+        options.IncludeFields = true;
+        options.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.WriteIndented = true;
+        options.Converters.Add(new TimeOnlyJsonConverter());
+    });
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddLogging();

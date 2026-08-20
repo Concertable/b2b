@@ -1,17 +1,10 @@
-using System.Text.Json.Serialization;
-
 namespace Concertable.B2B.Deal.Contracts.Enums;
 
-[JsonConverter(typeof(JsonStringEnumConverter<DealType>))]
 public enum DealType
 {
-    [JsonStringEnumMemberName(DealTypeNames.FlatFee)]
     FlatFee,
-    [JsonStringEnumMemberName(DealTypeNames.DoorSplit)]
     DoorSplit,
-    [JsonStringEnumMemberName(DealTypeNames.Versus)]
     Versus,
-    [JsonStringEnumMemberName(DealTypeNames.VenueHire)]
     VenueHire
 }
 
