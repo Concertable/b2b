@@ -3,6 +3,7 @@ using Concertable.B2B.Venue.Api.Mappers;
 using Concertable.B2B.Venue.Api.Responses;
 using Concertable.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Venue.Api.Controllers;
 
@@ -19,12 +20,14 @@ internal sealed class VenueReviewController : ControllerBase
         this.reviewService = reviewService;
     }
 
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
     [HttpGet]
     public async Task<ActionResult<IPagination<ReviewDto>>> GetReviews(
         int venueId,
         [FromQuery] PageParams pageParams) =>
         Ok(await reviewService.GetPagedAsync(venueId, pageParams));
 
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
     [HttpGet("summary")]
     public async Task<ActionResult<ReviewSummary>> GetSummary(int venueId) =>
         Ok(await reviewService.GetSummaryAsync(venueId));

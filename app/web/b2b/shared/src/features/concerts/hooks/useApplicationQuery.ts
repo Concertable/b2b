@@ -48,7 +48,7 @@ export function useAcceptApplicationMutation(opportunityId: number) {
       queryClient.setQueryData<Application>(
         ["applications", applicationId],
         (application) =>
-          application ? { ...application, status: "Accepted" } : application,
+          application ? { ...application, status: "accepted" } : application,
       );
       queryClient.invalidateQueries({
         queryKey: ["applications", "opportunity", opportunityId],

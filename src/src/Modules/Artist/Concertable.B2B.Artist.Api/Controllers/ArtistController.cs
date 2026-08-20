@@ -2,6 +2,7 @@ using Concertable.B2B.Artist.Api.Mappers;
 using Concertable.B2B.Artist.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Artist.Api.Controllers;
 
@@ -18,6 +19,7 @@ internal sealed class ArtistController : ControllerBase
         this.artistService = artistService;
     }
 
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
     [HttpGet("{artistId:int}")]
     public async Task<ActionResult<DetailsResponse>> GetDetailsById(
         int artistId,
@@ -36,6 +38,7 @@ internal sealed class ArtistController : ControllerBase
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
+    [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
     [HttpPost($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> Create(
         [FromForm] CreateArtistRequest request,
@@ -47,6 +50,7 @@ internal sealed class ArtistController : ControllerBase
 
     [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
+    [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
     [HttpPut($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> Update(
         [FromForm] UpdateArtistRequest request,
