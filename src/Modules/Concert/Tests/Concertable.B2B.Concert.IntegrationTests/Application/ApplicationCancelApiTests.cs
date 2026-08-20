@@ -29,8 +29,8 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     private async Task<BookingEntity> AcceptFlatFeeAsync(HttpClient client)
     {
         var appId = fixture.SeedState.FlatFeeApp.Id;
-        await client.PostAsync($"/api/Application/{appId}/checkout");
-        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        await client.PostAsync($"/api/application/{appId}/checkout");
+        var acceptResponse = await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         return await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
     }
@@ -38,7 +38,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     private async Task<BookingEntity> AcceptVenueHireAsync(HttpClient client)
     {
         var appId = fixture.SeedState.VenueHireApp.Id;
-        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        var acceptResponse = await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         return await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
     }
@@ -62,16 +62,16 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var booking = await AcceptFlatFeeAsync(client);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         var refund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
         Assert.Equal(booking.Id, refund.BookingId);
         Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
-        Assert.Contains(fixture.EmailSender.Sent, e =>
+        Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
             e.To == fixture.SeedState.ArtistManager1.Email && e.Subject == "Concert Application Cancelled");
     }
 
@@ -81,12 +81,12 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.DoorSplitApp.Id;
-        await client.PostAsync($"/api/Application/{appId}/checkout");
-        var acceptResponse = await client.PostAsync($"/api/Application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+        await client.PostAsync($"/api/application/{appId}/checkout");
+        var acceptResponse = await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -105,11 +105,11 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/withdraw", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(booking.Id, fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId);
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
     }
@@ -129,11 +129,11 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         Assert.Equal(LifecycleState.PaymentFailed, await StateOfAsync(appId));
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
     }
 
@@ -148,13 +148,13 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.VenueHireApp.Id;
         var booking = await AcceptVenueHireAsync(client);
-        var cancelResponse = await client.PostAsync($"/api/Application/{appId}/cancel", (object?)null);
+        var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
 
         // Act
         await fixture.StripeClient.SendWebhookAsync();
         var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
 
         // Assert
         Assert.Equal(LifecycleState.Cancelled, await StateOfAsync(appId));
@@ -178,7 +178,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         Assert.Equal(LifecycleState.Booked, await StateOfAsync(appId));
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -193,7 +193,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -210,7 +210,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -230,17 +230,17 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
         await AcceptFlatFeeAsync(client);
 
-        var closedResponse = await client.GetAsync($"/api/Venue/{fixture.SeedState.Venue.Id}/opportunities");
+        var closedResponse = await client.GetAsync($"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
         var closed = await closedResponse.Content.ReadAsync<IEnumerable<OpportunityResponse>>();
         Assert.DoesNotContain(closed!, o => o.Id == opportunityId);
 
         // Act
-        var cancelResponse = await client.PostAsync($"/api/Application/{appId}/cancel", (object?)null);
+        var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
-        var reopenedResponse = await client.GetAsync($"/api/Venue/{fixture.SeedState.Venue.Id}/opportunities");
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
+        var reopenedResponse = await client.GetAsync($"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
         var reopened = await reopenedResponse.Content.ReadAsync<IEnumerable<OpportunityResponse>>();
         Assert.Contains(reopened!, o => o.Id == opportunityId);
     }
@@ -254,17 +254,17 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
         await AcceptFlatFeeAsync(client);
         await fixture.StripeClient.SendWebhookAsync();
-        var concertResponse = await client.GetAsync($"/api/Concert/application/{appId}");
+        var concertResponse = await client.GetAsync($"/api/concert/application/{appId}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
         var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
 
         // Act
-        var cancelResponse = await client.PostAsync($"/api/Concert/{concert!.Id}/cancel");
+        var cancelResponse = await client.PostAsync($"/api/concert/{concert!.Id}/cancel");
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
-        var reopenedResponse = await client.GetAsync($"/api/Venue/{fixture.SeedState.Venue.Id}/opportunities");
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
+        var reopenedResponse = await client.GetAsync($"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
         var reopened = await reopenedResponse.Content.ReadAsync<IEnumerable<OpportunityResponse>>();
         Assert.Contains(reopened!, o => o.Id == opportunityId);
     }
@@ -280,19 +280,19 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
         await AcceptFlatFeeAsync(client);
-        var beforeResponse = await client.GetAsync($"/api/Application/{appId}");
+        var beforeResponse = await client.GetAsync($"/api/application/{appId}");
         await beforeResponse.ShouldBe(HttpStatusCode.OK);
         var before = await beforeResponse.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
         Assert.Equal(ApplicationStatus.Accepted, before!.Status);
         Assert.NotNull(before.Actions.Cancel);
 
         // Act
-        var cancelResponse = await client.PostAsync($"/api/Application/{appId}/cancel", (object?)null);
+        var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
-        var afterResponse = await client.GetAsync($"/api/Application/{appId}");
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
+        var afterResponse = await client.GetAsync($"/api/application/{appId}");
         await afterResponse.ShouldBe(HttpStatusCode.OK);
         var after = await afterResponse.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
         Assert.Equal(ApplicationStatus.Cancelled, after!.Status);

@@ -4,8 +4,8 @@ import type {
   ReviewSummary,
   StripeConnectStatus,
 } from "@concertable/shared/features/dashboard";
-import type { OpportunitySummary } from "@concertable/b2b/features/dashboard";
-import type { Deal } from "@concertable/b2b/features/deals";
+import type { OpportunitySummary } from "@concertable/web-b2b/features/dashboard";
+import type { Deal } from "@concertable/web-b2b/features/deals";
 import type { Genre } from "@concertable/shared/types/common";
 import type { ApplicationActions } from "./applicationActions";
 

@@ -20,15 +20,12 @@ internal sealed class VenueDashboardController : ControllerBase
 
     [HttpGet("overview")]
     public async Task<ActionResult<VenueDashboardOverview>> GetOverview(CancellationToken ct)
-        => (await dashboardService.GetOverviewAsync(ct)).ToOkOrProblem();
+        => (await dashboardService.GetOverviewAsync(ct)).ToOkOrNoContent();
 
     [HttpGet("kpis")]
     public async Task<ActionResult<VenueDashboardKpis>> GetKpis(CancellationToken ct)
     {
-        var kpis = await dashboardService.GetKpisAsync(ct);
-        return kpis.Match<ActionResult<VenueDashboardKpis>>(
-            value => Ok(value),
-            () => NoContent());
+        return (await dashboardService.GetKpisAsync(ct)).ToOkOrNoContent();
     }
 
     [HttpGet("charts/ticket-revenue")]

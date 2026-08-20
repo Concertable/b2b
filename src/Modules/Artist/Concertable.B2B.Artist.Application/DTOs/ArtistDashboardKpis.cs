@@ -4,4 +4,5 @@ internal sealed record ArtistDashboardKpis(
     int PendingApplications,
     int AcceptedAwaitingCheckout,
     int UpcomingConcerts,
-    long MtdPayoutsCents);
+    long MtdPayoutsCents,
+    double? MtdPayoutsDeltaPercent);

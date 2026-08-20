@@ -67,6 +67,9 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId")
+                        .IsUnique();
+
                     b.ToTable("Venues", "venue");
                 });
 

@@ -6,7 +6,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class BookingRepository : VenueArtistTenantScopedRepository<BookingEntity>, IBookingRepository
 {
-    public BookingRepository(ConcertDbContext context) : base(context) { }
+    private readonly ConcertDbContext context;
+
+    public BookingRepository(ConcertDbContext context) : base(context)
+    {
+        this.context = context;
+    }
 
     public override async Task<BookingEntity?> GetByIdAsync(int id, CancellationToken ct = default)
     {

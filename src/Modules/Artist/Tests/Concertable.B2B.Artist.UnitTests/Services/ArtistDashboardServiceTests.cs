@@ -31,7 +31,6 @@ public sealed class ArtistDashboardServiceTests
 
     public ArtistDashboardServiceTests()
     {
-        artistService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(42);
         tenantContext.SetupGet(t => t.TenantId).Returns(tenantId);
         reviewService.Setup(s => s.GetSummaryAsync(It.IsAny<int>())).ReturnsAsync(new ReviewSummary(0, null));
         payoutAccountClient
@@ -73,7 +72,8 @@ public sealed class ArtistDashboardServiceTests
     [Fact]
     public async Task GetOverviewAsync_CompleteProfile_CombinesProfilePaymentAndReview()
     {
-        artistService.Setup(s => s.GetDetailsForCurrentUserAsync()).ReturnsAsync(ArtistDetails());
+        artistService.Setup(s => s.GetDetailsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Option.Some(ArtistDetails()));
         reviewService.Setup(s => s.GetSummaryAsync(42)).ReturnsAsync(new ReviewSummary(9, 4.5));
 
         var result = await service.GetOverviewAsync();
@@ -94,7 +94,7 @@ public sealed class ArtistDashboardServiceTests
     public async Task GetKpisAsync_QueriesTenantMonthToDatePayouts_AndMapsToCents()
     {
         concertModule
-            .Setup(m => m.GetArtistDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetArtistDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ArtistDashboardCounts(
                 PendingApplications: 4, AcceptedAwaitingCheckout: 2, UpcomingConcerts: 6));
 
@@ -120,15 +120,18 @@ public sealed class ArtistDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_ReturnsNull_WhenCountsUnavailable()
+    public async Task GetKpisAsync_CountsUnavailable_ReturnsNoneAfterConcurrentReportingCall()
     {
         concertModule
-            .Setup(m => m.GetArtistDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetArtistDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Option.None<ArtistDashboardCounts>());
 
         var result = await service.GetKpisAsync();
 
         Assert.False(result.TryGetValue(out _));
+        reportingClient.Verify(
+            r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -136,7 +139,7 @@ public sealed class ArtistDashboardServiceTests
     {
         timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
         concertModule
-            .Setup(m => m.GetArtistDashboardCountsAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetArtistDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ArtistDashboardCounts(
                 PendingApplications: 4, AcceptedAwaitingCheckout: 2, UpcomingConcerts: 6));
 
@@ -150,28 +153,12 @@ public sealed class ArtistDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsForbidden()
+    public async Task GetKpisAsync_AtMonthStartWithoutTenant_ThrowsInvalidOperation()
     {
         timeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
         tenantContext.SetupGet(t => t.TenantId).Returns((Guid?)null);
 
-        await Assert.ThrowsAsync<ForbiddenException>(() => service.GetKpisAsync());
-    }
-
-    [Fact]
-    public async Task GetKpisAsync_WithoutArtist_ReturnsNoneWithoutQueries()
-    {
-        artistService.Setup(s => s.GetIdForCurrentTenantAsync()).ReturnsAsync(default(Option<int>));
-
-        var result = await service.GetKpisAsync();
-
-        Assert.False(result.TryGetValue(out _));
-        concertModule.Verify(
-            m => m.GetArtistDashboardCountsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        reportingClient.Verify(
-            r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetKpisAsync());
     }
 
     #endregion

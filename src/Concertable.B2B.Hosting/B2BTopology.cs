@@ -5,6 +5,7 @@ using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Payment.Contracts.Events;
 using Concertable.Payment.Contracts;
+using Concertable.Shared.Email.Application;
 using B2BPayoutOwnerRegisteredEvent = Concertable.B2B.Tenant.Contracts.Events.PayoutOwnerRegisteredEvent;
 
 namespace Concertable.B2B.Hosting;
@@ -32,5 +33,6 @@ public static class B2BTopology
             .Subscribe<DepositEscrowRejectedEvent>(B2BConstants.ServiceName)
             .Subscribe<RefundEscrowSucceededEvent>(B2BConstants.ServiceName)
             .Subscribe<RefundEscrowRejectedEvent>(B2BConstants.ServiceName)
-            .Subscribe<RefundEscrowDeferredEvent>(B2BConstants.ServiceName);
+            .Subscribe<RefundEscrowDeferredEvent>(B2BConstants.ServiceName)
+            .Queue<SendEmailCommand>(B2BConstants.ServiceName);
 }

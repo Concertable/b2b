@@ -3,8 +3,8 @@ import {
   usePendingApplicationsQuery,
   useRecentDeniedApplicationsQuery,
   ConfirmActionDialog,
-} from "@concertable/b2b/features/concerts";
-import type { Application } from "@concertable/b2b/features/concerts";
+} from "@concertable/web-b2b/features/concerts";
+import type { Application } from "@concertable/web-b2b/features/concerts";
 import { Badge } from "@concertable/web/components/ui/badge";
 import { Button } from "@concertable/web/components/ui/button";
 import { useWithdrawApplication } from "../hooks/useWithdrawApplication";

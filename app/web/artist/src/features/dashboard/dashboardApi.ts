@@ -57,7 +57,7 @@ const dashboardApi = {
   },
   getRecentReviews: async (): Promise<ReviewExcerpt[]> => {
     const { data } = await apiClient.get<ReviewExcerpt[]>(
-      "/artists/current/reviews/recent",
+      "/organization/artist/review/recent",
     );
     return data;
   },

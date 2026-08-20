@@ -1,10 +1,10 @@
-using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Projections;
+using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Services;
-using Concertable.B2B.Venue.Contracts;
 using Concertable.Contracts.Enums;
+using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
 using Reunion;
@@ -14,27 +14,29 @@ namespace Concertable.B2B.Concert.UnitTests.Services;
 public sealed class OpportunityDashboardServiceTests
 {
     private readonly Mock<IOpportunityRepository> repository;
-    private readonly Mock<IPublicOpportunityRepository> publicRepository;
-    private readonly Mock<IVenueModule> venueModule;
-    private readonly Mock<IArtistModule> artistModule;
+    private readonly Mock<IOpportunityReadRepository> readRepository;
+    private readonly Mock<IArtistReadModelRepository> artistRepository;
+    private readonly Mock<ITenantContext> tenantContext;
     private readonly Mock<IDealModule> dealModule;
     private readonly FakeTimeProvider timeProvider;
     private readonly OpportunityDashboardService service;
+    private readonly Guid tenantId = Guid.NewGuid();
 
     public OpportunityDashboardServiceTests()
     {
         this.repository = new Mock<IOpportunityRepository>();
-        this.publicRepository = new Mock<IPublicOpportunityRepository>();
-        this.venueModule = new Mock<IVenueModule>();
-        this.artistModule = new Mock<IArtistModule>();
+        this.readRepository = new Mock<IOpportunityReadRepository>();
+        this.artistRepository = new Mock<IArtistReadModelRepository>();
+        this.tenantContext = new Mock<ITenantContext>();
         this.dealModule = new Mock<IDealModule>();
         this.timeProvider = new FakeTimeProvider(
             new DateTimeOffset(2026, 8, 16, 12, 0, 0, TimeSpan.Zero));
+        this.tenantContext.SetupGet(value => value.TenantId).Returns(this.tenantId);
         this.service = new OpportunityDashboardService(
             this.repository.Object,
-            this.publicRepository.Object,
-            this.venueModule.Object,
-            this.artistModule.Object,
+            this.readRepository.Object,
+            this.artistRepository.Object,
+            this.tenantContext.Object,
             this.dealModule.Object,
             this.timeProvider);
     }
@@ -56,11 +58,8 @@ public sealed class OpportunityDashboardServiceTests
             ApplicationCount = 4
         };
         var deal = new FlatFeeDeal { Id = 7, PaymentMethod = PaymentMethod.Cash, Fee = 500 };
-        this.venueModule
-            .Setup(module => module.GetVenueIdForCurrentTenantAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Option.Some(42));
         this.repository
-            .Setup(value => value.GetOpenWithApplicationCountsByVenueIdAsync(42))
+            .Setup(value => value.GetOpenWithApplicationCountsByVenueTenantIdAsync(this.tenantId))
             .ReturnsAsync([projection]);
         this.dealModule
             .Setup(module => module.GetByIdsAsync(It.IsAny<IEnumerable<int>>(), It.IsAny<CancellationToken>()))
@@ -74,22 +73,6 @@ public sealed class OpportunityDashboardServiceTests
         Assert.Equal(3, item.DaysUntilDeadline);
         Assert.Equal(1, item.Opportunity.Id);
         Assert.Same(deal, item.Opportunity.Deal);
-    }
-
-    [Fact]
-    public async Task GetApplicationMetricsForCurrentVenueAsync_MissingVenue_ReturnsTypedError()
-    {
-        this.venueModule
-            .Setup(module => module.GetVenueIdForCurrentTenantAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Option.None<int>());
-
-        var result = await this.service.GetApplicationMetricsForCurrentVenueAsync();
-
-        Assert.True(result.TryGetError(out var error));
-        Assert.IsType<OpportunityError.MissingVenue>(error);
-        this.repository.Verify(
-            value => value.GetOpenWithApplicationCountsByVenueIdAsync(It.IsAny<int>()),
-            Times.Never);
     }
 
     #endregion
@@ -113,13 +96,15 @@ public sealed class OpportunityDashboardServiceTests
             DealId = 8
         };
         var deal = new FlatFeeDeal { Id = 8, PaymentMethod = PaymentMethod.Cash, Fee = 600 };
-        this.artistModule
-            .Setup(module => module.GetIdForCurrentTenantAsync())
-            .ReturnsAsync(Option.Some(9));
-        this.artistModule
-            .Setup(module => module.GetGenresAsync(9))
-            .ReturnsAsync(artistGenres);
-        this.publicRepository
+        this.artistRepository
+            .Setup(value => value.GetByTenantIdAsync(this.tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ArtistReadModel
+            {
+                Id = 9,
+                TenantId = this.tenantId,
+                Genres = artistGenres.Select(genre => new ArtistReadModelGenre { Genre = genre }).ToList(),
+            });
+        this.readRepository
             .Setup(value => value.GetMatchCandidatesAsync(9, artistGenres))
             .ReturnsAsync([projection]);
         this.dealModule
@@ -139,15 +124,15 @@ public sealed class OpportunityDashboardServiceTests
     [Fact]
     public async Task GetMatchesForCurrentArtistAsync_MissingArtist_ReturnsTypedError()
     {
-        this.artistModule
-            .Setup(module => module.GetIdForCurrentTenantAsync())
-            .ReturnsAsync(Option.None<int>());
+        this.artistRepository
+            .Setup(value => value.GetByTenantIdAsync(this.tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ArtistReadModel?)null);
 
         var result = await this.service.GetMatchesForCurrentArtistAsync();
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<OpportunityError.MissingArtist>(error);
-        this.publicRepository.Verify(
+        this.readRepository.Verify(
             value => value.GetMatchCandidatesAsync(It.IsAny<int>(), It.IsAny<IReadOnlySet<Genre>>()),
             Times.Never);
     }

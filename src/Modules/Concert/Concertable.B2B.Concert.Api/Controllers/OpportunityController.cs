@@ -45,7 +45,7 @@ internal sealed class OpportunityController : ControllerBase
         (await opportunityService.CreateAsync(request))
             .ToCreatedOrProblem(
                 mapper.ToResponse,
-                opportunity => $"/api/Opportunity/{opportunity.Id}");
+                opportunity => $"/api/opportunity/{opportunity.Id}");
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPost("bulk")]
@@ -55,7 +55,7 @@ internal sealed class OpportunityController : ControllerBase
         return result.ToActionResult(() => Created());
     }
 
-    [HttpGet("/api/Venue/{venueId:int}/opportunities")]
+    [HttpGet("/api/venue/{venueId:int}/opportunities")]
     public async Task<IActionResult> GetByVenueId(int venueId)
     {
         var opportunities = await opportunityService.GetActiveByVenueIdAsync(venueId);
@@ -63,7 +63,7 @@ internal sealed class OpportunityController : ControllerBase
     }
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
-    [HttpPut("/api/Venue/{venueId:int}/opportunities")]
+    [HttpPut("/api/venue/{venueId:int}/opportunities")]
     public async Task<ActionResult<List<OpportunityResponse>>> Update(
         int venueId,
         [FromBody] IEnumerable<OpportunityRequest> desired)

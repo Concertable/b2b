@@ -9,12 +9,12 @@ internal interface IConcertRepository : IRepository<ConcertEntity>
     Task<ConcertEntity?> GetByIdWithArtistAndVenueAsync(int id);
     Task<ConcertEntity?> GetByIdWithVenueAsync(int id);
     Task<ConcertEntity?> GetByIdWithBookingAsync(int id, CancellationToken ct = default);
-    Task<ConcertDetails?> GetDetailsByIdAsync(int id);
+    Task<ConcertDetails?> GetDetailsByIdAsync(int id, CancellationToken ct = default);
     Task<ConcertDetails?> GetDetailsByApplicationIdAsync(int applicationId);
     Task<IEnumerable<ConcertSummary>> GetUnpostedByArtistIdAsync(int id);
     Task<IEnumerable<ConcertSummary>> GetUnpostedByVenueIdAsync(int id);
-    Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForVenueAsync(int venueId);
-    Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForArtistAsync(int artistId);
+    Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForVenueTenantIdAsync(Guid venueTenantId);
+    Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForArtistTenantIdAsync(Guid artistTenantId);
     Task<IEnumerable<int>> GetEndedConfirmedIdsAsync();
     Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId);
     Task<int?> GetDealIdByIdAsync(int concertId);

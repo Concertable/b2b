@@ -12,7 +12,7 @@ internal sealed class ConcertDbContext(
     DbContextOptions<ConcertDbContext> options,
     ConcertConfigurationProvider provider,
     ITenantContext tenantContext)
-    : VenueArtistTenantDbContext(options, provider, tenantContext, Schema.Name)
+    : VenueArtistTenantScopedDbContext(options, provider, tenantContext, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
     public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
@@ -29,9 +29,6 @@ internal sealed class ConcertDbContext(
     public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();
     public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
 
-    /* Applications and bookings are private deal records — visible to their two parties only.
-       Concert carries the same tenant pair but is deliberately NOT filtered: its details page is
-       public marketplace browse, served by PublicConcertDbContext. */
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyVenueArtist<ApplicationEntity>(this);

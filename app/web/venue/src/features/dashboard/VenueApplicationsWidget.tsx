@@ -12,8 +12,8 @@ import {
 } from "./applicationActions";
 import type { Application } from "./types";
 import type { DashboardApplicationStatus } from "@concertable/shared/features/dashboard";
-import { dealSummary } from "@concertable/b2b/features/deals";
-import { ConfirmActionDialog } from "@concertable/b2b/features/concerts";
+import { dealSummary } from "@concertable/web-b2b/features/deals";
+import { ConfirmActionDialog } from "@concertable/web-b2b/features/concerts";
 import { Button } from "@concertable/web/components/ui/button";
 import { DataTable } from "@concertable/web/components/ui/data-table";
 import {
