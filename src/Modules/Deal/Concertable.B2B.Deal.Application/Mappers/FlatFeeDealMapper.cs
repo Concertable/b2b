@@ -7,10 +7,10 @@ namespace Concertable.B2B.Deal.Application.Mappers;
 
 internal sealed class FlatFeeDealMapper : IDealMapper
 {
-    public IDeal ToDeal(DealEntity entity)
+    public DealDto ToDeal(DealEntity entity)
     {
         var e = (FlatFeeDealEntity)entity;
-        return new FlatFeeDeal
+        return new FlatFeeDealDto
         {
             Id = e.Id,
             PaymentMethod = e.PaymentMethod,
@@ -18,9 +18,9 @@ internal sealed class FlatFeeDealMapper : IDealMapper
         };
     }
 
-    public Result<DealEntity, ValidationErrors> ToEntity(IDeal deal)
+    public Result<DealEntity, ValidationErrors> ToEntity(DealDto deal)
     {
-        var c = (FlatFeeDeal)deal;
+        var c = (FlatFeeDealDto)deal;
         return FlatFeeDealEntity.Create(c.Fee, c.PaymentMethod).Map<DealEntity>(entity => entity);
     }
 }

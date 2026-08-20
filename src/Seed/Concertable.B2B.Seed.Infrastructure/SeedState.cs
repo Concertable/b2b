@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Artist.Domain.Entities;
+using Concertable.B2B.Artist.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Seed.Contracts;

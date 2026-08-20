@@ -5,12 +5,12 @@ namespace Concertable.B2B.Concert.Application.Renderers;
 
 internal sealed class FlatFeeDealTerms : IDealTerms
 {
-    public string Render(IDeal deal)
+    public string Render(DealDto deal)
     {
-        var terms = (FlatFeeDeal)deal;
+        var terms = (FlatFeeDealDto)deal;
         return $"The venue pays the artist a flat fee of {Gbp(terms.Fee)}.";
     }
 
-    public string Serialize(IDeal deal) =>
-        $"Fee={TermsFingerprintFormat.Number(((FlatFeeDeal)deal).Fee)}";
+    public string Serialize(DealDto deal) =>
+        $"Fee={TermsFingerprintFormat.Number(((FlatFeeDealDto)deal).Fee)}";
 }

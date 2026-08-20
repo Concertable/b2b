@@ -12,6 +12,6 @@ internal sealed class DealTermsRenderer : IDealTermsRenderer
         this.terms = terms;
     }
 
-    public string Render(IDeal deal) =>
+    public string Render(DealDto deal) =>
         terms.Create(deal.DealType).Render(deal);
 }

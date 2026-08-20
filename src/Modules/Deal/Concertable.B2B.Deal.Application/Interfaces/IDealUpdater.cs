@@ -5,7 +5,7 @@ using Reunion;
 
 namespace Concertable.B2B.Deal.Application.Interfaces;
 
-internal interface IDealUpdater
+internal interface IDealUpdater : IDealStrategy
 {
-    UnitResult<ValidationErrors> Apply(DealEntity existing, IDeal source);
+    UnitResult<ValidationErrors> Apply(DealEntity existing, DealDto source);
 }

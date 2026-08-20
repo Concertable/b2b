@@ -40,7 +40,7 @@ public sealed class TenantScopingTests : IAsyncLifetime
         // Arrange — venue manager creates a fresh FlatFee opportunity
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var oppResponse = await venueClient.PostAsync("/api/opportunity",
-            BuildRequest(new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 }, fixture.SeedNow));
+            BuildRequest(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Cash, Fee = 500 }, fixture.SeedNow));
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies

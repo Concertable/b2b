@@ -31,7 +31,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForFlatFee()
     {
         // Arrange — fresh FlatFee opportunity, artist applies, venue checkout + accept
-        var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         var applicationId = await ApplyAsync(opportunityId);
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/application/{applicationId}/checkout");
@@ -48,7 +48,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         AssertCommonSnapshot(contract);
 
         // Act — the venue edits the live contract after acceptance
-        await UpdateDealAsync(opportunityId, new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 999m });
+        await UpdateDealAsync(opportunityId, new FlatFeeDealDto { PaymentMethod = PaymentMethod.Cash, Fee = 999m });
 
         // Assert — the frozen contract is untouched (the terms text still states the agreed £500)
         var frozen = await GetContractAsync(applicationId);
@@ -60,7 +60,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForDoorSplit()
     {
         // Arrange
-        var opportunityId = await CreateOpportunityAsync(new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m });
+        var opportunityId = await CreateOpportunityAsync(new DoorSplitDealDto { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m });
         var applicationId = await ApplyAsync(opportunityId);
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
@@ -75,7 +75,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         AssertCommonSnapshot(contract);
 
         // Act
-        await UpdateDealAsync(opportunityId, new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 15m });
+        await UpdateDealAsync(opportunityId, new DoorSplitDealDto { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 15m });
 
         // Assert — the frozen terms text still states the agreed 70%
         var frozen = await GetContractAsync(applicationId);
@@ -86,7 +86,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForVersus()
     {
         // Arrange
-        var opportunityId = await CreateOpportunityAsync(new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200m, ArtistDoorPercent = 60m });
+        var opportunityId = await CreateOpportunityAsync(new VersusDealDto { PaymentMethod = PaymentMethod.Cash, Guarantee = 200m, ArtistDoorPercent = 60m });
         var applicationId = await ApplyAsync(opportunityId);
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
@@ -101,7 +101,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         AssertCommonSnapshot(contract);
 
         // Act
-        await UpdateDealAsync(opportunityId, new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 999m, ArtistDoorPercent = 10m });
+        await UpdateDealAsync(opportunityId, new VersusDealDto { PaymentMethod = PaymentMethod.Cash, Guarantee = 999m, ArtistDoorPercent = 10m });
 
         // Assert — the frozen terms text still states the agreed £200 guarantee + 60%
         var frozen = await GetContractAsync(applicationId);
@@ -112,7 +112,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForVenueHire()
     {
         // Arrange — VenueHire is prepaid: the artist applies with a payment method
-        var opportunityId = await CreateOpportunityAsync(new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 250m });
+        var opportunityId = await CreateOpportunityAsync(new VenueHireDealDto { PaymentMethod = PaymentMethod.Cash, HireFee = 250m });
         var applicationId = await ApplyAsync(opportunityId, "pm_card_visa");
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
@@ -127,7 +127,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         AssertCommonSnapshot(contract);
 
         // Act
-        await UpdateDealAsync(opportunityId, new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 999m });
+        await UpdateDealAsync(opportunityId, new VenueHireDealDto { PaymentMethod = PaymentMethod.Cash, HireFee = 999m });
 
         // Assert — the frozen terms text still states the agreed £250
         var frozen = await GetContractAsync(applicationId);
@@ -138,7 +138,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     public async Task Apply_ShouldReturn400_WithoutConsent()
     {
         // Arrange
-        var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
@@ -153,7 +153,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     public async Task Apply_ShouldRecordArtistESignatureAndFingerprint()
     {
         // Arrange + Act
-        var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         var applicationId = await ApplyAsync(opportunityId);
 
         // Assert
@@ -169,7 +169,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     public async Task Accept_ShouldReturn400_WithoutConsent()
     {
         // Arrange
-        var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         var applicationId = await ApplyAsync(opportunityId);
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/application/{applicationId}/checkout");
@@ -186,9 +186,9 @@ public sealed class ContractApiTests : IAsyncLifetime
     public async Task Accept_ShouldReturn409_WhenTermsChangedSinceApply()
     {
         // Arrange — artist consents to £500, then the venue edits the live contract to £999
-        var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         var applicationId = await ApplyAsync(opportunityId);
-        await UpdateDealAsync(opportunityId, new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 999m });
+        await UpdateDealAsync(opportunityId, new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 999m });
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/application/{applicationId}/checkout");
 
@@ -272,7 +272,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     public async Task Contract_Pdf_RendersBothPartyESignatures()
     {
         // Distinct names so each extracted signature line ties to its party — artist signs on apply, venue on accept.
-        var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         await (await artistClient.PostAsync($"/api/application/{opportunityId}", new { eSignature = new { signatoryName = "Zola Banks" } })).ShouldBe(HttpStatusCode.Created);
         var applicationId = (await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.OpportunityId == opportunityId)).Id;
@@ -325,7 +325,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     [Fact]
     public async Task PendingApplication_HasNoContractLink()
     {
-        var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         var applicationId = await ApplyAsync(opportunityId);
 
         var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
@@ -338,7 +338,7 @@ public sealed class ContractApiTests : IAsyncLifetime
 
     private async Task<int> AcceptedFlatFeeAsync()
     {
-        var opportunityId = await CreateOpportunityAsync(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        var opportunityId = await CreateOpportunityAsync(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         var applicationId = await ApplyAsync(opportunityId);
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/application/{applicationId}/checkout");
@@ -347,7 +347,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         return applicationId;
     }
 
-    private async Task<int> CreateOpportunityAsync(IDeal deal)
+    private async Task<int> CreateOpportunityAsync(DealDto deal)
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var response = await venueClient.PostAsync("/api/opportunity", BuildRequest(deal, fixture.SeedNow));
@@ -397,7 +397,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     // The live edit venues make through OpportunitySyncer.UpdateAsync — mutates the contract row in place.
-    private async Task UpdateDealAsync(int opportunityId, IDeal desired)
+    private async Task UpdateDealAsync(int opportunityId, DealDto desired)
     {
         var opportunity = await fixture.ConcertReads.Set<OpportunityEntity>()
             .FirstAsync(o => o.Id == opportunityId);
@@ -409,7 +409,6 @@ public sealed class ContractApiTests : IAsyncLifetime
 
         var updatedOption = await contracts.GetByIdAsync(opportunity.DealId);
         Assert.True(updatedOption.TryGetValue(out var updated));
-        desired.Id = opportunity.DealId;
-        Assert.Equal(desired, updated); // sanity: the live contract really changed
+        Assert.Equal(desired with { Id = opportunity.DealId }, updated); // sanity: the live contract really changed
     }
 }
