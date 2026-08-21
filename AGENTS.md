@@ -1,6 +1,6 @@
 # Concertable.B2B
 
-Data service — venue↔artist booking + settlement. Inherits root [`AGENTS.md`](../../AGENTS.md) + [`api/AGENTS.md`](../AGENTS.md) (don't restate). B2B's DbContext stances, filtered-entity list and `DealType` strategy/workflow rosters: @./CODE_PATTERNS.md. Internal design → [`ARCHITECTURE.md`](./ARCHITECTURE.md); deal/contract/workflow → [`src/Modules/Deal/ARCHITECTURE.md`](./src/Modules/Deal/ARCHITECTURE.md) + [`src/Modules/Concert/AGENTS.md`](./src/Modules/Concert/AGENTS.md); legal/VAT → [`src/Modules/Deal/LEGAL_REQUIREMENTS.md`](./src/Modules/Deal/LEGAL_REQUIREMENTS.md).
+Data service — venue↔artist booking + settlement. Inherits root [`AGENTS.md`](../../AGENTS.md) (don't restate). B2B's DbContext stances, filtered-entity list and `DealType` strategy/workflow rosters: @./CODE_PATTERNS.md. Internal design → [`ARCHITECTURE.md`](./ARCHITECTURE.md); deal/contract/workflow → [`src/Modules/Deal/ARCHITECTURE.md`](./src/Modules/Deal/ARCHITECTURE.md) + [`src/Modules/Concert/AGENTS.md`](./src/Modules/Concert/AGENTS.md); legal/VAT → [`src/Modules/Deal/LEGAL_REQUIREMENTS.md`](./src/Modules/Deal/LEGAL_REQUIREMENTS.md).
 
 ## Authority is the request-scoped active tenant, never a token claim
 

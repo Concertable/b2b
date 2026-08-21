@@ -45,17 +45,18 @@ public sealed class B2BCompositionTests
     }
 
     [Fact]
-    public void Functions_MissingAdminModule_FailsWithUnresolvedDependency()
+    public void Web_MissingAdminModule_FailsWithUnresolvedDependency()
     {
-        var builder = B2BWorkerHost.CreateBuilder(CompositionTestArguments.Create());
+        // IAdminModule's only consumer is UserController.Me() — Web-hosted, not Workers.
+        var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
+        builder.AddB2BWebHost();
         builder.Services.RemoveAll<IAdminModule>();
         var exception = Record.Exception(() =>
         {
             using var app = builder.Build();
             builder.Services.ValidateComposition(app.Services, new CompositionValidationOptions
             {
-                RootAssemblies = [typeof(B2BWorkerHost).Assembly],
-                IsFunction = method => method.IsDefined(typeof(FunctionAttribute), inherit: false)
+                RootAssemblies = [typeof(B2BWebHostExtensions).Assembly]
             });
         });
         Assert.NotNull(exception);

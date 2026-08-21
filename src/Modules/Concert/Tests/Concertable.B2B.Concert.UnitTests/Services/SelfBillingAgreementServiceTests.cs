@@ -71,7 +71,7 @@ public sealed class SelfBillingAgreementServiceTests
     {
         SelfBillingAgreementEntity? built = null;
         repository
-            .Setup(r => r.AddAsync(It.IsAny<SelfBillingAgreementEntity>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.InsertAsync(It.IsAny<SelfBillingAgreementEntity>(), It.IsAny<CancellationToken>()))
             .Callback<SelfBillingAgreementEntity, CancellationToken>((a, _) => built = a)
             .ReturnsAsync((SelfBillingAgreementEntity a, CancellationToken _) => a);
 
@@ -87,7 +87,7 @@ public sealed class SelfBillingAgreementServiceTests
         Assert.Equal(new DateTime(2027, 2, 1, 12, 0, 0, DateTimeKind.Utc), built.ExpiresAtUtc);
         Assert.Equal("2026-07", built.PlatformTermsVersion);
         Assert.Contains("Sally Supplier Ltd", built.ClauseText);
-        repository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        repository.Verify(r => r.InsertAsync(It.IsAny<SelfBillingAgreementEntity>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class SelfBillingAgreementServiceTests
     {
         SelfBillingAgreementEntity? built = null;
         repository
-            .Setup(r => r.AddAsync(It.IsAny<SelfBillingAgreementEntity>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.InsertAsync(It.IsAny<SelfBillingAgreementEntity>(), It.IsAny<CancellationToken>()))
             .Callback<SelfBillingAgreementEntity, CancellationToken>((a, _) => built = a)
             .ReturnsAsync((SelfBillingAgreementEntity a, CancellationToken _) => a);
 
