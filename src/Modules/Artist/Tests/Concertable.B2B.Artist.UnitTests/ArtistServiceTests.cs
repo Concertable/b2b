@@ -18,13 +18,33 @@ namespace Concertable.B2B.Artist.UnitTests;
 
 public sealed class ArtistServiceTests
 {
-    private readonly Mock<IArtistRepository> repository = new();
-    private readonly Mock<IArtistReadRepository> readRepository = new();
-    private readonly Mock<IImageService> imageService = new();
-    private readonly Mock<ICurrentUser> currentUser = new();
-    private readonly Mock<ITenantContext> tenantContext = new();
-    private readonly Mock<IGeocodingClient> geocodingClient = new();
-    private readonly Mock<IGeometryProvider> geometryProvider = new();
+    private readonly Mock<IArtistRepository> repository;
+    private readonly Mock<IArtistReadRepository> readRepository;
+    private readonly Mock<IImageService> imageService;
+    private readonly Mock<ICurrentUser> currentUser;
+    private readonly Mock<ITenantContext> tenantContext;
+    private readonly Mock<IGeocodingClient> geocodingClient;
+    private readonly Mock<IGeometryProvider> geometryProvider;
+    private readonly ArtistService service;
+
+    public ArtistServiceTests()
+    {
+        this.repository = new Mock<IArtistRepository>();
+        this.readRepository = new Mock<IArtistReadRepository>();
+        this.imageService = new Mock<IImageService>();
+        this.currentUser = new Mock<ICurrentUser>();
+        this.tenantContext = new Mock<ITenantContext>();
+        this.geocodingClient = new Mock<IGeocodingClient>();
+        this.geometryProvider = new Mock<IGeometryProvider>();
+        this.service = new ArtistService(
+            this.repository.Object,
+            this.readRepository.Object,
+            this.imageService.Object,
+            this.currentUser.Object,
+            this.tenantContext.Object,
+            this.geocodingClient.Object,
+            this.geometryProvider.Object);
+    }
 
     [Fact]
     public async Task GetDetailsAsync_ProfileMissing_ReturnsNone()
@@ -35,7 +55,7 @@ public sealed class ArtistServiceTests
             .Setup(value => value.GetDetailsByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((ArtistDetails?)null);
 
-        var result = await CreateService().GetDetailsAsync();
+        var result = await this.service.GetDetailsAsync();
 
         Assert.True(result.IsNone);
     }
@@ -66,7 +86,7 @@ public sealed class ArtistServiceTests
             Avatar = Mock.Of<IFormFile>()
         };
 
-        var result = await CreateService().CreateAsync(request);
+        var result = await this.service.CreateAsync(request);
 
         Assert.True(result.TryGetError(out var error));
         var invalid = Assert.IsType<CreateArtistError.Invalid>(error);
@@ -110,7 +130,7 @@ public sealed class ArtistServiceTests
             Banner = Mock.Of<IFormFile>()
         };
 
-        var result = await CreateService().UpdateAsync(request);
+        var result = await this.service.UpdateAsync(request);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<UpdateArtistError.Invalid>(error);
@@ -125,12 +145,4 @@ public sealed class ArtistServiceTests
             Times.Never);
     }
 
-    private ArtistService CreateService() => new(
-        repository.Object,
-        readRepository.Object,
-        imageService.Object,
-        currentUser.Object,
-        tenantContext.Object,
-        geocodingClient.Object,
-        geometryProvider.Object);
 }
