@@ -84,7 +84,7 @@ public sealed class VenueDashboardResourceTests : IAsyncLifetime
             "/_artist/?inbox=open")), MessageEnvelope.Create<TenantActivityRecordedEvent>(at));
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        var response = await client.GetAsync("/api/VenueDashboard/activity");
+        var response = await client.GetAsync("/api/venue-dashboard/activity");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var activity = await response.Content.ReadAsync<List<ActivityItemDto>>();
