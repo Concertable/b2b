@@ -12,12 +12,31 @@ namespace Concertable.B2B.Tenant.UnitTests;
 
 public sealed class InvitationServiceTests
 {
-    private readonly Mock<ITenantRepository> tenantRepository = new();
-    private readonly Mock<IMembershipRepository> membershipRepository = new();
-    private readonly Mock<IInvitationRepository> repository = new();
-    private readonly Mock<ITenantContext> tenantContext = new();
-    private readonly Mock<ICurrentUser> currentUser = new();
-    private readonly Mock<IUserModule> userModule = new();
+    private readonly Mock<ITenantRepository> tenantRepository;
+    private readonly Mock<IMembershipRepository> membershipRepository;
+    private readonly Mock<IInvitationRepository> repository;
+    private readonly Mock<ITenantContext> tenantContext;
+    private readonly Mock<ICurrentUser> currentUser;
+    private readonly Mock<IUserModule> userModule;
+    private readonly InvitationService service;
+
+    public InvitationServiceTests()
+    {
+        this.tenantRepository = new Mock<ITenantRepository>();
+        this.membershipRepository = new Mock<IMembershipRepository>();
+        this.repository = new Mock<IInvitationRepository>();
+        this.tenantContext = new Mock<ITenantContext>();
+        this.currentUser = new Mock<ICurrentUser>();
+        this.userModule = new Mock<IUserModule>();
+        this.service = new InvitationService(
+            this.tenantRepository.Object,
+            this.membershipRepository.Object,
+            this.repository.Object,
+            this.tenantContext.Object,
+            this.currentUser.Object,
+            this.userModule.Object,
+            TimeProvider.System);
+    }
 
     [Fact]
     public async Task AcceptInvitationAsync_ExpiredInvitation_MapsDomainFailureWithoutCreatingMembership()
@@ -49,7 +68,7 @@ public sealed class InvitationServiceTests
             .Setup(value => value.IsMemberAsync(tenantId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var result = await CreateService().AcceptInvitationAsync(invitation.Id);
+        var result = await this.service.AcceptInvitationAsync(invitation.Id);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<AcceptInvitationError.InvitationExpired>(error);
@@ -76,7 +95,7 @@ public sealed class InvitationServiceTests
             .Setup(value => value.GetByIdAsync(invitation.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(invitation);
 
-        var result = await CreateService().RevokeInvitationAsync(invitation.Id);
+        var result = await this.service.RevokeInvitationAsync(invitation.Id);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<RevokeInvitationError.InvitationNotPending>(error);
@@ -97,7 +116,7 @@ public sealed class InvitationServiceTests
         userModule.Setup(value => value.GetEmailsByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
             .ReturnsAsync(new Dictionary<Guid, string>());
 
-        var result = await CreateService().InviteAsync(new InviteMemberRequest
+        var result = await this.service.InviteAsync(new InviteMemberRequest
         {
             Email = "member@example.com",
             Role = TenantRole.Staff
@@ -113,7 +132,7 @@ public sealed class InvitationServiceTests
     [Fact]
     public async Task AcceptInvitationAsync_UnauthenticatedUser_ReturnsForbiddenWithoutLoadingInvitation()
     {
-        var result = await CreateService().AcceptInvitationAsync(Guid.NewGuid());
+        var result = await this.service.AcceptInvitationAsync(Guid.NewGuid());
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<AcceptInvitationError.Unauthenticated>(error);
@@ -122,12 +141,4 @@ public sealed class InvitationServiceTests
             Times.Never);
     }
 
-    private InvitationService CreateService() => new(
-        tenantRepository.Object,
-        membershipRepository.Object,
-        repository.Object,
-        tenantContext.Object,
-        currentUser.Object,
-        userModule.Object,
-        TimeProvider.System);
 }
