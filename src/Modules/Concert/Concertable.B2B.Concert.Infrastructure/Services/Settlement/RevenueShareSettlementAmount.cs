@@ -13,7 +13,7 @@ internal abstract class RevenueShareSettlementAmount : ISettlementAmountResolver
         this.concertRepository = concertRepository;
     }
 
-    public async Task<Money> ResolveGrossAsync(int concertId, IDeal deal, CancellationToken ct = default)
+    public async Task<Money> ResolveGrossAsync(int concertId, DealDto deal, CancellationToken ct = default)
     {
         var totalRevenue = await concertRepository.GetTotalRevenueByConcertIdAsync(concertId)
             ?? throw new InvalidOperationException(
@@ -21,5 +21,5 @@ internal abstract class RevenueShareSettlementAmount : ISettlementAmountResolver
         return Money.Gbp(CalculateGross(deal, totalRevenue));
     }
 
-    protected abstract decimal CalculateGross(IDeal deal, decimal totalRevenue);
+    protected abstract decimal CalculateGross(DealDto deal, decimal totalRevenue);
 }

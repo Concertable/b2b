@@ -7,9 +7,9 @@ internal sealed class VersusSettlementAmount : RevenueShareSettlementAmount
 {
     public VersusSettlementAmount(IConcertRepository concertRepository) : base(concertRepository) { }
 
-    protected override decimal CalculateGross(IDeal deal, decimal totalRevenue)
+    protected override decimal CalculateGross(DealDto deal, decimal totalRevenue)
     {
-        var versus = (VersusDeal)deal;
+        var versus = (VersusDealDto)deal;
         return versus.Guarantee + (totalRevenue * (versus.ArtistDoorPercent / 100));
     }
 }

@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Artist.Contracts;
+using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Deal.Contracts;
 using System.Text.Json.Serialization;
@@ -28,7 +28,7 @@ internal sealed record OpportunitySummaryResponse(
     DateTime StartDate,
     DateTime EndDate,
     IReadOnlyList<Genre> Genres,
-    IDeal Deal);
+    DealDto Deal);
 
 internal sealed record VenueApplicationActions(
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] ActionLink? Accept,

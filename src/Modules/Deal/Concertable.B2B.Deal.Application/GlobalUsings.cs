@@ -5,4 +5,5 @@ global using Concertable.Contracts.Enums;
 global using Concertable.B2B.Deal.Contracts;
 global using Concertable.B2B.Deal.Contracts.Enums;
 global using Concertable.B2B.Deal.Domain;
+global using Concertable.B2B.Deal.Application.Strategies;
 global using Reunion.Errors;

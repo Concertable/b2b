@@ -4,10 +4,10 @@ using Reunion;
 
 namespace Concertable.B2B.Deal.Application.Interfaces;
 
-internal interface IDealMapper
+internal interface IDealMapper : IDealStrategy
 {
-    IDeal ToDeal(DealEntity entity);
-    Result<DealEntity, ValidationErrors> ToEntity(IDeal deal);
+    DealDto ToDeal(DealEntity entity);
+    Result<DealEntity, ValidationErrors> ToEntity(DealDto deal);
 
-    IReadOnlyList<IDeal> ToDeals(IEnumerable<DealEntity> entities) => entities.Select(ToDeal).ToList();
+    IReadOnlyList<DealDto> ToDeals(IEnumerable<DealEntity> entities) => entities.Select(ToDeal).ToList();
 }

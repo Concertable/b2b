@@ -7,9 +7,9 @@ internal sealed class DoorSplitSettlementAmount : RevenueShareSettlementAmount
 {
     public DoorSplitSettlementAmount(IConcertRepository concertRepository) : base(concertRepository) { }
 
-    protected override decimal CalculateGross(IDeal deal, decimal totalRevenue)
+    protected override decimal CalculateGross(DealDto deal, decimal totalRevenue)
     {
-        var doorSplit = (DoorSplitDeal)deal;
+        var doorSplit = (DoorSplitDealDto)deal;
         return totalRevenue * (doorSplit.ArtistDoorPercent / 100);
     }
 }

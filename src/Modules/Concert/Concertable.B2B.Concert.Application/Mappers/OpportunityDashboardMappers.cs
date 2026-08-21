@@ -10,7 +10,7 @@ internal static class OpportunityDashboardMappers
     extension(IEnumerable<OpportunityApplicationProjection> projections)
     {
         public IReadOnlyList<OpportunityApplicationMetrics> ToApplicationMetrics(
-            IReadOnlyDictionary<int, IDeal> deals,
+            IReadOnlyDictionary<int, DealDto> deals,
             DateTime today) =>
             projections.Select(projection => new OpportunityApplicationMetrics(
                 projection.ToDto(deals[projection.DealId]),
@@ -22,7 +22,7 @@ internal static class OpportunityDashboardMappers
     extension(IEnumerable<OpportunityMatchProjection> projections)
     {
         public IReadOnlyList<OpportunityMatch> ToMatches(
-            IReadOnlyDictionary<int, IDeal> deals,
+            IReadOnlyDictionary<int, DealDto> deals,
             IReadOnlySet<Genre> artistGenres) =>
             projections.Select(projection => new OpportunityMatch(
                 projection.ToDto(deals[projection.DealId]),
@@ -34,7 +34,7 @@ internal static class OpportunityDashboardMappers
 
     extension(OpportunityApplicationProjection projection)
     {
-        private OpportunityDto ToDto(IDeal deal) => new()
+        private OpportunityDto ToDto(DealDto deal) => new()
         {
             Id = projection.Id,
             VenueId = projection.VenueId,
@@ -49,7 +49,7 @@ internal static class OpportunityDashboardMappers
 
     extension(OpportunityMatchProjection projection)
     {
-        private OpportunityDto ToDto(IDeal deal) => new()
+        private OpportunityDto ToDto(DealDto deal) => new()
         {
             Id = projection.Id,
             VenueId = projection.VenueId,

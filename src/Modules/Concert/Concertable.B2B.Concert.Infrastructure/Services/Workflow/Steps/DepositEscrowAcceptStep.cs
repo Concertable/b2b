@@ -28,7 +28,7 @@ internal sealed class DepositEscrowAcceptStep(
 
     private async Task StageAsync(PrepaidApplication application, int bookingId, CancellationToken ct)
     {
-        var deal = (VenueHireDeal)dealAccessor.Deal;
+        var deal = (VenueHireDealDto)dealAccessor.Deal;
         logger.AcceptingVenueHireApplication(
             application.Id,
             bookingId,
