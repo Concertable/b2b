@@ -14,19 +14,19 @@ internal sealed class DealModule : IDealModule
         this.dealService = dealService;
     }
 
-    public Task<Option<IDeal>> GetByIdAsync(int dealId, CancellationToken ct = default)
+    public Task<Option<DealDto>> GetByIdAsync(int dealId, CancellationToken ct = default)
         => dealService.FindByIdAsync(dealId, ct);
 
-    public Task<IReadOnlyList<IDeal>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
+    public Task<IReadOnlyList<DealDto>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
         => dealService.GetByIdsAsync(dealIds, ct);
 
-    public UnitResult<ValidationErrors> Validate(IDeal deal)
+    public UnitResult<ValidationErrors> Validate(DealDto deal)
         => dealService.Validate(deal);
 
-    public Task<Result<int, CreateDealError>> CreateAsync(IDeal deal, CancellationToken ct = default)
+    public Task<Result<int, CreateDealError>> CreateAsync(DealDto deal, CancellationToken ct = default)
         => dealService.CreateAsync(deal, ct);
 
-    public Task<UnitResult<UpdateDealError>> UpdateAsync(int dealId, IDeal deal, CancellationToken ct = default)
+    public Task<UnitResult<UpdateDealError>> UpdateAsync(int dealId, DealDto deal, CancellationToken ct = default)
         => dealService.UpdateAsync(dealId, deal, ct);
 
     public Task DeleteAsync(int dealId, CancellationToken ct = default)

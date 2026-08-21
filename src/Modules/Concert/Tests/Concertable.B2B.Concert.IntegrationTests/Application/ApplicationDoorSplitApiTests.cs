@@ -59,7 +59,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         // Arrange — venue manager creates a fresh DoorSplit opportunity
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var oppResponse = await venueClient.PostAsync("/api/opportunity",
-            BuildRequest(new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 }, fixture.SeedNow));
+            BuildRequest(new DoorSplitDealDto { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 }, fixture.SeedNow));
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies directly with no payment method

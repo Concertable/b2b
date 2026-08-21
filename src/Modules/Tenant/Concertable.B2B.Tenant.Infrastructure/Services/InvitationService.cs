@@ -9,19 +9,25 @@ internal sealed class InvitationService : IInvitationService
 {
     private static readonly TimeSpan InvitationTtl = TimeSpan.FromDays(7);
 
-    private readonly ITenantRepository repository;
+    private readonly ITenantRepository tenantRepository;
+    private readonly IMembershipRepository membershipRepository;
+    private readonly IInvitationRepository repository;
     private readonly ITenantContext tenantContext;
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
     private readonly TimeProvider timeProvider;
 
     public InvitationService(
-        ITenantRepository repository,
+        ITenantRepository tenantRepository,
+        IMembershipRepository membershipRepository,
+        IInvitationRepository repository,
         ITenantContext tenantContext,
         ICurrentUser currentUser,
         IUserModule userModule,
         TimeProvider timeProvider)
     {
+        this.tenantRepository = tenantRepository;
+        this.membershipRepository = membershipRepository;
         this.repository = repository;
         this.tenantContext = tenantContext;
         this.currentUser = currentUser;
@@ -44,7 +50,7 @@ internal sealed class InvitationService : IInvitationService
         CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var tenant = await repository.GetByIdAsync(tenantId, ct);
+        var tenant = await tenantRepository.GetByIdAsync(tenantId, ct);
         if (tenant is null)
             return new InviteMemberError.TenantNotFound();
 
@@ -53,7 +59,7 @@ internal sealed class InvitationService : IInvitationService
 
         // "Already a member" is by email; membership stores only the user id, so resolve members' emails
         // from the User projection (same batch join as the members list) and match case-insensitively.
-        var members = await repository.ListMembershipsByTenantAsync(tenantId, ct);
+        var members = await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct);
         var memberEmails = await userModule.GetEmailsByIdsAsync(members.Select(m => m.UserId));
         if (memberEmails.Values.Any(e => string.Equals(e, email, StringComparison.OrdinalIgnoreCase)))
             return new InviteMemberError.AlreadyMember();
@@ -74,8 +80,7 @@ internal sealed class InvitationService : IInvitationService
             return new InviteMemberError.Unauthenticated();
 
         var invitation = TenantInvitationEntity.Create(tenantId, tenant.Type, email, request.Role, inviterId, now, InvitationTtl);
-        repository.AddInvitation(invitation);
-        await repository.SaveChangesAsync(ct);
+        await repository.InsertAsync(invitation, ct);
 
         return new InvitationDto(invitation.Id, invitation.Email, invitation.Role, invitation.CreatedAt, invitation.ExpiresAt);
     }
@@ -85,7 +90,7 @@ internal sealed class InvitationService : IInvitationService
         CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var invitation = await repository.GetInvitationByIdAsync(invitationId, ct);
+        var invitation = await repository.GetByIdAsync(invitationId, ct);
         if (invitation is null || invitation.TenantId != tenantId)
             return new RevokeInvitationError.InvitationNotFound(invitationId);
 
@@ -101,7 +106,7 @@ internal sealed class InvitationService : IInvitationService
         if (currentUser.Id is not { } userId)
             return new AcceptInvitationError.Unauthenticated();
 
-        var invitation = await repository.GetInvitationByIdAsync(invitationId, ct);
+        var invitation = await repository.GetByIdAsync(invitationId, ct);
         if (invitation is null)
             return new AcceptInvitationError.InvitationNotFound(invitationId);
 
@@ -113,20 +118,19 @@ internal sealed class InvitationService : IInvitationService
 
         // Guard on the tenant still existing — an accept can race a tenant delete (BUG1b). Delete already
         // clears pending invitations, so this is the secondary defence against the concurrent-delete race.
-        var tenant = await repository.GetByIdAsync(invitation.TenantId, ct);
+        var tenant = await tenantRepository.GetByIdAsync(invitation.TenantId, ct);
         if (tenant is null)
             return new AcceptInvitationError.TenantNotFound();
 
-        if (await repository.IsMemberAsync(invitation.TenantId, userId, ct))
+        if (await membershipRepository.IsMemberAsync(invitation.TenantId, userId, ct))
             return new AcceptInvitationError.AlreadyMember();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await invitation.Accept(userId, now)
             .BindAsync(async () =>
             {
-                repository.AddMembership(TenantMembershipEntity.Create(
-                    invitation.TenantId, userId, invitation.Role, invitedBy: invitation.CreatedByUserId, now));
-                await repository.SaveChangesAsync(ct);
+                await membershipRepository.InsertAsync(TenantMembershipEntity.Create(
+                    invitation.TenantId, userId, invitation.Role, invitedBy: invitation.CreatedByUserId, now), ct);
 
                 return Result.Success<MembershipDto, AcceptInvitationError>(
                     new MembershipDto(tenant.Id, tenant.LegalName, tenant.Type, invitation.Role));

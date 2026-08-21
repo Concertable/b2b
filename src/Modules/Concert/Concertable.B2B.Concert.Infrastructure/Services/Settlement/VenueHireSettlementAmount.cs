@@ -6,6 +6,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 
 internal sealed class VenueHireSettlementAmount : ISettlementAmountResolver
 {
-    public Task<Money> ResolveGrossAsync(int concertId, IDeal deal, CancellationToken ct = default) =>
-        Task.FromResult(Money.Gbp(((VenueHireDeal)deal).HireFee));
+    public Task<Money> ResolveGrossAsync(int concertId, DealDto deal, CancellationToken ct = default) =>
+        Task.FromResult(Money.Gbp(((VenueHireDealDto)deal).HireFee));
 }

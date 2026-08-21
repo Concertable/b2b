@@ -20,7 +20,7 @@ export function RootNavigator() {
   return (
     <NavigationContainer>
       {isB2bIdentity(user) &&
-      user.memberships.some((m) => m.type === "Venue") ? (
+      user.memberships.some((m) => m.type === "venue") ? (
         <VenueTabs />
       ) : (
         <ArtistTabs />

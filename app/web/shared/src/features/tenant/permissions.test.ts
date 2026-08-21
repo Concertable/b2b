@@ -3,7 +3,7 @@ import { permissionsForRole } from "./permissions";
 
 describe("tenant permissions", () => {
   it("derives the permission set from the active membership role", () => {
-    const permissions = permissionsForRole("Manager");
+    const permissions = permissionsForRole("manager");
 
     expect(permissions.has("MembersInvite")).toBe(true);
     expect(permissions.has("MembersManageRoles")).toBe(false);

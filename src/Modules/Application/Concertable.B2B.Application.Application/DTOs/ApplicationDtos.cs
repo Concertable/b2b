@@ -14,4 +14,4 @@ internal sealed record OpportunitySnapshot(
     int Id,
     DateTime StartDate,
     DateTime EndDate,
-    IDeal Deal);
+    DealDto Deal);

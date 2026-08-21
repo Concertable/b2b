@@ -142,7 +142,7 @@ internal sealed class OpportunityService : IOpportunityService
         return ownerTenantId == tenant;
     }
 
-    private UnitResult<OpportunityMutationError> ValidateDeals(IEnumerable<IDeal> deals)
+    private UnitResult<OpportunityMutationError> ValidateDeals(IEnumerable<DealDto> deals)
     {
         foreach (var deal in deals)
         {
@@ -156,13 +156,13 @@ internal sealed class OpportunityService : IOpportunityService
         return new Success();
     }
 
-    private async Task<Result<int, OpportunityMutationError>> CreateDealAsync(IDeal deal) =>
+    private async Task<Result<int, OpportunityMutationError>> CreateDealAsync(DealDto deal) =>
         (await dealModule.CreateAsync(deal))
             .MapError<OpportunityMutationError>(
                 error => error.Match<OpportunityMutationError>(
                     invalid => new OpportunityMutationError.InvalidDeal(invalid.Errors)));
 
-    private async Task<int> CreatePrevalidatedDealAsync(IDeal deal)
+    private async Task<int> CreatePrevalidatedDealAsync(DealDto deal)
     {
         var result = await dealModule.CreateAsync(deal);
         if (result.TryGetValue(out var dealId))

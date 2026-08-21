@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Aspire.Azure.Storage.Blobs" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
@@ -19,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Modules\Admin\Concertable.B2B.Admin.Infrastructure\Concertable.B2B.Admin.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Infrastructure\Concertable.B2B.Artist.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Tenant\Concertable.B2B.Tenant.Infrastructure\Concertable.B2B.Tenant.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\User\Concertable.B2B.User.Infrastructure\Concertable.B2B.User.Infrastructure.csproj" />
@@ -36,6 +38,7 @@
     <PackageReference Include="Concertable.Messaging.Infrastructure" />
     <PackageReference Include="Concertable.Payment.Client" />
     <PackageReference Include="Concertable.Seed.Shared" />
+    <PackageReference Include="Concertable.ServiceDefaults" />
     <PackageReference Include="Concertable.Shared.Blob.Infrastructure" />
     <PackageReference Include="Concertable.Shared.Email.Infrastructure" />
     <PackageReference Include="Concertable.Shared.Geocoding.Infrastructure" />

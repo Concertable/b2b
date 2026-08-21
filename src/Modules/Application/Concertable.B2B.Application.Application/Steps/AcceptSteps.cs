@@ -29,7 +29,7 @@ internal interface IAcceptStep
     Result<AcceptedApplication, AcceptApplicationError> Create(
         AcceptedApplicationFacts facts,
         ApplicationEntity application,
-        IDeal deal,
+        DealDto deal,
         string? paymentMethodId);
 }
 
@@ -38,10 +38,10 @@ internal sealed class FlatFeeAcceptStep : IAcceptStep
     public Result<AcceptedApplication, AcceptApplicationError> Create(
         AcceptedApplicationFacts facts,
         ApplicationEntity application,
-        IDeal deal,
+        DealDto deal,
         string? paymentMethodId)
     {
-        var terms = (FlatFeeDeal)deal;
+        var terms = (FlatFeeDealDto)deal;
         return new FlatFeeAcceptedApplication(
             facts.OperationId, facts.ApplicationId, facts.OpportunityId, facts.ArtistId,
             facts.VenueId, facts.VenueTenantId, facts.ArtistTenantId, facts.PaymentMethod,
@@ -55,12 +55,12 @@ internal sealed class DoorSplitAcceptStep : IAcceptStep
     public Result<AcceptedApplication, AcceptApplicationError> Create(
         AcceptedApplicationFacts facts,
         ApplicationEntity application,
-        IDeal deal,
+        DealDto deal,
         string? paymentMethodId)
     {
         if (string.IsNullOrWhiteSpace(paymentMethodId))
             return new AcceptApplicationError.PaymentMethodRequired();
-        var terms = (DoorSplitDeal)deal;
+        var terms = (DoorSplitDealDto)deal;
         return new DoorSplitAcceptedApplication(
             facts.OperationId, facts.ApplicationId, facts.OpportunityId, facts.ArtistId,
             facts.VenueId, facts.VenueTenantId, facts.ArtistTenantId, facts.PaymentMethod,
@@ -75,12 +75,12 @@ internal sealed class VersusAcceptStep : IAcceptStep
     public Result<AcceptedApplication, AcceptApplicationError> Create(
         AcceptedApplicationFacts facts,
         ApplicationEntity application,
-        IDeal deal,
+        DealDto deal,
         string? paymentMethodId)
     {
         if (string.IsNullOrWhiteSpace(paymentMethodId))
             return new AcceptApplicationError.PaymentMethodRequired();
-        var terms = (VersusDeal)deal;
+        var terms = (VersusDealDto)deal;
         return new VersusAcceptedApplication(
             facts.OperationId, facts.ApplicationId, facts.OpportunityId, facts.ArtistId,
             facts.VenueId, facts.VenueTenantId, facts.ArtistTenantId, facts.PaymentMethod,
@@ -95,12 +95,12 @@ internal sealed class VenueHireAcceptStep : IAcceptStep
     public Result<AcceptedApplication, AcceptApplicationError> Create(
         AcceptedApplicationFacts facts,
         ApplicationEntity application,
-        IDeal deal,
+        DealDto deal,
         string? paymentMethodId)
     {
         if (application is not PrepaidApplication prepaid)
             return new AcceptApplicationError.PaymentMethodRequired();
-        var terms = (VenueHireDeal)deal;
+        var terms = (VenueHireDealDto)deal;
         return new VenueHireAcceptedApplication(
             facts.OperationId, facts.ApplicationId, facts.OpportunityId, facts.ArtistId,
             facts.VenueId, facts.VenueTenantId, facts.ArtistTenantId, facts.PaymentMethod,

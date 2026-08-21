@@ -11,7 +11,7 @@ internal sealed class TermsFingerprintCalculator : ITermsFingerprintCalculator
 
     public TermsFingerprintCalculator(IDealTermsSerializer termsSerializer) => this.termsSerializer = termsSerializer;
 
-    public string Calculate(IDeal deal, DateRange period)
+    public string Calculate(DealDto deal, DateRange period)
     {
         var numbers = termsSerializer.Serialize(deal);
         var payload = Invariant(

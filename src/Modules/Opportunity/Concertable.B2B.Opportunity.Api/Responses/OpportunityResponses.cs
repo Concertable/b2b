@@ -6,7 +6,7 @@ namespace Concertable.B2B.Opportunity.Api.Responses;
 internal sealed record OpportunityResponse(
     int Id,
     int VenueId,
-    IDeal Deal,
+    DealDto Deal,
     DateTime StartDate,
     DateTime EndDate,
     IEnumerable<Genre> Genres,

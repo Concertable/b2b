@@ -42,7 +42,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     {
         var opportunity = await GetOpportunityAsync(opportunityId);
         var deal = await GetDealAsync(opportunity.DealId);
-        if (deal is not VenueHireDeal venueHire)
+        if (deal is not VenueHireDealDto venueHire)
             throw new BadRequestException("This deal does not support a pre-apply checkout");
 
         var venue = await GetVenueAsync(opportunity.VenueId);
@@ -74,7 +74,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
             [PaymentMetadataKeys.ApplicationId] = applicationId.ToString()
         };
 
-        if (deal is FlatFeeDeal flatFee)
+        if (deal is FlatFeeDealDto flatFee)
         {
             metadata[PaymentMetadataKeys.Type] = TransactionTypes.ApplicationAccept;
             var session = await payment.CreateHoldSessionAsync(
@@ -106,7 +106,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         throw new NotFoundException(Concertable.B2B.Opportunity.Contracts.DisplayNames.Opportunity);
     }
 
-    private async Task<IDeal> GetDealAsync(int dealId)
+    private async Task<DealDto> GetDealAsync(int dealId)
     {
         var option = await deals.GetByIdAsync(dealId);
         if (option.TryGetValue(out var deal))
@@ -130,10 +130,10 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         throw new NotFoundException("venue");
     }
 
-    private static IPaymentAmount ToPaymentAmount(IDeal deal) => deal switch
+    private static IPaymentAmount ToPaymentAmount(DealDto deal) => deal switch
     {
-        DoorSplitDeal doorSplit => new DoorSharePayment(doorSplit.ArtistDoorPercent),
-        VersusDeal versus => new GuaranteedDoorPayment(versus.Guarantee, versus.ArtistDoorPercent),
+        DoorSplitDealDto doorSplit => new DoorSharePayment(doorSplit.ArtistDoorPercent),
+        VersusDealDto versus => new GuaranteedDoorPayment(versus.Guarantee, versus.ArtistDoorPercent),
         _ => throw new BadRequestException("This deal does not support an accept checkout")
     };
 }
