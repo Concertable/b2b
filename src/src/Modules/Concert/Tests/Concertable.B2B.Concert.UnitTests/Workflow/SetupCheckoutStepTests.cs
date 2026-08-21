@@ -17,7 +17,7 @@ public sealed class SetupCheckoutStepTests
     private readonly Guid venueManagerId = Guid.NewGuid();
     private readonly Guid artistTenantId = Guid.NewGuid();
     private readonly CheckoutSession session = new("seti_secret", "cs", "cus");
-    private readonly VenueHireDeal deal = new() { PaymentMethod = PaymentMethod.Cash, HireFee = 300 };
+    private readonly VenueHireDealDto deal = new() { PaymentMethod = PaymentMethod.Cash, HireFee = 300 };
 
     private readonly Mock<IOpportunityRepository> opportunityRepository;
     private readonly Mock<IUserModule> userModule;

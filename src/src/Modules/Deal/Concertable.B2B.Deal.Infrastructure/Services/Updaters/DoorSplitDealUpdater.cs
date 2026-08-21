@@ -8,10 +8,10 @@ namespace Concertable.B2B.Deal.Infrastructure.Services.Updaters;
 
 internal sealed class DoorSplitDealUpdater : IDealUpdater
 {
-    public UnitResult<ValidationErrors> Apply(DealEntity existing, IDeal source)
+    public UnitResult<ValidationErrors> Apply(DealEntity existing, DealDto source)
     {
         var entity = (DoorSplitDealEntity)existing;
-        var deal = (DoorSplitDeal)source;
+        var deal = (DoorSplitDealDto)source;
         return entity.Update(deal.ArtistDoorPercent, deal.PaymentMethod);
     }
 }

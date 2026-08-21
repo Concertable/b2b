@@ -46,7 +46,7 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
         int artistId,
         string artistName,
         DateRange period,
-        IDeal deal,
+        DealDto deal,
         string termsText,
         string platformTermsVersion,
         ESignature artistESignature,

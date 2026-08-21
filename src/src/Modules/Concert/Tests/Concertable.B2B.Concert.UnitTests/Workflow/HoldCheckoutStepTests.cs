@@ -15,7 +15,7 @@ public sealed class HoldCheckoutStepTests
     private readonly Guid venueTenantId = Guid.NewGuid();
     private readonly PayeeSummary artist = new("Artist", "artist@example.com");
     private readonly CheckoutSession session = new("pi_secret", "cs", "cus");
-    private readonly FlatFeeDeal deal = new() { PaymentMethod = PaymentMethod.Cash, Fee = 100 };
+    private readonly FlatFeeDealDto deal = new() { PaymentMethod = PaymentMethod.Cash, Fee = 100 };
 
     private readonly Mock<IApplicationRepository> applicationRepository;
     private readonly Mock<IDealAccessor> dealAccessor;

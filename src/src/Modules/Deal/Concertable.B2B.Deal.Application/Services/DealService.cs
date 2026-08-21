@@ -23,27 +23,27 @@ internal sealed class DealService : IDealService
         this.updater = updater;
     }
 
-    public Task<Option<IDeal>> FindByIdAsync(int dealId, CancellationToken ct = default) =>
+    public Task<Option<DealDto>> FindByIdAsync(int dealId, CancellationToken ct = default) =>
         dealRepository.GetByIdAsync(dealId, ct)
             .ToOption()
             .Map(mapper.ToDeal);
 
-    public Task<Result<IDeal, DealError>> GetByIdAsync(int dealId, CancellationToken ct = default) =>
+    public Task<Result<DealDto, DealError>> GetByIdAsync(int dealId, CancellationToken ct = default) =>
         FindByIdAsync(dealId, ct)
             .OrFailure(() => (DealError)new DealError.NotFound(dealId));
 
-    public async Task<IReadOnlyList<IDeal>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
+    public async Task<IReadOnlyList<DealDto>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
     {
         var entities = await dealRepository.GetByIdsAsync(dealIds, ct);
         return mapper.ToDeals(entities);
     }
 
-    public UnitResult<ValidationErrors> Validate(IDeal deal) =>
+    public UnitResult<ValidationErrors> Validate(DealDto deal) =>
         mapper.ToEntity(deal).Match(
             _ => UnitResult.Success<ValidationErrors>(),
             UnitResult.Failure);
 
-    public Task<Result<int, CreateDealError>> CreateAsync(IDeal deal, CancellationToken ct = default) =>
+    public Task<Result<int, CreateDealError>> CreateAsync(DealDto deal, CancellationToken ct = default) =>
         mapper.ToEntity(deal)
             .BindAsync(async (DealEntity entity) =>
             {
@@ -52,7 +52,7 @@ internal sealed class DealService : IDealService
                 return Result.Success<int, CreateDealError>(entity.Id);
             }, errors => new CreateDealError.Invalid(errors));
 
-    public async Task<UnitResult<UpdateDealError>> UpdateAsync(int dealId, IDeal deal, CancellationToken ct = default)
+    public async Task<UnitResult<UpdateDealError>> UpdateAsync(int dealId, DealDto deal, CancellationToken ct = default)
     {
         var existing = await dealRepository.GetByIdAsync(dealId, ct);
         if (existing is null)

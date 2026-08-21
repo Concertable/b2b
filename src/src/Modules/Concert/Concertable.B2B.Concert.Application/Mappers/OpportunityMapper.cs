@@ -39,11 +39,11 @@ internal sealed class OpportunityMapper : IOpportunityMapper
         return opportunities.Map(o => ToDto(o, deals));
     }
 
-    private async Task<Dictionary<int, IDeal>> DealsByIdAsync(IReadOnlyCollection<OpportunityEntity> opportunities) =>
+    private async Task<Dictionary<int, DealDto>> DealsByIdAsync(IReadOnlyCollection<OpportunityEntity> opportunities) =>
         (await dealModule.GetByIdsAsync(opportunities.Select(o => o.DealId).Distinct()))
             .ToDictionary(deal => deal.Id);
 
-    private static OpportunityDto ToDto(OpportunityEntity opportunity, Dictionary<int, IDeal> deals) =>
+    private static OpportunityDto ToDto(OpportunityEntity opportunity, Dictionary<int, DealDto> deals) =>
         deals.TryGetValue(opportunity.DealId, out var deal)
             ? opportunity.ToDto(deal)
             : throw new InvalidOperationException($"Opportunity {opportunity.Id} references missing deal {opportunity.DealId}.");
@@ -51,7 +51,7 @@ internal sealed class OpportunityMapper : IOpportunityMapper
 
 internal static class OpportunityMappers
 {
-    public static OpportunityDto ToDto(this OpportunityEntity opportunity, IDeal deal) => new()
+    public static OpportunityDto ToDto(this OpportunityEntity opportunity, DealDto deal) => new()
     {
         Id = opportunity.Id,
         VenueId = opportunity.VenueId,

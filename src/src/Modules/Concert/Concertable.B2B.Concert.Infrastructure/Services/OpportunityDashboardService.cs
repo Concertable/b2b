@@ -58,7 +58,7 @@ internal sealed class OpportunityDashboardService : IOpportunityDashboardService
             projections.ToMatches(deals, artistGenres));
     }
 
-    private async Task<IReadOnlyDictionary<int, IDeal>> GetDealsAsync(IEnumerable<int> dealIds) =>
+    private async Task<IReadOnlyDictionary<int, DealDto>> GetDealsAsync(IEnumerable<int> dealIds) =>
         (await dealModule.GetByIdsAsync(dealIds.Distinct()))
             .ToDictionary(deal => deal.Id);
 }

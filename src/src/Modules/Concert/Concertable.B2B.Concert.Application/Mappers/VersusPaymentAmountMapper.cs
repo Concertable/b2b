@@ -5,9 +5,9 @@ namespace Concertable.B2B.Concert.Application.Mappers;
 
 internal sealed class VersusPaymentAmountMapper : IPaymentAmountMapper
 {
-    public IPaymentAmount ToPaymentAmount(IDeal deal)
+    public IPaymentAmount ToPaymentAmount(DealDto deal)
     {
-        var c = (VersusDeal)deal;
+        var c = (VersusDealDto)deal;
         return new GuaranteedDoorPayment(c.Guarantee, c.ArtistDoorPercent);
     }
 }

@@ -16,7 +16,7 @@ public sealed class VerifyCheckoutStepTests
     private readonly Guid venueTenantId = Guid.NewGuid();
     private readonly PayeeSummary artist = new("Artist", "artist@example.com");
     private readonly CheckoutSession session = new("seti_secret", "cs", "cus");
-    private readonly DoorSplitDeal deal = new() { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
+    private readonly DoorSplitDealDto deal = new() { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 };
     private readonly DoorSharePayment amount = new(70);
 
     private readonly Mock<IApplicationRepository> applicationRepository;
