@@ -1,16 +1,15 @@
 using System.Net;
-using Concertable.B2B.Concert.Contracts;
-using Microsoft.Extensions.DependencyInjection;
+using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Concert.IntegrationTests.Dashboard;
+namespace Concertable.B2B.Artist.IntegrationTests;
 
 [Collection("Integration")]
 public sealed class ArtistDashboardCountsTests : IAsyncLifetime
 {
-    private readonly ConcertApiFixture fixture;
+    private readonly ApiFixture fixture;
 
-    public ArtistDashboardCountsTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    public ArtistDashboardCountsTests(ApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -22,8 +21,7 @@ public sealed class ArtistDashboardCountsTests : IAsyncLifetime
     [Fact]
     public async Task GetArtistDashboardCounts_CountsAcceptedCheckoutCapableApplication_AfterVenueAccepts()
     {
-        var artistTenantId = fixture.SeedState.FlatFeeApp.ArtistTenantId;
-        var before = await GetAcceptedAwaitingCheckoutAsync(artistTenantId);
+        var before = await GetAcceptedAwaitingCheckoutAsync();
 
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
@@ -32,17 +30,20 @@ public sealed class ArtistDashboardCountsTests : IAsyncLifetime
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var after = await GetAcceptedAwaitingCheckoutAsync(artistTenantId);
+        var after = await GetAcceptedAwaitingCheckoutAsync();
 
         Assert.Equal(before + 1, after);
     }
 
-    private async Task<int> GetAcceptedAwaitingCheckoutAsync(Guid artistTenantId)
+    private async Task<int> GetAcceptedAwaitingCheckoutAsync()
     {
-        using var scope = fixture.Services.CreateScope();
-        var concertModule = scope.ServiceProvider.GetRequiredService<IConcertModule>();
-        var counts = await concertModule.GetArtistDashboardCountsAsync(artistTenantId);
-        Assert.True(counts.TryGetValue(out var value));
-        return value.AcceptedAwaitingCheckout;
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var response = await client.GetAsync("/api/artist-dashboard/kpis");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var counts = await response.Content.ReadAsync<ArtistDashboardBoundaryResponse>();
+        Assert.NotNull(counts);
+        return counts.AcceptedAwaitingCheckout;
     }
+
+    private sealed record ArtistDashboardBoundaryResponse(int AcceptedAwaitingCheckout);
 }
