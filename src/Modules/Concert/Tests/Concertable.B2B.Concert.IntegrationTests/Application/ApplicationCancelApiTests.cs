@@ -62,7 +62,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var booking = await AcceptFlatFeeAsync(client);
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -86,7 +86,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -105,7 +105,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/withdraw");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -129,7 +129,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         Assert.Equal(LifecycleState.PaymentFailed, await StateOfAsync(appId));
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -148,7 +148,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.VenueHireApp.Id;
         var booking = await AcceptVenueHireAsync(client);
-        var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
+        var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel");
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
 
         // Act
@@ -178,7 +178,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         Assert.Equal(LifecycleState.Booked, await StateOfAsync(appId));
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -193,7 +193,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -210,7 +210,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -235,7 +235,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         Assert.DoesNotContain(closed!, o => o.Id == opportunityId);
 
         // Act
-        var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
+        var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel");
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -287,7 +287,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         Assert.NotNull(before.Actions.Cancel);
 
         // Act
-        var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
+        var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel");
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);

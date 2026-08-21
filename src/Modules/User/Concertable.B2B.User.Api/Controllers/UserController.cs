@@ -45,7 +45,7 @@ internal sealed class UserController : ControllerBase
             return Unauthorized();
 
         var memberships = await tenantModule.GetMembershipsAsync(currentUser.GetId());
-        var isAdmin = await adminModule.IsCurrentUserAdminAsync();
+        var isAdmin = await adminModule.EnsureCurrentUserAdminGrantedIfEligibleAsync();
         return Ok(value with { Memberships = memberships, IsAdmin = isAdmin });
     }
 }
