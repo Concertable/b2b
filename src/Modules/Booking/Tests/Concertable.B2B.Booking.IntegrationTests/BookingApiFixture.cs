@@ -9,16 +9,16 @@ namespace Concertable.B2B.Booking.IntegrationTests;
 
 public sealed class BookingApiFixture : ApiFixture
 {
-    private IBookingReadDbContext context = null!;
-    private BookingDbContext writeContext = null!;
+    private IBookingReadDbContext readDbContext = null!;
+    private BookingDbContext dbContext = null!;
 
-    internal IQueryable<BookingEntity> Bookings => context.Bookings;
-    internal IQueryable<ContractEntity> Contracts => context.Contracts;
-    internal IQueryable<InboxMessageEntity> InboxMessages => writeContext.Set<InboxMessageEntity>().AsNoTracking();
+    internal IQueryable<BookingEntity> Bookings => readDbContext.Bookings;
+    internal IQueryable<ContractEntity> Contracts => readDbContext.Contracts;
+    internal IQueryable<InboxMessageEntity> InboxMessages => dbContext.Set<InboxMessageEntity>().AsNoTracking();
 
     protected override void OnReset(IServiceScope scope)
     {
-        context = scope.ServiceProvider.GetRequiredService<IBookingReadDbContext>();
-        writeContext = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+        readDbContext = scope.ServiceProvider.GetRequiredService<IBookingReadDbContext>();
+        dbContext = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
     }
 }

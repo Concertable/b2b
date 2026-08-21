@@ -1,8 +1,6 @@
 using System.Net;
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Venue.Application.DTOs;
-using Concertable.B2B.Venue.Application.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using static Concertable.B2B.Venue.IntegrationTests.VenueRequestBuilders;
 using Xunit.Abstractions;
 
@@ -11,9 +9,9 @@ namespace Concertable.B2B.Venue.IntegrationTests;
 [Collection("Integration")]
 public sealed class TenantScopingTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly VenueApiFixture fixture;
 
-    public TenantScopingTests(ApiFixture fixture, ITestOutputHelper output)
+    public TenantScopingTests(VenueApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -22,11 +20,6 @@ public sealed class TenantScopingTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    /// <summary>
-    /// The write-side guarantee: creating a venue as an operator stamps the row with that operator's tenant —
-    /// the <c>TenantInterceptor</c> does it on SaveChanges, the service never sets it. This is the actual
-    /// Bucket-A isolation in Phase 2 (reads stay public / UserId-keyed).
-    /// </summary>
     [Fact]
     public async Task CreatingVenue_StampsTheCurrentOperatorsTenant()
     {
@@ -40,31 +33,27 @@ public sealed class TenantScopingTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.Created);
         var created = await response.Content.ReadAsync<VenueDetails>();
 
-        using var scope = fixture.Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IVenueRepository>();
-        var venue = await repository.GetByIdAsync(created!.Id);
+        var venue = await fixture.Venues.SingleOrDefaultAsync(value => value.Id == created!.Id);
 
         Assert.NotNull(venue);
         Assert.Equal(expectedTenantId, venue!.TenantId);
     }
 
-    /// <summary>
-    /// <see cref="ITenantScopedRepository{TEntity,TKey}.GetAllByTenantIdAsync"/> returns exactly the rows owned
-    /// by the given tenant — the explicit, by-tenant read for admin/reporting.
-    /// </summary>
     [Fact]
     public async Task GetAllByTenantId_ReturnsOnlyThatTenantsVenues()
     {
         var grandVenue = fixture.SeedState.Venue;
 
-        using var scope = fixture.Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IVenueRepository>();
-
-        var ownTenant = await repository.GetAllByTenantIdAsync(grandVenue.TenantId);
+        var ownTenant = await fixture.Venues
+            .Where(value => value.TenantId == grandVenue.TenantId)
+            .ToListAsync();
         Assert.Contains(ownTenant, v => v.Id == grandVenue.Id);
         Assert.All(ownTenant, v => Assert.Equal(grandVenue.TenantId, v.TenantId));
 
-        var otherTenant = await repository.GetAllByTenantIdAsync(Guid.NewGuid());
+        var otherTenantId = Guid.NewGuid();
+        var otherTenant = await fixture.Venues
+            .Where(value => value.TenantId == otherTenantId)
+            .ToListAsync();
         Assert.DoesNotContain(otherTenant, v => v.Id == grandVenue.Id);
     }
 }

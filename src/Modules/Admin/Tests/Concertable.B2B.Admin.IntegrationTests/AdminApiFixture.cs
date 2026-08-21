@@ -9,22 +9,22 @@ namespace Concertable.B2B.Admin.IntegrationTests;
 
 public sealed class AdminApiFixture : ApiFixture
 {
-    private AdminDbContext adminDb = null!;
+    private AdminDbContext dbContext = null!;
     private IAdminService adminService = null!;
 
     public IQueryable<AdminInvitationEntity> AdminInvitations =>
-        adminDb.AdminInvitations.AsNoTracking();
+        dbContext.AdminInvitations.AsNoTracking();
 
     public Task<bool> IsAdminAsync(Guid sub) =>
-        adminDb.AdminProfiles.AnyAsync(profile => profile.Sub == sub);
+        dbContext.AdminProfiles.AnyAsync(profile => profile.Sub == sub);
 
     public Task GrantIfEligibleAsync(Guid sub, string email) =>
         adminService.GrantIfEligibleAsync(sub, email);
 
     public async Task ClearAdminsAsync()
     {
-        adminDb.AdminProfiles.RemoveRange(adminDb.AdminProfiles);
-        await adminDb.SaveChangesAsync();
+        dbContext.AdminProfiles.RemoveRange(dbContext.AdminProfiles);
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<AdminInvitationEntity> AddAdminInvitationAsync(
@@ -39,14 +39,14 @@ public sealed class AdminApiFixture : ApiFixture
             now,
             expiresAt - now);
         invitation.ClearDomainEvents();
-        adminDb.AdminInvitations.Add(invitation);
-        await adminDb.SaveChangesAsync();
+        dbContext.AdminInvitations.Add(invitation);
+        await dbContext.SaveChangesAsync();
         return invitation;
     }
 
     protected override void OnReset(IServiceScope scope)
     {
-        adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+        dbContext = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
         adminService = scope.ServiceProvider.GetRequiredService<IAdminService>();
     }
 }

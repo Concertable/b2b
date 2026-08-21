@@ -15,17 +15,17 @@ namespace Concertable.B2B.Concert.IntegrationTests;
 
 public sealed class ConcertApiFixture : ApiFixture
 {
-    private IConcertReadDbContext reads = null!;
-    private ConcertDbContext writes = null!;
+    private IConcertReadDbContext readDbContext = null!;
+    private ConcertDbContext dbContext = null!;
     private ICompleteExecutor completeExecutor = null!;
     private IConcertCompletionRunner completionRunner = null!;
     private IConcertService concertService = null!;
     private ISelfBillingAgreementGate selfBillingAgreementGate = null!;
 
-    internal IQueryable<ConcertEntity> Concerts => reads.Concerts;
-    internal IQueryable<InvoiceEntity> Invoices => writes.Invoices.AsNoTracking();
+    internal IQueryable<ConcertEntity> Concerts => readDbContext.Concerts;
+    internal IQueryable<InvoiceEntity> Invoices => dbContext.Invoices.AsNoTracking();
     internal IQueryable<SelfBillingAgreementEntity> SelfBillingAgreements =>
-        reads.SelfBillingAgreements;
+        readDbContext.SelfBillingAgreements;
 
     internal async Task<Result<SettlementOutcome, FinishConcertError>> FinishConcertAsync(int concertId)
     {
@@ -50,12 +50,12 @@ public sealed class ConcertApiFixture : ApiFixture
         Guid? venueTenantId = null)
     {
         if (artistTenantId is { } artist)
-            await writes.Concerts.Where(concert => concert.Id == concertId)
+            await dbContext.Concerts.Where(concert => concert.Id == concertId)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(
                     concert => concert.ArtistTenantId,
                     artist));
         if (venueTenantId is { } venue)
-            await writes.Concerts.Where(concert => concert.Id == concertId)
+            await dbContext.Concerts.Where(concert => concert.Id == concertId)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(
                     concert => concert.VenueTenantId,
                     venue));
@@ -64,8 +64,8 @@ public sealed class ConcertApiFixture : ApiFixture
     internal async Task AddSelfBillingAgreementsAsync(
         params SelfBillingAgreementEntity[] agreements)
     {
-        writes.SelfBillingAgreements.AddRange(agreements);
-        await writes.SaveChangesAsync();
+        dbContext.SelfBillingAgreements.AddRange(agreements);
+        await dbContext.SaveChangesAsync();
     }
 
     internal Task AddSelfBillingAgreementAsync(Guid tenantId, DateTime acceptedAtUtc) =>
@@ -73,8 +73,8 @@ public sealed class ConcertApiFixture : ApiFixture
 
     protected override void OnReset(IServiceScope scope)
     {
-        reads = scope.ServiceProvider.GetRequiredService<IConcertReadDbContext>();
-        writes = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
+        readDbContext = scope.ServiceProvider.GetRequiredService<IConcertReadDbContext>();
+        dbContext = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
         completeExecutor = scope.ServiceProvider.GetRequiredService<ICompleteExecutor>();
         completionRunner = scope.ServiceProvider.GetRequiredService<IConcertCompletionRunner>();
         concertService = scope.ServiceProvider.GetRequiredService<IConcertService>();
@@ -84,13 +84,13 @@ public sealed class ConcertApiFixture : ApiFixture
 
     private async Task EnsureSupplierSelfBillingAgreementAsync(int concertId)
     {
-        var concert = await writes.Concerts.SingleOrDefaultAsync(value => value.Id == concertId);
+        var concert = await dbContext.Concerts.SingleOrDefaultAsync(value => value.Id == concertId);
         if (concert is null)
             return;
 
         var supplierTenantId = concert.SettlementPayeeTenantId;
         var now = SeedNow;
-        if (await writes.SelfBillingAgreements.AnyAsync(
+        if (await dbContext.SelfBillingAgreements.AnyAsync(
                 agreement => agreement.TenantId == supplierTenantId && agreement.ExpiresAtUtc > now))
             return;
 

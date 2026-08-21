@@ -12,12 +12,12 @@ namespace Concertable.B2B.Tenant.IntegrationTests;
 
 public sealed class TenantApiFixture : ApiFixture
 {
-    private TenantDbContext tenantDb = null!;
+    private TenantDbContext dbContext = null!;
     private TenantProvisioningHandler provisioning = null!;
 
-    public IQueryable<TenantEntity> Tenants => tenantDb.Tenants.AsNoTracking();
-    public IQueryable<TenantMembershipEntity> Memberships => tenantDb.Memberships.AsNoTracking();
-    public IQueryable<TenantInvitationEntity> Invitations => tenantDb.Invitations.AsNoTracking();
+    public IQueryable<TenantEntity> Tenants => dbContext.Tenants.AsNoTracking();
+    public IQueryable<TenantMembershipEntity> Memberships => dbContext.Memberships.AsNoTracking();
+    public IQueryable<TenantInvitationEntity> Invitations => dbContext.Invitations.AsNoTracking();
 
     public Task ProvisionAsync(CredentialRegisteredEvent @event, MessageEnvelope? envelope = null) =>
         provisioning.HandleAsync(
@@ -29,9 +29,9 @@ public sealed class TenantApiFixture : ApiFixture
 
     public async Task AddMembershipAsync(Guid tenantId, Guid userId, TenantRole role)
     {
-        tenantDb.Memberships.Add(
+        dbContext.Memberships.Add(
             TenantMembershipEntity.Create(tenantId, userId, role, invitedBy: null, DateTime.UtcNow));
-        await tenantDb.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<TenantInvitationEntity> AddInvitationAsync(
@@ -42,7 +42,7 @@ public sealed class TenantApiFixture : ApiFixture
         DateTime expiresAt)
     {
         var now = DateTime.UtcNow;
-        var tenant = await tenantDb.Tenants.AsNoTracking()
+        var tenant = await dbContext.Tenants.AsNoTracking()
             .FirstOrDefaultAsync(value => value.Id == tenantId);
         var invitation = TenantInvitationEntity.Create(
             tenantId,
@@ -53,14 +53,14 @@ public sealed class TenantApiFixture : ApiFixture
             now,
             expiresAt - now);
         invitation.ClearDomainEvents();
-        tenantDb.Invitations.Add(invitation);
-        await tenantDb.SaveChangesAsync();
+        dbContext.Invitations.Add(invitation);
+        await dbContext.SaveChangesAsync();
         return invitation;
     }
 
     protected override void OnReset(IServiceScope scope)
     {
-        tenantDb = scope.ServiceProvider.GetRequiredService<TenantDbContext>();
+        dbContext = scope.ServiceProvider.GetRequiredService<TenantDbContext>();
         provisioning = scope.ServiceProvider
             .GetServices<IIntegrationEventHandler<CredentialRegisteredEvent>>()
             .OfType<TenantProvisioningHandler>()

@@ -7,13 +7,13 @@ namespace Concertable.B2B.Application.IntegrationTests;
 
 public sealed class ApplicationApiFixture : ApiFixture
 {
-    private IApplicationReadDbContext context = null!;
+    private IApplicationReadDbContext dbContext = null!;
 
-    internal IQueryable<ApplicationEntity> Applications => context.Applications;
-    internal IQueryable<VerifyPaymentEntity> PaymentVerifications => context.VerifyPayments;
+    internal IQueryable<ApplicationEntity> Applications => dbContext.Applications;
+    internal IQueryable<VerifyPaymentEntity> PaymentVerifications => dbContext.VerifyPayments;
 
     protected override void OnReset(IServiceScope scope)
     {
-        context = scope.ServiceProvider.GetRequiredService<IApplicationReadDbContext>();
+        dbContext = scope.ServiceProvider.GetRequiredService<IApplicationReadDbContext>();
     }
 }

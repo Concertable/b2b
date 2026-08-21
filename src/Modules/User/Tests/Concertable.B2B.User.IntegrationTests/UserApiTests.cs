@@ -1,10 +1,7 @@
 using System.Net;
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.User.Application.Requests;
 using Concertable.B2B.User.Contracts;
-using Concertable.B2B.User.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.User.IntegrationTests;
@@ -42,8 +39,8 @@ public sealed class UserApiTests : IAsyncLifetime
     [Fact]
     public async Task UpdateLocation_ShouldReturnTyped401WithoutWritingLocation_WhenUserProjectionIsMissing()
     {
-        var missingUser = UserEntity.FromRegistration(Guid.NewGuid(), "missing@test.com");
-        var client = fixture.CreateClient(missingUser);
+        var missingUserId = Guid.NewGuid();
+        var client = fixture.CreateClient(missingUserId, "missing@test.com");
 
         var response = await client.PutAsync("/api/User/location", new UpdateLocationRequest(51.5, -0.1));
 
@@ -56,9 +53,7 @@ public sealed class UserApiTests : IAsyncLifetime
         Assert.True(problem.Extensions.TryGetValue("code", out var code));
         Assert.Equal("user.location_unauthenticated", code?.ToString());
 
-        using var scope = fixture.Services.CreateScope();
-        var userModule = scope.ServiceProvider.GetRequiredService<IUserModule>();
-        Assert.False((await userModule.GetByIdAsync(missingUser.Id)).TryGetValue(out _));
+        Assert.False(await fixture.UserExistsAsync(missingUserId));
     }
 
     [Fact]

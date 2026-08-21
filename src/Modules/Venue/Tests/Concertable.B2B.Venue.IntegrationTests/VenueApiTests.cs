@@ -1,11 +1,9 @@
 using System.Net;
 using Concertable.B2B.Venue.Application.DTOs;
-using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.B2B.Venue.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.IntegrationTests.Fixtures;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using static Concertable.B2B.Venue.IntegrationTests.VenueRequestBuilders;
 using Xunit.Abstractions;
 
@@ -15,9 +13,9 @@ namespace Concertable.B2B.Venue.IntegrationTests;
 
 public sealed class VenueApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly VenueApiFixture fixture;
 
-    public VenueApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public VenueApiTests(VenueApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -236,9 +234,9 @@ public sealed class VenueApiTests : IAsyncLifetime
 
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Created));
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Conflict));
-        using var scope = fixture.Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IVenueRepository>();
-        var profiles = await repository.GetAllByTenantIdAsync(tenantId);
+        var profiles = await fixture.Venues
+            .Where(value => value.TenantId == tenantId)
+            .ToListAsync();
         Assert.Single(profiles);
     }
 
