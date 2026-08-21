@@ -12,7 +12,6 @@ using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
-using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -59,7 +58,6 @@ internal static class ServiceCollectionExtensions
         services.AddAdminModule(configuration);
         services.AddTenantModule(configuration);
         services.AddUserModule(configuration);
-        services.AddAdminModule(configuration);
         services.AddArtistModule(configuration);
         services.AddVenueModule(configuration);
         services.AddConcertModule(configuration);
