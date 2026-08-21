@@ -9,5 +9,5 @@ export const Route = createFileRoute("/settings/members/accept/$invitationId")({
 
 function RouteComponent() {
   const { invitationId } = Route.useParams();
-  return <AcceptInvitationPage invitationId={invitationId} tenantType="Artist" />;
+  return <AcceptInvitationPage invitationId={invitationId} tenantType="artist" />;
 }
