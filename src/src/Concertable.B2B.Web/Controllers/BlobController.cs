@@ -20,6 +20,9 @@ public sealed class BlobController : ControllerBase
     [HttpGet("download/{blobName}")]
     public async Task<IActionResult> Download(string blobName)
     {
+        if (blobName.Contains('/') || blobName.Contains('\\'))
+            return NotFound("Blob not found");
+
         var stream = await imageService.DownloadAsync(blobName);
 
         if (stream == null)
