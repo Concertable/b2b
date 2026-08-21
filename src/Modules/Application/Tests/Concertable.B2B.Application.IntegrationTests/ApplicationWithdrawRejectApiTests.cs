@@ -91,6 +91,21 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Withdraw_ShouldReturn409_WhenAlreadyAccepted()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var applicationId = fixture.SeedState.AwaitingPaymentApp.Id;
+
+        var response = await client.PostAsync(
+            $"/api/application/{applicationId}/withdraw",
+            (object?)null);
+
+        await response.ShouldBe(HttpStatusCode.Conflict);
+        var application = await fixture.Applications.FirstAsync(value => value.Id == applicationId);
+        Assert.Equal(ApplicationState.Accepted, application.State);
+    }
+
+    [Fact]
     public async Task Withdraw_ShouldLeaveOpportunityOpenToOtherArtists()
     {
         // Arrange
@@ -193,6 +208,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         Assert.Equal(ApplicationStatus.Pending, before!.Status);
         Assert.NotNull(before.Actions.Withdraw);
         Assert.NotNull(before.Actions.Reject);
+        Assert.Null(before.Actions.Cancel);
 
         // Act
         var rejectResponse = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
@@ -205,6 +221,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         Assert.Equal(ApplicationStatus.Rejected, after!.Status);
         Assert.Null(after.Actions.Withdraw);
         Assert.Null(after.Actions.Reject);
+        Assert.Null(after.Actions.Cancel);
     }
 
     #endregion
