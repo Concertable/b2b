@@ -32,7 +32,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AdminConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<AdminConfigurationProvider>());
 
-        services.AddScoped<IAdminRepository, AdminRepository>();
+        services.AddScoped<IAdminInvitationRepository, AdminInvitationRepository>();
+        services.AddScoped<IAdminProfileRepository, AdminProfileRepository>();
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IAdminModule, AdminModule>();
 
