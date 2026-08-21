@@ -9,7 +9,7 @@ namespace Concertable.B2B.Tenant.Api.Controllers;
 /// <summary>
 /// B2B's payout proxy: authorizes payout operations here — where membership lives — then forwards them to the
 /// tenancy-agnostic Payment service over gRPC, scoped to the caller's active tenant rather than an
-/// <c>owner</c> claim. Rationale in <c>api/CLAUDE.md</c> ("Shared code is the intersection, never the union").
+/// <c>owner</c> claim. Rationale: the <c>microservice-boundaries</c> skill ("Shared code is the intersection, never the union").
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
