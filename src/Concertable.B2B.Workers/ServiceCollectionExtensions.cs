@@ -1,3 +1,4 @@
+using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.Kernel;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
@@ -11,7 +12,6 @@ using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
-using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -55,6 +55,7 @@ internal static class ServiceCollectionExtensions
         services.AddGeometry();
 
         services.AddCurrentUser();
+        services.AddAdminModule(configuration);
         services.AddTenantModule(configuration);
         services.AddUserModule(configuration);
         services.AddAdminModule(configuration);
