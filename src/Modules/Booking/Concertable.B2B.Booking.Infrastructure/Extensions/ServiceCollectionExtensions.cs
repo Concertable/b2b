@@ -70,6 +70,11 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<AcceptanceFinancialOperationOutcomeProcessor>());
             services.AddScoped<IIntegrationEventHandler<DepositEscrowRejectedEvent>>(provider =>
                 provider.GetRequiredService<AcceptanceFinancialOperationOutcomeProcessor>());
+            services.AddScoped<CancellationFinancialOperationOutcomeProcessor>();
+            services.AddScoped<IIntegrationEventHandler<RefundEscrowSucceededEvent>>(provider =>
+                provider.GetRequiredService<CancellationFinancialOperationOutcomeProcessor>());
+            services.AddScoped<IIntegrationEventHandler<RefundEscrowRejectedEvent>>(provider =>
+                provider.GetRequiredService<CancellationFinancialOperationOutcomeProcessor>());
 
             services.AddSingleton<BookingConfigurationProvider>();
             services.AddSingleton<IEntityTypeConfigurationProvider>(provider =>

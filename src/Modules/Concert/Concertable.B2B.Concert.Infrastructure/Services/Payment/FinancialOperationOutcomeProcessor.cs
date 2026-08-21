@@ -60,8 +60,8 @@ internal sealed class FinancialOperationOutcomeProcessor :
 
             context.AddInboxMessage(envelope, handler);
             var concert = await context.Concerts
-                .SingleOrDefaultAsync(value => value.CancellationOperationId == operationId, ct)
-                ?? throw new InvalidOperationException($"Cancellation operation {operationId} has no concert.");
-            await action(concert);
+                .SingleOrDefaultAsync(value => value.CancellationOperationId == operationId, ct);
+            if (concert is not null)
+                await action(concert);
         }, ct);
 }
