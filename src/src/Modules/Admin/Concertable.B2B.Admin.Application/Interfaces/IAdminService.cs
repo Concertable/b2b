@@ -13,8 +13,9 @@ internal interface IAdminService
     Task<bool> IsCurrentUserAdminAsync(CancellationToken ct = default);
 
     /// <summary>Grants the current user admin off a matching pending invitation or the one-time bootstrap
-    /// email, if they aren't already an admin. Called from <c>UserController.Me()</c> — the first
-    /// authenticated request after login, which Auth's own login gate (<c>CanAuthenticate</c> requires
-    /// <c>IsEmailVerified</c>) guarantees runs only for a verified mailbox. No-op otherwise.</summary>
-    Task EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default);
+    /// email, if they aren't already an admin, then returns whether the caller is an admin afterward.
+    /// Called from <c>UserController.Me()</c> — the first authenticated request after login, which
+    /// Auth's own login gate (<c>CanAuthenticate</c> requires <c>IsEmailVerified</c>) guarantees runs
+    /// only for a verified mailbox. No-op (returns the pre-existing status) otherwise.</summary>
+    Task<bool> EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default);
 }

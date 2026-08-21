@@ -7,6 +7,7 @@ using Concertable.B2B.Admin.Infrastructure.Services;
 using Concertable.B2B.Admin.Infrastructure.Settings;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -217,22 +218,24 @@ public sealed class AdminServiceTests
     {
         currentUser.SetupGet(user => user.Id).Returns((Guid?)null);
 
-        await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
+        var result = await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
 
+        Assert.False(result);
         repository.Verify(value => value.IsAdminAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
         repository.Verify(value => value.GrantAdmin(It.IsAny<Guid>()), Times.Never);
     }
 
     [Fact]
-    public async Task EnsureCurrentUserAdminGrantedIfEligibleAsync_AlreadyAdmin_DoesNothing()
+    public async Task EnsureCurrentUserAdminGrantedIfEligibleAsync_AlreadyAdmin_ReturnsTrueWithoutGranting()
     {
         var sub = Guid.NewGuid();
         currentUser.SetupGet(user => user.Id).Returns(sub);
         currentUser.SetupGet(user => user.Email).Returns("someone@example.com");
         repository.Setup(value => value.IsAdminAsync(sub, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
+        var result = await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
 
+        Assert.True(result);
         repository.Verify(value => value.GrantAdmin(It.IsAny<Guid>()), Times.Never);
     }
 
@@ -247,12 +250,32 @@ public sealed class AdminServiceTests
         repository.Setup(value => value.GetPendingInvitationByEmailAsync("invitee@example.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync(invitation);
 
-        await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
+        var result = await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
 
+        Assert.True(result);
         Assert.Equal(AdminInvitationStatus.Accepted, invitation.Status);
         Assert.Equal(sub, invitation.AcceptedByUserId);
         repository.Verify(value => value.GrantAdmin(sub), Times.Once);
         repository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task EnsureCurrentUserAdminGrantedIfEligibleAsync_MatchingPendingInvitation_NonDuplicateSaveFailure_Propagates()
+    {
+        var sub = Guid.NewGuid();
+        currentUser.SetupGet(user => user.Id).Returns(sub);
+        currentUser.SetupGet(user => user.Email).Returns("invitee@example.com");
+        repository.Setup(value => value.IsAdminAsync(sub, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        var invitation = AdminInvitationEntity.Create("invitee@example.com", Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
+        repository.Setup(value => value.GetPendingInvitationByEmailAsync("invitee@example.com", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(invitation);
+        var exception = new DbUpdateException();
+        repository.Setup(value => value.SaveChangesAsync(It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+
+        var actual = await Assert.ThrowsAsync<DbUpdateException>(
+            () => CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync());
+
+        Assert.Same(exception, actual);
     }
 
     [Fact]
@@ -266,14 +289,15 @@ public sealed class AdminServiceTests
             .ReturnsAsync((AdminInvitationEntity?)null);
         repository.Setup(value => value.CountAdminsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(0);
 
-        await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
+        var result = await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
 
+        Assert.True(result);
         repository.Verify(value => value.GrantAdmin(sub), Times.Once);
         repository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task EnsureCurrentUserAdminGrantedIfEligibleAsync_BootstrapEmail_DoesNothingWhenAnAdminAlreadyExists()
+    public async Task EnsureCurrentUserAdminGrantedIfEligibleAsync_BootstrapEmail_ReturnsFalseWhenAnAdminAlreadyExists()
     {
         var sub = Guid.NewGuid();
         currentUser.SetupGet(user => user.Id).Returns(sub);
@@ -283,13 +307,14 @@ public sealed class AdminServiceTests
             .ReturnsAsync((AdminInvitationEntity?)null);
         repository.Setup(value => value.CountAdminsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-        await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
+        var result = await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
 
+        Assert.False(result);
         repository.Verify(value => value.GrantAdmin(It.IsAny<Guid>()), Times.Never);
     }
 
     [Fact]
-    public async Task EnsureCurrentUserAdminGrantedIfEligibleAsync_NoInvitationAndNonBootstrapEmail_DoesNothing()
+    public async Task EnsureCurrentUserAdminGrantedIfEligibleAsync_NoInvitationAndNonBootstrapEmail_ReturnsFalse()
     {
         var sub = Guid.NewGuid();
         currentUser.SetupGet(user => user.Id).Returns(sub);
@@ -298,8 +323,9 @@ public sealed class AdminServiceTests
         repository.Setup(value => value.GetPendingInvitationByEmailAsync("uninvited@example.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync((AdminInvitationEntity?)null);
 
-        await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
+        var result = await CreateService().EnsureCurrentUserAdminGrantedIfEligibleAsync();
 
+        Assert.False(result);
         repository.Verify(value => value.GrantAdmin(It.IsAny<Guid>()), Times.Never);
         repository.Verify(value => value.CountAdminsAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
