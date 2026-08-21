@@ -27,19 +27,19 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    public static TheoryData<IDeal> AllDealTypes =>
+    public static TheoryData<DealDto> AllDealTypes =>
     [
-        new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 },
-        new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 },
-        new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 },
-        new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 300 },
+        new FlatFeeDealDto { PaymentMethod = PaymentMethod.Cash, Fee = 500 },
+        new DoorSplitDealDto { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 },
+        new VersusDealDto { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 },
+        new VenueHireDealDto { PaymentMethod = PaymentMethod.Cash, HireFee = 300 },
     ];
 
     #region Create
 
     [Theory]
     [MemberData(nameof(AllDealTypes))]
-    public async Task Create_ShouldReturnCreatedOpportunity(IDeal deal)
+    public async Task Create_ShouldReturnCreatedOpportunity(DealDto deal)
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -89,7 +89,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     public async Task Create_InvalidDeal_ReturnsValidationProblem()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var request = BuildRequest(new VersusDeal
+        var request = BuildRequest(new VersusDealDto
         {
             PaymentMethod = PaymentMethod.Cash,
             Guarantee = -1,
@@ -117,7 +117,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     public async Task Update_InvalidDeal_ReturnsValidationProblem()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var request = BuildRequest(new VenueHireDeal
+        var request = BuildRequest(new VenueHireDealDto
         {
             PaymentMethod = PaymentMethod.Cash,
             HireFee = 0

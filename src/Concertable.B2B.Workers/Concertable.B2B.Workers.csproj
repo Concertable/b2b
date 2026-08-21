@@ -24,7 +24,6 @@
     <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Infrastructure\Concertable.B2B.Artist.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Tenant\Concertable.B2B.Tenant.Infrastructure\Concertable.B2B.Tenant.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\User\Concertable.B2B.User.Infrastructure\Concertable.B2B.User.Infrastructure.csproj" />
-    <ProjectReference Include="..\Modules\Admin\Concertable.B2B.Admin.Infrastructure\Concertable.B2B.Admin.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Deal\Concertable.B2B.Deal.Infrastructure\Concertable.B2B.Deal.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Infrastructure\Concertable.B2B.Venue.Infrastructure.csproj" />

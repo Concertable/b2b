@@ -17,6 +17,6 @@ internal sealed class DealController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<IDeal>> GetById(int id) =>
-        (await dealService.GetByIdAsync(id)).ToActionResult(value => new ActionResult<IDeal>(value));
+    public async Task<ActionResult<DealDto>> GetById(int id) =>
+        (await dealService.GetByIdAsync(id)).ToActionResult(value => new ActionResult<DealDto>(value));
 }

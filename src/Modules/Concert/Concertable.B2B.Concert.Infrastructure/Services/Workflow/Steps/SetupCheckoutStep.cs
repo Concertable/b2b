@@ -37,7 +37,7 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
         var venue = new PayeeSummary(
             venueSummary.Name,
             manager.Match(value => value.Email, () => null));
-        var deal = (VenueHireDeal)dealAccessor.Deal;
+        var deal = (VenueHireDealDto)dealAccessor.Deal;
 
         var metadata = new Dictionary<string, string>
         {

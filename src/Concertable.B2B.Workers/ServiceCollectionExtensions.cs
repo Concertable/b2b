@@ -58,7 +58,6 @@ internal static class ServiceCollectionExtensions
         services.AddAdminModule(configuration);
         services.AddTenantModule(configuration);
         services.AddUserModule(configuration);
-        services.AddAdminModule(configuration);
         services.AddArtistModule(configuration);
         services.AddVenueModule(configuration);
         services.AddConcertModule(configuration);
