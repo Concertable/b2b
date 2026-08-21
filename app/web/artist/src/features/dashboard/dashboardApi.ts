@@ -15,13 +15,13 @@ import type {
 const dashboardApi = {
   getOverview: async (): Promise<ArtistDashboardOverview> => {
     const { data } = await apiClient.get<ArtistDashboardOverview>(
-      "/artistDashboard/overview",
+      "/artist-dashboard/overview",
     );
     return data;
   },
   getKpis: async (): Promise<ArtistDashboardKpis> => {
     const { data } = await apiClient.get<ArtistDashboardKpis>(
-      "/artistDashboard/kpis",
+      "/artist-dashboard/kpis",
     );
     return data;
   },
@@ -39,7 +39,7 @@ const dashboardApi = {
   },
   getPayouts: async (): Promise<MonthlyRevenuePoint[]> => {
     const { data } = await apiClient.get<MonthlyRevenuePoint[]>(
-      "/artistDashboard/charts/payouts",
+      "/artist-dashboard/charts/payouts",
     );
     return data;
   },
@@ -51,7 +51,7 @@ const dashboardApi = {
   },
   getActivity: async (): Promise<ActivityItem[]> => {
     const { data } = await apiClient.get<ActivityItem[]>(
-      "/artistDashboard/activity",
+      "/artist-dashboard/activity",
     );
     return data;
   },
