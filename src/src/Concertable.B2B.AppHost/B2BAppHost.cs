@@ -27,6 +27,7 @@ public static class B2BAppHost
         builder.AddVenueSpa(api, auth);
         builder.AddArtistSpa(api, auth);
         builder.AddBusinessSpa(api, auth);
+        builder.AddAdminSpa(api, auth);
         builder.AddMobileB2B(api, auth, paymentWeb);
         builder.AddStripeCli(paymentWeb);
         return builder;

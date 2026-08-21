@@ -105,8 +105,7 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
             now,
             now);
 
-        await repository.AddAsync(agreement, ct);
-        await repository.SaveChangesAsync(ct);
+        await repository.InsertAsync(agreement, ct);
         return new Success();
     }
 
