@@ -99,6 +99,25 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ## LOW
 
+### Integration fixtures have no canonical module-owned database assertion surface
+
+`ConcertApiFixture` currently exposes the Application and Booking module contexts as base `DbContext`
+handles so integration tests can inspect persisted state with `Set<TEntity>()`. This is useful during
+the module-ownership recovery, but the generic surface does not express which entities each context
+owns and permits a test to query an entity through the wrong module context. The provisional
+`ApplicationDb` and `BookingDb` names describe what is actually exposed without establishing this as
+the long-term convention.
+
+The canonical approach is still up for discussion. Options include module-owned assertion/query
+facades, scoped fixture query APIs, or retaining explicit raw context access with stronger ownership
+enforcement.
+
+**Resolves when:** one cross-module integration-test readback convention is selected, the B2B fixture
+and tests use it consistently, and querying an entity through the wrong module is prevented or caught
+mechanically.
+
+---
+
 ### Contract PDFs share the `images` blob container and rely on app-level write-once
 
 `ContractPdfService` stores contract PDFs under a `contracts/{bookingId}-{guid}.pdf` name in the **single shared `"images"` container** (the only container `Concertable.Shared.Blob` exposes). The blob *name* is fixed at creation, transactionally, at Accept (`ContractEntity.Create`), so generation can't race to mint competing names — but immutability of the *bytes* is still only app-level: `IBlobStorageService.UploadAsync` is `overwrite: true`, so nothing at the storage layer prevents a rewrite of a persisted legal document. A legal artefact ideally lives in its own container with a no-overwrite (write-once / immutability-policy) upload. Deliberately not done in the contract feature because both are **additive changes to the published `Concertable.Shared.Blob` package** (a dedicated container config + an overwrite-guarding `UploadAsync` overload), which would cross the package boundary the feature was scoped to avoid.

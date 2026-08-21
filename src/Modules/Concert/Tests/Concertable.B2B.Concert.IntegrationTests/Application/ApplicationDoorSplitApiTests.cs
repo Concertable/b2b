@@ -71,8 +71,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         // Assert — 201 Created, a StandardApplication row was created
         await applyResponse.ShouldBe(HttpStatusCode.Created);
-        var standard = await fixture.ApplicationReads.Set<ApplicationEntity>()
-            .OfType<StandardApplication>()
+        var standard = await fixture.ApplicationDb.Set<StandardApplication>()
             .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
         Assert.NotNull(standard);
     }
@@ -103,7 +102,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         // Assert — booking created but draft not created until verify webhook fires
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var booking = await fixture.BookingReads.Set<BookingEntity>()
+        var booking = await fixture.BookingDb.Set<BookingEntity>()
             .FirstOrDefaultAsync(b => b.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
         Assert.IsType<DeferredBooking>(booking);
         var concert = await fixture.ConcertReads.Set<ConcertEntity>()
@@ -179,7 +178,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var booking = await fixture.BookingReads.Set<BookingEntity>()
+        var booking = await fixture.BookingDb.Set<BookingEntity>()
             .FirstAsync(b => b.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
         Assert.Equal(BookingState.ConfirmationFailed, booking.State);
         Assert.Empty(fixture.NotificationService.DraftCreated);
@@ -228,7 +227,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         // Assert
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        var booking = await fixture.BookingReads.Set<BookingEntity>()
+        var booking = await fixture.BookingDb.Set<BookingEntity>()
             .FirstAsync(b => b.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
         Assert.Equal(BookingState.ConfirmationFailed, booking.State);
         Assert.Empty(fixture.NotificationService.DraftCreated);

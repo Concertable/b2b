@@ -36,7 +36,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         await client.PostAsync($"/api/application/{appId}/checkout");
         var acceptResponse = await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        return await fixture.BookingReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
+        return await fixture.BookingDb.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
     }
 
     private async Task<BookingEntity> AcceptVenueHireAsync(HttpClient client)
@@ -44,12 +44,12 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var appId = fixture.SeedState.VenueHireApp.Id;
         var acceptResponse = await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        return await fixture.BookingReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
+        return await fixture.BookingDb.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
     }
 
     private async Task<ApplicationState> ApplicationStateOfAsync(int appId)
     {
-        var application = await fixture.ApplicationReads.Set<ApplicationEntity>()
+        var application = await fixture.ApplicationDb.Set<ApplicationEntity>()
             .AsNoTracking()
             .FirstAsync(a => a.Id == appId);
         return application.State;
@@ -57,7 +57,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
     private async Task<BookingState> BookingStateOfAsync(int appId)
     {
-        var booking = await fixture.BookingReads.Set<BookingEntity>()
+        var booking = await fixture.BookingDb.Set<BookingEntity>()
             .AsNoTracking()
             .FirstAsync(b => b.ApplicationId == appId);
         return booking.State;

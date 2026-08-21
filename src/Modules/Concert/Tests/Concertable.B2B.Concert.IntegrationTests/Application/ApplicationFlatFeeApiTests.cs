@@ -1,10 +1,14 @@
 using System.Net;
-using Concertable.B2B.Concert.Application.DTOs;
-using Concertable.B2B.Concert.Application.Responses;
+using Concertable.B2B.Application.Api.Responses;
+using Concertable.B2B.Application.Application.DTOs;
+using Concertable.B2B.Application.Application.Responses;
+using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.Booking.Domain.Entities;
+using Concertable.B2B.Booking.Domain.State;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Deal.Contracts;
+using Concertable.B2B.Opportunity.Api.Responses;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -79,8 +83,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         var application = await applyResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.NotNull(application);
         Assert.Equal($"/api/application/{application.Id}", applyResponse.Headers.Location?.OriginalString);
-        var standard = await fixture.ConcertReads.Set<ApplicationEntity>()
-            .OfType<StandardApplication>()
+        var standard = await fixture.ApplicationDb.Set<StandardApplication>()
             .FirstOrDefaultAsync(a => a.OpportunityId == opportunity.Id);
         Assert.NotNull(standard);
     }
@@ -132,7 +135,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         Assert.Contains(fixture.SeedState.VenueManager1.Id.ToString(), notifiedUserIds);
         Assert.All(fixture.NotificationService.DraftCreated, n => Assert.NotNull(n.Payload));
 
-        var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
+        var booking = await fixture.BookingDb.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
         var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
         var command = fixture.PaymentTransport.SingleCommand<CaptureEscrowCommand>();
@@ -177,11 +180,14 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
+        var booking = await fixture.BookingDb.Set<BookingEntity>()
+            .SingleAsync(value => value.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
+        Assert.Equal(BookingState.ConfirmationFailed, booking.State);
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 
     [Fact]
-    public async Task Accept_ShouldRejectAndNotCreateDraft_WhenPaymentFails()
+    public async Task Accept_ShouldRecordConfirmationFailureAndNotCreateDraft_WhenPaymentFails()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -191,10 +197,10 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         await fixture.RejectLatestFinancialOperationAsync();
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>()
+        var booking = await fixture.BookingDb.Set<BookingEntity>()
             .AsNoTracking()
-            .SingleAsync(value => value.Id == fixture.SeedState.FlatFeeApp.Id);
-        Assert.Equal(LifecycleState.PaymentFailed, application.State);
+            .SingleAsync(value => value.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
+        Assert.Equal(BookingState.ConfirmationFailed, booking.State);
         var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.ApplicationId == fixture.SeedState.FlatFeeApp.Id);
         Assert.Null(draft);
         Assert.Empty(fixture.NotificationService.DraftCreated);
