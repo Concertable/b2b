@@ -94,7 +94,6 @@ public sealed class MessageServiceTests
 
         this.repository.Setup(r => r.AddAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((MessageEntity message, CancellationToken _) => message);
-        this.repository.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         this.repository.Setup(r => r.GetParticipantProfilesAsync(It.IsAny<IReadOnlySet<Guid>>()))
             .ReturnsAsync(new Dictionary<Guid, ParticipantProfile>
             {
@@ -112,6 +111,8 @@ public sealed class MessageServiceTests
         await this.sut.SendAndNotifyAsync(venueTenantId, artistTenantId,
             senderTenantId: venueTenantId, sentByUserId: sentByUserId, "hello", MessageAction.ApplicationAccepted);
 
+        this.repository.Verify(r => r.AddAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()), Times.Once);
+        this.repository.Verify(r => r.InsertAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()), Times.Never);
         this.tenantModule.Verify(t => t.GetMemberUserIdsAsync(artistTenantId, It.IsAny<CancellationToken>()), Times.Once);
         this.bus.Verify(b => b.PublishAsync(
             It.Is<TenantActivityRecordedEvent>(e =>
