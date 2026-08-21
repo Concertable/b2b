@@ -2,12 +2,8 @@ using System.Net;
 using System.Text;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.User.Domain.Entities;
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -36,24 +32,39 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     private Task<InvoiceEntity?> InvoiceForBookingAsync(int bookingId) =>
-        fixture.ConcertReads.Set<InvoiceEntity>().FirstOrDefaultAsync(i => i.BookingId == bookingId);
+        fixture.Invoices.FirstOrDefaultAsync(invoice => invoice.BookingId == bookingId);
 
     private Guid TenantOf(Guid userId) =>
         fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
 
     private async Task RepointArtistTenantAsync(int concertId, Guid artistTenantId)
     {
-        using var scope = fixture.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
-        await context.Concerts.Where(c => c.Id == concertId)
-            .ExecuteUpdateAsync(s => s.SetProperty(c => c.ArtistTenantId, artistTenantId));
+        await fixture.RepointConcertTenantsAsync(concertId, artistTenantId: artistTenantId);
     }
 
-    // The write validator only runs on the org-setup HTTP path; here we set the raw column so a seeded
-    // (VAT-null) supplier becomes registered. VatPolicy keys off presence, not format, so any value registers.
-    private Task SetVatNumberAsync(Guid tenantId, string vatNumber) =>
-        fixture.ConcertReads.Database.ExecuteSqlRawAsync(
-            "UPDATE [tenant].[Tenants] SET TaxCompliance_VatNumber = {0} WHERE Id = {1}", vatNumber, tenantId);
+    private async Task SetVatNumberAsync(Guid tenantId, string vatNumber)
+    {
+        var response = await ClientOfTenant(tenantId).PutAsync("/api/organization", new
+        {
+            legalName = "Registered Supplier Ltd",
+            taxCompliance = new
+            {
+                vatNumber,
+                sellerIdentifier = "12345678",
+                registeredAddress = new
+                {
+                    line1 = "1 High Street",
+                    line2 = (string?)null,
+                    city = "Manchester",
+                    postcode = "M1 1AA",
+                    country = "United Kingdom"
+                },
+                bankReference = "GB29NWBK60161331926819",
+                holdsMusicLicence = true
+            }
+        });
+        await response.ShouldBe(HttpStatusCode.OK);
+    }
 
     // --- Direction + no-VAT (unregistered seed suppliers) ---
 
@@ -229,7 +240,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
 
         foreach (var tenantId in new[] { concert.VenueTenantId, concert.ArtistTenantId })
         {
-            var party = fixture.CreateClient(UserOfTenant(tenantId));
+            var party = ClientOfTenant(tenantId);
             var response = await party.GetAsync($"/api/concert/{concert.Id}/invoice/pdf");
 
             await response.ShouldBe(HttpStatusCode.OK);
@@ -247,7 +258,8 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.FinishConcertAsync(concert.Id);
 
-        var venueUser = UserOfTenant(concert.VenueTenantId);
+        var venueUser = fixture.SeedState.Users.Single(
+            user => user.Id == TenantUserOf(concert.VenueTenantId));
         var strangerUser = venueUser.Id == fixture.SeedState.VenueManager1.Id
             ? fixture.SeedState.VenueManager2
             : fixture.SeedState.VenueManager1;
@@ -272,7 +284,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.NotNull(invoice);
         Assert.StartsWith("invoices/", invoice!.PdfBlobName);
 
-        var response = await fixture.CreateClient(UserOfTenant(concert.VenueTenantId))
+        var response = await ClientOfTenant(concert.VenueTenantId)
             .GetAsync($"/api/concert/{concert.Id}/invoice/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.Equal("%PDF", Encoding.ASCII.GetString(await response.Content.ReadAsByteArrayAsync(), 0, 4));
@@ -287,7 +299,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         await SetVatNumberAsync(concert.VenueTenantId, "GB222222222");    // customer registered
         await fixture.FinishConcertAsync(concert.Id);
 
-        var response = await fixture.CreateClient(UserOfTenant(concert.VenueTenantId))
+        var response = await ClientOfTenant(concert.VenueTenantId)
             .GetAsync($"/api/concert/{concert.Id}/invoice/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
         var text = Pdf.ExtractText(await response.Content.ReadAsByteArrayAsync());
@@ -306,7 +318,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
         var concert = fixture.SeedState.ConcertFor(booking);
-        var party = fixture.CreateClient(UserOfTenant(concert.VenueTenantId));
+        var party = ClientOfTenant(concert.VenueTenantId);
 
         // Before settlement: the party reads its concert, but no invoice exists yet -> no link.
         var before = await (await party.GetAsync($"/api/organization/concert/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
@@ -320,8 +332,9 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal($"/api/concert/{concert.Id}/invoice/pdf", after!.Actions!.Invoice!.Href);
     }
 
-    private UserEntity UserOfTenant(Guid tenantId) =>
-        fixture.SeedState.Users.Single(u => u.Id == TenantUserOf(tenantId));
+    private HttpClient ClientOfTenant(Guid tenantId) =>
+        fixture.CreateClient(fixture.SeedState.Users.Single(
+            user => user.Id == TenantUserOf(tenantId)));
 
     private Guid TenantUserOf(Guid tenantId) =>
         fixture.SeedState.Tenants.Single(t => t.Id == tenantId).CreatedByUserId;

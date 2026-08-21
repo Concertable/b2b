@@ -245,6 +245,26 @@ public class ApiFixture : IAsyncLifetime
             .ToList();
     }
 
+    public async Task<OutboxMessageSnapshot> GetOutboxMessageAsync(string messageType)
+    {
+        using var readScope = factory.Services.CreateScope();
+        var outbox = readScope.ServiceProvider.GetRequiredService<OutboxDbContext>();
+        var row = await outbox.Set<OutboxMessageEntity>()
+            .AsNoTracking()
+            .SingleAsync(message => message.MessageType == messageType);
+        return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
+    }
+
+    public async Task<OutboxMessageSnapshot> GetOutboxMessageAsync(Guid id)
+    {
+        using var readScope = factory.Services.CreateScope();
+        var outbox = readScope.ServiceProvider.GetRequiredService<OutboxDbContext>();
+        var row = await outbox.Set<OutboxMessageEntity>()
+            .AsNoTracking()
+            .SingleAsync(message => message.Id == id);
+        return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
+    }
+
     public HttpClient CreateClient(UserEntity user)
     {
         var client = factory.CreateClient();
@@ -276,3 +296,5 @@ public class ApiFixture : IAsyncLifetime
 
     public HttpClient CreateClient() => factory.CreateClient();
 }
+
+public sealed record OutboxMessageSnapshot(Guid Id, string Payload, bool IsDispatched);

@@ -1,8 +1,6 @@
 using System.Net;
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Concert.Domain.State;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -75,8 +73,8 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var response = await artistClient.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 
     [Fact]

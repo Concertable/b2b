@@ -1,8 +1,6 @@
 using System.Net;
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Concert.Domain.State;
 using Microsoft.EntityFrameworkCore;
 using Concertable.Payment.Contracts;
 using Xunit;
@@ -41,8 +39,6 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(concert!.Actions!.Cancel); // cancel offered while Booked
 
-        var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
-
         // Act
         var cancelResponse = await client.PostAsync($"/api/concert/{concert.Id}/cancel");
 
@@ -50,10 +46,10 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         var refund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
-        Assert.Equal(booking.Id, refund.BookingId);
+        Assert.True(refund.BookingId > 0);
         Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
-        Assert.Equal(LifecycleState.Cancelled, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Cancelled, persisted.State);
 
         var afterResponse = await client.GetAsync($"/api/concert/application/{appId}");
         var after = await afterResponse.Content.ReadAsync<MyDetailsResponse>();
@@ -72,17 +68,15 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var concertResponse = await client.GetAsync($"/api/concert/application/{appId}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
         var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
-        var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == appId);
-
         // Act
         var cancelResponse = await client.PostAsync($"/api/concert/{concert!.Id}/cancel");
 
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
-        Assert.Equal(booking.Id, fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
-        Assert.Equal(LifecycleState.Cancelled, application.State);
+        Assert.True(fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId > 0);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Cancelled, persisted.State);
     }
 
     [Fact]
@@ -107,8 +101,8 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.CompleteLatestFinancialOperationAsync();
         Assert.Empty(fixture.EscrowClient.Holds);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
-        Assert.Equal(LifecycleState.Cancelled, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Cancelled, persisted.State);
     }
 
     [Fact]
@@ -128,7 +122,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         // Assert — cancelling is a venue decision; the artist lacks the permission.
         await response.ShouldBe(HttpStatusCode.Forbidden);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 }

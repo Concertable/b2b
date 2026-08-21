@@ -1,7 +1,5 @@
 using Concertable.B2B.Concert.Application.Errors;
-using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Concert.Domain.State;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -33,8 +31,8 @@ public sealed class ConcertVenueHireApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         // Assert
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastVenueHireApp.Id);
-        Assert.Equal(LifecycleState.Complete, application.State);
+        var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
+        Assert.Equal(ConcertState.Complete, concert.State);
         Assert.Empty(fixture.ManagerPaymentClient.Payments);
     }
 
@@ -49,7 +47,7 @@ public sealed class ConcertVenueHireApiTests : IAsyncLifetime
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<FinishConcertError.ConcertNotEnded>(error);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.UpcomingVenueHireApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
+        Assert.Equal(ConcertState.Draft, concert.State);
     }
 }

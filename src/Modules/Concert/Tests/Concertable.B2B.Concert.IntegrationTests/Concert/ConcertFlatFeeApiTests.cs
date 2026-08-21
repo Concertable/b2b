@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Application.Errors;
-using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Concert.Application.Models;
+using Concertable.B2B.Concert.Domain.State;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -33,8 +32,8 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         // Assert
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(LifecycleState.Complete, application.State);
+        var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
+        Assert.Equal(ConcertState.Complete, concert.State);
         Assert.Empty(fixture.ManagerPaymentClient.Payments);
     }
 
@@ -49,12 +48,12 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<FinishConcertError.ConcertNotEnded>(error);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.UpcomingFlatFeeApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
+        Assert.Equal(ConcertState.Draft, concert.State);
     }
 
     [Fact]
-    public async Task Finish_ShouldFail_WhenAlreadyFinished()
+    public async Task Finish_ShouldBeIdempotent_WhenAlreadyFinished()
     {
         // Arrange
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking).Id;
@@ -63,7 +62,9 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         // Act & Assert
         var result = await fixture.FinishConcertAsync(concertId);
 
-        Assert.True(result.TryGetError(out var error));
-        Assert.IsType<FinishConcertError.TransitionFailure>(error);
+        Assert.True(result.TryGetValue(out var outcome));
+        Assert.Equal(SettlementOutcome.Settled, outcome);
+        var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
+        Assert.Equal(ConcertState.Complete, concert.State);
     }
 }

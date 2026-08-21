@@ -1,6 +1,4 @@
-using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Concert.Domain.State;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -29,7 +27,6 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
     {
         // Arrange — the venue declares the door revenue; Versus settles guarantee + a % of it
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastVersusBooking);
-        var deferred = (DeferredBooking)fixture.SeedState.PastVersusBooking;
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
         // Act
@@ -42,11 +39,11 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         Assert.Equal(venueTenantId, payment.PayerId);
         Assert.Equal(artistTenantId, payment.PayeeId);
         Assert.Equal(254m, payment.Amount);
-        Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
-        Assert.Equal(deferred.Id, payment.BookingId);
+        Assert.Equal(concert.SettlementPaymentMethodId, payment.PaymentMethodId);
+        Assert.Equal(concert.BookingId, payment.BookingId);
 
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastVersusApp.Id);
-        Assert.Equal(LifecycleState.AwaitingSettlement, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
     }
 
     [Fact]
@@ -61,7 +58,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastVersusApp.Id);
-        Assert.Equal(LifecycleState.Complete, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 }

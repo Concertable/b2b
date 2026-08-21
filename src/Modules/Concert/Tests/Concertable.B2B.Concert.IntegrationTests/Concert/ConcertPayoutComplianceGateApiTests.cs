@@ -1,9 +1,6 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Concert.Domain.State;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -37,18 +34,11 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
     private async Task RepointTenantAsync(int concertId, Guid? artistTenantId = null, Guid? venueTenantId = null)
     {
-        using var scope = fixture.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
-        if (artistTenantId is { } artist)
-            await context.Concerts.Where(c => c.Id == concertId)
-                .ExecuteUpdateAsync(s => s.SetProperty(c => c.ArtistTenantId, artist));
-        if (venueTenantId is { } venue)
-            await context.Concerts.Where(c => c.Id == concertId)
-                .ExecuteUpdateAsync(s => s.SetProperty(c => c.VenueTenantId, venue));
+        await fixture.RepointConcertTenantsAsync(concertId, artistTenantId, venueTenantId);
     }
 
-    private Task<ApplicationEntity> ApplicationAsync(int applicationId) =>
-        fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == applicationId);
+    private Task<ConcertEntity> ConcertAsync(int applicationId) =>
+        fixture.Concerts.FirstAsync(value => value.ApplicationId == applicationId);
 
     // --- Revenue-share (PayoutFinishStep): the artist is the payee ---
 
@@ -62,8 +52,8 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concert.Id);
 
         Assert.DoesNotContain(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
-        var application = await ApplicationAsync(fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 
     [Fact]
@@ -76,8 +66,8 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concert.Id);
 
         Assert.Contains(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
-        var application = await ApplicationAsync(fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.AwaitingSettlement, application.State);
+        var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
+        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
     }
 
     // --- Fixed-fee (ReleaseEscrowFinishStep): the artist is the payee ---
@@ -90,8 +80,8 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         await fixture.FinishConcertAsync(concertId);
 
-        var application = await ApplicationAsync(fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 
     [Fact]
@@ -101,8 +91,8 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         await fixture.FinishConcertAsync(concertId);
 
-        var application = await ApplicationAsync(fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(LifecycleState.Complete, application.State);
+        var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 
     // --- VenueHire direction-flip: the venue is the payee, so it is the tenant gated ---
@@ -115,7 +105,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         await fixture.FinishConcertAsync(concertId);
 
-        var application = await ApplicationAsync(fixture.SeedState.PastVenueHireApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var persisted = await ConcertAsync(fixture.SeedState.PastVenueHireApp.Id);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 }

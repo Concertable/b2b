@@ -1,10 +1,6 @@
 using System.Net;
-using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.ValueObjects;
-using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
@@ -48,25 +44,16 @@ public sealed class SelfBillingAgreementGateApiTests : IAsyncLifetime
         var lapsed = Guid.NewGuid();
         var never = Guid.NewGuid();
 
-        // A background (no-HTTP) scope is host, so the tenant interceptor no-ops and rows keep their explicit TenantId.
-        using (var seed = fixture.Services.CreateScope())
-        {
-            var context = seed.ServiceProvider.GetRequiredService<ConcertDbContext>();
-            context.SelfBillingAgreements.AddRange(
-                Agreement(inForce, Now.AddMonths(-13)),
-                Agreement(inForce, Now.AddMonths(-1)),
-                Agreement(lapsed, Now.AddMonths(-13)));
-            await context.SaveChangesAsync();
-        }
+        await fixture.AddSelfBillingAgreementsAsync(
+            Agreement(inForce, Now.AddMonths(-13)),
+            Agreement(inForce, Now.AddMonths(-1)),
+            Agreement(lapsed, Now.AddMonths(-13)));
 
-        using var scope = fixture.Services.CreateScope();
-        var gate = scope.ServiceProvider.GetRequiredService<ISelfBillingAgreementGate>();
+        Assert.True(await fixture.HasCurrentSelfBillingAgreementAsync(inForce, Now));
+        Assert.False(await fixture.HasCurrentSelfBillingAgreementAsync(lapsed, Now));
+        Assert.False(await fixture.HasCurrentSelfBillingAgreementAsync(never, Now));
 
-        Assert.True(await gate.HasCurrentAsync(inForce, Now));
-        Assert.False(await gate.HasCurrentAsync(lapsed, Now));
-        Assert.False(await gate.HasCurrentAsync(never, Now));
-
-        var current = await fixture.ConcertReads.Set<SelfBillingAgreementEntity>()
+        var current = await fixture.SelfBillingAgreements
             .Where(a => a.TenantId == inForce && a.ExpiresAtUtc > Now)
             .SingleAsync();
         Assert.Equal(current.AcceptedAtUtc.AddMonths(12), current.ExpiresAtUtc);

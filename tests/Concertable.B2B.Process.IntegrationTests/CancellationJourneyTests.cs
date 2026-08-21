@@ -76,6 +76,9 @@ public sealed class CancellationJourneyTests : IAsyncLifetime
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
         var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
         await AcceptFlatFeeAsync(client, applicationId);
+        var accepted = await GetApplicationAsync(client, applicationId);
+        Assert.NotNull(accepted.Actions.Cancel);
+        var bookingId = int.Parse(accepted.Actions.Cancel.Href.Split('/')[3]);
         await fixture.StripeClient.SendWebhookAsync();
         Assert.DoesNotContain(await GetOpportunitiesAsync(client), value => value.Id == opportunityId);
         var concertResponse = await client.GetAsync($"/api/concert/application/{applicationId}");
@@ -86,6 +89,9 @@ public sealed class CancellationJourneyTests : IAsyncLifetime
         var cancelResponse = await client.PostAsync($"/api/concert/{concert.Id}/cancel");
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
+        var refund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
+        Assert.Equal(bookingId, refund.BookingId);
+        Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
 
         Assert.Contains(await GetOpportunitiesAsync(client), value => value.Id == opportunityId);
     }

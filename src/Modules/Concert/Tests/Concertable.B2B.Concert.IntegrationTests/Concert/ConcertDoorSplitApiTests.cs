@@ -1,6 +1,4 @@
-using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Concert.Domain.State;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -29,7 +27,6 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     {
         // Arrange — the venue declares the night's door revenue; settlement is a % of that
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
-        var deferred = (DeferredBooking)fixture.SeedState.PastDoorSplitBooking;
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
         // Act
@@ -42,11 +39,11 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         Assert.Equal(venueTenantId, payment.PayerId);
         Assert.Equal(artistTenantId, payment.PayeeId);
         Assert.Equal(280m, payment.Amount);
-        Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
-        Assert.Equal(deferred.Id, payment.BookingId);
+        Assert.Equal(concert.SettlementPaymentMethodId, payment.PaymentMethodId);
+        Assert.Equal(concert.BookingId, payment.BookingId);
 
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.AwaitingSettlement, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
     }
 
     [Fact]
@@ -57,8 +54,9 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         // Assert — the gig is skipped (no payout), still awaiting its declaration
         Assert.DoesNotContain(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 
     [Fact]
@@ -75,8 +73,8 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.Complete, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 
     [Fact]
@@ -92,7 +90,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.Complete, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 }
