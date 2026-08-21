@@ -14,7 +14,7 @@ export const artistEmpty: ArtistDashboardFixture = {
         { id: "stripe", label: "Connect Stripe payouts", href: "/stripe-return", done: false },
       ],
     },
-    stripeConnect: { state: "Incomplete", href: "/stripe-return" },
+    stripeConnect: { state: "incomplete", href: "/stripe-return" },
     reviewSummary: { totalReviews: 0, averageRating: undefined },
   },
   kpis: {
