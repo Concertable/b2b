@@ -1,4 +1,5 @@
 import { Button } from "@concertable/web/components/ui/button";
+import { Spinner } from "@concertable/web/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -8,7 +9,6 @@ import {
   TableRow,
 } from "@concertable/web/components/ui/table";
 import { useAdminsRoster } from "../hooks/useAdminsRoster";
-import { Spinner } from "./Spinner";
 
 export function AdminsRoster() {
   const { admins, isLoading, canRevoke, revoke } = useAdminsRoster();
