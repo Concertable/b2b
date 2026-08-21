@@ -1,0 +1,211 @@
+using System.Net;
+using Concertable.B2B.IntegrationTests.Fixtures;
+using Xunit.Abstractions;
+
+namespace Concertable.B2B.Process.IntegrationTests;
+
+[Collection("Integration")]
+public sealed class DoorSplitJourneyTests : IAsyncLifetime
+{
+    private readonly ProcessApiFixture fixture;
+
+    public DoorSplitJourneyTests(ProcessApiFixture fixture, ITestOutputHelper output)
+    {
+        this.fixture = fixture;
+        fixture.AttachOutput(output);
+    }
+
+    public Task InitializeAsync() => fixture.ResetAsync();
+    public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
+
+    [Fact]
+    public async Task Accept_ShouldCreateDeferredBooking_WithoutDraft()
+    {
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await AcceptAsync(client, applicationId);
+
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        var financial = await GetFinancialOperationAsync(client, applicationId);
+        Assert.Equal(BookingBoundaryState.AwaitingConfirmation, financial.Status);
+        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
+        await concert.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Accept_ShouldCreateDraftConcertAndNotifyArtistAndVenue()
+    {
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/application/{applicationId}/checkout");
+
+        var acceptResponse = await AcceptAsync(client, applicationId);
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.StripeClient.SendWebhookAsync();
+
+        var application = await GetApplicationAsync(client, applicationId);
+        Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
+        var concert = await GetConcertAsync(client, applicationId);
+        Assert.Null(concert.DatePosted);
+        var financial = await GetFinancialOperationAsync(client, applicationId);
+        Assert.Equal(BookingBoundaryState.Confirmed, financial.Status);
+        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+        var notifiedUserIds = fixture.NotificationService.DraftCreated
+            .Select(notification => notification.UserId)
+            .ToList();
+        Assert.Contains(fixture.SeedState.ArtistManager1.Id.ToString(), notifiedUserIds);
+        Assert.Contains(fixture.SeedState.VenueManager1.Id.ToString(), notifiedUserIds);
+        Assert.All(fixture.NotificationService.DraftCreated, notification =>
+            Assert.NotNull(notification.Payload));
+    }
+
+    [Fact]
+    public async Task Accept_ShouldCreateOneConcert_WhenWebhookEventIsRedelivered()
+    {
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/application/{applicationId}/checkout");
+        var acceptResponse = await AcceptAsync(client, applicationId);
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+
+        await fixture.StripeClient.SendWebhookAsync();
+        var firstConcert = await GetConcertAsync(client, applicationId);
+        await fixture.StripeClient.SendWebhookAsync();
+        var redeliveredConcert = await GetConcertAsync(client, applicationId);
+
+        Assert.Equal(firstConcert.Id, redeliveredConcert.Id);
+        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+    }
+
+    [Fact]
+    public async Task Accept_ShouldNotCreateDraft_WhenFinancialConfirmationFails()
+    {
+        fixture.CreateClient(fixture.SeedState.VenueManager1, options => options.UseFailingStripe());
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/application/{applicationId}/checkout");
+        var acceptResponse = await AcceptAsync(client, applicationId);
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+
+        await fixture.StripeClient.SendWebhookAsync();
+
+        var financial = await GetFinancialOperationAsync(client, applicationId);
+        Assert.Equal(BookingBoundaryState.ConfirmationFailed, financial.Status);
+        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
+        await concert.ShouldBe(HttpStatusCode.NotFound);
+        Assert.Empty(fixture.NotificationService.DraftCreated);
+        var notification = Assert.Single(
+            fixture.NotificationService.Other,
+            value => value.EventName == "VerifyPaymentFailed");
+        Assert.Equal(fixture.SeedState.VenueManager1.Id.ToString(), notification.UserId);
+    }
+
+    [Fact]
+    public async Task Accept_ShouldCreateDraftConcert_WhenVerifyWebhookArrivesBeforeAccept()
+    {
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/application/{applicationId}/checkout");
+        await fixture.StripeClient.SendWebhookAsync();
+        var beforeAccept = await client.GetAsync($"/api/concert/application/{applicationId}");
+        await beforeAccept.ShouldBe(HttpStatusCode.NotFound);
+        Assert.Empty(fixture.NotificationService.DraftCreated);
+
+        var acceptResponse = await AcceptAsync(client, applicationId);
+
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        await GetConcertAsync(client, applicationId);
+        var financial = await GetFinancialOperationAsync(client, applicationId);
+        Assert.Equal(BookingBoundaryState.Confirmed, financial.Status);
+        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+    }
+
+    [Fact]
+    public async Task Accept_ShouldRouteBookingToConfirmationFailed_WhenVerifyFailureArrivesBeforeAccept()
+    {
+        fixture.CreateClient(fixture.SeedState.VenueManager1, options => options.UseFailingStripe());
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await client.PostAsync($"/api/application/{applicationId}/checkout");
+        await fixture.StripeClient.SendWebhookAsync();
+
+        var acceptResponse = await AcceptAsync(client, applicationId);
+
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        var financial = await GetFinancialOperationAsync(client, applicationId);
+        Assert.Equal(BookingBoundaryState.ConfirmationFailed, financial.Status);
+        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
+        await concert.ShouldBe(HttpStatusCode.NotFound);
+        Assert.Empty(fixture.NotificationService.DraftCreated);
+        Assert.Single(
+            fixture.NotificationService.Other,
+            value => value.EventName == "VerifyPaymentFailed");
+    }
+
+    private static Task<HttpResponseMessage> AcceptAsync(HttpClient client, int applicationId) =>
+        client.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new
+            {
+                eSignature = new { signatoryName = "Test Signatory" },
+                paymentMethodId = "pm_card_visa"
+            });
+
+    private static async Task<ApplicationBoundaryResponse> GetApplicationAsync(
+        HttpClient client,
+        int applicationId)
+    {
+        var response = await client.GetAsync($"/api/application/{applicationId}");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var application = await response.Content.ReadAsync<ApplicationBoundaryResponse>();
+        Assert.NotNull(application);
+        return application;
+    }
+
+    private static async Task<ConcertBoundaryResponse> GetConcertAsync(
+        HttpClient client,
+        int applicationId)
+    {
+        var response = await client.GetAsync($"/api/concert/application/{applicationId}");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var concert = await response.Content.ReadAsync<ConcertBoundaryResponse>();
+        Assert.NotNull(concert);
+        return concert;
+    }
+
+    private static async Task<FinancialOperationBoundaryResponse> GetFinancialOperationAsync(
+        HttpClient client,
+        int applicationId)
+    {
+        var response = await client.GetAsync(
+            $"/api/application/{applicationId}/financial-operation");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var financial = await response.Content.ReadAsync<FinancialOperationBoundaryResponse>();
+        Assert.NotNull(financial);
+        return financial;
+    }
+
+    private sealed record ApplicationBoundaryResponse(ApplicationBoundaryStatus Status);
+    private sealed record ConcertBoundaryResponse(int Id, DateTime? DatePosted);
+    private sealed record FinancialOperationBoundaryResponse(BookingBoundaryState Status);
+
+    private enum ApplicationBoundaryStatus
+    {
+        Pending,
+        Rejected,
+        Withdrawn,
+        Accepted,
+        Cancelled
+    }
+
+    private enum BookingBoundaryState
+    {
+        AwaitingConfirmation,
+        Confirmed,
+        ConfirmationFailed,
+        CancellationPending,
+        Cancelled,
+        CancellationFailed
+    }
+}
