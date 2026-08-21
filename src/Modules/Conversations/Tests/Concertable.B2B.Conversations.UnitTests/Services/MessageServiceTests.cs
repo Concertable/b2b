@@ -44,9 +44,8 @@ public sealed class MessageServiceTests
         var recipientMembers = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
         MessageDto? payload = null;
 
-        this.repository.Setup(r => r.AddAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()))
+        this.repository.Setup(r => r.InsertAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((MessageEntity message, CancellationToken _) => message);
-        this.repository.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         this.repository.Setup(r => r.GetParticipantProfilesAsync(It.IsAny<IReadOnlySet<Guid>>()))
             .ReturnsAsync(new Dictionary<Guid, ParticipantProfile>
             {
