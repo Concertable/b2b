@@ -25,15 +25,15 @@ const statusStyles: Record<
   DashboardApplicationStatus,
   { label: string; chip: string }
 > = {
-  AwaitingPayment: {
+  awaitingPayment: {
     label: "Awaiting payment",
     chip: "bg-amber-50 text-amber-700",
   },
-  Pending: { label: "Pending", chip: "bg-sky-50 text-sky-700" },
-  Accepted: { label: "Accepted", chip: "bg-emerald-50 text-emerald-700" },
-  Confirmed: { label: "Confirmed", chip: "bg-emerald-50 text-emerald-700" },
-  Rejected: { label: "Rejected", chip: "bg-muted text-muted-foreground" },
-  Withdrawn: { label: "Withdrawn", chip: "bg-muted text-muted-foreground" },
+  pending: { label: "Pending", chip: "bg-sky-50 text-sky-700" },
+  accepted: { label: "Accepted", chip: "bg-emerald-50 text-emerald-700" },
+  confirmed: { label: "Confirmed", chip: "bg-emerald-50 text-emerald-700" },
+  rejected: { label: "Rejected", chip: "bg-muted text-muted-foreground" },
+  withdrawn: { label: "Withdrawn", chip: "bg-muted text-muted-foreground" },
 };
 
 const actionVariants: Record<ApplicationActionName, "default" | "outline"> = {

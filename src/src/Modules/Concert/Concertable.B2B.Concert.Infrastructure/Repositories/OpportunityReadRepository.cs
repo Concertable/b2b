@@ -53,5 +53,7 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
     }
 
     private IQueryable<OpportunityEntity> ActiveForVenue(int venueId) =>
-        context.Opportunities.ActiveForVenue(venueId, timeProvider.GetUtcNow());
+        context.Opportunities
+            .Include(o => o.Venue)
+            .ActiveForVenue(venueId, timeProvider.GetUtcNow());
 }
