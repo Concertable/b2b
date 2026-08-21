@@ -1,5 +1,6 @@
 using Concertable.B2B.Admin.Domain.Entities;
 using Concertable.B2B.Admin.Infrastructure.Data;
+using Concertable.B2B.User.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,18 +14,23 @@ namespace Concertable.B2B.IntegrationTests.Fixtures;
 public sealed class AdminApiFixture : ApiFixture
 {
     private AdminDbContext adminDb = null!;
+    private UserDbContext userDb = null!;
 
     public IQueryable<AdminInvitationEntity> AdminInvitations => adminDb.AdminInvitations.AsNoTracking();
 
     public Task<bool> IsAdminAsync(Guid sub) => adminDb.AdminProfiles.AnyAsync(p => p.Sub == sub);
 
-    /// <summary>Removes every seeded admin profile — arranging the "no admin exists yet, and the bootstrap
-    /// email is free to register" precondition the bootstrap path requires, which the standard seed graph
-    /// never holds (it always seeds one admin at <c>SeedUsers.AdminEmail</c>).</summary>
+    /// <summary>Removes every seeded admin — profile and underlying user row alike — arranging the "no admin
+    /// exists yet, and the bootstrap email is free to register" precondition the bootstrap path requires,
+    /// which the standard seed graph never holds (it always seeds one admin at <c>SeedUsers.AdminEmail</c>).</summary>
     public async Task ClearAdminsAsync()
     {
+        var subs = await adminDb.AdminProfiles.Select(p => p.Sub).ToListAsync();
         adminDb.AdminProfiles.RemoveRange(adminDb.AdminProfiles);
         await adminDb.SaveChangesAsync();
+
+        userDb.Users.RemoveRange(userDb.Users.Where(u => subs.Contains(u.Id)));
+        await userDb.SaveChangesAsync();
     }
 
     /// <summary>Inserts a pending admin invitation with a chosen <paramref name="expiresAt"/> — lets a test
@@ -43,5 +49,6 @@ public sealed class AdminApiFixture : ApiFixture
     protected override void OnReset(IServiceScope scope)
     {
         adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+        userDb = scope.ServiceProvider.GetRequiredService<UserDbContext>();
     }
 }
