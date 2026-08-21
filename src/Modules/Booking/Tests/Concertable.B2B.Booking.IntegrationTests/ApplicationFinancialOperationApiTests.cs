@@ -5,14 +5,14 @@ using Concertable.Payment.Contracts;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Concert.IntegrationTests.Application;
+namespace Concertable.B2B.Booking.IntegrationTests;
 
 [Collection("Integration")]
 public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
 {
-    private readonly ConcertApiFixture fixture;
+    private readonly BookingApiFixture fixture;
 
-    public ApplicationFinancialOperationApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    public ApplicationFinancialOperationApiTests(BookingApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);

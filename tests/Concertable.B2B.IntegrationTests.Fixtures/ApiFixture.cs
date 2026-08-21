@@ -216,6 +216,15 @@ public class ApiFixture : IAsyncLifetime
     public Task RejectLatestFinancialOperationAsync() =>
         PaymentTransport.RejectLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
+    public Task DispatchIntegrationEventAsync<TEvent>(TEvent @event, MessageEnvelope envelope)
+        where TEvent : IIntegrationEvent =>
+        factory.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<TEvent>>>>()
+            .RunAsync(async handlers =>
+            {
+                foreach (var handler in handlers)
+                    await handler.HandleAsync(@event, envelope);
+            });
+
     public IServiceProvider Services => factory.Services;
 
     public async Task<IReadOnlyList<SendEmailCommand>> GetStagedEmailsAsync()
