@@ -1,17 +1,18 @@
 using System.Net;
 using Concertable.B2B.Deal.Contracts;
+using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Concert.IntegrationTests.Deal;
+namespace Concertable.B2B.Deal.IntegrationTests;
 
 [Collection("Integration")]
 public sealed class DealApiTests : IAsyncLifetime
 {
-    private readonly ConcertApiFixture fixture;
+    private readonly DealApiFixture fixture;
 
-    public DealApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    public DealApiTests(DealApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);

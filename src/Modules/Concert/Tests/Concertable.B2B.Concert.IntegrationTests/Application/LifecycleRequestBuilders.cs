@@ -3,9 +3,9 @@ using Concertable.Testing.Integration;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.Deal.Contracts;
 
-namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
+namespace Concertable.B2B.Concert.IntegrationTests.Application;
 
-internal static class OpportunityRequestBuilders
+internal static class LifecycleRequestBuilders
 {
     public static OpportunityRequest BuildRequest(DealDto deal, DateTime now) =>
         new()

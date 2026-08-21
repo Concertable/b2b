@@ -9,7 +9,7 @@ using Xunit;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
-using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
+using static Concertable.B2B.Concert.IntegrationTests.Application.LifecycleRequestBuilders;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Application;
 

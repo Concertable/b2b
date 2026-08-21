@@ -1,24 +1,22 @@
 using System.Net;
-using Concertable.B2B.Concert.Application.DTOs;
-
-using Concertable.B2B.Concert.Api.Responses;
-using Xunit;
-using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
 using Concertable.B2B.Deal.Contracts;
+using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Opportunity.Api.Responses;
 using Concertable.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc;
 using Xunit.Abstractions;
+using static Concertable.B2B.Opportunity.IntegrationTests.OpportunityRequestBuilders;
 
-namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
+namespace Concertable.B2B.Opportunity.IntegrationTests;
 
 [Collection("Integration")]
 public sealed class OpportunityApiTests : IAsyncLifetime
 {
-    private readonly ConcertApiFixture fixture;
+    private readonly OpportunityApiFixture fixture;
 
-    public OpportunityApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    public OpportunityApiTests(OpportunityApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -50,7 +48,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Created);
-        var opportunity = await response.Content.ReadAsync<OpportunityDto>();
+        var opportunity = await response.Content.ReadAsync<OpportunityResponse>();
         Assert.NotNull(opportunity);
         Assert.NotNull(opportunity.Id);
         Assert.Equal(request.StartDate, opportunity.StartDate);
@@ -154,7 +152,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var result = await response.Content.ReadAsync<Pagination<OpportunityDto>>();
+        var result = await response.Content.ReadAsync<Pagination<OpportunityResponse>>();
         Assert.NotNull(result);
         Assert.Contains(result.Data, o => o.Id == fixture.SeedState.FreshVenueHireOpportunity.Id);
     }
