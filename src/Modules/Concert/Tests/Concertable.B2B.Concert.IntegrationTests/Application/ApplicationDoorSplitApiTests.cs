@@ -181,7 +181,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         // Assert
         var booking = await fixture.BookingReads.Set<BookingEntity>()
             .FirstAsync(b => b.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
-        Assert.Equal(BookingState.FinancialConfirmationFailed, booking.State);
+        Assert.Equal(BookingState.ConfirmationFailed, booking.State);
         Assert.Empty(fixture.NotificationService.DraftCreated);
         var notification = Assert.Single(fixture.NotificationService.Other, n => n.EventName == "VerifyPaymentFailed");
         Assert.Equal(fixture.SeedState.VenueManager1.Id.ToString(), notification.UserId);
@@ -214,7 +214,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldRouteBookingToFinancialConfirmationFailed_WhenVerifyFailureArrivesBeforeAccept()
+    public async Task Accept_ShouldRouteBookingToConfirmationFailed_WhenVerifyFailureArrivesBeforeAccept()
     {
         // Arrange
         fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingStripe());
@@ -230,7 +230,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         var booking = await fixture.BookingReads.Set<BookingEntity>()
             .FirstAsync(b => b.ApplicationId == fixture.SeedState.DoorSplitApp.Id);
-        Assert.Equal(BookingState.FinancialConfirmationFailed, booking.State);
+        Assert.Equal(BookingState.ConfirmationFailed, booking.State);
         Assert.Empty(fixture.NotificationService.DraftCreated);
         Assert.Single(fixture.NotificationService.Other, n => n.EventName == "VerifyPaymentFailed");
     }

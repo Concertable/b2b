@@ -25,7 +25,7 @@ public sealed class VerifyPaymentConvergenceTests
                 accepted,
                 accepted.PaymentMethodId,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DeferredBookingDto(7, BookingState.AwaitingFinancialConfirmation, "pm_123"));
+            .ReturnsAsync(new DeferredBookingDto(7, BookingState.AwaitingConfirmation, "pm_123"));
         this.bookings
             .InSequence(sequence)
             .Setup(service => service.RecordSucceededAsync(
@@ -51,7 +51,7 @@ public sealed class VerifyPaymentConvergenceTests
             .Setup(service => service.GetByApplicationIdAsync(
                 payment.ApplicationId,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DeferredBookingDto(7, BookingState.AwaitingFinancialConfirmation, "pm_123"));
+            .ReturnsAsync(new DeferredBookingDto(7, BookingState.AwaitingConfirmation, "pm_123"));
         this.bookings
             .Setup(service => service.RecordSucceededAsync(
                 7,
@@ -81,7 +81,7 @@ public sealed class VerifyPaymentConvergenceTests
                 accepted,
                 accepted.PaymentMethodId,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DeferredBookingDto(7, BookingState.AwaitingFinancialConfirmation, "pm_123"));
+            .ReturnsAsync(new DeferredBookingDto(7, BookingState.AwaitingConfirmation, "pm_123"));
         this.bookings
             .Setup(service => service.RecordFailedAsync(
                 7,

@@ -26,7 +26,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IEven
     public DateTime StartDate { get; private set; }
     public DateTime EndDate { get; private set; }
     public List<Genre> Genres { get; private set; } = [];
-    internal BookingState State { get; private set; } = BookingState.AwaitingFinancialConfirmation;
+    internal BookingState State { get; private set; } = BookingState.AwaitingConfirmation;
     public Guid? CancellationOperationId { get; private set; }
     public string? FinancialFailureCode { get; private set; }
     public string? FinancialFailureMessage { get; private set; }
@@ -67,7 +67,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IEven
 
     internal void RecordFinancialConfirmation(string providerReferenceId)
     {
-        if (State is not (BookingState.AwaitingFinancialConfirmation or BookingState.FinancialConfirmationFailed))
+        if (State is not (BookingState.AwaitingConfirmation or BookingState.ConfirmationFailed))
             throw new InvalidOperationException($"Booking {Id} cannot confirm from {State}.");
 
         State = BookingState.Confirmed;
@@ -96,10 +96,10 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IEven
         string code,
         string message)
     {
-        if (State is not (BookingState.AwaitingFinancialConfirmation or BookingState.FinancialConfirmationFailed))
+        if (State is not (BookingState.AwaitingConfirmation or BookingState.ConfirmationFailed))
             throw new InvalidOperationException($"Booking {Id} cannot record payment failure from {State}.");
 
-        State = BookingState.FinancialConfirmationFailed;
+        State = BookingState.ConfirmationFailed;
         FinancialOperationReferenceId = providerReferenceId;
         FinancialFailureCode = code;
         FinancialFailureMessage = message;
@@ -107,10 +107,10 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IEven
 
     internal void RecordFinancialRejection(string code, string message)
     {
-        if (State is not (BookingState.AwaitingFinancialConfirmation or BookingState.FinancialConfirmationFailed))
+        if (State is not (BookingState.AwaitingConfirmation or BookingState.ConfirmationFailed))
             throw new InvalidOperationException($"Booking {Id} cannot record payment rejection from {State}.");
 
-        State = BookingState.FinancialConfirmationFailed;
+        State = BookingState.ConfirmationFailed;
         FinancialOperationReferenceId = null;
         FinancialFailureCode = code;
         FinancialFailureMessage = message;
@@ -118,7 +118,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IEven
 
     internal Guid BeginCancellation()
     {
-        if (State is not (BookingState.AwaitingFinancialConfirmation or BookingState.FinancialConfirmationFailed))
+        if (State is not (BookingState.AwaitingConfirmation or BookingState.ConfirmationFailed))
             throw new InvalidOperationException($"Booking {Id} cannot begin cancellation from {State}.");
 
         CancellationOperationId ??= Guid.NewGuid();

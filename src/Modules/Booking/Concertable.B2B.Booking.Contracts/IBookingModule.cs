@@ -24,8 +24,8 @@ public sealed record ContractPdf(byte[] Content, string FileName, string Content
 
 public enum BookingStatus
 {
-    AwaitingFinancialConfirmation,
-    FinancialConfirmationFailed,
+    AwaitingConfirmation,
+    ConfirmationFailed,
     Confirmed,
     CancellationPending,
     CancellationFailed,

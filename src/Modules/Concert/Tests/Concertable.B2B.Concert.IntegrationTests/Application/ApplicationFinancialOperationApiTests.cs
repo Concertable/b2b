@@ -50,7 +50,7 @@ public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
         await pendingResponse.ShouldBe(HttpStatusCode.OK);
         var pending = await pendingResponse.Content.ReadAsync<FinancialOperationResponse>();
         Assert.Equal(command.OperationId, pending!.OperationId);
-        Assert.Equal(BookingState.AwaitingFinancialConfirmation, pending.Status);
+        Assert.Equal(BookingState.AwaitingConfirmation, pending.Status);
         Assert.Null(pending.FailureCode);
         Assert.Null(pending.FailureMessage);
 
@@ -61,7 +61,7 @@ public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
         await rejectedResponse.ShouldBe(HttpStatusCode.OK);
         var rejected = await rejectedResponse.Content.ReadAsync<FinancialOperationResponse>();
         Assert.Equal(command.OperationId, rejected!.OperationId);
-        Assert.Equal(BookingState.FinancialConfirmationFailed, rejected.Status);
+        Assert.Equal(BookingState.ConfirmationFailed, rejected.Status);
         Assert.Equal("card_declined", rejected.FailureCode);
         Assert.Equal("Card was declined", rejected.FailureMessage);
     }

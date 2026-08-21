@@ -49,8 +49,8 @@ internal sealed class BookingModule : IBookingModule
 
     private static BookingStatus Map(BookingState state) => state switch
     {
-        BookingState.AwaitingFinancialConfirmation => BookingStatus.AwaitingFinancialConfirmation,
-        BookingState.FinancialConfirmationFailed => BookingStatus.FinancialConfirmationFailed,
+        BookingState.AwaitingConfirmation => BookingStatus.AwaitingConfirmation,
+        BookingState.ConfirmationFailed => BookingStatus.ConfirmationFailed,
         BookingState.Confirmed => BookingStatus.Confirmed,
         BookingState.CancellationPending => BookingStatus.CancellationPending,
         BookingState.CancellationFailed => BookingStatus.CancellationFailed,

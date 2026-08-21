@@ -24,7 +24,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
         bookingOption.TryGetValue(out var booking);
         var isPending = dto.State == ApplicationState.Applied;
         var isCancellable = booking?.Status is
-            BookingStatus.AwaitingFinancialConfirmation or BookingStatus.FinancialConfirmationFailed;
+            BookingStatus.AwaitingConfirmation or BookingStatus.ConfirmationFailed;
         var status = booking?.Status == BookingStatus.Cancelled
             ? ApplicationStatus.Cancelled
             : dto.Status;

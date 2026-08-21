@@ -178,7 +178,7 @@ internal sealed class BookingService : IBookingService
     private static bool IsDuplicateFailure(
         BookingEntity booking,
         FinancialOperationFailed operation) =>
-        booking.State == BookingState.FinancialConfirmationFailed && operation switch
+        booking.State == BookingState.ConfirmationFailed && operation switch
         {
             VerifyPaymentFailedEvidence verified =>
                 booking.FinancialOperationReferenceId == verified.ProviderReferenceId,

@@ -55,7 +55,7 @@ public sealed class BookingServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => this.service.RecordSucceededAsync(0, operation));
 
-        Assert.Equal(BookingState.AwaitingFinancialConfirmation, booking.State);
+        Assert.Equal(BookingState.AwaitingConfirmation, booking.State);
         this.bookings.Verify(
             repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
@@ -77,7 +77,7 @@ public sealed class BookingServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => this.service.RecordSucceededAsync(7, operation));
 
-        Assert.Equal(BookingState.AwaitingFinancialConfirmation, booking.State);
+        Assert.Equal(BookingState.AwaitingConfirmation, booking.State);
         this.bookings.Verify(
             repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
@@ -99,7 +99,7 @@ public sealed class BookingServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => this.service.RecordSucceededAsync(7, operation));
 
-        Assert.Equal(BookingState.AwaitingFinancialConfirmation, booking.State);
+        Assert.Equal(BookingState.AwaitingConfirmation, booking.State);
         this.bookings.Verify(
             repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
@@ -177,7 +177,7 @@ public sealed class BookingServiceTests
 
         await this.service.RecordFailedAsync(0, operation);
 
-        Assert.Equal(BookingState.FinancialConfirmationFailed, booking.State);
+        Assert.Equal(BookingState.ConfirmationFailed, booking.State);
         Assert.Equal("seti_123", booking.FinancialOperationReferenceId);
         Assert.Equal("card_declined", booking.FinancialFailureCode);
         Assert.Equal("Declined", booking.FinancialFailureMessage);

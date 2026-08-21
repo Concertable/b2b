@@ -146,7 +146,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var appId = fixture.SeedState.VenueHireApp.Id;
         var booking = await AcceptVenueHireAsync(client);
         await fixture.SendEscrowFailedWebhookAsync(booking.Id);
-        Assert.Equal(BookingState.FinancialConfirmationFailed, await BookingStateOfAsync(appId));
+        Assert.Equal(BookingState.ConfirmationFailed, await BookingStateOfAsync(appId));
 
         // Act
         var response = await client.PostAsync($"/api/application/{appId}/cancel", (object?)null);
@@ -234,7 +234,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
-        Assert.Equal(BookingState.AwaitingFinancialConfirmation, await BookingStateOfAsync(appId));
+        Assert.Equal(BookingState.AwaitingConfirmation, await BookingStateOfAsync(appId));
     }
 
     #endregion
