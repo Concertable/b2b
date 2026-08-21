@@ -57,7 +57,7 @@ public sealed class OpportunityDashboardServiceTests
             DealId = 7,
             ApplicationCount = 4
         };
-        var deal = new FlatFeeDeal { Id = 7, PaymentMethod = PaymentMethod.Cash, Fee = 500 };
+        var deal = new FlatFeeDealDto { Id = 7, PaymentMethod = PaymentMethod.Cash, Fee = 500 };
         this.repository
             .Setup(value => value.GetOpenWithApplicationCountsByVenueTenantIdAsync(this.tenantId))
             .ReturnsAsync([projection]);
@@ -95,7 +95,7 @@ public sealed class OpportunityDashboardServiceTests
             Genres = [Genre.Rock, Genre.Pop],
             DealId = 8
         };
-        var deal = new FlatFeeDeal { Id = 8, PaymentMethod = PaymentMethod.Cash, Fee = 600 };
+        var deal = new FlatFeeDealDto { Id = 8, PaymentMethod = PaymentMethod.Cash, Fee = 600 };
         this.artistRepository
             .Setup(value => value.GetByTenantIdAsync(this.tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ArtistReadModel
