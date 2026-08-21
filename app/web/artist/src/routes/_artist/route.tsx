@@ -25,13 +25,13 @@ const profileItems: ProfileMenuItem[] = [
 
 function ArtistLayout() {
   useArtistNotifications();
-  const { selectionRequired } = useTenant("Artist");
-  if (selectionRequired) return <TenantChooser tenantType="Artist" />;
+  const { selectionRequired } = useTenant("artist");
+  if (selectionRequired) return <TenantChooser tenantType="artist" />;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher tenantType="Artist" />}
+      headerSlot={<TenantSwitcher tenantType="artist" />}
     />
   );
 }
@@ -42,7 +42,7 @@ export const Route = createFileRoute("/_artist")({
       await requireLocalB2bAuth({ location });
       return;
     }
-    const { selectionRequired } = await resolveTenantRoute("Artist");
+    const { selectionRequired } = await resolveTenantRoute("artist");
     if (selectionRequired) return;
     await requireArtist({ pathname: location.pathname });
   },

@@ -16,7 +16,6 @@
     <PackageReference Include="Dunet" />
     <PackageReference Include="Reunion" />
     <PackageReference Include="Reunion.Errors" />
-    <PackageReference Include="Reunion.Validation" />
     <PackageReference Include="FluentValidation" />
   </ItemGroup>
 
