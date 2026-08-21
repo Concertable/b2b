@@ -41,6 +41,12 @@ public static class ServiceCollectionExtensions
                     provider.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(provider));
 
+        services.AddDbContext<ApplicationReadDbContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<IApplicationReadDbContext>(provider =>
+            provider.GetRequiredService<ApplicationReadDbContext>());
+
         services.AddScoped<IUnitOfWork<ApplicationDbContext>, UnitOfWork<ApplicationDbContext>>();
         services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
         services.AddScoped<IApplicationRepository, ApplicationRepository>();

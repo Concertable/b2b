@@ -35,6 +35,12 @@ public static class ServiceCollectionExtensions
                         provider.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(provider));
 
+            services.AddDbContext<BookingReadDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+            services.AddScoped<IBookingReadDbContext>(provider =>
+                provider.GetRequiredService<BookingReadDbContext>());
+
             services.AddScoped<IUnitOfWork<BookingDbContext>, UnitOfWork<BookingDbContext>>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
