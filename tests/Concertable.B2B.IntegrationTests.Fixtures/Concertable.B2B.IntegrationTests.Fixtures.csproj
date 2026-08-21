@@ -20,8 +20,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\Concertable.Shared\tests\Concertable.Testing.Integration\Concertable.Testing.Integration.csproj" />
     <ProjectReference Include="..\..\src\Concertable.B2B.Web\Concertable.B2B.Web.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Admin\Concertable.B2B.Admin.Domain\Concertable.B2B.Admin.Domain.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Admin\Concertable.B2B.Admin.Infrastructure\Concertable.B2B.Admin.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Concertable.Shared\src\Seed\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
     <ProjectReference Include="..\..\..\Concertable.Shared\src\Seed\Concertable.Seed.Infrastructure\Concertable.Seed.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />

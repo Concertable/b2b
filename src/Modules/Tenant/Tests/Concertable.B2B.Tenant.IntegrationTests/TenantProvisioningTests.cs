@@ -1,11 +1,8 @@
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
@@ -24,23 +21,13 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    private async Task ProvisionAsync(CredentialRegisteredEvent e, MessageEnvelope? envelope = null)
-    {
-        using var scope = fixture.Services.CreateScope();
-        var handler = scope.ServiceProvider
-            .GetServices<IIntegrationEventHandler<CredentialRegisteredEvent>>()
-            .OfType<TenantProvisioningHandler>()
-            .Single();
-        await handler.HandleAsync(e, envelope ?? MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow));
-    }
-
     [Theory]
     [InlineData(ClientIds.VenueWeb, TenantType.Venue)]
     [InlineData(ClientIds.ArtistWeb, TenantType.Artist)]
     public async Task Registration_NewManager_ProvisionsTenantWithTypeAndFoundingOwner(string clientId, TenantType expected)
     {
         var userId = Guid.NewGuid();
-        await ProvisionAsync(new CredentialRegisteredEvent(userId, $"{Guid.NewGuid():N}@test.com", clientId));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, $"{Guid.NewGuid():N}@test.com", clientId));
 
         var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == userId);
         Assert.NotNull(membership);
@@ -57,7 +44,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
     public async Task Registration_NonManagerClient_ProvisionsNothing()
     {
         var userId = Guid.NewGuid();
-        await ProvisionAsync(new CredentialRegisteredEvent(userId, "customer@test.com", ClientIds.CustomerWeb));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, "customer@test.com", ClientIds.CustomerWeb));
 
         Assert.False(await fixture.Memberships.AnyAsync(m => m.UserId == userId));
     }
@@ -71,7 +58,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         var newEmail = $"{Guid.NewGuid():N}@invited.test";
         await fixture.AddInvitationAsync(tenantId, newEmail, TenantRole.Manager, inviter.Id, DateTime.UtcNow.AddDays(7));
 
-        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.VenueWeb));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.VenueWeb));
 
         var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == newUserId);
         Assert.NotNull(membership);
@@ -96,7 +83,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         await fixture.AddInvitationAsync(tenantId, "invitee@casing.test", TenantRole.Staff, inviter.Id, DateTime.UtcNow.AddDays(7));
 
         // Auth carries the email verbatim; the handler normalizes it before matching the stored (normalized) invite.
-        await ProvisionAsync(new CredentialRegisteredEvent(newUserId, "  Invitee@Casing.TEST ", ClientIds.VenueWeb));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(newUserId, "  Invitee@Casing.TEST ", ClientIds.VenueWeb));
 
         var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == newUserId);
         Assert.NotNull(membership);
@@ -116,8 +103,8 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         // Same envelope → same MessageId → the inbox dedup swallows the redelivery.
         var envelope = MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow);
         var e = new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.VenueWeb);
-        await ProvisionAsync(e, envelope);
-        await ProvisionAsync(e, envelope);
+        await fixture.ProvisionAsync(e, envelope);
+        await fixture.ProvisionAsync(e, envelope);
 
         Assert.Equal(1, await fixture.Memberships.CountAsync(m => m.UserId == newUserId));
     }
@@ -130,7 +117,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         /* The seeder already created this operator's tenant + Owner membership; re-running the handler (as the
            bus would on the real CredentialRegisteredEvent) must not duplicate either — the unique (TenantId,
            UserId) index would throw on a duplicate insert, so a clean run is itself the dedup assertion. */
-        await ProvisionAsync(new CredentialRegisteredEvent(manager.Id, manager.Email, ClientIds.VenueWeb));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(manager.Id, manager.Email, ClientIds.VenueWeb));
 
         var ownerCount = await fixture.Memberships.CountAsync(m => m.UserId == manager.Id && m.Role == TenantRole.Owner);
         var tenantCount = await fixture.Tenants.CountAsync(t => t.CreatedByUserId == manager.Id);
