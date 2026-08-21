@@ -29,7 +29,7 @@ public sealed class DealApiTests : IAsyncLifetime
         var response = await client.GetAsync($"/api/Deal/{expected.DealId}");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var deal = await response.Content.ReadAsync<IDeal>();
+        var deal = await response.Content.ReadAsync<DealDto>();
         Assert.NotNull(deal);
         Assert.Equal(expected.DealId, deal.Id);
         Assert.Equal(DealType.VenueHire, deal.DealType);

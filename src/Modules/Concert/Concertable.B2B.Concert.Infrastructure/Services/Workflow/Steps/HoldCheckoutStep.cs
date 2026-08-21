@@ -28,7 +28,7 @@ internal sealed class HoldCheckoutStep : IAcceptCheckoutStep
             .OrNotFound(DisplayNames.Application);
         var venueTenantId = await applicationRepository.GetVenueTenantIdAsync(applicationId)
             .OrNotFound(DisplayNames.Application);
-        var deal = (FlatFeeDeal)dealAccessor.Deal;
+        var deal = (FlatFeeDealDto)dealAccessor.Deal;
 
         var metadata = new Dictionary<string, string>
         {

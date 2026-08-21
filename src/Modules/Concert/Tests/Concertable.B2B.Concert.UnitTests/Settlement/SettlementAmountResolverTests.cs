@@ -35,7 +35,7 @@ public sealed class SettlementAmountResolverTests : IDisposable
     [Fact]
     public async Task ResolveGrossAsync_FlatFee_ReturnsFixedFee()
     {
-        var deal = new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 200m };
+        var deal = new FlatFeeDealDto { PaymentMethod = PaymentMethod.Cash, Fee = 200m };
 
         var result = await this.resolver.ResolveGrossAsync(1, deal);
 
@@ -45,7 +45,7 @@ public sealed class SettlementAmountResolverTests : IDisposable
     [Fact]
     public async Task ResolveGrossAsync_DoorSplit_ReturnsPercentageOfLoadedRevenue()
     {
-        var deal = new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m };
+        var deal = new DoorSplitDealDto { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m };
 
         var result = await this.resolver.ResolveGrossAsync(3, deal);
 
@@ -58,7 +58,7 @@ public sealed class SettlementAmountResolverTests : IDisposable
     [Fact]
     public async Task ResolveGrossAsync_Versus_ReturnsGuaranteePlusPercentageOfLoadedRevenue()
     {
-        var deal = new VersusDeal
+        var deal = new VersusDealDto
         {
             PaymentMethod = PaymentMethod.Cash,
             Guarantee = 100m,
@@ -76,7 +76,7 @@ public sealed class SettlementAmountResolverTests : IDisposable
     [Fact]
     public async Task ResolveGrossAsync_VenueHire_ReturnsHireFee()
     {
-        var deal = new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 300m };
+        var deal = new VenueHireDealDto { PaymentMethod = PaymentMethod.Cash, HireFee = 300m };
 
         var result = await this.resolver.ResolveGrossAsync(2, deal);
 
