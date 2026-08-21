@@ -12,11 +12,10 @@ internal interface IAdminService
     Task<UnitResult<RevokeAdminError>> RevokeAdminAsync(Guid sub, CancellationToken ct = default);
     Task<bool> IsCurrentUserAdminAsync(CancellationToken ct = default);
 
-    /// <summary>Grants admin for <paramref name="sub"/> if a matching pending invitation exists, or if
-    /// <paramref name="email"/> is the bootstrap email and no admin exists yet, then saves. Called from
-    /// the User module's registration handler inside its cross-module unit of work — this method's own
-    /// save enlists in that ambient transaction rather than committing independently, so user creation
-    /// and admin granting land atomically. A redelivered call is naturally a no-op: the invitation is no
-    /// longer Pending, or an admin already exists.</summary>
-    Task GrantIfEligibleAsync(Guid sub, string email, CancellationToken ct = default);
+    /// <summary>Grants the current user admin off a matching pending invitation or the one-time bootstrap
+    /// email, if they aren't already an admin, then returns whether the caller is an admin afterward.
+    /// Called from <c>UserController.Me()</c> — the first authenticated request after login, which
+    /// Auth's own login gate (<c>CanAuthenticate</c> requires <c>IsEmailVerified</c>) guarantees runs
+    /// only for a verified mailbox. No-op (returns the pre-existing status) otherwise.</summary>
+    Task<bool> EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default);
 }
