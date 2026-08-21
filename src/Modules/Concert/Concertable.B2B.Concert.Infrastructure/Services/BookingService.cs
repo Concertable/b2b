@@ -15,16 +15,14 @@ internal sealed class BookingService : IBookingService
     public async Task<StandardBookingDto> CreateStandardAsync(ApplicationEntity application)
     {
         var booking = StandardBooking.Create(application);
-        await repository.AddAsync(booking);
-        await repository.SaveChangesAsync();
+        await repository.InsertAsync(booking);
         return booking.ToDto();
     }
 
     public async Task<DeferredBookingDto> CreateDeferredAsync(ApplicationEntity application, string paymentMethodId)
     {
         var booking = DeferredBooking.Create(application, paymentMethodId);
-        await repository.AddAsync(booking);
-        await repository.SaveChangesAsync();
+        await repository.InsertAsync(booking);
         return booking.ToDto();
     }
 
