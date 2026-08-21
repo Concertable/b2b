@@ -35,7 +35,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/withdraw");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -53,7 +53,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/withdraw");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -69,7 +69,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/withdraw");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NotFound);
@@ -83,9 +83,9 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var firstResponse = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
+        var firstResponse = await client.PostAsync($"/api/application/{appId}/withdraw");
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
-        var response = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/withdraw");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -100,7 +100,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
 
         // Act
-        var withdrawResponse = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
+        var withdrawResponse = await client.PostAsync($"/api/application/{appId}/withdraw");
 
         // Assert
         await withdrawResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -122,7 +122,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/reject");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -140,7 +140,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/reject");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
@@ -156,7 +156,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/reject");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NotFound);
@@ -170,7 +170,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.AwaitingPaymentApp.Id;
 
         // Act
-        var response = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
+        var response = await client.PostAsync($"/api/application/{appId}/reject");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
@@ -196,7 +196,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         Assert.NotNull(before.Actions.Reject);
 
         // Act
-        var rejectResponse = await client.PostAsync($"/api/application/{appId}/reject", (object?)null);
+        var rejectResponse = await client.PostAsync($"/api/application/{appId}/reject");
 
         // Assert
         await rejectResponse.ShouldBe(HttpStatusCode.NoContent);
