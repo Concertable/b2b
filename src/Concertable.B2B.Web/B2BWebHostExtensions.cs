@@ -76,8 +76,7 @@ public static class B2BWebHostExtensions
                     options.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
                     options.WriteIndented = true;
                     options.Converters.Add(new TimeOnlyJsonConverter());
-                })
-                .AddControllersAsServices();
+                });
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddLogging();
             builder.Services.AddEndpointsApiExplorer();
