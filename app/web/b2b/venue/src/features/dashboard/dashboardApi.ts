@@ -16,13 +16,13 @@ import type {
 const dashboardApi = {
   getOverview: async (): Promise<VenueDashboardOverview> => {
     const { data } = await apiClient.get<VenueDashboardOverview>(
-      "/venueDashboard/overview",
+      "/venue-dashboard/overview",
     );
     return data;
   },
   getKpis: async (): Promise<VenueDashboardKpis> => {
     const { data } = await apiClient.get<VenueDashboardKpis>(
-      "/venueDashboard/kpis",
+      "/venue-dashboard/kpis",
     );
     return data;
   },
@@ -40,7 +40,7 @@ const dashboardApi = {
   },
   getTicketRevenue: async (): Promise<MonthlyRevenuePoint[]> => {
     const { data } = await apiClient.get<MonthlyRevenuePoint[]>(
-      "/venueDashboard/charts/ticket-revenue",
+      "/venue-dashboard/charts/ticket-revenue",
     );
     return data;
   },
@@ -52,13 +52,13 @@ const dashboardApi = {
   },
   getActivity: async (): Promise<ActivityItem[]> => {
     const { data } = await apiClient.get<ActivityItem[]>(
-      "/venueDashboard/activity",
+      "/venue-dashboard/activity",
     );
     return data;
   },
   getSettlements: async (): Promise<Settlement[]> => {
     const { data } = await apiClient.get<Settlement[]>(
-      "/venueDashboard/settlements",
+      "/venue-dashboard/settlements",
     );
     return data;
   },
