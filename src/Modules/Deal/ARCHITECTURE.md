@@ -326,7 +326,7 @@ The single spot that ties a deal type to its strategies, lifecycle, steps, and w
    columns + `Create`/`Update`/validator), an `XDealMapper`, an `XDealUpdater`, and an EF config. Add
    both strategy leaves to the new deal's vertical `strategies.For(DealType.X)` block; the builder's
    exact-coverage gate fails until both families are present.
-3. **Migrations** — re-scaffold: run `./initial-migrations.ps1` from `api/` (per [`api/AGENTS.md`](../../../../AGENTS.md); never
+3. **Migrations** — re-scaffold: run `./initial-migrations.ps1` from `api/` (per the `migrations` skill; never
    an additive migration).
 4. **Concert `Infrastructure/.../Steps/`** — reuse an existing step where the money shape fits
    (`SimpleApplyStep`, `PaidAcceptStep`, `CreateConcertDraftStep`, `RefundEscrowStep`, …); write a new
