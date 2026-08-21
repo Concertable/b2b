@@ -1,5 +1,5 @@
 using System.Net;
-using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.State;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Payment.Contracts;
 using Xunit;
@@ -50,7 +50,7 @@ public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
         await pendingResponse.ShouldBe(HttpStatusCode.OK);
         var pending = await pendingResponse.Content.ReadAsync<FinancialOperationResponse>();
         Assert.Equal(command.OperationId, pending!.OperationId);
-        Assert.Equal(LifecycleState.Accepted, pending.Status);
+        Assert.Equal(BookingState.AwaitingFinancialConfirmation, pending.Status);
         Assert.Null(pending.FailureCode);
         Assert.Null(pending.FailureMessage);
 
@@ -61,14 +61,14 @@ public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
         await rejectedResponse.ShouldBe(HttpStatusCode.OK);
         var rejected = await rejectedResponse.Content.ReadAsync<FinancialOperationResponse>();
         Assert.Equal(command.OperationId, rejected!.OperationId);
-        Assert.Equal(LifecycleState.PaymentFailed, rejected.Status);
+        Assert.Equal(BookingState.FinancialConfirmationFailed, rejected.Status);
         Assert.Equal("card_declined", rejected.FailureCode);
         Assert.Equal("Card was declined", rejected.FailureMessage);
     }
 
     private sealed record FinancialOperationResponse(
         Guid OperationId,
-        LifecycleState Status,
+        BookingState Status,
         string? FailureCode,
         string? FailureMessage);
 }
