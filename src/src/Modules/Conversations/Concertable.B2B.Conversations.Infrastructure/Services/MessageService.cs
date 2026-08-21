@@ -37,15 +37,13 @@ internal sealed class MessageService : IMessageService
     public async Task SendAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null)
     {
         var message = MessageEntity.Create(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, timeProvider.GetUtcNow().DateTime, action);
-        await repository.AddAsync(message);
-        await repository.SaveChangesAsync();
+        await repository.InsertAsync(message);
     }
 
     public async Task SendAndNotifyAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null)
     {
         var message = MessageEntity.Create(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, timeProvider.GetUtcNow().DateTime, action);
-        await repository.AddAsync(message);
-        await repository.SaveChangesAsync();
+        await repository.InsertAsync(message);
 
         var recipientTenantId = senderTenantId == venueTenantId ? artistTenantId : venueTenantId;
         var payload = message.ToDto(await ResolveParticipantAsync(senderTenantId), senderTenantId);
