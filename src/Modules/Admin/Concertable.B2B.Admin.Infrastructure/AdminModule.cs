@@ -14,6 +14,6 @@ internal sealed class AdminModule : IAdminModule
     public Task<bool> IsCurrentUserAdminAsync(CancellationToken ct = default) =>
         service.IsCurrentUserAdminAsync(ct);
 
-    public Task EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default) =>
+    public Task<bool> EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default) =>
         service.EnsureCurrentUserAdminGrantedIfEligibleAsync(ct);
 }

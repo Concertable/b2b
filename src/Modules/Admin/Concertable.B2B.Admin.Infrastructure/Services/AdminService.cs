@@ -3,6 +3,8 @@ using Concertable.B2B.Admin.Application.Mappers;
 using Concertable.B2B.Admin.Application.Requests;
 using Concertable.B2B.Admin.Infrastructure.Settings;
 using Concertable.B2B.User.Contracts;
+using Concertable.DataAccess.Infrastructure.Extensions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -118,12 +120,12 @@ internal sealed class AdminService : IAdminService
     public Task<bool> IsCurrentUserAdminAsync(CancellationToken ct = default) =>
         currentUser.Id is { } id ? repository.IsAdminAsync(id, ct) : Task.FromResult(false);
 
-    public async Task EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default)
+    public async Task<bool> EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default)
     {
         if (currentUser.Id is not { } userId || currentUser.Email is not { } email)
-            return;
+            return false;
         if (await repository.IsAdminAsync(userId, ct))
-            return;
+            return true;
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var normalizedEmail = email.Trim().ToLowerInvariant();
@@ -133,17 +135,43 @@ internal sealed class AdminService : IAdminService
         {
             invitation.Accept(userId, now);
             repository.GrantAdmin(userId);
+            if (!await TrySaveGrantAsync(ct))
+                return true; // a concurrent Me() call already granted the same user; not a failure
+
             logger.GrantedAdminProfile(userId, "invitation");
-            await repository.SaveChangesAsync(ct);
-            return;
+            return true;
         }
 
         if (string.Equals(normalizedEmail, adminOptions.BootstrapEmail, StringComparison.OrdinalIgnoreCase) &&
             await repository.CountAdminsAsync(ct) == 0)
         {
             repository.GrantAdmin(userId);
+            if (!await TrySaveGrantAsync(ct))
+                return true; // a concurrent Me() call already granted the same user; not a failure
+
             logger.GrantedAdminProfile(userId, "bootstrap");
+            return true;
+        }
+
+        return false;
+    }
+
+    // EnsureCurrentUserAdminGrantedIfEligibleAsync runs on every /api/auth/me call rather than once
+    // inside a single serialized registration handler, so two concurrent calls for the same
+    // newly-eligible user can both pass the IsAdminAsync check above and race to grant. The loser's
+    // insert hits the AdminProfiles.Sub primary key the winner just committed; treat that as the
+    // natural race-loser no-op the old registration-time design got for free, not a real failure.
+    private async Task<bool> TrySaveGrantAsync(CancellationToken ct)
+    {
+        try
+        {
             await repository.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateException ex) when (ex.IsDuplicateKey())
+        {
+            ex.DiscardFailedChanges();
+            return false;
         }
     }
 }

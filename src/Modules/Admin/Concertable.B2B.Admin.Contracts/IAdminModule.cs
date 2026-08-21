@@ -7,9 +7,10 @@ public interface IAdminModule
     Task<bool> IsCurrentUserAdminAsync(CancellationToken ct = default);
 
     /// <summary>Grants the current request's authenticated user admin if eligible (matching pending
-    /// invitation, or the bootstrap email with no admin yet). Called from <c>UserController.Me()</c> —
-    /// the first authenticated request after login, which Auth's own login gate guarantees runs only for
-    /// a verified mailbox. Deliberately not registration-time: <c>CredentialRegisteredEvent</c> fires
-    /// before email verification, so granting off it would be gate-able by an unverified mailbox.</summary>
-    Task EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default);
+    /// invitation, or the bootstrap email with no admin yet), then returns whether they're an admin
+    /// afterward. Called from <c>UserController.Me()</c> — the first authenticated request after login,
+    /// which Auth's own login gate guarantees runs only for a verified mailbox. Deliberately not
+    /// registration-time: <c>CredentialRegisteredEvent</c> fires before email verification, so granting
+    /// off it would be gate-able by an unverified mailbox.</summary>
+    Task<bool> EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default);
 }

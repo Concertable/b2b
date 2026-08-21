@@ -3,6 +3,7 @@ using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Admin.Domain.Entities;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.User.Domain.Entities;
+using Concertable.Kernel.DependencyInjection;
 using Concertable.Messaging.Contracts;
 using Concertable.Seed.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -27,13 +28,13 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
 
     // Creates the plain UserEntity precondition a login needs — UserEntity creation and inbox dedup are
     // asserted in Concertable.B2B.User.IntegrationTests' UserProvisioningTests, not here.
-    private async Task RegisterAsync(CredentialRegisteredEvent e, MessageEnvelope? envelope = null)
-    {
-        using var scope = fixture.Services.CreateScope();
-        var handlers = scope.ServiceProvider.GetServices<IIntegrationEventHandler<CredentialRegisteredEvent>>();
-        foreach (var handler in handlers)
-            await handler.HandleAsync(e, envelope ?? MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow));
-    }
+    private Task RegisterAsync(CredentialRegisteredEvent e, MessageEnvelope? envelope = null) =>
+        fixture.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<CredentialRegisteredEvent>>>>()
+            .RunAsync(async handlers =>
+            {
+                foreach (var handler in handlers)
+                    await handler.HandleAsync(e, envelope ?? MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow));
+            });
 
     /// <summary>Simulates the first authenticated request after login (what every SPA calls right after
     /// signin) — the point where <c>AdminService.EnsureCurrentUserAdminGrantedIfEligibleAsync</c> actually
