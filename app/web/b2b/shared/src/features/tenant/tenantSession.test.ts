@@ -15,14 +15,14 @@ const venueMemberships: ReadonlyArray<Membership> = [
   {
     tenantId: "venue-one",
     legalName: "Venue One",
-    type: "Venue",
-    role: "Owner",
+    type: "venue",
+    role: "owner",
   },
   {
     tenantId: "venue-two",
     legalName: "Venue Two",
-    type: "Venue",
-    role: "Staff",
+    type: "venue",
+    role: "staff",
   },
 ];
 
@@ -47,7 +47,7 @@ describe("tenant session", () => {
     session.select("venue-two");
 
     expect(session.tenantIdForRequest()).toBe("venue-two");
-    expect(session.resolve("Venue").activeMembership).toEqual(
+    expect(session.resolve("venue").activeMembership).toEqual(
       venueMemberships[1],
     );
   });
@@ -56,7 +56,7 @@ describe("tenant session", () => {
     const { session } = createSession(venueMemberships);
     session.select("removed-venue");
 
-    const resolution = session.resolve("Venue");
+    const resolution = session.resolve("venue");
 
     expect(session.tenantIdForRequest()).toBeUndefined();
     expect(resolution.selectionRequired).toBe(true);
@@ -76,7 +76,7 @@ describe("tenant session", () => {
       clearMemberships: vi.fn(),
     });
 
-    const resolution = session.resolve("Venue");
+    const resolution = session.resolve("venue");
 
     expect(resolution.activeMembership).toEqual(singleMembership[0]);
     expect(session.tenantIdForRequest()).toBe("venue-one");

@@ -7,9 +7,14 @@ export const DEAL_TYPE_LABELS: Record<Deal["$type"], string> = {
   venueHire: "Venue Hire",
 };
 
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: "Cash",
+  transfer: "Transfer",
+};
+
 export function defaultDeal(
   type: Deal["$type"],
-  paymentMethod: PaymentMethod = "Transfer",
+  paymentMethod: PaymentMethod = "transfer",
 ): Deal {
   switch (type) {
     case "flatFee":
