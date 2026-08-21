@@ -25,7 +25,7 @@ internal sealed class CaptureEscrowAcceptStep(
 
     private async Task StageAsync(ApplicationEntity application, int bookingId, CancellationToken ct)
     {
-        var deal = (FlatFeeDeal)dealAccessor.Deal;
+        var deal = (FlatFeeDealDto)dealAccessor.Deal;
         var paymentIntentId = await managerPaymentClient.FindHeldIntentAsync(application.VenueTenantId, application.Id);
 
         logger.AcceptingFlatFeeApplication(

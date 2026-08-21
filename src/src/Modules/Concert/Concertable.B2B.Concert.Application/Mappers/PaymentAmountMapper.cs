@@ -13,6 +13,6 @@ internal sealed class PaymentAmountMapper : IPaymentAmountMapper
         this.mappers = mappers;
     }
 
-    public IPaymentAmount ToPaymentAmount(IDeal deal) =>
+    public IPaymentAmount ToPaymentAmount(DealDto deal) =>
         mappers.Create(deal.DealType).ToPaymentAmount(deal);
 }

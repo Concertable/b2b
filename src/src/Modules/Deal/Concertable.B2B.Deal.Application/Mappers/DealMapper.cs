@@ -15,9 +15,9 @@ internal sealed class DealMapper : IDealMapper
         this.strategies = strategies;
     }
 
-    public IDeal ToDeal(DealEntity entity) =>
-        strategies.Create(entity.DealType).ToDeal(entity);
+    public DealDto ToDeal(DealEntity entity) =>
+        strategies.Create(entity).ToDeal(entity);
 
-    public Result<DealEntity, ValidationErrors> ToEntity(IDeal deal) =>
-        strategies.Create(deal.DealType).ToEntity(deal);
+    public Result<DealEntity, ValidationErrors> ToEntity(DealDto deal) =>
+        strategies.Create(deal).ToEntity(deal);
 }

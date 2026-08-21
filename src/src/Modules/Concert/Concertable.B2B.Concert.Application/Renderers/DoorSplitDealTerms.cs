@@ -5,12 +5,12 @@ namespace Concertable.B2B.Concert.Application.Renderers;
 
 internal sealed class DoorSplitDealTerms : IDealTerms
 {
-    public string Render(IDeal deal)
+    public string Render(DealDto deal)
     {
-        var terms = (DoorSplitDeal)deal;
+        var terms = (DoorSplitDealDto)deal;
         return $"The artist receives {Percent(terms.ArtistDoorPercent)} of door revenue.";
     }
 
-    public string Serialize(IDeal deal) =>
-        $"ArtistDoorPercent={TermsFingerprintFormat.Number(((DoorSplitDeal)deal).ArtistDoorPercent)}";
+    public string Serialize(DealDto deal) =>
+        $"ArtistDoorPercent={TermsFingerprintFormat.Number(((DoorSplitDealDto)deal).ArtistDoorPercent)}";
 }
