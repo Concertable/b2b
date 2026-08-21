@@ -102,7 +102,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         return result;
     }
 
-    private UnitResult<AcceptApplicationError> VerifyTermsUnchanged(ApplicationEntity app, IDeal deal) =>
+    private UnitResult<AcceptApplicationError> VerifyTermsUnchanged(ApplicationEntity app, DealDto deal) =>
         app.TermsFingerprint == termsFingerprint.Calculate(deal, app.Opportunity.Period)
             ? new Success()
             : new AcceptApplicationError.TermsChanged();

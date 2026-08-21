@@ -14,6 +14,6 @@ internal sealed class SettlementAmountResolver : ISettlementAmountResolver
         this.resolvers = resolvers;
     }
 
-    public Task<Money> ResolveGrossAsync(int concertId, IDeal deal, CancellationToken ct = default) =>
+    public Task<Money> ResolveGrossAsync(int concertId, DealDto deal, CancellationToken ct = default) =>
         resolvers.Create(deal.DealType).ResolveGrossAsync(concertId, deal, ct);
 }

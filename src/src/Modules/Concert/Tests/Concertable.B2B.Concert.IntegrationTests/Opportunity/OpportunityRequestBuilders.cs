@@ -7,7 +7,7 @@ namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
 
 internal static class OpportunityRequestBuilders
 {
-    public static OpportunityRequest BuildRequest(IDeal deal, DateTime now) =>
+    public static OpportunityRequest BuildRequest(DealDto deal, DateTime now) =>
         new()
         {
             StartDate = now.AddMonths(1),
@@ -17,5 +17,5 @@ internal static class OpportunityRequestBuilders
         };
 
     public static OpportunityRequest BuildDefaultRequest(DateTime now) =>
-        BuildRequest(new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 }, now);
+        BuildRequest(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Cash, Fee = 500 }, now);
 }

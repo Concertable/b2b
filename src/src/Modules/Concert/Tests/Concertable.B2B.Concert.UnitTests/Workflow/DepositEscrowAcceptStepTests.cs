@@ -60,7 +60,7 @@ public sealed class DepositEscrowAcceptStepTests
         this.bookingService
             .Setup(value => value.CreateStandardAsync(application))
             .ReturnsAsync(new StandardBookingDto(42));
-        this.dealAccessor.SetupGet(value => value.Deal).Returns(new VenueHireDeal { HireFee = 12.34m });
+        this.dealAccessor.SetupGet(value => value.Deal).Returns(new VenueHireDealDto { HireFee = 12.34m });
 
         await this.step.ExecuteAsync(application);
 

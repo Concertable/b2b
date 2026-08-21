@@ -8,10 +8,10 @@ namespace Concertable.B2B.Deal.Infrastructure.Services.Updaters;
 
 internal sealed class FlatFeeDealUpdater : IDealUpdater
 {
-    public UnitResult<ValidationErrors> Apply(DealEntity existing, IDeal source)
+    public UnitResult<ValidationErrors> Apply(DealEntity existing, DealDto source)
     {
         var entity = (FlatFeeDealEntity)existing;
-        var deal = (FlatFeeDeal)source;
+        var deal = (FlatFeeDealDto)source;
         return entity.Update(deal.Fee, deal.PaymentMethod);
     }
 }
