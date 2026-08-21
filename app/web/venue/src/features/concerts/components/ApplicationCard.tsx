@@ -1,4 +1,4 @@
-﻿import { Button } from "@concertable/web/components/ui/button";
+import { Button } from "@concertable/web/components/ui/button";
 import { Badge } from "@concertable/web/components/ui/badge";
 import { useImageUrlQuery } from "@concertable/shared/hooks";
 import { useNavigate } from "@tanstack/react-router";
