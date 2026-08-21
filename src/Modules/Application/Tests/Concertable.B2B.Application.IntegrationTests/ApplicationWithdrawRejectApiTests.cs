@@ -1,22 +1,21 @@
 using System.Net;
-using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.Concert.Application.DTOs;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Application.Api.Responses;
+using Concertable.B2B.Application.Application.DTOs;
+using Concertable.B2B.Application.Domain.State;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Concert.IntegrationTests.Application;
+namespace Concertable.B2B.Application.IntegrationTests;
 
 [Collection("Integration")]
 
 public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
 {
-    private readonly ConcertApiFixture fixture;
+    private readonly ApplicationApiFixture fixture;
 
-    public ApplicationWithdrawRejectApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    public ApplicationWithdrawRejectApiTests(ApplicationApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -39,8 +38,8 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
-        Assert.Equal(LifecycleState.Withdrawn, application.State);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
+        Assert.Equal(ApplicationState.Withdrawn, application.State);
         Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
             e.To == fixture.SeedState.VenueManager1.Email && e.Subject == "Concert Application Withdrawn");
     }
@@ -57,8 +56,8 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
-        Assert.Equal(LifecycleState.Applied, application.State);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
+        Assert.Equal(ApplicationState.Applied, application.State);
     }
 
     [Fact]
@@ -106,7 +105,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         await withdrawResponse.ShouldBe(HttpStatusCode.NoContent);
         var opportunitiesResponse = await client.GetAsync($"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
         await opportunitiesResponse.ShouldBe(HttpStatusCode.OK);
-        var opportunities = await opportunitiesResponse.Content.ReadAsync<IEnumerable<OpportunityResponse>>();
+        var opportunities = await opportunitiesResponse.Content.ReadAsync<IEnumerable<OpportunityBoundaryResponse>>();
         Assert.Contains(opportunities!, o => o.Id == opportunityId);
     }
 
@@ -126,8 +125,8 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
-        Assert.Equal(LifecycleState.Rejected, application.State);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
+        Assert.Equal(ApplicationState.Rejected, application.State);
         Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
             e.To == fixture.SeedState.ArtistManager1.Email && e.Subject == "Concert Application Update");
     }
@@ -144,8 +143,8 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
-        Assert.Equal(LifecycleState.Applied, application.State);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
+        Assert.Equal(ApplicationState.Applied, application.State);
     }
 
     [Fact]
@@ -174,8 +173,8 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == appId);
-        Assert.Equal(LifecycleState.Accepted, application.State);
+        var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
+        Assert.Equal(ApplicationState.Accepted, application.State);
     }
 
     #endregion
@@ -209,4 +208,6 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     }
 
     #endregion
+
+    private sealed record OpportunityBoundaryResponse(int Id);
 }

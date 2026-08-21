@@ -4,15 +4,15 @@ using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Concert.IntegrationTests.Application;
+namespace Concertable.B2B.Application.IntegrationTests;
 
 [Collection("Integration")]
 
 public sealed class ApplicationApiTests : IAsyncLifetime
 {
-    private readonly ConcertApiFixture fixture;
+    private readonly ApplicationApiFixture fixture;
 
-    public ApplicationApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    public ApplicationApiTests(ApplicationApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
