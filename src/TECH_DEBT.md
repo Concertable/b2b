@@ -150,21 +150,6 @@ Deliberately not done now: the launch gate is *data completeness* (hold a comple
 
 ---
 
-### Integration tests pass `(object?)null` to bodyless `PostAsync` instead of the parameterless overload
-
-The B2B integration suites call `client.PostAsync(url, (object?)null)` for bodyless action POSTs
-(`withdraw`/`reject`/`cancel`/`accept`) — ~22 sites across `Concertable.B2B.Concert.IntegrationTests`
-(`ApplicationApiTests`, `ApplicationWithdrawRejectApiTests`, `ApplicationCancelApiTests`).
-`Concertable.Testing.HttpClientExtensions` already exposes a parameterless `PostAsync(this HttpClient,
-string url)` that posts the identical null JSON body (`PostAsJsonAsync<object?>(url, null)`), so the
-`(object?)null` cast is redundant ceremony that spread by copy-paste. Behaviour is identical — a
-readability nit, left uniform for now rather than migrating a lone call site out of step with its siblings.
-
-**Resolves when:** the `PostAsync(url, (object?)null)` sites switch to the parameterless `PostAsync(url)`
-in one mechanical sweep (no behaviour change).
-
----
-
 ### The `[Admin]` authorization seam is thin, and there is no admin UI for moderation
 
 `AdminAttribute` (`Admin.Api/Authorization`) resolves an `AdminProfileEntity` — a bare `Sub` column with
