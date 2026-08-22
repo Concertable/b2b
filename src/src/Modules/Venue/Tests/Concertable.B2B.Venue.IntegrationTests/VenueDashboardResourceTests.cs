@@ -61,6 +61,18 @@ public sealed class VenueDashboardResourceTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task RecentReviews_NoCurrentVenue_ReturnsEmptyArray()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
+
+        var response = await client.GetAsync("/api/organization/venue/review/recent");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var reviews = await response.Content.ReadAsync<List<RecentReviewResponse>>();
+        Assert.Empty(reviews!);
+    }
+
+    [Fact]
     public async Task Activity_ReturnsOnlyTheActiveTenantActivity()
     {
         await using var scope = fixture.Services.CreateAsyncScope();
