@@ -37,6 +37,5 @@ internal sealed class ArtistReviewController : ControllerBase
     [HasPermission(SharedPermissions.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<RecentReviewResponse>>> GetRecentForCurrent(
         CancellationToken ct) =>
-        (await reviewService.GetRecentForCurrentAsync(5, ct))
-            .ToOkOrNoContent(reviews => reviews.ToResponses());
+        Ok((await reviewService.GetRecentForCurrentAsync(5, ct)).ToResponses());
 }
