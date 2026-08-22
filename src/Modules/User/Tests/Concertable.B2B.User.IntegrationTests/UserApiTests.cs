@@ -42,7 +42,7 @@ public sealed class UserApiTests : IAsyncLifetime
     [Fact]
     public async Task UpdateLocation_ShouldReturnTyped401WithoutWritingLocation_WhenUserProjectionIsMissing()
     {
-        var missingUser = UserEntity.FromRegistration(Guid.NewGuid(), "missing@test.com");
+        var missingUser = UserEntity.Create(Guid.NewGuid(), "missing@test.com");
         var client = fixture.CreateClient(missingUser);
 
         var response = await client.PutAsync("/api/User/location", new UpdateLocationRequest(51.5, -0.1));
