@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@concertable/web/components/ui/button";
 import {
   Dialog,
@@ -12,6 +13,11 @@ import { Label } from "@concertable/web/components/ui/label";
 import { Textarea } from "@concertable/web/components/ui/textarea";
 import { Select } from "@concertable/web/components/Select";
 import { useResolveReport } from "../hooks/useResolveReport";
+import {
+  resolveReportRequestSchema,
+  type ResolveReportFormValues,
+  type ResolveReportRequest,
+} from "../schemas/resolveReportRequestSchema";
 import { REPORT_OUTCOME_LABELS, type ReportOutcome } from "../types";
 
 interface OutcomeOption {
@@ -30,22 +36,26 @@ interface Props {
 }
 
 export function ResolveReportDialog({ reportId, open, onOpenChange }: Readonly<Props>) {
-  const [outcome, setOutcome] = useState<OutcomeOption>();
-  const [notes, setNotes] = useState("");
-  const { parse, submit, isPending } = useResolveReport(reportId);
-
-  const draft = { outcome: outcome?.value, notes };
-  const parsed = parse(draft);
+  const { submit, isPending } = useResolveReport(reportId);
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isValid },
+  } = useForm<ResolveReportFormValues, unknown, ResolveReportRequest>({
+    resolver: zodResolver(resolveReportRequestSchema),
+    defaultValues: { notes: "" },
+    mode: "onChange",
+  });
 
   const close = (next: boolean) => {
     if (isPending) return;
     onOpenChange(next);
   };
 
-  const handleSubmit = () => {
-    submit(draft, () => {
-      setOutcome(undefined);
-      setNotes("");
+  const onValid = (request: ResolveReportRequest) => {
+    submit(request, () => {
+      reset();
       close(false);
     });
   };
@@ -64,39 +74,55 @@ export function ResolveReportDialog({ reportId, open, onOpenChange }: Readonly<P
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <form
+          id="resolve-report-form"
+          onSubmit={handleSubmit(onValid)}
+          className="space-y-4"
+        >
           <div className="space-y-2" data-testid="resolve-outcome">
             <Label>Outcome</Label>
-            <Select
-              options={outcomes}
-              value={outcome}
-              onChange={setOutcome}
-              getLabel={(o) => o.label}
-              getValue={(o) => o.value}
-              placeholder="Choose an outcome"
+            <Controller
+              control={control}
+              name="outcome"
+              render={({ field }) => (
+                <Select
+                  options={outcomes}
+                  value={outcomes.find((o) => o.value === field.value)}
+                  onChange={(o) => field.onChange(o.value)}
+                  getLabel={(o) => o.label}
+                  getValue={(o) => o.value}
+                  placeholder="Choose an outcome"
+                />
+              )}
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="resolve-notes">Notes (optional)</Label>
-            <Textarea
-              id="resolve-notes"
-              data-testid="resolve-notes"
-              rows={4}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+            <Controller
+              control={control}
+              name="notes"
+              render={({ field }) => (
+                <Textarea
+                  id="resolve-notes"
+                  data-testid="resolve-notes"
+                  rows={4}
+                  {...field}
+                />
+              )}
             />
           </div>
-        </div>
+        </form>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => close(false)} disabled={isPending}>
             Cancel
           </Button>
           <Button
+            type="submit"
+            form="resolve-report-form"
             data-testid="resolve-submit"
-            disabled={isPending || !parsed.success}
-            onClick={handleSubmit}
+            disabled={isPending || !isValid}
           >
             {isPending ? "Resolving..." : "Resolve"}
           </Button>

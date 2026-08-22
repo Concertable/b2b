@@ -15,21 +15,23 @@ entry covering `app/shared`'s own api modules with this shape.
 **Resolves when:** each listed file gets a `const BASE = "/..."` at the top, with every method
 interpolating it instead of restating the literal.
 
-### The write-boundary pattern's pre-validation form state is named `XBuffer`, not `XDraft`
+### Hand-rolled `useState` + manual zod `safeParse` per field, where `react-hook-form` is now the standard
 
 `useInviteMember.ts`'s `InviteBuffer` (consumed by `InviteForm.tsx`, re-exported from
 `features/members/index.ts`) and `useOrganization.ts`'s `OrganizationBuffer` (consumed by
-`OrganizationForm.tsx`, re-exported from `features/organizations/index.ts`) name the controlled-input
-state before it's parsed into a request `XBuffer`. "Buffer" reads as a binary/IO concept; "draft" is the
-clearer, unambiguous name for "user-entered values not yet validated or committed." `useESignature.ts`'s
-doc comment ("Owns the signature buffer and its validity...") describes the same concept in prose, not a
-type name, but is worth renaming alongside these two for consistency.
+`OrganizationForm.tsx`, re-exported from `features/organizations/index.ts`) hand-roll the write-boundary
+pattern: a `useState` per field, a manually named pre-validation type ("buffer" also reads as a
+binary/IO concept), and a facade hook exposing `validate`/`submit` that calls `schema.safeParse` by hand.
+`react-hook-form` + `@hookform/resolvers/zod` does this same job with less code and no separate draft
+type at all. `useESignature.ts`'s doc comment ("Owns the signature buffer and its validity...") describes
+the same concept in prose; its canvas-drawn signature isn't a normal text/select field though, so it may
+stay a `useState` even after this migration — worth a second look, not a given.
 
-Renamed in the admin console's own copy of this pattern (`InviteDraft`, `ResolveDraft` —
-`app/web/admin/src/features/{admins,moderation}/`) when this was raised; this entry is what's left.
-Sibling debt in `app/shared` (`ReportBuffer`) and `app/web/customer` (`ReviewBuffer`) covers the rest of
-the codebase.
+Migrated in the admin console's own copy of this pattern (`InviteForm`/`useInviteAdmin`,
+`ResolveReportDialog`/`useResolveReport` — `app/web/admin/src/features/{admins,moderation}/`) when this
+was raised; that's the model to follow. Sibling debt in `app/shared` (`useReportMessage`) and
+`app/web/customer` (`useAddReview`) covers the rest of the codebase.
 
-**Resolves when:** `InviteBuffer` → `InviteDraft` and `OrganizationBuffer` → `OrganizationDraft` (type,
-hook parameter names, the re-exports, `InviteForm.tsx`'s `InviteBuffer["role"]` usages), matching the
-admin console's already-renamed pattern; update `useESignature.ts`'s comment to match.
+**Resolves when:** `InviteForm`/`useInviteMember` and `OrganizationForm`/`useOrganization` use `useForm`
++ `zodResolver` the same way, `InviteBuffer`/`OrganizationBuffer` and the manual `validate`/`safeParse`
+calls disappear entirely rather than getting renamed; revisit `useESignature.ts` on its own merits.
