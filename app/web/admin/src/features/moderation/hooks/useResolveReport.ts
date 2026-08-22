@@ -3,7 +3,7 @@ import { resolveReportRequestSchema } from "../schemas/resolveReportRequestSchem
 import { useResolveReportMutation } from "./useResolveReportMutation";
 import type { ReportOutcome } from "../types";
 
-export interface ResolveBuffer {
+export interface ResolveDraft {
   outcome?: ReportOutcome;
   notes: string;
 }
@@ -11,14 +11,14 @@ export interface ResolveBuffer {
 export function useResolveReport(reportId: number) {
   const { mutate, isPending } = useResolveReportMutation();
 
-  const parse = (buffer: ResolveBuffer) =>
+  const parse = (draft: ResolveDraft) =>
     resolveReportRequestSchema.safeParse({
-      outcome: buffer.outcome,
-      notes: buffer.notes.trim() || undefined,
+      outcome: draft.outcome,
+      notes: draft.notes.trim() || undefined,
     });
 
-  const submit = (buffer: ResolveBuffer, onDone: () => void) => {
-    const parsed = parse(buffer);
+  const submit = (draft: ResolveDraft, onDone: () => void) => {
+    const parsed = parse(draft);
     if (parsed.success)
       mutate(
         { id: reportId, request: parsed.data },

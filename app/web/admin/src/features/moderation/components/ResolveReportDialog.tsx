@@ -34,8 +34,8 @@ export function ResolveReportDialog({ reportId, open, onOpenChange }: Readonly<P
   const [notes, setNotes] = useState("");
   const { parse, submit, isPending } = useResolveReport(reportId);
 
-  const buffer = { outcome: outcome?.value, notes };
-  const parsed = parse(buffer);
+  const draft = { outcome: outcome?.value, notes };
+  const parsed = parse(draft);
 
   const close = (next: boolean) => {
     if (isPending) return;
@@ -43,7 +43,7 @@ export function ResolveReportDialog({ reportId, open, onOpenChange }: Readonly<P
   };
 
   const handleSubmit = () => {
-    submit(buffer, () => {
+    submit(draft, () => {
       setOutcome(undefined);
       setNotes("");
       close(false);
