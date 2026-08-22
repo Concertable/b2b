@@ -2,7 +2,11 @@ import { useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { Skeleton } from "@concertable/web/components/ui/skeleton";
-import { ESignaturePanel, useApplyCheckoutQuery, useESignature } from "@concertable/web-b2b/features/concerts";
+import {
+  ESignaturePanel,
+  useApplyCheckoutQuery,
+  useESignature,
+} from "@concertable/web-b2b/features/concerts";
 import type { Checkout } from "@concertable/web/features/concerts";
 import applicationApi from "@concertable/web-b2b/features/concerts/api/applicationApi";
 import { CheckoutAwaiting } from "@concertable/web/features/concerts/components/checkout/CheckoutAwaiting";
@@ -12,7 +16,7 @@ import { CheckoutEventBanner } from "@concertable/web/features/concerts/componen
 import { OrderSummaryCard } from "@concertable/web/features/concerts/components/checkout/OrderSummaryCard";
 import { CheckoutSuccess } from "@concertable/web/features/concerts/components/checkout/CheckoutSuccess";
 import { StripePaymentForm } from "@concertable/web/features/concerts/components/checkout/StripePaymentForm";
-import { summaryFor } from "@concertable/web-b2b/features/concerts/utils/acceptCheckoutFormat";
+import { paymentSummary } from "@concertable/web-b2b/features/concerts/utils/acceptCheckoutFormat";
 
 export function ArtistApplyCheckoutPage() {
   const { opportunityId } = useParams({ strict: false }) as {
@@ -30,7 +34,12 @@ export function ArtistApplyCheckoutPage() {
       <div className="text-destructive p-6">Could not start checkout.</div>
     );
 
-  return <ArtistApplyCheckoutFlow opportunityId={opportunityId} checkout={checkout} />;
+  return (
+    <ArtistApplyCheckoutFlow
+      opportunityId={opportunityId}
+      checkout={checkout}
+    />
+  );
 }
 
 interface Props {
@@ -38,12 +47,19 @@ interface Props {
   checkout: Checkout;
 }
 
-export function ArtistApplyCheckoutFlow({ opportunityId, checkout }: Readonly<Props>) {
+export function ArtistApplyCheckoutFlow({
+  opportunityId,
+  checkout,
+}: Readonly<Props>) {
   const [submitted, setSubmitted] = useState(false);
   const { signature, setSignature, isValid } = useESignature();
   const { mutate, isPending, error } = useMutation({
     mutationFn: (paymentMethodId: string) =>
-      applicationApi.applyToOpportunityWithPayment(opportunityId, paymentMethodId, signature),
+      applicationApi.applyToOpportunityWithPayment(
+        opportunityId,
+        paymentMethodId,
+        signature,
+      ),
     onSuccess: () => setSubmitted(true),
   });
 
@@ -75,7 +91,7 @@ export function ArtistApplyCheckoutFlow({ opportunityId, checkout }: Readonly<Pr
       />
     );
 
-  const summary = summaryFor(checkout.amount);
+  const summary = paymentSummary(checkout.amount);
 
   return (
     <CheckoutLayout
@@ -109,7 +125,9 @@ export function ArtistApplyCheckoutFlow({ opportunityId, checkout }: Readonly<Pr
         </div>
       </CheckoutSection>
       {error && (
-        <p data-testid="payment-error" className="text-destructive text-sm">{error.message}</p>
+        <p data-testid="payment-error" className="text-destructive text-sm">
+          {error.message}
+        </p>
       )}
     </CheckoutLayout>
   );

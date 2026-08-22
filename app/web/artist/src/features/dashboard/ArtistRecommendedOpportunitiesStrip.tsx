@@ -3,11 +3,17 @@ import { Sparkles } from "lucide-react";
 import dayjs from "dayjs";
 import { useArtistRecommendedOpportunitiesQuery } from "./hooks";
 import { dealSummary } from "@concertable/web-b2b/features/deals";
-import { genreLabel } from "@concertable/shared/types";
-import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@concertable/web/features/dashboard";
+import { GENRE_LABELS } from "@concertable/shared/types";
+import {
+  DashboardCard,
+  WidgetEmpty,
+  WidgetError,
+  WidgetLoading,
+} from "@concertable/web/features/dashboard";
 
 export function ArtistRecommendedOpportunitiesStrip() {
-  const { data, isLoading, isError, refetch } = useArtistRecommendedOpportunitiesQuery();
+  const { data, isLoading, isError, refetch } =
+    useArtistRecommendedOpportunitiesQuery();
 
   return (
     <DashboardCard
@@ -39,7 +45,9 @@ export function ArtistRecommendedOpportunitiesStrip() {
                   </span>
                 )}
               </div>
-              <div className="line-clamp-1 text-sm font-medium">{o.venueName}</div>
+              <div className="line-clamp-1 text-sm font-medium">
+                {o.venueName}
+              </div>
               <div className="text-muted-foreground line-clamp-1 text-xs">
                 {o.town}, {o.county}
               </div>
@@ -47,7 +55,7 @@ export function ArtistRecommendedOpportunitiesStrip() {
                 {dealSummary(o.deal)}
               </div>
               <div className="text-muted-foreground line-clamp-1 text-[11px]">
-                {o.genres.map((g) => genreLabel(g)).join(" · ")}
+                {o.genres.map((genre) => GENRE_LABELS[genre]).join(" · ")}
               </div>
             </Link>
           ))}
