@@ -14,9 +14,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace Concertable.B2B.CompositionTests;
+namespace Concertable.B2B.ArchitectureTests;
 
-public sealed class B2BCompositionTests
+public sealed class B2BHostGraphTests
 {
     [Fact]
     public void Web_ProductionGraphAndStrictValidation_AreValid()
