@@ -55,7 +55,9 @@ public sealed class ReunionArchitectureTests
                 .Order()
                 .ToArray();
 
-            Assert.Equal(expected, actual);
+            Assert.True(
+                expected.SequenceEqual(actual),
+                $"{projectPath}: expected [{string.Join(", ", expected)}], actual [{string.Join(", ", actual)}]");
         }
     }
 

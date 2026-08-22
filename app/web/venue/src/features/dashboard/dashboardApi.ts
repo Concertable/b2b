@@ -1,50 +1,72 @@
-import { selectPersona } from "@concertable/shared/features/dashboard";
 import type {
   ActivityItem,
   ConcertCard,
-  MessageThread,
   MonthlyRevenuePoint,
   ReviewExcerpt,
   Settlement,
 } from "@concertable/shared/features/dashboard";
-import type { OpportunityWithCounts } from "@concertable/web-b2b/features/dashboard";
-import { venueFixtures } from "./fixtures";
+import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
   Application,
+  OpportunityApplicationMetrics,
   VenueDashboardKpis,
   VenueDashboardOverview,
 } from "./types";
 
 const dashboardApi = {
   getOverview: async (): Promise<VenueDashboardOverview> => {
-    return venueFixtures[selectPersona()].overview;
+    const { data } = await apiClient.get<VenueDashboardOverview>(
+      "/venue-dashboard/overview",
+    );
+    return data;
   },
   getKpis: async (): Promise<VenueDashboardKpis> => {
-    return venueFixtures[selectPersona()].kpis;
+    const { data } = await apiClient.get<VenueDashboardKpis>(
+      "/venue-dashboard/kpis",
+    );
+    return data;
   },
   getApplicationsToReview: async (): Promise<Application[]> => {
-    return venueFixtures[selectPersona()].applicationsToReview;
-  },
-  getInbox: async (): Promise<MessageThread[]> => {
-    return venueFixtures[selectPersona()].inbox;
+    const { data } = await apiClient.get<Application[]>(
+      "/application/venue/current",
+    );
+    return data;
   },
   getUpcomingConcerts: async (): Promise<ConcertCard[]> => {
-    return venueFixtures[selectPersona()].upcomingConcerts;
+    const { data } = await apiClient.get<ConcertCard[]>(
+      "/concert/upcoming/venue/current",
+    );
+    return data;
   },
   getTicketRevenue: async (): Promise<MonthlyRevenuePoint[]> => {
-    return venueFixtures[selectPersona()].ticketRevenue;
+    const { data } = await apiClient.get<MonthlyRevenuePoint[]>(
+      "/venue-dashboard/charts/ticket-revenue",
+    );
+    return data;
   },
-  getOpenOpportunities: async (): Promise<OpportunityWithCounts[]> => {
-    return venueFixtures[selectPersona()].openOpportunities;
+  getOpenOpportunities: async (): Promise<OpportunityApplicationMetrics[]> => {
+    const { data } = await apiClient.get<OpportunityApplicationMetrics[]>(
+      "/opportunity/venue/current",
+    );
+    return data;
   },
   getActivity: async (): Promise<ActivityItem[]> => {
-    return venueFixtures[selectPersona()].activity;
+    const { data } = await apiClient.get<ActivityItem[]>(
+      "/venue-dashboard/activity",
+    );
+    return data;
   },
   getSettlements: async (): Promise<Settlement[]> => {
-    return venueFixtures[selectPersona()].settlements;
+    const { data } = await apiClient.get<Settlement[]>(
+      "/venue-dashboard/settlements",
+    );
+    return data;
   },
   getRecentReviews: async (): Promise<ReviewExcerpt[]> => {
-    return venueFixtures[selectPersona()].recentReviews;
+    const { data } = await apiClient.get<ReviewExcerpt[]>(
+      "/organization/venue/review/recent",
+    );
+    return data;
   },
 };
 

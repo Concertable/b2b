@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Projections;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Contracts;
 
@@ -14,4 +15,7 @@ internal interface IOpportunityReadRepository
 {
     Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId, IPageParams pageParams);
     Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId);
+    Task<IReadOnlyList<OpportunityMatchProjection>> GetMatchCandidatesAsync(
+        int artistId,
+        IReadOnlySet<Genre> genres);
 }

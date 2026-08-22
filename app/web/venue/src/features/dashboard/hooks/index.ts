@@ -8,3 +8,4 @@ export { useVenueOpenOpportunitiesQuery } from "./useVenueOpenOpportunitiesQuery
 export { useVenueActivityQuery } from "./useVenueActivityQuery";
 export { useVenueSettlementsQuery } from "./useVenueSettlementsQuery";
 export { useVenueRecentReviewsQuery } from "./useVenueRecentReviewsQuery";
+export { useVenueApplicationActions } from "./useVenueApplicationActions";

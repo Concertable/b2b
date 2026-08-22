@@ -3,6 +3,7 @@ using Concertable.B2B.Web.Middleware;
 using Concertable.DataAccess.Application;
 using Concertable.ServiceDefaults;
 using Concertable.Shared.Notification.Infrastructure.Hubs;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.AddB2BWebHost();
 
@@ -29,6 +30,7 @@ app.MapFallback(async context =>
         context.Response.StatusCode = StatusCodes.Status404NotFound;
         return;
     }
+
     var indexPath = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html");
     if (File.Exists(indexPath))
         await context.Response.SendFileAsync(indexPath);

@@ -1,33 +1,37 @@
 using Concertable.B2B.Artist.Application.Interfaces;
-using Concertable.B2B.Artist.Infrastructure.Data;
+using Concertable.B2B.Artist.Application.DTOs;
 using Concertable.B2B.Artist.Infrastructure.Mappers;
 using Concertable.Contracts;
-using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Services;
 
 internal sealed class ArtistReviewService : IArtistReviewService
 {
-    private readonly ArtistDbContext context;
+    private readonly IArtistService artistService;
+    private readonly IArtistReviewRepository reviewRepository;
 
-    public ArtistReviewService(ArtistDbContext context)
+    public ArtistReviewService(
+        IArtistService artistService,
+        IArtistReviewRepository reviewRepository)
     {
-        this.context = context;
+        this.artistService = artistService;
+        this.reviewRepository = reviewRepository;
     }
 
-    public async Task<ReviewSummary> GetSummaryAsync(int artistId)
-    {
-        var projection = await context.ArtistRatingProjections
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.ArtistId == artistId);
-        return projection.ToReviewSummary();
-    }
+    public async Task<ReviewSummary> GetSummaryAsync(int artistId, CancellationToken ct = default) =>
+        (await reviewRepository.GetRatingByArtistIdAsync(artistId, ct)).ToReviewSummary();
 
-    public Task<IPagination<ReviewDto>> GetPagedAsync(int artistId, IPageParams pageParams) =>
-        context.ArtistReviews
-            .AsNoTracking()
-            .Where(r => r.ArtistId == artistId)
-            .OrderByDescending(r => r.Id)
-            .Select(r => new ReviewDto { Id = r.Id, Email = r.Email, Stars = (int)r.Stars, Details = r.Details })
-            .ToPaginationAsync(pageParams);
+    public async Task<IPagination<ReviewDto>> GetPagedAsync(int artistId, IPageParams pageParams) =>
+        (await reviewRepository.GetPagedByArtistIdAsync(artistId, pageParams)).Map(review => review.ToReviewDto());
+
+    public async Task<Option<IReadOnlyList<ArtistReview>>> GetRecentForCurrentAsync(
+        int take,
+        CancellationToken ct = default)
+    {
+        var artist = await artistService.GetDetailsAsync(ct);
+        if (!artist.TryGetValue(out var details))
+            return null;
+
+        return Option.Some(await reviewRepository.GetRecentByArtistIdAsync(details.Id, take, ct));
+    }
 }

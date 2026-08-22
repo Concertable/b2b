@@ -25,6 +25,9 @@ public sealed class MessageRepositoryTests
     private static MessageEntity FromArtist(DateTime sentDate) =>
         MessageEntity.Create(VenueTenantId, ArtistTenantId, ArtistTenantId, ArtistUserId, "received", sentDate);
 
+    private static MessageEntity FromArtist(Guid artistTenantId, DateTime sentDate, string content) =>
+        MessageEntity.Create(VenueTenantId, artistTenantId, artistTenantId, ArtistUserId, content, sentDate);
+
     [Fact]
     public async Task GetUnreadCount_CountsOnlyMessagesNewerThanTheMembersReadPointer()
     {
@@ -60,6 +63,45 @@ public sealed class MessageRepositoryTests
     }
 
     [Fact]
+    public async Task GetRecentPreviews_ReturnsLatestMessageAndMemberUnreadStatePerCounterparty()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        var secondArtistTenantId = Guid.NewGuid();
+        await using (var seed = NewContext(dbName))
+        {
+            seed.Messages.AddRange(
+                FromArtist(ArtistTenantId, Older, "old first thread"),
+                FromArtist(ArtistTenantId, Newer, "latest first thread"),
+                FromArtist(secondArtistTenantId, Between, "second thread"),
+                MessageEntity.Create(
+                    Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), ArtistUserId,
+                    "unrelated tenant thread", Newer.AddDays(1)));
+            seed.ThreadReadStates.Add(ThreadReadStateEntity.Create(
+                VenueTenantId, ArtistTenantId, VenueMemberId, Newer.AddMinutes(1)));
+            await seed.SaveChangesAsync();
+        }
+
+        await using var context = NewContext(dbName);
+        var previews = await new MessageRepository(context).GetRecentPreviewsAsync(VenueTenantId, VenueMemberId);
+
+        Assert.Collection(
+            previews,
+            first =>
+            {
+                Assert.Equal("latest first thread", first.Preview);
+                Assert.Equal(ArtistTenantId, first.CounterpartTenantId);
+                Assert.False(first.CounterpartIsVenue);
+                Assert.False(first.Unread);
+            },
+            second =>
+            {
+                Assert.Equal("second thread", second.Preview);
+                Assert.Equal(secondArtistTenantId, second.CounterpartTenantId);
+                Assert.True(second.Unread);
+            });
+    }
+
+    [Fact]
     public async Task HiddenMessages_AreExcludedFromTheInboxAndTheUnreadCount()
     {
         var dbName = Guid.NewGuid().ToString();
@@ -80,6 +122,34 @@ public sealed class MessageRepositoryTests
         Assert.Equal(Older, page.Data.Single().SentDate);
 
         Assert.Equal(1, await repository.GetUnreadCountByTenantIdAsync(VenueTenantId, VenueMemberId));
+    }
+
+    [Fact]
+    public async Task GetRecentPreviews_HiddenLatestMessage_ReturnsVisibleMessageAsRead()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using (var seed = NewContext(dbName))
+        {
+            var visible = FromArtist(Older);
+            var hidden = FromArtist(Newer);
+            hidden.Hide(Guid.NewGuid(), Newer.AddDays(1));
+            seed.Messages.AddRange(visible, hidden);
+            seed.ThreadReadStates.Add(ThreadReadStateEntity.Create(
+                VenueTenantId,
+                ArtistTenantId,
+                VenueMemberId,
+                Between));
+            await seed.SaveChangesAsync();
+        }
+
+        await using var context = NewContext(dbName);
+        var repository = new MessageRepository(context);
+
+        var previews = await repository.GetRecentPreviewsAsync(VenueTenantId, VenueMemberId);
+
+        var preview = Assert.Single(previews);
+        Assert.Equal(Older, preview.At);
+        Assert.False(preview.Unread);
     }
 
     private sealed class StubTenantContext : ITenantContext

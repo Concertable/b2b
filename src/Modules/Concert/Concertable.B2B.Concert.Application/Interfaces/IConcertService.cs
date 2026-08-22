@@ -15,6 +15,8 @@ internal interface IConcertService
     Task<Result<ConcertDetails, ConcertError>> GetDetailsByApplicationIdAsync(int applicationId);
     Task<IReadOnlyList<ConcertSummary>> GetUpcomingByVenueIdAsync(int id);
     Task<IReadOnlyList<ConcertSummary>> GetUpcomingByArtistIdAsync(int id);
+    Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentVenueAsync();
+    Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentArtistAsync();
     Task<Result<ConcertEntity, CreateConcertDraftError>> CreateDraftAsync(int applicationId);
     Task<Result<ConcertUpdateResponse, UpdateConcertError>> UpdateAsync(int id, UpdateConcertRequest request);
     Task<UnitResult<PostConcertError>> PostAsync(int id, UpdateConcertRequest request);

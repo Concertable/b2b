@@ -1,6 +1,7 @@
 using Concertable.Contracts;
 using Concertable.B2B.Conversations.Api.Mappers;
 using Concertable.B2B.Conversations.Api.Responses;
+using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
@@ -31,6 +32,10 @@ internal sealed class MessageController : ControllerBase
     [HttpGet("user/unread-count")]
     public async Task<ActionResult<int>> GetUnreadCountForUser() =>
         Ok(await messageService.GetUnreadCountForUserAsync());
+
+    [HttpGet("previews")]
+    public async Task<ActionResult<IReadOnlyList<MessagePreviewDto>>> GetRecentPreviews() =>
+        Ok(await messageService.GetRecentPreviewsAsync());
 
     [HttpPost("mark-read")]
     public async Task<ActionResult<int>> MarkInboxRead()
