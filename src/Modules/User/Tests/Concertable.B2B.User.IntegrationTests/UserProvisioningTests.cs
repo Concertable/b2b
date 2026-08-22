@@ -51,12 +51,11 @@ public sealed class UserProvisioningTests : IAsyncLifetime
     {
         var userId = Guid.NewGuid();
         var email = $"{Guid.NewGuid():N}@test.com";
-
-        // Same envelope → same MessageId → the inbox dedup swallows the redelivery.
         var envelope = MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow);
-        var e = new CredentialRegisteredEvent(userId, email, ClientIds.VenueWeb);
-        await fixture.ProvisionAsync(e, envelope);
-        await fixture.ProvisionAsync(e, envelope);
+        var @event = new CredentialRegisteredEvent(userId, email, ClientIds.VenueWeb);
+
+        await fixture.ProvisionAsync(@event, envelope);
+        await fixture.ProvisionAsync(@event, envelope);
 
         Assert.Equal(1, await fixture.Users.CountAsync(value => value.Id == userId));
     }

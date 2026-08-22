@@ -149,7 +149,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
-        var withdraw = await client.PostAsync($"/api/application/{appId}/withdraw", (object?)null);
+        var withdraw = await client.PostAsync($"/api/application/{appId}/withdraw");
         await withdraw.ShouldBe(HttpStatusCode.NoContent);
 
         // Act

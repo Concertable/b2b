@@ -33,7 +33,7 @@ Rules inherited from [`app/web/shared/AGENTS.md`](../../shared/AGENTS.md) still 
   endpoints are fine here — that's the point of the tier.
 
 Enforcement is the type system: both manager builds (`tsc -b`) compile this tree against their own
-route trees, and the customer build proves it can't reach it. All four web builds green is the gate.
+route trees, and the customer and admin builds prove they can't reach it. All five web builds green is the gate.
 
 The litmus: *"do BOTH manager sites render this and run every call it makes, with their own tokens,
 today — and would a customer ever be allowed to see it?"* Both-managers-yes + customer-no → here.

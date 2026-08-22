@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Admin.Infrastructure.Repositories;
 
-internal sealed class AdminRepository : Repository<AdminInvitationEntity>, IAdminRepository
+internal sealed class AdminProfileRepository : IAdminProfileRepository
 {
     private readonly AdminDbContext context;
 
-    public AdminRepository(AdminDbContext context) : base(context)
+    public AdminProfileRepository(AdminDbContext context)
     {
         this.context = context;
     }
@@ -24,12 +24,4 @@ internal sealed class AdminRepository : Repository<AdminInvitationEntity>, IAdmi
     public void GrantAdmin(Guid sub) => context.AdminProfiles.Add(new AdminProfileEntity(sub));
 
     public void RemoveAdmin(Guid sub) => context.AdminProfiles.Remove(new AdminProfileEntity(sub));
-
-    public async Task<IReadOnlyList<AdminInvitationEntity>> ListPendingInvitationsAsync(DateTime now, CancellationToken ct = default) =>
-        await context.AdminInvitations
-            .Where(i => i.Status == AdminInvitationStatus.Pending && i.ExpiresAt > now)
-            .ToListAsync(ct);
-
-    public Task<AdminInvitationEntity?> GetPendingInvitationByEmailAsync(string email, CancellationToken ct = default) =>
-        context.AdminInvitations.FirstOrDefaultAsync(i => i.Email == email && i.Status == AdminInvitationStatus.Pending, ct);
 }

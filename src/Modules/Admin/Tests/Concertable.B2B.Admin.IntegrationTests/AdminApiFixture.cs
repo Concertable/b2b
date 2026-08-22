@@ -1,4 +1,3 @@
-using Concertable.B2B.Admin.Application.Interfaces;
 using Concertable.B2B.Admin.Domain.Entities;
 using Concertable.B2B.Admin.Infrastructure.Data;
 using Concertable.B2B.IntegrationTests.Fixtures;
@@ -10,16 +9,12 @@ namespace Concertable.B2B.Admin.IntegrationTests;
 public sealed class AdminApiFixture : ApiFixture
 {
     private AdminDbContext dbContext = null!;
-    private IAdminService adminService = null!;
 
     public IQueryable<AdminInvitationEntity> AdminInvitations =>
         dbContext.AdminInvitations.AsNoTracking();
 
     public Task<bool> IsAdminAsync(Guid sub) =>
         dbContext.AdminProfiles.AnyAsync(profile => profile.Sub == sub);
-
-    public Task GrantIfEligibleAsync(Guid sub, string email) =>
-        adminService.GrantIfEligibleAsync(sub, email);
 
     public async Task ClearAdminsAsync()
     {
@@ -47,6 +42,5 @@ public sealed class AdminApiFixture : ApiFixture
     protected override void OnReset(IServiceScope scope)
     {
         dbContext = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
-        adminService = scope.ServiceProvider.GetRequiredService<IAdminService>();
     }
 }

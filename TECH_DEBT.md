@@ -58,28 +58,6 @@ See [`plans/platform/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/platform/SPLIT_TIM
 
 ---
 
-### `Add(entity); await SaveChangesAsync(ct);` used where `InsertAsync` is the one-call form
-
-`IWriteRepository<TEntity>` exposes both `AddAsync` (stage only, defer save — for a unit of work that
-stages more than one write before a single save) and `InsertAsync` (stage + save in one call — for the
-common case where the add is the *only* write in that method). Six services currently write the two-call
-form as the last two statements of a method with nothing else staged in between, where `InsertAsync`
-is the exact, simpler fit: `VenueService`, `MessageService`, `ArtistService`, `InvitationService`,
-`SelfBillingAgreementService`, `BookingService` (found via `grep -rP 'repository\.Add\w*\([^)]*\);\s*\n\s*await
-repository\.SaveChangesAsync' api/`). `AdminService` (User module) had the identical shape and was fixed
-to `InsertAsync` when caught in review — the same review is what surfaced this as recurring rather than
-a one-off.
-
-**Resolves when:** each of the six call sites above is checked — if the `Add`/`AddInvitation`/etc. call
-really is the sole staged write before its `SaveChangesAsync`, collapse it to one `InsertAsync` call;
-if another write is staged in between (making the two-call form correct), leave it and note why inline.
-Consider whether the `persistence` skill's repository section should call out the `InsertAsync`
-vs `AddAsync` choice explicitly, since this is the second time an agent session has written the
-worse form without being told — a one-line rule here might be cheaper than repeatedly catching it in
-review.
-
----
-
 ## RESOLVED
 
 ### ✅ Seed `TicketsSold` depends on the Payment seed simulator
@@ -147,21 +125,6 @@ Deliberately not done now: the launch gate is *data completeness* (hold a comple
 `FrontendUriGenerator` (`Concertable.B2B.Infrastructure`) resolves the venue/artist portal base per tenant type from `Urls:Frontends:{Venue,Artist}`. Those keys exist only as **localhost** in `Concertable.B2B.Web/appsettings.json`; there is no per-environment (App Config / tfvars) source for the real `venue.`/`artist.concertable.co.uk` hosts — that whole cloud-config layer is still the blocked future work in [`../../plans/platform/DOMAINS_AND_DNS.md`](../../plans/platform/DOMAINS_AND_DNS.md). So in any non-local environment the tenant-type dictionary binds empty and an invite send throws `KeyNotFoundException` — fails loud (not a silent bad link), but still broken.
 
 **Resolves when:** `Urls:Frontends:{Venue,Artist}` are supplied per environment from App Config, alongside `Auth:SpaClients` / `Cors:AllowedOrigins` (which key off the same hostnames), as part of the `DOMAINS_AND_DNS.md` config rollout.
-
----
-
-### Integration tests pass `(object?)null` to bodyless `PostAsync` instead of the parameterless overload
-
-The B2B integration suites call `client.PostAsync(url, (object?)null)` for bodyless action POSTs
-(`withdraw`/`reject`/`cancel`/`accept`) — ~22 sites across `Concertable.B2B.Concert.IntegrationTests`
-(`ApplicationApiTests`, `ApplicationWithdrawRejectApiTests`, `ApplicationCancelApiTests`).
-`Concertable.Testing.HttpClientExtensions` already exposes a parameterless `PostAsync(this HttpClient,
-string url)` that posts the identical null JSON body (`PostAsJsonAsync<object?>(url, null)`), so the
-`(object?)null` cast is redundant ceremony that spread by copy-paste. Behaviour is identical — a
-readability nit, left uniform for now rather than migrating a lone call site out of step with its siblings.
-
-**Resolves when:** the `PostAsync(url, (object?)null)` sites switch to the parameterless `PostAsync(url)`
-in one mechanical sweep (no behaviour change).
 
 ---
 
