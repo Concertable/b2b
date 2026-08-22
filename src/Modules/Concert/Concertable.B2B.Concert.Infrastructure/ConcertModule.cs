@@ -21,4 +21,9 @@ internal sealed class ConcertModule : IConcertModule
         Guid artistTenantId,
         CancellationToken ct = default) =>
         dashboardService.GetArtistCountsAsync(artistTenantId, ct);
+
+    public Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
+        IReadOnlyCollection<int> bookingIds,
+        CancellationToken ct = default) =>
+        dashboardService.GetManagerSettlementContextsAsync(bookingIds, ct);
 }

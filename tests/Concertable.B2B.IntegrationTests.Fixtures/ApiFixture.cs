@@ -170,11 +170,8 @@ public class ApiFixture : IAsyncLifetime
         OnReset(scope);
     }
 
-    /// <summary>Resolve module-specific read-back from the freshly-created reset <paramref name="scope"/>.</summary>
     protected virtual void OnReset(IServiceScope scope) { }
 
-    /// <summary>Fires B2B's <see cref="PaymentFailedEvent"/> handlers for an escrow payment on
-    /// <paramref name="bookingId"/> — the failure leg <see cref="IWebhookSimulator"/> cannot simulate.</summary>
     public async Task SendEscrowFailedWebhookAsync(int bookingId)
     {
         if (PaymentTransport.Commands.Any(command => command is CaptureEscrowCommand or DepositEscrowCommand))

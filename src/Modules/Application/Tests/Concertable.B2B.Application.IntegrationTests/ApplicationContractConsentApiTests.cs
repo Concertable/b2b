@@ -111,10 +111,10 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
         var response = await venueClient.GetAsync($"/api/application/{applicationId}");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var application = await response.Content.ReadAsync<ApplicationResponse>();
+        var application = await response.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
         Assert.NotNull(application);
         Assert.NotNull(application.Actions.Contract);
-        Assert.Equal($"/api/application/{applicationId}/contract", application.Actions.Contract!.Href);
+        Assert.Equal($"/api/application/{applicationId}/contract/pdf", application.Actions.Contract!.Href);
         Assert.Equal("GET", application.Actions.Contract.Method);
     }
 
@@ -129,7 +129,7 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
         var response = await artistClient.GetAsync($"/api/application/{applicationId}");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var application = await response.Content.ReadAsync<ApplicationResponse>();
+        var application = await response.Content.ReadAsync<ApplicationResponse<ArtistApplicationActions>>();
         Assert.NotNull(application);
         Assert.Null(application.Actions.Contract);
     }
@@ -151,7 +151,7 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
             $"/api/application/{opportunityId}",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await response.ShouldBe(HttpStatusCode.Created);
-        var application = await response.Content.ReadAsync<ApplicationResponse>();
+        var application = await response.Content.ReadAsync<ApplicationResponse<ArtistApplicationActions>>();
         Assert.NotNull(application);
         return application.Id;
     }

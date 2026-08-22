@@ -52,4 +52,9 @@ internal sealed class ConcertDashboardService : IConcertDashboardService
             applicationCounts.AcceptedAwaitingCheckout,
             concertCounts.UpcomingConcerts));
     }
+
+    public Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
+        IReadOnlyCollection<int> bookingIds,
+        CancellationToken ct = default) =>
+        repository.GetManagerSettlementContextsAsync(bookingIds, ct);
 }

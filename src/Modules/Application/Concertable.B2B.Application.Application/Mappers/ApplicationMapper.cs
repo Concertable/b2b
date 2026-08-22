@@ -3,6 +3,7 @@ using Concertable.B2B.Application.Application.Interfaces;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
+using Concertable.B2B.Venue.Contracts;
 
 namespace Concertable.B2B.Application.Application.Mappers;
 
@@ -10,15 +11,18 @@ internal sealed class ApplicationMapper : IApplicationMapper
 {
     private readonly IArtistModule artists;
     private readonly IOpportunityModule opportunities;
+    private readonly IVenueModule venues;
     private readonly IDealModule deals;
 
     public ApplicationMapper(
         IArtistModule artists,
         IOpportunityModule opportunities,
+        IVenueModule venues,
         IDealModule deals)
     {
         this.artists = artists;
         this.opportunities = opportunities;
+        this.venues = venues;
         this.deals = deals;
     }
 
@@ -39,13 +43,21 @@ internal sealed class ApplicationMapper : IApplicationMapper
             throw new InvalidOperationException(
                 $"Deal {opportunity.DealId} not found for opportunity {opportunity.OpportunityId}.");
 
+        var venueOption = await venues.GetProfileAsync(opportunity.VenueId);
+        if (!venueOption.TryGetValue(out var venue))
+            throw new InvalidOperationException(
+                $"Venue {opportunity.VenueId} not found for opportunity {opportunity.OpportunityId}.");
+
         return new ApplicationDto(
             application.Id,
             artist,
             new OpportunitySnapshot(
                 opportunity.OpportunityId,
+                opportunity.VenueId,
+                venue.Name,
                 opportunity.StartDate,
                 opportunity.EndDate,
+                opportunity.Genres,
                 deal),
             application.State.ToStatus(),
             application.State);

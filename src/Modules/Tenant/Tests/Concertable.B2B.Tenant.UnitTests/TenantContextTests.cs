@@ -68,6 +68,7 @@ public sealed class TenantContextTests
         Assert.True(ctx.HasTenant);
         Assert.False(ctx.IsHost);
         Assert.Equal(TenantRole.Owner, ((IMembershipContext)context).Role);
+        Assert.Equal(TenantType.Venue, ((IMembershipContext)context).Type);
     }
 
     [Fact]
@@ -87,6 +88,7 @@ public sealed class TenantContextTests
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
         Assert.Null(((IMembershipContext)context).Role);
+        Assert.Null(((IMembershipContext)context).Type);
     }
 
     [Fact]
@@ -106,6 +108,7 @@ public sealed class TenantContextTests
         ITenantContext ctx = context;
         Assert.Equal(headerTenant, ctx.TenantId);
         Assert.Equal(TenantRole.Manager, ((IMembershipContext)context).Role);
+        Assert.Equal(TenantType.Artist, ((IMembershipContext)context).Type);
         Assert.True(((IMembershipContext)context).HasPermission(ArtistPermissions.ApplicationsSubmit, TenantType.Artist));
         repository.Verify(
             r => r.GetMembershipsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),

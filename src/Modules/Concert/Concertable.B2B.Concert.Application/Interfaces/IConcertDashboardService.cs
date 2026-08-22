@@ -10,4 +10,7 @@ internal interface IConcertDashboardService
     Task<Option<ArtistDashboardCounts>> GetArtistCountsAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
+    Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
+        IReadOnlyCollection<int> bookingIds,
+        CancellationToken ct = default);
 }

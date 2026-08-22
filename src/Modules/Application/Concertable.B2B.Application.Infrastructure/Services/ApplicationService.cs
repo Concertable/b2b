@@ -124,6 +124,40 @@ internal sealed class ApplicationService : IApplicationService
                 .ToList());
     }
 
+    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForCurrentVenueAsync()
+    {
+        if (tenantContext.TenantId is not { } tenantId)
+            return new ApplicationError.MissingVenue();
+
+        var applications = await repository.GetByVenueTenantIdAndStateAsync(
+            tenantId,
+            ApplicationState.Applied);
+        var now = timeProvider.GetUtcNow();
+        var dtos = await mapper.ToDtosAsync(applications);
+        return new Success<IReadOnlyList<ApplicationDto>>(
+            dtos.Where(application => application.Opportunity.EndDate > now)
+                .OrderBy(application => application.Opportunity.StartDate)
+                .ThenBy(application => application.Id)
+                .Take(5)
+                .ToList());
+    }
+
+    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetCurrentForCurrentArtistAsync()
+    {
+        if (tenantContext.TenantId is not { } tenantId)
+            return new ApplicationError.MissingArtist();
+
+        var applications = await repository.GetCurrentByArtistTenantIdAsync(tenantId);
+        var now = timeProvider.GetUtcNow();
+        var dtos = await mapper.ToDtosAsync(applications);
+        return new Success<IReadOnlyList<ApplicationDto>>(
+            dtos.Where(application => application.Opportunity.EndDate > now)
+                .OrderBy(application => application.Opportunity.StartDate)
+                .ThenBy(application => application.Id)
+                .Take(10)
+                .ToList());
+    }
+
     public Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature) =>

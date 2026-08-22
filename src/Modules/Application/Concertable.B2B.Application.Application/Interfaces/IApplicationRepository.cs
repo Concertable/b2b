@@ -21,6 +21,13 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
         Guid artistTenantId,
         ApplicationState state,
         CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationEntity>> GetByVenueTenantIdAndStateAsync(
+        Guid venueTenantId,
+        ApplicationState state,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationEntity>> GetCurrentByArtistTenantIdAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
     Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(
         int applicationId,
         CancellationToken ct = default);
@@ -32,6 +39,12 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
         Guid venueTenantId,
         CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationDashboardProjection>> GetArtistDashboardProjectionsAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
+    Task<IReadOnlyDictionary<int, int>> GetCountsByOpportunityIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default);
+    Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
 }

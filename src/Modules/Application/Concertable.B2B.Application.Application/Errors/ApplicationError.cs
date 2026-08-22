@@ -16,7 +16,10 @@ internal abstract partial record ApplicationError : IError
                 $"You do not own concert opportunity {opportunityId}."),
         MissingArtist =>
             ErrorDefinition.Forbidden<MissingArtist>(
-                "You must have an artist account.")
+                "You must have an artist account."),
+        MissingVenue =>
+            ErrorDefinition.Forbidden<MissingVenue>(
+                "You must have a venue account.")
     };
 
     [ErrorCode("application.get.not_found")]
@@ -27,4 +30,7 @@ internal abstract partial record ApplicationError : IError
 
     [ErrorCode("application.query.missing_artist")]
     public partial record MissingArtist;
+
+    [ErrorCode("application.query.missing_venue")]
+    public partial record MissingVenue;
 }

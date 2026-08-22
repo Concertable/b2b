@@ -90,6 +90,18 @@ internal sealed class ConcertController : ControllerBase
         return Ok((await concertService.GetUpcomingByArtistIdAsync(id)).ToSummaryResponses());
     }
 
+    [HttpGet("upcoming/venue/current")]
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentVenue() =>
+        (await concertService.GetUpcomingForCurrentVenueAsync()).ToOkOrProblem();
+
+    [HttpGet("upcoming/artist/current")]
+    [RequiredTenantType(TenantType.Artist)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentArtist() =>
+        (await concertService.GetUpcomingForCurrentArtistAsync()).ToOkOrProblem();
+
     [RequiredTenantType(TenantType.Venue)]
     [HttpGet("history/venue/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetHistoryByVenueId(int id)

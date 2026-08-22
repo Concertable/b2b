@@ -2,6 +2,7 @@ using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Logging;
 
@@ -97,6 +98,24 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUpcomingByArtistIdAsync(int id) =>
         (await readRepository.GetUpcomingByArtistIdAsync(id)).ToList();
+
+    public async Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentVenueAsync()
+    {
+        if (tenantContext.TenantId is not { } tenantId)
+            return new ConcertError.MissingVenue();
+
+        return new Success<IReadOnlyList<ManagerConcertCard>>(
+            await repository.GetUpcomingCardsForVenueTenantIdAsync(tenantId));
+    }
+
+    public async Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentArtistAsync()
+    {
+        if (tenantContext.TenantId is not { } tenantId)
+            return new ConcertError.MissingArtist();
+
+        return new Success<IReadOnlyList<ManagerConcertCard>>(
+            await repository.GetUpcomingCardsForArtistTenantIdAsync(tenantId));
+    }
 
     public async Task<IReadOnlyList<ConcertSummary>> GetHistoryByArtistIdAsync(int id) =>
         (await readRepository.GetHistoryByArtistIdAsync(id)).ToList();

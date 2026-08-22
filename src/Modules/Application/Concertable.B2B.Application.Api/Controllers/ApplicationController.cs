@@ -12,56 +12,92 @@ internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
     private readonly IApplicationResponseMapper mapper;
+    private readonly IMembershipContext membership;
 
     public ApplicationController(
         IApplicationService applicationService,
-        IApplicationResponseMapper mapper)
+        IApplicationResponseMapper mapper,
+        IMembershipContext membership)
     {
         this.applicationService = applicationService;
         this.mapper = mapper;
+        this.membership = membership;
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpGet("opportunity/{id}")]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetAllByOpportunityId(int id)
+    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>>> GetAllByOpportunityId(int id)
     {
         var result = await applicationService.GetByOpportunityIdAsync(id);
-        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToVenueResponsesAsync)).ToOkOrProblem();
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
     [EnableRateLimiting(RateLimitPolicies.Apply)]
     [HttpPost("{opportunityId}")]
-    public async Task<ActionResult<ApplicationResponse>> Apply(int opportunityId, [FromBody] ApplyRequest request)
+    public async Task<ActionResult<ApplicationResponse<ArtistApplicationActions>>> Apply(
+        int opportunityId,
+        [FromBody] ApplyRequest request)
     {
         var result = request.PaymentMethodId is not null
             ? await applicationService.ApplyAsync(opportunityId, request.PaymentMethodId, request.ESignature)
             : await applicationService.ApplyAsync(opportunityId, request.ESignature);
-        var response = await result.MapAsync(mapper.ToResponseAsync);
+        var response = await result.MapAsync(mapper.ToArtistResponseAsync);
         return response.ToCreatedOrProblem(application => $"/api/application/{application.Id}");
     }
 
     [HttpGet("artist/pending")]
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetPendingForArtist()
+    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>>> GetPendingForArtist()
     {
         var result = await applicationService.GetPendingForArtistAsync();
-        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToArtistResponsesAsync)).ToOkOrProblem();
     }
 
     [HttpGet("artist/recently-denied")]
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetRecentDeniedForArtist()
+    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>>> GetRecentDeniedForArtist()
     {
         var result = await applicationService.GetRecentDeniedForArtistAsync();
-        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToArtistResponsesAsync)).ToOkOrProblem();
+    }
+
+    [HttpGet("venue/current")]
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>>> GetPendingForCurrentVenue()
+    {
+        var result = await applicationService.GetPendingForCurrentVenueAsync();
+        return (await result.MapAsync(mapper.ToVenueResponsesAsync)).ToOkOrProblem();
+    }
+
+    [HttpGet("artist/current")]
+    [RequiredTenantType(TenantType.Artist)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>>> GetCurrentForCurrentArtist()
+    {
+        var result = await applicationService.GetCurrentForCurrentArtistAsync();
+        return (await result.MapAsync(mapper.ToArtistResponsesAsync)).ToOkOrProblem();
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ApplicationResponse>> GetById(int id)
     {
+        Func<ApplicationDto, Task<ApplicationResponse>> responseMapper;
+        switch (membership.Type)
+        {
+            case TenantType.Venue:
+                responseMapper = async dto => await mapper.ToVenueResponseAsync(dto);
+                break;
+            case TenantType.Artist:
+                responseMapper = async dto => await mapper.ToArtistResponseAsync(dto);
+                break;
+            default:
+                return Forbid();
+        }
+
         var result = await applicationService.GetByIdAsync(id);
-        return (await result.MapAsync(mapper.ToResponseAsync)).ToOkOrProblem();
+        return (await result.MapAsync(responseMapper)).ToOkOrProblem();
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]

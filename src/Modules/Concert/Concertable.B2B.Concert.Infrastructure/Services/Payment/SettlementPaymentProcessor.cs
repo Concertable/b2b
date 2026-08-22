@@ -1,8 +1,11 @@
 using Concertable.B2B.Concert.Domain.State;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
+using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -13,15 +16,18 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
     private readonly ConcertDbContext context;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
     private readonly ILogger<SettlementPaymentProcessor> logger;
+    private readonly IBus bus;
 
     public SettlementPaymentProcessor(
         ConcertDbContext context,
         IOutboxUnitOfWorkBehavior outboxBehavior,
-        ILogger<SettlementPaymentProcessor> logger)
+        ILogger<SettlementPaymentProcessor> logger,
+        IBus bus)
     {
         this.context = context;
         this.outboxBehavior = outboxBehavior;
         this.logger = logger;
+        this.bus = bus;
     }
 
     public async Task HandleAsync(PaymentSucceededEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
@@ -52,6 +58,8 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
                 }
 
                 concert.CompleteSettlement(@event.TransactionId);
+                await PublishActivityAsync(concert.VenueTenantId, "venue", concert, envelope, ct);
+                await PublishActivityAsync(concert.ArtistTenantId, "artist", concert, envelope, ct);
             }, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
@@ -59,4 +67,19 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
             logger.DuplicateInboxMessage(envelope.MessageId);
         }
     }
+
+    private Task PublishActivityAsync(
+        Guid tenantId,
+        string persona,
+        ConcertEntity concert,
+        MessageEnvelope envelope,
+        CancellationToken ct) =>
+        bus.PublishAsync(new TenantActivityRecordedEvent(new ActivityRecord(
+            $"settlement:{envelope.MessageId}",
+            tenantId,
+            ActivityType.ConcertSettled,
+            envelope.OccurredAtUtc,
+            $"\"{concert.Name}\" settled",
+            null,
+            $"/_{persona}/my/concerts/concert/{concert.Id}")), ct);
 }

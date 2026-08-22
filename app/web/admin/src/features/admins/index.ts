@@ -4,7 +4,7 @@ export { PendingInvitations } from "./components/PendingInvitations";
 export { InviteForm } from "./components/InviteForm";
 export { useAdminsRoster } from "./hooks/useAdminsRoster";
 export { usePendingInvitations } from "./hooks/usePendingInvitations";
-export { useInviteAdmin, type InviteBuffer } from "./hooks/useInviteAdmin";
+export { useInviteAdmin } from "./hooks/useInviteAdmin";
 export type { Admin, AdminInvitation, AdminOverview } from "./types";
 export {
   inviteAdminRequestSchema,

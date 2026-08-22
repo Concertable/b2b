@@ -12,6 +12,9 @@ internal sealed record ApplicationDto(
 
 internal sealed record OpportunitySnapshot(
     int Id,
+    int VenueId,
+    string VenueName,
     DateTime StartDate,
     DateTime EndDate,
+    IReadOnlyList<Genre> Genres,
     DealDto Deal);

@@ -5,6 +5,8 @@ namespace Concertable.B2B.Application.Api.Mappers;
 
 internal interface IApplicationResponseMapper
 {
-    Task<ApplicationResponse> ToResponseAsync(ApplicationDto dto);
-    Task<IReadOnlyList<ApplicationResponse>> ToResponsesAsync(IEnumerable<ApplicationDto> dtos);
+    Task<ApplicationResponse<VenueApplicationActions>> ToVenueResponseAsync(ApplicationDto dto);
+    Task<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>> ToVenueResponsesAsync(IEnumerable<ApplicationDto> dtos);
+    Task<ApplicationResponse<ArtistApplicationActions>> ToArtistResponseAsync(ApplicationDto dto);
+    Task<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>> ToArtistResponsesAsync(IEnumerable<ApplicationDto> dtos);
 }

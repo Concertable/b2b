@@ -39,6 +39,27 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
                 application.State == state)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<ApplicationEntity>> GetByVenueTenantIdAndStateAsync(
+        Guid venueTenantId,
+        ApplicationState state,
+        CancellationToken ct = default) =>
+        await context.Applications
+            .AsNoTracking()
+            .Where(application =>
+                application.VenueTenantId == venueTenantId &&
+                application.State == state)
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<ApplicationEntity>> GetCurrentByArtistTenantIdAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default) =>
+        await context.Applications
+            .AsNoTracking()
+            .Where(application =>
+                application.ArtistTenantId == artistTenantId &&
+                application.State != ApplicationState.Withdrawn)
+            .ToListAsync(ct);
+
     public async Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(
         int applicationId,
         CancellationToken ct = default)
@@ -99,4 +120,22 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
                 application.State,
                 application.DealType))
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyDictionary<int, int>> GetCountsByOpportunityIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default) =>
+        await context.Applications
+            .Where(application => opportunityIds.Contains(application.OpportunityId))
+            .GroupBy(application => application.OpportunityId)
+            .ToDictionaryAsync(group => group.Key, group => group.Count(), ct);
+
+    public async Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default) =>
+        (await context.Applications
+            .Where(application => application.ArtistTenantId == artistTenantId)
+            .Select(application => application.OpportunityId)
+            .Distinct()
+            .ToListAsync(ct))
+        .ToHashSet();
 }

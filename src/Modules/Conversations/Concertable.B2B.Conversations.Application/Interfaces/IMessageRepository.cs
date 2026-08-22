@@ -1,3 +1,4 @@
+using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.Contracts;
 using Concertable.DataAccess.Application;
 
@@ -14,6 +15,7 @@ internal interface IMessageRepository : IRepository<MessageEntity>
 
     /// <summary>Count of a tenant's received messages past the member's per-thread read pointer.</summary>
     Task<int> GetUnreadCountByTenantIdAsync(Guid tenantId, Guid userId);
+    Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsAsync(Guid tenantId, Guid userId);
 
     /// <summary>Advance (or create) the member's read pointer to <paramref name="readAt"/> for every thread the
     /// tenant is party to — marking the whole inbox read for that member.</summary>

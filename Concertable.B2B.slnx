@@ -97,6 +97,7 @@
   </Folder>
   <Folder Name="/Modules/Opportunity/Tests/">
     <Project Path="src/Modules/Opportunity/Tests/Concertable.B2B.Opportunity.IntegrationTests/Concertable.B2B.Opportunity.IntegrationTests.csproj" />
+    <Project Path="src/Modules/Opportunity/Tests/Concertable.B2B.Opportunity.UnitTests/Concertable.B2B.Opportunity.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Modules/Conversations/">
     <Project Path="src/Modules/Conversations/Concertable.B2B.Conversations.Api/Concertable.B2B.Conversations.Api.csproj" />

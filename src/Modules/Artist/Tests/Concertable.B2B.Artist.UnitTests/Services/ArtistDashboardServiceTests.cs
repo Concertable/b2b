@@ -1,8 +1,15 @@
+using Concertable.B2B.Artist.Application.DTOs;
+using Concertable.B2B.Artist.Application.Interfaces;
 using Concertable.B2B.Artist.Infrastructure.Services;
 using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Tenant.Contracts;
+using Concertable.Contracts;
+using Concertable.Contracts.Enums;
+using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
+using Concertable.Payment.Client.Enums;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
 using Reunion;
@@ -11,9 +18,13 @@ namespace Concertable.B2B.Artist.UnitTests.Services;
 
 public sealed class ArtistDashboardServiceTests
 {
+    private readonly Mock<IArtistService> artistService = new();
     private readonly Mock<IConcertModule> concertModule = new();
+    private readonly Mock<IArtistReviewService> reviewService = new();
     private readonly Mock<IManagerPaymentReportingClient> reportingClient = new();
+    private readonly Mock<IPayoutAccountOperationsClient> payoutAccountClient = new();
     private readonly Mock<ITenantContext> tenantContext = new();
+    private readonly Mock<ITenantModule> tenantModule = new();
     private readonly FakeTimeProvider timeProvider = new(new DateTimeOffset(2026, 8, 13, 10, 30, 0, TimeSpan.Zero));
     private readonly Guid tenantId = Guid.NewGuid();
     private readonly ArtistDashboardService service;
@@ -21,16 +32,63 @@ public sealed class ArtistDashboardServiceTests
     public ArtistDashboardServiceTests()
     {
         tenantContext.SetupGet(t => t.TenantId).Returns(tenantId);
+        reviewService.Setup(s => s.GetSummaryAsync(It.IsAny<int>())).ReturnsAsync(new ReviewSummary(0, null));
+        payoutAccountClient
+            .Setup(c => c.GetAccountStatusAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PayoutAccountStatus.Verified);
         reportingClient
             .Setup(r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Money.Gbp(0m));
 
         service = new ArtistDashboardService(
+            artistService.Object,
             concertModule.Object,
+            reviewService.Object,
             reportingClient.Object,
+            payoutAccountClient.Object,
             tenantContext.Object,
+            tenantModule.Object,
             timeProvider);
     }
+
+    [Fact]
+    public async Task GetActivityAsync_UsesActiveTenantAndDashboardLimit()
+    {
+        ActivityItemDto[] expected =
+        [
+            new(Guid.NewGuid(), ActivityType.MessageReceived, timeProvider.GetUtcNow(), "New message", null, "/_artist/?inbox=open")
+        ];
+        tenantModule
+            .Setup(m => m.GetRecentActivityAsync(tenantId, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        var result = await service.GetActivityAsync();
+
+        Assert.Same(expected, result);
+    }
+
+    #region GetOverviewAsync
+
+    [Fact]
+    public async Task GetOverviewAsync_CompleteProfile_CombinesProfilePaymentAndReview()
+    {
+        artistService.Setup(s => s.GetDetailsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Option.Some(ArtistDetails()));
+        reviewService.Setup(s => s.GetSummaryAsync(42)).ReturnsAsync(new ReviewSummary(9, 4.5));
+
+        var result = await service.GetOverviewAsync();
+
+        Assert.True(result.TryGetValue(out var overview));
+        Assert.Equal(42, overview.ArtistId);
+        Assert.Equal(100, overview.ProfileHealth.Completeness);
+        Assert.Equal(6, overview.ProfileHealth.Items.Count);
+        Assert.Equal(StripeConnectState.Complete, overview.StripeConnect.State);
+        Assert.Equal(9, overview.ReviewSummary.TotalReviews);
+    }
+
+    #endregion
+
+    #region GetKpisAsync
 
     [Fact]
     public async Task GetKpisAsync_QueriesTenantMonthToDatePayouts_AndMapsToCents()
@@ -62,7 +120,7 @@ public sealed class ArtistDashboardServiceTests
     }
 
     [Fact]
-    public async Task GetKpisAsync_CountsUnavailable_ReturnsNoneWithoutReportingCall()
+    public async Task GetKpisAsync_CountsUnavailable_ReturnsNoneAfterConcurrentReportingCall()
     {
         concertModule
             .Setup(m => m.GetArtistDashboardCountsAsync(tenantId, It.IsAny<CancellationToken>()))
@@ -73,7 +131,7 @@ public sealed class ArtistDashboardServiceTests
         Assert.False(result.TryGetValue(out _));
         reportingClient.Verify(
             r => r.GetSettlementPayoutsAsync(It.IsAny<Guid>(), It.IsAny<DateRange>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+            Times.Once);
     }
 
     [Fact]
@@ -102,4 +160,39 @@ public sealed class ArtistDashboardServiceTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetKpisAsync());
     }
+
+    #endregion
+
+    #region GetPayoutsAsync
+
+    [Fact]
+    public async Task GetPayoutsAsync_SparseSeries_FillsSixCalendarMonths()
+    {
+        reportingClient
+            .Setup(r => r.GetSettlementPayoutsByMonthAsync(tenantId, It.IsAny<DateRange>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new MonthlyPaymentPoint(new DateOnly(2026, 7, 1), Money.Gbp(80m), Money.Gbp(70m), 3)]);
+
+        var result = await service.GetPayoutsAsync();
+
+        Assert.Equal(6, result.Count);
+        Assert.Equal(new DateOnly(2026, 3, 1), result[0].Month);
+        Assert.Equal(8000, result[4].GrossCents);
+        Assert.Equal(7000, result[4].NetCents);
+        Assert.Equal(0, result[5].GrossCents);
+    }
+
+    #endregion
+
+    private static ArtistDetails ArtistDetails() => new()
+    {
+        Id = 42,
+        Name = "Artist",
+        About = "About",
+        Genres = [Genre.Rock],
+        BannerUrl = "banner",
+        Avatar = "avatar",
+        County = "West Midlands",
+        Town = "Birmingham",
+        Email = "artist@example.com"
+    };
 }

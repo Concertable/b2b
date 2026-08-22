@@ -31,6 +31,10 @@ public static class AppHostExtensions
                       .WithReference(paymentWeb)
                       .WaitFor(paymentWeb)
                       .WithEnvironment("Auth__Authority", auth.GetEndpoint("https"))
+                      .WithEnvironment("Cors__AllowedOrigins__0", "https://localhost:5175")
+                      .WithEnvironment("Cors__AllowedOrigins__1", "https://localhost:5176")
+                      .WithEnvironment("Cors__AllowedOrigins__2", "https://localhost:5177")
+                      .WithEnvironment("Cors__AllowedOrigins__3", "https://localhost:5178")
                       .WithEnvironment(AzureServiceBusOptions.ServiceNameEnvVar, B2BConstants.ServiceName)
                       .WithEnvironment("ServiceAuth__ClientId", "concertable-b2b")
                       .WithOptionalEnvironment("ServiceAuth__ClientSecret", b2bSecret);

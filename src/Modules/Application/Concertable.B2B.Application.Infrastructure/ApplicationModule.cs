@@ -26,4 +26,5 @@ internal sealed class ApplicationModule : IApplicationModule
             artistTenantId,
             Enum.GetValues<DealType>().Where(RequiresAcceptCheckout).ToHashSet(),
             ct);
+
 }

@@ -1,5 +1,8 @@
-using System.Net;
+﻿using System.Net;
+using System.Text.Json;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Contracts.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using Xunit.Abstractions;
@@ -20,6 +23,65 @@ public sealed class ApplicationApiTests : IAsyncLifetime
 
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
+
+    [Fact]
+    public async Task GetCurrentForVenue_ShouldReturnApplicationList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync("/api/Application/venue/current");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var applications = await response.Content.ReadAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, applications.ValueKind);
+    }
+
+    [Fact]
+    public async Task GetCurrentForArtist_ShouldReturnApplicationList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await client.GetAsync("/api/Application/artist/current");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var applications = await response.Content.ReadAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, applications.ValueKind);
+    }
+
+    [Fact]
+    public async Task CurrentLists_IncludeApplicationsForInProgressOpportunities()
+    {
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var currentResponse = await venueClient.GetAsync(
+            $"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
+        await currentResponse.ShouldBe(HttpStatusCode.OK);
+        var current = await currentResponse.Content.ReadAsync<IReadOnlyList<OpportunityBoundaryResponse>>();
+        Assert.NotNull(current);
+        var requests = current.Select(opportunity => new OpportunityBoundaryRequest(
+            opportunity.Id,
+            opportunity.Id == opportunityId ? fixture.SeedNow.AddHours(-1) : opportunity.StartDate,
+            opportunity.Id == opportunityId ? fixture.SeedNow.AddHours(1) : opportunity.EndDate,
+            opportunity.Genres,
+            opportunity.Deal));
+        var updateResponse = await venueClient.PutAsync(
+            $"/api/venue/{fixture.SeedState.Venue.Id}/opportunities",
+            requests);
+        await updateResponse.ShouldBe(HttpStatusCode.OK);
+
+        var venueResponse = await venueClient
+            .GetAsync("/api/Application/venue/current");
+        var artistResponse = await fixture.CreateClient(fixture.SeedState.ArtistManager1)
+            .GetAsync("/api/Application/artist/current");
+
+        await venueResponse.ShouldBe(HttpStatusCode.OK);
+        await artistResponse.ShouldBe(HttpStatusCode.OK);
+        var venueApplications = await venueResponse.Content.ReadAsync<JsonElement>();
+        var artistApplications = await artistResponse.Content.ReadAsync<JsonElement>();
+        Assert.Contains(venueApplications.EnumerateArray(), item => item.GetProperty("id").GetInt32() == applicationId);
+        Assert.Contains(artistApplications.EnumerateArray(), item => item.GetProperty("id").GetInt32() == applicationId);
+    }
 
     #region Eligibility
 
@@ -108,7 +170,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await AssertProblemCodeAsync(response, HttpStatusCode.Forbidden, "application.eligibility.missing_artist");
     }
 
-    #endregion
+#endregion
 
     #region Accept
 
@@ -172,4 +234,18 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         Assert.True(problem.Extensions.TryGetValue("code", out var code));
         Assert.Equal(expectedCode, code?.ToString());
     }
+
+    private sealed record OpportunityBoundaryResponse(
+        int Id,
+        DateTime StartDate,
+        DateTime EndDate,
+        IReadOnlyList<Genre> Genres,
+        DealDto Deal);
+
+    private sealed record OpportunityBoundaryRequest(
+        int Id,
+        DateTime StartDate,
+        DateTime EndDate,
+        IReadOnlyList<Genre> Genres,
+        DealDto Deal);
 }

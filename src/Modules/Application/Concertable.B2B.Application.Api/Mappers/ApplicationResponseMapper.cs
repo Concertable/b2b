@@ -18,7 +18,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
         this.bookings = bookings;
     }
 
-    public async Task<ApplicationResponse> ToResponseAsync(ApplicationDto dto)
+    public async Task<ApplicationResponse<VenueApplicationActions>> ToVenueResponseAsync(ApplicationDto dto)
     {
         var bookingOption = await bookings.GetByApplicationIdAsync(dto.Id);
         bookingOption.TryGetValue(out var booking);
@@ -29,32 +29,77 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
             ? ApplicationStatus.Cancelled
             : dto.Status;
 
-        var actions = new ApplicationActions(
-            Accept: isPending ? new ActionLink($"/api/application/{dto.Id}/accept", HttpMethods.Post) : null,
-            Checkout: isPending && applications.RequiresAcceptCheckout(dto.Opportunity.Deal.DealType)
-                ? new ActionLink($"/api/application/{dto.Id}/checkout", HttpMethods.Post)
-                : null,
-            Withdraw: isPending
-                ? new ActionLink($"/api/application/{dto.Id}/withdraw", HttpMethods.Post)
-                : null,
-            Reject: isPending ? new ActionLink($"/api/application/{dto.Id}/reject", HttpMethods.Post) : null,
-            Cancel: isCancellable ? new ActionLink($"/api/booking/{booking!.BookingId}/cancel", HttpMethods.Post) : null,
-            Contract: booking is not null
-                ? new ActionLink($"/api/application/{dto.Id}/contract", HttpMethods.Get)
-                : null);
+        return ToResponse(
+            dto,
+            status,
+            new VenueApplicationActions(
+                Accept: isPending
+                    ? new ActionLink($"/api/application/{dto.Id}/accept", HttpMethods.Post)
+                    : null,
+                Checkout: isPending && applications.RequiresAcceptCheckout(dto.Opportunity.Deal.DealType)
+                    ? new ActionLink($"/api/application/{dto.Id}/checkout", HttpMethods.Post)
+                    : null,
+                Decline: isPending
+                    ? new ActionLink($"/api/application/{dto.Id}/reject", HttpMethods.Post)
+                    : null,
+                Cancel: isCancellable
+                    ? new ActionLink($"/api/booking/{booking!.BookingId}/cancel", HttpMethods.Post)
+                    : null,
+                Contract: booking is not null
+                    ? new ActionLink($"/api/application/{dto.Id}/contract/pdf", HttpMethods.Get)
+                    : null));
+    }
 
-        return new ApplicationResponse(
+    public async Task<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>> ToVenueResponsesAsync(
+        IEnumerable<ApplicationDto> dtos) =>
+        await Task.WhenAll(dtos.Select(ToVenueResponseAsync));
+
+    public async Task<ApplicationResponse<ArtistApplicationActions>> ToArtistResponseAsync(ApplicationDto dto)
+    {
+        var bookingOption = await bookings.GetByApplicationIdAsync(dto.Id);
+        bookingOption.TryGetValue(out var booking);
+        var checkoutCapable = applications.RequiresAcceptCheckout(dto.Opportunity.Deal.DealType);
+        var status = booking?.Status switch
+        {
+            BookingStatus.AwaitingConfirmation or BookingStatus.ConfirmationFailed when checkoutCapable =>
+                ApplicationStatus.AwaitingPayment,
+            BookingStatus.Confirmed or BookingStatus.CancellationPending or BookingStatus.CancellationFailed =>
+                ApplicationStatus.Confirmed,
+            BookingStatus.Cancelled => ApplicationStatus.Cancelled,
+            _ => dto.Status
+        };
+
+        return ToResponse(
+            dto,
+            status,
+            new ArtistApplicationActions(
+                Withdraw: dto.State == ApplicationState.Applied
+                    ? new ActionLink($"/api/application/{dto.Id}/withdraw", HttpMethods.Post)
+                    : null,
+                Contract: booking is not null
+                    ? new ActionLink($"/api/application/{dto.Id}/contract/pdf", HttpMethods.Get)
+                    : null));
+    }
+
+    public async Task<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>> ToArtistResponsesAsync(
+        IEnumerable<ApplicationDto> dtos) =>
+        await Task.WhenAll(dtos.Select(ToArtistResponseAsync));
+
+    private static ApplicationResponse<TActions> ToResponse<TActions>(
+        ApplicationDto dto,
+        ApplicationStatus status,
+        TActions actions) =>
+        new(
             dto.Id,
             dto.Artist,
             new OpportunitySummaryResponse(
                 dto.Opportunity.Id,
+                dto.Opportunity.VenueId,
+                dto.Opportunity.VenueName,
                 dto.Opportunity.StartDate,
                 dto.Opportunity.EndDate,
+                dto.Opportunity.Genres,
                 dto.Opportunity.Deal),
             status,
             actions);
-    }
-
-    public async Task<IReadOnlyList<ApplicationResponse>> ToResponsesAsync(IEnumerable<ApplicationDto> dtos) =>
-        await Task.WhenAll(dtos.Select(ToResponseAsync));
 }

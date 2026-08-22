@@ -53,6 +53,24 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
             ct);
     }
 
+    public async Task<IReadOnlyList<OpportunityEntity>> GetMatchCandidatesAsync(
+        IReadOnlyCollection<int> excludedOpportunityIds,
+        IReadOnlySet<Genre> genres,
+        CancellationToken ct = default)
+    {
+        var excludedIds = excludedOpportunityIds.ToArray();
+        var genreList = genres.ToArray();
+        return await context.Opportunities
+            .WhereActive(timeProvider.GetUtcNow())
+            .Where(opportunity => !excludedIds.Contains(opportunity.Id))
+            .Where(opportunity =>
+                opportunity.Genres.Count == 0 ||
+                opportunity.Genres.Any(genre => genreList.Contains(genre)))
+            .OrderBy(opportunity => opportunity.Period.Start)
+            .Take(5)
+            .ToListAsync(ct);
+    }
+
     private IQueryable<OpportunityEntity> ActiveForVenue(int venueId) =>
         context.Opportunities.ActiveForVenue(venueId, timeProvider.GetUtcNow());
 }

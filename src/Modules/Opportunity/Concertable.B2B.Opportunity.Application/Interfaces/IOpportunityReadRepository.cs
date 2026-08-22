@@ -3,13 +3,6 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Opportunity.Application.Interfaces;
 
-/// <summary>
-/// The public marketplace surface over opportunities — anonymous browse, no private contents.
-/// Reads run on the read-only <c>ConcertReadDbContext</c>, which composes no tenant filters,
-/// so the open/active check sees <b>all</b> parties' applications — an opportunity already booked
-/// by another tenant correctly stops showing as open. Management reads live on
-/// <see cref="IOpportunityRepository"/>, which is tenant-scoped.
-/// </summary>
 internal interface IOpportunityReadRepository
 {
     Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId, IPageParams pageParams);
@@ -19,5 +12,9 @@ internal interface IOpportunityReadRepository
         CancellationToken ct = default);
     Task<int> GetOpenCountAsync(
         Guid venueTenantId,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<OpportunityEntity>> GetMatchCandidatesAsync(
+        IReadOnlyCollection<int> excludedOpportunityIds,
+        IReadOnlySet<Genre> genres,
         CancellationToken ct = default);
 }

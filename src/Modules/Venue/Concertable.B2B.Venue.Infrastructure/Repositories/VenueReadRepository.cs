@@ -38,6 +38,8 @@ internal sealed class VenueReadRepository : IVenueReadRepository
             venue.UserId,
             venue.Name,
             venue.About,
-            venue.Email));
+            venue.Email,
+            venue.Address.County,
+            venue.Address.Town));
 
 }

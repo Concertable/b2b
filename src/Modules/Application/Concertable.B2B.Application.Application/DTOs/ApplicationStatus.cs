@@ -6,5 +6,7 @@ internal enum ApplicationStatus
     Rejected,
     Withdrawn,
     Accepted,
+    AwaitingPayment,
+    Confirmed,
     Cancelled
 }
