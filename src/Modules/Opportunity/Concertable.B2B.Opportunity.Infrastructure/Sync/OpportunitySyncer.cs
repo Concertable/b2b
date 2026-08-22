@@ -1,4 +1,5 @@
 using Concertable.B2B.Opportunity.Domain.Entities;
+using Concertable.B2B.Opportunity.Application.Interfaces;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Application.Diffing;
 
@@ -9,7 +10,7 @@ internal sealed class OpportunitySyncer
 {
     private readonly IDealModule dealModule;
 
-    public OpportunitySyncer(IWriteRepository<OpportunityEntity> repository, IDealModule dealModule)
+    public OpportunitySyncer(IOpportunityRepository repository, IDealModule dealModule)
         : base(repository)
     {
         this.dealModule = dealModule;

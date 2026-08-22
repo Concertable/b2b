@@ -1,21 +1,15 @@
-using Concertable.B2B.Opportunity.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-
 namespace Concertable.B2B.Opportunity.Infrastructure;
 
 internal sealed class OpportunityModule : IOpportunityModule
 {
-    private readonly IOpportunityReadDbContext readContext;
-    private readonly IOpportunityHandoffRepository handoffRepository;
+    private readonly IOpportunityHandoffService handoffService;
     private readonly IOpportunityDashboardService dashboardService;
 
     public OpportunityModule(
-        IOpportunityReadDbContext readContext,
-        IOpportunityHandoffRepository handoffRepository,
+        IOpportunityHandoffService handoffService,
         IOpportunityDashboardService dashboardService)
     {
-        this.readContext = readContext;
-        this.handoffRepository = handoffRepository;
+        this.handoffService = handoffService;
         this.dashboardService = dashboardService;
     }
 
@@ -23,26 +17,25 @@ internal sealed class OpportunityModule : IOpportunityModule
         int opportunityId,
         CancellationToken ct = default)
     {
-        var details = await readContext.Opportunities
-            .Where(opportunity => opportunity.Id == opportunityId)
-            .Select(opportunity => new OpportunityDetails(
-                opportunity.Id,
-                opportunity.VenueId,
-                opportunity.TenantId,
-                opportunity.DealId,
-                opportunity.Period.Start,
-                opportunity.Period.End,
-                opportunity.Genres))
-            .FirstOrDefaultAsync(ct);
+        var details = await handoffService.GetDetailsAsync(opportunityId, ct);
 
-        return details is null ? Option.None<OpportunityDetails>() : Option.Some(details);
+        return details is null
+            ? Option.None<OpportunityDetails>()
+            : Option.Some(new OpportunityDetails(
+                details.Id,
+                details.VenueId,
+                details.TenantId,
+                details.DealId,
+                details.Start,
+                details.End,
+                details.Genres));
     }
 
     public Task<bool> TryClaimAsync(
         int opportunityId,
         Guid venueTenantId,
         CancellationToken ct = default) =>
-        handoffRepository.TryClaimAsync(opportunityId, venueTenantId, ct);
+        handoffService.TryClaimAsync(opportunityId, venueTenantId, ct);
 
     public Task<IReadOnlySet<int>> GetUpcomingIdsAsync(
         IReadOnlyCollection<int> opportunityIds,

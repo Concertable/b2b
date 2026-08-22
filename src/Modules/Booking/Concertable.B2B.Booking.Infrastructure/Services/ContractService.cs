@@ -16,6 +16,11 @@ internal sealed class ContractService : IContractService
         this.pdfRenderer = pdfRenderer;
     }
 
+    public Task<int?> GetIdByApplicationIdAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        repository.GetIdByApplicationIdAsync(applicationId, ct);
+
     public Task<Result<ContractDto, ContractError>> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>

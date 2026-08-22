@@ -15,7 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Concertable.Shared.Api" />
-    <PackageReference Include="Reunion" />
     <PackageReference Include="Reunion.AspNetCore" />
   </ItemGroup>
 </Project>

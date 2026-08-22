@@ -5,6 +5,9 @@ namespace Concertable.B2B.Booking.Application.Interfaces;
 
 internal interface IContractService
 {
+    Task<int?> GetIdByApplicationIdAsync(
+        int applicationId,
+        CancellationToken ct = default);
     Task<Result<ContractDto, ContractError>> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);

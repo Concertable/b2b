@@ -62,6 +62,16 @@ internal sealed class BookingService : IBookingService
         CancellationToken ct = default) =>
         (await bookings.GetByApplicationIdAsync(applicationId, ct))?.ToDto();
 
+    public async Task<BookingSummaryDto?> GetSummaryByApplicationIdAsync(
+        int applicationId,
+        CancellationToken ct = default)
+    {
+        var booking = await bookings.GetByApplicationIdAsync(applicationId, ct);
+        return booking is null
+            ? null
+            : new BookingSummaryDto(booking.Id, booking.ApplicationId, booking.State);
+    }
+
     public Task<UnitResult<CancelBookingError>> CancelAsync(
         int bookingId,
         CancellationToken ct = default) =>

@@ -5,17 +5,14 @@ namespace Concertable.B2B.Booking.Infrastructure;
 
 internal sealed class BookingModule : IBookingModule
 {
-    private readonly IBookingRepository bookings;
-    private readonly IContractRepository contracts;
+    private readonly IBookingService bookingService;
     private readonly IContractService contractService;
 
     public BookingModule(
-        IBookingRepository bookings,
-        IContractRepository contracts,
+        IBookingService bookingService,
         IContractService contractService)
     {
-        this.bookings = bookings;
-        this.contracts = contracts;
+        this.bookingService = bookingService;
         this.contractService = contractService;
     }
 
@@ -23,7 +20,7 @@ internal sealed class BookingModule : IBookingModule
         int applicationId,
         CancellationToken ct = default)
     {
-        var booking = await bookings.GetByApplicationIdAsync(applicationId, ct);
+        var booking = await bookingService.GetSummaryByApplicationIdAsync(applicationId, ct);
         return booking is null
             ? Option.None<BookingSummary>()
             : Option.Some(new BookingSummary(
@@ -35,7 +32,7 @@ internal sealed class BookingModule : IBookingModule
     public async Task<Option<int>> GetContractIdByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        (await contracts.GetIdByApplicationIdAsync(applicationId, ct)).ToOption();
+        (await contractService.GetIdByApplicationIdAsync(applicationId, ct)).ToOption();
 
     public async Task<Option<ContractPdf>> GetContractPdfByBookingIdAsync(
         int bookingId,

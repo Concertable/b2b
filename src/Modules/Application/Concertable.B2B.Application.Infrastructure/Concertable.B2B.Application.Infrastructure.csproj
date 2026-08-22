@@ -30,6 +30,8 @@
     <PackageReference Include="Concertable.Payment.Client" />
     <PackageReference Include="Concertable.Payment.Contracts" />
     <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
+    <PackageReference Include="Reunion.Validation" />
     <PackageReference Include="Concertable.Seed.Shared" />
     <PackageReference Include="Concertable.Shared.Email.Application" />
   </ItemGroup>
