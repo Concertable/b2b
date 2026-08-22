@@ -19,7 +19,7 @@ export function InviteForm() {
   } = useForm<InviteAdminRequest>({
     resolver: zodResolver(inviteAdminRequestSchema),
     defaultValues: { email: "" },
-    mode: "onBlur",
+    mode: "onChange",
   });
 
   const onValid = (request: InviteAdminRequest) => {
