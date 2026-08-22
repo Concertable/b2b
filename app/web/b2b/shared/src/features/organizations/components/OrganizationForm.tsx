@@ -1,48 +1,63 @@
-import { useState, type FormEvent } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@concertable/web/components/ui/button";
 import { Checkbox } from "@concertable/web/components/ui/checkbox";
 import { Input } from "@concertable/web/components/ui/input";
 import { Label } from "@concertable/web/components/ui/label";
 import { Separator } from "@concertable/web/components/ui/separator";
 import { useOrganization } from "../hooks/useOrganization";
+import { updateOrganizationRequestSchema } from "../schemas/updateOrganizationRequestSchema";
 import { taxFormLabels } from "../taxFormLabels";
-import { Organization, type OrganizationBuffer } from "../types";
+import {
+  Organization,
+  type OrganizationFormValues,
+  type UpdateOrganizationRequest,
+} from "../types";
+
+interface FieldErrorProps {
+  id: string;
+  message?: string;
+}
+
+function FieldError({ id, message }: Readonly<FieldErrorProps>) {
+  if (!message) return null;
+  return (
+    <p id={id} className="text-destructive text-xs">
+      {message}
+    </p>
+  );
+}
 
 export function OrganizationForm({
   organization,
 }: Readonly<{ organization: Organization }>) {
   const { isSaving, save } = useOrganization();
-  const [buffer, setBuffer] = useState(() =>
-    Organization.toBuffer(organization),
-  );
-  const [error, setError] = useState<string>();
-
-  function set<K extends keyof OrganizationBuffer>(
-    key: K,
-    value: OrganizationBuffer[K],
-  ) {
-    setBuffer((current) => ({ ...current, [key]: value }));
-  }
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const parsed = save(buffer);
-    setError(parsed.success ? undefined : parsed.error.issues[0].message);
-  }
+  const {
+    control,
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isValid },
+  } = useForm<OrganizationFormValues, unknown, UpdateOrganizationRequest>({
+    resolver: zodResolver(updateOrganizationRequestSchema),
+    defaultValues: Organization.toFormValues(organization),
+    mode: "onChange",
+  });
+  const vatRegistered = watch("vatRegistered");
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit(save)} className="space-y-8">
       <div className="space-y-4">
         <h3 className="font-medium">Legal identity</h3>
         <div className="space-y-1">
           <Label htmlFor="legalName">Legal name</Label>
           <Input
             id="legalName"
-            value={buffer.legalName}
-            onChange={(e) => set("legalName", e.target.value)}
-            required
-            maxLength={200}
+            aria-invalid={errors.legalName !== undefined}
+            aria-describedby="legalName-error"
+            {...register("legalName")}
           />
+          <FieldError id="legalName-error" message={errors.legalName?.message} />
         </div>
         <div className="space-y-1">
           <Label htmlFor="sellerIdentifier">
@@ -50,10 +65,13 @@ export function OrganizationForm({
           </Label>
           <Input
             id="sellerIdentifier"
-            value={buffer.sellerIdentifier}
-            onChange={(e) => set("sellerIdentifier", e.target.value)}
-            required
-            maxLength={50}
+            aria-invalid={errors.sellerIdentifier !== undefined}
+            aria-describedby="sellerIdentifier-error"
+            {...register("sellerIdentifier")}
+          />
+          <FieldError
+            id="sellerIdentifier-error"
+            message={errors.sellerIdentifier?.message}
           />
           <p className="text-muted-foreground text-xs">
             {taxFormLabels.sellerIdentifierHint}
@@ -66,26 +84,30 @@ export function OrganizationForm({
       <div className="space-y-4">
         <h3 className="font-medium">VAT</h3>
         <div className="flex items-center gap-2">
-          <Checkbox
-            id="vatRegistered"
-            checked={buffer.vatRegistered}
-            onCheckedChange={(checked) =>
-              set("vatRegistered", checked === true)
-            }
+          <Controller
+            control={control}
+            name="vatRegistered"
+            render={({ field }) => (
+              <Checkbox
+                id="vatRegistered"
+                checked={field.value}
+                onCheckedChange={(checked) => field.onChange(checked === true)}
+              />
+            )}
           />
           <Label htmlFor="vatRegistered">VAT registered</Label>
         </div>
-        {buffer.vatRegistered && (
+        {vatRegistered && (
           <div className="space-y-1">
             <Label htmlFor="vatNumber">{taxFormLabels.vatLabel}</Label>
             <Input
               id="vatNumber"
-              value={buffer.vatNumber}
-              onChange={(e) => set("vatNumber", e.target.value)}
-              required
-              maxLength={20}
               placeholder={taxFormLabels.vatNumberPlaceholder}
+              aria-invalid={errors.vatNumber !== undefined}
+              aria-describedby="vatNumber-error"
+              {...register("vatNumber")}
             />
+            <FieldError id="vatNumber-error" message={errors.vatNumber?.message} />
           </div>
         )}
       </div>
@@ -98,40 +120,44 @@ export function OrganizationForm({
           <Label htmlFor="line1">Address line 1</Label>
           <Input
             id="line1"
-            value={buffer.line1}
-            onChange={(e) => set("line1", e.target.value)}
-            required
-            maxLength={200}
+            aria-invalid={errors.line1 !== undefined}
+            aria-describedby="line1-error"
+            {...register("line1")}
           />
+          <FieldError id="line1-error" message={errors.line1?.message} />
         </div>
         <div className="space-y-1">
           <Label htmlFor="line2">Address line 2</Label>
           <Input
             id="line2"
-            value={buffer.line2}
-            onChange={(e) => set("line2", e.target.value)}
-            maxLength={200}
+            aria-invalid={errors.line2 !== undefined}
+            aria-describedby="line2-error"
+            {...register("line2")}
           />
+          <FieldError id="line2-error" message={errors.line2?.message} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label htmlFor="city">City</Label>
             <Input
               id="city"
-              value={buffer.city}
-              onChange={(e) => set("city", e.target.value)}
-              required
-              maxLength={100}
+              aria-invalid={errors.city !== undefined}
+              aria-describedby="city-error"
+              {...register("city")}
             />
+            <FieldError id="city-error" message={errors.city?.message} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="postcode">Postcode</Label>
             <Input
               id="postcode"
-              value={buffer.postcode}
-              onChange={(e) => set("postcode", e.target.value)}
-              required
-              maxLength={20}
+              aria-invalid={errors.postcode !== undefined}
+              aria-describedby="postcode-error"
+              {...register("postcode")}
+            />
+            <FieldError
+              id="postcode-error"
+              message={errors.postcode?.message}
             />
           </div>
         </div>
@@ -139,11 +165,11 @@ export function OrganizationForm({
           <Label htmlFor="country">Country</Label>
           <Input
             id="country"
-            value={buffer.country}
-            onChange={(e) => set("country", e.target.value)}
-            required
-            maxLength={100}
+            aria-invalid={errors.country !== undefined}
+            aria-describedby="country-error"
+            {...register("country")}
           />
+          <FieldError id="country-error" message={errors.country?.message} />
         </div>
       </div>
 
@@ -155,11 +181,14 @@ export function OrganizationForm({
           <Label htmlFor="bankReference">Bank reference</Label>
           <Input
             id="bankReference"
-            value={buffer.bankReference}
-            onChange={(e) => set("bankReference", e.target.value)}
-            required
-            maxLength={50}
             placeholder="IBAN or account reference"
+            aria-invalid={errors.bankReference !== undefined}
+            aria-describedby="bankReference-error"
+            {...register("bankReference")}
+          />
+          <FieldError
+            id="bankReference-error"
+            message={errors.bankReference?.message}
           />
         </div>
       </div>
@@ -169,12 +198,16 @@ export function OrganizationForm({
       <div className="space-y-4">
         <h3 className="font-medium">Music licence</h3>
         <div className="flex items-center gap-2">
-          <Checkbox
-            id="holdsMusicLicence"
-            checked={buffer.holdsMusicLicence}
-            onCheckedChange={(checked) =>
-              set("holdsMusicLicence", checked === true)
-            }
+          <Controller
+            control={control}
+            name="holdsMusicLicence"
+            render={({ field }) => (
+              <Checkbox
+                id="holdsMusicLicence"
+                checked={field.value}
+                onCheckedChange={(checked) => field.onChange(checked === true)}
+              />
+            )}
           />
           <Label htmlFor="holdsMusicLicence">
             {taxFormLabels.musicLicenceLabel}
@@ -185,16 +218,7 @@ export function OrganizationForm({
         </p>
       </div>
 
-      {error && (
-        <p
-          className="text-destructive text-xs"
-          data-testid="organization-error"
-        >
-          {error}
-        </p>
-      )}
-
-      <Button type="submit" disabled={isSaving}>
+      <Button type="submit" disabled={isSaving || !isValid}>
         {isSaving ? "Saving..." : "Save details"}
       </Button>
     </form>

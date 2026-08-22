@@ -20,7 +20,7 @@ export interface Organization {
   taxCompliance?: TaxCompliance;
 }
 
-export interface OrganizationBuffer {
+export interface OrganizationFormValues {
   legalName: string;
   vatRegistered: boolean;
   vatNumber: string;
@@ -40,7 +40,7 @@ export interface UpdateOrganizationRequest {
 }
 
 export const Organization = {
-  toBuffer(organization: Organization): OrganizationBuffer {
+  toFormValues(organization: Organization): OrganizationFormValues {
     const tax = organization.taxCompliance;
     return {
       legalName: organization.legalName,
@@ -54,27 +54,6 @@ export const Organization = {
       country: tax?.registeredAddress.country ?? "United Kingdom",
       bankReference: tax?.bankReference ?? "",
       holdsMusicLicence: tax?.holdsMusicLicence ?? false,
-    };
-  },
-};
-
-export const OrganizationBuffer = {
-  toUpdateRequest(buffer: OrganizationBuffer): UpdateOrganizationRequest {
-    return {
-      legalName: buffer.legalName,
-      taxCompliance: {
-        vatNumber: buffer.vatRegistered ? buffer.vatNumber : undefined,
-        sellerIdentifier: buffer.sellerIdentifier,
-        registeredAddress: {
-          line1: buffer.line1,
-          line2: buffer.line2 || undefined,
-          city: buffer.city,
-          postcode: buffer.postcode,
-          country: buffer.country,
-        },
-        bankReference: buffer.bankReference,
-        holdsMusicLicence: buffer.holdsMusicLicence,
-      },
     };
   },
 };

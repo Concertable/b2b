@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { TENANT_ROLE_LABELS } from "@b2b/features/tenant";
 import { Button } from "@concertable/web/components/ui/button";
 import { Input } from "@concertable/web/components/ui/input";
@@ -10,31 +11,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@concertable/web/components/ui/select";
-import { useInviteMember, type InviteBuffer } from "../hooks/useInviteMember";
+import { useInviteMember } from "../hooks/useInviteMember";
+import { inviteMemberRequestSchema } from "../schemas/inviteMemberRequestSchema";
+import type { InviteMemberRequest } from "../types";
 
 export function InviteForm() {
-  const { submit, validate, isPending, roleOptions } = useInviteMember();
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<InviteBuffer["role"]>("manager");
-  const [touched, setTouched] = useState(false);
+  const { submit, isPending, roleOptions } = useInviteMember();
+  const {
+    control,
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isValid },
+  } = useForm<InviteMemberRequest>({
+    resolver: zodResolver(inviteMemberRequestSchema),
+    defaultValues: { email: "", role: "manager" },
+    mode: "onChange",
+  });
 
-  const parsed = validate({ email, role });
-  const error =
-    touched && !parsed.success ? parsed.error.issues[0].message : null;
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const result = submit({ email, role }, () => {
-      setEmail("");
-      setRole("manager");
-      setTouched(false);
-    });
-    if (!result.success) setTouched(true);
-  }
+  const onValid = (request: InviteMemberRequest) => {
+    submit(request, () => reset());
+  };
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onValid)}
       className="space-y-4"
       data-testid="invite-form"
     >
@@ -45,42 +46,47 @@ export function InviteForm() {
           <Input
             id="invite-email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onBlur={() => setTouched(true)}
-            aria-invalid={error != null}
+            aria-invalid={errors.email !== undefined}
             data-testid="invite-email"
+            {...register("email")}
           />
         </div>
         <div className="space-y-1">
           <Label htmlFor="invite-role">Role</Label>
-          <Select
-            value={role}
-            onValueChange={(r) => setRole(r as InviteBuffer["role"])}
-          >
-            <SelectTrigger
-              id="invite-role"
-              className="w-36"
-              data-testid="invite-role"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {roleOptions.map((r) => (
-                <SelectItem key={r} value={r}>
-                  {TENANT_ROLE_LABELS[r]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="role"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger
+                  id="invite-role"
+                  className="w-36"
+                  data-testid="invite-role"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleOptions.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {TENANT_ROLE_LABELS[role]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
-        <Button type="submit" disabled={isPending} data-testid="invite-submit">
+        <Button
+          type="submit"
+          disabled={isPending || !isValid}
+          data-testid="invite-submit"
+        >
           {isPending ? "Sending..." : "Send invite"}
         </Button>
       </div>
-      {error && (
+      {errors.email && (
         <p className="text-destructive text-xs" data-testid="invite-error">
-          {error}
+          {errors.email.message}
         </p>
       )}
     </form>
