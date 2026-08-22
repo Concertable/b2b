@@ -40,7 +40,7 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
     /// signin) — the point where <c>AdminService.EnsureCurrentUserAdminGrantedIfEligibleAsync</c> actually
     /// runs. Registration alone (<see cref="RegisterAsync"/>) only ever creates the plain <see cref="UserEntity"/>.</summary>
     private Task LogInAsync(Guid userId, string email) =>
-        fixture.CreateClient(UserEntity.FromRegistration(userId, email)).GetAsync("/api/auth/me");
+        fixture.CreateClient(UserEntity.Create(userId, email)).GetAsync("/api/auth/me");
 
     [Fact]
     public async Task Login_MatchingPendingInvitation_GrantsAdminProfile()
