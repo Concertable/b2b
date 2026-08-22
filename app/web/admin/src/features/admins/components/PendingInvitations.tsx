@@ -1,6 +1,6 @@
 import { Button } from "@concertable/web/components/ui/button";
+import { Spinner } from "@concertable/web/components/ui/spinner";
 import { usePendingInvitations } from "../hooks/usePendingInvitations";
-import { Spinner } from "./Spinner";
 
 function expiresInLabel(expiresAt: string): string {
   const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000);
@@ -34,7 +34,7 @@ export function PendingInvitations() {
                 </p>
               </div>
               <Button
-                variant="ghost"
+                variant="destructive"
                 size="sm"
                 onClick={() => revoke(inv.id)}
                 data-testid={`revoke-invitation-${inv.id}`}
