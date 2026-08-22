@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Xunit;
 
@@ -8,15 +9,31 @@ public sealed class IntegrationTestBoundaryTests
     [Fact]
     public void ModuleIntegrationProjects_DoNotReferenceAnotherModulesDomainOrInfrastructure()
     {
-        var violations = Directory
-            .EnumerateFiles(FindB2BRoot(), "*.IntegrationTests.csproj", SearchOption.AllDirectories)
-            .Where(path => path.Contains($"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}Modules{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+        var violations = FindModuleIntegrationProjects()
             .SelectMany(FindCrossModuleReferences)
             .Order()
             .ToArray();
 
         Assert.Empty(violations);
     }
+
+    [Fact]
+    public void ModuleIntegrationTests_UseOwningFixture()
+    {
+        var violations = FindModuleIntegrationProjects()
+            .SelectMany(FindSharedFixtureConsumers)
+            .Order()
+            .ToArray();
+
+        Assert.Empty(violations);
+    }
+
+    private static IEnumerable<string> FindModuleIntegrationProjects() =>
+        Directory
+            .EnumerateFiles(FindB2BRoot(), "*.IntegrationTests.csproj", SearchOption.AllDirectories)
+            .Where(path => path.Contains(
+                $"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}Modules{Path.DirectorySeparatorChar}",
+                StringComparison.OrdinalIgnoreCase));
 
     private static IEnumerable<string> FindCrossModuleReferences(string projectPath)
     {
@@ -39,6 +56,22 @@ public sealed class IntegrationTestBoundaryTests
             var referencedLayer = parts[3];
             if (referencedModule != owner && referencedLayer is "Domain" or "Infrastructure")
                 yield return $"{projectName} -> {referencedName}";
+        }
+    }
+
+    private static IEnumerable<string> FindSharedFixtureConsumers(string projectPath)
+    {
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+
+        foreach (var sourcePath in Directory.EnumerateFiles(projectDirectory, "*.cs", SearchOption.AllDirectories))
+        {
+            if (sourcePath.EndsWith("ApiFixture.cs", StringComparison.OrdinalIgnoreCase) ||
+                sourcePath.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) ||
+                sourcePath.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (Regex.IsMatch(File.ReadAllText(sourcePath), @"\bApiFixture\b"))
+                yield return Path.GetRelativePath(FindB2BRoot(), sourcePath);
         }
     }
 
