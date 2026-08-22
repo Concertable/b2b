@@ -127,4 +127,31 @@ public sealed class UserApiTests : IAsyncLifetime
     }
 
     #endregion
+
+    #region GetIdByEmailAsync
+
+    [Fact]
+    public async Task GetIdByEmailAsync_ReturnsId_WhenEmailDiffersOnlyByCase()
+    {
+        using var scope = fixture.Services.CreateScope();
+        var userModule = scope.ServiceProvider.GetRequiredService<IUserModule>();
+
+        var result = await userModule.GetIdByEmailAsync(fixture.SeedState.VenueManager1.Email.ToUpperInvariant());
+
+        Assert.True(result.TryGetValue(out var id));
+        Assert.Equal(fixture.SeedState.VenueManager1.Id, id);
+    }
+
+    [Fact]
+    public async Task GetIdByEmailAsync_ReturnsNone_WhenNoUserHasThatEmail()
+    {
+        using var scope = fixture.Services.CreateScope();
+        var userModule = scope.ServiceProvider.GetRequiredService<IUserModule>();
+
+        var result = await userModule.GetIdByEmailAsync("nobody-with-this-email@test.com");
+
+        Assert.False(result.TryGetValue(out _));
+    }
+
+    #endregion
 }
