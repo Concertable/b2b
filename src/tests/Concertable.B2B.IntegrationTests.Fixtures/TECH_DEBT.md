@@ -8,9 +8,9 @@
 headers — it never persists or queries the entity. Most call sites pass a real, already-seeded
 `UserEntity` (e.g. `fixture.SeedState.ArtistManager1`), which is fine. But
 `AdminProvisioningTests.LogInAsync(Guid userId, string email)` calls
-`UserEntity.FromRegistration(userId, email)` purely to satisfy this signature, for a user that was
+`UserEntity.Create(userId, email)` purely to satisfy this signature, for a user that was
 already persisted moments earlier by `RegisterAsync` — reusing the production domain factory
-(`Concertable.B2B.User.Domain.Entities.UserEntity.FromRegistration`, the one
+(`Concertable.B2B.User.Domain.Entities.UserEntity.Create`, the one
 `CredentialRegisteredHandler` uses to construct a brand-new entity from a registration event) to fake an
 identity for a row that already exists, instead of reading the real one back.
 
@@ -23,8 +23,7 @@ authenticating as claims that don't match the real DB state, rather than failing
 `userId` via `UserDbContext` (or a small fixture helper) instead of accepting a caller-supplied copy.
 More broadly, `CreateClient` could accept a minimal test-identity shape (`Guid id, string email`, or a
 dedicated record) rather than a full domain `UserEntity`, so callers stop needing to construct or borrow
-one just to authenticate. Bundle with the `UserEntity.Create` rename in
-`api/Concertable.B2B/src/Modules/User/TECH_DEBT.md`, since fixing this changes the same call sites.
+one just to authenticate.
 
 Found 2026-08-20 while debugging the `CredentialRegisteredHandler` `SaveChangesAsync` regression (once
 the user was actually persisted, the pattern became worth naming). Not fixed here — logged for a
