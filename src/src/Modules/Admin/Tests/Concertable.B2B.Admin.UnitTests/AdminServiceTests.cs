@@ -94,10 +94,9 @@ public sealed class AdminServiceTests
     [Fact]
     public async Task InviteAsync_EmailAlreadyBelongsToAnAdmin_ReturnsAlreadyAdminWithoutCreatingInvitation()
     {
-        var adminSub = Guid.NewGuid();
-        profileRepository.Setup(value => value.ListAdminSubsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([adminSub]);
-        userModule.Setup(value => value.GetEmailsByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
-            .ReturnsAsync(new Dictionary<Guid, string> { [adminSub] = "admin@example.com" });
+        var adminId = Guid.NewGuid();
+        userModule.Setup(value => value.GetIdByEmailAsync("admin@example.com")).ReturnsAsync(adminId);
+        profileRepository.Setup(value => value.IsAdminAsync(adminId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         var result = await service.InviteAsync(new CreateAdminInvitationRequest { Email = "Admin@Example.com" });
 
@@ -107,9 +106,21 @@ public sealed class AdminServiceTests
     }
 
     [Fact]
+    public async Task InviteAsync_EmailBelongsToANonAdminUser_DoesNotReturnAlreadyAdmin()
+    {
+        var userId = Guid.NewGuid();
+        userModule.Setup(value => value.GetIdByEmailAsync("invitee@example.com")).ReturnsAsync(userId);
+        profileRepository.Setup(value => value.IsAdminAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        currentUser.SetupGet(user => user.Id).Returns(Guid.NewGuid());
+
+        var result = await service.InviteAsync(new CreateAdminInvitationRequest { Email = "invitee@example.com" });
+
+        Assert.False(result.TryGetError(out var error) && error is InviteAdminError.AlreadyAdmin);
+    }
+
+    [Fact]
     public async Task InviteAsync_PendingInvitationAlreadyExists_ReturnsInvitationPendingWithoutCreatingAnother()
     {
-        profileRepository.Setup(value => value.ListAdminSubsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
         var existing = AdminInvitationEntity.Create("invitee@example.com", Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
         invitationRepository.Setup(value => value.GetPendingInvitationByEmailAsync("invitee@example.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
@@ -124,8 +135,6 @@ public sealed class AdminServiceTests
     [Fact]
     public async Task InviteAsync_UnauthenticatedUser_ReturnsForbiddenWithoutCreatingInvitation()
     {
-        profileRepository.Setup(value => value.ListAdminSubsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
-
         var result = await service.InviteAsync(new CreateAdminInvitationRequest { Email = "invitee@example.com" });
 
         Assert.True(result.TryGetError(out var error));
@@ -138,7 +147,6 @@ public sealed class AdminServiceTests
     {
         var inviterId = Guid.NewGuid();
         currentUser.SetupGet(user => user.Id).Returns(inviterId);
-        profileRepository.Setup(value => value.ListAdminSubsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
 
         var result = await service.InviteAsync(new CreateAdminInvitationRequest { Email = "invitee@example.com" });
 
