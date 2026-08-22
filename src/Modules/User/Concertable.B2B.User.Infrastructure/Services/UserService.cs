@@ -87,4 +87,7 @@ internal sealed class UserService : IUserService
 
         return new ManagerDto { Id = user.Id, Email = user.Email, Avatar = user.Avatar };
     }
+
+    public async Task<Option<Guid>> GetIdByEmailAsync(string email) =>
+        (await userRepository.GetIdByEmailAsync(email)).ToOption();
 }
