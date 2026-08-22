@@ -4,13 +4,16 @@ namespace Concertable.B2B.Venue.Application.Mappers;
 
 internal static class VenueMappers
 {
-    public static PendingVenueDto ToPendingVenueDto(this VenueEntity venue) => new()
+    extension(VenueEntity venue)
     {
-        Id = venue.Id,
-        Name = venue.Name,
-        Email = venue.Email,
-        Avatar = venue.Avatar,
-        County = venue.Address.County,
-        Town = venue.Address.Town
-    };
+        public PendingVenue ToPendingVenue() => new()
+        {
+            Id = venue.Id,
+            Name = venue.Name,
+            Email = venue.Email,
+            Avatar = venue.Avatar,
+            County = venue.Address.County,
+            Town = venue.Address.Town
+        };
+    }
 }

@@ -41,7 +41,7 @@ internal sealed class VenueController : ControllerBase
 
     [Admin]
     [HttpGet("pending-approval")]
-    public async Task<ActionResult<IPagination<PendingVenueDto>>> GetPendingApproval(
+    public async Task<ActionResult<IPagination<PendingVenue>>> GetPendingApproval(
         [FromQuery] PageParams pageParams) =>
         Ok(await venueService.GetPendingApprovalAsync(pageParams));
 
