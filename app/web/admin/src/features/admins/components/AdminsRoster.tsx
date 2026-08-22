@@ -33,7 +33,7 @@ export function AdminsRoster() {
               <TableCell>{admin.email}</TableCell>
               <TableCell className="text-right">
                 <Button
-                  variant="ghost"
+                  variant="destructive"
                   size="sm"
                   disabled={!canRevoke}
                   onClick={() => revoke(admin.sub)}

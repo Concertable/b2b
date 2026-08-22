@@ -69,7 +69,7 @@ export function ReportsQueue() {
               </TableCell>
               <TableCell className="text-right space-x-2">
                 <Button
-                  variant="ghost"
+                  variant="destructive"
                   size="sm"
                   onClick={() => hideMessage(report.messageId)}
                   data-testid={`hide-message-${report.id}`}
@@ -77,7 +77,7 @@ export function ReportsQueue() {
                   Hide
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => restoreMessage(report.messageId)}
                   data-testid={`restore-message-${report.id}`}
@@ -85,7 +85,6 @@ export function ReportsQueue() {
                   Restore
                 </Button>
                 <Button
-                  variant="ghost"
                   size="sm"
                   disabled={report.outcome != null}
                   onClick={() => setResolvingReportId(report.id)}
