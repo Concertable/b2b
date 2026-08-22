@@ -1,8 +1,6 @@
-﻿using Concertable.Shared.Blob.Application;
 using Concertable.Shared.Imaging.Application;
-using Concertable.B2B.Tenant.Contracts;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.StaticFiles;
 
 namespace Concertable.B2B.Web.Controllers;
@@ -11,31 +9,20 @@ namespace Concertable.B2B.Web.Controllers;
 [Route("api/[controller]")]
 public sealed class BlobController : ControllerBase
 {
-    private readonly IBlobStorageService blobStorageService;
     private readonly IImageService imageService;
 
-    public BlobController(IBlobStorageService blobStorageService, IImageService imageService)
+    public BlobController(IImageService imageService)
     {
-        this.blobStorageService = blobStorageService;
         this.imageService = imageService;
     }
 
-    [EnableRateLimiting(RateLimitPolicies.Upload)]
-    [HttpPost("upload")]
-    public async Task<IActionResult> Upload([FromForm] IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-            return BadRequest("Invalid file");
-
-        using var stream = file.OpenReadStream();
-        await blobStorageService.UploadAsync(stream, file.FileName);
-
-        return Ok("Blob uploaded successfully");
-    }
-
+    [AllowAnonymous]
     [HttpGet("download/{blobName}")]
     public async Task<IActionResult> Download(string blobName)
     {
+        if (blobName.Contains('/') || blobName.Contains('\\'))
+            return NotFound("Blob not found");
+
         var stream = await imageService.DownloadAsync(blobName);
 
         if (stream == null)
@@ -44,13 +31,6 @@ public sealed class BlobController : ControllerBase
         var contentType = GetContentType(blobName);
 
         return File(stream, contentType, blobName);
-    }
-
-    [HttpDelete("{fileName}")]
-    public async Task<IActionResult> Delete(string fileName)
-    {
-        await blobStorageService.DeleteAsync(fileName);
-        return Ok(new { message = "File deleted successfully" });
     }
 
     private string GetContentType(string fileName)
