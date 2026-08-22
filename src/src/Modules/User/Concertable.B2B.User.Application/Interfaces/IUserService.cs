@@ -11,4 +11,5 @@ internal interface IUserService
     Task<IReadOnlyList<UserDto>> GetByIdsAsync(IEnumerable<Guid> ids);
     Task<IReadOnlyDictionary<Guid, string>> GetEmailsByIdsAsync(IEnumerable<Guid> ids);
     Task<Option<ManagerDto>> GetManagerByIdAsync(Guid userId);
+    Task<Option<Guid>> GetIdByEmailAsync(string email);
 }
