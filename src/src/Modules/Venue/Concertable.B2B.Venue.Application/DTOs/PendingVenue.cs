@@ -1,7 +1,7 @@
 namespace Concertable.B2B.Venue.Application.DTOs;
 
 /// <summary>A row of the platform venue-approval queue.</summary>
-internal sealed record PendingVenueDto
+internal sealed record PendingVenue
 {
     public int Id { get; init; }
     public required string Name { get; init; }
