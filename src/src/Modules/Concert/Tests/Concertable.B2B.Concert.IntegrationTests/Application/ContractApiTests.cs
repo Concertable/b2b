@@ -315,10 +315,10 @@ public sealed class ContractApiTests : IAsyncLifetime
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var response = await venue.GetAsync($"/api/application/{applicationId}");
         await response.ShouldBe(HttpStatusCode.OK);
-        var application = await response.Content.ReadAsync<ApplicationResponse>();
+        var application = await response.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
 
         Assert.NotNull(application!.Actions.Contract);
-        Assert.Equal($"/api/application/{applicationId}/contract", application.Actions.Contract!.Href);
+        Assert.Equal($"/api/application/{applicationId}/contract/pdf", application.Actions.Contract!.Href);
         Assert.Equal("GET", application.Actions.Contract.Method);
     }
 
@@ -331,7 +331,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var response = await artist.GetAsync($"/api/application/{applicationId}");
         await response.ShouldBe(HttpStatusCode.OK);
-        var application = await response.Content.ReadAsync<ApplicationResponse>();
+        var application = await response.Content.ReadAsync<ApplicationResponse<ArtistApplicationActions>>();
 
         Assert.Null(application!.Actions.Contract);
     }

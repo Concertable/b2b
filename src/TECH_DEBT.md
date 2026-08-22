@@ -50,6 +50,22 @@ See [`plans/platform/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/platform/SPLIT_TIM
 
 ## MED
 
+### Venue opportunity counts are exposed by the write repository
+
+`IOpportunityRepository.GetOpenWithApplicationCountsByVenueTenantIdAsync` is a read-only dashboard
+projection, but it currently lives on the write repository and queries `ConcertDbContext` with
+`AsNoTracking`. That is behaviourally safe, but it blurs the repository permission boundary and makes
+`OpportunityDashboardService` depend on the write surface for a query. The projection belongs on
+`IOpportunityReadRepository`, implemented by `OpportunityReadRepository` against
+`IConcertReadDbContext`; the read context already provides the correct no-tracking stance, so this
+should not be solved by restoring a general-purpose `Query` escape hatch.
+
+**Resolves when:** the projection and its tests move to `IOpportunityReadRepository` /
+`OpportunityReadRepository`, `OpportunityDashboardService` reads it through that interface, and
+`IOpportunityRepository` no longer exposes the query.
+
+---
+
 ### `DELETE api/organization` is a local hard-delete with no cross-module / cross-service teardown
 
 `TenantService.DeleteAsync` deletes the tenant row and cascades only the Tenant module's own children (memberships, invitations). It emits **no `TenantDeletedEvent`** and touches nothing outside the `tenant` schema, so deleting an organization silently **orphans** everything provisioned off it: the Payment Stripe payout account (provisioned by `CredentialRegisteredHandler`), the venues/artists/concerts owned by the tenant (separate modules/contexts, no cross-schema FK — so no error, just dangling rows), and downstream Search projections. The create path deliberately re-raises `TenantCreatedEvent` via `Announce()` for exactly this cross-service reason; delete has no symmetric path. Landed as a simple synchronous endpoint in the member-management phase (Phase 6.2); the full teardown is its own design (a new integration event + a Payment consumer that deactivates the connected account + module-owned cleanup of venue/artist/concert data).
@@ -76,6 +92,21 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 ---
 
 ## LOW
+
+### Application affordances are not yet modelled as role-and-state discriminated unions
+
+Application responses need different affordances for venue and artist callers, and those affordances also vary by
+application lifecycle state. The current non-preview design uses `ApplicationResponse<TActions>` with separate venue
+and artist action objects; nullable links within each role-specific object intentionally mean that an action is not
+available in the current state. This keeps the two actor cases separate, but the type system still permits invalid
+combinations such as checkout and withdraw being populated together.
+
+**Resolves when:** after the repository upgrades to a .NET/C# version with production-ready discriminated unions and
+stable `System.Text.Json` / OpenAPI support for them, replace the role-specific nullable action objects with exhaustive
+role-and-state unions. Each variant must carry only its valid links, and the API mapper plus TypeScript contracts must
+handle every variant exhaustively so invalid affordance combinations are unrepresentable end to end.
+
+---
 
 ### Contract PDFs share the `images` blob container and rely on app-level write-once
 

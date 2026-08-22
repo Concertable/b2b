@@ -1,33 +1,37 @@
 using Concertable.Contracts;
+using Concertable.B2B.Venue.Application.DTOs;
 using Concertable.B2B.Venue.Application.Interfaces;
-using Concertable.B2B.Venue.Infrastructure.Data;
 using Concertable.B2B.Venue.Infrastructure.Mappers;
-using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Services;
 
 internal sealed class VenueReviewService : IVenueReviewService
 {
-    private readonly VenueDbContext context;
+    private readonly IVenueService venueService;
+    private readonly IVenueReviewRepository reviewRepository;
 
-    public VenueReviewService(VenueDbContext context)
+    public VenueReviewService(
+        IVenueService venueService,
+        IVenueReviewRepository reviewRepository)
     {
-        this.context = context;
+        this.venueService = venueService;
+        this.reviewRepository = reviewRepository;
     }
 
-    public async Task<ReviewSummary> GetSummaryAsync(int venueId)
-    {
-        var projection = await context.VenueRatingProjections
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.VenueId == venueId);
-        return projection.ToReviewSummary();
-    }
+    public async Task<ReviewSummary> GetSummaryAsync(int venueId, CancellationToken ct = default) =>
+        (await reviewRepository.GetRatingByVenueIdAsync(venueId, ct)).ToReviewSummary();
 
-    public Task<IPagination<ReviewDto>> GetPagedAsync(int venueId, IPageParams pageParams) =>
-        context.VenueReviews
-            .AsNoTracking()
-            .Where(r => r.VenueId == venueId)
-            .OrderByDescending(r => r.Id)
-            .Select(r => new ReviewDto { Id = r.Id, Email = r.Email, Stars = (int)r.Stars, Details = r.Details })
-            .ToPaginationAsync(pageParams);
+    public async Task<IPagination<ReviewDto>> GetPagedAsync(int venueId, IPageParams pageParams) =>
+        (await reviewRepository.GetPagedByVenueIdAsync(venueId, pageParams)).Map(review => review.ToReviewDto());
+
+    public async Task<Option<IReadOnlyList<VenueReview>>> GetRecentForCurrentAsync(
+        int take,
+        CancellationToken ct = default)
+    {
+        var venue = await venueService.GetDetailsAsync(ct);
+        if (!venue.TryGetValue(out var details))
+            return null;
+
+        return Option.Some(await reviewRepository.GetRecentByVenueIdAsync(details.Id, take, ct));
+    }
 }

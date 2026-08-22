@@ -39,6 +39,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .Include(ca => ca.Artist)
                 .ThenInclude(a => a.Genres)
             .Include(ca => ca.Opportunity)
+                .ThenInclude(o => o.Venue)
             .ToListAsync();
     }
 
@@ -62,6 +63,47 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
                 a.ArtistTenantId == artistTenantId &&
                 !context.Bookings.Any(b => b.ApplicationId == a.Id) &&
                 a.Opportunity.Period.Start > timeProvider.GetUtcNow())
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<ApplicationEntity>> GetPendingForVenueTenantIdAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        return await context.Applications
+            .AsNoTracking()
+            .Include(a => a.Artist)
+                .ThenInclude(a => a.Genres)
+            .Include(a => a.Opportunity)
+                .ThenInclude(o => o.Venue)
+            .Where(a => a.VenueTenantId == venueTenantId
+                        && a.State == LifecycleState.Applied
+                        && a.Opportunity.Period.End > now)
+            .OrderBy(a => a.Opportunity.Period.Start)
+            .ThenBy(a => a.Id)
+            .Take(5)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<ApplicationEntity>> GetCurrentForArtistTenantIdAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        return await context.Applications
+            .AsNoTracking()
+            .Include(a => a.Artist)
+                .ThenInclude(a => a.Genres)
+            .Include(a => a.Opportunity)
+                .ThenInclude(o => o.Venue)
+            .Where(a => a.ArtistTenantId == artistTenantId
+                        && a.Opportunity.Period.End > now
+                        && a.State != LifecycleState.Withdrawn
+                        && a.State != LifecycleState.Cancelled)
+            .OrderBy(a => a.Opportunity.Period.Start)
+            .ThenBy(a => a.Id)
+            .Take(10)
             .ToListAsync(ct);
     }
 
@@ -107,6 +149,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .Include(ca => ca.Artist)
                 .ThenInclude(a => a.Genres)
             .Include(ca => ca.Opportunity)
+                .ThenInclude(o => o.Venue)
             .FirstOrDefaultAsync(ct);
     }
 

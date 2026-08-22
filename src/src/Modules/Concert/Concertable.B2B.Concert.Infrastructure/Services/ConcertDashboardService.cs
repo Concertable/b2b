@@ -30,4 +30,9 @@ internal sealed class ConcertDashboardService : IConcertDashboardService
             artistTenantId,
             capabilityRegistry.DealTypesWith<IAcceptsCheckout>(),
             ct);
+
+    public Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
+        IReadOnlyCollection<int> bookingIds,
+        CancellationToken ct = default) =>
+        repository.GetManagerSettlementContextsAsync(bookingIds, ct);
 }
