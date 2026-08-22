@@ -113,7 +113,7 @@
     <Project Path="src/Modules/Venue/Tests/Concertable.B2B.Venue.UnitTests/Concertable.B2B.Venue.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Tests/">
-    <Project Path="tests/Concertable.B2B.CompositionTests/Concertable.B2B.CompositionTests.csproj" />
+    <Project Path="tests/Concertable.B2B.ArchitectureTests/Concertable.B2B.ArchitectureTests.csproj" />
     <Project Path="tests/Concertable.B2B.IntegrationTests.Fixtures/Concertable.B2B.IntegrationTests.Fixtures.csproj" />
     <Project Path="tests/Concertable.B2B.Workers.UnitTests/Concertable.B2B.Workers.UnitTests.csproj" />
   </Folder>
