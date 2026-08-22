@@ -5,7 +5,7 @@ namespace Concertable.B2B.User.Domain.Entities;
 
 public sealed class UserEntity : IGuidEntity
 {
-    protected UserEntity() { }
+    private UserEntity() { }
 
     private UserEntity(Guid id, string email)
     {
@@ -19,7 +19,7 @@ public sealed class UserEntity : IGuidEntity
     public Point? Location { get; private set; }
     public string? Avatar { get; private set; }
 
-    public static UserEntity FromRegistration(Guid id, string email) =>
+    public static UserEntity Create(Guid id, string email) =>
         new(id, email);
 
     public void UpdateLocation(Point location, Address? address = null)
