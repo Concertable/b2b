@@ -39,6 +39,12 @@ internal sealed class VenueController : ControllerBase
         return (await venueService.ApproveAsync(venueId, ct)).ToNoContentOrProblem();
     }
 
+    [Admin]
+    [HttpGet("pending-approval")]
+    public async Task<ActionResult<IPagination<PendingVenueDto>>> GetPendingApproval(
+        [FromQuery] PageParams pageParams) =>
+        Ok(await venueService.GetPendingApprovalAsync(pageParams));
+
     [HttpGet("{venueId:int}/ownership")]
     public async Task<ActionResult<bool>> IsOwner(int venueId, CancellationToken ct)
     {

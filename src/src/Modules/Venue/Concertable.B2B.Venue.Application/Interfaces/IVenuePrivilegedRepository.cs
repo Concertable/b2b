@@ -7,4 +7,7 @@ namespace Concertable.B2B.Venue.Application.Interfaces;
 /// (venue approval), served by an unfiltered writable context. Tenant-scoped access lives on
 /// <see cref="IVenueRepository"/>; marketplace reads on <see cref="IVenueReadRepository"/>.
 /// </summary>
-internal interface IVenuePrivilegedRepository : IRepository<VenueEntity>;
+internal interface IVenuePrivilegedRepository : IRepository<VenueEntity>
+{
+    Task<IPagination<VenueEntity>> GetPendingApprovalAsync(IPageParams pageParams);
+}
