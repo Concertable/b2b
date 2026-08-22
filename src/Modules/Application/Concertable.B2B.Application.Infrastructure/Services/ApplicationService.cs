@@ -246,17 +246,23 @@ internal sealed class ApplicationService : IApplicationService
     public async Task<bool> CanAcceptAsync(int applicationId) =>
         (await CheckCanAcceptAsync(applicationId)).IsSuccess;
 
-    public async Task<Result<Checkout, ApplicationEligibilityError>> ApplyCheckoutAsync(int opportunityId)
+    public async Task<Result<Checkout, ApplicationCheckoutError>> ApplyCheckoutAsync(int opportunityId)
     {
         var eligibility = await CheckCanApplyAsync(opportunityId);
         if (eligibility.TryGetError(out var error))
-            return error;
+            return new ApplicationCheckoutError.Ineligible(error);
 
         return await checkout.CreateApplyCheckoutAsync(opportunityId);
     }
 
-    public Task<Checkout> AcceptCheckoutAsync(int applicationId) =>
-        checkout.CreateAcceptCheckoutAsync(applicationId);
+    public async Task<Result<Checkout, ApplicationCheckoutError>> AcceptCheckoutAsync(int applicationId)
+    {
+        var eligibility = await CheckCanAcceptAsync(applicationId);
+        if (eligibility.TryGetError(out var error))
+            return new ApplicationCheckoutError.Ineligible(error);
+
+        return await checkout.CreateAcceptCheckoutAsync(applicationId);
+    }
 
     public async Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,

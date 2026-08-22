@@ -3,7 +3,6 @@ using Concertable.B2B.Application.Application.Responses;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
-using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Contracts;
 
@@ -37,17 +36,24 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.tenantContext = tenantContext;
     }
 
-    public async Task<Result<Checkout, ApplicationEligibilityError>> CreateApplyCheckoutAsync(
+    public async Task<Result<Checkout, ApplicationCheckoutError>> CreateApplyCheckoutAsync(
         int opportunityId)
     {
-        var opportunity = await GetOpportunityAsync(opportunityId);
-        var deal = await GetDealAsync(opportunity.DealId);
-        if (deal is not VenueHireDealDto venueHire)
-            throw new BadRequestException("This deal does not support a pre-apply checkout");
+        var opportunityOption = await opportunities.GetDetailsAsync(opportunityId);
+        if (!opportunityOption.TryGetValue(out var opportunity))
+            return new ApplicationCheckoutError.OpportunityNotFound();
 
-        var venue = await GetVenueAsync(opportunity.VenueId);
-        var artistTenantId = tenantContext.TenantId
-            ?? throw new ForbiddenException("No tenant for current user");
+        var dealOption = await deals.GetByIdAsync(opportunity.DealId);
+        if (!dealOption.TryGetValue(out var deal))
+            return new ApplicationCheckoutError.DealNotFound();
+        if (deal is not VenueHireDealDto venueHire)
+            return new ApplicationCheckoutError.ApplyCheckoutUnsupported(deal.DealType);
+
+        var venueOption = await venues.GetProfileAsync(opportunity.VenueId);
+        if (!venueOption.TryGetValue(out var venue))
+            return new ApplicationCheckoutError.VenueNotFound();
+        if (tenantContext.TenantId is not { } artistTenantId)
+            return new ApplicationCheckoutError.MissingTenant();
         var metadata = new Dictionary<string, string>
         {
             [PaymentMetadataKeys.Type] = TransactionTypes.ApplicationApply,
@@ -61,14 +67,27 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
             CheckoutLabels.Charge);
     }
 
-    public async Task<Checkout> CreateAcceptCheckoutAsync(int applicationId)
+    public async Task<Result<Checkout, ApplicationCheckoutError>> CreateAcceptCheckoutAsync(int applicationId)
     {
-        var application = await applications.GetByIdAsync(applicationId)
-            .OrNotFound(Concertable.B2B.Application.Contracts.DisplayNames.Application);
-        var opportunity = await GetOpportunityAsync(application.OpportunityId);
-        var deal = await GetDealAsync(opportunity.DealId);
-        var artist = await GetArtistAsync(application.ArtistId);
-        var venue = await GetVenueAsync(opportunity.VenueId);
+        var application = await applications.GetByIdAsync(applicationId);
+        if (application is null)
+            return new ApplicationCheckoutError.ApplicationNotFound();
+
+        var opportunityOption = await opportunities.GetDetailsAsync(application.OpportunityId);
+        if (!opportunityOption.TryGetValue(out var opportunity))
+            return new ApplicationCheckoutError.OpportunityNotFound();
+
+        var dealOption = await deals.GetByIdAsync(opportunity.DealId);
+        if (!dealOption.TryGetValue(out var deal))
+            return new ApplicationCheckoutError.DealNotFound();
+
+        var artistOption = await artists.GetProfileAsync(application.ArtistId);
+        if (!artistOption.TryGetValue(out var artist))
+            return new ApplicationCheckoutError.ArtistNotFound();
+
+        var venueOption = await venues.GetProfileAsync(opportunity.VenueId);
+        if (!venueOption.TryGetValue(out var venue))
+            return new ApplicationCheckoutError.VenueNotFound();
         var metadata = new Dictionary<string, string>
         {
             [PaymentMetadataKeys.ApplicationId] = applicationId.ToString()
@@ -88,6 +107,9 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
                 CheckoutLabels.Charge);
         }
 
+        if (deal is not (DoorSplitDealDto or VersusDealDto))
+            return new ApplicationCheckoutError.AcceptCheckoutUnsupported(deal.DealType);
+
         metadata[PaymentMetadataKeys.Type] = TransactionTypes.Verify;
         metadata[PaymentMetadataKeys.VenueManagerId] = venue.UserId.ToString();
         var verification = await managerPaymentClient.CreateVerifySessionAsync(application.VenueTenantId, metadata);
@@ -98,42 +120,10 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
             CheckoutLabels.Settlement);
     }
 
-    private async Task<OpportunityDetails> GetOpportunityAsync(int opportunityId)
-    {
-        var option = await opportunities.GetDetailsAsync(opportunityId);
-        if (option.TryGetValue(out var opportunity))
-            return opportunity;
-        throw new NotFoundException(Concertable.B2B.Opportunity.Contracts.DisplayNames.Opportunity);
-    }
-
-    private async Task<DealDto> GetDealAsync(int dealId)
-    {
-        var option = await deals.GetByIdAsync(dealId);
-        if (option.TryGetValue(out var deal))
-            return deal;
-        throw new NotFoundException("deal");
-    }
-
-    private async Task<ArtistProfile> GetArtistAsync(int artistId)
-    {
-        var option = await artists.GetProfileAsync(artistId);
-        if (option.TryGetValue(out var artist))
-            return artist;
-        throw new NotFoundException("artist");
-    }
-
-    private async Task<VenueProfile> GetVenueAsync(int venueId)
-    {
-        var option = await venues.GetProfileAsync(venueId);
-        if (option.TryGetValue(out var venue))
-            return venue;
-        throw new NotFoundException("venue");
-    }
-
     private static IPaymentAmount ToPaymentAmount(DealDto deal) => deal switch
     {
         DoorSplitDealDto doorSplit => new DoorSharePayment(doorSplit.ArtistDoorPercent),
         VersusDealDto versus => new GuaranteedDoorPayment(versus.Guarantee, versus.ArtistDoorPercent),
-        _ => throw new BadRequestException("This deal does not support an accept checkout")
+        _ => throw new InvalidOperationException()
     };
 }

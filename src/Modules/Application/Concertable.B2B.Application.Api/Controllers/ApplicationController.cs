@@ -124,10 +124,9 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/checkout")]
-    public async Task<IActionResult> AcceptCheckout(int applicationId)
+    public async Task<ActionResult<Checkout>> AcceptCheckout(int applicationId)
     {
-        var checkout = await applicationService.AcceptCheckoutAsync(applicationId);
-        return Ok(checkout);
+        return (await applicationService.AcceptCheckoutAsync(applicationId)).ToOkOrProblem();
     }
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]

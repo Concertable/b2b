@@ -20,8 +20,8 @@ internal interface IApplicationService
         ESignatureRequest eSignature);
     Task<bool> CanApplyAsync(int opportunityId);
     Task<bool> CanAcceptAsync(int applicationId);
-    Task<Result<Checkout, ApplicationEligibilityError>> ApplyCheckoutAsync(int opportunityId);
-    Task<Checkout> AcceptCheckoutAsync(int applicationId);
+    Task<Result<Checkout, ApplicationCheckoutError>> ApplyCheckoutAsync(int opportunityId);
+    Task<Result<Checkout, ApplicationCheckoutError>> AcceptCheckoutAsync(int applicationId);
     Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,
         string? paymentMethodId,
