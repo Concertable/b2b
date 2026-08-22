@@ -34,7 +34,7 @@ export function PendingInvitations() {
                 </p>
               </div>
               <Button
-                variant="ghost"
+                variant="destructive"
                 size="sm"
                 onClick={() => revoke(inv.id)}
                 data-testid={`revoke-invitation-${inv.id}`}

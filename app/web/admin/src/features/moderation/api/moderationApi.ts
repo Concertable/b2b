@@ -4,30 +4,32 @@ import type { PaginationParams } from "@concertable/web/hooks/usePagination";
 import type { ContentReport } from "../types";
 import type { ResolveReportRequest } from "../schemas/resolveReportRequestSchema";
 
+const BASE = "/Moderation";
+
 const moderationApi = {
   getReports: async (
     params: PaginationParams,
   ): Promise<Pagination<ContentReport>> => {
     const { data } = await apiClient.get<Pagination<ContentReport>>(
-      "/Moderation/reports",
+      `${BASE}/reports`,
       { params },
     );
     return data;
   },
 
   hideMessage: async (id: number): Promise<void> => {
-    await apiClient.post(`/Moderation/messages/${id}/hide`);
+    await apiClient.post(`${BASE}/messages/${id}/hide`);
   },
 
   restoreMessage: async (id: number): Promise<void> => {
-    await apiClient.post(`/Moderation/messages/${id}/restore`);
+    await apiClient.post(`${BASE}/messages/${id}/restore`);
   },
 
   resolveReport: async (
     id: number,
     request: ResolveReportRequest,
   ): Promise<void> => {
-    await apiClient.post(`/Moderation/reports/${id}/resolve`, request);
+    await apiClient.post(`${BASE}/reports/${id}/resolve`, request);
   },
 };
 
