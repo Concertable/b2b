@@ -2,18 +2,18 @@ import { toast } from "sonner";
 import { inviteAdminRequestSchema } from "../schemas/inviteAdminRequestSchema";
 import { useInviteMutation } from "./useInviteMutation";
 
-export interface InviteBuffer {
+export interface InviteDraft {
   email: string;
 }
 
 export function useInviteAdmin() {
   const { mutate, isPending } = useInviteMutation();
 
-  const validate = (buffer: InviteBuffer) =>
-    inviteAdminRequestSchema.safeParse(buffer);
+  const validate = (draft: InviteDraft) =>
+    inviteAdminRequestSchema.safeParse(draft);
 
-  const submit = (buffer: InviteBuffer, onDone: () => void) => {
-    const parsed = validate(buffer);
+  const submit = (draft: InviteDraft, onDone: () => void) => {
+    const parsed = validate(draft);
     if (parsed.success)
       mutate(parsed.data, {
         onSuccess: () => {
