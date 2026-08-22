@@ -2,9 +2,10 @@ export { OpportunitySection } from "./components/opportunities/OpportunitySectio
 export { AcceptDealSummary } from "./components/applications/AcceptDealSummary";
 export { ESignaturePanel } from "./components/applications/ESignaturePanel";
 export type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
+export { Opportunity } from "./types";
 export type {
-  Opportunity,
   OpportunityDraft,
+  OpportunityRequest,
   Application,
   ApplicationStatus,
   ApplicationActions,

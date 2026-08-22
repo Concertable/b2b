@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { tenantRoleLabel } from "@b2b/features/tenant";
+import { TENANT_ROLE_LABELS } from "@b2b/features/tenant";
 import { Button } from "@concertable/web/components/ui/button";
 import { Input } from "@concertable/web/components/ui/input";
 import { Label } from "@concertable/web/components/ui/label";
@@ -10,10 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@concertable/web/components/ui/select";
-import {
-  useInviteMember,
-  type InviteBuffer,
-} from "../hooks/useInviteMember";
+import { useInviteMember, type InviteBuffer } from "../hooks/useInviteMember";
 
 export function InviteForm() {
   const { submit, validate, isPending, roleOptions } = useInviteMember();
@@ -22,7 +19,8 @@ export function InviteForm() {
   const [touched, setTouched] = useState(false);
 
   const parsed = validate({ email, role });
-  const error = touched && !parsed.success ? parsed.error.issues[0].message : null;
+  const error =
+    touched && !parsed.success ? parsed.error.issues[0].message : null;
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -35,7 +33,11 @@ export function InviteForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" data-testid="invite-form">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+      data-testid="invite-form"
+    >
       <h3 className="font-medium">Invite a member</h3>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
         <div className="flex-1 space-y-1">
@@ -66,7 +68,7 @@ export function InviteForm() {
             <SelectContent>
               {roleOptions.map((r) => (
                 <SelectItem key={r} value={r}>
-                  {tenantRoleLabel(r)}
+                  {TENANT_ROLE_LABELS[r]}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -1,6 +1,5 @@
 import { apiClient } from "@concertable/shared/lib/apiClient";
-import type { Organization } from "../types";
-import type { UpdateOrganizationRequest } from "../schemas/updateOrganizationRequestSchema";
+import type { Organization, UpdateOrganizationRequest } from "../types";
 
 const organizationApi = {
   get: async (): Promise<Organization | null> => {
