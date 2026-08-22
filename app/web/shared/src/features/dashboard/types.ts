@@ -10,24 +10,3 @@ export interface OpportunitySummary {
   genres: Genre[];
   deal: Deal;
 }
-
-export interface OpportunityWithCounts {
-  opportunity: OpportunitySummary;
-  applicationCount: number;
-  daysUntilDeadline: number;
-}
-
-export interface OpportunityCard {
-  id: number;
-  venueId: number;
-  venueName: string;
-  venueAvatarUrl?: string;
-  county: string;
-  town: string;
-  startDate: string;
-  endDate: string;
-  genres: Genre[];
-  deal: Deal;
-  fitScore?: number;
-  href: string;
-}

@@ -10,6 +10,7 @@ public interface IMembershipContext
 {
     /// <summary>The active membership's role; <see langword="null"/> when the caller has no membership in the active tenant.</summary>
     TenantRole? Role { get; }
+    TenantType? Type { get; }
 
     bool HasPermission(string permission, TenantType? requiredTenantType = null);
 }

@@ -42,12 +42,6 @@ export function ArtistKpiStrip() {
     {
       label: "MTD payouts",
       value: formatCurrency(data.mtdPayoutsCents),
-      delta: data.mtdPayoutsDeltaPercent
-        ? {
-            value: `${data.mtdPayoutsDeltaPercent > 0 ? "+" : ""}${data.mtdPayoutsDeltaPercent}% vs last month`,
-            direction: (data.mtdPayoutsDeltaPercent > 0 ? "up" : "down") as "up" | "down",
-          }
-        : undefined,
       intent: "positive" as const,
       icon: CircleDollarSign,
       href: "/my",

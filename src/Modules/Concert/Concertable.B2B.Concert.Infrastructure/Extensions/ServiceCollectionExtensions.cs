@@ -82,6 +82,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConcertNotifier, ConcertNotifier>();
         services.AddScoped<BookingConfirmationEmailSender>();
         services.AddScoped<IOpportunityService, OpportunityService>();
+        services.AddScoped<IOpportunityDashboardService, OpportunityDashboardService>();
         services.AddScoped<IOpportunitySyncer>(sp => new Sync.OpportunitySyncer(
             sp.GetRequiredService<IOpportunityRepository>(),
             sp.GetRequiredService<IDealModule>()));

@@ -1,6 +1,4 @@
 using System.Net;
-using Concertable.B2B.Concert.Application.DTOs;
-
 using Concertable.B2B.Concert.Api.Responses;
 using Xunit;
 using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
@@ -27,6 +25,30 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
+    [Fact]
+    public async Task GetCurrentForVenue_ShouldReturnOpportunityList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync("/api/Opportunity/venue/current");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var opportunities = await response.Content.ReadAsync<System.Text.Json.JsonElement>();
+        Assert.Equal(System.Text.Json.JsonValueKind.Array, opportunities.ValueKind);
+    }
+
+    [Fact]
+    public async Task GetRecommendedForArtist_ShouldReturnOpportunityList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await client.GetAsync("/api/Opportunity/artist/recommended");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var opportunities = await response.Content.ReadAsync<System.Text.Json.JsonElement>();
+        Assert.Equal(System.Text.Json.JsonValueKind.Array, opportunities.ValueKind);
+    }
+
     public static TheoryData<DealDto> AllDealTypes =>
     [
         new FlatFeeDealDto { PaymentMethod = PaymentMethod.Cash, Fee = 500 },
@@ -50,7 +72,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Created);
-        var opportunity = await response.Content.ReadAsync<OpportunityDto>();
+        var opportunity = await response.Content.ReadAsync<OpportunityResponse>();
         Assert.NotNull(opportunity);
         Assert.NotNull(opportunity.Id);
         Assert.Equal(request.StartDate, opportunity.StartDate);
@@ -154,7 +176,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var result = await response.Content.ReadAsync<Pagination<OpportunityDto>>();
+        var result = await response.Content.ReadAsync<Pagination<OpportunityResponse>>();
         Assert.NotNull(result);
         Assert.Contains(result.Data, o => o.Id == fixture.SeedState.FreshVenueHireOpportunity.Id);
     }

@@ -1,11 +1,14 @@
 using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.B2B.Conversations.Application.Interfaces;
+using Concertable.B2B.Conversations.Infrastructure;
 using Concertable.B2B.Conversations.Domain.ReadModels;
 using Concertable.B2B.Conversations.Infrastructure.Services;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.User.Contracts;
 using Concertable.Contracts;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Contracts;
 using Reunion;
 using Moq;
 
@@ -15,6 +18,7 @@ public sealed class MessageServiceTests
 {
     private readonly Mock<IMessageRepository> repository;
     private readonly Mock<IConversationsNotifier> notifier;
+    private readonly Mock<IBus> bus;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly Mock<ITenantModule> tenantModule;
     private readonly MessageService sut;
@@ -23,16 +27,60 @@ public sealed class MessageServiceTests
     {
         this.repository = new Mock<IMessageRepository>();
         this.notifier = new Mock<IConversationsNotifier>();
+        this.bus = new Mock<IBus>();
+        this.bus.Setup(value => value.PublishAsync(
+                It.IsAny<TenantActivityRecordedEvent>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
         this.tenantContext = new Mock<ITenantContext>();
         this.tenantModule = new Mock<ITenantModule>();
         this.sut = new MessageService(
             this.repository.Object,
             this.notifier.Object,
+            this.bus.Object,
+            new InlineOutboxBehavior(),
             Mock.Of<ICurrentUser>(),
             this.tenantContext.Object,
             this.tenantModule.Object,
             Mock.Of<IUserModule>(),
             TimeProvider.System);
+    }
+
+    [Fact]
+    public async Task GetRecentPreviews_ResolvesCounterpartyIdentityAndPersonaHref()
+    {
+        var activeTenantId = Guid.NewGuid();
+        var venueTenantId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var at = new DateTime(2026, 8, 14, 12, 0, 0, DateTimeKind.Utc);
+        var repository = new Mock<IMessageRepository>();
+        repository.Setup(r => r.GetRecentPreviewsAsync(activeTenantId, userId))
+            .ReturnsAsync([new(12, venueTenantId, true, "See you Friday", at, true)]);
+        var currentUser = new Mock<ICurrentUser>();
+        currentUser.SetupGet(u => u.Id).Returns(userId);
+        var tenantContext = new Mock<ITenantContext>();
+        tenantContext.SetupGet(t => t.TenantId).Returns(activeTenantId);
+        repository.Setup(r => r.GetParticipantProfilesAsync(It.IsAny<IReadOnlySet<Guid>>()))
+            .ReturnsAsync(new Dictionary<Guid, ParticipantProfile>
+            {
+                [venueTenantId] = ParticipantProfile.Create(
+                    venueTenantId,
+                    "The Roundhouse",
+                    "Greater London",
+                    "London")
+            });
+        var service = new MessageService(
+            repository.Object, Mock.Of<IConversationsNotifier>(), Mock.Of<IBus>(), new InlineOutboxBehavior(),
+            currentUser.Object, tenantContext.Object,
+            Mock.Of<ITenantModule>(), Mock.Of<IUserModule>(), TimeProvider.System);
+
+        var previews = await service.GetRecentPreviewsAsync();
+
+        var preview = Assert.Single(previews);
+        Assert.Equal("The Roundhouse", preview.OtherPartyName);
+        Assert.Equal("See you Friday", preview.Preview);
+        Assert.True(preview.Unread);
+        Assert.Equal("/_artist/?inbox=open", preview.Href);
     }
 
     [Fact]
@@ -44,7 +92,7 @@ public sealed class MessageServiceTests
         var recipientMembers = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
         MessageDto? payload = null;
 
-        this.repository.Setup(r => r.InsertAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()))
+        this.repository.Setup(r => r.AddAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((MessageEntity message, CancellationToken _) => message);
         this.repository.Setup(r => r.GetParticipantProfilesAsync(It.IsAny<IReadOnlySet<Guid>>()))
             .ReturnsAsync(new Dictionary<Guid, ParticipantProfile>
@@ -63,7 +111,17 @@ public sealed class MessageServiceTests
         await this.sut.SendAndNotifyAsync(venueTenantId, artistTenantId,
             senderTenantId: venueTenantId, sentByUserId: sentByUserId, "hello", MessageAction.ApplicationAccepted);
 
+        this.repository.Verify(r => r.AddAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()), Times.Once);
+        this.repository.Verify(r => r.InsertAsync(It.IsAny<MessageEntity>(), It.IsAny<CancellationToken>()), Times.Never);
         this.tenantModule.Verify(t => t.GetMemberUserIdsAsync(artistTenantId, It.IsAny<CancellationToken>()), Times.Once);
+        this.bus.Verify(b => b.PublishAsync(
+            It.Is<TenantActivityRecordedEvent>(e =>
+                e.Activity.TenantId == artistTenantId &&
+                e.Activity.Type == ActivityType.ApplicationAccepted &&
+                e.Activity.Subject == "hello" &&
+                e.Activity.Url == "/_artist/?inbox=open"),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
         foreach (var member in recipientMembers)
             this.notifier.Verify(n => n.MessageReceivedAsync(member.ToString(), It.IsAny<object>()), Times.Once);
         this.notifier.VerifyNoOtherCalls();
@@ -121,5 +179,14 @@ public sealed class MessageServiceTests
         Assert.Equal("Unknown", sender.DisplayName);
         Assert.Null(sender.County);
         Assert.Null(sender.Town);
+    }
+
+    private sealed class InlineOutboxBehavior : IOutboxUnitOfWorkBehavior
+    {
+        public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken = default) =>
+            action();
+
+        public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default) =>
+            action();
     }
 }

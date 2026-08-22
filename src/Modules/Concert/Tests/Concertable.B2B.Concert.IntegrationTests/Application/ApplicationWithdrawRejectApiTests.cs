@@ -183,17 +183,17 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     #region HATEOAS
 
     [Fact]
-    public async Task GetById_ShouldOfferWithdrawAndRejectLinks_OnlyWhilePending()
+    public async Task GetById_ShouldOfferVenueDecisionLinks_OnlyWhilePending()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var beforeResponse = await client.GetAsync($"/api/application/{appId}");
         await beforeResponse.ShouldBe(HttpStatusCode.OK);
-        var before = await beforeResponse.Content.ReadAsync<ApplicationResponse>();
+        var before = await beforeResponse.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
         Assert.Equal(ApplicationStatus.Pending, before!.Status);
-        Assert.NotNull(before.Actions.Withdraw);
-        Assert.NotNull(before.Actions.Reject);
+        Assert.NotNull(before.Actions.Accept);
+        Assert.NotNull(before.Actions.Decline);
 
         // Act
         var rejectResponse = await client.PostAsync($"/api/application/{appId}/reject");
@@ -202,10 +202,31 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         await rejectResponse.ShouldBe(HttpStatusCode.NoContent);
         var afterResponse = await client.GetAsync($"/api/application/{appId}");
         await afterResponse.ShouldBe(HttpStatusCode.OK);
-        var after = await afterResponse.Content.ReadAsync<ApplicationResponse>();
+        var after = await afterResponse.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
         Assert.Equal(ApplicationStatus.Rejected, after!.Status);
-        Assert.Null(after.Actions.Withdraw);
-        Assert.Null(after.Actions.Reject);
+        Assert.Null(after.Actions.Accept);
+        Assert.Null(after.Actions.Decline);
+    }
+
+    [Fact]
+    public async Task GetById_ShouldOfferArtistWithdraw_OnlyWhilePending()
+    {
+        var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var appId = fixture.SeedState.FlatFeeApp.Id;
+
+        var beforeResponse = await artist.GetAsync($"/api/Application/{appId}");
+        await beforeResponse.ShouldBe(HttpStatusCode.OK);
+        var before = await beforeResponse.Content.ReadAsync<ApplicationResponse<ArtistApplicationActions>>();
+        Assert.NotNull(before!.Actions.Withdraw);
+
+        var rejectResponse = await venue.PostAsync($"/api/Application/{appId}/reject", (object?)null);
+        await rejectResponse.ShouldBe(HttpStatusCode.NoContent);
+
+        var afterResponse = await artist.GetAsync($"/api/Application/{appId}");
+        await afterResponse.ShouldBe(HttpStatusCode.OK);
+        var after = await afterResponse.Content.ReadAsync<ApplicationResponse<ArtistApplicationActions>>();
+        Assert.Null(after!.Actions.Withdraw);
     }
 
     #endregion
