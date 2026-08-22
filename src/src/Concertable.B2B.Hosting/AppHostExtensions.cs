@@ -31,10 +31,7 @@ public static class AppHostExtensions
                       .WithReference(paymentWeb)
                       .WaitFor(paymentWeb)
                       .WithEnvironment("Auth__Authority", auth.GetEndpoint("https"))
-                      .WithEnvironment("Cors__AllowedOrigins__0", "https://localhost:5175")
-                      .WithEnvironment("Cors__AllowedOrigins__1", "https://localhost:5176")
-                      .WithEnvironment("Cors__AllowedOrigins__2", "https://localhost:5177")
-                      .WithEnvironment("Cors__AllowedOrigins__3", "https://localhost:5178")
+                      .WithLocalSpaCorsOrigins(LocalSpaSurfaces.B2B)
                       .WithEnvironment(AzureServiceBusOptions.ServiceNameEnvVar, B2BConstants.ServiceName)
                       .WithEnvironment("ServiceAuth__ClientId", "concertable-b2b")
                       .WithOptionalEnvironment("ServiceAuth__ClientSecret", b2bSecret);
@@ -72,5 +69,17 @@ public static class AppHostExtensions
         return builder.AddProject<TProject>(B2BConstants.SeedingSimulatorResource)
                       .WithReference(asb)
                       .WaitFor(asb);
+    }
+
+    extension(IResourceBuilder<ProjectResource> resource)
+    {
+        public IResourceBuilder<ProjectResource> WithLocalSpaCorsOrigins(
+            IReadOnlyList<LocalSpaSurface> surfaces)
+        {
+            for (var index = 0; index < surfaces.Count; index++)
+                resource = resource.WithEnvironment($"Cors__AllowedOrigins__{index}", surfaces[index].Origin);
+
+            return resource;
+        }
     }
 }

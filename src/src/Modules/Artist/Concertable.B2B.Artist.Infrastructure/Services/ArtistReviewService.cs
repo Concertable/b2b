@@ -24,14 +24,14 @@ internal sealed class ArtistReviewService : IArtistReviewService
     public async Task<IPagination<ReviewDto>> GetPagedAsync(int artistId, IPageParams pageParams) =>
         (await reviewRepository.GetPagedByArtistIdAsync(artistId, pageParams)).Map(review => review.ToReviewDto());
 
-    public async Task<Option<IReadOnlyList<ArtistReview>>> GetRecentForCurrentAsync(
+    public async Task<IReadOnlyList<ArtistReview>> GetRecentForCurrentAsync(
         int take,
         CancellationToken ct = default)
     {
         var artist = await artistService.GetDetailsAsync(ct);
         if (!artist.TryGetValue(out var details))
-            return null;
+            return [];
 
-        return Option.Some(await reviewRepository.GetRecentByArtistIdAsync(details.Id, take, ct));
+        return await reviewRepository.GetRecentByArtistIdAsync(details.Id, take, ct);
     }
 }
