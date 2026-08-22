@@ -19,5 +19,8 @@ internal sealed class UserRepository : Repository<UserEntity>, IUserRepository
         await context.Users.Where(u => ids.Contains(u.Id)).ToListAsync();
 
     public async Task<Guid?> GetIdByEmailAsync(string email) =>
-        await context.Users.Where(u => u.Email == email).Select(u => (Guid?)u.Id).FirstOrDefaultAsync();
+        await context.Users
+            .Where(u => u.Email.ToLower() == email.ToLower())
+            .Select(u => (Guid?)u.Id)
+            .FirstOrDefaultAsync();
 }
