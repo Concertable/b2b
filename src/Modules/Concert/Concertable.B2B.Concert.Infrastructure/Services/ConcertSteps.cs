@@ -14,13 +14,13 @@ internal sealed class RefundEscrowCancelStep(IBus bus) : ICancelStep
             RefundReasonCodes.RequestedByCustomer), ct);
 }
 
-internal sealed class ReleaseEscrowCompleteStep(IEscrowOperationsClient escrow) : ICompleteStep
+internal sealed class ReleaseEscrowCompleteStep(IEscrowOperationsClient escrowClient) : ICompleteStep
 {
     public async Task<UnitResult<FinishConcertError>> ExecuteAsync(
         ConcertEntity concert,
         CancellationToken ct = default)
     {
-        var result = await escrow.ReleaseByBookingIdAsync(concert.BookingId, ct);
+        var result = await escrowClient.ReleaseByBookingIdAsync(concert.BookingId, ct);
         if (result.TryGetError(out var error))
             return new FinishConcertError.EscrowReleaseFailure(error);
 
@@ -30,7 +30,7 @@ internal sealed class ReleaseEscrowCompleteStep(IEscrowOperationsClient escrow) 
 }
 
 internal sealed class PayoutCompleteStep(
-    IManagerPaymentOperationsClient payments,
+    IManagerPaymentOperationsClient managerPaymentClient,
     ILogger<PayoutCompleteStep> logger) : ICompleteStep
 {
     public async Task<UnitResult<FinishConcertError>> ExecuteAsync(
@@ -46,7 +46,7 @@ internal sealed class PayoutCompleteStep(
             concert.SettlementPayerTenantId,
             concert.SettlementPayeeTenantId);
 
-        var result = await payments.PayAsync(
+        var result = await managerPaymentClient.PayAsync(
             concert.SettlementPayerTenantId,
             concert.SettlementPayeeTenantId,
             gross,

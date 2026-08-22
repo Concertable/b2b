@@ -16,7 +16,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private readonly IOpportunityModule opportunities;
     private readonly IVenueModule venues;
     private readonly IDealModule deals;
-    private readonly IManagerPaymentOperationsClient payment;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly ITenantContext tenantContext;
 
     public ApplicationCheckoutService(
@@ -25,7 +25,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         IOpportunityModule opportunities,
         IVenueModule venues,
         IDealModule deals,
-        IManagerPaymentOperationsClient payment,
+        IManagerPaymentOperationsClient managerPaymentClient,
         ITenantContext tenantContext)
     {
         this.applications = applications;
@@ -33,7 +33,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.opportunities = opportunities;
         this.venues = venues;
         this.deals = deals;
-        this.payment = payment;
+        this.managerPaymentClient = managerPaymentClient;
         this.tenantContext = tenantContext;
     }
 
@@ -53,7 +53,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
             [PaymentMetadataKeys.Type] = TransactionTypes.ApplicationApply,
             [PaymentMetadataKeys.OpportunityId] = opportunityId.ToString()
         };
-        var session = await payment.CreateSetupSessionAsync(artistTenantId, metadata);
+        var session = await managerPaymentClient.CreateSetupSessionAsync(artistTenantId, metadata);
         return new Checkout(
             new FlatPayment(venueHire.HireFee),
             new PayeeSummary(venue.Name, venue.Email),
@@ -77,7 +77,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         if (deal is FlatFeeDealDto flatFee)
         {
             metadata[PaymentMetadataKeys.Type] = TransactionTypes.ApplicationAccept;
-            var session = await payment.CreateHoldSessionAsync(
+            var session = await managerPaymentClient.CreateHoldSessionAsync(
                 application.VenueTenantId,
                 Money.Gbp(flatFee.Fee),
                 metadata);
@@ -90,7 +90,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 
         metadata[PaymentMetadataKeys.Type] = TransactionTypes.Verify;
         metadata[PaymentMetadataKeys.VenueManagerId] = venue.UserId.ToString();
-        var verification = await payment.CreateVerifySessionAsync(application.VenueTenantId, metadata);
+        var verification = await managerPaymentClient.CreateVerifySessionAsync(application.VenueTenantId, metadata);
         return new Checkout(
             ToPaymentAmount(deal),
             new PayeeSummary(artist.Name, artist.Email),

@@ -15,18 +15,18 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 internal sealed class FlatFeeConfirmStep : IConfirmStep
 {
     private readonly IBookingService bookings;
-    private readonly IManagerPaymentOperationsClient payment;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly IBus bus;
     private readonly ILogger<FlatFeeConfirmStep> logger;
 
     public FlatFeeConfirmStep(
         IBookingService bookings,
-        IManagerPaymentOperationsClient payment,
+        IManagerPaymentOperationsClient managerPaymentClient,
         IBus bus,
         ILogger<FlatFeeConfirmStep> logger)
     {
         this.bookings = bookings;
-        this.payment = payment;
+        this.managerPaymentClient = managerPaymentClient;
         this.bus = bus;
         this.logger = logger;
     }
@@ -37,7 +37,7 @@ internal sealed class FlatFeeConfirmStep : IConfirmStep
     {
         var accepted = (FlatFeeAcceptedApplication)application;
         var booking = await bookings.CreateStandardAsync(accepted, ct);
-        var paymentIntentId = await payment.FindHeldIntentAsync(
+        var paymentIntentId = await managerPaymentClient.FindHeldIntentAsync(
             accepted.VenueTenantId,
             accepted.ApplicationId);
         logger.AcceptingFlatFeeApplication(
