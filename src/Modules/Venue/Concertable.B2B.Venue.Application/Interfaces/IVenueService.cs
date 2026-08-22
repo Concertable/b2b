@@ -23,4 +23,6 @@ internal interface IVenueService
         CancellationToken ct = default);
 
     Task<Option<VenueSummary>> GetSummaryAsync(int id, CancellationToken ct = default);
+
+    Task<IPagination<PendingVenueDto>> GetPendingApprovalAsync(IPageParams pageParams);
 }

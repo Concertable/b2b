@@ -1,4 +1,5 @@
 using Concertable.B2B.Venue.Application.Errors;
+using Concertable.B2B.Venue.Application.Mappers;
 using Concertable.B2B.Venue.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure.Extensions;
@@ -155,4 +156,7 @@ internal sealed class VenueService : IVenueService
         int id,
         CancellationToken ct = default) =>
         await readRepository.GetSummaryAsync(id, ct);
+
+    public async Task<IPagination<PendingVenueDto>> GetPendingApprovalAsync(IPageParams pageParams) =>
+        (await adminRepository.GetPendingApprovalAsync(pageParams)).Map(v => v.ToPendingVenueDto());
 }
