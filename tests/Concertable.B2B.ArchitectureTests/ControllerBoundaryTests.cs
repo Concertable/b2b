@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -14,6 +15,30 @@ public sealed class ControllerBoundaryTests
             .Where(type => type.GetConstructors().SelectMany(constructor => constructor.GetParameters())
                 .Any(parameter => parameter.ParameterType == typeof(TimeProvider)))
             .Select(type => type.FullName)
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    [Fact]
+    public void Mutating_endpoints_declare_authorization_explicitly()
+    {
+        var mutating = new[]
+        {
+            typeof(HttpPostAttribute),
+            typeof(HttpPutAttribute),
+            typeof(HttpPatchAttribute),
+            typeof(HttpDeleteAttribute),
+        };
+
+        var offenders = GetControllers()
+            .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            .Where(method => mutating.Any(verb => method.IsDefined(verb, inherit: true)))
+            .Where(method => !method.IsDefined(typeof(AuthorizeAttribute), inherit: true)
+                && !(method.DeclaringType?.IsDefined(typeof(AuthorizeAttribute), inherit: true) ?? false)
+                && !method.IsDefined(typeof(AllowAnonymousAttribute), inherit: true)
+                && !(method.DeclaringType?.IsDefined(typeof(AllowAnonymousAttribute), inherit: true) ?? false))
+            .Select(method => $"{method.DeclaringType!.FullName}.{method.Name}")
             .ToArray();
 
         Assert.Empty(offenders);
@@ -52,6 +77,7 @@ public sealed class ControllerBoundaryTests
     {
         var directory = Path.GetDirectoryName(typeof(ControllerBoundaryTests).Assembly.Location)!;
         return Directory.GetFiles(directory, "Concertable.B2B.*.Api.dll")
+            .Concat(Directory.GetFiles(directory, "Concertable.B2B.Web.dll"))
             .Select(Assembly.LoadFrom)
             .SelectMany(GetLoadableTypes)
             .Where(type => !type.IsAbstract && typeof(ControllerBase).IsAssignableFrom(type));

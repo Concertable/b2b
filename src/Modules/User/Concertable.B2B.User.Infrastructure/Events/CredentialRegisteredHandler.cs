@@ -57,7 +57,7 @@ internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<Cre
         }
 
         context.AddInboxMessage(envelope, nameof(CredentialRegisteredHandler));
-        context.Users.Add(UserEntity.FromRegistration(e.UserId, e.Email));
+        context.Users.Add(UserEntity.Create(e.UserId, e.Email));
 
         await context.SaveChangesAsync(ct);
         logger.WroteUserFromCredentialRegistered(e.UserId);
