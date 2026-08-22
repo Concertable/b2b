@@ -1,72 +1,116 @@
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import concertApi from "@concertable/shared/features/concerts/api/concertApi";
-import { useConcertStore } from "@concertable/shared/features/concerts/store/useConcertStore";
-import {
-  updateConcertRequestSchema,
-  type UpdateConcertRequest,
-} from "@concertable/shared/features/concerts/schemas/updateConcertRequestSchema";
-import type { Concert } from "@concertable/shared/features/concerts/types";
-import type { MyConcert } from "../types";
 import { concertKeys } from "@concertable/shared/features/concerts/hooks/useConcertQuery";
+import { updateConcertRequestSchema } from "@concertable/shared/features/concerts/schemas/updateConcertRequestSchema";
+import {
+  Concert,
+  type UpdateConcertRequest,
+} from "@concertable/shared/features/concerts/types";
+import type { MyConcert } from "../types";
 import { useMyConcertQuery } from "./useMyConcertQuery";
 
 interface UseMyConcertResult {
   concert: MyConcert | undefined;
-  draft: Concert | undefined;
+  draft: UpdateConcertRequest | undefined;
   isLoading: boolean;
   isError: boolean;
   editMode: boolean;
   isDirty: boolean;
   isSaving: boolean;
   canSave: boolean;
-  saveError: string | null;
+  saveError?: string;
   save: () => void;
   toggleEdit: () => void;
   resetDraft: () => void;
+  setName: (name: string) => void;
+  setAbout: (about: string) => void;
 }
+
+const emptyRequest: UpdateConcertRequest = {
+  name: "",
+  about: "",
+  price: 0,
+  totalTickets: 0,
+};
 
 export function useMyConcert(id: number): UseMyConcertResult {
   const { data: concert, isLoading, isError } = useMyConcertQuery(id);
   const queryClient = useQueryClient();
-
-  const { beginEdit, endEdit, draft, isDirty, editMode } = useConcertStore();
+  const [editMode, setEditMode] = useState(false);
+  const {
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isDirty, isValid },
+  } = useForm<UpdateConcertRequest>({
+    resolver: zodResolver(updateConcertRequestSchema),
+    defaultValues: emptyRequest,
+    mode: "onChange",
+  });
 
   const mutation = useMutation({
     mutationFn: (request: UpdateConcertRequest) =>
       concertApi.updateConcert(id, request),
     onSuccess: (saved) => {
-      queryClient.setQueryData<MyConcert>(concertKeys.my(id), (prev) =>
-        prev ? { ...prev, ...saved } : undefined,
+      queryClient.setQueryData<MyConcert>(concertKeys.my(id), (previous) =>
+        previous ? { ...previous, ...saved } : undefined,
       );
-      endEdit();
+      reset(Concert.toUpdateRequest(saved));
+      setEditMode(false);
     },
   });
 
-  const validation = draft
-    ? updateConcertRequestSchema.safeParse(draft)
-    : undefined;
-  const canSave = validation?.success ?? false;
-  const saveError =
-    isDirty && validation && !validation.success
-      ? validation.error.issues[0].message
-      : null;
+  const resetDraft = () => {
+    if (concert) reset(Concert.toUpdateRequest(concert));
+    setEditMode(false);
+  };
+
+  const toggleEdit = () => {
+    if (editMode) {
+      resetDraft();
+      return;
+    }
+
+    if (concert) {
+      reset(Concert.toUpdateRequest(concert));
+      setEditMode(true);
+    }
+  };
 
   const save = () => {
-    if (validation?.success) mutation.mutate(validation.data);
+    void handleSubmit((request) => mutation.mutate(request))();
   };
+
+  const saveError = isDirty
+    ? errors.name?.message ??
+      errors.about?.message ??
+      errors.price?.message ??
+      errors.totalTickets?.message
+    : undefined;
 
   return {
     concert,
-    draft,
+    draft: editMode ? watch() : undefined,
     isLoading,
     isError,
     editMode,
     isDirty,
-    canSave,
+    canSave: editMode && isDirty && isValid,
     saveError,
     save,
+    resetDraft,
+    toggleEdit,
+    setName: (name) =>
+      setValue("name", name, { shouldDirty: true, shouldValidate: true }),
+    setAbout: (about) =>
+      setValue("about", about, {
+        shouldDirty: true,
+        shouldValidate: true,
+      }),
     isSaving: mutation.isPending,
-    toggleEdit: () => (editMode ? endEdit() : beginEdit(concert!)),
-    resetDraft: endEdit,
   };
 }

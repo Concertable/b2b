@@ -1,7 +1,7 @@
 import { z } from "zod";
-import type { OrganizationBuffer } from "../types";
+import type { UpdateOrganizationRequest } from "../types";
 
-export const updateOrganizationRequestSchema: z.ZodType<OrganizationBuffer> = z
+export const updateOrganizationRequestSchema = z
   .object({
     legalName: z
       .string()
@@ -49,11 +49,29 @@ export const updateOrganizationRequestSchema: z.ZodType<OrganizationBuffer> = z
       .max(50, "Bank reference must be 50 characters or fewer"),
     holdsMusicLicence: z.boolean(),
   })
-  .superRefine((buffer, context) => {
-    if (buffer.vatRegistered && buffer.vatNumber.length === 0)
+  .superRefine((values, context) => {
+    if (values.vatRegistered && values.vatNumber.length === 0)
       context.addIssue({
         code: "custom",
         path: ["vatNumber"],
         message: "Enter your VAT number",
       });
-  });
+  })
+  .transform(
+    (values): UpdateOrganizationRequest => ({
+      legalName: values.legalName,
+      taxCompliance: {
+        vatNumber: values.vatRegistered ? values.vatNumber : undefined,
+        sellerIdentifier: values.sellerIdentifier,
+        registeredAddress: {
+          line1: values.line1,
+          line2: values.line2 || undefined,
+          city: values.city,
+          postcode: values.postcode,
+          country: values.country,
+        },
+        bankReference: values.bankReference,
+        holdsMusicLicence: values.holdsMusicLicence,
+      },
+    }),
+  );
