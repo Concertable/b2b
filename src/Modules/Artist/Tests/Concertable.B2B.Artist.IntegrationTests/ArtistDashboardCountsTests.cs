@@ -7,9 +7,9 @@ namespace Concertable.B2B.Artist.IntegrationTests;
 [Collection("Integration")]
 public sealed class ArtistDashboardCountsTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ArtistApiFixture fixture;
 
-    public ArtistDashboardCountsTests(ApiFixture fixture, ITestOutputHelper output)
+    public ArtistDashboardCountsTests(ArtistApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
