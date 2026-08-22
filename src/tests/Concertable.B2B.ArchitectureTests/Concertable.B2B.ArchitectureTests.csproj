@@ -30,8 +30,8 @@
     <ProjectReference Include="..\..\src\Seed\Concertable.B2B.Seed.Simulator\Concertable.B2B.Seed.Simulator.csproj" />
     <ProjectReference Include="..\..\src\Concertable.B2B.AppHost\Concertable.B2B.AppHost.csproj" />
     <ProjectReference Include="..\..\src\Modules\Admin\Concertable.B2B.Admin.Contracts\Concertable.B2B.Admin.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\Concertable.Shared\tests\Concertable.Composition.Testing\Concertable.Composition.Testing.csproj" Condition="'$(UseLocalPlatformPackages)' != 'true' And Exists('..\..\..\Concertable.Shared\tests\Concertable.Composition.Testing\Concertable.Composition.Testing.csproj')" />
-    <PackageReference Include="Concertable.Composition.Testing" Condition="'$(UseLocalPlatformPackages)' == 'true' Or !Exists('..\..\..\Concertable.Shared\tests\Concertable.Composition.Testing\Concertable.Composition.Testing.csproj')" />
+    <ProjectReference Include="..\..\..\Concertable.Shared\tests\Concertable.Testing.Architecture\Concertable.Testing.Architecture.csproj" Condition="'$(UseLocalPlatformPackages)' != 'true' And Exists('..\..\..\Concertable.Shared\tests\Concertable.Testing.Architecture\Concertable.Testing.Architecture.csproj')" />
+    <PackageReference Include="Concertable.Testing.Architecture" Condition="'$(UseLocalPlatformPackages)' == 'true' Or !Exists('..\..\..\Concertable.Shared\tests\Concertable.Testing.Architecture\Concertable.Testing.Architecture.csproj')" />
   </ItemGroup>
 
 </Project>
