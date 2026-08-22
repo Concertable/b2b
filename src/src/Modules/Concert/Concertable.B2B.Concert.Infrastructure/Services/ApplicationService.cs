@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ReadModels;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
@@ -81,6 +82,20 @@ internal sealed class ApplicationService : IApplicationService
         var applications = await repository.GetRecentDeniedByArtistTenantIdAsync(artist.TenantId);
         return new Success<IReadOnlyList<ApplicationDto>>(
             await mapper.ToDtosAsync(applications));
+    }
+
+    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForCurrentVenueAsync()
+    {
+        return new Success<IReadOnlyList<ApplicationDto>>(
+            await mapper.ToDtosAsync(
+                await repository.GetPendingForVenueTenantIdAsync(tenantContext.GetTenantId())));
+    }
+
+    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetCurrentForCurrentArtistAsync()
+    {
+        return new Success<IReadOnlyList<ApplicationDto>>(
+            await mapper.ToDtosAsync(
+                await repository.GetCurrentForArtistTenantIdAsync(tenantContext.GetTenantId())));
     }
 
     public Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(

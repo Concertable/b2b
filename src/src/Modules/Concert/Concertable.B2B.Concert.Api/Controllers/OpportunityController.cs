@@ -9,15 +9,19 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[RequiredTenantType(TenantType.Venue)]
 internal sealed class OpportunityController : ControllerBase
 {
     private readonly IOpportunityService opportunityService;
+    private readonly IOpportunityDashboardService dashboardService;
     private readonly IOpportunityResponseMapper mapper;
 
-    public OpportunityController(IOpportunityService opportunityService, IOpportunityResponseMapper mapper)
+    public OpportunityController(
+        IOpportunityService opportunityService,
+        IOpportunityDashboardService dashboardService,
+        IOpportunityResponseMapper mapper)
     {
         this.opportunityService = opportunityService;
+        this.dashboardService = dashboardService;
         this.mapper = mapper;
     }
 
@@ -80,4 +84,18 @@ internal sealed class OpportunityController : ControllerBase
     {
         return Ok(await opportunityService.OwnsOpportunityByApplicationIdAsync(applicationId));
     }
+
+    [HttpGet("venue/current")]
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<OpportunityApplicationMetricsResponse>>> GetOpenForCurrentVenue() =>
+        (await dashboardService.GetApplicationMetricsForCurrentVenueAsync())
+            .ToOkOrProblem(metrics => metrics.ToApplicationMetricsResponses());
+
+    [HttpGet("artist/recommended")]
+    [RequiredTenantType(TenantType.Artist)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<OpportunityMatchResponse>>> GetRecommendedForCurrentArtist() =>
+        (await dashboardService.GetMatchesForCurrentArtistAsync())
+            .ToOkOrProblem(matches => matches.ToMatchResponses());
 }

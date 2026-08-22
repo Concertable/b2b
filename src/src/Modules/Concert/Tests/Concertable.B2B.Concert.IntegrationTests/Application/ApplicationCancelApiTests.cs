@@ -274,7 +274,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     #region HATEOAS
 
     [Fact]
-    public async Task GetById_ShouldOfferCancelAndWithdraw_WhileAccepted_AndNoneOnceCancelled()
+    public async Task GetById_ShouldOfferVenueCancel_WhileAccepted_AndNoneOnceCancelled()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -282,11 +282,9 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         await AcceptFlatFeeAsync(client);
         var beforeResponse = await client.GetAsync($"/api/application/{appId}");
         await beforeResponse.ShouldBe(HttpStatusCode.OK);
-        var before = await beforeResponse.Content.ReadAsync<ApplicationResponse>();
+        var before = await beforeResponse.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
         Assert.Equal(ApplicationStatus.Accepted, before!.Status);
         Assert.NotNull(before.Actions.Cancel);
-        Assert.NotNull(before.Actions.Withdraw);
-        Assert.Null(before.Actions.Reject);
 
         // Act
         var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel");
@@ -296,11 +294,9 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         var afterResponse = await client.GetAsync($"/api/application/{appId}");
         await afterResponse.ShouldBe(HttpStatusCode.OK);
-        var after = await afterResponse.Content.ReadAsync<ApplicationResponse>();
+        var after = await afterResponse.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
         Assert.Equal(ApplicationStatus.Cancelled, after!.Status);
         Assert.Null(after.Actions.Cancel);
-        Assert.Null(after.Actions.Withdraw);
-        Assert.Null(after.Actions.Reject);
     }
 
     #endregion

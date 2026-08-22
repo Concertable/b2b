@@ -15,6 +15,8 @@ internal interface IApplicationService
     Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id);
     Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForArtistAsync();
     Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetRecentDeniedForArtistAsync();
+    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForCurrentVenueAsync();
+    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetCurrentForCurrentArtistAsync();
     Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(int opportunityId, ESignatureRequest eSignature);
     Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,

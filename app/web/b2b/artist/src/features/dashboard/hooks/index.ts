@@ -7,3 +7,4 @@ export { useArtistPayoutsQuery } from "./useArtistPayoutsQuery";
 export { useArtistRecommendedOpportunitiesQuery } from "./useArtistRecommendedOpportunitiesQuery";
 export { useArtistActivityQuery } from "./useArtistActivityQuery";
 export { useArtistRecentReviewsQuery } from "./useArtistRecentReviewsQuery";
+export { useArtistApplicationActions } from "./useArtistApplicationActions";

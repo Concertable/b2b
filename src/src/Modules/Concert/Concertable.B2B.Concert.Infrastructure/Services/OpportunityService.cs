@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
@@ -55,6 +56,7 @@ internal sealed class OpportunityService : IOpportunityService
                     new DateRange(request.StartDate, request.EndDate),
                     dealId,
                     request.Genres);
+                entity.Venue = venue;
                 await repository.AddAsync(entity);
                 return Result.Success<OpportunityEntity, OpportunityMutationError>(entity);
             });
@@ -84,6 +86,7 @@ internal sealed class OpportunityService : IOpportunityService
                     new DateRange(request.StartDate, request.EndDate),
                     dealId,
                     request.Genres);
+                opportunity.Venue = venue;
                 await repository.AddAsync(opportunity);
             }
         });

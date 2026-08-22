@@ -17,6 +17,7 @@ internal sealed class ConcertDevSeeder : IDevSeeder
     private readonly ConcertDbContext context;
     private readonly SeedState seed;
     private readonly IDealModule deals;
+    private readonly IDealTermsRenderer termsRenderer;
     private readonly ITermsFingerprintCalculator fingerprint;
     private readonly ITenantModule tenants;
     private readonly LegalSettings legal;
@@ -26,6 +27,7 @@ internal sealed class ConcertDevSeeder : IDevSeeder
         ConcertDbContext context,
         SeedState seed,
         IDealModule deals,
+        IDealTermsRenderer termsRenderer,
         ITermsFingerprintCalculator fingerprint,
         ITenantModule tenants,
         IOptions<LegalSettings> legal,
@@ -34,6 +36,7 @@ internal sealed class ConcertDevSeeder : IDevSeeder
         this.context = context;
         this.seed = seed;
         this.deals = deals;
+        this.termsRenderer = termsRenderer;
         this.fingerprint = fingerprint;
         this.tenants = tenants;
         this.legal = legal.Value;
@@ -58,6 +61,25 @@ internal sealed class ConcertDevSeeder : IDevSeeder
             await context.SaveChangesAsync(ct);
 
             context.Concerts.AddRange(seed.Concerts);
+            await context.SaveChangesAsync(ct);
+        });
+
+        await context.Contracts.SeedIfEmptyAsync(async () =>
+        {
+            var bookedApplications = await context.Applications
+                .Include(application => application.Booking)
+                .Include(application => application.Opportunity)
+                .Where(application => application.Booking != null)
+                .ToListAsync(ct);
+            var contracts = await SeededContractFactory.CreateAsync(
+                seed,
+                bookedApplications,
+                deals,
+                termsRenderer,
+                legal.PlatformTermsVersion,
+                timeProvider.GetUtcNow().UtcDateTime,
+                ct);
+            context.Contracts.AddRange(contracts);
             await context.SaveChangesAsync(ct);
         });
 

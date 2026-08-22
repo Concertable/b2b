@@ -18,11 +18,9 @@ export interface VenueDashboardOverview {
 
 export interface VenueDashboardKpis {
   applicationsToReview: number;
-  applicationsToReviewDelta?: number;
   openOpportunities: number;
   upcomingConcerts: number;
   mtdRevenueCents: number;
-  mtdRevenueDeltaPercent?: number;
 }
 
 export interface Application {
@@ -31,4 +29,10 @@ export interface Application {
   artist: ArtistSummary;
   opportunity: OpportunitySummary;
   actions: ApplicationActions;
+}
+
+export interface OpportunityApplicationMetrics {
+  opportunity: OpportunitySummary;
+  applicationCount: number;
+  daysUntilDeadline: number;
 }
