@@ -1,28 +1,37 @@
-import { useState, type FormEvent } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@concertable/web/components/ui/button";
 import { Input } from "@concertable/web/components/ui/input";
 import { Label } from "@concertable/web/components/ui/label";
 import { useInviteAdmin } from "../hooks/useInviteAdmin";
+import {
+  inviteAdminRequestSchema,
+  type InviteAdminRequest,
+} from "../schemas/inviteAdminRequestSchema";
 
 export function InviteForm() {
-  const { submit, validate, isPending } = useInviteAdmin();
-  const [email, setEmail] = useState("");
-  const [touched, setTouched] = useState(false);
+  const { submit, isPending } = useInviteAdmin();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<InviteAdminRequest>({
+    resolver: zodResolver(inviteAdminRequestSchema),
+    defaultValues: { email: "" },
+    mode: "onChange",
+  });
 
-  const parsed = validate({ email });
-  const error = touched && !parsed.success ? parsed.error.issues[0].message : null;
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const result = submit({ email }, () => {
-      setEmail("");
-      setTouched(false);
-    });
-    if (!result.success) setTouched(true);
-  }
+  const onValid = (request: InviteAdminRequest) => {
+    submit(request, () => reset());
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" data-testid="invite-form">
+    <form
+      onSubmit={handleSubmit(onValid)}
+      className="space-y-4"
+      data-testid="invite-form"
+    >
       <h3 className="font-medium">Invite an admin</h3>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
         <div className="flex-1 space-y-1">
@@ -30,20 +39,18 @@ export function InviteForm() {
           <Input
             id="invite-email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onBlur={() => setTouched(true)}
-            aria-invalid={error != null}
+            aria-invalid={errors.email != null}
             data-testid="invite-email"
+            {...register("email")}
           />
         </div>
         <Button type="submit" disabled={isPending} data-testid="invite-submit">
           {isPending ? "Sending..." : "Send invite"}
         </Button>
       </div>
-      {error && (
+      {errors.email && (
         <p className="text-destructive text-xs" data-testid="invite-error">
-          {error}
+          {errors.email.message}
         </p>
       )}
     </form>
