@@ -91,7 +91,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         var response = await client.GetAsync(
-            $"/api/application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/eligibility");
+            $"/api/application/opportunity/{fixture.SeedState.ActiveVenueHireOpportunity.Id}/eligibility");
 
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.True(await response.Content.ReadAsync<bool>());
@@ -103,7 +103,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
 
         var response = await client.GetAsync(
-            $"/api/application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/eligibility");
+            $"/api/application/opportunity/{fixture.SeedState.ActiveVenueHireOpportunity.Id}/eligibility");
 
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.False(await response.Content.ReadAsync<bool>());
@@ -164,7 +164,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
 
         var response = await client.PostAsync(
-            $"/api/application/opportunity/{fixture.SeedState.FreshVenueHireOpportunity.Id}/checkout",
+            $"/api/application/opportunity/{fixture.SeedState.ActiveVenueHireOpportunity.Id}/checkout",
             null);
 
         await AssertProblemCodeAsync(response, HttpStatusCode.Forbidden, "application.eligibility.missing_artist");

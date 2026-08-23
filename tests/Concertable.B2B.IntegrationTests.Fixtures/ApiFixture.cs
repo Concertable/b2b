@@ -260,33 +260,33 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task<int> GetOutboxMessageCountAsync<TMessage>()
     {
-        using var readScope = factory.Services.CreateScope();
-        var outbox = readScope.ServiceProvider.GetRequiredService<OutboxDbContext>();
         var messageType = MessageTypeAttribute.Resolve(typeof(TMessage));
-        return await outbox.Set<OutboxMessageEntity>()
-            .AsNoTracking()
-            .CountAsync(message => message.MessageType == messageType);
+        return await factory.Services
+            .GetRequiredService<IScoped<OutboxDbContext>>()
+            .RunAsync(outbox => outbox.Set<OutboxMessageEntity>()
+                .AsNoTracking()
+                .CountAsync(message => message.MessageType == messageType));
     }
 
-    public async Task<OutboxMessageSnapshot> GetOutboxMessageAsync(string messageType)
-    {
-        using var readScope = factory.Services.CreateScope();
-        var outbox = readScope.ServiceProvider.GetRequiredService<OutboxDbContext>();
-        var row = await outbox.Set<OutboxMessageEntity>()
-            .AsNoTracking()
-            .SingleAsync(message => message.MessageType == messageType);
-        return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
-    }
+    public Task<OutboxMessageSnapshot> GetOutboxMessageAsync(string messageType) => factory.Services
+        .GetRequiredService<IScoped<OutboxDbContext>>()
+        .RunAsync(async outbox =>
+        {
+            var row = await outbox.Set<OutboxMessageEntity>()
+                .AsNoTracking()
+                .SingleAsync(message => message.MessageType == messageType);
+            return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
+        });
 
-    public async Task<OutboxMessageSnapshot> GetOutboxMessageAsync(Guid id)
-    {
-        using var readScope = factory.Services.CreateScope();
-        var outbox = readScope.ServiceProvider.GetRequiredService<OutboxDbContext>();
-        var row = await outbox.Set<OutboxMessageEntity>()
-            .AsNoTracking()
-            .SingleAsync(message => message.Id == id);
-        return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
-    }
+    public Task<OutboxMessageSnapshot> GetOutboxMessageAsync(Guid id) => factory.Services
+        .GetRequiredService<IScoped<OutboxDbContext>>()
+        .RunAsync(async outbox =>
+        {
+            var row = await outbox.Set<OutboxMessageEntity>()
+                .AsNoTracking()
+                .SingleAsync(message => message.Id == id);
+            return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
+        });
 
     public HttpClient CreateClient(SeedUserSnapshot user) =>
         CreateClient(user.Id, user.Email);

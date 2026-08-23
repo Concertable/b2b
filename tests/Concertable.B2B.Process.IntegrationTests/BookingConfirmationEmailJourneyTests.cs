@@ -6,8 +6,6 @@ namespace Concertable.B2B.Process.IntegrationTests;
 [Collection("Integration")]
 public sealed class BookingConfirmationEmailJourneyTests : IAsyncLifetime
 {
-    private const string SeededAddress = "1 Seed Way, London, EC1A 1AA, United Kingdom";
-
     private readonly ProcessApiFixture fixture;
 
     public BookingConfirmationEmailJourneyTests(ProcessApiFixture fixture, ITestOutputHelper output)
@@ -35,6 +33,14 @@ public sealed class BookingConfirmationEmailJourneyTests : IAsyncLifetime
             .Where(email => email.Subject.StartsWith("Booking confirmed:", StringComparison.Ordinal))
             .ToList();
         var recipients = confirmations.Select(email => email.To).ToList();
+        var venueAddress = fixture.SeedState.Tenants
+            .Single(tenant => tenant.Id == fixture.SeedState.Venue.TenantId)
+            .RegisteredAddress;
+        var artistAddress = fixture.SeedState.Tenants
+            .Single(tenant => tenant.Id == fixture.SeedState.Artist.TenantId)
+            .RegisteredAddress;
+        Assert.NotNull(venueAddress);
+        Assert.NotNull(artistAddress);
 
         Assert.Contains(fixture.SeedState.VenueManager1.Email, recipients);
         Assert.Contains(fixture.SeedState.VenueManager3.Email, recipients);
@@ -44,7 +50,8 @@ public sealed class BookingConfirmationEmailJourneyTests : IAsyncLifetime
         {
             Assert.Contains(fixture.SeedState.VenueManager1.Email, email.Body);
             Assert.Contains(fixture.SeedState.ArtistManager1.Email, email.Body);
-            Assert.Contains(SeededAddress, email.Body);
+            Assert.Contains(venueAddress, email.Body);
+            Assert.Contains(artistAddress, email.Body);
         });
     }
 }

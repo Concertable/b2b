@@ -10,6 +10,7 @@ using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.User.Domain.Entities;
 using Concertable.B2B.Venue.Domain.Entities;
 using Concertable.Kernel.ValueObjects;
+using Concertable.Contracts.Enums;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
@@ -33,7 +34,7 @@ public sealed class SeedStateSnapshot
     public IReadOnlyList<SeedConcertSnapshot> Concerts { get; }
     public SeedFlatFeeDealSnapshot FlatFeeAppDeal { get; }
     public SeedVenueHireDealSnapshot VenueHireAppDeal { get; }
-    public SeedOpportunitySnapshot FreshVenueHireOpportunity { get; }
+    public SeedOpportunitySnapshot ActiveVenueHireOpportunity { get; }
     public SeedApplicationSnapshot FlatFeeApp { get; }
     public SeedApplicationSnapshot VersusApp { get; }
     public SeedApplicationSnapshot DoorSplitApp { get; }
@@ -83,7 +84,7 @@ public sealed class SeedStateSnapshot
         Concerts = source.Concerts.Select(SeedConcertSnapshot.From).ToArray();
         FlatFeeAppDeal = SeedFlatFeeDealSnapshot.From(source.FlatFeeAppDeal);
         VenueHireAppDeal = SeedVenueHireDealSnapshot.From(source.VenueHireAppDeal);
-        FreshVenueHireOpportunity = SeedOpportunitySnapshot.From(source.FreshVenueHireOpportunity);
+        ActiveVenueHireOpportunity = SeedOpportunitySnapshot.From(source.ActiveVenueHireOpportunity);
         FlatFeeApp = applications[source.FlatFeeApp.Id];
         VersusApp = applications[source.VersusApp.Id];
         DoorSplitApp = applications[source.DoorSplitApp.Id];
@@ -113,22 +114,61 @@ public sealed record SeedUserSnapshot(Guid Id, string Email)
     internal static SeedUserSnapshot From(UserEntity user) => new(user.Id, user.Email);
 }
 
-public sealed record SeedTenantSnapshot(Guid Id, Guid CreatedByUserId, string LegalName)
+public sealed record SeedTenantSnapshot(
+    Guid Id,
+    Guid CreatedByUserId,
+    string LegalName,
+    string? RegisteredAddress)
 {
     internal static SeedTenantSnapshot From(TenantEntity tenant) =>
-        new(tenant.Id, tenant.CreatedByUserId, tenant.LegalName);
+        new(
+            tenant.Id,
+            tenant.CreatedByUserId,
+            tenant.LegalName,
+            tenant.TaxCompliance is null
+                ? null
+                : string.Join(
+                    ", ",
+                    new[]
+                    {
+                        tenant.TaxCompliance.RegisteredAddress.Line1,
+                        tenant.TaxCompliance.RegisteredAddress.Line2,
+                        tenant.TaxCompliance.RegisteredAddress.City,
+                        tenant.TaxCompliance.RegisteredAddress.Postcode,
+                        tenant.TaxCompliance.RegisteredAddress.Country
+                    }.Where(value => !string.IsNullOrWhiteSpace(value))));
 }
 
-public sealed record SeedArtistSnapshot(int Id, Guid TenantId, Guid UserId, string Name, string Email)
+public sealed record SeedArtistSnapshot(
+    int Id,
+    Guid TenantId,
+    Guid UserId,
+    string Name,
+    string Email,
+    IReadOnlySet<Genre> Genres)
 {
     internal static SeedArtistSnapshot From(ArtistEntity artist) =>
-        new(artist.Id, artist.TenantId, artist.UserId, artist.Name, artist.Email);
+        new(artist.Id, artist.TenantId, artist.UserId, artist.Name, artist.Email, artist.Genres.ToHashSet());
 }
 
-public sealed record SeedVenueSnapshot(int Id, Guid TenantId, Guid UserId, string Name, string Email)
+public sealed record SeedVenueSnapshot(
+    int Id,
+    Guid TenantId,
+    Guid UserId,
+    string Name,
+    string Email,
+    string County,
+    string Town)
 {
     internal static SeedVenueSnapshot From(VenueEntity venue) =>
-        new(venue.Id, venue.TenantId, venue.UserId, venue.Name, venue.Email);
+        new(
+            venue.Id,
+            venue.TenantId,
+            venue.UserId,
+            venue.Name,
+            venue.Email,
+            venue.Address.County,
+            venue.Address.Town);
 }
 
 public sealed record SeedFlatFeeDealSnapshot(int Id, Guid TenantId, DealType DealType, decimal Fee)

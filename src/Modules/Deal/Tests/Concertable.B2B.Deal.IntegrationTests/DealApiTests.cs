@@ -25,7 +25,7 @@ public sealed class DealApiTests : IAsyncLifetime
     public async Task GetById_ExistingDeal_ReturnsDeal()
     {
         var client = fixture.CreateClient();
-        var expected = fixture.SeedState.FreshVenueHireOpportunity;
+        var expected = fixture.SeedState.ActiveVenueHireOpportunity;
 
         var response = await client.GetAsync($"/api/Deal/{expected.DealId}");
 

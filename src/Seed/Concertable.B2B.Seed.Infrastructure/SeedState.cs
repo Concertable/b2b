@@ -72,7 +72,7 @@ public sealed class SeedState
     public VenueHireDealEntity PastVenueHireAppDeal { get; }
     public DoorSplitDealEntity PastDoorSplitAppDeal { get; }
 
-    public OpportunityEntity FreshVenueHireOpportunity { get; }
+    public OpportunityEntity ActiveVenueHireOpportunity { get; }
 
     public ApplicationEntity FlatFeeApp { get; }
     public ApplicationEntity VersusApp { get; }
@@ -197,6 +197,8 @@ public sealed class SeedState
         PastVenueHireAppDeal = VenueHireDealFactory.Create(66, 300m);
         PastDoorSplitAppDeal = DoorSplitDealFactory.Create(67, 70m);
 
+        var activeVenueHireDeal = VenueHireDealFactory.Create(59, 300m);
+
         Deals =
         [
             FlatFeeDealFactory.Create(1, 150m),
@@ -257,7 +259,7 @@ public sealed class SeedState
             DoorSplitDealFactory.Create(56, 70m),
             VersusDealFactory.Create(57, 110m, 65m),
             FlatFeeDealFactory.Create(58, 150m),
-            VenueHireDealFactory.Create(59, 300m),
+            activeVenueHireDeal,
             FlatFeeDealFactory.Create(60, 200m),
             DoorSplitDealFactory.Create(61, 70m),
             VersusDealFactory.Create(62, 100m, 60m),
@@ -297,7 +299,7 @@ public sealed class SeedState
                 dealId: Deals[i].Id));
         }
         Opportunities = opps;
-        FreshVenueHireOpportunity = opps[62];
+        ActiveVenueHireOpportunity = opps.Single(opportunity => opportunity.DealId == activeVenueHireDeal.Id);
 
         // Artists get a tenant too (they own no Bucket-A rows) so Payment provisions their Connect account off PayoutOwnerRegisteredEvent.
         // The "no venue"/"no artist" operators registered but never set up their organization, so their tenants stay

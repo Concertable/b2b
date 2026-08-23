@@ -29,27 +29,60 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
-    public async Task GetCurrentForVenue_ShouldReturnOpportunityList()
+    public async Task GetCurrentForVenue_MapsApplicationCountAndDeadline()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.GetAsync("/api/Opportunity/venue/current");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var opportunities = await response.Content.ReadAsync<System.Text.Json.JsonElement>();
-        Assert.Equal(System.Text.Json.JsonValueKind.Array, opportunities.ValueKind);
+        var metrics = await response.Content.ReadAsync<IReadOnlyList<OpportunityApplicationMetricsResponse>>();
+        Assert.NotNull(metrics);
+        var opportunity = fixture.SeedState.ActiveVenueHireOpportunity;
+        var metric = Assert.Single(metrics, item => item.Opportunity.Id == opportunity.Id);
+        Assert.Equal(1, metric.ApplicationCount);
+        Assert.Equal(
+            Math.Max(0, (opportunity.Period.Start.Date.AddDays(-7) - fixture.SeedNow.Date).Days),
+            metric.DaysUntilDeadline);
     }
 
     [Fact]
-    public async Task GetRecommendedForArtist_ShouldReturnOpportunityList()
+    public async Task GetRecommendedForArtist_MapsFitAndVenueLocation()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         var response = await client.GetAsync("/api/Opportunity/artist/recommended");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var opportunities = await response.Content.ReadAsync<System.Text.Json.JsonElement>();
-        Assert.Equal(System.Text.Json.JsonValueKind.Array, opportunities.ValueKind);
+        var matches = await response.Content.ReadAsync<IReadOnlyList<OpportunityMatchResponse>>();
+        Assert.NotNull(matches);
+        Assert.NotEmpty(matches);
+        Assert.All(matches, match =>
+        {
+            var venue = fixture.SeedState.Venues.Single(value => value.Id == match.VenueId);
+            var expectedFit = match.Genres.Count == 0
+                ? 100
+                : (int)Math.Round(
+                    match.Genres.Count(fixture.SeedState.Artist.Genres.Contains) * 100d /
+                    match.Genres.Count);
+            Assert.Equal(venue.County, match.County);
+            Assert.Equal(venue.Town, match.Town);
+            Assert.Equal(expectedFit, match.FitScore);
+            Assert.Equal($"/api/application/opportunity/{match.Id}/checkout", match.Href);
+        });
+    }
+
+    [Fact]
+    public async Task GetRecommendedForArtist_MissingArtist_ReturnsTypedProblem()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
+
+        var response = await client.GetAsync("/api/Opportunity/artist/recommended");
+
+        await response.ShouldBe(HttpStatusCode.Forbidden);
+        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal("opportunity.query.missing_artist", problem.Extensions["code"]?.ToString());
     }
 
     public static TheoryData<DealDto> AllDealTypes =>
@@ -148,7 +181,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
             HireFee = 0
         }, fixture.SeedNow) with
         {
-            Id = fixture.SeedState.FreshVenueHireOpportunity.Id
+            Id = fixture.SeedState.ActiveVenueHireOpportunity.Id
         };
 
         var response = await client.PutAsync(
@@ -167,7 +200,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     public async Task Update_OmittedOpportunity_IsWithdrawnInsteadOfDeleted()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var opportunityId = fixture.SeedState.FreshVenueHireOpportunity.Id;
+        var opportunityId = fixture.SeedState.ActiveVenueHireOpportunity.Id;
 
         var response = await client.PutAsync(
             $"/api/venue/{fixture.SeedState.Venue.Id}/opportunities",
@@ -196,7 +229,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var result = await response.Content.ReadAsync<Pagination<OpportunityResponse>>();
         Assert.NotNull(result);
-        Assert.Contains(result.Data, o => o.Id == fixture.SeedState.FreshVenueHireOpportunity.Id);
+        Assert.Contains(result.Data, o => o.Id == fixture.SeedState.ActiveVenueHireOpportunity.Id);
     }
 
     #endregion
