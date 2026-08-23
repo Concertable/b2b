@@ -1,19 +1,24 @@
+using System.Collections.Concurrent;
+
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
 public sealed class MockNotificationClient : IMockNotificationClient
 {
-    public List<(string UserId, object Payload)> DraftCreated { get; } = [];
-    public List<(string UserId, string EventName, object Payload)> Other { get; } = [];
+    private readonly ConcurrentQueue<(string UserId, object Payload)> draftCreated = new();
+    private readonly ConcurrentQueue<(string UserId, string EventName, object Payload)> other = new();
+
+    public IReadOnlyCollection<(string UserId, object Payload)> DraftCreated => draftCreated;
+    public IReadOnlyCollection<(string UserId, string EventName, object Payload)> Other => other;
 
     public Task SendAsync(string userId, string eventName, object payload)
     {
         switch (eventName)
         {
             case "ConcertDraftCreated":
-                DraftCreated.Add((userId, payload));
+                draftCreated.Enqueue((userId, payload));
                 break;
             default:
-                Other.Add((userId, eventName, payload));
+                other.Enqueue((userId, eventName, payload));
                 break;
         }
         return Task.CompletedTask;
@@ -21,7 +26,7 @@ public sealed class MockNotificationClient : IMockNotificationClient
 
     public void Reset()
     {
-        DraftCreated.Clear();
-        Other.Clear();
+        draftCreated.Clear();
+        other.Clear();
     }
 }

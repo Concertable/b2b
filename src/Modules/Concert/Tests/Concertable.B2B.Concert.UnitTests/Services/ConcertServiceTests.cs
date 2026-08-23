@@ -5,6 +5,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Contracts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
@@ -50,8 +51,8 @@ public sealed class ConcertServiceTests
             Mock.Of<IConcertValidator>(),
             Mock.Of<IArtistReadModelRepository>(),
             Mock.Of<IVenueReadModelRepository>(),
-            Mock.Of<IConcertNotifier>(),
             Mock.Of<IBookingConfirmationEmailSender>(),
+            Mock.Of<IBus>(),
             Mock.Of<IBookingModule>(),
             new FakeTimeProvider(now),
             tenantContext.Object,

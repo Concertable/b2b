@@ -48,7 +48,7 @@ public sealed class VersusJourneyTests : IAsyncLifetime
         Assert.Null(concert.DatePosted);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingBoundaryState.Confirmed, financial.Status);
-        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+        Assert.Equal(2, (await fixture.WaitForDraftNotificationsAsync(2)).Count);
         var notifiedUserIds = fixture.NotificationService.DraftCreated
             .Select(notification => notification.UserId)
             .ToList();
@@ -73,7 +73,7 @@ public sealed class VersusJourneyTests : IAsyncLifetime
         var redeliveredConcert = await GetConcertAsync(client, applicationId);
 
         Assert.Equal(firstConcert.Id, redeliveredConcert.Id);
-        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+        Assert.Equal(2, (await fixture.WaitForDraftNotificationsAsync(2)).Count);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class VersusJourneyTests : IAsyncLifetime
         await GetConcertAsync(client, applicationId);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingBoundaryState.Confirmed, financial.Status);
-        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+        Assert.Equal(2, (await fixture.WaitForDraftNotificationsAsync(2)).Count);
     }
 
     private static Task<HttpResponseMessage> AcceptAsync(HttpClient client, int applicationId) =>

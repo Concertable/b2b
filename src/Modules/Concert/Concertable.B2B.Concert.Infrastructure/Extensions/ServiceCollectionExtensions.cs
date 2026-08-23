@@ -13,6 +13,7 @@ using Concertable.B2B.Concert.Application.Validators;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Infrastructure.Data;
@@ -123,6 +124,8 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistReadModelProjectionHandler>();
             services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueReadModelProjectionHandler>();
             services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ConcertReviewProjectionHandler>();
+            services.AddScoped<IIntegrationCommandHandler<NotifyConcertDraftCreatedCommand>,
+                NotifyConcertDraftCreatedCommandHandler>();
             services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, SettlementPaymentProcessor>();
             services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, TicketSaleProcessor>();
             services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, SettlementPaymentFailedProcessor>();

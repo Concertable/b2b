@@ -142,6 +142,7 @@ public class ApiFixture : IAsyncLifetime
         });
 
         _ = factory.Services;
+        PaymentTransport.Connect(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
         await sqlFixture.InitializeRespawnerAsync();
         StripeClient = factory.Services.GetRequiredService<IWebhookSimulator>();
@@ -223,6 +224,22 @@ public class ApiFixture : IAsyncLifetime
 
     public IServiceProvider Services => factory.Services;
 
+    public async Task<IReadOnlyCollection<(string UserId, object Payload)>> WaitForDraftNotificationsAsync(
+        int count)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow <= deadline)
+        {
+            var notifications = NotificationService.DraftCreated.ToArray();
+            if (notifications.Length >= count)
+                return notifications;
+
+            await Task.Delay(100);
+        }
+
+        throw new InvalidOperationException($"Expected {count} concert draft notifications within 5 seconds.");
+    }
+
     public async Task<IReadOnlyList<SendEmailCommand>> GetStagedEmailsAsync()
     {
         using var readScope = factory.Services.CreateScope();
@@ -239,6 +256,16 @@ public class ApiFixture : IAsyncLifetime
         return rows
             .Select(r => (SendEmailCommand)serializer.Deserialize(BinaryData.FromString(r.Payload), typeof(SendEmailCommand)))
             .ToList();
+    }
+
+    public async Task<int> GetOutboxMessageCountAsync<TMessage>()
+    {
+        using var readScope = factory.Services.CreateScope();
+        var outbox = readScope.ServiceProvider.GetRequiredService<OutboxDbContext>();
+        var messageType = MessageTypeAttribute.Resolve(typeof(TMessage));
+        return await outbox.Set<OutboxMessageEntity>()
+            .AsNoTracking()
+            .CountAsync(message => message.MessageType == messageType);
     }
 
     public async Task<OutboxMessageSnapshot> GetOutboxMessageAsync(string messageType)

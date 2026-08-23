@@ -1,6 +1,8 @@
 using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.Payment.Contracts;
+using Concertable.Shared.Email.Application;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Process.IntegrationTests;
@@ -39,7 +41,7 @@ public sealed class FlatFeeJourneyTests : IAsyncLifetime
         var concert = await concertResponse.Content.ReadAsync<ConcertBoundaryResponse>();
         Assert.NotNull(concert);
         Assert.Null(concert.DatePosted);
-        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+        Assert.Equal(2, (await fixture.WaitForDraftNotificationsAsync(2)).Count);
         var notifiedUserIds = fixture.NotificationService.DraftCreated
             .Select(notification => notification.UserId)
             .ToList();
@@ -76,7 +78,7 @@ public sealed class FlatFeeJourneyTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
         await fixture.StripeClient.SendWebhookAsync();
 
-        Assert.Equal(2, fixture.NotificationService.DraftCreated.Count);
+        Assert.Equal(2, (await fixture.WaitForDraftNotificationsAsync(2)).Count);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingBoundaryState.Confirmed, financial.Status);
     }
@@ -120,6 +122,30 @@ public sealed class FlatFeeJourneyTests : IAsyncLifetime
         Assert.Equal(BookingBoundaryState.ConfirmationFailed, financial.Status);
         var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
         await concert.ShouldBe(HttpStatusCode.NotFound);
+        Assert.Empty(fixture.NotificationService.DraftCreated);
+    }
+
+    [Fact]
+    public async Task Confirm_ShouldRollBackBookingConcertAndMessages_WhenEmailStagingFails()
+    {
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var client = fixture.CreateClient(
+            fixture.SeedState.VenueManager1,
+            options => options.UseFailingEmailRendering());
+        await client.PostAsync($"/api/application/{applicationId}/checkout");
+        var acceptResponse = await client.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.StripeClient.SendWebhookAsync());
+
+        var financial = await GetFinancialOperationAsync(client, applicationId);
+        Assert.Equal(BookingBoundaryState.AwaitingConfirmation, financial.Status);
+        await (await client.GetAsync($"/api/concert/application/{applicationId}"))
+            .ShouldBe(HttpStatusCode.NotFound);
+        Assert.Equal(0, await fixture.GetOutboxMessageCountAsync<NotifyConcertDraftCreatedCommand>());
+        Assert.Equal(0, await fixture.GetOutboxMessageCountAsync<SendEmailCommand>());
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 

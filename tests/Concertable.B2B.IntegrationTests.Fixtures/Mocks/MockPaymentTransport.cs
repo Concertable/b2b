@@ -10,6 +10,7 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
 {
     private readonly ConcurrentQueue<object> commands = new();
     private readonly ConcurrentDictionary<Guid, byte> completed = new();
+    private IServiceScopeFactory? scopeFactory;
 
     public IReadOnlyCollection<object> Commands => commands.ToArray();
     public bool HasPendingCommand => commands.Any(value =>
@@ -22,14 +23,30 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         where TEvent : IIntegrationEvent =>
         Task.CompletedTask;
 
-    public Task SendAsync<TCommand>(
+    public async Task SendAsync<TCommand>(
         TCommand command,
         MessageEnvelope envelope,
         CancellationToken ct = default)
         where TCommand : IIntegrationCommand
     {
         commands.Enqueue(command);
-        return Task.CompletedTask;
+        if (scopeFactory is null)
+            return;
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var handlers = scope.ServiceProvider.GetServices<IIntegrationCommandHandler<TCommand>>().ToArray();
+        if (handlers.Length == 0)
+            return;
+        if (handlers.Length > 1)
+            throw new InvalidOperationException(
+                $"Multiple handlers registered for command {typeof(TCommand).FullName}.");
+
+        await handlers[0].HandleAsync(command, envelope, ct);
+    }
+
+    public void Connect(IServiceScopeFactory serviceScopeFactory)
+    {
+        scopeFactory = serviceScopeFactory;
     }
 
     public Task CompleteLatestAsync(IServiceScopeFactory scopeFactory) =>

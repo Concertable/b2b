@@ -1,9 +1,11 @@
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Application.Errors;
+using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Domain.State;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Contracts;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
@@ -16,8 +18,8 @@ internal sealed class ConcertService : IConcertService
     private readonly IConcertValidator concertValidator;
     private readonly IArtistReadModelRepository artists;
     private readonly IVenueReadModelRepository venues;
-    private readonly IConcertNotifier notifier;
     private readonly IBookingConfirmationEmailSender emailSender;
+    private readonly IBus bus;
     private readonly IBookingModule bookingModule;
     private readonly TimeProvider timeProvider;
     private readonly ITenantContext tenantContext;
@@ -30,8 +32,8 @@ internal sealed class ConcertService : IConcertService
         IConcertValidator concertValidator,
         IArtistReadModelRepository artists,
         IVenueReadModelRepository venues,
-        IConcertNotifier notifier,
         IBookingConfirmationEmailSender emailSender,
+        IBus bus,
         IBookingModule bookingModule,
         TimeProvider timeProvider,
         ITenantContext tenantContext,
@@ -43,8 +45,8 @@ internal sealed class ConcertService : IConcertService
         this.concertValidator = concertValidator;
         this.artists = artists;
         this.venues = venues;
-        this.notifier = notifier;
         this.emailSender = emailSender;
+        this.bus = bus;
         this.bookingModule = bookingModule;
         this.timeProvider = timeProvider;
         this.tenantContext = tenantContext;
@@ -88,8 +90,10 @@ internal sealed class ConcertService : IConcertService
         await repository.SaveChangesAsync(ct);
 
         logger.ConcertDraftCreated(concert.Id, booking.BookingId, artist.Id, venue.Id);
-        await notifier.ConcertDraftCreatedAsync(artist.UserId.ToString(), concert.Id);
-        await notifier.ConcertDraftCreatedAsync(venue.UserId.ToString(), concert.Id);
+        await bus.SendAsync(new NotifyConcertDraftCreatedCommand(
+            concert.Id,
+            artist.UserId,
+            venue.UserId), ct);
         await emailSender.SendAsync(booking, venue.Name, artist.Name, ct);
     }
 

@@ -5,6 +5,7 @@ using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Contracts;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -75,8 +76,8 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<IConcertValidator>(),
             artists.Object,
             venues.Object,
-            Mock.Of<IConcertNotifier>(),
             Mock.Of<IBookingConfirmationEmailSender>(),
+            Mock.Of<IBus>(),
             Mock.Of<IBookingModule>(),
             TimeProvider.System,
             Mock.Of<ITenantContext>(),
