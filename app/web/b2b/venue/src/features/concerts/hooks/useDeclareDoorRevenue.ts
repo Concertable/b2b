@@ -12,7 +12,9 @@ export function useDeclareDoorRevenue(concert: MyConcert, rawValue: string) {
   const queryClient = useQueryClient();
 
   const parsed = doorRevenueRequestSchema.safeParse({ doorRevenue: Number(rawValue) });
-  const errorMessage = parsed.success ? null : parsed.error.issues[0].message;
+  const errorMessage = parsed.success
+    ? undefined
+    : parsed.error.issues[0].message;
 
   const external = Number(rawValue) || 0;
   const concertableSales = concert.ticketsSold * concert.price;

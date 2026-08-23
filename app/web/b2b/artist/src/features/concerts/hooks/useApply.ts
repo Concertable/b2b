@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useAuthStore } from "@concertable/web/features/auth";
+import { useTenantIdentity } from "@concertable/web-b2b/features/tenant";
 import applicationApi from "@concertable/web-b2b/features/concerts/api/applicationApi";
 import type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
 
 export function useApply(opportunityId: number, options?: { onSuccess?: () => void }) {
-  const isAuthenticated = useAuthStore((s) => s.user != null);
+  const { data: identity } = useTenantIdentity();
+  const isAuthenticated = identity !== undefined;
 
   const { data: isEligible } = useQuery({
     queryKey: ["applications", "opportunity", opportunityId, "eligibility"],

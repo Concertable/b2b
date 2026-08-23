@@ -12,6 +12,6 @@ export interface B2bIdentity extends User {
   memberships: Membership[];
 }
 
-export function isB2bIdentity(user: User | null): user is B2bIdentity {
-  return user !== null && "memberships" in user && Array.isArray(user.memberships);
+export function isB2bIdentity(user: User | undefined): user is B2bIdentity {
+  return user !== undefined && "memberships" in user && Array.isArray(user.memberships);
 }

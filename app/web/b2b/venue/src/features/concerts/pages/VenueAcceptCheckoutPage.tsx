@@ -137,7 +137,7 @@ function VenueAcceptCheckoutForm({
 }: Readonly<VenueAcceptCheckoutFormProps>) {
   const [submitted, setSubmitted] = useState(false);
   const { signature, setSignature, isValid } = useESignature();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string>();
   const acceptMutation = useAcceptApplicationMutation(
     application.opportunity.id,
   );
@@ -150,7 +150,7 @@ function VenueAcceptCheckoutForm({
   const summary = paymentSummary(checkout.amount);
 
   async function handleAccept(paymentMethodId: string) {
-    setError(null);
+    setError(undefined);
     try {
       await acceptMutation.mutateAsync({
         applicationId,

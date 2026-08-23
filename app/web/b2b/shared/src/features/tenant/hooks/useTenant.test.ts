@@ -35,9 +35,9 @@ vi.mock("@tanstack/react-router", () => ({
   useRouter: () => ({ invalidate: mocks.invalidateRouter }),
 }));
 
-vi.mock("@concertable/web/features/user", () => ({ useSyncUser: vi.fn() }));
-vi.mock("@concertable/web/features/user/hooks/useSyncUser", () => ({
+vi.mock("@concertable/web/features/user", () => ({
   meQueryKey: ["auth", "me"],
+  useMeQuery: () => ({ data: mocks.identity }),
 }));
 vi.mock("../api/identityApi", () => ({
   default: { getMe: mocks.getMe },

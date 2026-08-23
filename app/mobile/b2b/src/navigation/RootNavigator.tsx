@@ -1,13 +1,13 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { ActivityIndicator, View } from "react-native";
 import { useAuthInit } from "@concertable/mobile/auth/useAuthInit";
-import { useAuthStore } from "@concertable/shared/features/auth";
+import { useCurrentUser } from "@concertable/mobile/auth/useCurrentUser";
 import { isB2bIdentity } from "./identity";
 import { ArtistTabs } from "./ArtistTabs";
 import { VenueTabs } from "./VenueTabs";
 
 export function RootNavigator() {
-  const user = useAuthStore((s) => s.user);
+  const user = useCurrentUser();
   const isReady = useAuthInit();
 
   if (!isReady)
