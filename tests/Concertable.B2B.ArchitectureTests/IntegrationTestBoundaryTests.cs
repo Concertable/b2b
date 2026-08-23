@@ -1,26 +1,36 @@
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
+using System.Reflection;
+using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Testing;
 using Xunit;
 
 namespace Concertable.B2B.ArchitectureTests;
 
 public sealed class IntegrationTestBoundaryTests
 {
+    private const BindingFlags DeclaredMembers =
+        BindingFlags.Public |
+        BindingFlags.NonPublic |
+        BindingFlags.Instance |
+        BindingFlags.Static |
+        BindingFlags.DeclaredOnly;
+
     [Fact]
     public void ModuleIntegrationProjects_DoNotReferenceAnotherModulesDomainOrInfrastructure()
     {
-        var violations = FindModuleIntegrationProjects()
-            .SelectMany(FindCrossModuleReferences)
+        var assemblies = FindModuleIntegrationAssemblies();
+        var violations = assemblies
+            .SelectMany(assembly => assembly.CrossModuleDomainOrInfrastructureReferences(assemblies)
+                .Select(reference => $"{assembly.GetName().Name} -> {reference}"))
             .Order()
             .ToArray();
 
-        Assert.Empty(violations);
+        Assert.True(violations.Length == 0, string.Join(Environment.NewLine, violations));
     }
 
     [Fact]
     public void ModuleIntegrationTests_UseOwningFixture()
     {
-        var violations = FindModuleIntegrationProjects()
+        var violations = FindModuleIntegrationAssemblies()
             .SelectMany(FindSharedFixtureConsumers)
             .Order()
             .ToArray();
@@ -28,65 +38,26 @@ public sealed class IntegrationTestBoundaryTests
         Assert.Empty(violations);
     }
 
-    private static IEnumerable<string> FindModuleIntegrationProjects() =>
-        Directory
-            .EnumerateFiles(FindB2BRoot(), "*.IntegrationTests.csproj", SearchOption.AllDirectories)
-            .Where(path => path.Contains(
-                $"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}Modules{Path.DirectorySeparatorChar}",
-                StringComparison.OrdinalIgnoreCase));
+    private static IReadOnlyCollection<Assembly> FindModuleIntegrationAssemblies() =>
+        typeof(IntegrationTestBoundaryTests).Assembly.LoadSiblingModuleIntegrationTestAssemblies();
 
-    private static IEnumerable<string> FindCrossModuleReferences(string projectPath)
+    private static IEnumerable<string> FindSharedFixtureConsumers(Assembly assembly)
     {
-        var projectName = Path.GetFileNameWithoutExtension(projectPath);
-        var owner = projectName.Split('.')[2];
-        var projectDirectory = Path.GetDirectoryName(projectPath)!;
-
-        foreach (var reference in XDocument.Load(projectPath).Descendants("ProjectReference"))
+        foreach (var type in assembly.GetTypes())
         {
-            var include = (string?)reference.Attribute("Include");
-            if (include is null)
-                continue;
+            var consumesSharedFixture = type.GetFields(DeclaredMembers)
+                    .Any(field => field.FieldType == typeof(ApiFixture)) ||
+                type.GetProperties(DeclaredMembers)
+                    .Any(property => property.PropertyType == typeof(ApiFixture)) ||
+                type.GetConstructors(DeclaredMembers)
+                    .SelectMany(constructor => constructor.GetParameters())
+                    .Any(parameter => parameter.ParameterType == typeof(ApiFixture)) ||
+                type.GetMethods(DeclaredMembers)
+                    .Any(method => method.ReturnType == typeof(ApiFixture) ||
+                        method.GetParameters().Any(parameter => parameter.ParameterType == typeof(ApiFixture)));
 
-            var referencedName = Path.GetFileNameWithoutExtension(Path.GetFullPath(include, projectDirectory));
-            var parts = referencedName.Split('.');
-            if (parts.Length < 4 || parts[0] != "Concertable" || parts[1] != "B2B")
-                continue;
-
-            var referencedModule = parts[2];
-            var referencedLayer = parts[3];
-            if (referencedModule != owner && referencedLayer is "Domain" or "Infrastructure")
-                yield return $"{projectName} -> {referencedName}";
+            if (consumesSharedFixture)
+                yield return $"{assembly.GetName().Name}: {type.FullName}";
         }
-    }
-
-    private static IEnumerable<string> FindSharedFixtureConsumers(string projectPath)
-    {
-        var projectDirectory = Path.GetDirectoryName(projectPath)!;
-
-        foreach (var sourcePath in Directory.EnumerateFiles(projectDirectory, "*.cs", SearchOption.AllDirectories))
-        {
-            if (sourcePath.EndsWith("ApiFixture.cs", StringComparison.OrdinalIgnoreCase) ||
-                sourcePath.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) ||
-                sourcePath.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            if (Regex.IsMatch(File.ReadAllText(sourcePath), @"\bApiFixture\b"))
-                yield return Path.GetRelativePath(FindB2BRoot(), sourcePath);
-        }
-    }
-
-    private static string FindB2BRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "Concertable.B2B.slnx")))
-                return directory.FullName;
-
-            directory = directory.Parent;
-        }
-
-        throw new DirectoryNotFoundException("Could not locate api/Concertable.B2B.");
     }
 }

@@ -4,7 +4,6 @@ using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Events;
 using Concertable.Payment.Client;
 using Concertable.B2B.User.Contracts;
-using Concertable.B2B.User.Domain.Entities;
 using Concertable.Kernel;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Testing.Integration;
@@ -74,7 +73,7 @@ public class ApiFixture : IAsyncLifetime
         EscrowClient = new MockEscrowClient(StripeApiClient);
     }
     public IWebhookSimulator StripeClient { get; private set; } = null!;
-    public SeedState SeedState { get; private set; } = null!;
+    public SeedStateSnapshot SeedState { get; private set; } = null!;
     public DateTime SeedNow => factory.Services.GetRequiredService<SeedCatalog>().Now;
 
     public async Task InitializeAsync()
@@ -166,7 +165,7 @@ public class ApiFixture : IAsyncLifetime
         scope = factory.Services.CreateScope();
         var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
         await initializer.InitializeAsync();
-        SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
+        SeedState = new SeedStateSnapshot(scope.ServiceProvider.GetRequiredService<SeedState>());
         OnReset(scope);
     }
 
@@ -262,10 +261,8 @@ public class ApiFixture : IAsyncLifetime
         return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
     }
 
-    public HttpClient CreateClient(UserEntity user)
-    {
-        return CreateClient(user.Id, user.Email);
-    }
+    public HttpClient CreateClient(SeedUserSnapshot user) =>
+        CreateClient(user.Id, user.Email);
 
     public HttpClient CreateClient(Guid userId, string email)
     {
@@ -275,7 +272,10 @@ public class ApiFixture : IAsyncLifetime
         return client;
     }
 
-    public HttpClient CreateClient(UserEntity user, Action<TestClientOptions> configure)
+    public HttpClient CreateClient(SeedUserSnapshot user, Action<TestClientOptions> configure) =>
+        CreateClient(user.Id, user.Email, configure);
+
+    private HttpClient CreateClient(Guid userId, string email, Action<TestClientOptions> configure)
     {
         var options = new TestClientOptions();
         configure(options);
@@ -291,8 +291,8 @@ public class ApiFixture : IAsyncLifetime
         StripeClient = customFactory.Services.GetRequiredService<IWebhookSimulator>();
 
         var client = customFactory.CreateClient();
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, email);
         return client;
     }
 

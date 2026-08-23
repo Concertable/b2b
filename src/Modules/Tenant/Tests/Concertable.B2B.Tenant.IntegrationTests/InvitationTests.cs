@@ -2,7 +2,6 @@ using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.User.Domain.Entities;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
@@ -42,7 +41,7 @@ public sealed class InvitationTests : IAsyncLifetime
     }
 
     // A member who also owns another tenant must name the acting tenant explicitly, or resolution fails closed.
-    private HttpClient ClientInTenant(UserEntity user, Guid tenantId)
+    private HttpClient ClientInTenant(SeedUserSnapshot user, Guid tenantId)
     {
         var client = fixture.CreateClient(user);
         client.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
