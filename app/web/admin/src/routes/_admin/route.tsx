@@ -7,6 +7,7 @@ import { requireAdmin } from "../../features/identity";
 const links: NavLink[] = [
   { label: "Admins", to: "/" },
   { label: "Moderation", to: "/moderation" },
+  { label: "Venues", to: "/venues" },
 ];
 
 function AdminProfileSlot() {
