@@ -7,4 +7,5 @@ internal interface IUserRepository : IRepository<UserEntity, Guid>
 {
     Task<bool> ExistsByEmailAsync(string email);
     Task<IReadOnlyCollection<UserEntity>> GetByIdsAsync(IEnumerable<Guid> ids);
+    Task<Guid?> GetIdByEmailAsync(string email);
 }
