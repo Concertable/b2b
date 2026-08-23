@@ -55,11 +55,11 @@ public static class ServiceCollectionExtensions
             services.AddKeyedScoped<IConfirmStep, DoorSplitConfirmStep>(DealType.DoorSplit);
             services.AddKeyedScoped<IConfirmStep, VersusConfirmStep>(DealType.Versus);
             services.AddKeyedScoped<IConfirmStep, VenueHireConfirmStep>(DealType.VenueHire);
-            services.AddScoped<IPreCommitDomainEventHandler<ApplicationAcceptedDomainEvent>,
+            services.AddScoped<IDomainEventHandler<ApplicationAcceptedDomainEvent>,
                 ApplicationAcceptedDomainEventHandler>();
-            services.AddScoped<IPreCommitDomainEventHandler<VerifyPaymentSucceeded>,
+            services.AddScoped<IDomainEventHandler<VerifyPaymentSucceeded>,
                 VerifyPaymentSucceededHandler>();
-            services.AddScoped<IPreCommitDomainEventHandler<VerifyPaymentFailed>,
+            services.AddScoped<IDomainEventHandler<VerifyPaymentFailed>,
                 VerifyPaymentFailedHandler>();
             services.AddScoped<AcceptanceFinancialOperationOutcomeProcessor>();
             services.AddScoped<IIntegrationEventHandler<CaptureEscrowSucceededEvent>>(provider =>
