@@ -153,7 +153,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
         if (State is not (ConcertState.Draft or ConcertState.Posted or ConcertState.CancellationFailed))
             throw new InvalidOperationException($"Concert {Id} cannot begin cancellation from {State}.");
 
-        CancellationOperationId ??= Guid.NewGuid();
+        CancellationOperationId = Guid.NewGuid();
         State = ConcertState.CancellationPending;
         return CancellationOperationId.Value;
     }

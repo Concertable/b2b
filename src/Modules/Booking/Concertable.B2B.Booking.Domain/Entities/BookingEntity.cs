@@ -118,10 +118,10 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IEven
 
     internal Guid BeginCancellation()
     {
-        if (State is not (BookingState.AwaitingConfirmation or BookingState.ConfirmationFailed))
+        if (State is not (BookingState.AwaitingConfirmation or BookingState.ConfirmationFailed or BookingState.CancellationFailed))
             throw new InvalidOperationException($"Booking {Id} cannot begin cancellation from {State}.");
 
-        CancellationOperationId ??= Guid.NewGuid();
+        CancellationOperationId = Guid.NewGuid();
         State = BookingState.CancellationPending;
         return CancellationOperationId.Value;
     }
