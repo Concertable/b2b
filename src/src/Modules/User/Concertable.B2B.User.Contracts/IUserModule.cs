@@ -13,4 +13,8 @@ public interface IUserModule
     Task<IReadOnlyDictionary<Guid, string>> GetEmailsByIdsAsync(IEnumerable<Guid> ids);
 
     Task<Option<ManagerDto>> GetManagerByIdAsync(Guid userId);
+
+    /// <summary>Resolves a user id from an email, for callers that only need a yes/no identity check
+    /// (e.g. "is this candidate already a user?") without fetching the full user roster.</summary>
+    Task<Option<Guid>> GetIdByEmailAsync(string email);
 }
