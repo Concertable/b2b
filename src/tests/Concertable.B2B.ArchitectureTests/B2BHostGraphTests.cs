@@ -6,7 +6,7 @@ using Concertable.B2B.Hosting;
 using Concertable.B2B.Seed.Simulator;
 using Concertable.B2B.Web;
 using Concertable.B2B.Workers;
-using Concertable.Composition.Testing;
+using Concertable.Testing.Architecture;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection.Extensions;
