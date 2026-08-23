@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Application.Steps;
@@ -29,7 +30,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IClientContext clientContext;
     private readonly ITermsFingerprintCalculator termsFingerprint;
     private readonly IDealTermsRenderer termsRenderer;
-    private readonly IStepResolver<IAcceptStep> acceptSteps;
+    private readonly IAcceptFactory acceptFactory;
     private readonly IApplicationCheckoutService checkout;
     private readonly IApplicationMapper mapper;
     private readonly TimeProvider timeProvider;
@@ -49,7 +50,7 @@ internal sealed class ApplicationService : IApplicationService
         IClientContext clientContext,
         ITermsFingerprintCalculator termsFingerprint,
         IDealTermsRenderer termsRenderer,
-        IStepResolver<IAcceptStep> acceptSteps,
+        IAcceptFactory acceptFactory,
         IApplicationCheckoutService checkout,
         IApplicationMapper mapper,
         TimeProvider timeProvider,
@@ -68,7 +69,7 @@ internal sealed class ApplicationService : IApplicationService
         this.clientContext = clientContext;
         this.termsFingerprint = termsFingerprint;
         this.termsRenderer = termsRenderer;
-        this.acceptSteps = acceptSteps;
+        this.acceptFactory = acceptFactory;
         this.checkout = checkout;
         this.mapper = mapper;
         this.timeProvider = timeProvider;
@@ -343,8 +344,14 @@ internal sealed class ApplicationService : IApplicationService
                 clientContext.UserAgent,
                 eSignature.SignatoryName,
                 eSignature.DrawnSignatureImage));
-        var accepted = acceptSteps.Resolve(deal.DealType)
-            .Create(facts, application, deal, paymentMethodId);
+        var accepted = acceptFactory.Create(deal) switch
+        {
+            IStandardAccept method => method.Create(facts, application, deal),
+            IPrepaidAccept method when !string.IsNullOrWhiteSpace(paymentMethodId) =>
+                method.Create(facts, application, deal, paymentMethodId),
+            IPrepaidAccept => new AcceptApplicationError.PaymentMethodRequired(),
+            _ => throw new UnreachableException()
+        };
         if (accepted.TryGetError(out var acceptanceError))
             return acceptanceError;
         if (!accepted.TryGetValue(out var acceptedApplication))

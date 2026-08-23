@@ -2,6 +2,7 @@ using Concertable.B2B.Application.Application.Interfaces;
 using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Application.Renderers;
 using Concertable.B2B.Application.Application.Steps;
+using Concertable.B2B.Application.Application.Strategies;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Infrastructure.Data;
@@ -10,6 +11,7 @@ using Concertable.B2B.Application.Infrastructure.Events;
 using Concertable.B2B.Application.Infrastructure.Repositories;
 using Concertable.B2B.Application.Infrastructure.Services;
 using Concertable.B2B.Application.Infrastructure.Services.Payment;
+using Concertable.B2B.Application.Infrastructure.Services.Strategies;
 using Concertable.B2B.Application.Infrastructure.Validators;
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;
@@ -23,6 +25,7 @@ using Concertable.Payment.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 
@@ -69,17 +72,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IIntegrationEventHandler<ConcertCancelledEvent>>(provider =>
                 provider.GetRequiredService<ApplicationCancellationIntegrationEventHandler>());
             services.AddScoped<IApplicationCheckoutService, ApplicationCheckoutService>();
-            services.AddScoped(typeof(IStepResolver<>), typeof(StepResolver<>));
-            services.AddScoped<IDealTermsSerializer, DealTermsSerializer>();
-            services.AddScoped<IDealTermsRenderer, DealTermsRenderer>();
-            services.AddKeyedScoped<IDealTerms, FlatFeeDealTerms>(DealType.FlatFee);
-            services.AddKeyedScoped<IDealTerms, DoorSplitDealTerms>(DealType.DoorSplit);
-            services.AddKeyedScoped<IDealTerms, VersusDealTerms>(DealType.Versus);
-            services.AddKeyedScoped<IDealTerms, VenueHireDealTerms>(DealType.VenueHire);
-            services.AddKeyedScoped<IAcceptStep, FlatFeeAcceptStep>(DealType.FlatFee);
-            services.AddKeyedScoped<IAcceptStep, DoorSplitAcceptStep>(DealType.DoorSplit);
-            services.AddKeyedScoped<IAcceptStep, VersusAcceptStep>(DealType.Versus);
-            services.AddKeyedScoped<IAcceptStep, VenueHireAcceptStep>(DealType.VenueHire);
+            services.AddApplicationDealStrategies();
             services.AddScoped<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
             services.AddScoped<IClientContext, ClientContextAccessor>();
             services.AddScoped<IApplicationModule, ApplicationModule>();
@@ -88,6 +81,46 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IEntityTypeConfigurationProvider>(provider =>
                 provider.GetRequiredService<ApplicationConfigurationProvider>());
 
+            return services;
+        }
+
+        internal IServiceCollection AddApplicationDealStrategies()
+        {
+            services.AddScoped<IDealTermsSerializer, DealTermsSerializer>();
+            services.AddScoped<IDealTermsRenderer, DealTermsRenderer>();
+            services.AddScoped<IAcceptFactory, AcceptFactory>();
+
+            return services.AddApplicationDealStrategies(strategies =>
+            {
+                strategies.For(DealType.FlatFee)
+                    .AddSingleton<IDealTerms, FlatFeeDealTerms>()
+                    .AddSingleton<IAccept, FlatFeeAccept>();
+                strategies.For(DealType.DoorSplit)
+                    .AddSingleton<IDealTerms, DoorSplitDealTerms>()
+                    .AddSingleton<IAccept, DoorSplitAccept>();
+                strategies.For(DealType.Versus)
+                    .AddSingleton<IDealTerms, VersusDealTerms>()
+                    .AddSingleton<IAccept, VersusAccept>();
+                strategies.For(DealType.VenueHire)
+                    .AddSingleton<IDealTerms, VenueHireDealTerms>()
+                    .AddSingleton<IAccept, VenueHireAccept>();
+
+                strategies.RequireAll<IDealTerms>();
+                strategies.RequireAll<IAccept>();
+            });
+        }
+
+        internal IServiceCollection AddApplicationDealStrategies(
+            Action<ApplicationDealStrategyBuilder> configure)
+        {
+            var builder = new ApplicationDealStrategyBuilder(services);
+            configure(builder);
+            builder.Build();
+
+            services.TryAddScoped<IKeyedServiceProvider>(provider => (IKeyedServiceProvider)provider);
+            services.TryAddScoped(
+                typeof(IApplicationDealStrategyFactory<>),
+                typeof(ApplicationDealStrategyFactory<>));
             return services;
         }
 

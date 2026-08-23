@@ -24,22 +24,36 @@ internal sealed record AcceptedApplicationFacts(
     Signature ArtistSignature,
     Signature VenueSignature);
 
-internal interface IAcceptStep
+internal interface IAccept;
+
+internal interface IStandardAccept : IAccept
+{
+    Result<AcceptedApplication, AcceptApplicationError> Create(
+        AcceptedApplicationFacts facts,
+        ApplicationEntity application,
+        DealDto deal);
+}
+
+internal interface IPrepaidAccept : IAccept
 {
     Result<AcceptedApplication, AcceptApplicationError> Create(
         AcceptedApplicationFacts facts,
         ApplicationEntity application,
         DealDto deal,
-        string? paymentMethodId);
+        string paymentMethodId);
 }
 
-internal sealed class FlatFeeAcceptStep : IAcceptStep
+internal interface IAcceptFactory
+{
+    IAccept Create(DealDto deal);
+}
+
+internal sealed class FlatFeeAccept : IStandardAccept
 {
     public Result<AcceptedApplication, AcceptApplicationError> Create(
         AcceptedApplicationFacts facts,
         ApplicationEntity application,
-        DealDto deal,
-        string? paymentMethodId)
+        DealDto deal)
     {
         var terms = (FlatFeeDealDto)deal;
         return new FlatFeeAcceptedApplication(
@@ -50,16 +64,14 @@ internal sealed class FlatFeeAcceptStep : IAcceptStep
     }
 }
 
-internal sealed class DoorSplitAcceptStep : IAcceptStep
+internal sealed class DoorSplitAccept : IPrepaidAccept
 {
     public Result<AcceptedApplication, AcceptApplicationError> Create(
         AcceptedApplicationFacts facts,
         ApplicationEntity application,
         DealDto deal,
-        string? paymentMethodId)
+        string paymentMethodId)
     {
-        if (string.IsNullOrWhiteSpace(paymentMethodId))
-            return new AcceptApplicationError.PaymentMethodRequired();
         var terms = (DoorSplitDealDto)deal;
         return new DoorSplitAcceptedApplication(
             facts.OperationId, facts.ApplicationId, facts.OpportunityId, facts.ArtistId,
@@ -70,16 +82,14 @@ internal sealed class DoorSplitAcceptStep : IAcceptStep
     }
 }
 
-internal sealed class VersusAcceptStep : IAcceptStep
+internal sealed class VersusAccept : IPrepaidAccept
 {
     public Result<AcceptedApplication, AcceptApplicationError> Create(
         AcceptedApplicationFacts facts,
         ApplicationEntity application,
         DealDto deal,
-        string? paymentMethodId)
+        string paymentMethodId)
     {
-        if (string.IsNullOrWhiteSpace(paymentMethodId))
-            return new AcceptApplicationError.PaymentMethodRequired();
         var terms = (VersusDealDto)deal;
         return new VersusAcceptedApplication(
             facts.OperationId, facts.ApplicationId, facts.OpportunityId, facts.ArtistId,
@@ -90,13 +100,12 @@ internal sealed class VersusAcceptStep : IAcceptStep
     }
 }
 
-internal sealed class VenueHireAcceptStep : IAcceptStep
+internal sealed class VenueHireAccept : IStandardAccept
 {
     public Result<AcceptedApplication, AcceptApplicationError> Create(
         AcceptedApplicationFacts facts,
         ApplicationEntity application,
-        DealDto deal,
-        string? paymentMethodId)
+        DealDto deal)
     {
         if (application is not PrepaidApplication prepaid)
             return new AcceptApplicationError.PaymentMethodRequired();

@@ -1,11 +1,19 @@
 using System.Globalization;
 using Concertable.B2B.Application.Application.Interfaces;
+using Concertable.B2B.Application.Application.Strategies;
 
 namespace Concertable.B2B.Application.Application.Renderers;
 
-internal sealed class DealTermsRenderer(IStepResolver<IDealTerms> terms) : IDealTermsRenderer
+internal sealed class DealTermsRenderer : IDealTermsRenderer
 {
-    public string Render(DealDto deal) => terms.Resolve(deal.DealType).Render(deal);
+    private readonly IApplicationDealStrategyFactory<IDealTerms> terms;
+
+    public DealTermsRenderer(IApplicationDealStrategyFactory<IDealTerms> terms)
+    {
+        this.terms = terms;
+    }
+
+    public string Render(DealDto deal) => terms.Create(deal.DealType).Render(deal);
 }
 
 internal sealed class FlatFeeDealTerms : IDealTerms
