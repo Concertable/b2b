@@ -12,7 +12,7 @@ export function useConcertByApplicationQuery(applicationId: number) {
     queryKey: venueConcertKeys.byApplication(applicationId),
     queryFn: () => venueConcertApi.getByApplication(applicationId),
     refetchInterval: (query) =>
-      query.state.status === "success" && query.state.data === null
+      query.state.status === "success" && query.state.data === undefined
         ? 1_000
         : false,
   });

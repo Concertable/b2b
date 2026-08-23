@@ -4,7 +4,7 @@ import type { MyConcert } from "@concertable/web-b2b/features/concerts";
 const venueConcertApi = {
   getByApplication: async (
     applicationId: number,
-  ): Promise<MyConcert | null> => {
+  ): Promise<MyConcert | undefined> => {
     const { data } = await apiClient.getOptional<MyConcert>(
       `/concert/application/${applicationId}`,
     );

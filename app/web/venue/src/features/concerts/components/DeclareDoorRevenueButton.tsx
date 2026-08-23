@@ -24,7 +24,7 @@ export function DeclareDoorRevenueButton({ concert }: Readonly<Props>) {
   const { errorMessage, concertableSales, external, total, declare, isPending } =
     useDeclareDoorRevenue(concert, value);
 
-  const error = touched ? errorMessage : null;
+  const error = touched ? errorMessage : undefined;
 
   function handleConfirm() {
     const parsed = declare(() => {
