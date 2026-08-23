@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Booking.Domain.Events;
 using Concertable.B2B.Booking.Domain.State;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Deal.Contracts.Enums;
@@ -144,6 +145,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IEven
         State = BookingState.Cancelled;
         FinancialFailureCode = null;
         FinancialFailureMessage = null;
+        events.Raise(new BookingCancelledDomainEvent(Id, ApplicationId, OpportunityId));
     }
 
     protected abstract ConfirmedBookingTerms GetConfirmedTerms();

@@ -5,6 +5,7 @@ using Concertable.B2B.Application.Api.Extensions;
 using Concertable.B2B.Artist.Api.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Booking.Api.Extensions;
+using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Api.Extensions;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
@@ -149,6 +150,8 @@ public static class B2BWebHostExtensions
                     reg.Publishes<ConcertChangedEvent>();
                     reg.Publishes<ConcertPostedEvent>();
                     reg.Publishes<ConcertRatingUpdatedEvent>();
+                    reg.Publishes<BookingCancelledEvent>();
+                    reg.Publishes<ConcertCancelledEvent>();
                     reg.Publishes<Concertable.B2B.Tenant.Contracts.Events.PayoutOwnerRegisteredEvent>();
                     reg.Publishes<Concertable.B2B.Tenant.Contracts.Events.TenantActivityRecordedEvent>();
                     reg.SendsTo<CaptureEscrowCommand>(PaymentServiceIdentity.Name);
@@ -164,6 +167,8 @@ public static class B2BWebHostExtensions
                     reg.SubscribeTo<DepositEscrowRejectedEvent>();
                     reg.SubscribeTo<RefundEscrowSucceededEvent>();
                     reg.SubscribeTo<RefundEscrowRejectedEvent>();
+                    reg.SubscribeTo<BookingCancelledEvent>();
+                    reg.SubscribeTo<ConcertCancelledEvent>();
                     reg.HandleCommand<SendEmailCommand>();
                 });
             services.AddDirectBusKeyed("webhook");

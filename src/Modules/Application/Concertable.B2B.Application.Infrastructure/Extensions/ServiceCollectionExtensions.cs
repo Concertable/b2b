@@ -11,6 +11,8 @@ using Concertable.B2B.Application.Infrastructure.Repositories;
 using Concertable.B2B.Application.Infrastructure.Services;
 using Concertable.B2B.Application.Infrastructure.Services.Payment;
 using Concertable.B2B.Application.Infrastructure.Validators;
+using Concertable.B2B.Booking.Contracts.Events;
+using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure;
@@ -61,6 +63,11 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, VerifyPaymentFailedProcessor>();
             services.AddScoped<IDomainEventHandler<ApplicationCounterpartyNotifiedDomainEvent>,
                 ApplicationCounterpartyNotifiedDomainEventHandler>();
+            services.AddScoped<ApplicationCancellationIntegrationEventHandler>();
+            services.AddScoped<IIntegrationEventHandler<BookingCancelledEvent>>(provider =>
+                provider.GetRequiredService<ApplicationCancellationIntegrationEventHandler>());
+            services.AddScoped<IIntegrationEventHandler<ConcertCancelledEvent>>(provider =>
+                provider.GetRequiredService<ApplicationCancellationIntegrationEventHandler>());
             services.AddScoped<IApplicationCheckoutService, ApplicationCheckoutService>();
             services.AddScoped(typeof(IStepResolver<>), typeof(StepResolver<>));
             services.AddScoped<IDealTermsSerializer, DealTermsSerializer>();

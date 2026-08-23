@@ -20,8 +20,9 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         TEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default)
-        where TEvent : IIntegrationEvent =>
-        Task.CompletedTask;
+        where TEvent : IIntegrationEvent => scopeFactory is null
+            ? Task.CompletedTask
+            : DispatchAsync(@event, envelope, scopeFactory, ct);
 
     public async Task SendAsync<TCommand>(
         TCommand command,
@@ -188,9 +189,19 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
     private static async Task DispatchAsync<TEvent>(TEvent @event, IServiceScopeFactory scopeFactory)
         where TEvent : IIntegrationEvent
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
         var envelope = MessageEnvelope.Create<TEvent>(DateTimeOffset.UtcNow);
+        await DispatchAsync(@event, envelope, scopeFactory, CancellationToken.None);
+    }
+
+    private static async Task DispatchAsync<TEvent>(
+        TEvent @event,
+        MessageEnvelope envelope,
+        IServiceScopeFactory scopeFactory,
+        CancellationToken ct)
+        where TEvent : IIntegrationEvent
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
         foreach (var handler in scope.ServiceProvider.GetServices<IIntegrationEventHandler<TEvent>>())
-            await handler.HandleAsync(@event, envelope, CancellationToken.None);
+            await handler.HandleAsync(@event, envelope, ct);
     }
 }

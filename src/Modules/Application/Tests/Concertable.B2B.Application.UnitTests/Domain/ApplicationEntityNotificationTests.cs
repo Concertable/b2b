@@ -26,7 +26,8 @@ public sealed class ApplicationEntityNotificationTests
     [Theory]
     [InlineData(ApplicationNotification.Accepted)]
     [InlineData(ApplicationNotification.Rejected)]
-    public void NotifyCounterparty_AcceptedOrRejected_TargetsArtist(ApplicationNotification kind)
+    [InlineData(ApplicationNotification.Cancelled)]
+    public void NotifyCounterparty_ArtistFacingNotification_TargetsArtist(ApplicationNotification kind)
     {
         var application = CreateApplication();
 

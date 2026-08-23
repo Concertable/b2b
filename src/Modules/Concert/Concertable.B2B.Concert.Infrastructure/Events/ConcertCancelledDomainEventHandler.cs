@@ -22,6 +22,9 @@ internal sealed class ConcertCancelledDomainEventHandler : IPreCommitDomainEvent
             ?? throw new InvalidOperationException(
                 $"Concert {e.ConcertId} not found when publishing ConcertCancelledEvent");
 
-        await bus.PublishAsync(new ConcertCancelledEvent(concert.ApplicationId, concert.Id), ct);
+        await bus.PublishAsync(new ConcertCancelledEvent(
+            concert.Id,
+            concert.ApplicationId,
+            concert.OpportunityId), ct);
     }
 }

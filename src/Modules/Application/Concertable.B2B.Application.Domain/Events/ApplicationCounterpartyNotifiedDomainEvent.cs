@@ -7,7 +7,8 @@ public enum ApplicationNotification
     Applied,
     Accepted,
     Withdrawn,
-    Rejected
+    Rejected,
+    Cancelled
 }
 
 public sealed record ApplicationCounterpartyNotifiedDomainEvent(

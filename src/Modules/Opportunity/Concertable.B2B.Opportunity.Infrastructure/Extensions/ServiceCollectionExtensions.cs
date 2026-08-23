@@ -6,6 +6,10 @@ using Concertable.B2B.Opportunity.Infrastructure.Data.Seeders;
 using Concertable.B2B.Opportunity.Infrastructure.Repositories;
 using Concertable.B2B.Opportunity.Infrastructure.Services;
 using Concertable.B2B.Opportunity.Infrastructure.Sync;
+using Concertable.B2B.Opportunity.Infrastructure.Events;
+using Concertable.B2B.Booking.Contracts.Events;
+using Concertable.B2B.Concert.Contracts.Events;
+using Concertable.Messaging.Contracts;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
@@ -58,6 +62,11 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IOpportunityMapper, OpportunityMapper>();
             services.AddScoped<IOpportunitySyncer, OpportunitySyncer>();
             services.AddScoped<IOpportunityModule, OpportunityModule>();
+            services.AddScoped<OpportunityCancellationIntegrationEventHandler>();
+            services.AddScoped<IIntegrationEventHandler<BookingCancelledEvent>>(provider =>
+                provider.GetRequiredService<OpportunityCancellationIntegrationEventHandler>());
+            services.AddScoped<IIntegrationEventHandler<ConcertCancelledEvent>>(provider =>
+                provider.GetRequiredService<OpportunityCancellationIntegrationEventHandler>());
 
             services.AddSingleton<OpportunityConfigurationProvider>();
             services.AddSingleton<IEntityTypeConfigurationProvider>(

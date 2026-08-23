@@ -6,6 +6,7 @@ using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Booking.Infrastructure.Data.Seeders;
 using Concertable.B2B.Booking.Infrastructure.Repositories;
 using Concertable.B2B.Booking.Infrastructure.Services;
+using Concertable.B2B.Booking.Domain.Events;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure;
@@ -61,6 +62,8 @@ public static class ServiceCollectionExtensions
                 VerifyPaymentSucceededHandler>();
             services.AddScoped<IDomainEventHandler<VerifyPaymentFailed>,
                 VerifyPaymentFailedHandler>();
+            services.AddScoped<IDomainEventHandler<BookingCancelledDomainEvent>,
+                BookingCancelledDomainEventHandler>();
             services.AddScoped<AcceptanceFinancialOperationOutcomeProcessor>();
             services.AddScoped<IIntegrationEventHandler<CaptureEscrowSucceededEvent>>(provider =>
                 provider.GetRequiredService<AcceptanceFinancialOperationOutcomeProcessor>());
