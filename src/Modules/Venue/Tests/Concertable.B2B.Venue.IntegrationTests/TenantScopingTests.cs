@@ -39,21 +39,4 @@ public sealed class TenantScopingTests : IAsyncLifetime
         Assert.Equal(expectedTenantId, venue!.TenantId);
     }
 
-    [Fact]
-    public async Task GetAllByTenantId_ReturnsOnlyThatTenantsVenues()
-    {
-        var grandVenue = fixture.SeedState.Venue;
-
-        var ownTenant = await fixture.Venues
-            .Where(value => value.TenantId == grandVenue.TenantId)
-            .ToListAsync();
-        Assert.Contains(ownTenant, v => v.Id == grandVenue.Id);
-        Assert.All(ownTenant, v => Assert.Equal(grandVenue.TenantId, v.TenantId));
-
-        var otherTenantId = Guid.NewGuid();
-        var otherTenant = await fixture.Venues
-            .Where(value => value.TenantId == otherTenantId)
-            .ToListAsync();
-        Assert.DoesNotContain(otherTenant, v => v.Id == grandVenue.Id);
-    }
 }

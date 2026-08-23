@@ -23,7 +23,13 @@ internal static class BookingMappers
     extension(BookingSummaryDto booking)
     {
         public BookingSummary ToSummary() =>
-            new(booking.Id, booking.ApplicationId, booking.State.ToStatus());
+            new(
+                booking.Id,
+                booking.ApplicationId,
+                booking.State.ToStatus(),
+                booking.OperationId,
+                booking.FailureCode,
+                booking.FailureMessage);
     }
 
     extension(BookingState state)

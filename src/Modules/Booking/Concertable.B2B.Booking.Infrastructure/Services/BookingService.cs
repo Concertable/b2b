@@ -69,14 +69,26 @@ internal sealed class BookingService : IBookingService
         var booking = await bookings.GetByApplicationIdAsync(applicationId, ct);
         return booking is null
             ? null
-            : new BookingSummaryDto(booking.Id, booking.ApplicationId, booking.State);
+            : new BookingSummaryDto(
+                booking.Id,
+                booking.ApplicationId,
+                booking.State,
+                booking.OperationId,
+                booking.FinancialFailureCode,
+                booking.FinancialFailureMessage);
     }
 
     public async Task<IReadOnlyList<BookingSummaryDto>> GetSummariesByApplicationIdsAsync(
         IReadOnlyCollection<int> applicationIds,
         CancellationToken ct = default) =>
         (await bookings.GetByApplicationIdsAsync(applicationIds, ct))
-            .Select(booking => new BookingSummaryDto(booking.Id, booking.ApplicationId, booking.State))
+            .Select(booking => new BookingSummaryDto(
+                booking.Id,
+                booking.ApplicationId,
+                booking.State,
+                booking.OperationId,
+                booking.FinancialFailureCode,
+                booking.FinancialFailureMessage))
             .ToList();
 
     public async Task<UnitResult<CancelBookingError>> CancelByApplicationIdAsync(

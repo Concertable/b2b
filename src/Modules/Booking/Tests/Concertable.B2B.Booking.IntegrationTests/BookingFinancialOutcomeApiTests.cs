@@ -1,5 +1,5 @@
 using System.Net;
-using Concertable.B2B.Booking.Domain.State;
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Payment.Contracts;
 using Xunit;
@@ -8,11 +8,11 @@ using Xunit.Abstractions;
 namespace Concertable.B2B.Booking.IntegrationTests;
 
 [Collection("Integration")]
-public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
+public sealed class BookingFinancialOutcomeApiTests : IAsyncLifetime
 {
     private readonly BookingApiFixture fixture;
 
-    public ApplicationFinancialOperationApiTests(BookingApiFixture fixture, ITestOutputHelper output)
+    public BookingFinancialOutcomeApiTests(BookingApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -22,12 +22,12 @@ public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
-    public async Task Get_Returns404BeforeFinancialOperationStarts()
+    public async Task Get_Returns404BeforeBookingExists()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.GetAsync(
-            $"/api/application/{fixture.SeedState.FlatFeeApp.Id}/financial-operation");
+            $"/api/booking/application/{fixture.SeedState.FlatFeeApp.Id}");
 
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -46,29 +46,23 @@ public sealed class ApplicationFinancialOperationApiTests : IAsyncLifetime
             await fixture.PaymentTransport.WaitForCommandsAsync<CaptureEscrowCommand>(1));
 
         var pendingResponse = await client.GetAsync(
-            $"/api/application/{applicationId}/financial-operation");
+            $"/api/booking/application/{applicationId}");
         await pendingResponse.ShouldBe(HttpStatusCode.OK);
-        var pending = await pendingResponse.Content.ReadAsync<FinancialOperationResponse>();
+        var pending = await pendingResponse.Content.ReadAsync<BookingSummary>();
         Assert.Equal(command.OperationId, pending!.OperationId);
-        Assert.Equal(BookingState.AwaitingConfirmation, pending.Status);
+        Assert.Equal(BookingStatus.AwaitingConfirmation, pending.Status);
         Assert.Null(pending.FailureCode);
         Assert.Null(pending.FailureMessage);
 
         await fixture.RejectLatestFinancialOperationAsync();
 
         var rejectedResponse = await client.GetAsync(
-            $"/api/application/{applicationId}/financial-operation");
+            $"/api/booking/application/{applicationId}");
         await rejectedResponse.ShouldBe(HttpStatusCode.OK);
-        var rejected = await rejectedResponse.Content.ReadAsync<FinancialOperationResponse>();
+        var rejected = await rejectedResponse.Content.ReadAsync<BookingSummary>();
         Assert.Equal(command.OperationId, rejected!.OperationId);
-        Assert.Equal(BookingState.ConfirmationFailed, rejected.Status);
+        Assert.Equal(BookingStatus.ConfirmationFailed, rejected.Status);
         Assert.Equal("card_declined", rejected.FailureCode);
         Assert.Equal("Card was declined", rejected.FailureMessage);
     }
-
-    private sealed record FinancialOperationResponse(
-        Guid OperationId,
-        BookingState Status,
-        string? FailureCode,
-        string? FailureMessage);
 }
