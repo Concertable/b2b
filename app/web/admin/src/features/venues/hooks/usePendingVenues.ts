@@ -4,7 +4,7 @@ import { usePendingVenuesQuery } from "./usePendingVenuesQuery";
 import { useApproveVenueMutation } from "./useApproveVenueMutation";
 
 export function usePendingVenues() {
-  const { params, nextPage, prevPage } = usePagination(10);
+  const { params, setPage, nextPage, prevPage } = usePagination(10);
   const { data, isLoading, isError } = usePendingVenuesQuery(params);
   const { mutate: approveMutation } = useApproveVenueMutation();
 
@@ -17,6 +17,13 @@ export function usePendingVenues() {
     nextPage,
     prevPage,
     approve: (id: number) =>
-      approveMutation(id, { onSuccess: () => toast.success("Venue approved") }),
+      approveMutation(id, {
+        onSuccess: () => {
+          if (params.pageNumber > 1 && data?.data.length === 1)
+            setPage(params.pageNumber - 1);
+
+          toast.success("Venue approved");
+        },
+      }),
   };
 }
