@@ -1,4 +1,5 @@
 using Concertable.B2B.Venue.Application.Errors;
+using Concertable.B2B.Venue.Application.Mappers;
 using Concertable.B2B.Venue.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure.Extensions;
@@ -15,7 +16,7 @@ internal sealed class VenueService : IVenueService
 {
     private readonly IVenueRepository repository;
     private readonly IVenueReadRepository readRepository;
-    private readonly IVenuePrivilegedRepository adminRepository;
+    private readonly IVenuePrivilegedRepository privilegedRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly ITenantContext tenantContext;
@@ -25,7 +26,7 @@ internal sealed class VenueService : IVenueService
     public VenueService(
         IVenueRepository repository,
         IVenueReadRepository readRepository,
-        IVenuePrivilegedRepository adminRepository,
+        IVenuePrivilegedRepository privilegedRepository,
         IImageService imageService,
         ICurrentUser currentUser,
         ITenantContext tenantContext,
@@ -34,7 +35,7 @@ internal sealed class VenueService : IVenueService
     {
         this.repository = repository;
         this.readRepository = readRepository;
-        this.adminRepository = adminRepository;
+        this.privilegedRepository = privilegedRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
         this.tenantContext = tenantContext;
@@ -142,12 +143,12 @@ internal sealed class VenueService : IVenueService
         int id,
         CancellationToken ct = default)
     {
-        var venue = await adminRepository.GetByIdAsync(id, ct);
+        var venue = await privilegedRepository.GetByIdAsync(id, ct);
         if (venue is null)
             return new ApproveVenueError.VenueNotFound(id);
 
         venue.Approve();
-        await adminRepository.SaveChangesAsync(ct);
+        await privilegedRepository.SaveChangesAsync(ct);
         return new Success();
     }
 
@@ -171,4 +172,7 @@ internal sealed class VenueService : IVenueService
         tenantContext.TenantId is { } tenantId
             ? (await readRepository.GetProfileByTenantIdAsync(tenantId, ct)).ToOption()
             : Option.None<VenueProfile>();
+
+    public async Task<IPagination<PendingVenue>> GetPendingApprovalAsync(IPageParams pageParams) =>
+        (await privilegedRepository.GetPendingApprovalAsync(pageParams)).Map(v => v.ToPendingVenue());
 }

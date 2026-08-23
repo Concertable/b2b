@@ -421,6 +421,57 @@ public sealed class VenueApiTests : IAsyncLifetime
 
     #endregion
 
+    #region GetPendingApproval
+
+    [Fact]
+    public async Task GetPendingApproval_ShouldReturn401_WhenUnauthenticated()
+    {
+        // Arrange
+        var client = fixture.CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/api/venue/pending-approval");
+
+        // Assert
+        await response.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetPendingApproval_ShouldReturn403_WhenNotAdmin()
+    {
+        // Arrange
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        // Act
+        var response = await client.GetAsync("/api/venue/pending-approval");
+
+        // Assert
+        await response.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task GetPendingApproval_ShouldReturn200_WithOnlyUnapprovedVenues()
+    {
+        // Arrange
+        var creator = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
+        var created = await (await creator.PostAsync(
+            "/api/organization/venue",
+            await BuildCreateRequest().ToFormContent())).Content.ReadAsync<DetailsResponse>();
+        var admin = fixture.CreateClient(fixture.SeedState.Admin);
+
+        // Act
+        var response = await admin.GetAsync("/api/venue/pending-approval");
+
+        // Assert
+        await response.ShouldBe(HttpStatusCode.OK);
+        var page = await response.Content.ReadAsync<PendingVenuePage>();
+        Assert.NotNull(page);
+        Assert.Contains(page.Data, v => v.Id == created!.Id);
+        Assert.DoesNotContain(page.Data, v => v.Id == fixture.SeedState.Venue.Id);
+    }
+
+    #endregion
+
     #region IsOwner
 
     [Fact]
@@ -454,4 +505,7 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     #endregion
+
+    private sealed record PendingVenuePage(List<PendingVenue> Data);
+    private sealed record PendingVenue(int Id, string Name, string Email);
 }

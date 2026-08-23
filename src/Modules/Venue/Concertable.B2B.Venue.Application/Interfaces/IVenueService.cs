@@ -26,4 +26,5 @@ internal interface IVenueService
     Task<Option<int>> GetCurrentIdAsync(CancellationToken ct = default);
     Task<Option<VenueProfile>> GetProfileAsync(int id, CancellationToken ct = default);
     Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
+    Task<IPagination<PendingVenue>> GetPendingApprovalAsync(IPageParams pageParams);
 }
