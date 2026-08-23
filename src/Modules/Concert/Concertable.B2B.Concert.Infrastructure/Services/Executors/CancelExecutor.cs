@@ -37,7 +37,7 @@ internal sealed class CancelExecutor : ICancelExecutor
                     return (UnitResult<CancelConcertError>)new CancelConcertError.ConcertNotFound(concertId);
                 if (concert.State is ConcertState.Cancelled or ConcertState.CancellationPending)
                     return UnitResult.Success<CancelConcertError>();
-                if (concert.State is ConcertState.Complete or ConcertState.AwaitingSettlement)
+                if (concert.State is ConcertState.Complete or ConcertState.AwaitingSettlement or ConcertState.SettlementFailed)
                     return new CancelConcertError.InvalidState(concert.State);
 
                 await steps.Create(concert.DealType).ExecuteAsync(concert, ct);

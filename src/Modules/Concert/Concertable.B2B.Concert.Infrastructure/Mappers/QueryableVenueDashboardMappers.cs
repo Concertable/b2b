@@ -6,11 +6,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Mappers;
 
 internal static class QueryableVenueDashboardMappers
 {
-    public static IQueryable<VenueConcertDashboardCounts> ToVenueCounts(
-        this IQueryable<VenueReadModel> query,
-        IQueryable<ConcertEntity> upcomingConcerts,
-        IQueryable<ConcertEntity> awaitingDoorRevenue)
-        => query.Select(v => new VenueConcertDashboardCounts(
-            upcomingConcerts.Count(),
-            awaitingDoorRevenue.Count()));
+    extension(IQueryable<VenueReadModel> query)
+    {
+        public IQueryable<VenueConcertDashboardCounts> ToVenueCounts(
+            IQueryable<ConcertEntity> upcomingConcerts,
+            IQueryable<ConcertEntity> awaitingDoorRevenue) =>
+            query.Select(v => new VenueConcertDashboardCounts(
+                upcomingConcerts.Count(),
+                awaitingDoorRevenue.Count()));
+    }
 }

@@ -6,11 +6,22 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Completion;
 
-internal sealed class ConcertCompletionRunner(
-    IConcertRepository concertRepository,
-    IScoped<ICompleteExecutor> completion,
-    ILogger<ConcertCompletionRunner> logger) : IConcertCompletionRunner
+internal sealed class ConcertCompletionRunner : IConcertCompletionRunner
 {
+    private readonly IConcertRepository concertRepository;
+    private readonly IScoped<ICompleteExecutor> completion;
+    private readonly ILogger<ConcertCompletionRunner> logger;
+
+    public ConcertCompletionRunner(
+        IConcertRepository concertRepository,
+        IScoped<ICompleteExecutor> completion,
+        ILogger<ConcertCompletionRunner> logger)
+    {
+        this.concertRepository = concertRepository;
+        this.completion = completion;
+        this.logger = logger;
+    }
+
     public async Task RunAsync(CancellationToken ct = default)
     {
         var concertIds = await concertRepository.GetEndedPendingCompletionIdsAsync(ct);

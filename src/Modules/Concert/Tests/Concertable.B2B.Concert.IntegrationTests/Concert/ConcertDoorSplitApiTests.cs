@@ -1,3 +1,4 @@
+using System.Net;
 using Concertable.B2B.Concert.Domain.State;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -44,6 +45,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
+        Assert.NotNull(await fixture.Invoices.SingleOrDefaultAsync(invoice => invoice.BookingId == concert.BookingId));
     }
 
     [Fact]
@@ -75,6 +77,23 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         // Assert
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
+    }
+
+    [Fact]
+    public async Task Cancel_ShouldReturnBadRequest_WhenSettlementFailed()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var booking = fixture.SeedState.PastDoorSplitBooking;
+        var concert = fixture.SeedState.ConcertFor(booking);
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
+        await fixture.FinishConcertAsync(concert.Id);
+        await fixture.SendSettlementFailedWebhookAsync(booking.Id);
+
+        var response = await client.PostAsync($"/api/concert/{concert.Id}/cancel");
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.SettlementFailed, persisted.State);
     }
 
     [Fact]

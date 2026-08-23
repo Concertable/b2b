@@ -222,7 +222,7 @@ internal sealed class ConcertService : IConcertService
             return new DeclareDoorRevenueError.WrongDealType();
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
             return new DeclareDoorRevenueError.TooEarly();
-        if (concert.State is ConcertState.AwaitingSettlement or ConcertState.SettlementFailed or ConcertState.Complete)
+        if (concert.State is not (ConcertState.Draft or ConcertState.Posted))
             return new DeclareDoorRevenueError.AlreadySettled();
 
         return await concert.DeclareDoorRevenue(doorRevenue)

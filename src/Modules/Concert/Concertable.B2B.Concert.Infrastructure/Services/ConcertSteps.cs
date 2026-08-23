@@ -5,8 +5,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class RefundEscrowCancelStep(IBus bus) : ICancelStep
+internal sealed class RefundEscrowCancelStep : ICancelStep
 {
+    private readonly IBus bus;
+
+    public RefundEscrowCancelStep(IBus bus)
+    {
+        this.bus = bus;
+    }
+
     public Task ExecuteAsync(ConcertEntity concert, CancellationToken ct = default) =>
         bus.SendAsync(new RefundEscrowCommand(
             concert.BeginCancellation(),
@@ -14,8 +21,25 @@ internal sealed class RefundEscrowCancelStep(IBus bus) : ICancelStep
             RefundReasonCodes.RequestedByCustomer), ct);
 }
 
-internal sealed class ReleaseEscrowCompleteStep(IEscrowOperationsClient escrowClient) : ICompleteStep
+internal sealed class ImmediateCancelStep : ICancelStep
 {
+    public Task ExecuteAsync(ConcertEntity concert, CancellationToken ct = default)
+    {
+        concert.BeginCancellation();
+        concert.Cancel();
+        return Task.CompletedTask;
+    }
+}
+
+internal sealed class ReleaseEscrowCompleteStep : ICompleteStep
+{
+    private readonly IEscrowOperationsClient escrowClient;
+
+    public ReleaseEscrowCompleteStep(IEscrowOperationsClient escrowClient)
+    {
+        this.escrowClient = escrowClient;
+    }
+
     public async Task<UnitResult<FinishConcertError>> ExecuteAsync(
         ConcertEntity concert,
         CancellationToken ct = default)
@@ -29,10 +53,19 @@ internal sealed class ReleaseEscrowCompleteStep(IEscrowOperationsClient escrowCl
     }
 }
 
-internal sealed class PayoutCompleteStep(
-    IManagerPaymentOperationsClient managerPaymentClient,
-    ILogger<PayoutCompleteStep> logger) : ICompleteStep
+internal sealed class PayoutCompleteStep : ICompleteStep
 {
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
+    private readonly ILogger<PayoutCompleteStep> logger;
+
+    public PayoutCompleteStep(
+        IManagerPaymentOperationsClient managerPaymentClient,
+        ILogger<PayoutCompleteStep> logger)
+    {
+        this.managerPaymentClient = managerPaymentClient;
+        this.logger = logger;
+    }
+
     public async Task<UnitResult<FinishConcertError>> ExecuteAsync(
         ConcertEntity concert,
         CancellationToken ct = default)

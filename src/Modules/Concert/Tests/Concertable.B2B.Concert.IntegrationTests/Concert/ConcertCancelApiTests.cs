@@ -1,4 +1,5 @@
 using System.Net;
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.State;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var acceptResponse = await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
+        var booking = await GetBookingAsync(client, appId);
 
         var concertResponse = await client.GetAsync($"/api/concert/application/{appId}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
@@ -46,7 +48,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         var refund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
-        Assert.True(refund.BookingId > 0);
+        Assert.Equal(booking.BookingId, refund.BookingId);
         Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Cancelled, persisted.State);
@@ -64,6 +66,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var appId = fixture.SeedState.VenueHireApp.Id;
         await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.StripeClient.SendWebhookAsync();
+        var booking = await GetBookingAsync(client, appId);
 
         var concertResponse = await client.GetAsync($"/api/concert/application/{appId}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
@@ -74,7 +77,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
-        Assert.True(fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId > 0);
+        Assert.Equal(booking.BookingId, fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Cancelled, persisted.State);
     }
@@ -82,7 +85,6 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
     [Fact]
     public async Task Cancel_ShouldMarkCancelled_ForDoorSplit_WhereNoEscrowIsHeld()
     {
-        // Arrange — DoorSplit holds no escrow at Booked (verify is a SetupIntent); refund is a no-op.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.DoorSplitApp.Id;
         await client.PostAsync($"/api/application/{appId}/checkout");
@@ -97,12 +99,30 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         // Act
         var cancelResponse = await client.PostAsync($"/api/concert/{concert!.Id}/cancel");
 
-        // Assert — cancels cleanly; no escrow hold existed, so the refund is a correct no-op.
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.CompleteLatestFinancialOperationAsync();
+        Assert.DoesNotContain(fixture.PaymentTransport.Commands, command => command is RefundEscrowCommand);
         Assert.Empty(fixture.EscrowClient.Holds);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Cancelled, persisted.State);
+    }
+
+    [Fact]
+    public async Task DeclareDoorRevenue_ShouldReturnBadRequest_AfterCancellation()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+
+        var cancelResponse = await client.PostAsync($"/api/concert/{concert.Id}/cancel");
+        await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
+
+        var response = await client.PostAsync(
+            $"/api/concert/{concert.Id}/door-revenue",
+            new { doorRevenue = 200m });
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Cancelled, persisted.State);
+        Assert.Null(persisted.DoorRevenue);
     }
 
     [Fact]
@@ -124,5 +144,12 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Draft, persisted.State);
+    }
+
+    private static async Task<BookingSummary> GetBookingAsync(HttpClient client, int applicationId)
+    {
+        var response = await client.GetAsync($"/api/booking/application/{applicationId}");
+        await response.ShouldBe(HttpStatusCode.OK);
+        return Assert.IsType<BookingSummary>(await response.Content.ReadAsync<BookingSummary>());
     }
 }

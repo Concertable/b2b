@@ -82,8 +82,7 @@ internal sealed class CompleteExecutor : ICompleteExecutor
             var completion = await steps.Create(concert.DealType).ExecuteAsync(concert, ct);
             if (completion.TryGetError(out var error))
                 return error;
-            if (concert.State is ConcertState.Complete)
-                await invoiceIssuer.IssueAsync(concert, ct);
+            await invoiceIssuer.IssueAsync(concert, ct);
 
             await concerts.SaveChangesAsync(ct);
             return SettlementOutcome.Settled;
