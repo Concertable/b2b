@@ -168,6 +168,11 @@ internal sealed class VenueService : IVenueService
         CancellationToken ct = default) =>
         (await readRepository.GetProfileAsync(id, ct)).ToOption();
 
+    public Task<IReadOnlyList<VenueProfile>> GetProfilesAsync(
+        IReadOnlyCollection<int> ids,
+        CancellationToken ct = default) =>
+        readRepository.GetProfilesAsync(ids, ct);
+
     public async Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default) =>
         tenantContext.TenantId is { } tenantId
             ? (await readRepository.GetProfileByTenantIdAsync(tenantId, ct)).ToOption()

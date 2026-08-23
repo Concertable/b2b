@@ -32,7 +32,7 @@ internal sealed class CancelExecutor : ICancelExecutor
         unitOfWork.ExecuteAsync(
             () => outboxBehavior.ExecuteAsync(async () =>
             {
-                var concert = await concerts.GetByIdForLifecycleAsync(concertId, ct);
+                var concert = await concerts.GetByIdAsync(concertId, ct);
                 if (concert is null)
                     return (UnitResult<CancelConcertError>)new CancelConcertError.ConcertNotFound(concertId);
                 if (concert.State is ConcertState.Cancelled or ConcertState.CancellationPending)

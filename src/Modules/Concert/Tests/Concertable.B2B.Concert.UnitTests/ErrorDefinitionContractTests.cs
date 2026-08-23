@@ -37,12 +37,6 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.Invalid
         },
         {
-            new CancelConcertError.EscrowRefundFailure(new EscrowRefundError.Conflict()),
-            "escrow.refund_conflict",
-            "Another refund changed the refundable amount.",
-            ErrorKind.Conflict
-        },
-        {
             new DeclareDoorRevenueError.ConcertNotFound(42),
             "concert.door_revenue.not_found",
             "Concert 42 was not found.",

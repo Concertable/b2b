@@ -146,7 +146,7 @@ public sealed class VenueHireJourneyTests : IAsyncLifetime
         int applicationId)
     {
         var response = await client.GetAsync(
-            $"/api/application/{applicationId}/financial-operation");
+            $"/api/booking/application/{applicationId}");
         await response.ShouldBe(HttpStatusCode.OK);
         var financial = await response.Content.ReadAsync<FinancialOperationBoundaryResponse>();
         Assert.NotNull(financial);

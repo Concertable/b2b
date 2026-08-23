@@ -146,7 +146,7 @@ internal sealed class ConcertService : IConcertService
         int id,
         CancellationToken ct = default)
     {
-        var concert = await repository.GetByIdForLifecycleAsync(id, ct);
+        var concert = await repository.GetByIdAsync(id, ct);
         if (concert is null)
             return new ConcertError.NotFound(id);
 
@@ -195,7 +195,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<UnitResult<PostConcertError>> PostAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await repository.GetByIdForLifecycleAsync(id);
+        var concertEntity = await repository.GetByIdAsync(id);
         if (concertEntity is null)
             return new PostConcertError.ConcertNotFound(id);
 
@@ -211,7 +211,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueAsync(int id, decimal doorRevenue)
     {
-        var concert = await repository.GetByIdForLifecycleAsync(id);
+        var concert = await repository.GetByIdAsync(id);
         if (concert is null)
             return new DeclareDoorRevenueError.ConcertNotFound(id);
 

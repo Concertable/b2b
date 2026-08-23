@@ -7,6 +7,12 @@ internal interface IOpportunityHandoffService
     Task<OpportunityHandoffDto?> GetDetailsAsync(
         int opportunityId,
         CancellationToken ct = default);
+    Task<IReadOnlyList<OpportunityHandoffDto>> GetDetailsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default);
+    Task<OpportunityHandoffDto?> GetOpenDetailsAsync(
+        int opportunityId,
+        CancellationToken ct = default);
     Task<bool> TryClaimAsync(
         int opportunityId,
         Guid venueTenantId,

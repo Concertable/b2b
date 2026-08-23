@@ -35,6 +35,7 @@ public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opp
     }
 
     public void MarkFilled() => State = OpportunityState.Filled;
+    public void Withdraw() => State = OpportunityState.Withdrawn;
 
     public bool Equals(OpportunityEntity? other) => other is not null && Id == other.Id;
 
@@ -46,5 +47,6 @@ public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opp
 public enum OpportunityState
 {
     Open,
-    Filled
+    Filled,
+    Withdrawn
 }

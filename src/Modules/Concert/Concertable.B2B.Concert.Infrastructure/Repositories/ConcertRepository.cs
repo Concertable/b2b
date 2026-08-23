@@ -95,13 +95,6 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .FirstOrDefaultAsync();
     }
 
-    public async Task<ConcertEntity?> GetByIdForLifecycleAsync(int id, CancellationToken ct = default)
-    {
-        return await context.Concerts
-            .Where(e => e.Id == id)
-            .FirstOrDefaultAsync(ct);
-    }
-
     public async Task<ConcertDetails?> GetDetailsByIdAsync(
         int id,
         CancellationToken ct = default)

@@ -130,6 +130,26 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         Assert.Equal("pm_card_visa", prepaid.PaymentMethodId);
     }
 
+    [Fact]
+    public async Task Apply_ShouldReturn400_WhenPaymentMethodIsMissing()
+    {
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var opportunityResponse = await venueClient.PostAsync(
+            "/api/opportunity",
+            BuildOpportunityRequest());
+        await opportunityResponse.ShouldBe(HttpStatusCode.Created);
+        var opportunity = await opportunityResponse.Content.ReadAsync<OpportunityBoundaryResponse>();
+        Assert.NotNull(opportunity);
+        var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var applyResponse = await artistClient.PostAsync(
+            $"/api/application/{opportunity.Id}",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+
+        await applyResponse.ShouldBe(HttpStatusCode.BadRequest);
+        Assert.False(await fixture.Applications.AnyAsync(value => value.OpportunityId == opportunity.Id));
+    }
+
     private OpportunityBoundaryRequest BuildOpportunityRequest() =>
         new(
             fixture.SeedNow.AddMonths(13),

@@ -17,6 +17,11 @@ internal sealed class ArtistModule : IArtistModule
         CancellationToken ct = default) =>
         artistService.GetSummaryAsync(artistId, ct);
 
+    public Task<IReadOnlyList<ArtistSummary>> GetSummariesAsync(
+        IReadOnlyCollection<int> artistIds,
+        CancellationToken ct = default) =>
+        artistService.GetSummariesAsync(artistIds, ct);
+
     public Task<IReadOnlySet<Genre>> GetGenresAsync(
         int artistId,
         CancellationToken ct = default) =>

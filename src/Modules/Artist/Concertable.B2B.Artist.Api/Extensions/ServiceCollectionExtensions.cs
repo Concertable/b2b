@@ -8,15 +8,18 @@ namespace Concertable.B2B.Artist.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddArtistApi(this IServiceCollection services, IConfiguration configuration)
+    extension(IServiceCollection services)
     {
-        services.AddArtistModule(configuration);
-        services.AddControllers()
-            .AddInternalControllers(typeof(ArtistController).Assembly);
-        return services;
-    }
+        public IServiceCollection AddArtistApi(IConfiguration configuration)
+        {
+            services.AddArtistModule(configuration);
+            services.AddControllers()
+                .AddInternalControllers(typeof(ArtistController).Assembly);
+            return services;
+        }
 
-    public static IServiceCollection AddArtistDevSeeder(this IServiceCollection services) =>
-        Concertable.B2B.Artist.Infrastructure.Extensions.ServiceCollectionExtensions
-            .AddArtistDevSeeder(services);
+        public IServiceCollection AddArtistDevSeeder() =>
+            Concertable.B2B.Artist.Infrastructure.Extensions.ServiceCollectionExtensions
+                .AddArtistDevSeeder(services);
+    }
 }

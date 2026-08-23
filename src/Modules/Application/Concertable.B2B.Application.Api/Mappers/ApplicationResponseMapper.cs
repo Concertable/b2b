@@ -22,6 +22,25 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
     {
         var bookingOption = await bookings.GetByApplicationIdAsync(dto.Id);
         bookingOption.TryGetValue(out var booking);
+        return ToVenueResponse(dto, booking);
+    }
+
+    public async Task<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>> ToVenueResponsesAsync(
+        IEnumerable<ApplicationDto> dtos)
+    {
+        var dtoList = dtos.ToList();
+        var bookingsByApplicationId = (await bookings.GetByApplicationIdsAsync(
+                dtoList.Select(dto => dto.Id).ToArray()))
+            .ToDictionary(booking => booking.ApplicationId);
+        return dtoList
+            .Select(dto => ToVenueResponse(dto, bookingsByApplicationId.GetValueOrDefault(dto.Id)))
+            .ToList();
+    }
+
+    private ApplicationResponse<VenueApplicationActions> ToVenueResponse(
+        ApplicationDto dto,
+        BookingSummary? booking)
+    {
         var isPending = dto.State == ApplicationState.Applied;
         var isCancellable = booking?.Status is
             BookingStatus.AwaitingConfirmation or BookingStatus.ConfirmationFailed;
@@ -50,14 +69,29 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
                     : null));
     }
 
-    public async Task<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>> ToVenueResponsesAsync(
-        IEnumerable<ApplicationDto> dtos) =>
-        await Task.WhenAll(dtos.Select(ToVenueResponseAsync));
-
     public async Task<ApplicationResponse<ArtistApplicationActions>> ToArtistResponseAsync(ApplicationDto dto)
     {
         var bookingOption = await bookings.GetByApplicationIdAsync(dto.Id);
         bookingOption.TryGetValue(out var booking);
+        return ToArtistResponse(dto, booking);
+    }
+
+    public async Task<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>> ToArtistResponsesAsync(
+        IEnumerable<ApplicationDto> dtos)
+    {
+        var dtoList = dtos.ToList();
+        var bookingsByApplicationId = (await bookings.GetByApplicationIdsAsync(
+                dtoList.Select(dto => dto.Id).ToArray()))
+            .ToDictionary(booking => booking.ApplicationId);
+        return dtoList
+            .Select(dto => ToArtistResponse(dto, bookingsByApplicationId.GetValueOrDefault(dto.Id)))
+            .ToList();
+    }
+
+    private ApplicationResponse<ArtistApplicationActions> ToArtistResponse(
+        ApplicationDto dto,
+        BookingSummary? booking)
+    {
         var checkoutCapable = applications.RequiresAcceptCheckout(dto.Opportunity.Deal.DealType);
         var status = booking?.Status switch
         {
@@ -80,10 +114,6 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
                     ? new ActionLink($"/api/application/{dto.Id}/contract/pdf", HttpMethods.Get)
                     : null));
     }
-
-    public async Task<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>> ToArtistResponsesAsync(
-        IEnumerable<ApplicationDto> dtos) =>
-        await Task.WhenAll(dtos.Select(ToArtistResponseAsync));
 
     private static ApplicationResponse<TActions> ToResponse<TActions>(
         ApplicationDto dto,

@@ -59,13 +59,10 @@ internal sealed class OpportunityMapper : IOpportunityMapper
         IReadOnlyCollection<OpportunityEntity> opportunities)
     {
         var venueIds = opportunities.Select(opportunity => opportunity.VenueId).Distinct().ToArray();
-        var profiles = await Task.WhenAll(venueIds.Select(async venueId =>
-        {
-            var profileOption = await venues.GetProfileAsync(venueId);
-            if (!profileOption.TryGetValue(out var profile))
-                throw new InvalidOperationException($"Venue {venueId} was not found.");
-            return profile;
-        }));
+        var profiles = await venues.GetProfilesAsync(venueIds);
+        var missingVenueId = venueIds.FirstOrDefault(venueId => profiles.All(profile => profile.Id != venueId));
+        if (missingVenueId != 0)
+            throw new InvalidOperationException($"Venue {missingVenueId} was not found.");
         return profiles.ToDictionary(profile => profile.Id, profile => profile.Name);
     }
 

@@ -19,16 +19,41 @@ internal sealed class OpportunityModule : IOpportunityModule
     {
         var details = await handoffService.GetDetailsAsync(opportunityId, ct);
 
+        return ToOption(details);
+    }
+
+    public async Task<Option<OpportunityDetails>> GetOpenDetailsAsync(
+        int opportunityId,
+        CancellationToken ct = default)
+    {
+        var details = await handoffService.GetOpenDetailsAsync(opportunityId, ct);
+
+        return ToOption(details);
+    }
+
+    public async Task<IReadOnlyList<OpportunityDetails>> GetDetailsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default) =>
+        (await handoffService.GetDetailsAsync(opportunityIds, ct))
+            .Select(ToDetails)
+            .ToList();
+
+    private static OpportunityDetails ToDetails(OpportunityHandoffDto details) =>
+        new(
+            details.Id,
+            details.VenueId,
+            details.TenantId,
+            details.DealId,
+            details.Start,
+            details.End,
+            details.Genres);
+
+    private static Option<OpportunityDetails> ToOption(OpportunityHandoffDto? details)
+    {
+
         return details is null
             ? Option.None<OpportunityDetails>()
-            : Option.Some(new OpportunityDetails(
-                details.Id,
-                details.VenueId,
-                details.TenantId,
-                details.DealId,
-                details.Start,
-                details.End,
-                details.Genres));
+            : Option.Some(ToDetails(details));
     }
 
     public Task<bool> TryClaimAsync(

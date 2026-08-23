@@ -18,7 +18,7 @@ internal sealed class ConcertCancelledDomainEventHandler : IPreCommitDomainEvent
 
     public async Task HandleAsync(ConcertCancelledDomainEvent e, CancellationToken ct = default)
     {
-        var concert = await concertRepository.GetByIdForLifecycleAsync(e.ConcertId)
+        var concert = await concertRepository.GetByIdAsync(e.ConcertId)
             ?? throw new InvalidOperationException(
                 $"Concert {e.ConcertId} not found when publishing ConcertCancelledEvent");
 

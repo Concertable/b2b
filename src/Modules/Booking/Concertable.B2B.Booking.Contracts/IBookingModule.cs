@@ -7,6 +7,9 @@ public interface IBookingModule
     Task<Option<BookingSummary>> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);
+    Task<IReadOnlyList<BookingSummary>> GetByApplicationIdsAsync(
+        IReadOnlyCollection<int> applicationIds,
+        CancellationToken ct = default);
     Task<Option<int>> GetContractIdByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);

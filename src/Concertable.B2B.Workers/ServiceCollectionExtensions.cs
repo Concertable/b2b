@@ -33,8 +33,10 @@ namespace Concertable.B2B.Workers;
 
 internal static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
+    extension(IServiceCollection services)
     {
+        public IServiceCollection AddInfrastructure(IConfiguration configuration, IHostEnvironment environment)
+        {
         services.AddSeedingInfrastructure();
         services.AddSharedInfrastructure(configuration);
         services.AddUris(configuration);
@@ -85,6 +87,7 @@ internal static class ServiceCollectionExtensions
 
         services.AddSingleton(TimeProvider.System);
 
-        return services;
+            return services;
+        }
     }
 }

@@ -37,6 +37,14 @@ internal sealed class ArtistReadRepository : IArtistReadRepository
             .ToProfile()
             .FirstOrDefaultAsync(ct);
 
+    public async Task<IReadOnlyList<ArtistSummary>> GetSummariesAsync(
+        IReadOnlyCollection<int> ids,
+        CancellationToken ct = default) =>
+        await context.Artists
+            .Where(artist => ids.Contains(artist.Id))
+            .ToSummary(context.ArtistRatingProjections)
+            .ToListAsync(ct);
+
     public Task<ArtistProfile?> GetProfileByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         context.Artists
             .Where(artist => artist.TenantId == tenantId)

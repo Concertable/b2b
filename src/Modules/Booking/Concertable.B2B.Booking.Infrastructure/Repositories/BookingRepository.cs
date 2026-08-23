@@ -18,6 +18,13 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             booking => booking.ApplicationId == applicationId,
             ct);
 
+    public async Task<IReadOnlyList<BookingEntity>> GetByApplicationIdsAsync(
+        IReadOnlyCollection<int> applicationIds,
+        CancellationToken ct = default) =>
+        await context.Bookings
+            .Where(booking => applicationIds.Contains(booking.ApplicationId))
+            .ToListAsync(ct);
+
     public Task<BookingEntity?> GetByOperationIdAsync(
         Guid operationId,
         CancellationToken ct = default) =>

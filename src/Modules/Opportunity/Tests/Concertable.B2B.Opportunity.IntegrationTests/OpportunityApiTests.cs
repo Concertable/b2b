@@ -2,10 +2,13 @@ using System.Net;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Opportunity.Api.Responses;
+using Concertable.B2B.Opportunity.Application.Requests;
+using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
 using static Concertable.B2B.Opportunity.IntegrationTests.OpportunityRequestBuilders;
 
@@ -158,6 +161,21 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         Assert.True(problem.Extensions.TryGetValue("code", out var code));
         Assert.Equal("opportunity.deal.invalid", code?.ToString());
         Assert.Equal(["Hire fee must be greater than zero."], problem.Errors["HireFee"]);
+    }
+
+    [Fact]
+    public async Task Update_OmittedOpportunity_IsWithdrawnInsteadOfDeleted()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var opportunityId = fixture.SeedState.FreshVenueHireOpportunity.Id;
+
+        var response = await client.PutAsync(
+            $"/api/venue/{fixture.SeedState.Venue.Id}/opportunities",
+            Array.Empty<OpportunityRequest>());
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var opportunity = await fixture.Opportunities.SingleAsync(value => value.Id == opportunityId);
+        Assert.Equal(OpportunityState.Withdrawn, opportunity.State);
     }
 
     #endregion

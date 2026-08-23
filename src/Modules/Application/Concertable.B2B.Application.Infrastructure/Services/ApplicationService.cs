@@ -175,7 +175,7 @@ internal sealed class ApplicationService : IApplicationService
         if (tenantContext.TenantId is not { } artistTenantId)
             return new ApplyApplicationError.MissingTenant();
 
-        var opportunityOption = await opportunities.GetDetailsAsync(opportunityId);
+        var opportunityOption = await opportunities.GetOpenDetailsAsync(opportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
@@ -193,16 +193,17 @@ internal sealed class ApplicationService : IApplicationService
         if (!dealOption.TryGetValue(out var deal))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
+        if (deal.DealType == DealType.VenueHire && string.IsNullOrWhiteSpace(paymentMethodId))
+            return new ApplyApplicationError.UnsupportedDeal(deal.DealType);
+
         ApplicationEntity application = deal.DealType == DealType.VenueHire
-            ? paymentMethodId is { Length: > 0 }
-                ? PrepaidApplication.Create(
-                    artist.Id,
-                    opportunityId,
-                    deal.DealType,
-                    paymentMethodId,
-                    opportunity.VenueTenantId,
-                    artistTenantId)
-                : throw new InvalidOperationException("Venue hire application requires checkout.")
+            ? PrepaidApplication.Create(
+                artist.Id,
+                opportunityId,
+                deal.DealType,
+                paymentMethodId!,
+                opportunity.VenueTenantId,
+                artistTenantId)
             : StandardApplication.Create(
                 artist.Id,
                 opportunityId,
@@ -401,7 +402,7 @@ internal sealed class ApplicationService : IApplicationService
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationEligibilityError.MissingArtist();
 
-        var opportunityOption = await opportunities.GetDetailsAsync(opportunityId);
+        var opportunityOption = await opportunities.GetOpenDetailsAsync(opportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationEligibilityError.OpportunityNotFound();
 

@@ -20,63 +20,64 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddOpportunityModule(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    extension(IServiceCollection services)
     {
-        services.AddDbContext<OpportunityDbContext>((sp, options) =>
-            options.UseSqlServer(
-                    configuration.GetConnectionString(B2BDb.Name),
-                    sql => sql.UseNetTopologySuite())
-                .AddInterceptors(
-                    sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<TenantInterceptor>())
-                .UseSeedingSupport(sp));
+        public IServiceCollection AddOpportunityModule(IConfiguration configuration)
+        {
+            services.AddDbContext<OpportunityDbContext>((sp, options) =>
+                options.UseSqlServer(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        sql => sql.UseNetTopologySuite())
+                    .AddInterceptors(
+                        sp.GetRequiredService<AuditInterceptor>(),
+                        sp.GetRequiredService<TenantInterceptor>())
+                    .UseSeedingSupport(sp));
 
-        services.AddDbContext<OpportunityReadDbContext>(options =>
-            options.UseSqlServer(
-                    configuration.GetConnectionString(B2BDb.Name),
-                    sql => sql.UseNetTopologySuite())
-                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
-        services.AddScoped<IOpportunityReadDbContext>(
-            sp => sp.GetRequiredService<OpportunityReadDbContext>());
+            services.AddDbContext<OpportunityReadDbContext>(options =>
+                options.UseSqlServer(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        sql => sql.UseNetTopologySuite())
+                    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+            services.AddScoped<IOpportunityReadDbContext>(
+                sp => sp.GetRequiredService<OpportunityReadDbContext>());
 
-        services.AddDbContext<OpportunityHandoffDbContext>((sp, options) =>
-            options.UseSqlServer(
-                    configuration.GetConnectionString(B2BDb.Name),
-                    sql => sql.UseNetTopologySuite())
-                .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
+            services.AddDbContext<OpportunityHandoffDbContext>((sp, options) =>
+                options.UseSqlServer(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        sql => sql.UseNetTopologySuite())
+                    .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
 
-        services.AddScoped<IUnitOfWork<OpportunityDbContext>, UnitOfWork<OpportunityDbContext>>();
-        services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
-        services.AddScoped<IOpportunityRepository, OpportunityRepository>();
-        services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
-        services.AddScoped<IOpportunityHandoffRepository, OpportunityHandoffRepository>();
-        services.AddScoped<IOpportunityService, OpportunityService>();
-        services.AddScoped<IOpportunityHandoffService, OpportunityHandoffService>();
-        services.AddScoped<IOpportunityDashboardService, OpportunityDashboardService>();
-        services.AddScoped<IOpportunityMapper, OpportunityMapper>();
-        services.AddScoped<IOpportunitySyncer, OpportunitySyncer>();
-        services.AddScoped<IOpportunityModule, OpportunityModule>();
+            services.AddScoped<IUnitOfWork<OpportunityDbContext>, UnitOfWork<OpportunityDbContext>>();
+            services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IOpportunityRepository, OpportunityRepository>();
+            services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
+            services.AddScoped<IOpportunityHandoffRepository, OpportunityHandoffRepository>();
+            services.AddScoped<IOpportunityService, OpportunityService>();
+            services.AddScoped<IOpportunityHandoffService, OpportunityHandoffService>();
+            services.AddScoped<IOpportunityDashboardService, OpportunityDashboardService>();
+            services.AddScoped<IOpportunityMapper, OpportunityMapper>();
+            services.AddScoped<IOpportunitySyncer, OpportunitySyncer>();
+            services.AddScoped<IOpportunityModule, OpportunityModule>();
 
-        services.AddSingleton<OpportunityConfigurationProvider>();
-        services.AddSingleton<IEntityTypeConfigurationProvider>(
-            sp => sp.GetRequiredService<OpportunityConfigurationProvider>());
+            services.AddSingleton<OpportunityConfigurationProvider>();
+            services.AddSingleton<IEntityTypeConfigurationProvider>(
+                sp => sp.GetRequiredService<OpportunityConfigurationProvider>());
 
-        services.AddValidatorsFromAssemblyContaining<OpportunityDtoValidator>();
+            services.AddValidatorsFromAssemblyContaining<OpportunityDtoValidator>();
 
-        return services;
-    }
+            return services;
+        }
 
-    public static IServiceCollection AddOpportunityDevSeeder(this IServiceCollection services)
-    {
-        services.AddScoped<IDevSeeder, OpportunityDevSeeder>();
-        return services;
-    }
+        public IServiceCollection AddOpportunityDevSeeder()
+        {
+            services.AddScoped<IDevSeeder, OpportunityDevSeeder>();
+            return services;
+        }
 
-    public static IServiceCollection AddOpportunityTestSeeder(this IServiceCollection services)
-    {
-        services.AddScoped<ITestSeeder, OpportunityTestSeeder>();
-        return services;
+        public IServiceCollection AddOpportunityTestSeeder()
+        {
+            services.AddScoped<ITestSeeder, OpportunityTestSeeder>();
+            return services;
+        }
     }
 }

@@ -99,14 +99,11 @@ internal sealed class OpportunityDashboardService : IOpportunityDashboardService
         IReadOnlyCollection<OpportunityDto> opportunities,
         CancellationToken ct)
     {
-        var profiles = await Task.WhenAll(
-            opportunities.Select(async opportunity =>
-            {
-                var profile = await venues.GetProfileAsync(opportunity.VenueId, ct);
-                return profile.TryGetValue(out var value)
-                    ? value
-                    : throw new InvalidOperationException($"Venue {opportunity.VenueId} was not found.");
-            }));
+        var venueIds = opportunities.Select(opportunity => opportunity.VenueId).Distinct().ToArray();
+        var profiles = await venues.GetProfilesAsync(venueIds, ct);
+        var missingVenueId = venueIds.FirstOrDefault(venueId => profiles.All(profile => profile.Id != venueId));
+        if (missingVenueId != 0)
+            throw new InvalidOperationException($"Venue {missingVenueId} was not found.");
         return profiles.ToDictionary(profile => profile.Id);
     }
 

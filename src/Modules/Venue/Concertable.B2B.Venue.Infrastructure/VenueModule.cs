@@ -20,6 +20,11 @@ internal sealed class VenueModule : IVenueModule
         CancellationToken ct = default) =>
         venueService.GetProfileAsync(venueId, ct);
 
+    public Task<IReadOnlyList<VenueProfile>> GetProfilesAsync(
+        IReadOnlyCollection<int> venueIds,
+        CancellationToken ct = default) =>
+        venueService.GetProfilesAsync(venueIds, ct);
+
     public Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default) =>
         venueService.GetCurrentProfileAsync(ct);
 }

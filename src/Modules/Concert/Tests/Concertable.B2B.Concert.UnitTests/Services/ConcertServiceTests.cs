@@ -39,7 +39,7 @@ public sealed class ConcertServiceTests
             []);
         var repository = new Mock<IConcertRepository>();
         repository
-            .Setup(value => value.GetByIdForLifecycleAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>()))
             .ReturnsAsync(concert);
         var tenantContext = new Mock<ITenantContext>();
         tenantContext.SetupGet(context => context.IsHost).Returns(true);

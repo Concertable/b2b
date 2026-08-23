@@ -1,5 +1,5 @@
 using Concertable.B2B.Booking.Contracts;
-using Concertable.B2B.Booking.Domain.State;
+using Concertable.B2B.Booking.Application.Mappers;
 
 namespace Concertable.B2B.Booking.Infrastructure;
 
@@ -23,11 +23,15 @@ internal sealed class BookingModule : IBookingModule
         var booking = await bookingService.GetSummaryByApplicationIdAsync(applicationId, ct);
         return booking is null
             ? Option.None<BookingSummary>()
-            : Option.Some(new BookingSummary(
-                booking.Id,
-                booking.ApplicationId,
-                Map(booking.State)));
+            : Option.Some(booking.ToSummary());
     }
+
+    public async Task<IReadOnlyList<BookingSummary>> GetByApplicationIdsAsync(
+        IReadOnlyCollection<int> applicationIds,
+        CancellationToken ct = default) =>
+        (await bookingService.GetSummariesByApplicationIdsAsync(applicationIds, ct))
+            .Select(booking => booking.ToSummary())
+            .ToList();
 
     public async Task<Option<int>> GetContractIdByApplicationIdAsync(
         int applicationId,
@@ -44,14 +48,4 @@ internal sealed class BookingModule : IBookingModule
             : Option.None<ContractPdf>();
     }
 
-    private static BookingStatus Map(BookingState state) => state switch
-    {
-        BookingState.AwaitingConfirmation => BookingStatus.AwaitingConfirmation,
-        BookingState.ConfirmationFailed => BookingStatus.ConfirmationFailed,
-        BookingState.Confirmed => BookingStatus.Confirmed,
-        BookingState.CancellationPending => BookingStatus.CancellationPending,
-        BookingState.CancellationFailed => BookingStatus.CancellationFailed,
-        BookingState.Cancelled => BookingStatus.Cancelled,
-        _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
-    };
 }

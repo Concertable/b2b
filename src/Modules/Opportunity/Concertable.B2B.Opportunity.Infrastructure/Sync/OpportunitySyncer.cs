@@ -37,4 +37,10 @@ internal sealed class OpportunitySyncer
 
         entity.Update(new DateRange(dto.StartDate, dto.EndDate), entity.DealId, dto.Genres);
     }
+
+    protected override Task DeleteAsync(OpportunityEntity entity)
+    {
+        entity.Withdraw();
+        return Task.CompletedTask;
+    }
 }
