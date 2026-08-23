@@ -68,8 +68,8 @@ internal sealed class AdminService : IAdminService
         var email = request.Email.Trim().ToLowerInvariant();
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
-        var admins = await ListAdminsAsync(ct);
-        if (admins.Any(a => string.Equals(a.Email, email, StringComparison.OrdinalIgnoreCase)))
+        if ((await userModule.GetIdByEmailAsync(email)).TryGetValue(out var candidateId) &&
+            await profileRepository.IsAdminAsync(candidateId, ct))
             return new InviteAdminError.AlreadyAdmin();
 
         var existing = await invitationRepository.GetPendingInvitationByEmailAsync(email, ct);
