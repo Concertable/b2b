@@ -103,6 +103,15 @@ internal sealed class BookingService : IBookingService
                 if (booking.State == BookingState.Confirmed)
                     return new CancelBookingError.InvalidState(booking.State);
 
+                if (booking.ExpectedFinancialOperation == FinancialOperation.VerifyPayment ||
+                    booking.State == BookingState.ConfirmationFailed)
+                {
+                    booking.BeginCancellation();
+                    booking.Cancel();
+                    await bookings.SaveChangesAsync(ct);
+                    return UnitResult.Success<CancelBookingError>();
+                }
+
                 await bus.SendAsync(new RefundEscrowCommand(
                     booking.BeginCancellation(),
                     booking.Id,
@@ -152,6 +161,12 @@ internal sealed class BookingService : IBookingService
 
         if (booking.State == BookingState.Confirmed)
             return;
+        if (booking.State == BookingState.CancellationPending)
+        {
+            booking.Cancel();
+            await bookings.SaveChangesAsync(ct);
+            return;
+        }
         if (IsDuplicateFailure(booking, operation))
             return;
 
