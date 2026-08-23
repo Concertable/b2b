@@ -24,14 +24,14 @@ internal sealed class VenueReviewService : IVenueReviewService
     public async Task<IPagination<ReviewDto>> GetPagedAsync(int venueId, IPageParams pageParams) =>
         (await reviewRepository.GetPagedByVenueIdAsync(venueId, pageParams)).Map(review => review.ToReviewDto());
 
-    public async Task<Option<IReadOnlyList<VenueReview>>> GetRecentForCurrentAsync(
+    public async Task<IReadOnlyList<VenueReview>> GetRecentForCurrentAsync(
         int take,
         CancellationToken ct = default)
     {
         var venue = await venueService.GetDetailsAsync(ct);
         if (!venue.TryGetValue(out var details))
-            return null;
+            return [];
 
-        return Option.Some(await reviewRepository.GetRecentByVenueIdAsync(details.Id, take, ct));
+        return await reviewRepository.GetRecentByVenueIdAsync(details.Id, take, ct);
     }
 }

@@ -94,16 +94,31 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
-    public async Task AppHost_WebSpaOrigins_AreConsistent()
+    public void LocalSpaSurfaces_AreCanonicalAndCollisionFree()
     {
-        (string Surface, int Port, string? AuthClient)[] surfaces =
+        LocalSpaSurface[] expected =
         [
-            ("venue", 5175, "Venue"),
-            ("artist", 5176, "Artist"),
-            ("business", 5177, null),
-            ("admin", 5178, "Admin")
+            new("customer", 5174, LocalSpaClient.Customer),
+            new("venue", 5175, LocalSpaClient.Venue),
+            new("artist", 5176, LocalSpaClient.Artist),
+            new("business", 5177, null),
+            new("admin", 5178, LocalSpaClient.Admin)
         ];
 
+        Assert.Equal(expected, LocalSpaSurfaces.All);
+        Assert.Equal(expected.Length, LocalSpaSurfaces.All.Select(surface => surface.ResourceName).Distinct().Count());
+        Assert.Equal(expected.Length, LocalSpaSurfaces.All.Select(surface => surface.HttpsPort).Distinct().Count());
+        Assert.Equal(
+            expected.Where(surface => surface.AuthClient is not null),
+            LocalSpaSurfaces.Authenticated);
+        Assert.Equal(
+            expected.Where(surface => surface != LocalSpaSurfaces.Customer),
+            LocalSpaSurfaces.B2B);
+    }
+
+    [Fact]
+    public async Task AppHost_WebSpaOrigins_AreConsistent()
+    {
         var builder = B2BAppHost.CreateBuilder([]);
         var nodeApps = builder.Resources.OfType<NodeAppResource>().ToArray();
         var auth = Assert.IsAssignableFrom<IResourceWithEnvironment>(
@@ -121,27 +136,27 @@ public sealed class B2BHostGraphTests
         var b2bEnvironment = b2bConfiguration.EnvironmentVariables.ToDictionary();
 
         Assert.Equal(
-            surfaces.Select(surface => surface.Surface).Order(),
+            LocalSpaSurfaces.B2B.Select(surface => surface.ResourceName).Order(),
             nodeApps.Select(resource => resource.Name).Order());
 
-        foreach (var (surface, port, authClient) in surfaces)
+        for (var index = 0; index < LocalSpaSurfaces.B2B.Count; index++)
         {
-            var origin = $"https://localhost:{port}";
-            var nodeApp = Assert.Single(nodeApps, resource => resource.Name == surface);
+            var surface = LocalSpaSurfaces.B2B[index];
+            var nodeApp = Assert.Single(nodeApps, resource => resource.Name == surface.ResourceName);
             var endpoint = Assert.Single(nodeApp.Annotations.OfType<EndpointAnnotation>());
 
             Assert.Equal("https", endpoint.UriScheme);
-            Assert.Equal(port, endpoint.Port);
-            Assert.Contains(origin, b2bEnvironment.Values);
+            Assert.Equal(surface.HttpsPort, endpoint.Port);
+            Assert.Equal(surface.Origin, b2bEnvironment[$"Cors__AllowedOrigins__{index}"]);
 
-            if (authClient is null)
+            if (surface.AuthClient is not { } authClient)
                 continue;
 
             Assert.Equal(
-                $"{origin}/auth/callback",
+                $"{surface.Origin}/auth/callback",
                 authEnvironment[$"Auth__SpaClients__{authClient}__RedirectUri"]);
-            Assert.Equal(origin, authEnvironment[$"Auth__SpaClients__{authClient}__PostLogoutRedirectUri"]);
-            Assert.Equal(origin, authEnvironment[$"Auth__SpaClients__{authClient}__AllowedCorsOrigins__0"]);
+            Assert.Equal(surface.Origin, authEnvironment[$"Auth__SpaClients__{authClient}__PostLogoutRedirectUri"]);
+            Assert.Equal(surface.Origin, authEnvironment[$"Auth__SpaClients__{authClient}__AllowedCorsOrigins__0"]);
         }
     }
 }
