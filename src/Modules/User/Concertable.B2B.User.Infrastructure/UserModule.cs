@@ -22,4 +22,7 @@ internal sealed class UserModule : IUserModule
 
     public Task<Option<ManagerDto>> GetManagerByIdAsync(Guid userId) =>
         userService.GetManagerByIdAsync(userId);
+
+    public Task<Option<Guid>> GetIdByEmailAsync(string email) =>
+        userService.GetIdByEmailAsync(email);
 }
