@@ -26,20 +26,14 @@ internal sealed class VenueReadRepository : IVenueReadRepository
             .FirstOrDefaultAsync(ct);
 
     public Task<VenueProfile?> GetProfileAsync(int id, CancellationToken ct = default) =>
-        Profiles().FirstOrDefaultAsync(venue => venue.Id == id, ct);
+        context.Venues
+            .Where(venue => venue.Id == id)
+            .ToProfiles()
+            .FirstOrDefaultAsync(ct);
 
     public Task<VenueProfile?> GetProfileByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
-        Profiles().FirstOrDefaultAsync(venue => venue.TenantId == tenantId, ct);
-
-    private IQueryable<VenueProfile> Profiles() =>
-        context.Venues.Select(venue => new VenueProfile(
-            venue.Id,
-            venue.TenantId,
-            venue.UserId,
-            venue.Name,
-            venue.About,
-            venue.Email,
-            venue.Address.County,
-            venue.Address.Town));
-
+        context.Venues
+            .Where(venue => venue.TenantId == tenantId)
+            .ToProfiles()
+            .FirstOrDefaultAsync(ct);
 }
