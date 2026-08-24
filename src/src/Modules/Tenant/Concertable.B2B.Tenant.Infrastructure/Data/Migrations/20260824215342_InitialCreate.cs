@@ -96,6 +96,48 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     table.PrimaryKey("PK_Tenants", x => x.Id);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Verifications",
+                schema: "tenant",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    RejectionReason = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    ReviewedByAdminSub = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ReviewedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    SubmittedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Verifications", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "VerificationDocuments",
+                schema: "tenant",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantVerificationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DocumentType = table.Column<int>(type: "int", nullable: false),
+                    BlobName = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    UploadedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_VerificationDocuments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_VerificationDocuments_Verifications_TenantVerificationId",
+                        column: x => x.TenantVerificationId,
+                        principalSchema: "tenant",
+                        principalTable: "Verifications",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Activities_TenantId_At",
                 schema: "tenant",
@@ -135,6 +177,19 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 schema: "tenant",
                 table: "Memberships",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_VerificationDocuments_TenantVerificationId",
+                schema: "tenant",
+                table: "VerificationDocuments",
+                column: "TenantVerificationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Verifications_TenantId",
+                schema: "tenant",
+                table: "Verifications",
+                column: "TenantId",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -154,6 +209,14 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "Tenants",
+                schema: "tenant");
+
+            migrationBuilder.DropTable(
+                name: "VerificationDocuments",
+                schema: "tenant");
+
+            migrationBuilder.DropTable(
+                name: "Verifications",
                 schema: "tenant");
         }
     }

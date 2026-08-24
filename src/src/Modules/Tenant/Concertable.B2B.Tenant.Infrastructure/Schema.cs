@@ -10,5 +10,7 @@ internal static class Schema
         public const string Memberships = "Memberships";
         public const string Invitations = "Invitations";
         public const string Activities = "Activities";
+        public const string Verifications = "Verifications";
+        public const string VerificationDocuments = "VerificationDocuments";
     }
 }
