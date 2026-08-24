@@ -22,6 +22,9 @@ public sealed class VerificationDocumentEntity : IIdEntity
     public static VerificationDocumentEntity Create(VerificationDocumentType documentType, string blobName, DateTime uploadedAt)
     {
         DomainException.ThrowIfNullOrWhiteSpace(blobName, "BlobName");
+        if (blobName.Length > 500)
+            throw new DomainException("BlobName must be 500 characters or fewer.");
+
         return new VerificationDocumentEntity
         {
             DocumentType = documentType,

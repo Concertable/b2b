@@ -28,4 +28,13 @@ public sealed class VerificationDocumentEntityTests
         Assert.Throws<DomainException>(() =>
             VerificationDocumentEntity.Create(VerificationDocumentType.Licence, blobName!, UploadedAt));
     }
+
+    [Fact]
+    public void Create_BlobNameTooLong_ThrowsDomainException()
+    {
+        var blobName = new string('b', 501);
+
+        Assert.Throws<DomainException>(() =>
+            VerificationDocumentEntity.Create(VerificationDocumentType.Licence, blobName, UploadedAt));
+    }
 }

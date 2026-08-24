@@ -13,7 +13,7 @@ namespace Concertable.B2B.Tenant.Domain.Entities;
 /// </summary>
 public sealed class TenantVerificationEntity : IGuidEntity, IEventRaiser
 {
-    private static readonly IStateMachine<TenantVerificationStatus, TenantVerificationTrigger> Transitions =
+    private static readonly IStateMachine<TenantVerificationStatus, TenantVerificationTrigger> StateMachine =
         new StateMachine<TenantVerificationStatus, TenantVerificationTrigger>(
         [
             (TenantVerificationStatus.Pending, TenantVerificationTrigger.Approve, TenantVerificationStatus.Approved),
@@ -54,7 +54,7 @@ public sealed class TenantVerificationEntity : IGuidEntity, IEventRaiser
             SubmittedAt = submittedAt,
         };
         verification.documents.AddRange(evidence);
-        verification.events.Raise(new TenantVerificationChangedDomainEvent(verification));
+        verification.Announce();
         return verification;
     }
 
@@ -71,6 +71,7 @@ public sealed class TenantVerificationEntity : IGuidEntity, IEventRaiser
         ReviewedByAdminSub = null;
         ReviewedAt = null;
         SubmittedAt = submittedAt;
+        Announce();
     }
 
     /// <summary>Only legal from <see cref="TenantVerificationStatus.Pending"/>.</summary>
@@ -80,24 +81,32 @@ public sealed class TenantVerificationEntity : IGuidEntity, IEventRaiser
         ReviewedByAdminSub = adminSub;
         ReviewedAt = approvedAt;
         RejectionReason = null;
+        Announce();
     }
 
     /// <summary>Only legal from <see cref="TenantVerificationStatus.Pending"/>.</summary>
     public void Reject(Guid adminSub, string reason, DateTime rejectedAt)
     {
         DomainException.ThrowIfNullOrWhiteSpace(reason, "RejectionReason");
+        if (reason.Length > 1000)
+            throw new DomainException("RejectionReason must be 1000 characters or fewer.");
+
         Apply(TenantVerificationTrigger.Reject);
         ReviewedByAdminSub = adminSub;
         ReviewedAt = rejectedAt;
         RejectionReason = reason;
+        Announce();
     }
 
     private void Apply(TenantVerificationTrigger trigger)
     {
-        if (!Transitions.Transition(Status, trigger).TryGetValue(out var next))
+        if (!StateMachine.Transition(Status, trigger).TryGetValue(out var next))
             throw new DomainException($"Cannot apply '{trigger}' to a verification in status '{Status}'.");
 
         Status = next;
-        events.Raise(new TenantVerificationChangedDomainEvent(this));
     }
+
+    private void Announce() =>
+        events.Raise(new TenantVerificationChangedDomainEvent(
+            Id, TenantId, Status, RejectionReason, ReviewedByAdminSub, ReviewedAt));
 }
