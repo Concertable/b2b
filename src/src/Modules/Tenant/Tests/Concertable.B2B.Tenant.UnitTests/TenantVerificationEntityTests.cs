@@ -37,12 +37,33 @@ public sealed class TenantVerificationEntityTests
     }
 
     [Fact]
-    public void Submit_RaisesTenantVerificationChangedDomainEvent()
+    public void Submit_RaisesTenantVerificationChangedDomainEventCarryingTheSnapshotAtRaiseTime()
     {
         var verification = TenantVerificationEntity.Submit(this.tenantId, [Document()], SubmittedAt);
 
         var raised = Assert.IsType<TenantVerificationChangedDomainEvent>(Assert.Single(verification.DomainEvents));
-        Assert.Same(verification, raised.Verification);
+        Assert.Equal(verification.Id, raised.TenantVerificationId);
+        Assert.Equal(this.tenantId, raised.TenantId);
+        Assert.Equal(TenantVerificationStatus.Pending, raised.Status);
+        Assert.Null(raised.RejectionReason);
+        Assert.Null(raised.ReviewedByAdminSub);
+    }
+
+    [Fact]
+    public void Reject_ThenResubmit_EachRaisedEventKeepsItsOwnSnapshot()
+    {
+        var verification = Submitted();
+
+        verification.Reject(this.adminSub, "Not enough evidence.", SubmittedAt.AddDays(1));
+        verification.Resubmit([Document()], SubmittedAt.AddDays(2));
+
+        var events = verification.DomainEvents.Cast<TenantVerificationChangedDomainEvent>().ToList();
+        Assert.Equal(3, events.Count);
+        Assert.Equal(TenantVerificationStatus.Pending, events[0].Status);
+        Assert.Equal(TenantVerificationStatus.Rejected, events[1].Status);
+        Assert.Equal("Not enough evidence.", events[1].RejectionReason);
+        Assert.Equal(TenantVerificationStatus.Pending, events[2].Status);
+        Assert.Null(events[2].RejectionReason);
     }
 
     #endregion
@@ -115,6 +136,15 @@ public sealed class TenantVerificationEntityTests
         var verification = Rejected();
 
         Assert.Throws<DomainException>(() => verification.Reject(this.adminSub, "Still not enough.", SubmittedAt.AddDays(2)));
+    }
+
+    [Fact]
+    public void Reject_ReasonTooLong_ThrowsDomainException()
+    {
+        var verification = Submitted();
+        var reason = new string('r', 1001);
+
+        Assert.Throws<DomainException>(() => verification.Reject(this.adminSub, reason, SubmittedAt.AddDays(1)));
     }
 
     #endregion
