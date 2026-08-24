@@ -6,6 +6,7 @@ using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Booking.Infrastructure.Data.Seeders;
 using Concertable.B2B.Booking.Infrastructure.Repositories;
 using Concertable.B2B.Booking.Infrastructure.Services;
+using Concertable.B2B.Booking.Infrastructure.Services.Strategies;
 using Concertable.B2B.Booking.Domain.Events;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess.Application;
@@ -14,6 +15,7 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
@@ -45,17 +47,13 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IUnitOfWork<BookingDbContext>, UnitOfWork<BookingDbContext>>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
-            services.AddScoped(typeof(IStepResolver<>), typeof(StepResolver<>));
             services.AddScoped<IBookingRepository, BookingRepository>();
             services.AddScoped<IContractRepository, ContractRepository>();
             services.AddScoped<IBookingService, BookingService>();
             services.AddScoped<IContractService, ContractService>();
             services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
             services.AddScoped<IBookingModule, BookingModule>();
-            services.AddKeyedScoped<IConfirmStep, FlatFeeConfirmStep>(DealType.FlatFee);
-            services.AddKeyedScoped<IConfirmStep, DoorSplitConfirmStep>(DealType.DoorSplit);
-            services.AddKeyedScoped<IConfirmStep, VersusConfirmStep>(DealType.Versus);
-            services.AddKeyedScoped<IConfirmStep, VenueHireConfirmStep>(DealType.VenueHire);
+            services.AddBookingDealStrategies();
             services.AddScoped<IDomainEventHandler<ApplicationAcceptedDomainEvent>,
                 ApplicationAcceptedDomainEventHandler>();
             services.AddScoped<IDomainEventHandler<VerifyPaymentSucceeded>,
@@ -83,6 +81,42 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IEntityTypeConfigurationProvider>(provider =>
                 provider.GetRequiredService<BookingConfigurationProvider>());
 
+            return services;
+        }
+
+        internal IServiceCollection AddBookingDealStrategies() =>
+            services.AddBookingDealStrategies(strategies =>
+            {
+                strategies.For(DealType.FlatFee)
+                    .AddScoped<IConfirmStep, FlatFeeConfirmStep>()
+                    .AddScoped<ICancelStep, EscrowCancelStep>();
+                strategies.For(DealType.DoorSplit)
+                    .AddScoped<IConfirmStep, DoorSplitConfirmStep>()
+                    .AddScoped<ICancelStep, ImmediateCancelStep>();
+                strategies.For(DealType.Versus)
+                    .AddScoped<IConfirmStep, VersusConfirmStep>()
+                    .AddScoped<ICancelStep, ImmediateCancelStep>();
+                strategies.For(DealType.VenueHire)
+                    .AddScoped<IConfirmStep, VenueHireConfirmStep>()
+                    .AddScoped<ICancelStep, EscrowCancelStep>();
+
+                strategies.RequireAll<IConfirmStep>();
+                strategies.RequireAll<ICancelStep>();
+            });
+
+        internal IServiceCollection AddBookingDealStrategies(
+            Action<BookingDealStrategyBuilder> configure)
+        {
+            var builder = new BookingDealStrategyBuilder(services);
+            configure(builder);
+            builder.Build();
+
+            services.TryAddScoped<IKeyedServiceProvider>(provider => (IKeyedServiceProvider)provider);
+            services.TryAddScoped(
+                typeof(IBookingDealStrategyFactory<>),
+                typeof(BookingDealStrategyFactory<>));
+            services.TryAddScoped<IBookingConfirmationExecutor, BookingConfirmationExecutor>();
+            services.TryAddScoped<IBookingCancellationExecutor, BookingCancellationExecutor>();
             return services;
         }
 

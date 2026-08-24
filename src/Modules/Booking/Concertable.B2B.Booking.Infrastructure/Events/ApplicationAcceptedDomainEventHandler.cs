@@ -7,22 +7,15 @@ namespace Concertable.B2B.Booking.Infrastructure.Events;
 internal sealed class ApplicationAcceptedDomainEventHandler
     : IPreCommitDomainEventHandler<ApplicationAcceptedDomainEvent>
 {
-    private readonly IStepResolver<IConfirmStep> steps;
-    private readonly IOutboxUnitOfWorkBehavior outbox;
+    private readonly IBookingConfirmationExecutor confirmation;
 
-    public ApplicationAcceptedDomainEventHandler(
-        IStepResolver<IConfirmStep> steps,
-        IOutboxUnitOfWorkBehavior outbox)
+    public ApplicationAcceptedDomainEventHandler(IBookingConfirmationExecutor confirmation)
     {
-        this.steps = steps;
-        this.outbox = outbox;
+        this.confirmation = confirmation;
     }
 
     public Task HandleAsync(
         ApplicationAcceptedDomainEvent @event,
         CancellationToken ct = default) =>
-        this.outbox.ExecuteAsync(
-            () => this.steps.Resolve(@event.Application.DealType)
-                .ExecuteAsync(@event.Application, ct),
-            ct);
+        this.confirmation.ExecuteAsync(@event.Application, ct);
 }

@@ -18,6 +18,7 @@ internal sealed class BookingService : IBookingService
     private readonly IUnitOfWorkBehavior unitOfWork;
     private readonly IBus bus;
     private readonly IOutboxUnitOfWorkBehavior outbox;
+    private readonly IBookingCancellationExecutor cancellation;
     private readonly TimeProvider timeProvider;
 
     public BookingService(
@@ -26,6 +27,7 @@ internal sealed class BookingService : IBookingService
         IUnitOfWorkBehavior unitOfWork,
         IBus bus,
         IOutboxUnitOfWorkBehavior outbox,
+        IBookingCancellationExecutor cancellation,
         TimeProvider timeProvider)
     {
         this.bookings = bookings;
@@ -33,6 +35,7 @@ internal sealed class BookingService : IBookingService
         this.unitOfWork = unitOfWork;
         this.bus = bus;
         this.outbox = outbox;
+        this.cancellation = cancellation;
         this.timeProvider = timeProvider;
     }
 
@@ -115,19 +118,7 @@ internal sealed class BookingService : IBookingService
                 if (booking.State == BookingState.Confirmed)
                     return new CancelBookingError.InvalidState(booking.State);
 
-                if (booking.ExpectedFinancialOperation == FinancialOperation.VerifyPayment ||
-                    booking.State == BookingState.ConfirmationFailed)
-                {
-                    booking.BeginCancellation();
-                    booking.Cancel();
-                    await bookings.SaveChangesAsync(ct);
-                    return UnitResult.Success<CancelBookingError>();
-                }
-
-                await bus.SendAsync(new RefundEscrowCommand(
-                    booking.BeginCancellation(),
-                    booking.Id,
-                    RefundReasonCodes.RequestedByCustomer), ct);
+                await this.cancellation.ExecuteAsync(booking, ct);
                 await bookings.SaveChangesAsync(ct);
                 return UnitResult.Success<CancelBookingError>();
             }, ct),

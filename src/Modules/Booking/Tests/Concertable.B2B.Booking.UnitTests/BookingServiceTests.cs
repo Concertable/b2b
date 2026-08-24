@@ -24,6 +24,7 @@ public sealed class BookingServiceTests
             Mock.Of<IUnitOfWorkBehavior>(),
             this.bus.Object,
             Mock.Of<IOutboxUnitOfWorkBehavior>(),
+            Mock.Of<IBookingCancellationExecutor>(),
             TimeProvider.System);
     }
 
