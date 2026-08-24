@@ -2,6 +2,7 @@ using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Contracts.Commands;
+using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.State;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
@@ -88,6 +89,16 @@ internal sealed class ConcertService : IConcertService
             matchingGenres);
         await repository.AddAsync(concert, ct);
         await repository.SaveChangesAsync(ct);
+
+        await bus.PublishAsync(new ConcertCreatedEvent(
+            concert.Id,
+            concert.ApplicationId,
+            concert.OpportunityId,
+            concert.ArtistId,
+            concert.VenueId,
+            concert.VenueTenantId,
+            concert.ArtistTenantId,
+            concert.Period.Start), ct);
 
         logger.ConcertDraftCreated(concert.Id, booking.BookingId, artist.Id, venue.Id);
         await bus.SendAsync(new NotifyConcertDraftCreatedCommand(

@@ -1,8 +1,11 @@
 ﻿using System.Net;
 using System.Text.Json;
+using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Contracts.Enums;
+using Concertable.Messaging.Contracts;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using Xunit.Abstractions;
@@ -107,6 +110,45 @@ public sealed class ApplicationApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.False(await response.Content.ReadAsync<bool>());
+    }
+
+    [Fact]
+    public async Task ConcertFacts_UpdateOwnedAvailabilityProjection()
+    {
+        const int concertId = int.MaxValue;
+        var opportunity = fixture.SeedState.ActiveVenueHireOpportunity;
+        var artist = fixture.SeedState.Artist;
+        var venue = fixture.SeedState.Venues.Single(value => value.Id == opportunity.VenueId);
+        var created = new ConcertCreatedEvent(
+            concertId,
+            0,
+            opportunity.Id,
+            artist.Id,
+            venue.Id,
+            venue.TenantId,
+            artist.TenantId,
+            opportunity.Period.Start);
+        await fixture.DispatchIntegrationEventAsync(
+            created,
+            MessageEnvelope.Create<ConcertCreatedEvent>(DateTimeOffset.UtcNow));
+
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var unavailable = await client.GetAsync(
+            $"/api/application/opportunity/{opportunity.Id}/eligibility");
+
+        await unavailable.ShouldBe(HttpStatusCode.OK);
+        Assert.False(await unavailable.Content.ReadAsync<bool>());
+        Assert.True(await fixture.ConcertAvailabilities.AnyAsync(value => value.ConcertId == concertId));
+
+        await fixture.DispatchIntegrationEventAsync(
+            new ConcertCancelledEvent(concertId, 0, opportunity.Id),
+            MessageEnvelope.Create<ConcertCancelledEvent>(DateTimeOffset.UtcNow));
+
+        var available = await client.GetAsync(
+            $"/api/application/opportunity/{opportunity.Id}/eligibility");
+        await available.ShouldBe(HttpStatusCode.OK);
+        Assert.True(await available.Content.ReadAsync<bool>());
+        Assert.False(await fixture.ConcertAvailabilities.AnyAsync(value => value.ConcertId == concertId));
     }
 
     [Fact]

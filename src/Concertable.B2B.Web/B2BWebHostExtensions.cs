@@ -152,6 +152,7 @@ public static class B2BWebHostExtensions
                     reg.Publishes<ConcertRatingUpdatedEvent>();
                     reg.Publishes<BookingCancelledEvent>();
                     reg.Publishes<ConcertCancelledEvent>();
+                    reg.Publishes<ConcertCreatedEvent>();
                     reg.Publishes<Concertable.B2B.Tenant.Contracts.Events.PayoutOwnerRegisteredEvent>();
                     reg.Publishes<Concertable.B2B.Tenant.Contracts.Events.TenantActivityRecordedEvent>();
                     reg.SendsTo<CaptureEscrowCommand>(PaymentServiceIdentity.Name);
@@ -169,6 +170,7 @@ public static class B2BWebHostExtensions
                     reg.SubscribeTo<RefundEscrowRejectedEvent>();
                     reg.SubscribeTo<BookingCancelledEvent>();
                     reg.SubscribeTo<ConcertCancelledEvent>();
+                    reg.SubscribeTo<ConcertCreatedEvent>();
                     reg.HandleCommand<SendEmailCommand>();
                 });
             services.AddDirectBusKeyed("webhook");

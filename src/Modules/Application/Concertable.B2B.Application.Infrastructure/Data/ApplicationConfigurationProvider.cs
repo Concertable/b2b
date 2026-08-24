@@ -9,6 +9,7 @@ internal sealed class ApplicationConfigurationProvider : IEntityTypeConfiguratio
     public void Configure(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new ApplicationEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new ConcertAvailabilityEntityConfiguration());
         modelBuilder.ApplyConfiguration(new VerifyPaymentEntityConfiguration());
     }
 }

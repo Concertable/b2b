@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260822110130_InitialCreate")]
+    [Migration("20260824003654_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -106,6 +106,41 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                     b.HasDiscriminator<string>("Discriminator").HasValue("ApplicationEntity");
 
                     b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.ConcertAvailabilityEntity", b =>
+                {
+                    b.Property<int>("ConcertId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArtistId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ArtistTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("OpportunityId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("VenueId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("VenueTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ConcertId");
+
+                    b.HasIndex("OpportunityId")
+                        .IsUnique();
+
+                    b.HasIndex("ArtistId", "StartDate");
+
+                    b.HasIndex("VenueId", "StartDate");
+
+                    b.ToTable("ConcertAvailabilities", "application");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.VerifyPaymentEntity", b =>

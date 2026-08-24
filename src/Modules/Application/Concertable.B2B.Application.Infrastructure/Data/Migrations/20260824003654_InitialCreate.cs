@@ -44,6 +44,24 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ConcertAvailabilities",
+                schema: "application",
+                columns: table => new
+                {
+                    ConcertId = table.Column<int>(type: "int", nullable: false),
+                    OpportunityId = table.Column<int>(type: "int", nullable: false),
+                    ArtistId = table.Column<int>(type: "int", nullable: false),
+                    VenueId = table.Column<int>(type: "int", nullable: false),
+                    VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ConcertAvailabilities", x => x.ConcertId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "VerifyPayments",
                 schema: "application",
                 columns: table => new
@@ -84,6 +102,25 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_ConcertAvailabilities_ArtistId_StartDate",
+                schema: "application",
+                table: "ConcertAvailabilities",
+                columns: new[] { "ArtistId", "StartDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConcertAvailabilities_OpportunityId",
+                schema: "application",
+                table: "ConcertAvailabilities",
+                column: "OpportunityId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConcertAvailabilities_VenueId_StartDate",
+                schema: "application",
+                table: "ConcertAvailabilities",
+                columns: new[] { "VenueId", "StartDate" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_VerifyPayments_ApplicationId",
                 schema: "application",
                 table: "VerifyPayments",
@@ -101,6 +138,10 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "ConcertAvailabilities",
+                schema: "application");
+
             migrationBuilder.DropTable(
                 name: "VerifyPayments",
                 schema: "application");

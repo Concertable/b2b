@@ -102,6 +102,21 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.Conflict);
     }
 
+    [Fact]
+    public async Task Accept_WithoutPaymentMethod_DoesNotPersistTransition()
+    {
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        var application = await fixture.Applications.SingleAsync(value => value.Id == applicationId);
+        Assert.Null(application.AcceptanceOperationId);
+    }
+
     private OpportunityBoundaryRequest BuildOpportunityRequest(DealDto deal) =>
         new(
             fixture.SeedNow.AddMonths(1),

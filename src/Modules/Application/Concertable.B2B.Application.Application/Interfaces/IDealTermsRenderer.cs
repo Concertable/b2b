@@ -8,5 +8,4 @@ internal interface IDealTermsRenderer
 internal interface IDealTerms
 {
     string Render(DealDto deal);
-    string Serialize(DealDto deal);
 }

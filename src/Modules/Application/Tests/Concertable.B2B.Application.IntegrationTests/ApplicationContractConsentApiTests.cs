@@ -54,6 +54,16 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SeededApplications_HaveCatalogTimestampedConsent()
+    {
+        var application = await fixture.Applications
+            .SingleAsync(value => value.Id == fixture.SeedState.FlatFeeApp.Id);
+
+        Assert.Equal(fixture.SeedNow, application.ArtistESignature.AtUtc);
+        Assert.False(string.IsNullOrWhiteSpace(application.TermsFingerprint));
+    }
+
+    [Fact]
     public async Task Accept_ShouldReturn400_WithoutConsent()
     {
         var opportunityId = await CreateOpportunityAsync(

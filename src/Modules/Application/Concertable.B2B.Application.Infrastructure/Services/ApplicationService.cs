@@ -319,7 +319,7 @@ internal sealed class ApplicationService : IApplicationService
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
 
-        var operationId = application.BeginAcceptance();
+        var operationId = application.AcceptanceOperationId ?? Guid.NewGuid();
         var facts = new AcceptedApplicationFacts(
             operationId,
             application.Id,
@@ -363,6 +363,7 @@ internal sealed class ApplicationService : IApplicationService
                 ct))
             return new AcceptApplicationError.OpportunityUnavailable(application.OpportunityId);
 
+        application.BeginAcceptance(operationId);
         application.Accept(acceptedApplication);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
         await repository.SaveChangesAsync(ct);

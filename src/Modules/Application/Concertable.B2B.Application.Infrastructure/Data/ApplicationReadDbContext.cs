@@ -9,5 +9,7 @@ internal sealed class ApplicationReadDbContext(
     : ReadDbContext(options, provider, Schema.Name), IApplicationReadDbContext
 {
     IQueryable<ApplicationEntity> IApplicationReadDbContext.Applications => Query<ApplicationEntity>();
+    IQueryable<ConcertAvailabilityEntity> IApplicationReadDbContext.ConcertAvailabilities =>
+        Query<ConcertAvailabilityEntity>();
     IQueryable<VerifyPaymentEntity> IApplicationReadDbContext.VerifyPayments => Query<VerifyPaymentEntity>();
 }

@@ -10,6 +10,7 @@ public sealed class ApplicationApiFixture : ApiFixture
     private IApplicationReadDbContext dbContext = null!;
 
     internal IQueryable<ApplicationEntity> Applications => dbContext.Applications;
+    internal IQueryable<ConcertAvailabilityEntity> ConcertAvailabilities => dbContext.ConcertAvailabilities;
     internal IQueryable<VerifyPaymentEntity> PaymentVerifications => dbContext.VerifyPayments;
 
     protected override void OnReset(IServiceScope scope)

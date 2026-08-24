@@ -44,9 +44,17 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
         ArtistTenantId = artistTenantId;
     }
 
-    public Guid BeginAcceptance()
+    public Guid BeginAcceptance() => BeginAcceptance(Guid.NewGuid());
+
+    public Guid BeginAcceptance(Guid operationId)
     {
-        AcceptanceOperationId ??= Guid.NewGuid();
+        if (operationId == Guid.Empty)
+            throw new ArgumentException("An acceptance operation id is required.", nameof(operationId));
+
+        AcceptanceOperationId ??= operationId;
+        if (AcceptanceOperationId != operationId)
+            throw new InvalidOperationException("The application already belongs to another acceptance operation.");
+
         return AcceptanceOperationId.Value;
     }
 

@@ -1,10 +1,9 @@
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.Application.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class ConcertAvailability : IConcertAvailability, IApplicationAvailabilityProjection
+internal sealed class ConcertAvailability : IConcertAvailability
 {
     private readonly IConcertReadDbContext context;
 

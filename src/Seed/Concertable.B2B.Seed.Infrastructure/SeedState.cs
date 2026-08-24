@@ -55,6 +55,7 @@ public sealed class SeedState
     public IReadOnlyList<OpportunityEntity> Opportunities { get; }
     public IReadOnlyList<BookingEntity> Bookings { get; }
     public IReadOnlyList<ApplicationEntity> Applications { get; }
+    public IReadOnlyList<ConcertAvailabilityEntity> ConcertAvailabilities { get; }
     public IReadOnlyList<ConcertEntity> Concerts { get; }
 
     public FlatFeeDealEntity FlatFeeAppDeal { get; }
@@ -494,16 +495,18 @@ public sealed class SeedState
             ApplicationFactory.CreatePrepaid(8, 48),
         ];
 
-        var artistTenantById = Artists.ToDictionary(a => a.Id, a => a.TenantId);
+        var artistById = Artists.ToDictionary(artist => artist.Id);
+        var opportunityById = Opportunities.ToDictionary(opportunity => opportunity.Id);
+        var dealById = Deals.ToDictionary(deal => deal.Id);
         foreach (var application in Applications)
         {
-            var dealType = Deals[Opportunities[application.OpportunityId - 1].DealId - 1].DealType;
-            application.With(nameof(ApplicationEntity.DealType), dealType);
-
-            application.With(
-                nameof(ApplicationEntity.VenueTenantId),
-                Opportunities[application.OpportunityId - 1].TenantId);
-            application.With(nameof(ApplicationEntity.ArtistTenantId), artistTenantById[application.ArtistId]);
+            var opportunity = opportunityById[application.OpportunityId];
+            ApplicationFactory.FinishConstruction(
+                application,
+                artistById[application.ArtistId],
+                opportunity,
+                dealById[opportunity.DealId],
+                now);
             var booking = Bookings.FirstOrDefault(b =>
                 bookingApplications.TryGetValue(b, out var linked) && ReferenceEquals(linked, application));
             if (booking is not null)
@@ -518,6 +521,14 @@ public sealed class SeedState
         }
 
         Concerts = catalog.Concerts.Select(s => ConcertFactory.Create(s, Bookings[s.ConcertId - 1])).ToList();
+        ConcertAvailabilities = Concerts.Select(concert => ConcertAvailabilityEntity.Create(
+            concert.Id,
+            concert.OpportunityId,
+            concert.ArtistId,
+            concert.VenueId,
+            concert.VenueTenantId,
+            concert.ArtistTenantId,
+            concert.Period.Start)).ToList();
     }
 
     public ConcertEntity ConcertFor(BookingEntity booking) =>

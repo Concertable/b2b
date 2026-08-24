@@ -21,8 +21,6 @@ internal sealed class FlatFeeDealTerms : IDealTerms
     public string Render(DealDto deal) =>
         $"The venue pays the artist a flat fee of {DealTermsFormat.Gbp(((FlatFeeDealDto)deal).Fee)}.";
 
-    public string Serialize(DealDto deal) =>
-        $"Fee={TermsFingerprintFormat.Number(((FlatFeeDealDto)deal).Fee)}";
 }
 
 internal sealed class DoorSplitDealTerms : IDealTerms
@@ -30,8 +28,6 @@ internal sealed class DoorSplitDealTerms : IDealTerms
     public string Render(DealDto deal) =>
         $"The artist receives {DealTermsFormat.Percent(((DoorSplitDealDto)deal).ArtistDoorPercent)} of door revenue.";
 
-    public string Serialize(DealDto deal) =>
-        $"ArtistDoorPercent={TermsFingerprintFormat.Number(((DoorSplitDealDto)deal).ArtistDoorPercent)}";
 }
 
 internal sealed class VersusDealTerms : IDealTerms
@@ -42,11 +38,6 @@ internal sealed class VersusDealTerms : IDealTerms
         return $"The artist receives a guarantee of {DealTermsFormat.Gbp(versus.Guarantee)} plus {DealTermsFormat.Percent(versus.ArtistDoorPercent)} of door revenue.";
     }
 
-    public string Serialize(DealDto deal)
-    {
-        var versus = (VersusDealDto)deal;
-        return $"Guarantee={TermsFingerprintFormat.Number(versus.Guarantee)};ArtistDoorPercent={TermsFingerprintFormat.Number(versus.ArtistDoorPercent)}";
-    }
 }
 
 internal sealed class VenueHireDealTerms : IDealTerms
@@ -54,8 +45,6 @@ internal sealed class VenueHireDealTerms : IDealTerms
     public string Render(DealDto deal) =>
         $"The artist pays the venue a hire fee of {DealTermsFormat.Gbp(((VenueHireDealDto)deal).HireFee)}.";
 
-    public string Serialize(DealDto deal) =>
-        $"HireFee={TermsFingerprintFormat.Number(((VenueHireDealDto)deal).HireFee)}";
 }
 
 internal static class DealTermsFormat

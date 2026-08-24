@@ -11,7 +11,6 @@ using Concertable.B2B.Concert.Application.Executors;
 using Concertable.B2B.Concert.Application.Steps;
 using Concertable.B2B.Concert.Application.Validators;
 using Concertable.B2B.Booking.Contracts;
-using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
@@ -93,7 +92,6 @@ public static class ServiceCollectionExtensions
             // Business-rule validators (interfaces in Concert.Application, impls in Concert.Infrastructure.Validators)
             services.AddSingleton<IConcertValidator, ConcertValidator>();
             services.AddScoped<IConcertAvailability, ConcertAvailability>();
-            services.AddScoped<IApplicationAvailabilityProjection, ConcertAvailability>();
 
             services.TryAddSingleton(typeof(IScoped<>), typeof(Scoped<>));
             services.AddScoped<IConcertCompletionRunner, ConcertCompletionRunner>();

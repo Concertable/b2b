@@ -61,6 +61,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IApplicationMapper, ApplicationMapper>();
             services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
             services.AddScoped<IApplicationValidator, ApplicationValidator>();
+            services.AddScoped<IApplicationAvailabilityProjection, ApplicationAvailabilityProjection>();
             services.AddScoped<IPaymentVerificationRecorder, PaymentVerificationRecorder>();
             services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, VerifyPaymentProcessor>();
             services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, VerifyPaymentFailedProcessor>();
@@ -71,6 +72,11 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<ApplicationCancellationIntegrationEventHandler>());
             services.AddScoped<IIntegrationEventHandler<ConcertCancelledEvent>>(provider =>
                 provider.GetRequiredService<ApplicationCancellationIntegrationEventHandler>());
+            services.AddScoped<ConcertAvailabilityIntegrationEventHandler>();
+            services.AddScoped<IIntegrationEventHandler<ConcertCreatedEvent>>(provider =>
+                provider.GetRequiredService<ConcertAvailabilityIntegrationEventHandler>());
+            services.AddScoped<IIntegrationEventHandler<ConcertCancelledEvent>>(provider =>
+                provider.GetRequiredService<ConcertAvailabilityIntegrationEventHandler>());
             services.AddScoped<IApplicationCheckoutService, ApplicationCheckoutService>();
             services.AddApplicationDealStrategies();
             services.AddScoped<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
@@ -86,7 +92,6 @@ public static class ServiceCollectionExtensions
 
         internal IServiceCollection AddApplicationDealStrategies()
         {
-            services.AddScoped<IDealTermsSerializer, DealTermsSerializer>();
             services.AddScoped<IDealTermsRenderer, DealTermsRenderer>();
             services.AddScoped<IAcceptFactory, AcceptFactory>();
 

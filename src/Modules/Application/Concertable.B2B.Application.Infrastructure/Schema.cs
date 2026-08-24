@@ -7,6 +7,7 @@ internal static class Schema
     public static class Tables
     {
         public const string Applications = "Applications";
+        public const string ConcertAvailabilities = "ConcertAvailabilities";
         public const string VerifyPayments = "VerifyPayments";
     }
 }

@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\Concertable.B2B.Application.Application\Concertable.B2B.Application.Application.csproj" />
     <ProjectReference Include="..\..\Concertable.B2B.Application.Domain\Concertable.B2B.Application.Domain.csproj" />
     <ProjectReference Include="..\..\Concertable.B2B.Application.Infrastructure\Concertable.B2B.Application.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

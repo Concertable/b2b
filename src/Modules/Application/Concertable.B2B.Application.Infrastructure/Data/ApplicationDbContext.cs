@@ -10,7 +10,11 @@ internal sealed class ApplicationDbContext(
 {
     public DbSet<ApplicationEntity> Applications => Set<ApplicationEntity>();
     public DbSet<VerifyPaymentEntity> VerifyPayments => Set<VerifyPaymentEntity>();
+    public DbSet<ConcertAvailabilityEntity> ConcertAvailabilities => Set<ConcertAvailabilityEntity>();
 
-    protected override void ApplyTenantFilters(ModelBuilder modelBuilder) =>
+    protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
+    {
         modelBuilder.ApplyVenueArtist<ApplicationEntity>(this);
+        modelBuilder.ApplyVenueArtist<ConcertAvailabilityEntity>(this);
+    }
 }
