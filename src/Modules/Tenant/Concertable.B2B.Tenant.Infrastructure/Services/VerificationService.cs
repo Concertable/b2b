@@ -28,9 +28,9 @@ internal sealed class VerificationService : IVerificationService
     public async Task<Option<VerificationStatusDto>> GetOwnAsync(CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
-            return Option.None<VerificationStatusDto>();
+            return null;
 
-        return (await repository.GetByTenantIdAsync(tenantId, ct)).ToOption().Map(v => v.ToDto());
+        return (await repository.GetByTenantIdAsync(tenantId, ct))?.ToDto();
     }
 
     public async Task<Result<VerificationStatusDto, SubmitVerificationError>> SubmitAsync(
@@ -74,12 +74,12 @@ internal sealed class VerificationService : IVerificationService
 
         foreach (var upload in uploads)
         {
-            var blobName = VerificationDocumentEntity.BuildBlobName(tenantId, upload.DocumentType, upload.FileExtension);
+            var document = VerificationDocumentEntity.Create(tenantId, upload.DocumentType, upload.FileExtension, now);
 
             await using var stream = upload.Content;
-            await blobStorage.UploadAsync(stream, blobName);
+            await blobStorage.UploadAsync(stream, document.BlobName);
 
-            documents.Add(VerificationDocumentEntity.Create(upload.DocumentType, blobName, now));
+            documents.Add(document);
         }
 
         return documents;
