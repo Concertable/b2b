@@ -1,5 +1,6 @@
 using Concertable.B2B.Booking.Domain.State;
 using Concertable.B2B.Booking.Infrastructure.Events;
+using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -54,10 +55,13 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
                 message.ConsumerName == nameof(AcceptanceFinancialOperationOutcomeProcessor))
             .ToListAsync();
         Assert.Single(inbox);
+        Assert.Contains(
+            await fixture.GetStagedEmailsAsync(),
+            email => email.Subject.StartsWith("Booking confirmed:", StringComparison.Ordinal));
     }
 
     [Fact]
-    public async Task CaptureSuccess_WhenBookingSaveFails_RollsBackBookingConcertAndInbox()
+    public async Task CaptureSuccess_WhenBookingSaveFails_RollsBackBookingConcertAndOutboundMessages()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
@@ -98,5 +102,12 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
                 message.ConsumerName == nameof(AcceptanceFinancialOperationOutcomeProcessor))
             .ToListAsync();
         Assert.Empty(inbox);
+        Assert.Equal(
+            0,
+            await fixture.GetOutboxMessageCountAsync<NotifyConcertDraftCreatedCommand>());
+        Assert.DoesNotContain(
+            await fixture.GetStagedEmailsAsync(),
+            email => email.Subject.StartsWith("Booking confirmed:", StringComparison.Ordinal));
+        Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 }
