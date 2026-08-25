@@ -16,6 +16,29 @@ public sealed class BookingApiFixture : ApiFixture
     internal IQueryable<ContractEntity> Contracts => readDbContext.Contracts;
     internal IQueryable<InboxMessageEntity> InboxMessages => dbContext.Set<InboxMessageEntity>().AsNoTracking();
 
+    internal Task FailBookingUpdatesAsync() =>
+        dbContext.Database.ExecuteSqlRawAsync("""
+            CREATE TRIGGER [booking].[TR_Bookings_FailUpdate_ForTest]
+            ON [booking].[Bookings]
+            AFTER UPDATE
+            AS
+            BEGIN
+                THROW 51000, 'Forced booking update failure.', 1;
+            END
+            """);
+
+    internal Task RestoreBookingUpdatesAsync() =>
+        dbContext.Database.ExecuteSqlRawAsync(
+            "DROP TRIGGER IF EXISTS [booking].[TR_Bookings_FailUpdate_ForTest]");
+
+    internal Task<int> GetConcertCountAsync(int bookingId) =>
+        dbContext.Database.SqlQuery<int>($"""
+                SELECT COUNT(*) AS [Value]
+                FROM [concert].[Concerts]
+                WHERE [BookingId] = {bookingId}
+                """)
+            .SingleAsync();
+
     protected override void OnReset(IServiceScope scope)
     {
         readDbContext = scope.ServiceProvider.GetRequiredService<IBookingReadDbContext>();
