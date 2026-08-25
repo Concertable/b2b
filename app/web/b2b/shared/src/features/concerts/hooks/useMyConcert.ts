@@ -68,11 +68,13 @@ export function useMyConcert(id: number): UseMyConcertResult {
       queryClient.setQueryData<MyConcert>(concertKeys.my(id), (previous) =>
         previous ? { ...previous, ...saved } : undefined,
       );
+      reset();
       endEdit();
     },
   });
 
   const resetDraft = () => {
+    reset();
     endEdit();
   };
 
