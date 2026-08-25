@@ -24,7 +24,7 @@ internal sealed class VerificationController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<VerificationStatusDto>> Get(CancellationToken ct) =>
-        (await verificationService.GetOwnAsync(ct)).ToOkOrNoContent();
+        (await verificationService.GetStatusAsync(ct)).ToOkOrNoContent();
 
     [HttpPost("documents")]
     [HasPermission(SharedPermissions.TenantSettingsEdit)]
