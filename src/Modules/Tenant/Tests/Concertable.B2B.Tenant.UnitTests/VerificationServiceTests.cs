@@ -96,6 +96,9 @@ public sealed class VerificationServiceTests
         repository
             .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((TenantVerificationEntity?)null);
+        repository
+            .Setup(r => r.InsertAsync(It.IsAny<TenantVerificationEntity>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TenantVerificationEntity entity, CancellationToken _) => entity);
 
         var result = await service.SubmitAsync(BuildRequest());
 

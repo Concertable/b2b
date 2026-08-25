@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Domain.Enums;
 using Concertable.Kernel.Identity;
@@ -43,13 +44,20 @@ internal sealed class VerificationService : IVerificationService
             return new SubmitVerificationError.NotEligible(existing.Status);
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        var documents = await UploadEvidenceAsync(tenantId, request, ct);
+        var documents = await UploadEvidenceAsync(tenantId, request, now, ct);
 
         if (existing is null)
         {
             var verification = TenantVerificationEntity.Submit(tenantId, documents, now);
-            await repository.InsertAsync(verification, ct);
-            return verification.ToDto();
+            var inserted = await repository.TryInsertAsync(verification, ct);
+            if (!inserted.TryGetValue(out var createdVerification))
+            {
+                // Lost the race against a concurrent first submission for this tenant — TenantId is
+                // unique-indexed. Re-read the winner's status rather than assuming Pending.
+                var current = await repository.GetByTenantIdAsync(tenantId, ct);
+                return new SubmitVerificationError.NotEligible(current?.Status ?? TenantVerificationStatus.Pending);
+            }
+            return createdVerification.ToDto();
         }
 
         existing.Resubmit(documents, now);
@@ -60,10 +68,10 @@ internal sealed class VerificationService : IVerificationService
     private async Task<List<VerificationDocumentEntity>> UploadEvidenceAsync(
         Guid tenantId,
         SubmitVerificationRequest request,
+        DateTime now,
         CancellationToken ct)
     {
         var documents = new List<VerificationDocumentEntity>();
-        var now = timeProvider.GetUtcNow().UtcDateTime;
 
         for (var i = 0; i < request.Files.Count; i++)
         {
