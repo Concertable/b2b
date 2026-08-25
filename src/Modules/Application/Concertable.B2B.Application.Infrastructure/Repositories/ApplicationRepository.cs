@@ -1,5 +1,5 @@
 using Concertable.B2B.Application.Domain.Entities;
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Application.Models;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +31,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
 
     public async Task<IReadOnlyList<ApplicationEntity>> GetByArtistTenantIdAndStateAsync(
         Guid artistTenantId,
-        ApplicationState state,
+        State state,
         CancellationToken ct = default) =>
         await context.Applications
             .Where(application =>
@@ -41,7 +41,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
 
     public async Task<IReadOnlyList<ApplicationEntity>> GetByVenueTenantIdAndStateAsync(
         Guid venueTenantId,
-        ApplicationState state,
+        State state,
         CancellationToken ct = default) =>
         await context.Applications
             .AsNoTracking()
@@ -57,7 +57,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .AsNoTracking()
             .Where(application =>
                 application.ArtistTenantId == artistTenantId &&
-                application.State != ApplicationState.Withdrawn)
+                application.State != State.Withdrawn)
             .ToListAsync(ct);
 
     public async Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(
@@ -91,17 +91,24 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
     public async Task RejectAllExceptAsync(
         int opportunityId,
         int applicationId,
-        CancellationToken ct = default) =>
-        await context.Applications
+        CancellationToken ct = default)
+    {
+        var applications = await context.Applications
             .Where(application =>
                 application.OpportunityId == opportunityId &&
                 application.Id != applicationId &&
-                application.State == ApplicationState.Applied)
-            .ExecuteUpdateAsync(
-                setters => setters.SetProperty(
-                    application => application.State,
-                    ApplicationState.Rejected),
-                ct);
+                application.State == State.Applied)
+            .ToListAsync(ct);
+
+        foreach (var application in applications)
+        {
+            if (application.Reject().TryGetError(out var error))
+                throw new InvalidOperationException(
+                    $"Application {application.Id} could not be rejected from {error.Current}.");
+        }
+
+        await context.SaveChangesAsync(ct);
+    }
 
     public async Task<IReadOnlyList<ApplicationDashboardProjection>> GetVenueDashboardProjectionsAsync(
         Guid venueTenantId,
@@ -109,7 +116,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         await context.Applications
             .Where(application =>
                 application.VenueTenantId == venueTenantId &&
-                application.State == ApplicationState.Applied)
+                application.State == State.Applied)
             .Select(application => new ApplicationDashboardProjection(
                 application.OpportunityId,
                 application.State,
@@ -122,8 +129,8 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         await context.Applications
             .Where(application =>
                 application.ArtistTenantId == artistTenantId &&
-                (application.State == ApplicationState.Applied ||
-                 application.State == ApplicationState.Accepted))
+                (application.State == State.Applied ||
+                 application.State == State.Accepted))
             .Select(application => new ApplicationDashboardProjection(
                 application.OpportunityId,
                 application.State,

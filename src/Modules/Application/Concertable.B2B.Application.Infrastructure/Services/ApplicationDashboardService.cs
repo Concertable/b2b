@@ -1,6 +1,6 @@
 using Concertable.B2B.Application.Application.Interfaces;
 using Concertable.B2B.Application.Application.Models;
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Opportunity.Contracts;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
@@ -34,7 +34,7 @@ internal sealed class ApplicationDashboardService : IApplicationDashboardService
         var applications = await repository.GetArtistDashboardProjectionsAsync(artistTenantId, ct);
         var upcomingOpportunityIds = await GetUpcomingOpportunityIdsAsync(applications, ct);
         return applications.Count(application =>
-            application.State == ApplicationState.Applied &&
+            application.State == State.Applied &&
             upcomingOpportunityIds.Contains(application.OpportunityId));
     }
 

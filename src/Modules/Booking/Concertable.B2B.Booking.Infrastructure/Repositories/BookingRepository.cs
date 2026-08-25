@@ -1,5 +1,6 @@
 using Concertable.B2B.Booking.Domain.Entities;
-using Concertable.B2B.Booking.Domain.State;
+using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -66,7 +67,7 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
                 booking.ArtistTenantId == artistTenantId &&
                 booking.EndDate > now &&
                 booking.DealType != DealType.VenueHire &&
-                (booking.State == BookingState.AwaitingConfirmation ||
-                 booking.State == BookingState.ConfirmationFailed),
+                (booking.State == State.AwaitingConfirmation ||
+                 booking.State == State.ConfirmationFailed),
             ct);
 }

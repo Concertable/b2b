@@ -1,4 +1,5 @@
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.Kernel;
 using Dunet;
 
 namespace Concertable.B2B.Application.Application.Errors;
@@ -9,8 +10,8 @@ internal abstract partial record AcceptApplicationError : IError
     public ErrorDefinition Definition => this switch
     {
         Ineligible(var error) => error.Definition,
-        InvalidState(var state) => ErrorDefinition.Conflict<InvalidState>(
-            $"Cannot accept an application from {state}."),
+        InvalidTransition(var error) => ErrorDefinition.Conflict<InvalidTransition>(
+            $"Cannot accept an application from {error.Current}."),
         TermsChanged => ErrorDefinition.Conflict<TermsChanged>(
             "The deal terms have changed since the artist applied. The artist must re-apply before acceptance."),
         OpportunityUnavailable(var opportunityId) => ErrorDefinition.Conflict<OpportunityUnavailable>(
@@ -24,7 +25,7 @@ internal abstract partial record AcceptApplicationError : IError
     public partial record Ineligible(ApplicationEligibilityError Error);
 
     [ErrorCode("application.accept.invalid_state")]
-    public partial record InvalidState(ApplicationState State);
+    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
 
     [ErrorCode("application.accept.terms_changed")]
     public partial record TermsChanged;

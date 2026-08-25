@@ -1,4 +1,5 @@
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.Kernel;
 using Dunet;
 
 namespace Concertable.B2B.Application.Application.Errors;
@@ -10,13 +11,13 @@ internal abstract partial record WithdrawApplicationError : IError
     {
         ApplicationNotFound(var applicationId) =>
             ErrorDefinition.NotFound<ApplicationNotFound>($"Application {applicationId} was not found."),
-        InvalidState(var state) =>
-            ErrorDefinition.Conflict<InvalidState>($"Cannot withdraw an application from {state}.")
+        InvalidTransition(var error) =>
+            ErrorDefinition.Conflict<InvalidTransition>($"Cannot withdraw an application from {error.Current}.")
     };
 
     [ErrorCode("application.withdraw.not_found")]
     public partial record ApplicationNotFound(int ApplicationId);
 
     [ErrorCode("application.withdraw.invalid_state")]
-    public partial record InvalidState(ApplicationState State);
+    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
 }

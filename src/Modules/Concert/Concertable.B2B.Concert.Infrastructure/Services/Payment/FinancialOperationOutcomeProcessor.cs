@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -27,10 +27,11 @@ internal sealed class FinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, concert =>
         {
-            if (concert.State is ConcertState.Cancelled)
+            if (concert.State is State.Cancelled)
                 return Task.CompletedTask;
 
-            concert.Cancel();
+            if (concert.Cancel().TryGetError(out var transitionError))
+                throw new InvalidOperationException($"Concert cannot cancel from {transitionError.Current}.");
             return Task.CompletedTask;
         }, ct);
 
@@ -40,10 +41,11 @@ internal sealed class FinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, concert =>
         {
-            if (concert.State is ConcertState.CancellationFailed)
+            if (concert.State is State.CancellationFailed)
                 return Task.CompletedTask;
 
-            concert.RecordCancellationFailure(@event.Code, @event.Message);
+            if (concert.RecordCancellationFailure(@event.Code, @event.Message).TryGetError(out var transitionError))
+                throw new InvalidOperationException($"Concert cannot record cancellation failure from {transitionError.Current}.");
             return Task.CompletedTask;
         }, ct);
 

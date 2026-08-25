@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.Errors;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.Kernel;
 using Concertable.Payment.Contracts.Errors;
 using Reunion.Errors;
 
@@ -31,7 +32,8 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.NotFound
         },
         {
-            new CancelConcertError.InvalidState(ConcertState.Complete),
+            new CancelConcertError.InvalidTransition(
+                new TransitionError<State, Trigger>(State.Complete, Trigger.BeginCancellation)),
             "concert.cancel.invalid_state",
             "A concert in Complete cannot be cancelled.",
             ErrorKind.Invalid
@@ -91,7 +93,8 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.Invalid
         },
         {
-            new FinishConcertError.InvalidState(ConcertState.Cancelled),
+            new FinishConcertError.InvalidTransition(
+                new TransitionError<State, Trigger>(State.Cancelled, Trigger.CompleteSettlement)),
             "concert.finish.invalid_state",
             "A concert in Cancelled cannot be finished.",
             ErrorKind.Invalid

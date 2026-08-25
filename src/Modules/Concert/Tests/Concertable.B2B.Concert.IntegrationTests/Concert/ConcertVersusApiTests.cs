@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -43,7 +43,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         Assert.Equal(concert.BookingId, payment.BookingId);
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
+        Assert.Equal(State.AwaitingSettlement, persisted.State);
     }
 
     [Fact]
@@ -59,6 +59,6 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
 
         // Assert
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.Complete, persisted.State);
+        Assert.Equal(State.Complete, persisted.State);
     }
 }

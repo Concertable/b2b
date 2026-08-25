@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Application.Executors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Steps;
 using Concertable.B2B.Concert.Application.Strategies;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Executors;
 
@@ -35,10 +35,10 @@ internal sealed class CancelExecutor : ICancelExecutor
                 var concert = await concerts.GetByIdAsync(concertId, ct);
                 if (concert is null)
                     return (UnitResult<CancelConcertError>)new CancelConcertError.ConcertNotFound(concertId);
-                if (concert.State is ConcertState.Cancelled or ConcertState.CancellationPending)
+                if (concert.State is State.Cancelled or State.CancellationPending)
                     return UnitResult.Success<CancelConcertError>();
-                if (concert.State is ConcertState.Complete or ConcertState.AwaitingSettlement or ConcertState.SettlementFailed)
-                    return new CancelConcertError.InvalidState(concert.State);
+                if (concert.ValidateBeginCancellation().TryGetError(out var transitionError))
+                    return new CancelConcertError.InvalidTransition(transitionError);
 
                 await steps.Create(concert.DealType).ExecuteAsync(concert, ct);
                 await concerts.SaveChangesAsync(ct);

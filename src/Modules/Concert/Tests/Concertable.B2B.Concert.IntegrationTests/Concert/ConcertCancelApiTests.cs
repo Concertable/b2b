@@ -1,7 +1,7 @@
 using System.Net;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 using Concertable.Payment.Contracts;
 using Xunit;
@@ -51,7 +51,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         Assert.Equal(booking.BookingId, refund.BookingId);
         Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.Cancelled, persisted.State);
+        Assert.Equal(State.Cancelled, persisted.State);
 
         var afterResponse = await client.GetAsync($"/api/concert/application/{appId}");
         var after = await afterResponse.Content.ReadAsync<MyDetailsResponse>();
@@ -79,7 +79,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(booking.BookingId, fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.Cancelled, persisted.State);
+        Assert.Equal(State.Cancelled, persisted.State);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         Assert.DoesNotContain(fixture.PaymentTransport.Commands, command => command is RefundEscrowCommand);
         Assert.Empty(fixture.EscrowClient.Holds);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.Cancelled, persisted.State);
+        Assert.Equal(State.Cancelled, persisted.State);
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.Cancelled, persisted.State);
+        Assert.Equal(State.Cancelled, persisted.State);
         Assert.Null(persisted.DoorRevenue);
     }
 
@@ -143,7 +143,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         // Assert — cancelling is a venue decision; the artist lacks the permission.
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(State.Draft, persisted.State);
     }
 
     private static async Task<BookingSummary> GetBookingAsync(HttpClient client, int applicationId)

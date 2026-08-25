@@ -1,5 +1,6 @@
 using Concertable.B2B.Booking.Domain.Entities;
-using Concertable.B2B.Booking.Domain.State;
+using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
@@ -28,10 +29,11 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, booking =>
         {
-            if (booking.State == BookingState.Cancelled)
+            if (booking.State == State.Cancelled)
                 return;
 
-            booking.Cancel();
+            if (booking.Cancel().TryGetError(out var transitionError))
+                throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
         }, ct);
 
     public Task HandleAsync(
@@ -40,10 +42,11 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, booking =>
         {
-            if (booking.State == BookingState.CancellationFailed)
+            if (booking.State == State.CancellationFailed)
                 return;
 
-            booking.RecordCancellationFailure(@event.Code, @event.Message);
+            if (booking.RecordCancellationFailure(@event.Code, @event.Message).TryGetError(out var transitionError))
+                throw new InvalidOperationException($"Booking cannot record cancellation failure from {transitionError.Current}.");
         }, ct);
 
     private Task ProcessAsync(

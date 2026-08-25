@@ -13,5 +13,6 @@
   <ItemGroup>
     <PackageReference Include="Concertable.Contracts" />
     <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Reunion" />
   </ItemGroup>
 </Project>

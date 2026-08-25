@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Domain.Entities;
@@ -49,7 +49,7 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
                 var concert = await context.Concerts.SingleOrDefaultAsync(value => value.BookingId == bookingId, ct)
                     ?? throw new InvalidOperationException($"Settlement booking {bookingId} has no concert.");
 
-                if (concert.State is ConcertState.Complete)
+                if (concert.State is State.Complete)
                 {
                     if (concert.FinancialOperationReferenceId != @event.TransactionId)
                         throw new InvalidOperationException(
@@ -57,7 +57,8 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
                     return;
                 }
 
-                concert.CompleteSettlement(@event.TransactionId);
+                if (concert.CompleteSettlement(@event.TransactionId).TryGetError(out var transitionError))
+                    throw new InvalidOperationException($"Concert cannot complete settlement from {transitionError.Current}.");
                 await PublishActivityAsync(concert.VenueTenantId, "venue", concert, envelope, ct);
                 await PublishActivityAsync(concert.ArtistTenantId, "artist", concert, envelope, ct);
             }, ct);

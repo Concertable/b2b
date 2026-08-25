@@ -1,7 +1,7 @@
 using Concertable.B2B.Application.Api.Responses;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Contracts;
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Booking.Contracts;
 using Microsoft.AspNetCore.Http;
 
@@ -39,7 +39,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
         ApplicationDto dto,
         BookingSummary? booking)
     {
-        var isPending = dto.State == ApplicationState.Applied;
+        var isPending = dto.State == State.Applied;
         var isCancellable = booking?.Status is
             BookingStatus.AwaitingConfirmation or BookingStatus.ConfirmationFailed;
         var status = booking?.Status == BookingStatus.Cancelled
@@ -105,7 +105,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
             dto,
             status,
             new ArtistApplicationActions(
-                Withdraw: dto.State == ApplicationState.Applied
+                Withdraw: dto.State == State.Applied
                     ? new ActionLink($"/api/application/{dto.Id}/withdraw", HttpMethods.Post)
                     : null,
                 Contract: booking is not null

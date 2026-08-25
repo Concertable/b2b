@@ -14,19 +14,26 @@ internal sealed class RefundEscrowCancelStep : ICancelStep
         this.bus = bus;
     }
 
-    public Task ExecuteAsync(ConcertEntity concert, CancellationToken ct = default) =>
-        bus.SendAsync(new RefundEscrowCommand(
-            concert.BeginCancellation(),
+    public Task ExecuteAsync(ConcertEntity concert, CancellationToken ct = default)
+    {
+        var cancellation = concert.BeginCancellation();
+        if (!cancellation.TryGetValue(out var operationId))
+            throw new InvalidOperationException($"Concert cannot begin cancellation from {concert.State}.");
+        return bus.SendAsync(new RefundEscrowCommand(
+            operationId,
             concert.BookingId,
             RefundReasonCodes.RequestedByCustomer), ct);
+    }
 }
 
 internal sealed class ImmediateCancelStep : ICancelStep
 {
     public Task ExecuteAsync(ConcertEntity concert, CancellationToken ct = default)
     {
-        concert.BeginCancellation();
-        concert.Cancel();
+        if (concert.BeginCancellation().TryGetError(out var beginError))
+            throw new InvalidOperationException($"Concert cannot begin cancellation from {beginError.Current}.");
+        if (concert.Cancel().TryGetError(out var cancelError))
+            throw new InvalidOperationException($"Concert cannot cancel from {cancelError.Current}.");
         return Task.CompletedTask;
     }
 }
@@ -48,7 +55,8 @@ internal sealed class ReleaseEscrowCompleteStep : ICompleteStep
         if (result.TryGetError(out var error))
             return new FinishConcertError.EscrowReleaseFailure(error);
 
-        concert.CompleteSettlement();
+        if (concert.CompleteSettlement().TryGetError(out var transitionError))
+            return new FinishConcertError.InvalidTransition(transitionError);
         return new Success();
     }
 }
@@ -93,7 +101,8 @@ internal sealed class PayoutCompleteStep : ICompleteStep
         if (!result.TryGetValue(out var outcome) || string.IsNullOrWhiteSpace(outcome.TransactionId))
             throw new InvalidOperationException($"Settlement for concert {concert.Id} returned no transaction ID.");
 
-        concert.BeginSettlement(outcome.TransactionId);
+        if (concert.BeginSettlement(outcome.TransactionId).TryGetError(out var transitionError))
+            return new FinishConcertError.InvalidTransition(transitionError);
         return new Success();
     }
 }

@@ -1,5 +1,5 @@
 using Concertable.B2B.Application.Domain.Entities;
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Application.Models;
 using Concertable.B2B.DataAccess.Application;
 
@@ -19,11 +19,11 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
         CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetByArtistTenantIdAndStateAsync(
         Guid artistTenantId,
-        ApplicationState state,
+        State state,
         CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetByVenueTenantIdAndStateAsync(
         Guid venueTenantId,
-        ApplicationState state,
+        State state,
         CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetCurrentByArtistTenantIdAsync(
         Guid artistTenantId,

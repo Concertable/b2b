@@ -1,5 +1,6 @@
 using Concertable.B2B.Booking.Domain.Entities;
-using Concertable.B2B.Booking.Domain.State;
+using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.Financial;
 
 namespace Concertable.B2B.Booking.UnitTests;
 

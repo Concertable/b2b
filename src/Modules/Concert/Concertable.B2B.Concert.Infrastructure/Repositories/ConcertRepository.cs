@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
@@ -139,9 +139,9 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         CancellationToken ct = default) =>
         await ended.And(doorRevenueOutstanding.Not())
             .Apply(context.Concerts.Where(concert =>
-                concert.State == ConcertState.Draft ||
-                concert.State == ConcertState.Posted ||
-                concert.State == ConcertState.SettlementFailed))
+                concert.State == State.Draft ||
+                concert.State == State.Posted ||
+                concert.State == State.SettlementFailed))
             .Select(c => c.Id)
             .ToListAsync(ct);
 

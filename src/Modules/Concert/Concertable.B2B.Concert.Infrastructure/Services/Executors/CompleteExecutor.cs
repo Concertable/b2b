@@ -4,7 +4,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Steps;
 using Concertable.B2B.Concert.Application.Strategies;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.Extensions.Logging;
 
@@ -49,10 +49,10 @@ internal sealed class CompleteExecutor : ICompleteExecutor
             var concert = await concerts.GetByIdAsync(concertId, ct);
             if (concert is null)
                 return new FinishConcertError.ConcertNotFound(concertId);
-            if (concert.State is ConcertState.Complete or ConcertState.AwaitingSettlement)
+            if (concert.State is State.Complete or State.AwaitingSettlement)
                 return SettlementOutcome.Settled;
-            if (concert.State is ConcertState.CancellationPending or ConcertState.CancellationFailed or ConcertState.Cancelled)
-                return new FinishConcertError.InvalidState(concert.State);
+            if (concert.ValidateCompleteSettlement().TryGetError(out var transitionError))
+                return new FinishConcertError.InvalidTransition(transitionError);
             if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
                 return new FinishConcertError.ConcertNotEnded();
             if (concert.RequiresDoorRevenue && concert.DoorRevenue is null)

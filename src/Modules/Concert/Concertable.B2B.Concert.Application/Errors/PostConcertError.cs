@@ -1,3 +1,5 @@
+using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.Kernel;
 using Dunet;
 
 namespace Concertable.B2B.Concert.Application.Errors;
@@ -13,7 +15,9 @@ internal abstract partial record PostConcertError : IError
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The concert cannot be posted.",
-                errors)
+                errors),
+        InvalidTransition(var error) => ErrorDefinition.Conflict<InvalidTransition>(
+            $"A concert in {error.Current} cannot be posted.")
     };
 
     [ErrorCode("concert.post.not_found")]
@@ -21,4 +25,6 @@ internal abstract partial record PostConcertError : IError
 
     [ErrorCode("concert.post.invalid")]
     public partial record Invalid(ValidationErrors Errors);
+
+    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
 }

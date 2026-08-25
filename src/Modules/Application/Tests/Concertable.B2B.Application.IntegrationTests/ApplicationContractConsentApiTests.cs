@@ -1,6 +1,6 @@
 using System.Net;
 using Concertable.B2B.Application.Api.Responses;
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Contracts.Enums;
@@ -78,7 +78,7 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var application = await fixture.Applications.FirstAsync(value => value.Id == applicationId);
-        Assert.Equal(ApplicationState.Applied, application.State);
+        Assert.Equal(State.Applied, application.State);
         var financial = await venueClient.GetAsync(
             $"/api/application/{applicationId}/financial-operation");
         await financial.ShouldBe(HttpStatusCode.NotFound);
@@ -102,7 +102,7 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.Conflict);
         var application = await fixture.Applications.FirstAsync(value => value.Id == applicationId);
-        Assert.Equal(ApplicationState.Applied, application.State);
+        Assert.Equal(State.Applied, application.State);
         var contract = await venueClient.GetAsync($"/api/application/{applicationId}/contract");
         await contract.ShouldBe(HttpStatusCode.NotFound);
     }

@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -53,7 +53,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         Assert.DoesNotContain(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
         var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(State.Draft, persisted.State);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         Assert.Contains(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
         var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
+        Assert.Equal(State.AwaitingSettlement, persisted.State);
     }
 
     // --- Fixed-fee (ReleaseEscrowFinishStep): the artist is the payee ---
@@ -81,7 +81,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(State.Draft, persisted.State);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(ConcertState.Complete, persisted.State);
+        Assert.Equal(State.Complete, persisted.State);
     }
 
     // --- VenueHire direction-flip: the venue is the payee, so it is the tenant gated ---
@@ -106,6 +106,6 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastVenueHireApp.Id);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(State.Draft, persisted.State);
     }
 }

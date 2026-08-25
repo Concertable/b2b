@@ -1,20 +1,23 @@
 using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Events;
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Kernel;
+using Reunion;
 
 namespace Concertable.B2B.Application.Domain.Entities;
 
 [DisplayName(DisplayNames.Application)]
 public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, IEventRaiser
 {
+    private static readonly StateMachine stateMachine = new();
+
     public int Id { get; private set; }
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
-    internal ApplicationState State { get; private set; } = ApplicationState.Applied;
+    internal State State { get; private set; } = State.Applied;
     internal VerifyPaymentEntity? VerifyPayment { get; private set; }
     internal VerifyPayment? Verification => VerifyPayment?.ToContract();
     public int OpportunityId { get; private set; }
@@ -82,23 +85,40 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
         TermsFingerprint = termsFingerprint;
     }
 
-    internal void Accept(AcceptedApplication application)
+    internal UnitResult<TransitionError<State, Trigger>> Accept(AcceptedApplication application)
     {
         if (application.ApplicationId != Id || application.OperationId != AcceptanceOperationId)
             throw new InvalidOperationException("Accepted application facts do not match the application transition.");
 
-        Transition(ApplicationState.Accepted);
+        var transition = Transition(Trigger.Accept);
+        if (transition.TryGetError(out var error))
+            return error;
         events.Raise(new ApplicationAcceptedDomainEvent(application));
+        return new Success();
     }
-    internal void Reject() => Transition(ApplicationState.Rejected);
-    internal void Withdraw() => Transition(ApplicationState.Withdrawn);
 
-    private void Transition(ApplicationState next)
+    internal UnitResult<TransitionError<State, Trigger>> ValidateAccept() => Validate(Trigger.Accept);
+    internal UnitResult<TransitionError<State, Trigger>> Reject() => Apply(Trigger.Reject);
+    internal UnitResult<TransitionError<State, Trigger>> Withdraw() => Apply(Trigger.Withdraw);
+
+    private UnitResult<TransitionError<State, Trigger>> Validate(Trigger trigger)
     {
-        if (State != ApplicationState.Applied)
-            throw new InvalidOperationException($"Application {Id} cannot transition from {State} to {next}.");
+        var transition = stateMachine.Transition(State, trigger);
+        return transition.TryGetError(out var error) ? error : new Success();
+    }
 
-        State = next;
+    private UnitResult<TransitionError<State, Trigger>> Apply(Trigger trigger)
+    {
+        var transition = Transition(trigger);
+        return transition.TryGetError(out var error) ? error : new Success();
+    }
+
+    private Result<State, TransitionError<State, Trigger>> Transition(Trigger trigger)
+    {
+        var transition = stateMachine.Transition(State, trigger);
+        if (transition.TryGetValue(out var next))
+            State = next;
+        return transition;
     }
 
     private readonly EventRaiser events = new();

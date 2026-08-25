@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -43,7 +43,7 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
                 var concert = await context.Concerts.SingleOrDefaultAsync(value => value.BookingId == bookingId, ct)
                     ?? throw new InvalidOperationException($"Settlement booking {bookingId} has no concert.");
 
-                if (concert.State is ConcertState.SettlementFailed)
+                if (concert.State is State.SettlementFailed)
                 {
                     if (concert.FinancialOperationReferenceId != @event.TransactionId)
                         throw new InvalidOperationException(
@@ -51,10 +51,11 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
                     return;
                 }
 
-                concert.RecordSettlementFailure(
+                if (concert.RecordSettlementFailure(
                     @event.TransactionId,
                     @event.FailureCode ?? "unknown",
-                    @event.FailureMessage ?? "Settlement payment failed.");
+                    @event.FailureMessage ?? "Settlement payment failed.").TryGetError(out var transitionError))
+                    throw new InvalidOperationException($"Concert cannot record settlement failure from {transitionError.Current}.");
             }, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())

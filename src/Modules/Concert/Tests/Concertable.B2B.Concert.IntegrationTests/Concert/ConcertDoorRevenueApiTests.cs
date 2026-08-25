@@ -1,6 +1,6 @@
 using System.Net;
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -74,7 +74,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(State.Draft, persisted.State);
     }
 
     [Fact]

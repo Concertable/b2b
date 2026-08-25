@@ -1,6 +1,6 @@
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Models;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -33,7 +33,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
 
         // Assert
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(ConcertState.Complete, concert.State);
+        Assert.Equal(State.Complete, concert.State);
         Assert.Empty(fixture.ManagerPaymentClient.Payments);
     }
 
@@ -49,7 +49,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<FinishConcertError.ConcertNotEnded>(error);
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(ConcertState.Draft, concert.State);
+        Assert.Equal(State.Draft, concert.State);
     }
 
     [Fact]
@@ -65,6 +65,6 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         Assert.True(result.TryGetValue(out var outcome));
         Assert.Equal(SettlementOutcome.Settled, outcome);
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(ConcertState.Complete, concert.State);
+        Assert.Equal(State.Complete, concert.State);
     }
 }

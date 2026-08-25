@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -36,7 +36,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
         await FinishWithoutGrantingAsync(fixture.SeedState.ConcertFor(booking).Id);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(State.Draft, persisted.State);
         Assert.Null(await InvoiceForBookingAsync(booking.Id));
     }
 
@@ -48,7 +48,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
         await FinishWithoutGrantingAsync(fixture.SeedState.ConcertFor(booking).Id);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastVenueHireApp.Id);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(State.Draft, persisted.State);
         Assert.Null(await InvoiceForBookingAsync(booking.Id));
     }
 
@@ -67,7 +67,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
         await FinishWithoutGrantingAsync(concert.Id);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(ConcertState.Complete, persisted.State);
+        Assert.Equal(State.Complete, persisted.State);
 
         var invoice = await InvoiceForBookingAsync(booking.Id);
         Assert.NotNull(invoice);

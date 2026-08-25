@@ -1,4 +1,5 @@
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.Kernel;
 using Dunet;
 
 namespace Concertable.B2B.Concert.Application.Errors;
@@ -10,13 +11,13 @@ internal abstract partial record CancelConcertError : IError
     {
         ConcertNotFound(var concertId) => ErrorDefinition.NotFound<ConcertNotFound>(
             $"Concert {concertId} was not found."),
-        InvalidState(var state) => ErrorDefinition.Invalid<InvalidState>(
-            $"A concert in {state} cannot be cancelled.")
+        InvalidTransition(var error) => ErrorDefinition.Invalid<InvalidTransition>(
+            $"A concert in {error.Current} cannot be cancelled.")
     };
 
     [ErrorCode("concert.cancel.not_found")]
     public partial record ConcertNotFound(int ConcertId);
 
     [ErrorCode("concert.cancel.invalid_state")]
-    public partial record InvalidState(ConcertState State);
+    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
 }

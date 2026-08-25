@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Infrastructure.Mappers;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
 using Microsoft.EntityFrameworkCore;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.DataAccess.Application.Specifications;
 using Concertable.Kernel.Specifications;
 
@@ -39,7 +39,7 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
             .And(doorRevenueOutstanding)
             .Apply(context.Concerts.Where(c =>
                 c.VenueTenantId == venueTenantId &&
-                (c.State == ConcertState.Draft || c.State == ConcertState.Posted)));
+                (c.State == State.Draft || c.State == State.Posted)));
 
         return context.VenueReadModels
             .Where(v => v.TenantId == venueTenantId)

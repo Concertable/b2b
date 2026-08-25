@@ -5,7 +5,7 @@ using Concertable.B2B.Application.Application.Steps;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
@@ -102,7 +102,7 @@ internal sealed class ApplicationService : IApplicationService
 
         var applications = await repository.GetByArtistTenantIdAndStateAsync(
             artist.TenantId,
-            ApplicationState.Applied);
+            State.Applied);
         var dtos = await mapper.ToDtosAsync(applications);
         return new Success<IReadOnlyList<ApplicationDto>>(
             dtos.Where(application => application.Opportunity.StartDate > timeProvider.GetUtcNow())
@@ -117,7 +117,7 @@ internal sealed class ApplicationService : IApplicationService
 
         var applications = await repository.GetByArtistTenantIdAndStateAsync(
             artist.TenantId,
-            ApplicationState.Rejected);
+            State.Rejected);
         var dtos = await mapper.ToDtosAsync(applications);
         return new Success<IReadOnlyList<ApplicationDto>>(
             dtos.OrderByDescending(application => application.Opportunity.EndDate)
@@ -132,7 +132,7 @@ internal sealed class ApplicationService : IApplicationService
 
         var applications = await repository.GetByVenueTenantIdAndStateAsync(
             tenantId,
-            ApplicationState.Applied);
+            State.Applied);
         var now = timeProvider.GetUtcNow();
         var dtos = await mapper.ToDtosAsync(applications);
         return new Success<IReadOnlyList<ApplicationDto>>(
@@ -289,8 +289,8 @@ internal sealed class ApplicationService : IApplicationService
         if (application is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
-        if (application.State != ApplicationState.Applied)
-            return new AcceptApplicationError.InvalidState(application.State);
+        if (application.ValidateAccept().TryGetError(out var acceptError))
+            return new AcceptApplicationError.InvalidTransition(acceptError);
 
         var opportunityOption = await opportunities.GetAsync(application.OpportunityId, ct);
         if (!opportunityOption.TryGetValue(out var opportunity))
@@ -364,7 +364,8 @@ internal sealed class ApplicationService : IApplicationService
             return new AcceptApplicationError.OpportunityUnavailable(application.OpportunityId);
 
         application.BeginAcceptance(operationId);
-        application.Accept(acceptedApplication);
+        if (application.Accept(acceptedApplication).TryGetError(out var transitionError))
+            return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
         await repository.SaveChangesAsync(ct);
         await repository.RejectAllExceptAsync(application.OpportunityId, application.Id, ct);
@@ -379,10 +380,8 @@ internal sealed class ApplicationService : IApplicationService
         var application = await repository.GetByIdAsync(applicationId, ct);
         if (application is null)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
-        if (application.State != ApplicationState.Applied)
-            return new WithdrawApplicationError.InvalidState(application.State);
-
-        application.Withdraw();
+        if (application.Withdraw().TryGetError(out var transitionError))
+            return new WithdrawApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Withdrawn);
         await repository.SaveChangesAsync(ct);
         await notifier.WithdrawnAsync(applicationId);
@@ -394,10 +393,8 @@ internal sealed class ApplicationService : IApplicationService
         var application = await repository.GetByIdAsync(applicationId);
         if (application is null)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
-        if (application.State != ApplicationState.Applied)
-            return new RejectApplicationError.InvalidState(application.State);
-
-        application.Reject();
+        if (application.Reject().TryGetError(out var transitionError))
+            return new RejectApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Rejected);
         await repository.SaveChangesAsync();
         await notifier.RejectedAsync(applicationId);

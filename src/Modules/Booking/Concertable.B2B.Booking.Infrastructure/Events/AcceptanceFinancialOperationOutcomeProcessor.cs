@@ -1,6 +1,7 @@
 using Concertable.B2B.Booking.Application.Interfaces;
 using Concertable.B2B.Booking.Application.Models;
-using Concertable.B2B.Booking.Domain.State;
+using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;

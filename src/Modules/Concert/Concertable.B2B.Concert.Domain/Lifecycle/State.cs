@@ -1,6 +1,6 @@
-namespace Concertable.B2B.Concert.Domain.State;
+namespace Concertable.B2B.Concert.Domain.Lifecycle;
 
-public enum ConcertState
+public enum State
 {
     Draft,
     Posted,

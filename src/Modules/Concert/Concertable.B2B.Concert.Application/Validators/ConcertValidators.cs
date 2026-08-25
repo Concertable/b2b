@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Application.Requests;
+using Concertable.B2B.Concert.Application.Requests;
 using FluentValidation;
 
 namespace Concertable.B2B.Concert.Application.Validators;

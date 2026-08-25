@@ -1,0 +1,68 @@
+using System.Net;
+using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.Contracts.Enums;
+using Concertable.Kernel;
+
+namespace Concertable.B2B.Application.UnitTests;
+
+public sealed class ApplicationEntityLifecycleTests
+{
+    [Fact]
+    public void Accept_WhenAlreadyAccepted_LeavesStateAcceptanceAndEventsUnchanged()
+    {
+        var application = StandardApplication.Create(
+            1,
+            2,
+            DealType.FlatFee,
+            Guid.NewGuid(),
+            Guid.NewGuid());
+        var operationId = application.BeginAcceptance();
+        var accepted = CreateAcceptedApplication(application, operationId);
+        Assert.False(application.Accept(accepted).TryGetError(out _));
+        var events = application.DomainEvents.ToArray();
+
+        var result = application.Accept(accepted);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Equal(new TransitionError<State, Trigger>(State.Accepted, Trigger.Accept), error);
+        Assert.Equal(State.Accepted, application.State);
+        Assert.Equal(operationId, application.AcceptanceOperationId);
+        Assert.Equal(events, application.DomainEvents);
+    }
+
+    private static FlatFeeAcceptedApplication CreateAcceptedApplication(
+        ApplicationEntity application,
+        Guid operationId)
+    {
+        var signature = new Signature(
+            Guid.NewGuid(),
+            new DateTime(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            IPAddress.Loopback,
+            "tests",
+            "Signatory",
+            null);
+
+        return new FlatFeeAcceptedApplication(
+            operationId,
+            application.Id,
+            application.OpportunityId,
+            application.ArtistId,
+            3,
+            application.VenueTenantId,
+            application.ArtistTenantId,
+            PaymentMethod.Transfer,
+            new DateTime(2030, 1, 1, 19, 0, 0, DateTimeKind.Utc),
+            new DateTime(2030, 1, 1, 22, 0, 0, DateTimeKind.Utc),
+            [Genre.Rock],
+            "Artist",
+            "Venue",
+            "Terms",
+            "1",
+            signature,
+            signature,
+            100m);
+    }
+}

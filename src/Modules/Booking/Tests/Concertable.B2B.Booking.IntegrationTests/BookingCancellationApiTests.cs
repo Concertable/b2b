@@ -1,5 +1,6 @@
 using System.Net;
-using Concertable.B2B.Booking.Domain.State;
+using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -30,12 +31,12 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var response = await client.PostAsync(booking.CancelHref, (object?)null);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Equal(BookingState.CancellationPending, await StateOfAsync(booking.Id));
+        Assert.Equal(State.CancellationPending, await StateOfAsync(booking.Id));
         var refund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
         Assert.Equal(booking.Id, refund.BookingId);
         Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
-        Assert.Equal(BookingState.Cancelled, await StateOfAsync(booking.Id));
+        Assert.Equal(State.Cancelled, await StateOfAsync(booking.Id));
     }
 
     [Fact]
@@ -48,7 +49,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         Assert.DoesNotContain(fixture.PaymentTransport.Commands, command => command is RefundEscrowCommand);
-        Assert.Equal(BookingState.Cancelled, await StateOfAsync(booking.Id));
+        Assert.Equal(State.Cancelled, await StateOfAsync(booking.Id));
         Assert.Empty(fixture.EscrowClient.Holds);
     }
 
@@ -58,13 +59,13 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var booking = await AcceptVenueHireAsync(client);
         await fixture.SendEscrowFailedWebhookAsync(booking.Id);
-        Assert.Equal(BookingState.ConfirmationFailed, await StateOfAsync(booking.Id));
+        Assert.Equal(State.ConfirmationFailed, await StateOfAsync(booking.Id));
 
         var response = await client.PostAsync(booking.CancelHref, (object?)null);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         Assert.DoesNotContain(fixture.PaymentTransport.Commands, command => command is RefundEscrowCommand);
-        Assert.Equal(BookingState.Cancelled, await StateOfAsync(booking.Id));
+        Assert.Equal(State.Cancelled, await StateOfAsync(booking.Id));
     }
 
     [Fact]
@@ -74,11 +75,11 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var booking = await AcceptFlatFeeAsync(client);
         var cancelResponse = await client.PostAsync(booking.CancelHref, (object?)null);
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Equal(BookingState.CancellationPending, await StateOfAsync(booking.Id));
+        Assert.Equal(State.CancellationPending, await StateOfAsync(booking.Id));
 
         await fixture.SendEscrowFailedWebhookAsync(booking.Id);
 
-        Assert.Equal(BookingState.Cancelled, await StateOfAsync(booking.Id));
+        Assert.Equal(State.Cancelled, await StateOfAsync(booking.Id));
     }
 
     [Fact]
@@ -93,7 +94,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
 
-        Assert.Equal(BookingState.Cancelled, await StateOfAsync(booking.Id));
+        Assert.Equal(State.Cancelled, await StateOfAsync(booking.Id));
         Assert.Equal(2, refunds.Count(command => command.BookingId == booking.Id));
     }
 
@@ -108,7 +109,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         await fixture.RejectLatestFinancialOperationAsync();
 
         var entity = await fixture.Bookings.SingleAsync(value => value.Id == booking.Id);
-        Assert.Equal(BookingState.CancellationFailed, entity.State);
+        Assert.Equal(State.CancellationFailed, entity.State);
         Assert.Equal("refund_failed", entity.FinancialFailureCode);
         Assert.Equal("Refund failed", entity.FinancialFailureMessage);
     }
@@ -119,12 +120,12 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var booking = await AcceptFlatFeeAsync(client);
         await fixture.StripeClient.SendWebhookAsync();
-        Assert.Equal(BookingState.Confirmed, await StateOfAsync(booking.Id));
+        Assert.Equal(State.Confirmed, await StateOfAsync(booking.Id));
 
         var response = await client.PostAsync(booking.CancelHref, (object?)null);
 
         await response.ShouldBe(HttpStatusCode.Conflict);
-        Assert.Equal(BookingState.Confirmed, await StateOfAsync(booking.Id));
+        Assert.Equal(State.Confirmed, await StateOfAsync(booking.Id));
     }
 
     [Fact]
@@ -146,7 +147,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         await confirmationTask;
 
         await cancellation.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Equal(BookingState.CancellationPending, await StateOfAsync(booking.Id));
+        Assert.Equal(State.CancellationPending, await StateOfAsync(booking.Id));
         Assert.Equal(0, await fixture.GetConcertCountAsync(booking.Id));
         Assert.Equal(
             2,
@@ -174,7 +175,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
 
         await cancellation.ShouldBe(HttpStatusCode.Conflict);
         var entity = await fixture.Bookings.SingleAsync(value => value.Id == booking.Id);
-        Assert.Equal(BookingState.Confirmed, entity.State);
+        Assert.Equal(State.Confirmed, entity.State);
         Assert.Equal("pi_confirm_first", entity.FinancialOperationReferenceId);
         Assert.Equal(1, await fixture.GetConcertCountAsync(booking.Id));
         Assert.DoesNotContain(
@@ -192,7 +193,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var response = await artistClient.PostAsync(booking.CancelHref, (object?)null);
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
-        Assert.Equal(BookingState.AwaitingConfirmation, await StateOfAsync(booking.Id));
+        Assert.Equal(State.AwaitingConfirmation, await StateOfAsync(booking.Id));
     }
 
     private async Task<BookingBoundary> AcceptFlatFeeAsync(HttpClient client)
@@ -240,7 +241,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         return new BookingBoundary(int.Parse(cancelHref.Split('/')[3]), cancelHref);
     }
 
-    private async Task<BookingState> StateOfAsync(int bookingId) =>
+    private async Task<State> StateOfAsync(int bookingId) =>
         (await fixture.Bookings.SingleAsync(value => value.Id == bookingId)).State;
 
     private sealed record ApplicationBoundaryResponse(ApplicationActionsBoundaryResponse Actions);

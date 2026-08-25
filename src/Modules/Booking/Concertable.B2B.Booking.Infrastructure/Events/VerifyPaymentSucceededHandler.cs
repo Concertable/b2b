@@ -1,7 +1,8 @@
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.Interfaces;
 using Concertable.B2B.Booking.Application.Models;
-using Concertable.B2B.Booking.Domain.State;
+using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Booking.Infrastructure.Events;

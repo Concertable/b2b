@@ -1,7 +1,8 @@
 using Concertable.B2B.Booking.Application.DTOs;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Domain.Entities;
-using Concertable.B2B.Booking.Domain.State;
+using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.Financial;
 
 namespace Concertable.B2B.Booking.Application.Mappers;
 
@@ -32,16 +33,16 @@ internal static class BookingMappers
                 booking.FailureMessage);
     }
 
-    extension(BookingState state)
+    extension(State state)
     {
         public BookingStatus ToStatus() => state switch
         {
-            BookingState.AwaitingConfirmation => BookingStatus.AwaitingConfirmation,
-            BookingState.ConfirmationFailed => BookingStatus.ConfirmationFailed,
-            BookingState.Confirmed => BookingStatus.Confirmed,
-            BookingState.CancellationPending => BookingStatus.CancellationPending,
-            BookingState.CancellationFailed => BookingStatus.CancellationFailed,
-            BookingState.Cancelled => BookingStatus.Cancelled,
+            State.AwaitingConfirmation => BookingStatus.AwaitingConfirmation,
+            State.ConfirmationFailed => BookingStatus.ConfirmationFailed,
+            State.Confirmed => BookingStatus.Confirmed,
+            State.CancellationPending => BookingStatus.CancellationPending,
+            State.CancellationFailed => BookingStatus.CancellationFailed,
+            State.Cancelled => BookingStatus.Cancelled,
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
         };
     }

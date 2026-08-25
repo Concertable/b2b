@@ -1,5 +1,5 @@
 using System.ComponentModel;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Contracts;
 
 namespace Concertable.B2B.Concert.Application.DTOs;
@@ -19,7 +19,7 @@ internal sealed record ConcertDetails
     public DateTime StartDate { get; init; }
     public DateTime EndDate { get; init; }
     public DateTime? DatePosted { get; init; }
-    public ConcertState State { get; init; }
+    public State State { get; init; }
     public bool IsRevenueShare { get; init; }
     public int TicketsSold { get; init; }
     public decimal? DoorRevenue { get; init; }

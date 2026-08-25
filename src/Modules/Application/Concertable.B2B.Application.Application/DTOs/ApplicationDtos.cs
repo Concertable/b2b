@@ -1,5 +1,5 @@
 using Concertable.B2B.Artist.Contracts;
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
 
 namespace Concertable.B2B.Application.Application.DTOs;
 
@@ -8,7 +8,7 @@ internal sealed record ApplicationDto(
     ArtistSummary Artist,
     OpportunitySummary Opportunity,
     ApplicationStatus Status,
-    ApplicationState State);
+    State State);
 
 internal sealed record OpportunitySummary(
     int Id,

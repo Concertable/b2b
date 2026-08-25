@@ -3,7 +3,7 @@ using System.Net;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain;
 using Concertable.B2B.Application.Domain.Entities;
-using Concertable.B2B.Application.Domain.State;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Artist.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
@@ -106,27 +106,27 @@ public static class ApplicationFactory
             .With(nameof(ApplicationEntity.DealType), dealType);
 
     public static StandardApplication Accepted(int artistId, int opportunityId)
-        => InState<StandardApplication>(artistId, opportunityId, ApplicationState.Accepted);
+        => InState<StandardApplication>(artistId, opportunityId, State.Accepted);
 
     public static PrepaidApplication AcceptedPrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
-        => InState<PrepaidApplication>(artistId, opportunityId, ApplicationState.Accepted)
+        => InState<PrepaidApplication>(artistId, opportunityId, State.Accepted)
             .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
 
     public static StandardApplication Booked(int artistId, int opportunityId)
-        => InState<StandardApplication>(artistId, opportunityId, ApplicationState.Accepted);
+        => InState<StandardApplication>(artistId, opportunityId, State.Accepted);
 
     public static PrepaidApplication BookedPrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
-        => InState<PrepaidApplication>(artistId, opportunityId, ApplicationState.Accepted)
+        => InState<PrepaidApplication>(artistId, opportunityId, State.Accepted)
             .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
 
     public static StandardApplication Complete(int artistId, int opportunityId)
-        => InState<StandardApplication>(artistId, opportunityId, ApplicationState.Accepted);
+        => InState<StandardApplication>(artistId, opportunityId, State.Accepted);
 
     public static PrepaidApplication CompletePrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
-        => InState<PrepaidApplication>(artistId, opportunityId, ApplicationState.Accepted)
+        => InState<PrepaidApplication>(artistId, opportunityId, State.Accepted)
             .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
 
-    private static TApplication InState<TApplication>(int artistId, int opportunityId, ApplicationState state)
+    private static TApplication InState<TApplication>(int artistId, int opportunityId, State state)
         where TApplication : ApplicationEntity =>
         New<TApplication>()
             .With(nameof(ApplicationEntity.ArtistId), artistId)

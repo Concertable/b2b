@@ -1,4 +1,4 @@
-namespace Concertable.B2B.Booking.Domain.State;
+namespace Concertable.B2B.Booking.Domain.Financial;
 
 internal enum FinancialOperation
 {

@@ -4,7 +4,7 @@ using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.Errors;
 using Concertable.B2B.Concert.Domain.ReadModels;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts;
 using Concertable.Kernel;
@@ -20,6 +20,8 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 [DisplayName(DisplayNames.Concert)]
 public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRaiser, IVenueArtistTenantScoped
 {
+    private static readonly StateMachine stateMachine = new();
+
     public int Id { get; private set; }
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
@@ -31,7 +33,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public int VenueId { get; private set; }
     public DealType DealType { get; private set; }
     public bool RequiresDoorRevenue { get; private set; }
-    public ConcertState State { get; private set; } = ConcertState.Draft;
+    public State State { get; private set; } = State.Draft;
     public Guid? CancellationOperationId { get; private set; }
     public string? FinancialOperationReferenceId { get; private set; }
     public string? FinancialFailureCode { get; private set; }
@@ -133,84 +135,109 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
         events.Raise(new ConcertChangedDomainEvent(Id, totalTickets, price, Period, DatePosted));
     }
 
-    public void Post(string name, string about, decimal price, int totalTickets, DateTime now)
+    public UnitResult<TransitionError<State, Trigger>> Post(string name, string about, decimal price, int totalTickets, DateTime now)
     {
-        if (State is not (ConcertState.Draft or ConcertState.Posted))
-            throw new InvalidOperationException($"Concert {Id} cannot be posted from {State}.");
-
+        var transition = Apply(Trigger.Post);
+        if (transition.TryGetError(out var error))
+            return error;
         Name = name;
         About = about;
         Price = price;
         TotalTickets = totalTickets;
         DatePosted = now;
-        State = ConcertState.Posted;
         events.Raise(new ConcertChangedDomainEvent(Id, totalTickets, price, Period, now));
         events.Raise(new ConcertPostedDomainEvent(Id));
+        return new Success();
     }
 
-    public Guid BeginCancellation()
+    public Result<Guid, TransitionError<State, Trigger>> BeginCancellation()
     {
-        if (State is not (ConcertState.Draft or ConcertState.Posted or ConcertState.CancellationFailed))
-            throw new InvalidOperationException($"Concert {Id} cannot begin cancellation from {State}.");
-
+        var transition = Apply(Trigger.BeginCancellation);
+        if (transition.TryGetError(out var error))
+            return error;
         CancellationOperationId = Guid.NewGuid();
-        State = ConcertState.CancellationPending;
         return CancellationOperationId.Value;
     }
 
-    public void RecordCancellationFailure(string code, string message)
-    {
-        if (State != ConcertState.CancellationPending)
-            throw new InvalidOperationException($"Concert {Id} cannot record cancellation failure from {State}.");
+    internal UnitResult<TransitionError<State, Trigger>> ValidateBeginCancellation() =>
+        Validate(Trigger.BeginCancellation);
 
-        State = ConcertState.CancellationFailed;
+    public UnitResult<TransitionError<State, Trigger>> RecordCancellationFailure(string code, string message)
+    {
+        var transition = Apply(Trigger.RecordCancellationFailure);
+        if (transition.TryGetError(out var error))
+            return error;
         FinancialFailureCode = code;
         FinancialFailureMessage = message;
+        return new Success();
     }
 
-    public void Cancel()
+    public UnitResult<TransitionError<State, Trigger>> Cancel()
     {
-        if (State is not (ConcertState.CancellationPending or ConcertState.CancellationFailed))
-            throw new InvalidOperationException($"Concert {Id} cannot cancel from {State}.");
-
-        State = ConcertState.Cancelled;
+        var transition = Apply(Trigger.Cancel);
+        if (transition.TryGetError(out var error))
+            return error;
         FinancialFailureCode = null;
         FinancialFailureMessage = null;
         events.Raise(new ConcertCancelledDomainEvent(Id));
+        return new Success();
     }
 
-    public void BeginSettlement(string providerReferenceId)
+    public UnitResult<TransitionError<State, Trigger>> BeginSettlement(string providerReferenceId)
     {
-        if (State is not (ConcertState.Draft or ConcertState.Posted or ConcertState.SettlementFailed))
-            throw new InvalidOperationException($"Concert {Id} cannot begin settlement from {State}.");
-
-        State = ConcertState.AwaitingSettlement;
+        var transition = Apply(Trigger.BeginSettlement);
+        if (transition.TryGetError(out var error))
+            return error;
         FinancialOperationReferenceId = providerReferenceId;
         FinancialFailureCode = null;
         FinancialFailureMessage = null;
+        return new Success();
     }
 
-    public void RecordSettlementFailure(string providerReferenceId, string code, string message)
+    public UnitResult<TransitionError<State, Trigger>> RecordSettlementFailure(string providerReferenceId, string code, string message)
     {
         EnsureSettlementReference(providerReferenceId);
-        if (State != ConcertState.AwaitingSettlement)
-            throw new InvalidOperationException($"Concert {Id} cannot record settlement failure from {State}.");
-
-        State = ConcertState.SettlementFailed;
+        var transition = Apply(Trigger.RecordSettlementFailure);
+        if (transition.TryGetError(out var error))
+            return error;
         FinancialFailureCode = code;
         FinancialFailureMessage = message;
+        return new Success();
     }
 
-    public void CompleteSettlement(string? providerReferenceId = null)
+    public UnitResult<TransitionError<State, Trigger>> CompleteSettlement(string? providerReferenceId = null)
     {
         if (providerReferenceId is not null)
             EnsureSettlementReference(providerReferenceId);
-        if (State is not (ConcertState.Draft or ConcertState.Posted or ConcertState.AwaitingSettlement or ConcertState.SettlementFailed))
-            throw new InvalidOperationException($"Concert {Id} cannot complete from {State}.");
-
-        State = ConcertState.Complete;
+        var transition = Apply(Trigger.CompleteSettlement);
+        if (transition.TryGetError(out var error))
+            return error;
         FinancialFailureCode = null;
         FinancialFailureMessage = null;
+        return new Success();
+    }
+
+    internal UnitResult<TransitionError<State, Trigger>> ValidateCompleteSettlement() =>
+        Validate(Trigger.CompleteSettlement);
+
+    private UnitResult<TransitionError<State, Trigger>> Apply(Trigger trigger)
+    {
+        var transition = Transition(trigger);
+        return transition.TryGetError(out var error) ? error : new Success();
+    }
+
+    private UnitResult<TransitionError<State, Trigger>> Validate(Trigger trigger)
+    {
+        var transition = stateMachine.Transition(State, trigger);
+        return transition.TryGetError(out var error) ? error : new Success();
+    }
+
+    private Result<State, TransitionError<State, Trigger>> Transition(Trigger trigger)
+    {
+        var transition = stateMachine.Transition(State, trigger);
+        if (transition.TryGetValue(out var next))
+            State = next;
+        return transition;
     }
 
     public decimal CalculateSettlementGross() => DealType switch

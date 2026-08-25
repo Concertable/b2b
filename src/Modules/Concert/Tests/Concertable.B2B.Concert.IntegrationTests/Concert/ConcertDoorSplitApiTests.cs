@@ -1,5 +1,5 @@
 using System.Net;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -44,7 +44,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         Assert.Equal(concert.BookingId, payment.BookingId);
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
+        Assert.Equal(State.AwaitingSettlement, persisted.State);
         Assert.NotNull(await fixture.Invoices.SingleOrDefaultAsync(invoice => invoice.BookingId == concert.BookingId));
     }
 
@@ -58,7 +58,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         Assert.DoesNotContain(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(State.Draft, persisted.State);
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         // Assert
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.Complete, persisted.State);
+        Assert.Equal(State.Complete, persisted.State);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.SettlementFailed, persisted.State);
+        Assert.Equal(State.SettlementFailed, persisted.State);
     }
 
     [Fact]
@@ -110,6 +110,6 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         // Assert
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.Complete, persisted.State);
+        Assert.Equal(State.Complete, persisted.State);
     }
 }

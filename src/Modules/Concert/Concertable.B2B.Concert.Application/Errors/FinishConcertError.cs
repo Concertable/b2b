@@ -1,4 +1,5 @@
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.Kernel;
 using Concertable.Payment.Contracts.Errors;
 using Dunet;
 
@@ -15,8 +16,8 @@ internal abstract partial record FinishConcertError : IError
             "The concert cannot be finished before it has ended."),
         DoorRevenueRequired => ErrorDefinition.Invalid<DoorRevenueRequired>(
             "Door revenue must be declared before the concert can be finished."),
-        InvalidState(var state) => ErrorDefinition.Invalid<InvalidState>(
-            $"A concert in {state} cannot be finished."),
+        InvalidTransition(var error) => ErrorDefinition.Invalid<InvalidTransition>(
+            $"A concert in {error.Current} cannot be finished."),
         ManagerPaymentFailure(var error) => error.Definition,
         EscrowReleaseFailure(var error) => error.Definition
     };
@@ -31,7 +32,7 @@ internal abstract partial record FinishConcertError : IError
     public partial record DoorRevenueRequired;
 
     [ErrorCode("concert.finish.invalid_state")]
-    public partial record InvalidState(ConcertState State);
+    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
 
     public partial record ManagerPaymentFailure(ManagerPaymentError Error);
     public partial record EscrowReleaseFailure(EscrowReleaseError Error);

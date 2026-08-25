@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Application.Errors;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -32,7 +32,7 @@ public sealed class ConcertVenueHireApiTests : IAsyncLifetime
 
         // Assert
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(ConcertState.Complete, concert.State);
+        Assert.Equal(State.Complete, concert.State);
         Assert.Empty(fixture.ManagerPaymentClient.Payments);
     }
 
@@ -48,6 +48,6 @@ public sealed class ConcertVenueHireApiTests : IAsyncLifetime
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<FinishConcertError.ConcertNotEnded>(error);
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(ConcertState.Draft, concert.State);
+        Assert.Equal(State.Draft, concert.State);
     }
 }

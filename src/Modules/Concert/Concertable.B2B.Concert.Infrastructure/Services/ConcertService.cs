@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
-using Concertable.B2B.Concert.Domain.State;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Messaging.Contracts;
@@ -218,7 +218,9 @@ internal sealed class ConcertService : IConcertService
         if (result.TryGetErrors(out var errors))
             return new PostConcertError.Invalid(new ValidationErrors(errors.ToDictionary()));
 
-        concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime);
+        if (concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime)
+            .TryGetError(out var transitionError))
+            return new PostConcertError.InvalidTransition(transitionError);
 
         await repository.SaveChangesAsync();
         return new Success();
@@ -237,7 +239,7 @@ internal sealed class ConcertService : IConcertService
             return new DeclareDoorRevenueError.WrongDealType();
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
             return new DeclareDoorRevenueError.TooEarly();
-        if (concert.State is not (ConcertState.Draft or ConcertState.Posted))
+        if (concert.State is not (State.Draft or State.Posted))
             return new DeclareDoorRevenueError.AlreadySettled();
 
         return await concert.DeclareDoorRevenue(doorRevenue)
@@ -253,8 +255,8 @@ internal sealed class ConcertService : IConcertService
 
     private ConcertDetails WithActions(ConcertDetails details) => details with
     {
-        CanCancel = details.State is ConcertState.Draft or ConcertState.Posted or ConcertState.CancellationFailed,
-        CanDeclareDoorRevenue = details.State is ConcertState.Draft or ConcertState.Posted
+        CanCancel = details.State is State.Draft or State.Posted or State.CancellationFailed,
+        CanDeclareDoorRevenue = details.State is State.Draft or State.Posted
             && details.IsRevenueShare
             && details.DoorRevenue is null
             && details.EndDate < timeProvider.GetUtcNow().UtcDateTime
