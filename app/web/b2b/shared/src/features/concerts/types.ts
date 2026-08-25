@@ -15,7 +15,7 @@ export type ApplicationStatus =
   | "settled";
 
 export interface OpportunityActions {
-  checkout?: ActionLink | null;
+  checkout?: ActionLink;
 }
 
 export interface OpportunityDraft {
@@ -31,27 +31,41 @@ export interface Opportunity extends OpportunityDraft {
   actions: OpportunityActions;
 }
 
+export interface OpportunityRequest extends OpportunityDraft {
+  id?: number;
+}
+
+export const Opportunity = {
+  toRequest(opportunity: Opportunity | OpportunityDraft): OpportunityRequest {
+    return {
+      id: "id" in opportunity ? opportunity.id : undefined,
+      startDate: opportunity.startDate,
+      endDate: opportunity.endDate,
+      genres: opportunity.genres,
+      deal: opportunity.deal,
+    };
+  },
+};
+
 export interface ApplicationActions {
   accept: ActionLink;
-  checkout?: ActionLink | null;
-  withdraw?: ActionLink | null;
-  reject?: ActionLink | null;
-  cancel?: ActionLink | null;
-  contract?: ActionLink | null;
+  checkout?: ActionLink;
+  withdraw?: ActionLink;
+  reject?: ActionLink;
+  cancel?: ActionLink;
+  contract?: ActionLink;
 }
 
 export interface ConcertActions {
-  cancel?: ActionLink | null;
-  contract?: ActionLink | null;
-  declareDoorRevenue?: ActionLink | null;
-  invoice?: ActionLink | null;
+  cancel?: ActionLink;
+  contract?: ActionLink;
+  declareDoorRevenue?: ActionLink;
+  invoice?: ActionLink;
 }
 
-// The party-scoped owner read (GET /organization/concert/{id}): the public concert plus the venue-private
-// figures and party-only action links the anonymous marketplace read omits.
 export interface MyConcert extends Concert {
   ticketsSold: number;
-  doorRevenue: number | null;
+  doorRevenue?: number;
   actions: ConcertActions;
 }
 

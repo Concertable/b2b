@@ -1,7 +1,7 @@
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import type { Pagination } from "@concertable/shared/types/common";
 import type { PaginationParams } from "@concertable/shared/hooks/usePagination";
-import type { Opportunity, OpportunityDraft } from "../types";
+import { Opportunity, type OpportunityDraft } from "../types";
 
 const opportunityApi = {
   getPaged: async (
@@ -28,13 +28,7 @@ const opportunityApi = {
   ): Promise<Opportunity[]> => {
     const { data } = await apiClient.put<Opportunity[]>(
       `/venue/${venueId}/opportunities`,
-      desired.map((o) => ({
-        id: "id" in o ? o.id : undefined,
-        startDate: o.startDate,
-        endDate: o.endDate,
-        genres: o.genres,
-        deal: o.deal,
-      })),
+      desired.map(Opportunity.toRequest),
     );
     return data;
   },

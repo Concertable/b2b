@@ -8,4 +8,4 @@ export type {
   Venue,
   CreateVenueRequest,
   UpdateVenueRequest,
-} from "./types";
+} from "@concertable/shared/features/venues";
