@@ -7,7 +7,7 @@ namespace Concertable.B2B.Application.Application.Interfaces;
 
 internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<ApplicationEntity>
 {
-    Task<ApplicationEntity?> GetWithVerifyPaymentForUpdateByIdAsync(
+    Task<ApplicationEntity?> GetForUpdateByIdAsync(
         int applicationId,
         CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(

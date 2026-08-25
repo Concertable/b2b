@@ -72,7 +72,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         return row is null ? null : (row.VenueTenantId, row.ArtistTenantId);
     }
 
-    public Task<ApplicationEntity?> GetWithVerifyPaymentForUpdateByIdAsync(
+    public Task<ApplicationEntity?> GetForUpdateByIdAsync(
         int applicationId,
         CancellationToken ct = default)
     {

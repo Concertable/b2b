@@ -281,14 +281,13 @@ internal sealed class ApplicationService : IApplicationService
         ESignatureRequest eSignature,
         CancellationToken ct)
     {
-        var eligibility = await CheckCanAcceptAsync(applicationId);
-        if (eligibility.TryGetError(out var error))
-            return new AcceptApplicationError.Ineligible(error);
-
-        var application = await repository.GetWithVerifyPaymentForUpdateByIdAsync(applicationId, ct);
+        var application = await repository.GetForUpdateByIdAsync(applicationId, ct);
         if (application is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
+        var eligibility = await CheckCanAcceptAsync(application, ct);
+        if (eligibility.TryGetError(out var error))
+            return new AcceptApplicationError.Ineligible(error);
         if (application.ValidateAccept().TryGetError(out var acceptError))
             return new AcceptApplicationError.InvalidTransition(acceptError);
 
@@ -375,9 +374,14 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(
         int applicationId,
-        CancellationToken ct = default)
+        CancellationToken ct = default) =>
+        await unitOfWork.ExecuteAsync(() => WithdrawCoreAsync(applicationId, ct), ct);
+
+    private async Task<UnitResult<WithdrawApplicationError>> WithdrawCoreAsync(
+        int applicationId,
+        CancellationToken ct)
     {
-        var application = await repository.GetByIdAsync(applicationId, ct);
+        var application = await repository.GetForUpdateByIdAsync(applicationId, ct);
         if (application is null)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
         if (application.Withdraw().TryGetError(out var transitionError))
@@ -388,15 +392,22 @@ internal sealed class ApplicationService : IApplicationService
         return new Success();
     }
 
-    public async Task<UnitResult<RejectApplicationError>> RejectAsync(int applicationId)
+    public async Task<UnitResult<RejectApplicationError>> RejectAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        await unitOfWork.ExecuteAsync(() => RejectCoreAsync(applicationId, ct), ct);
+
+    private async Task<UnitResult<RejectApplicationError>> RejectCoreAsync(
+        int applicationId,
+        CancellationToken ct)
     {
-        var application = await repository.GetByIdAsync(applicationId);
+        var application = await repository.GetForUpdateByIdAsync(applicationId, ct);
         if (application is null)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
         if (application.Reject().TryGetError(out var transitionError))
             return new RejectApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Rejected);
-        await repository.SaveChangesAsync();
+        await repository.SaveChangesAsync(ct);
         await notifier.RejectedAsync(applicationId);
         return new Success();
     }
@@ -423,7 +434,14 @@ internal sealed class ApplicationService : IApplicationService
         if (application is null)
             return new ApplicationEligibilityError.ApplicationNotFound();
 
-        var opportunityOption = await opportunities.GetAsync(application.OpportunityId);
+        return await CheckCanAcceptAsync(application);
+    }
+
+    private async Task<UnitResult<ApplicationEligibilityError>> CheckCanAcceptAsync(
+        ApplicationEntity application,
+        CancellationToken ct = default)
+    {
+        var opportunityOption = await opportunities.GetAsync(application.OpportunityId, ct);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationEligibilityError.OpportunityNotFound();
 

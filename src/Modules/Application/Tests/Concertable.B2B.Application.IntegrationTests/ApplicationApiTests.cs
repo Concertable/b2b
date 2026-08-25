@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
@@ -227,6 +228,59 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     #endregion
 
     #region Accept
+
+    [Fact]
+    public async Task Accept_WhenQueuedBeforeWithdraw_WinsTheLifecycleTransition()
+    {
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        await using var applicationLock = await fixture.HoldApplicationForUpdateAsync(applicationId);
+        var acceptTask = venue.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+        await fixture.WaitForApplicationLockWaitersAsync(1);
+        var withdrawTask = artist.PostAsync(
+            $"/api/application/{applicationId}/withdraw",
+            (object?)null);
+        await fixture.WaitForApplicationLockWaitersAsync(2);
+
+        await applicationLock.RollbackAsync();
+        var accept = await acceptTask;
+        var withdraw = await withdrawTask;
+
+        await accept.ShouldBe(HttpStatusCode.NoContent);
+        await withdraw.ShouldBe(HttpStatusCode.Conflict);
+        Assert.Equal(
+            State.Accepted,
+            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+    }
+
+    [Fact]
+    public async Task Accept_WhenQueuedBeforeReject_WinsTheLifecycleTransition()
+    {
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        await using var applicationLock = await fixture.HoldApplicationForUpdateAsync(applicationId);
+        var acceptTask = venue.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+        await fixture.WaitForApplicationLockWaitersAsync(1);
+        var rejectTask = venue.PostAsync(
+            $"/api/application/{applicationId}/reject",
+            (object?)null);
+        await fixture.WaitForApplicationLockWaitersAsync(2);
+
+        await applicationLock.RollbackAsync();
+        var accept = await acceptTask;
+        var reject = await rejectTask;
+
+        await accept.ShouldBe(HttpStatusCode.NoContent);
+        await reject.ShouldBe(HttpStatusCode.Conflict);
+        Assert.Equal(
+            State.Accepted,
+            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+    }
 
     [Fact]
     public async Task Accept_WhenVerificationOverlapsApplicationTransition_ConfirmsBooking()

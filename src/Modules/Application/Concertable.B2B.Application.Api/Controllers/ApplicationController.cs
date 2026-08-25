@@ -152,8 +152,8 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{applicationId}/reject")]
-    public async Task<IActionResult> Reject(int applicationId)
+    public async Task<IActionResult> Reject(int applicationId, CancellationToken ct)
     {
-        return (await applicationService.RejectAsync(applicationId)).ToNoContentOrProblem();
+        return (await applicationService.RejectAsync(applicationId, ct)).ToNoContentOrProblem();
     }
 }
