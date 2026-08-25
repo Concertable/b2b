@@ -2,13 +2,18 @@ using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Concertable.Auth.Hosting;
 using Concertable.B2B.Admin.Contracts;
+using Concertable.B2B.Booking.Contracts.Events;
+using Concertable.B2B.Concert.Contracts.Commands;
+using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Hosting;
 using Concertable.B2B.Seed.Simulator;
 using Concertable.B2B.Web;
 using Concertable.B2B.Workers;
+using Concertable.Messaging.Application;
 using Concertable.Testing.Architecture;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -32,6 +37,20 @@ public sealed class B2BHostGraphTests
         invalidBuilder.AddB2BWebHost();
         invalidBuilder.Services.AddInvalidLifetimeGraph();
         Assert.ThrowsAny<Exception>(() => invalidBuilder.Build());
+    }
+
+    [Fact]
+    public void Web_MessageTopology_HandlesDurableCommandsWithoutSelfSubscriptions()
+    {
+        var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
+        builder.AddB2BWebHost();
+        using var app = builder.Build();
+        var registry = app.Services.GetRequiredService<MessageTypeRegistry>();
+
+        Assert.Contains(typeof(NotifyConcertDraftCreatedCommand), registry.HandledCommandTypes);
+        Assert.DoesNotContain(typeof(BookingCancelledEvent), registry.SubscribedEventTypes);
+        Assert.DoesNotContain(typeof(ConcertCancelledEvent), registry.SubscribedEventTypes);
+        Assert.DoesNotContain(typeof(ConcertCreatedEvent), registry.SubscribedEventTypes);
     }
 
     [Fact]
