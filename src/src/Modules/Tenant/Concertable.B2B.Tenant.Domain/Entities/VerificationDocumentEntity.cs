@@ -32,4 +32,10 @@ public sealed class VerificationDocumentEntity : IIdEntity
             UploadedAt = uploadedAt,
         };
     }
+
+    /// <summary>The evidence blob-naming convention — the domain's rule, not infrastructure's to invent
+    /// inline. <paramref name="fileExtension"/> includes the leading dot (as <see cref="Path.GetExtension"/>
+    /// returns it), or is empty for an extensionless upload.</summary>
+    public static string BuildBlobName(Guid tenantId, VerificationDocumentType documentType, string fileExtension) =>
+        $"verification-evidence/{tenantId}-{documentType}-{Guid.NewGuid()}{fileExtension}";
 }

@@ -3,7 +3,6 @@ using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Domain.Enums;
 using Concertable.Kernel.Identity;
 using Concertable.Shared.Blob.Application;
-using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
@@ -35,7 +34,7 @@ internal sealed class VerificationService : IVerificationService
     }
 
     public async Task<Result<VerificationStatusDto, SubmitVerificationError>> SubmitAsync(
-        SubmitVerificationRequest request,
+        IReadOnlyList<EvidenceUpload> uploads,
         CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
@@ -44,7 +43,7 @@ internal sealed class VerificationService : IVerificationService
             return new SubmitVerificationError.NotEligible(existing.Status);
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        var documents = await UploadEvidenceAsync(tenantId, request, now, ct);
+        var documents = await UploadEvidenceAsync(tenantId, uploads, now, ct);
 
         if (existing is null)
         {
@@ -65,24 +64,22 @@ internal sealed class VerificationService : IVerificationService
         return existing.ToDto();
     }
 
-    private async Task<List<VerificationDocumentEntity>> UploadEvidenceAsync(
+    private async Task<IReadOnlyList<VerificationDocumentEntity>> UploadEvidenceAsync(
         Guid tenantId,
-        SubmitVerificationRequest request,
+        IReadOnlyList<EvidenceUpload> uploads,
         DateTime now,
         CancellationToken ct)
     {
         var documents = new List<VerificationDocumentEntity>();
 
-        for (var i = 0; i < request.Files.Count; i++)
+        foreach (var upload in uploads)
         {
-            IFormFile file = request.Files[i];
-            var documentType = request.DocumentTypes[i];
-            var blobName = $"verification-evidence/{tenantId}-{documentType}-{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var blobName = VerificationDocumentEntity.BuildBlobName(tenantId, upload.DocumentType, upload.FileExtension);
 
-            await using var stream = file.OpenReadStream();
+            await using var stream = upload.Content;
             await blobStorage.UploadAsync(stream, blobName);
 
-            documents.Add(VerificationDocumentEntity.Create(documentType, blobName, now));
+            documents.Add(VerificationDocumentEntity.Create(upload.DocumentType, blobName, now));
         }
 
         return documents;

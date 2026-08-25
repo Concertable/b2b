@@ -1,5 +1,6 @@
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Interfaces;
+using Concertable.B2B.Tenant.Application.Mappers;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -31,5 +32,5 @@ internal sealed class VerificationController : ControllerBase
     public async Task<ActionResult<VerificationStatusDto>> SubmitDocuments(
         [FromForm] SubmitVerificationRequest request,
         CancellationToken ct) =>
-        (await verificationService.SubmitAsync(request, ct)).ToOkOrProblem();
+        (await verificationService.SubmitAsync(request.ToEvidenceUploads(), ct)).ToOkOrProblem();
 }

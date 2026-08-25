@@ -37,4 +37,26 @@ public sealed class VerificationDocumentEntityTests
         Assert.Throws<DomainException>(() =>
             VerificationDocumentEntity.Create(VerificationDocumentType.Licence, blobName, UploadedAt));
     }
+
+    [Fact]
+    public void BuildBlobName_IncludesTenantDocumentTypeAndExtension()
+    {
+        var tenantId = Guid.NewGuid();
+
+        var blobName = VerificationDocumentEntity.BuildBlobName(tenantId, VerificationDocumentType.Licence, ".pdf");
+
+        Assert.StartsWith($"verification-evidence/{tenantId}-Licence-", blobName);
+        Assert.EndsWith(".pdf", blobName);
+    }
+
+    [Fact]
+    public void BuildBlobName_CalledTwice_ReturnsDistinctNames()
+    {
+        var tenantId = Guid.NewGuid();
+
+        var first = VerificationDocumentEntity.BuildBlobName(tenantId, VerificationDocumentType.Licence, ".pdf");
+        var second = VerificationDocumentEntity.BuildBlobName(tenantId, VerificationDocumentType.Licence, ".pdf");
+
+        Assert.NotEqual(first, second);
+    }
 }

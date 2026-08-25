@@ -3,17 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 
-internal sealed class VerificationRepository : Repository<TenantVerificationEntity>, IVerificationRepository
+internal sealed class VerificationRepository(TenantDbContext context)
+    : Repository<TenantVerificationEntity>(context), IVerificationRepository
 {
-    private readonly TenantDbContext context;
-
-    public VerificationRepository(TenantDbContext context) : base(context)
-    {
-        this.context = context;
-    }
-
     public Task<TenantVerificationEntity?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
-        context.Verifications
+        Context.Query<TenantVerificationEntity>()
             .Include(v => v.Documents)
             .FirstOrDefaultAsync(v => v.TenantId == tenantId, ct);
 }
