@@ -76,6 +76,7 @@ public sealed class SeedState
     public OpportunityEntity ActiveVenueHireOpportunity { get; }
 
     public ApplicationEntity FlatFeeApp { get; }
+    public ApplicationEntity InProgressApplication { get; }
     public ApplicationEntity VersusApp { get; }
     public ApplicationEntity DoorSplitApp { get; }
     public ApplicationEntity VenueHireApp { get; }
@@ -198,8 +199,6 @@ public sealed class SeedState
         PastVenueHireAppDeal = VenueHireDealFactory.Create(66, 300m);
         PastDoorSplitAppDeal = DoorSplitDealFactory.Create(67, 70m);
 
-        var activeVenueHireDeal = VenueHireDealFactory.Create(59, 300m);
-
         var deals = new List<DealEntity>
         {
             FlatFeeDealFactory.Create(1, 150m),
@@ -260,7 +259,7 @@ public sealed class SeedState
             DoorSplitDealFactory.Create(56, 70m),
             VersusDealFactory.Create(57, 110m, 65m),
             FlatFeeDealFactory.Create(58, 150m),
-            activeVenueHireDeal,
+            VenueHireDealFactory.Create(59, 300m),
             FlatFeeDealFactory.Create(60, 200m),
             DoorSplitDealFactory.Create(61, 70m),
             VersusDealFactory.Create(62, 100m, 60m),
@@ -301,7 +300,6 @@ public sealed class SeedState
                 dealId: Deals[i].Id));
         }
         Opportunities = opps;
-        ActiveVenueHireOpportunity = opps.Single(opportunity => opportunity.DealId == activeVenueHireDeal.Id);
 
         // Artists get a tenant too (they own no Bucket-A rows) so Payment provisions their Connect account off PayoutOwnerRegisteredEvent.
         // The "no venue"/"no artist" operators registered but never set up their organization, so their tenants stay
@@ -350,6 +348,7 @@ public sealed class SeedState
         VersusApp = ApplicationFactory.Create(1, Opportunities[56].Id, Deals[56].DealType);
         VenueHireApp = ApplicationFactory.CreatePrepaid(1, Opportunities[51].Id, Deals[51].DealType);
         FlatFeeApp = ApplicationFactory.Create(1, Opportunities[54].Id, Deals[54].DealType);
+        InProgressApplication = ApplicationFactory.Create(1, Opportunities[12].Id, Deals[12].DealType);
 
         Applications =
         [
@@ -452,6 +451,7 @@ public sealed class SeedState
             Link(47, ApplicationFactory.BookedPrepaid(6, 48)),
             ApplicationFactory.CreatePrepaid(7, 48),
             ApplicationFactory.CreatePrepaid(8, 48),
+            InProgressApplication,
         ];
 
         for (var i = 0; i < Applications.Count; i++)
@@ -485,6 +485,13 @@ public sealed class SeedState
         var venueById = Venues.ToDictionary(venue => venue.Id);
         var opportunityById = opps.ToDictionary(opportunity => opportunity.Id);
         var dealById = deals.ToDictionary(deal => deal.Id);
+        ActiveVenueHireOpportunity = opps
+            .Where(opportunity => opportunity.Period.End > now)
+            .Where(opportunity => dealById[opportunity.DealId] is VenueHireDealEntity)
+            .Where(opportunity => Applications.All(application =>
+                application.OpportunityId != opportunity.Id))
+            .OrderBy(opportunity => opportunity.Period.Start)
+            .First();
         foreach (var application in Applications)
         {
             var opportunity = opportunityById[application.OpportunityId];

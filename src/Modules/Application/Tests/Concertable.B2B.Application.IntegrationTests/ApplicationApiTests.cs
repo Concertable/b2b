@@ -1,9 +1,8 @@
 ﻿using System.Net;
 using System.Text.Json;
 using Concertable.B2B.Concert.Contracts.Events;
-using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
-using Concertable.Contracts.Enums;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
@@ -54,25 +53,11 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task CurrentLists_IncludeApplicationsForInProgressOpportunities()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
-        var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
-        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var currentResponse = await venueClient.GetAsync(
-            $"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
-        await currentResponse.ShouldBe(HttpStatusCode.OK);
-        var current = await currentResponse.Content.ReadAsync<IReadOnlyList<OpportunityBoundaryResponse>>();
-        Assert.NotNull(current);
-        var requests = current.Select(opportunity => new OpportunityBoundaryRequest(
-            opportunity.Id,
-            opportunity.Id == opportunityId ? fixture.SeedNow.AddHours(-1) : opportunity.StartDate,
-            opportunity.Id == opportunityId ? fixture.SeedNow.AddHours(1) : opportunity.EndDate,
-            opportunity.Genres,
-            opportunity.Deal));
-        var updateResponse = await venueClient.PutAsync(
-            $"/api/venue/{fixture.SeedState.Venue.Id}/opportunities",
-            requests);
-        await updateResponse.ShouldBe(HttpStatusCode.OK);
-
+        var application = fixture.SeedState.InProgressApplication;
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager3);
+        venueClient.DefaultRequestHeaders.Add(
+            TenantHeaders.TenantId,
+            application.VenueTenantId.ToString());
         var venueResponse = await venueClient
             .GetAsync("/api/Application/venue/current");
         var artistResponse = await fixture.CreateClient(fixture.SeedState.ArtistManager1)
@@ -82,8 +67,8 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await artistResponse.ShouldBe(HttpStatusCode.OK);
         var venueApplications = await venueResponse.Content.ReadAsync<JsonElement>();
         var artistApplications = await artistResponse.Content.ReadAsync<JsonElement>();
-        Assert.Contains(venueApplications.EnumerateArray(), item => item.GetProperty("id").GetInt32() == applicationId);
-        Assert.Contains(artistApplications.EnumerateArray(), item => item.GetProperty("id").GetInt32() == applicationId);
+        Assert.Contains(venueApplications.EnumerateArray(), item => item.GetProperty("id").GetInt32() == application.Id);
+        Assert.Contains(artistApplications.EnumerateArray(), item => item.GetProperty("id").GetInt32() == application.Id);
     }
 
     #region Eligibility
@@ -212,33 +197,59 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await AssertProblemCodeAsync(response, HttpStatusCode.Forbidden, "application.eligibility.missing_artist");
     }
 
-#endregion
+    #endregion
 
     #region Accept
 
     [Fact]
+    public async Task Accept_WhenVerificationOverlapsApplicationTransition_ConfirmsBooking()
+    {
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var checkout = await client.PostAsync($"/api/application/{applicationId}/checkout");
+        await checkout.ShouldBe(HttpStatusCode.OK);
+
+        await using var applicationLock = await fixture.HoldApplicationForUpdateAsync(applicationId);
+        var acceptTask = client.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new
+            {
+                paymentMethodId = "pm_card_visa",
+                eSignature = new { signatoryName = "Test Signatory" }
+            });
+        await fixture.WaitForApplicationLockWaitersAsync(1);
+
+        var verificationTask = fixture.StripeClient.SendWebhookAsync();
+        await fixture.WaitForApplicationLockWaitersAsync(2);
+        await applicationLock.RollbackAsync();
+
+        var accept = await acceptTask;
+        await verificationTask;
+
+        await accept.ShouldBe(HttpStatusCode.NoContent);
+        var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}");
+        await bookingResponse.ShouldBe(HttpStatusCode.OK);
+        var booking = await bookingResponse.Content.ReadAsync<JsonElement>();
+        Assert.Equal("confirmed", booking.GetProperty("status").GetString());
+    }
+
+    [Fact]
     public async Task Accept_ShouldReturn403_WhenNotVenueManager()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
-        // Act
         var response = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
     public async Task Accept_ShouldReturn404_WhenCalledByDifferentVenueManager()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
-        // Act
         var response = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        // Assert
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
@@ -249,17 +260,14 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task Apply_ShouldReturn400_WhenSameArtistReappliesAfterWithdraw()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
         var withdraw = await client.PostAsync($"/api/application/{appId}/withdraw");
         await withdraw.ShouldBe(HttpStatusCode.NoContent);
 
-        // Act
         var response = await client.PostAsync($"/api/application/{opportunityId}", new { eSignature = new { signatoryName = "Aretha Artist" } });
 
-        // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
     }
 
@@ -277,17 +285,4 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         Assert.Equal(expectedCode, code?.ToString());
     }
 
-    private sealed record OpportunityBoundaryResponse(
-        int Id,
-        DateTime StartDate,
-        DateTime EndDate,
-        IReadOnlyList<Genre> Genres,
-        DealDto Deal);
-
-    private sealed record OpportunityBoundaryRequest(
-        int Id,
-        DateTime StartDate,
-        DateTime EndDate,
-        IReadOnlyList<Genre> Genres,
-        DealDto Deal);
 }
