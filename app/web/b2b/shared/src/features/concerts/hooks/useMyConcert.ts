@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import concertApi from "@concertable/shared/features/concerts/api/concertApi";
 import { concertKeys } from "@concertable/shared/features/concerts/hooks/useConcertQuery";
 import { updateConcertRequestSchema } from "@concertable/shared/features/concerts/schemas/updateConcertRequestSchema";
@@ -9,12 +8,16 @@ import {
   Concert,
   type UpdateConcertRequest,
 } from "@concertable/shared/features/concerts/types";
+import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
+import { useConcertStore } from "../store/useConcertStore";
 import type { MyConcert } from "../types";
 import { useMyConcertQuery } from "./useMyConcertQuery";
 
 interface UseMyConcertResult {
   concert: MyConcert | undefined;
-  draft: UpdateConcertRequest | undefined;
+  draft:
+    | Pick<Concert, "name" | "about" | "price" | "totalTickets">
+    | undefined;
   isLoading: boolean;
   isError: boolean;
   editMode: boolean;
@@ -39,18 +42,24 @@ const emptyRequest: UpdateConcertRequest = {
 export function useMyConcert(id: number): UseMyConcertResult {
   const { data: concert, isLoading, isError } = useMyConcertQuery(id);
   const queryClient = useQueryClient();
-  const [editMode, setEditMode] = useState(false);
+  const draft = useConcertStore((state) => state.draft);
+  const editMode = useConcertStore((state) => state.editMode);
+  const beginEdit = useConcertStore((state) => state.beginEdit);
+  const endEdit = useConcertStore((state) => state.endEdit);
+  const setStoreName = useConcertStore((state) => state.setName);
+  const setStoreAbout = useConcertStore((state) => state.setAbout);
   const {
     handleSubmit,
     reset,
     setValue,
-    watch,
     formState: { errors, isDirty, isValid },
   } = useForm<UpdateConcertRequest>({
     resolver: zodResolver(updateConcertRequestSchema),
     defaultValues: emptyRequest,
     mode: "onChange",
   });
+
+  useMountEffect(() => () => endEdit());
 
   const mutation = useMutation({
     mutationFn: (request: UpdateConcertRequest) =>
@@ -60,29 +69,39 @@ export function useMyConcert(id: number): UseMyConcertResult {
         previous ? { ...previous, ...saved } : undefined,
       );
       reset(Concert.toUpdateRequest(saved));
-      setEditMode(false);
+      endEdit();
     },
   });
 
   const resetDraft = () => {
     if (concert) reset(Concert.toUpdateRequest(concert));
-    setEditMode(false);
+    endEdit();
   };
 
   const toggleEdit = () => {
     if (editMode) {
       resetDraft();
-      return;
-    }
-
-    if (concert) {
+    } else if (concert) {
       reset(Concert.toUpdateRequest(concert));
-      setEditMode(true);
+      beginEdit(concert);
     }
   };
 
   const save = () => {
     void handleSubmit((request) => mutation.mutate(request))();
+  };
+
+  const setName = (name: string) => {
+    setStoreName(name);
+    setValue("name", name, { shouldDirty: true, shouldValidate: true });
+  };
+
+  const setAbout = (about: string) => {
+    setStoreAbout(about);
+    setValue("about", about, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   const saveError = isDirty
@@ -94,7 +113,7 @@ export function useMyConcert(id: number): UseMyConcertResult {
 
   return {
     concert,
-    draft: editMode ? watch() : undefined,
+    draft: editMode ? draft : undefined,
     isLoading,
     isError,
     editMode,
@@ -104,13 +123,8 @@ export function useMyConcert(id: number): UseMyConcertResult {
     save,
     resetDraft,
     toggleEdit,
-    setName: (name) =>
-      setValue("name", name, { shouldDirty: true, shouldValidate: true }),
-    setAbout: (about) =>
-      setValue("about", about, {
-        shouldDirty: true,
-        shouldValidate: true,
-      }),
+    setName,
+    setAbout,
     isSaving: mutation.isPending,
   };
 }
