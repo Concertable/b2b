@@ -1,5 +1,7 @@
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Artist.Contracts.Events;
+using Concertable.B2B.Booking.Contracts.Events;
+using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
@@ -21,6 +23,9 @@ public static class B2BTopology
             .Publish<ConcertChangedEvent>()
             .Publish<ConcertPostedEvent>()
             .Publish<ConcertRatingUpdatedEvent>()
+            .Publish<BookingCancelledEvent>()
+            .Publish<ConcertCancelledEvent>()
+            .Publish<ConcertCreatedEvent>()
             .Publish<B2BPayoutOwnerRegisteredEvent>()
             .Publish<Concertable.B2B.Tenant.Contracts.Events.TenantActivityRecordedEvent>()
             .Subscribe<CustomerReviewSubmittedEvent>(B2BConstants.ServiceName)
@@ -34,5 +39,6 @@ public static class B2BTopology
             .Subscribe<RefundEscrowSucceededEvent>(B2BConstants.ServiceName)
             .Subscribe<RefundEscrowRejectedEvent>(B2BConstants.ServiceName)
             .Subscribe<RefundEscrowDeferredEvent>(B2BConstants.ServiceName)
-            .Queue<SendEmailCommand>(B2BConstants.ServiceName);
+            .Queue<SendEmailCommand>(B2BConstants.ServiceName)
+            .Queue<NotifyConcertDraftCreatedCommand>(B2BConstants.ServiceName);
 }
