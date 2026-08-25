@@ -5,9 +5,9 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ApplicationAvailabilityProjection : IApplicationAvailabilityProjection
 {
-    private readonly ApplicationDbContext dbContext;
+    private readonly IApplicationReadDbContext dbContext;
 
-    public ApplicationAvailabilityProjection(ApplicationDbContext dbContext)
+    public ApplicationAvailabilityProjection(IApplicationReadDbContext dbContext)
     {
         this.dbContext = dbContext;
     }

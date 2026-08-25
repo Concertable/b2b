@@ -149,6 +149,33 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CanAccept_ArtistBookedAtAnotherVenue_ReturnsFalse()
+    {
+        const int concertId = int.MaxValue;
+        var application = fixture.SeedState.FlatFeeApp;
+        var opportunity = fixture.SeedState.Opportunities.Single(value => value.Id == application.OpportunityId);
+        var artist = fixture.SeedState.Artists.Single(value => value.Id == application.ArtistId);
+        var otherVenue = fixture.SeedState.Venues.First(value => value.TenantId != application.VenueTenantId);
+        await fixture.DispatchIntegrationEventAsync(
+            new ConcertCreatedEvent(
+                concertId,
+                0,
+                int.MaxValue,
+                artist.Id,
+                otherVenue.Id,
+                otherVenue.TenantId,
+                artist.TenantId,
+                opportunity.Period.Start),
+            MessageEnvelope.Create<ConcertCreatedEvent>(DateTimeOffset.UtcNow));
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync($"/api/application/{application.Id}/eligibility");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        Assert.False(await response.Content.ReadAsync<bool>());
+    }
+
+    [Fact]
     public async Task CanAccept_MissingApplication_ReturnsFalse()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
