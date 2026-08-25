@@ -33,14 +33,28 @@ public sealed class BookingConfirmationEmailJourneyTests : IAsyncLifetime
             .Where(email => email.Subject.StartsWith("Booking confirmed:", StringComparison.Ordinal))
             .ToList();
         var recipients = confirmations.Select(email => email.To).ToList();
-        var venueAddress = fixture.SeedState.Tenants
+        var venueRegisteredAddress = fixture.SeedState.Tenants
             .Single(tenant => tenant.Id == fixture.SeedState.Venue.TenantId)
+            .TaxCompliance?
             .RegisteredAddress;
-        var artistAddress = fixture.SeedState.Tenants
+        var artistRegisteredAddress = fixture.SeedState.Tenants
             .Single(tenant => tenant.Id == fixture.SeedState.Artist.TenantId)
+            .TaxCompliance?
             .RegisteredAddress;
-        Assert.NotNull(venueAddress);
-        Assert.NotNull(artistAddress);
+        Assert.NotNull(venueRegisteredAddress);
+        Assert.NotNull(artistRegisteredAddress);
+        var venueAddress = FormatAddress(
+            venueRegisteredAddress.Line1,
+            venueRegisteredAddress.Line2,
+            venueRegisteredAddress.City,
+            venueRegisteredAddress.Postcode,
+            venueRegisteredAddress.Country);
+        var artistAddress = FormatAddress(
+            artistRegisteredAddress.Line1,
+            artistRegisteredAddress.Line2,
+            artistRegisteredAddress.City,
+            artistRegisteredAddress.Postcode,
+            artistRegisteredAddress.Country);
 
         Assert.Contains(fixture.SeedState.VenueManager1.Email, recipients);
         Assert.Contains(fixture.SeedState.VenueManager3.Email, recipients);
@@ -54,4 +68,7 @@ public sealed class BookingConfirmationEmailJourneyTests : IAsyncLifetime
             Assert.Contains(artistAddress, email.Body);
         });
     }
+
+    private static string FormatAddress(params string?[] parts) =>
+        string.Join(", ", parts.Where(value => !string.IsNullOrWhiteSpace(value)));
 }
