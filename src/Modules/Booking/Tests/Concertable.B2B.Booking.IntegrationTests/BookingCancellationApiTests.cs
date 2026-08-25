@@ -1,4 +1,5 @@
 using System.Net;
+using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.Messaging.Contracts;
@@ -156,6 +157,27 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Cancel_WhenQueuedBeforeVerifyPaymentConfirmation_ConvergesOnCancellation()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var booking = await AcceptDoorSplitAsync(client);
+        await using var bookingLock = await fixture.HoldBookingForUpdateAsync(booking.Id);
+        var cancellationTask = client.PostAsync(booking.CancelHref, (object?)null);
+        await fixture.WaitForBookingLockWaitersAsync(1);
+        var confirmationTask = fixture.DispatchPreCommitDomainEventAsync(
+            new VerifyPaymentSucceeded(booking.ApplicationId, "seti_cancel_first"));
+        await fixture.WaitForBookingLockWaitersAsync(2);
+
+        await bookingLock.RollbackAsync();
+        var cancellation = await cancellationTask;
+        await confirmationTask;
+
+        await cancellation.ShouldBe(HttpStatusCode.NoContent);
+        Assert.Equal(State.Cancelled, await StateOfAsync(booking.Id));
+        Assert.Equal(0, await fixture.GetConcertCountAsync(booking.Id));
+    }
+
+    [Fact]
     public async Task Cancel_WhenQueuedAfterConfirmation_LeavesConfirmedBooking()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -238,7 +260,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         Assert.NotNull(application);
         Assert.NotNull(application.Actions.Cancel);
         var cancelHref = application.Actions.Cancel.Href;
-        return new BookingBoundary(int.Parse(cancelHref.Split('/')[3]), cancelHref);
+        return new BookingBoundary(int.Parse(cancelHref.Split('/')[3]), applicationId, cancelHref);
     }
 
     private async Task<State> StateOfAsync(int bookingId) =>
@@ -247,5 +269,5 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     private sealed record ApplicationBoundaryResponse(ApplicationActionsBoundaryResponse Actions);
     private sealed record ApplicationActionsBoundaryResponse(ActionBoundaryResponse? Cancel);
     private sealed record ActionBoundaryResponse(string Href);
-    private sealed record BookingBoundary(int Id, string CancelHref);
+    private sealed record BookingBoundary(int Id, int ApplicationId, string CancelHref);
 }

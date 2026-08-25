@@ -1,6 +1,8 @@
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Kernel;
+using Concertable.Kernel.DependencyInjection;
 using Concertable.Messaging.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -84,6 +86,15 @@ public sealed class BookingApiFixture : ApiFixture
                 WHERE [BookingId] = {bookingId}
                 """)
             .SingleAsync();
+
+    internal Task DispatchPreCommitDomainEventAsync<TEvent>(TEvent @event)
+        where TEvent : IDomainEvent =>
+        Services.GetRequiredService<IScoped<IEnumerable<IPreCommitDomainEventHandler<TEvent>>>>()
+            .RunAsync(async handlers =>
+            {
+                foreach (var handler in handlers)
+                    await handler.HandleAsync(@event);
+            });
 
     protected override void OnReset(IServiceScope scope)
     {

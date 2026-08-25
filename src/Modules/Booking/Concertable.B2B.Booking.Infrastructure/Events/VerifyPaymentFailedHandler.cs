@@ -18,12 +18,12 @@ internal sealed class VerifyPaymentFailedHandler : IPreCommitDomainEventHandler<
 
     public async Task HandleAsync(VerifyPaymentFailed payment, CancellationToken ct = default)
     {
-        var booking = await bookings.GetByApplicationIdAsync(payment.ApplicationId, ct);
-        if (booking is null)
+        var bookingId = await bookings.GetIdByApplicationIdAsync(payment.ApplicationId, ct);
+        if (bookingId is null)
             return;
 
         await bookings.RecordFailedAsync(
-            booking.Id,
+            bookingId.Value,
             new VerifyPaymentFailedEvidence(
                 payment.ApplicationId,
                 payment.ProviderTransactionId,
