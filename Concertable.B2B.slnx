@@ -171,7 +171,6 @@
     <Project Path="tests/Concertable.B2B.ArchitectureTests/Concertable.B2B.ArchitectureTests.csproj" />
     <Project Path="tests/Concertable.B2B.IntegrationTests.Fixtures/Concertable.B2B.IntegrationTests.Fixtures.csproj" />
     <Project Path="tests/Concertable.B2B.Process.IntegrationTests/Concertable.B2B.Process.IntegrationTests.csproj" />
-    <Project Path="tests/Concertable.B2B.Workers.UnitTests/Concertable.B2B.Workers.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Tests/E2ETests/">
     <Project Path="tests/E2ETests/Concertable.B2B.E2ETests/Concertable.B2B.E2ETests.csproj" />
