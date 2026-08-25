@@ -57,8 +57,8 @@ public sealed class OpportunityDashboardApiTests : IAsyncLifetime
                 : (int)Math.Round(
                     match.Genres.Count(fixture.SeedState.Artist.Genres.Contains) * 100d /
                     match.Genres.Count);
-            Assert.Equal(venue.County, match.County);
-            Assert.Equal(venue.Town, match.Town);
+            Assert.Equal(venue.Address.County, match.County);
+            Assert.Equal(venue.Address.Town, match.Town);
             Assert.Equal(expectedFit, match.FitScore);
             Assert.Equal($"/_artist/find/venue/{match.VenueId}", match.Href);
         });
