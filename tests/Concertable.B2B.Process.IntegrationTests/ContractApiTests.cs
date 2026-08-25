@@ -1,20 +1,18 @@
 using System.Net;
 using System.Text;
-using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Contracts.Enums;
-using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Booking.IntegrationTests;
+namespace Concertable.B2B.Process.IntegrationTests;
 
 [Collection("Integration")]
 public sealed class ContractApiTests : IAsyncLifetime
 {
-    private readonly BookingApiFixture fixture;
+    private readonly ProcessApiFixture fixture;
 
-    public ContractApiTests(BookingApiFixture fixture, ITestOutputHelper output)
+    public ContractApiTests(ProcessApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -23,8 +21,10 @@ public sealed class ContractApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
+    #region Get
+
     [Fact]
-    public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForFlatFee()
+    public async Task Get_ReturnsImmutableFlatFeeSnapshot()
     {
         var opportunityId = await CreateOpportunityAsync(
             new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
@@ -53,7 +53,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForDoorSplit()
+    public async Task Get_ReturnsImmutableDoorSplitSnapshot()
     {
         var opportunityId = await CreateOpportunityAsync(
             new DoorSplitDealDto { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70m });
@@ -83,7 +83,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForVersus()
+    public async Task Get_ReturnsImmutableVersusSnapshot()
     {
         var opportunityId = await CreateOpportunityAsync(
             new VersusDealDto
@@ -127,7 +127,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldSnapshotContract_ThatSurvivesContractEdit_ForVenueHire()
+    public async Task Get_ReturnsImmutableVenueHireSnapshot()
     {
         var opportunityId = await CreateOpportunityAsync(
             new VenueHireDealDto { PaymentMethod = PaymentMethod.Cash, HireFee = 250m });
@@ -153,7 +153,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldSucceed_ForSeededSignedApplication()
+    public async Task Get_ReturnsSignaturesForSeededAcceptedApplication()
     {
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -170,7 +170,28 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Contract_Pdf_IsDownloadableByBothParties()
+    public async Task Get_IsReadableByParty_And404ForStranger()
+    {
+        var applicationId = await AcceptedFlatFeeAsync();
+        var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await artist.GetAsync($"/api/application/{applicationId}/contract");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("The venue pays the artist a flat fee of", body);
+        Assert.Contains("2026-07", body);
+        var stranger = fixture.CreateClient(fixture.SeedState.VenueManager2);
+        var strangerResponse = await stranger.GetAsync($"/api/application/{applicationId}/contract");
+        await strangerResponse.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    #endregion
+
+    #region GetPdf
+
+    [Fact]
+    public async Task GetPdf_IsDownloadableByBothParties()
     {
         var applicationId = await AcceptedFlatFeeAsync();
 
@@ -188,7 +209,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Contract_Pdf_Returns404ForNonParty()
+    public async Task GetPdf_Returns404ForNonParty()
     {
         var applicationId = await AcceptedFlatFeeAsync();
         var stranger = fixture.CreateClient(fixture.SeedState.VenueManager2);
@@ -199,13 +220,9 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Contract_Pdf_BlobNameAssignedAtAccept_AndRendersOnDownload()
+    public async Task GetPdf_RendersOnFirstDownload()
     {
         var applicationId = await AcceptedFlatFeeAsync();
-        var contract = await GetContractAsync(applicationId);
-        Assert.NotNull(contract.PdfBlobName);
-        Assert.StartsWith("contracts/", contract.PdfBlobName);
-
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var response = await client.GetAsync($"/api/application/{applicationId}/contract/pdf");
 
@@ -213,7 +230,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Contract_Pdf_RendersBothPartyESignatures()
+    public async Task GetPdf_RendersBothPartyESignatures()
     {
         var opportunityId = await CreateOpportunityAsync(
             new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
@@ -242,22 +259,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         Assert.DoesNotContain("No recorded signature", text);
     }
 
-    [Fact]
-    public async Task Contract_Metadata_IsReadableByParty_And404ForStranger()
-    {
-        var applicationId = await AcceptedFlatFeeAsync();
-        var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-
-        var response = await artist.GetAsync($"/api/application/{applicationId}/contract");
-
-        await response.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("The venue pays the artist a flat fee of", body);
-        Assert.Contains("2026-07", body);
-        var stranger = fixture.CreateClient(fixture.SeedState.VenueManager2);
-        var strangerResponse = await stranger.GetAsync($"/api/application/{applicationId}/contract");
-        await strangerResponse.ShouldBe(HttpStatusCode.NotFound);
-    }
+    #endregion
 
     private async Task<int> AcceptedFlatFeeAsync()
     {
@@ -299,16 +301,17 @@ public sealed class ContractApiTests : IAsyncLifetime
         return application.Id;
     }
 
-    private async Task<ContractEntity> GetContractAsync(int applicationId)
+    private async Task<ContractBoundaryResponse> GetContractAsync(int applicationId)
     {
-        var booking = await fixture.Bookings.FirstAsync(value => value.ApplicationId == applicationId);
-        var contract = await fixture.Contracts.SingleAsync(value => value.BookingId == booking.Id);
-        Assert.Equal(booking.VenueTenantId, contract.VenueTenantId);
-        Assert.Equal(booking.ArtistTenantId, contract.ArtistTenantId);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var response = await client.GetAsync($"/api/application/{applicationId}/contract");
+        await response.ShouldBe(HttpStatusCode.OK);
+        var contract = await response.Content.ReadAsync<ContractBoundaryResponse>();
+        Assert.NotNull(contract);
         return contract;
     }
 
-    private void AssertCommonSnapshot(ContractEntity contract)
+    private void AssertCommonSnapshot(ContractBoundaryResponse contract)
     {
         Assert.NotEmpty(contract.VenueName);
         Assert.NotEmpty(contract.ArtistName);
@@ -360,6 +363,22 @@ public sealed class ContractApiTests : IAsyncLifetime
             deal);
 
     private sealed record ApplicationBoundaryResponse(int Id);
+
+    private sealed record ContractBoundaryResponse(
+        string VenueName,
+        string ArtistName,
+        DealType DealType,
+        PaymentMethod PaymentMethod,
+        string TermsText,
+        string PlatformTermsVersion,
+        SignatureBoundaryResponse ArtistSignature,
+        SignatureBoundaryResponse VenueSignature,
+        DateTime CreatedAtUtc);
+
+    private sealed record SignatureBoundaryResponse(
+        Guid UserId,
+        DateTime AtUtc,
+        string SignatoryName);
 
     private sealed record OpportunityBoundaryResponse(
         int Id,
