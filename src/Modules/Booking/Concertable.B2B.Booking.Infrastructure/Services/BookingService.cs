@@ -118,7 +118,7 @@ internal sealed class BookingService : IBookingService
         unitOfWork.ExecuteAsync(
             () => outbox.ExecuteAsync(async () =>
             {
-                var booking = await bookings.GetByIdAsync(bookingId, ct);
+                var booking = await bookings.GetForUpdateByIdAsync(bookingId, ct);
                 if (booking is null)
                     return (UnitResult<CancelBookingError>)new CancelBookingError.BookingNotFound(bookingId);
                 if (booking.State is BookingState.Cancelled or BookingState.CancellationPending)
@@ -132,12 +132,24 @@ internal sealed class BookingService : IBookingService
             }, ct),
             ct);
 
-    public async Task RecordSucceededAsync(
+    public Task RecordSucceededAsync(
         int bookingId,
         FinancialOperationSucceeded operation,
-        CancellationToken ct = default)
+        CancellationToken ct = default) =>
+        unitOfWork.ExecuteAsync(() => RecordSucceededCoreAsync(bookingId, operation, ct), ct);
+
+    public Task RecordFailedAsync(
+        int bookingId,
+        FinancialOperationFailed operation,
+        CancellationToken ct = default) =>
+        unitOfWork.ExecuteAsync(() => RecordFailedCoreAsync(bookingId, operation, ct), ct);
+
+    private async Task RecordSucceededCoreAsync(
+        int bookingId,
+        FinancialOperationSucceeded operation,
+        CancellationToken ct)
     {
-        var booking = await bookings.GetByIdAsync(bookingId, ct)
+        var booking = await bookings.GetForUpdateByIdAsync(bookingId, ct)
             ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
         Validate(bookingId, booking, operation);
 
@@ -161,12 +173,12 @@ internal sealed class BookingService : IBookingService
         await bookings.SaveChangesAsync(ct);
     }
 
-    public async Task RecordFailedAsync(
+    private async Task RecordFailedCoreAsync(
         int bookingId,
         FinancialOperationFailed operation,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
-        var booking = await bookings.GetByIdAsync(bookingId, ct)
+        var booking = await bookings.GetForUpdateByIdAsync(bookingId, ct)
             ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
         Validate(bookingId, booking, operation);
 

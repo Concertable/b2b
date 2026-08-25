@@ -34,6 +34,21 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             booking => booking.OperationId == operationId,
             ct);
 
+    public Task<BookingEntity?> GetForUpdateByIdAsync(
+        int bookingId,
+        CancellationToken ct = default)
+    {
+        var sql = $$"""
+            SELECT *
+            FROM [{{Schema.Name}}].[{{Schema.Tables.Bookings}}] WITH (UPDLOCK, ROWLOCK)
+            WHERE [Id] = {0}
+            """;
+
+        return context.Bookings
+            .FromSqlRaw(sql, bookingId)
+            .SingleOrDefaultAsync(booking => booking.Id == bookingId, ct);
+    }
+
     public Task<int?> GetApplicationIdByIdAsync(
         int bookingId,
         CancellationToken ct = default) =>

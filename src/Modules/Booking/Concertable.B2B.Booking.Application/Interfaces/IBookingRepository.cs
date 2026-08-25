@@ -14,6 +14,9 @@ internal interface IBookingRepository : IVenueArtistTenantScopedRepository<Booki
     Task<BookingEntity?> GetByOperationIdAsync(
         Guid operationId,
         CancellationToken ct = default);
+    Task<BookingEntity?> GetForUpdateByIdAsync(
+        int bookingId,
+        CancellationToken ct = default);
     Task<int?> GetApplicationIdByIdAsync(
         int bookingId,
         CancellationToken ct = default);
