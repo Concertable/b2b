@@ -32,12 +32,12 @@ public sealed class VerificationServiceTests
     private static IReadOnlyList<EvidenceUpload> BuildUploads() =>
         [new EvidenceUpload(Stream.Null, ".pdf", VerificationDocumentType.Licence)];
 
-    #region GetOwnAsync
+    #region GetStatusAsync
 
     [Fact]
-    public async Task GetOwnAsync_NoActiveTenant_ReturnsNone()
+    public async Task GetStatusAsync_NoActiveTenant_ReturnsNone()
     {
-        var result = await service.GetOwnAsync();
+        var result = await service.GetStatusAsync();
 
         Assert.True(result.IsNone);
         repository.Verify(
@@ -46,7 +46,7 @@ public sealed class VerificationServiceTests
     }
 
     [Fact]
-    public async Task GetOwnAsync_NeverSubmitted_ReturnsNone()
+    public async Task GetStatusAsync_NeverSubmitted_ReturnsNone()
     {
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(c => c.TenantId).Returns(tenantId);
@@ -54,13 +54,13 @@ public sealed class VerificationServiceTests
             .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((TenantVerificationEntity?)null);
 
-        var result = await service.GetOwnAsync();
+        var result = await service.GetStatusAsync();
 
         Assert.True(result.IsNone);
     }
 
     [Fact]
-    public async Task GetOwnAsync_ExistingRow_MapsStatusAndDocuments()
+    public async Task GetStatusAsync_ExistingRow_MapsStatusAndDocuments()
     {
         var tenantId = Guid.NewGuid();
         var verification = TenantVerificationEntity.Submit(
@@ -72,7 +72,7 @@ public sealed class VerificationServiceTests
             .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(verification);
 
-        var result = await service.GetOwnAsync();
+        var result = await service.GetStatusAsync();
 
         Assert.True(result.TryGetValue(out var dto));
         Assert.Equal(TenantVerificationStatus.Pending, dto.Status);

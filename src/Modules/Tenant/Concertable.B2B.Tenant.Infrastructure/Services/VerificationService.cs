@@ -25,7 +25,7 @@ internal sealed class VerificationService : IVerificationService
         this.timeProvider = timeProvider;
     }
 
-    public async Task<Option<VerificationStatusDto>> GetOwnAsync(CancellationToken ct = default)
+    public async Task<Option<VerificationStatusDto>> GetStatusAsync(CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
             return null;
