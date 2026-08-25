@@ -8,4 +8,4 @@ export type {
   Artist,
   CreateArtistRequest,
   UpdateArtistRequest,
-} from "./types";
+} from "@concertable/shared/features/artists";

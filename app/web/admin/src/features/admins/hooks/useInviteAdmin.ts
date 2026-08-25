@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { useInviteMutation } from "./useInviteMutation";
-import type { InviteAdminRequest } from "../schemas/inviteAdminRequestSchema";
+import type { InviteAdminRequest } from "../types";
 
 export function useInviteAdmin() {
   const { mutate, isPending } = useInviteMutation();
