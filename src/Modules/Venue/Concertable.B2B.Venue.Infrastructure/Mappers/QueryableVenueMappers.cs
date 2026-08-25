@@ -44,6 +44,8 @@ internal static class QueryableVenueMappers
                 venue.UserId,
                 venue.Name,
                 venue.About,
+                venue.BannerUrl,
+                venue.Avatar,
                 venue.Email,
                 venue.Address.County,
                 venue.Address.Town));

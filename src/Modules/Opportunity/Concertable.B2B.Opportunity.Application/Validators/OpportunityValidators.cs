@@ -1,15 +1,19 @@
-using Concertable.B2B.Opportunity.Application.DTOs;
+using Concertable.B2B.Opportunity.Application.Requests;
 using FluentValidation;
 
 namespace Concertable.B2B.Opportunity.Application.Validators;
 
-internal sealed class OpportunityDtoValidator : AbstractValidator<OpportunityDto>
+internal sealed class OpportunityRequestValidator : AbstractValidator<OpportunityRequest>
 {
-    public OpportunityDtoValidator()
+    public OpportunityRequestValidator(TimeProvider timeProvider)
     {
         RuleFor(x => x.StartDate)
-            .GreaterThan(DateTime.UtcNow)
+            .GreaterThan(_ => timeProvider.GetUtcNow().UtcDateTime)
             .WithMessage("You cannot create a Concert Opportunity in the past.");
+
+        RuleFor(x => x.EndDate)
+            .GreaterThan(x => x.StartDate)
+            .WithMessage("EndDate must be after StartDate.");
 
         RuleFor(x => x.EndDate)
             .Must((dto, endDate) => (endDate - dto.StartDate).TotalHours <= 24)

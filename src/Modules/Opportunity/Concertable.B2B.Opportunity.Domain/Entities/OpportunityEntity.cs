@@ -8,6 +8,14 @@ namespace Concertable.B2B.Opportunity.Domain.Entities;
 [DisplayName(DisplayNames.Opportunity)]
 public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<OpportunityEntity>, ITenantScoped
 {
+    private HashSet<Genre> genres = [];
+
+    private List<Genre> PersistedGenres
+    {
+        get => genres.ToList();
+        set => genres = value.ToHashSet();
+    }
+
     private OpportunityEntity() { }
 
     public int Id { get; private set; }
@@ -15,23 +23,27 @@ public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opp
     public int VenueId { get; set; }
     public DateRange Period { get; private set; } = null!;
     public int DealId { get; private set; }
-    public List<Genre> Genres { get; private set; } = [];
+    public IReadOnlySet<Genre> Genres => genres;
     public OpportunityState State { get; private set; } = OpportunityState.Open;
 
-    public static OpportunityEntity Create(int venueId, DateRange period, int dealId, IEnumerable<Genre>? genres = null) =>
+    public static OpportunityEntity Create(
+        int venueId,
+        DateRange period,
+        int dealId,
+        IReadOnlySet<Genre> genres) =>
         new()
         {
             VenueId = venueId,
             Period = period,
             DealId = dealId,
-            Genres = genres?.ToList() ?? []
+            genres = genres.ToHashSet()
         };
 
-    public void Update(DateRange period, int dealId, IEnumerable<Genre> genres)
+    public void Update(DateRange period, int dealId, IReadOnlySet<Genre> genres)
     {
         Period = period;
         DealId = dealId;
-        Genres = genres.ToList();
+        this.genres = genres.ToHashSet();
     }
 
     public void MarkFilled() => State = OpportunityState.Filled;

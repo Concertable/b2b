@@ -1,5 +1,6 @@
 using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.B2B.Opportunity.Infrastructure.Data;
+using Concertable.B2B.Opportunity.Infrastructure.Data.Configurations;
 using Concertable.B2B.Opportunity.Infrastructure.Extensions;
 using Concertable.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,29 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
         this.context = context;
         this.timeProvider = timeProvider;
     }
+
+    public Task<OpportunityEntity?> GetByIdAsync(
+        int opportunityId,
+        CancellationToken ct = default) =>
+        context.Opportunities
+            .FirstOrDefaultAsync(opportunity => opportunity.Id == opportunityId, ct);
+
+    public async Task<IReadOnlyList<OpportunityEntity>> GetByIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default) =>
+        await context.Opportunities
+            .Where(opportunity => opportunityIds.Contains(opportunity.Id))
+            .ToListAsync(ct);
+
+    public Task<OpportunityEntity?> GetOpenByIdAsync(
+        int opportunityId,
+        CancellationToken ct = default) =>
+        context.Opportunities
+            .FirstOrDefaultAsync(
+                opportunity =>
+                    opportunity.Id == opportunityId &&
+                    opportunity.State == OpportunityState.Open,
+                ct);
 
     public async Task<IPagination<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId, IPageParams pageParams) =>
         await ActiveForVenue(venueId).ToPaginationAsync(pageParams);
@@ -59,13 +83,12 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
         CancellationToken ct = default)
     {
         var excludedIds = excludedOpportunityIds.ToArray();
-        var genreList = genres.ToArray();
         return await context.Opportunities
             .WhereActive(timeProvider.GetUtcNow())
             .Where(opportunity => !excludedIds.Contains(opportunity.Id))
-            .Where(opportunity =>
-                opportunity.Genres.Count == 0 ||
-                opportunity.Genres.Any(genre => genreList.Contains(genre)))
+            .WhereEmptyOrOverlaps(
+                OpportunityEntityConfiguration.PersistedGenresProperty,
+                genres)
             .OrderBy(opportunity => opportunity.Period.Start)
             .Take(5)
             .ToListAsync(ct);

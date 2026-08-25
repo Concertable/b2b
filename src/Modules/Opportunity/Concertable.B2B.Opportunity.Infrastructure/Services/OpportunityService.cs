@@ -1,4 +1,6 @@
 using Concertable.B2B.Opportunity.Application.Errors;
+using Concertable.B2B.Opportunity.Application.Mappers;
+using Concertable.B2B.Opportunity.Contracts.Errors;
 using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
@@ -14,7 +16,6 @@ internal sealed class OpportunityService : IOpportunityService
     private readonly IVenueModule venueModule;
     private readonly IDealModule dealModule;
     private readonly IOpportunitySyncer syncer;
-    private readonly IOpportunityMapper mapper;
     private readonly ITenantContext tenantContext;
     private readonly IUnitOfWorkBehavior uowBehavior;
 
@@ -24,7 +25,6 @@ internal sealed class OpportunityService : IOpportunityService
         IVenueModule venueModule,
         IDealModule dealModule,
         IOpportunitySyncer syncer,
-        IOpportunityMapper mapper,
         ITenantContext tenantContext,
         IUnitOfWorkBehavior uowBehavior)
     {
@@ -33,7 +33,6 @@ internal sealed class OpportunityService : IOpportunityService
         this.venueModule = venueModule;
         this.dealModule = dealModule;
         this.syncer = syncer;
-        this.mapper = mapper;
         this.tenantContext = tenantContext;
         this.uowBehavior = uowBehavior;
     }
@@ -53,14 +52,71 @@ internal sealed class OpportunityService : IOpportunityService
                     venueId,
                     new DateRange(request.StartDate, request.EndDate),
                     dealId,
-                    request.Genres);
+                    request.Genres.ToHashSet());
                 await repository.AddAsync(entity);
                 return Result.Success<OpportunityEntity, OpportunityMutationError>(entity);
             });
         });
 
-        return await creation.MapAsync(mapper.ToDtoAsync);
+        return creation.Map(opportunity => opportunity.ToDto());
     }
+
+    public async Task<Option<OpportunityDto>> GetAsync(
+        int opportunityId,
+        CancellationToken ct = default) =>
+        (await readRepository.GetByIdAsync(opportunityId, ct))
+            .ToOption()
+            .Map(opportunity => opportunity.ToDto());
+
+    public async Task<IReadOnlyList<OpportunityDto>> GetAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default) =>
+        (await readRepository.GetByIdsAsync(opportunityIds, ct))
+            .Select(opportunity => opportunity.ToDto())
+            .ToList();
+
+    public async Task<Option<OpportunityDto>> GetOpenAsync(
+        int opportunityId,
+        CancellationToken ct = default) =>
+        (await readRepository.GetOpenByIdAsync(opportunityId, ct))
+            .ToOption()
+            .Map(opportunity => opportunity.ToDto());
+
+    public async Task<UnitResult<FillOpportunityError>> FillAsync(
+        int opportunityId,
+        Guid venueTenantId,
+        CancellationToken ct = default)
+    {
+        if (!await repository.TryFillAsync(opportunityId, venueTenantId, ct))
+            return new FillOpportunityError.Unavailable(opportunityId);
+
+        return new Success();
+    }
+
+    public Task<IReadOnlySet<int>> GetUpcomingIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default) =>
+        readRepository.GetUpcomingIdsAsync(opportunityIds, ct);
+
+    public Task<int> GetOpenCountAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default) =>
+        readRepository.GetOpenCountAsync(venueTenantId, ct);
+
+    public async Task<IReadOnlyList<OpportunityDto>> GetOpenByVenueTenantIdAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default) =>
+        (await repository.GetOpenByVenueTenantIdAsync(venueTenantId, ct))
+            .Select(opportunity => opportunity.ToDto())
+            .ToList();
+
+    public async Task<IReadOnlyList<OpportunityDto>> GetRecommendedAsync(
+        IReadOnlyCollection<int> excludedOpportunityIds,
+        IReadOnlySet<Genre> genres,
+        CancellationToken ct = default) =>
+        (await readRepository.GetMatchCandidatesAsync(excludedOpportunityIds, genres, ct))
+            .Select(opportunity => opportunity.ToDto())
+            .ToList();
 
     public async Task<UnitResult<OpportunityMutationError>> CreateMultipleAsync(IEnumerable<OpportunityRequest> requests)
     {
@@ -82,7 +138,7 @@ internal sealed class OpportunityService : IOpportunityService
                     venueId,
                     new DateRange(request.StartDate, request.EndDate),
                     dealId,
-                    request.Genres);
+                    request.Genres.ToHashSet());
                 await repository.AddAsync(opportunity);
             }
         });
@@ -93,13 +149,13 @@ internal sealed class OpportunityService : IOpportunityService
     public async Task<IPagination<OpportunityDto>> GetActiveByVenueIdAsync(int id, IPageParams pageParams)
     {
         var opportunities = await readRepository.GetActiveByVenueIdAsync(id, pageParams);
-        return await mapper.ToDtosAsync(opportunities);
+        return opportunities.Map(opportunity => opportunity.ToDto());
     }
 
     public async Task<IReadOnlyList<OpportunityDto>> GetActiveByVenueIdAsync(int venueId)
     {
         var opportunities = await readRepository.GetActiveByVenueIdAsync(venueId);
-        return await mapper.ToDtosAsync(opportunities);
+        return opportunities.Select(opportunity => opportunity.ToDto()).ToList();
     }
 
     public async Task<Result<IReadOnlyList<OpportunityDto>, OpportunityMutationError>> UpdateAsync(
@@ -123,15 +179,14 @@ internal sealed class OpportunityService : IOpportunityService
         await uowBehavior.ExecuteAsync(() => syncer.SyncAsync(venueId, current, desiredList));
 
         var updated = await readRepository.GetActiveByVenueIdAsync(venueId);
-        return new Success<IReadOnlyList<OpportunityDto>>(
-            await mapper.ToDtosAsync(updated));
+        return updated.Select(opportunity => opportunity.ToDto()).ToList();
     }
 
     public Task<Result<OpportunityDto, OpportunityError>> GetByIdAsync(int id) =>
         repository.GetByIdAsync(id)
             .ToOption()
             .OrFailure(() => (OpportunityError)new OpportunityError.NotFound(id))
-            .MapAsync(mapper.ToDtoAsync);
+            .Map(opportunity => opportunity.ToDto());
 
     public async Task<bool> OwnsOpportunityAsync(int opportunityId)
     {

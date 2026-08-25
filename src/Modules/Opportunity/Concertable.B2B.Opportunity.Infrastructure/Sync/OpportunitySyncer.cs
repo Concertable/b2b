@@ -26,7 +26,7 @@ internal sealed class OpportunitySyncer
             venueId,
             new DateRange(dto.StartDate, dto.EndDate),
             dealId,
-            dto.Genres);
+            dto.Genres.ToHashSet());
     }
 
     protected override async Task UpdateAsync(OpportunityEntity entity, OpportunityRequest dto)
@@ -35,7 +35,10 @@ internal sealed class OpportunitySyncer
         if (result.IsFailure)
             throw new InvalidOperationException("Deal update failed after successful validation.");
 
-        entity.Update(new DateRange(dto.StartDate, dto.EndDate), entity.DealId, dto.Genres);
+        entity.Update(
+            new DateRange(dto.StartDate, dto.EndDate),
+            entity.DealId,
+            dto.Genres.ToHashSet());
     }
 
     protected override Task DeleteAsync(OpportunityEntity entity)

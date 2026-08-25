@@ -268,27 +268,4 @@ public sealed class ArtistApiTests : IAsyncLifetime
 
     #endregion
 
-    #region Dashboard
-
-    [Fact]
-    public async Task GetDashboardKpis_ShouldReturn200_WhenProfileExists()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-
-        var response = await client.GetAsync("/api/artist-dashboard/kpis");
-
-        await response.ShouldBe(HttpStatusCode.OK);
-    }
-
-    [Fact]
-    public async Task GetDashboardKpis_ShouldReturn204_WhenProfileDoesNotExist()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
-
-        var response = await client.GetAsync("/api/artist-dashboard/kpis");
-
-        await response.ShouldBe(HttpStatusCode.NoContent);
-    }
-
-    #endregion
 }

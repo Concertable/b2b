@@ -43,6 +43,8 @@ internal static class QueryableArtistMappers
                 artist.UserId,
                 artist.Name,
                 artist.About,
+                artist.BannerUrl,
+                artist.Avatar,
                 artist.Email,
                 artist.Genres.ToHashSet()));
     }

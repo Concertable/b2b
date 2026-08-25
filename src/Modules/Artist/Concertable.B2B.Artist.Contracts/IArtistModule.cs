@@ -1,4 +1,5 @@
 using Concertable.Contracts.Enums;
+using Concertable.Contracts;
 using Reunion;
 
 namespace Concertable.B2B.Artist.Contracts;
@@ -12,4 +13,5 @@ public interface IArtistModule
     Task<IReadOnlySet<Genre>> GetGenresAsync(int artistId, CancellationToken ct = default);
     Task<Option<ArtistProfile>> GetProfileAsync(int artistId, CancellationToken ct = default);
     Task<Option<ArtistProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
+    Task<ReviewSummary> GetReviewSummaryAsync(int artistId, CancellationToken ct = default);
 }

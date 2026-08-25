@@ -1,74 +1,55 @@
+using Concertable.B2B.Opportunity.Contracts.Errors;
+
 namespace Concertable.B2B.Opportunity.Infrastructure;
 
 internal sealed class OpportunityModule : IOpportunityModule
 {
-    private readonly IOpportunityHandoffService handoffService;
-    private readonly IOpportunityDashboardService dashboardService;
+    private readonly IOpportunityService service;
 
-    public OpportunityModule(
-        IOpportunityHandoffService handoffService,
-        IOpportunityDashboardService dashboardService)
+    public OpportunityModule(IOpportunityService service)
     {
-        this.handoffService = handoffService;
-        this.dashboardService = dashboardService;
+        this.service = service;
     }
 
-    public async Task<Option<OpportunityDetails>> GetDetailsAsync(
+    public Task<Option<OpportunityDto>> GetAsync(
         int opportunityId,
-        CancellationToken ct = default)
-    {
-        var details = await handoffService.GetDetailsAsync(opportunityId, ct);
+        CancellationToken ct = default) =>
+        service.GetAsync(opportunityId, ct);
 
-        return ToOption(details);
-    }
-
-    public async Task<Option<OpportunityDetails>> GetOpenDetailsAsync(
-        int opportunityId,
-        CancellationToken ct = default)
-    {
-        var details = await handoffService.GetOpenDetailsAsync(opportunityId, ct);
-
-        return ToOption(details);
-    }
-
-    public async Task<IReadOnlyList<OpportunityDetails>> GetDetailsAsync(
+    public Task<IReadOnlyList<OpportunityDto>> GetAsync(
         IReadOnlyCollection<int> opportunityIds,
         CancellationToken ct = default) =>
-        (await handoffService.GetDetailsAsync(opportunityIds, ct))
-            .Select(ToDetails)
-            .ToList();
+        service.GetAsync(opportunityIds, ct);
 
-    private static OpportunityDetails ToDetails(OpportunityHandoffDto details) =>
-        new(
-            details.Id,
-            details.VenueId,
-            details.TenantId,
-            details.DealId,
-            details.Start,
-            details.End,
-            details.Genres);
+    public Task<Option<OpportunityDto>> GetOpenAsync(
+        int opportunityId,
+        CancellationToken ct = default) =>
+        service.GetOpenAsync(opportunityId, ct);
 
-    private static Option<OpportunityDetails> ToOption(OpportunityHandoffDto? details)
-    {
-
-        return details is null
-            ? Option.None<OpportunityDetails>()
-            : Option.Some(ToDetails(details));
-    }
-
-    public Task<bool> TryClaimAsync(
+    public Task<UnitResult<FillOpportunityError>> FillAsync(
         int opportunityId,
         Guid venueTenantId,
         CancellationToken ct = default) =>
-        handoffService.TryClaimAsync(opportunityId, venueTenantId, ct);
+        service.FillAsync(opportunityId, venueTenantId, ct);
 
     public Task<IReadOnlySet<int>> GetUpcomingIdsAsync(
         IReadOnlyCollection<int> opportunityIds,
         CancellationToken ct = default) =>
-        dashboardService.GetUpcomingIdsAsync(opportunityIds, ct);
+        service.GetUpcomingIdsAsync(opportunityIds, ct);
 
     public Task<int> GetOpenCountAsync(
         Guid venueTenantId,
         CancellationToken ct = default) =>
-        dashboardService.GetOpenCountAsync(venueTenantId, ct);
+        service.GetOpenCountAsync(venueTenantId, ct);
+
+    public Task<IReadOnlyList<OpportunityDto>> GetOpenByVenueTenantIdAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default) =>
+        service.GetOpenByVenueTenantIdAsync(venueTenantId, ct);
+
+    public Task<IReadOnlyList<OpportunityDto>> GetRecommendedAsync(
+        IReadOnlyCollection<int> excludedOpportunityIds,
+        IReadOnlySet<Genre> genres,
+        CancellationToken ct = default) =>
+        service.GetRecommendedAsync(excludedOpportunityIds, genres, ct);
 }

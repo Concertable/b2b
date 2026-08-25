@@ -21,14 +21,14 @@ internal sealed class ApplicationValidator : IApplicationValidator
         this.timeProvider = timeProvider;
     }
 
-    public async Task<ValidationResult> CanApplyAsync(OpportunityDetails opportunity, int artistId)
+    public async Task<ValidationResult> CanApplyAsync(OpportunityDto opportunity, int artistId)
     {
         var errors = new List<string>();
 
         if (opportunity.StartDate < timeProvider.GetUtcNow())
             errors.Add("This concert opportunity has already passed");
 
-        if (await availability.OpportunityHasConcertAsync(opportunity.OpportunityId))
+        if (await availability.OpportunityHasConcertAsync(opportunity.Id))
             errors.Add("This concert opportunity has already been booked for a concert");
 
         if (await availability.ArtistHasConcertOnDateAsync(artistId, opportunity.StartDate))
@@ -38,7 +38,7 @@ internal sealed class ApplicationValidator : IApplicationValidator
     }
 
     public async Task<ValidationResult> CanAcceptAsync(
-        OpportunityDetails opportunity,
+        OpportunityDto opportunity,
         ApplicationEntity application)
     {
         var errors = new List<string>();
@@ -49,7 +49,7 @@ internal sealed class ApplicationValidator : IApplicationValidator
         if (opportunity.StartDate < timeProvider.GetUtcNow())
             errors.Add("This concert opportunity has already passed");
 
-        if (await availability.OpportunityHasConcertAsync(opportunity.OpportunityId))
+        if (await availability.OpportunityHasConcertAsync(opportunity.Id))
             errors.Add("This concert opportunity already has a concert booked");
 
         if (await availability.ArtistHasConcertOnDateAsync(application.ArtistId, opportunity.StartDate))

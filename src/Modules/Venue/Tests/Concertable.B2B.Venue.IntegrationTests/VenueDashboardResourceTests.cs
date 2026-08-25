@@ -1,11 +1,8 @@
 using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
-using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.Venue.Domain.ReadModels;
 using Concertable.B2B.Venue.Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
-using Concertable.Messaging.Contracts;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Venue.IntegrationTests;
@@ -58,38 +55,6 @@ public sealed class VenueDashboardResourceTests : IAsyncLifetime
         Assert.Equal("newer@example.com", review.ReviewerName);
         Assert.Equal("Newer", review.Excerpt);
         Assert.Equal($"/_venue/find/venue/{fixture.SeedState.Venue.Id}", review.Href);
-    }
-
-    [Fact]
-    public async Task Activity_ReturnsOnlyTheActiveTenantActivity()
-    {
-        await using var scope = fixture.Services.CreateAsyncScope();
-        var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<TenantActivityRecordedEvent>>();
-        var at = new DateTimeOffset(2026, 8, 14, 12, 0, 0, TimeSpan.Zero);
-        await handler.HandleAsync(new TenantActivityRecordedEvent(new ActivityRecord(
-            "test:venue",
-            fixture.SeedState.Venue.TenantId,
-            ActivityType.MessageReceived,
-            at,
-            "Venue activity",
-            null,
-            "/_venue/?inbox=open")), MessageEnvelope.Create<TenantActivityRecordedEvent>(at));
-        await handler.HandleAsync(new TenantActivityRecordedEvent(new ActivityRecord(
-            "test:artist",
-            fixture.SeedState.Artist.TenantId,
-            ActivityType.MessageReceived,
-            at,
-            "Artist activity",
-            null,
-            "/_artist/?inbox=open")), MessageEnvelope.Create<TenantActivityRecordedEvent>(at));
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-
-        var response = await client.GetAsync("/api/venue-dashboard/activity");
-
-        await response.ShouldBe(HttpStatusCode.OK);
-        var activity = await response.Content.ReadAsync<List<ActivityItemDto>>();
-        var item = Assert.Single(activity!);
-        Assert.Equal("Venue activity", item.Subject);
     }
 
     private sealed record RecentReviewResponse(

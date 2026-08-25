@@ -6,6 +6,6 @@ namespace Concertable.B2B.Application.Application.Interfaces;
 
 internal interface IApplicationValidator
 {
-    Task<ValidationResult> CanApplyAsync(OpportunityDetails opportunity, int artistId);
-    Task<ValidationResult> CanAcceptAsync(OpportunityDetails opportunity, ApplicationEntity application);
+    Task<ValidationResult> CanApplyAsync(OpportunityDto opportunity, int artistId);
+    Task<ValidationResult> CanAcceptAsync(OpportunityDto opportunity, ApplicationEntity application);
 }

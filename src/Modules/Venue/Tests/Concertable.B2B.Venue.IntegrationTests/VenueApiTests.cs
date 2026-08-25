@@ -336,30 +336,6 @@ public sealed class VenueApiTests : IAsyncLifetime
 
     #endregion
 
-    #region Dashboard
-
-    [Fact]
-    public async Task GetDashboardKpis_ShouldReturn200_WhenProfileExists()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-
-        var response = await client.GetAsync("/api/venue-dashboard/kpis");
-
-        await response.ShouldBe(HttpStatusCode.OK);
-    }
-
-    [Fact]
-    public async Task GetDashboardKpis_ShouldReturn204_WhenProfileDoesNotExist()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
-
-        var response = await client.GetAsync("/api/venue-dashboard/kpis");
-
-        await response.ShouldBe(HttpStatusCode.NoContent);
-    }
-
-    #endregion
-
     #region Approve
 
     [Fact]

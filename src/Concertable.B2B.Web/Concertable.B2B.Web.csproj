@@ -46,6 +46,9 @@
     <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Api\Concertable.B2B.Venue.Api.csproj" />
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Api\Concertable.B2B.Concert.Api.csproj" />
     <ProjectReference Include="..\Modules\Deal\Concertable.B2B.Deal.Api\Concertable.B2B.Deal.Api.csproj" />
+    <ProjectReference Include="..\Modules\Dashboard\Artist\Concertable.B2B.Dashboard.Artist.Api\Concertable.B2B.Dashboard.Artist.Api.csproj" />
+    <ProjectReference Include="..\Modules\Dashboard\Opportunity\Concertable.B2B.Dashboard.Opportunity.Api\Concertable.B2B.Dashboard.Opportunity.Api.csproj" />
+    <ProjectReference Include="..\Modules\Dashboard\Venue\Concertable.B2B.Dashboard.Venue.Api\Concertable.B2B.Dashboard.Venue.Api.csproj" />
     <ProjectReference Include="..\Modules\Opportunity\Concertable.B2B.Opportunity.Api\Concertable.B2B.Opportunity.Api.csproj" />
     <ProjectReference Include="..\Modules\Conversations\Concertable.B2B.Conversations.Api\Concertable.B2B.Conversations.Api.csproj" />
     <ProjectReference Include="..\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />

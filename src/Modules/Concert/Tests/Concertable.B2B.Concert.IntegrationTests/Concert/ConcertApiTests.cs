@@ -114,25 +114,6 @@ public sealed class ConcertApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Post_ShouldReturn400_WhenBookingNotConfirmed()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var request = BuildPostRequest();
-
-        var response = await client.PutAsync(
-            $"/api/concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.AwaitingPaymentBooking).Id}",
-            request);
-
-        await response.ShouldBe(HttpStatusCode.BadRequest);
-        var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
-        Assert.NotNull(problem);
-        Assert.Equal("concert.post.invalid", problem.Extensions["code"]?.ToString());
-        Assert.Equal(
-            ["Concert cannot be posted until the booking is confirmed"],
-            problem.Errors["booking"]);
-    }
-
-    [Fact]
     public async Task Post_ShouldReturn204_WhenPostedSuccessfully()
     {
         var client = CreateOwningVenueClient(fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).VenueId);

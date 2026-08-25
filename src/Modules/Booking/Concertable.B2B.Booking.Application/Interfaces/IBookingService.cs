@@ -23,6 +23,9 @@ internal interface IBookingService
     Task<IReadOnlyList<BookingSummaryDto>> GetSummariesByApplicationIdsAsync(
         IReadOnlyCollection<int> applicationIds,
         CancellationToken ct = default);
+    Task<int> GetArtistAwaitingCheckoutCountAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
     Task<UnitResult<CancelBookingError>> CancelByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);

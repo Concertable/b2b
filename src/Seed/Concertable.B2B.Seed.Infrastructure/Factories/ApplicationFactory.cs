@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain;
@@ -7,12 +8,69 @@ using Concertable.B2B.Artist.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Opportunity.Domain.Entities;
+using Concertable.B2B.Venue.Domain.Entities;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;
 
 public static class ApplicationFactory
 {
+    private const string SeedPaymentMethodId = "pm_card_visa";
+
+    public static AcceptedApplication ToAcceptedApplication(
+        ApplicationEntity application,
+        ArtistEntity artist,
+        VenueEntity venue,
+        OpportunityEntity opportunity,
+        DealEntity deal,
+        DateTime acceptedAtUtc,
+        Guid operationId)
+    {
+        application.BeginAcceptance(operationId);
+        var venueSignature = new Signature(
+            venue.UserId,
+            acceptedAtUtc,
+            IPAddress.Loopback,
+            null,
+            venue.Name,
+            null);
+        var genres = opportunity.Genres.ToList();
+        var termsText = RenderTerms(deal);
+
+        return deal switch
+        {
+            FlatFeeDealEntity flatFee => new FlatFeeAcceptedApplication(
+                operationId, application.Id, opportunity.Id, artist.Id, venue.Id,
+                opportunity.TenantId, artist.TenantId, deal.PaymentMethod,
+                opportunity.Period.Start, opportunity.Period.End, genres,
+                artist.Name, venue.Name, termsText, "2026-07",
+                application.ArtistESignature, venueSignature, flatFee.Fee),
+            DoorSplitDealEntity doorSplit => new DoorSplitAcceptedApplication(
+                operationId, application.Id, opportunity.Id, artist.Id, venue.Id,
+                opportunity.TenantId, artist.TenantId, deal.PaymentMethod,
+                opportunity.Period.Start, opportunity.Period.End, genres,
+                artist.Name, venue.Name, termsText, "2026-07",
+                application.ArtistESignature, venueSignature, doorSplit.ArtistDoorPercent,
+                SeedPaymentMethodId, application.Verification),
+            VersusDealEntity versus => new VersusAcceptedApplication(
+                operationId, application.Id, opportunity.Id, artist.Id, venue.Id,
+                opportunity.TenantId, artist.TenantId, deal.PaymentMethod,
+                opportunity.Period.Start, opportunity.Period.End, genres,
+                artist.Name, venue.Name, termsText, "2026-07",
+                application.ArtistESignature, venueSignature, versus.Guarantee,
+                versus.ArtistDoorPercent, SeedPaymentMethodId,
+                application.Verification),
+            VenueHireDealEntity venueHire => new VenueHireAcceptedApplication(
+                operationId, application.Id, opportunity.Id, artist.Id, venue.Id,
+                opportunity.TenantId, artist.TenantId, deal.PaymentMethod,
+                opportunity.Period.Start, opportunity.Period.End, genres,
+                artist.Name, venue.Name, termsText, "2026-07",
+                application.ArtistESignature, venueSignature, venueHire.HireFee,
+                ((PrepaidApplication)application).PaymentMethodId),
+            _ => throw new ArgumentOutOfRangeException(nameof(deal), deal, null)
+        };
+    }
+
     public static void FinishConstruction(
         ApplicationEntity application,
         ArtistEntity artist,
@@ -104,4 +162,23 @@ public static class ApplicationFactory
         },
         _ => throw new ArgumentOutOfRangeException(nameof(deal), deal, null)
     };
+
+    private static string RenderTerms(DealEntity deal) => deal switch
+    {
+        FlatFeeDealEntity flatFee =>
+            $"The venue pays the artist a flat fee of {Gbp(flatFee.Fee)}.",
+        DoorSplitDealEntity doorSplit =>
+            $"The artist receives {Percent(doorSplit.ArtistDoorPercent)} of door revenue.",
+        VersusDealEntity versus =>
+            $"The artist receives a guarantee of {Gbp(versus.Guarantee)} plus {Percent(versus.ArtistDoorPercent)} of door revenue.",
+        VenueHireDealEntity venueHire =>
+            $"The artist pays the venue a hire fee of {Gbp(venueHire.HireFee)}.",
+        _ => throw new ArgumentOutOfRangeException(nameof(deal), deal, null)
+    };
+
+    private static string Gbp(decimal amount) =>
+        amount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
+
+    private static string Percent(decimal percent) =>
+        $"{percent.ToString("0.##", CultureInfo.GetCultureInfo("en-GB"))}%";
 }

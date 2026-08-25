@@ -12,7 +12,6 @@
     <ProjectReference Include="..\Concertable.B2B.Opportunity.Application\Concertable.B2B.Opportunity.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Opportunity.Domain\Concertable.B2B.Opportunity.Domain.csproj" />
     <ProjectReference Include="..\..\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
-    <ProjectReference Include="..\..\Application\Concertable.B2B.Application.Contracts\Concertable.B2B.Application.Contracts.csproj" />
     <ProjectReference Include="..\..\Booking\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" />
     <ProjectReference Include="..\..\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
     <ProjectReference Include="..\..\Artist\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" />

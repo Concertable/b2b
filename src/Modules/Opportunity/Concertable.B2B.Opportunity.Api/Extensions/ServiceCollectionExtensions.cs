@@ -15,7 +15,7 @@ public static class ServiceCollectionExtensions
         {
             services.AddOpportunityModule(configuration);
             services.AddOpportunityDevSeeder();
-            services.AddScoped<IOpportunityResponseMapper, OpportunityResponseMapper>();
+            services.AddScoped<IOpportunityMapper, OpportunityMapper>();
             services.AddControllers().AddInternalControllers(typeof(OpportunityController).Assembly);
             return services;
         }

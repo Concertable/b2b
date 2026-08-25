@@ -1,15 +1,17 @@
-using Concertable.B2B.Deal.Contracts.Enums;
-
 namespace Concertable.B2B.Application.Contracts;
 
 public interface IApplicationModule
 {
-    bool RequiresApplyCheckout(DealType dealType);
-    bool RequiresAcceptCheckout(DealType dealType);
     Task<int> GetVenuePendingCountAsync(
         Guid venueTenantId,
         CancellationToken ct = default);
-    Task<ArtistApplicationDashboardCounts> GetArtistDashboardCountsAsync(
+    Task<int> GetArtistPendingCountAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
+    Task<IReadOnlyDictionary<int, int>> GetCountsByOpportunityIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default);
+    Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
 }

@@ -85,7 +85,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id)
     {
-        var opportunityOption = await opportunities.GetDetailsAsync(id);
+        var opportunityOption = await opportunities.GetAsync(id);
         if (!opportunityOption.TryGetValue(out var opportunity) ||
             opportunity.VenueTenantId != tenantContext.TenantId)
             return new ApplicationError.OpportunityForbidden(id);
@@ -176,7 +176,7 @@ internal sealed class ApplicationService : IApplicationService
         if (tenantContext.TenantId is not { } artistTenantId)
             return new ApplyApplicationError.MissingTenant();
 
-        var opportunityOption = await opportunities.GetOpenDetailsAsync(opportunityId);
+        var opportunityOption = await opportunities.GetOpenAsync(opportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
@@ -285,14 +285,14 @@ internal sealed class ApplicationService : IApplicationService
         if (eligibility.TryGetError(out var error))
             return new AcceptApplicationError.Ineligible(error);
 
-        var application = await repository.GetWithVerifyPaymentByIdAsync(applicationId, ct);
+        var application = await repository.GetWithVerifyPaymentForUpdateByIdAsync(applicationId, ct);
         if (application is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
         if (application.State != ApplicationState.Applied)
             return new AcceptApplicationError.InvalidState(application.State);
 
-        var opportunityOption = await opportunities.GetDetailsAsync(application.OpportunityId, ct);
+        var opportunityOption = await opportunities.GetAsync(application.OpportunityId, ct);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
@@ -331,7 +331,7 @@ internal sealed class ApplicationService : IApplicationService
             deal.PaymentMethod,
             opportunity.StartDate,
             opportunity.EndDate,
-            opportunity.Genres,
+            opportunity.Genres.ToList(),
             artist.Name,
             venue.Name,
             termsRenderer.Render(deal),
@@ -357,10 +357,10 @@ internal sealed class ApplicationService : IApplicationService
         if (!accepted.TryGetValue(out var acceptedApplication))
             throw new InvalidOperationException("Acceptance succeeded without an accepted application fact.");
 
-        if (!await opportunities.TryClaimAsync(
+        if ((await opportunities.FillAsync(
                 application.OpportunityId,
                 application.VenueTenantId,
-                ct))
+                ct)).IsFailure)
             return new AcceptApplicationError.OpportunityUnavailable(application.OpportunityId);
 
         application.BeginAcceptance(operationId);
@@ -410,7 +410,7 @@ internal sealed class ApplicationService : IApplicationService
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationEligibilityError.MissingArtist();
 
-        var opportunityOption = await opportunities.GetOpenDetailsAsync(opportunityId);
+        var opportunityOption = await opportunities.GetOpenAsync(opportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationEligibilityError.OpportunityNotFound();
 
@@ -426,7 +426,7 @@ internal sealed class ApplicationService : IApplicationService
         if (application is null)
             return new ApplicationEligibilityError.ApplicationNotFound();
 
-        var opportunityOption = await opportunities.GetDetailsAsync(application.OpportunityId);
+        var opportunityOption = await opportunities.GetAsync(application.OpportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationEligibilityError.OpportunityNotFound();
 

@@ -48,4 +48,9 @@ internal sealed class BookingModule : IBookingModule
             : Option.None<ContractPdf>();
     }
 
+    public Task<int> GetArtistAwaitingCheckoutCountAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default) =>
+        bookingService.GetArtistAwaitingCheckoutCountAsync(artistTenantId, ct);
+
 }

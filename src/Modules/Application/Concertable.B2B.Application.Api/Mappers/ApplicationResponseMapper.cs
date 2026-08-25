@@ -9,12 +9,10 @@ namespace Concertable.B2B.Application.Api.Mappers;
 
 internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
 {
-    private readonly IApplicationModule applications;
     private readonly IBookingModule bookings;
 
-    public ApplicationResponseMapper(IApplicationModule applications, IBookingModule bookings)
+    public ApplicationResponseMapper(IBookingModule bookings)
     {
-        this.applications = applications;
         this.bookings = bookings;
     }
 
@@ -55,7 +53,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
                 Accept: isPending
                     ? new ActionLink($"/api/application/{dto.Id}/accept", HttpMethods.Post)
                     : null,
-                Checkout: isPending && applications.RequiresAcceptCheckout(dto.Opportunity.Deal.DealType)
+                Checkout: isPending && dto.Opportunity.Deal.DealType.RequiresAcceptCheckout()
                     ? new ActionLink($"/api/application/{dto.Id}/checkout", HttpMethods.Post)
                     : null,
                 Decline: isPending
@@ -92,7 +90,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
         ApplicationDto dto,
         BookingSummary? booking)
     {
-        var checkoutCapable = applications.RequiresAcceptCheckout(dto.Opportunity.Deal.DealType);
+        var checkoutCapable = dto.Opportunity.Deal.DealType.RequiresAcceptCheckout();
         var status = booking?.Status switch
         {
             BookingStatus.AwaitingConfirmation or BookingStatus.ConfirmationFailed when checkoutCapable =>
@@ -128,7 +126,7 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
                 dto.Opportunity.VenueName,
                 dto.Opportunity.StartDate,
                 dto.Opportunity.EndDate,
-                dto.Opportunity.Genres,
+                dto.Opportunity.Genres.ToList(),
                 dto.Opportunity.Deal),
             status,
             actions);

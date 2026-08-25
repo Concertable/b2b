@@ -1,3 +1,4 @@
+using Concertable.Contracts;
 using Reunion;
 
 namespace Concertable.B2B.Venue.Contracts;
@@ -11,4 +12,5 @@ public interface IVenueModule
         IReadOnlyCollection<int> venueIds,
         CancellationToken ct = default);
     Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
+    Task<ReviewSummary> GetReviewSummaryAsync(int venueId, CancellationToken ct = default);
 }

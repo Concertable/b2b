@@ -6,10 +6,14 @@ namespace Concertable.B2B.Artist.Infrastructure;
 internal sealed class ArtistModule : IArtistModule
 {
     private readonly IArtistService artistService;
+    private readonly IArtistReviewService reviewService;
 
-    public ArtistModule(IArtistService artistService)
+    public ArtistModule(
+        IArtistService artistService,
+        IArtistReviewService reviewService)
     {
         this.artistService = artistService;
+        this.reviewService = reviewService;
     }
 
     public Task<Option<ArtistSummary>> GetSummaryAsync(
@@ -34,4 +38,9 @@ internal sealed class ArtistModule : IArtistModule
 
     public Task<Option<ArtistProfile>> GetCurrentProfileAsync(CancellationToken ct = default) =>
         artistService.GetCurrentProfileAsync(ct);
+
+    public Task<ReviewSummary> GetReviewSummaryAsync(
+        int artistId,
+        CancellationToken ct = default) =>
+        reviewService.GetSummaryAsync(artistId, ct);
 }

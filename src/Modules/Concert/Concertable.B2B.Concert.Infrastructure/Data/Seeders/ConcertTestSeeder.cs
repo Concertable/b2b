@@ -27,7 +27,6 @@ internal sealed class ConcertTestSeeder : ITestSeeder
     {
         await context.Concerts.SeedIfEmptyAsync(async () =>
         {
-            seed.LinkConcertsToPersistedBookings();
             context.Concerts.AddRange(seed.Concerts);
             await context.SaveChangesAsync(ct);
         });

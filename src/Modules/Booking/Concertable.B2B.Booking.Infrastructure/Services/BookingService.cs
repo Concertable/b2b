@@ -94,6 +94,14 @@ internal sealed class BookingService : IBookingService
                 booking.FinancialFailureMessage))
             .ToList();
 
+    public Task<int> GetArtistAwaitingCheckoutCountAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default) =>
+        bookings.GetAwaitingCheckoutCountByArtistTenantIdAsync(
+            artistTenantId,
+            timeProvider.GetUtcNow().UtcDateTime,
+            ct);
+
     public async Task<UnitResult<CancelBookingError>> CancelByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default)

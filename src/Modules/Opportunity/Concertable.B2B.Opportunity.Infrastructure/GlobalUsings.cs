@@ -9,7 +9,6 @@ global using Concertable.B2B.DataAccess.Infrastructure;
 global using Concertable.B2B.Deal.Contracts;
 global using Concertable.B2B.Opportunity.Contracts;
 global using Concertable.B2B.Opportunity.Domain.Entities;
-global using Concertable.B2B.Opportunity.Application.DTOs;
 global using Concertable.B2B.Opportunity.Application.Interfaces;
 global using Concertable.B2B.Opportunity.Application.Errors;
 global using Concertable.B2B.Opportunity.Application.Requests;

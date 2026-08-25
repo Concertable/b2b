@@ -6,6 +6,8 @@ public sealed record VenueProfile(
     Guid UserId,
     string Name,
     string About,
+    string BannerUrl,
+    string Avatar,
     string Email,
     string County,
     string Town);

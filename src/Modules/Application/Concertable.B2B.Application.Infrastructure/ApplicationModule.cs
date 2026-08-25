@@ -1,6 +1,4 @@
 using Concertable.B2B.Application.Contracts;
-using Concertable.B2B.Deal.Contracts.Enums;
-
 namespace Concertable.B2B.Application.Infrastructure;
 
 internal sealed class ApplicationModule : IApplicationModule
@@ -10,21 +8,24 @@ internal sealed class ApplicationModule : IApplicationModule
     public ApplicationModule(IApplicationDashboardService dashboardService) =>
         this.dashboardService = dashboardService;
 
-    public bool RequiresApplyCheckout(DealType dealType) => dealType == DealType.VenueHire;
-
-    public bool RequiresAcceptCheckout(DealType dealType) => dealType != DealType.VenueHire;
-
     public Task<int> GetVenuePendingCountAsync(
         Guid venueTenantId,
         CancellationToken ct = default) =>
         dashboardService.GetVenuePendingCountAsync(venueTenantId, ct);
 
-    public Task<ArtistApplicationDashboardCounts> GetArtistDashboardCountsAsync(
+    public Task<int> GetArtistPendingCountAsync(
         Guid artistTenantId,
         CancellationToken ct = default) =>
-        dashboardService.GetArtistCountsAsync(
-            artistTenantId,
-            Enum.GetValues<DealType>().Where(RequiresAcceptCheckout).ToHashSet(),
-            ct);
+        dashboardService.GetArtistPendingCountAsync(artistTenantId, ct);
+
+    public Task<IReadOnlyDictionary<int, int>> GetCountsByOpportunityIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default) =>
+        dashboardService.GetCountsByOpportunityIdsAsync(opportunityIds, ct);
+
+    public Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default) =>
+        dashboardService.GetOpportunityIdsForArtistTenantAsync(artistTenantId, ct);
 
 }

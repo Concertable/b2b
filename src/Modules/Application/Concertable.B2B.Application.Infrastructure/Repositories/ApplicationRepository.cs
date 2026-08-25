@@ -72,12 +72,21 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         return row is null ? null : (row.VenueTenantId, row.ArtistTenantId);
     }
 
-    public Task<ApplicationEntity?> GetWithVerifyPaymentByIdAsync(
+    public Task<ApplicationEntity?> GetWithVerifyPaymentForUpdateByIdAsync(
         int applicationId,
-        CancellationToken ct = default) =>
-        context.Applications
+        CancellationToken ct = default)
+    {
+        var sql = $$"""
+            SELECT *
+            FROM [{{Schema.Name}}].[{{Schema.Tables.Applications}}] WITH (UPDLOCK, ROWLOCK)
+            WHERE [Id] = {0}
+            """;
+
+        return context.Applications
+            .FromSqlRaw(sql, applicationId)
             .Include(application => application.VerifyPayment)
             .SingleOrDefaultAsync(application => application.Id == applicationId, ct);
+    }
 
     public async Task RejectAllExceptAsync(
         int opportunityId,

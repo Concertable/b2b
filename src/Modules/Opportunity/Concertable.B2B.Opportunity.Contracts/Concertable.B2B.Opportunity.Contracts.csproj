@@ -8,7 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="Concertable.Contracts" />
+    <PackageReference Include="Dunet" />
     <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
   </ItemGroup>
 
 </Project>

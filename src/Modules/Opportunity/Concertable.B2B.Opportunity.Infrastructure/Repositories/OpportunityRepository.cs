@@ -28,6 +28,21 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
             .Select(o => (int?)o.DealId)
             .FirstOrDefaultAsync();
 
+    public async Task<bool> TryFillAsync(
+        int opportunityId,
+        Guid venueTenantId,
+        CancellationToken ct = default) =>
+        await context.Opportunities
+            .Where(opportunity =>
+                opportunity.Id == opportunityId &&
+                opportunity.TenantId == venueTenantId &&
+                opportunity.State == OpportunityState.Open)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(
+                    opportunity => opportunity.State,
+                    OpportunityState.Filled),
+                ct) == 1;
+
     public async Task<IReadOnlyList<OpportunityEntity>> GetByIdsAsync(IReadOnlyCollection<int> ids) =>
         await context.Opportunities
             .Where(o => ids.Contains(o.Id))

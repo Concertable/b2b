@@ -1,5 +1,7 @@
 using Concertable.B2B.Booking.Domain.Entities;
+using Concertable.B2B.Booking.Domain.State;
 using Concertable.B2B.Booking.Infrastructure.Data;
+using Concertable.B2B.Deal.Contracts.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Repositories;
@@ -39,4 +41,17 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             .Where(booking => booking.Id == bookingId)
             .Select(booking => (int?)booking.ApplicationId)
             .FirstOrDefaultAsync(ct);
+
+    public Task<int> GetAwaitingCheckoutCountByArtistTenantIdAsync(
+        Guid artistTenantId,
+        DateTime now,
+        CancellationToken ct = default) =>
+        context.Bookings.CountAsync(
+            booking =>
+                booking.ArtistTenantId == artistTenantId &&
+                booking.EndDate > now &&
+                booking.DealType != DealType.VenueHire &&
+                (booking.State == BookingState.AwaitingConfirmation ||
+                 booking.State == BookingState.ConfirmationFailed),
+            ct);
 }

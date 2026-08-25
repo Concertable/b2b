@@ -6,15 +6,15 @@ namespace Concertable.B2B.Application.Application.DTOs;
 internal sealed record ApplicationDto(
     int Id,
     ArtistSummary Artist,
-    OpportunitySnapshot Opportunity,
+    OpportunitySummary Opportunity,
     ApplicationStatus Status,
     ApplicationState State);
 
-internal sealed record OpportunitySnapshot(
+internal sealed record OpportunitySummary(
     int Id,
     int VenueId,
     string VenueName,
     DateTime StartDate,
     DateTime EndDate,
-    IReadOnlyList<Genre> Genres,
+    IReadOnlySet<Genre> Genres,
     DealDto Deal);

@@ -35,9 +35,9 @@ internal sealed class ApplicationMapper : IApplicationMapper
         var artistsById = (await artists.GetSummariesAsync(
                 applicationList.Select(application => application.ArtistId).Distinct().ToArray()))
             .ToDictionary(artist => artist.Id);
-        var opportunitiesById = (await opportunities.GetDetailsAsync(
+        var opportunitiesById = (await opportunities.GetAsync(
                 applicationList.Select(application => application.OpportunityId).Distinct().ToArray()))
-            .ToDictionary(opportunity => opportunity.OpportunityId);
+            .ToDictionary(opportunity => opportunity.Id);
         var dealsById = (await deals.GetByIdsAsync(
                 opportunitiesById.Values.Select(opportunity => opportunity.DealId).Distinct()))
             .ToDictionary(deal => deal.Id);
@@ -55,16 +55,16 @@ internal sealed class ApplicationMapper : IApplicationMapper
                     $"Opportunity {application.OpportunityId} not found for application {application.Id}.");
             if (!dealsById.TryGetValue(opportunity.DealId, out var deal))
                 throw new InvalidOperationException(
-                    $"Deal {opportunity.DealId} not found for opportunity {opportunity.OpportunityId}.");
+                    $"Deal {opportunity.DealId} not found for opportunity {opportunity.Id}.");
             if (!venuesById.TryGetValue(opportunity.VenueId, out var venue))
                 throw new InvalidOperationException(
-                    $"Venue {opportunity.VenueId} not found for opportunity {opportunity.OpportunityId}.");
+                    $"Venue {opportunity.VenueId} not found for opportunity {opportunity.Id}.");
 
             return new ApplicationDto(
                 application.Id,
                 artist,
-                new OpportunitySnapshot(
-                    opportunity.OpportunityId,
+                new OpportunitySummary(
+                    opportunity.Id,
                     opportunity.VenueId,
                     venue.Name,
                     opportunity.StartDate,

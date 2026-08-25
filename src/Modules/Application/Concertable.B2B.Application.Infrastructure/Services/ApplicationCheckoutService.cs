@@ -39,7 +39,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     public async Task<Result<Checkout, ApplicationCheckoutError>> CreateApplyCheckoutAsync(
         int opportunityId)
     {
-        var opportunityOption = await opportunities.GetOpenDetailsAsync(opportunityId);
+        var opportunityOption = await opportunities.GetOpenAsync(opportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationCheckoutError.OpportunityNotFound();
 
@@ -73,7 +73,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         if (application is null)
             return new ApplicationCheckoutError.ApplicationNotFound();
 
-        var opportunityOption = await opportunities.GetDetailsAsync(application.OpportunityId);
+        var opportunityOption = await opportunities.GetAsync(application.OpportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationCheckoutError.OpportunityNotFound();
 

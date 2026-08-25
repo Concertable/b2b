@@ -12,84 +12,81 @@ namespace Concertable.B2B.Opportunity.Api.Controllers;
 internal sealed class OpportunityController : ControllerBase
 {
     private readonly IOpportunityService opportunityService;
-    private readonly IOpportunityDashboardService dashboardService;
-    private readonly IOpportunityResponseMapper mapper;
+    private readonly IOpportunityMapper mapper;
 
     public OpportunityController(
         IOpportunityService opportunityService,
-        IOpportunityDashboardService dashboardService,
-        IOpportunityResponseMapper mapper)
+        IOpportunityMapper mapper)
     {
         this.opportunityService = opportunityService;
-        this.dashboardService = dashboardService;
         this.mapper = mapper;
     }
 
     [HttpGet("active/venue/{id}")]
-    public async Task<IActionResult> GetActiveByVenueId(int id, [FromQuery] PageParams pageParams)
+    public async Task<ActionResult<IPagination<OpportunityResponse>>> GetActiveByVenueId(
+        int id,
+        [FromQuery] PageParams pageParams,
+        CancellationToken ct)
     {
         var page = await opportunityService.GetActiveByVenueIdAsync(id, pageParams);
-        return Ok(mapper.ToResponses(page));
+        return Ok(await mapper.ToResponsesAsync(page, ct));
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<OpportunityResponse>> GetById(int id)
+    public async Task<ActionResult<OpportunityResponse>> GetById(
+        int id,
+        CancellationToken ct)
     {
-        return (await opportunityService.GetByIdAsync(id))
-            .ToOkOrProblem(mapper.ToResponse);
+        var result = await opportunityService.GetByIdAsync(id);
+        return (await result.MapAsync(
+            opportunity => mapper.ToResponseAsync(opportunity, ct)))
+            .ToOkOrProblem();
     }
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPost]
-    public async Task<ActionResult<OpportunityResponse>> Create([FromBody] OpportunityRequest request) =>
-        (await opportunityService.CreateAsync(request))
+    public async Task<ActionResult<OpportunityResponse>> Create(
+        [FromBody] OpportunityRequest request,
+        CancellationToken ct) =>
+        (await (await opportunityService.CreateAsync(request))
+            .MapAsync(opportunity => mapper.ToResponseAsync(opportunity, ct)))
             .ToCreatedOrProblem(
-                mapper.ToResponse,
                 opportunity => $"/api/opportunity/{opportunity.Id}");
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPost("bulk")]
-    public async Task<IActionResult> CreateMultiple([FromBody] IEnumerable<OpportunityRequest> requests)
+    public async Task<ActionResult> CreateMultiple([FromBody] IEnumerable<OpportunityRequest> requests)
     {
         var result = await opportunityService.CreateMultipleAsync(requests);
         return result.ToActionResult(() => Created());
     }
 
     [HttpGet("/api/venue/{venueId:int}/opportunities")]
-    public async Task<IActionResult> GetByVenueId(int venueId)
+    public async Task<ActionResult<IReadOnlyList<OpportunityResponse>>> GetByVenueId(
+        int venueId,
+        CancellationToken ct)
     {
         var opportunities = await opportunityService.GetActiveByVenueIdAsync(venueId);
-        return Ok(mapper.ToResponses(opportunities));
+        return Ok(await mapper.ToResponsesAsync(opportunities, ct));
     }
 
     [HasPermission(VenuePermissions.OpportunitiesManage)]
     [HttpPut("/api/venue/{venueId:int}/opportunities")]
-    public async Task<ActionResult<List<OpportunityResponse>>> Update(
+    public async Task<ActionResult<IReadOnlyList<OpportunityResponse>>> Update(
         int venueId,
-        [FromBody] IEnumerable<OpportunityRequest> desired)
+        [FromBody] IEnumerable<OpportunityRequest> desired,
+        CancellationToken ct)
     {
-        var result = (await opportunityService.UpdateAsync(venueId, desired))
-            .Map(opportunities => mapper.ToResponses(opportunities).ToList());
-        return result.ToOkOrProblem();
+        var result = await opportunityService.UpdateAsync(venueId, desired);
+        return (await result.MapAsync(
+            opportunities => mapper.ToResponsesAsync(opportunities, ct)))
+            .ToOkOrProblem();
     }
 
     [HttpGet("{id}/ownership")]
-    public async Task<IActionResult> IsOwner(int id)
+    public async Task<ActionResult<bool>> IsOwner(int id)
     {
         return Ok(await opportunityService.OwnsOpportunityAsync(id));
     }
 
-    [HttpGet("venue/current")]
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(SharedPermissions.OperationsView)]
-    public async Task<ActionResult<IReadOnlyList<OpportunityApplicationMetricsResponse>>> GetOpenForCurrentVenue() =>
-        (await dashboardService.GetApplicationMetricsForCurrentVenueAsync())
-            .ToOkOrProblem(metrics => metrics.ToApplicationMetricsResponses());
-
-    [HttpGet("artist/recommended")]
-    [RequiredTenantType(TenantType.Artist)]
-    [HasPermission(SharedPermissions.OperationsView)]
-    public async Task<ActionResult<IReadOnlyList<OpportunityMatchResponse>>> GetRecommendedForCurrentArtist() =>
-        (await dashboardService.GetMatchesForCurrentArtistAsync())
-            .ToOkOrProblem(matches => matches.ToMatchResponses());
 }

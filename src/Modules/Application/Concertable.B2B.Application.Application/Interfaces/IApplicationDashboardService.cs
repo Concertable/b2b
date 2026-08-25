@@ -1,6 +1,3 @@
-using Concertable.B2B.Application.Contracts;
-using Concertable.B2B.Deal.Contracts.Enums;
-
 namespace Concertable.B2B.Application.Application.Interfaces;
 
 internal interface IApplicationDashboardService
@@ -8,8 +5,13 @@ internal interface IApplicationDashboardService
     Task<int> GetVenuePendingCountAsync(
         Guid venueTenantId,
         CancellationToken ct = default);
-    Task<ArtistApplicationDashboardCounts> GetArtistCountsAsync(
+    Task<int> GetArtistPendingCountAsync(
         Guid artistTenantId,
-        IReadOnlySet<DealType> acceptCheckoutDealTypes,
+        CancellationToken ct = default);
+    Task<IReadOnlyDictionary<int, int>> GetCountsByOpportunityIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default);
+    Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
+        Guid artistTenantId,
         CancellationToken ct = default);
 }

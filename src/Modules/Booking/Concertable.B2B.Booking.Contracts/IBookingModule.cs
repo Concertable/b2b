@@ -16,6 +16,9 @@ public interface IBookingModule
     Task<Option<ContractPdf>> GetContractPdfByBookingIdAsync(
         int bookingId,
         CancellationToken ct = default);
+    Task<int> GetArtistAwaitingCheckoutCountAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
 }
 
 public sealed record BookingSummary(

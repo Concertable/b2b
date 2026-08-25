@@ -1,4 +1,5 @@
 using Concertable.B2B.Opportunity.Domain.Entities;
+
 namespace Concertable.B2B.Opportunity.Infrastructure.Extensions;
 
 internal static class QueryableOpportunityExtensions

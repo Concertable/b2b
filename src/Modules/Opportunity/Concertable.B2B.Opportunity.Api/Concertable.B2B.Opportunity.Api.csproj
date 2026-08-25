@@ -12,6 +12,7 @@
     <ProjectReference Include="..\Concertable.B2B.Opportunity.Application\Concertable.B2B.Opportunity.Application.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Opportunity.Infrastructure\Concertable.B2B.Opportunity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Application\Concertable.B2B.Application.Contracts\Concertable.B2B.Application.Contracts.csproj" />
+    <ProjectReference Include="..\..\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
     <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>

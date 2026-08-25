@@ -11,5 +11,5 @@ public static class OpportunityFactory
         => Create(venueId, period, dealId, genres).WithId(id);
 
     public static OpportunityEntity Create(int venueId, DateRange period, int dealId, IEnumerable<Genre>? genres = null)
-        => OpportunityEntity.Create(venueId, period, dealId, genres);
+        => OpportunityEntity.Create(venueId, period, dealId, genres?.ToHashSet() ?? []);
 }

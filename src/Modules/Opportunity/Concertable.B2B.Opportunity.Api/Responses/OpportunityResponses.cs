@@ -22,21 +22,3 @@ internal sealed record OpportunitySummaryResponse(
     DateTime EndDate,
     IReadOnlyList<Genre> Genres,
     DealDto Deal);
-
-internal sealed record OpportunityApplicationMetricsResponse(
-    OpportunitySummaryResponse Opportunity,
-    int ApplicationCount,
-    int DaysUntilDeadline);
-
-internal sealed record OpportunityMatchResponse(
-    int Id,
-    int VenueId,
-    string VenueName,
-    string County,
-    string Town,
-    DateTime StartDate,
-    DateTime EndDate,
-    IReadOnlyList<Genre> Genres,
-    DealDto Deal,
-    int FitScore,
-    string Href);

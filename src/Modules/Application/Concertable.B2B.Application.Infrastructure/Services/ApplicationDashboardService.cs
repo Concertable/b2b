@@ -1,8 +1,6 @@
 using Concertable.B2B.Application.Application.Interfaces;
 using Concertable.B2B.Application.Application.Models;
-using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.State;
-using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Opportunity.Contracts;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
@@ -29,22 +27,26 @@ internal sealed class ApplicationDashboardService : IApplicationDashboardService
         return applications.Count(application => upcomingOpportunityIds.Contains(application.OpportunityId));
     }
 
-    public async Task<ArtistApplicationDashboardCounts> GetArtistCountsAsync(
+    public async Task<int> GetArtistPendingCountAsync(
         Guid artistTenantId,
-        IReadOnlySet<DealType> acceptCheckoutDealTypes,
         CancellationToken ct = default)
     {
         var applications = await repository.GetArtistDashboardProjectionsAsync(artistTenantId, ct);
         var upcomingOpportunityIds = await GetUpcomingOpportunityIdsAsync(applications, ct);
-        return new ArtistApplicationDashboardCounts(
-            applications.Count(application =>
-                application.State == ApplicationState.Applied &&
-                upcomingOpportunityIds.Contains(application.OpportunityId)),
-            applications.Count(application =>
-                application.State == ApplicationState.Accepted &&
-                acceptCheckoutDealTypes.Contains(application.DealType) &&
-                upcomingOpportunityIds.Contains(application.OpportunityId)));
+        return applications.Count(application =>
+            application.State == ApplicationState.Applied &&
+            upcomingOpportunityIds.Contains(application.OpportunityId));
     }
+
+    public Task<IReadOnlyDictionary<int, int>> GetCountsByOpportunityIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default) =>
+        repository.GetCountsByOpportunityIdsAsync(opportunityIds, ct);
+
+    public Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default) =>
+        repository.GetOpportunityIdsForArtistTenantAsync(artistTenantId, ct);
 
     private Task<IReadOnlySet<int>> GetUpcomingOpportunityIdsAsync(
         IEnumerable<ApplicationDashboardProjection> applications,

@@ -8,5 +8,7 @@ public sealed record ArtistProfile(
     Guid UserId,
     string Name,
     string About,
+    string BannerUrl,
+    string Avatar,
     string Email,
     IReadOnlySet<Genre> Genres);

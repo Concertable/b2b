@@ -45,21 +45,11 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IOpportunityReadDbContext>(
                 sp => sp.GetRequiredService<OpportunityReadDbContext>());
 
-            services.AddDbContext<OpportunityHandoffDbContext>((sp, options) =>
-                options.UseSqlServer(
-                        configuration.GetConnectionString(B2BDb.Name),
-                        sql => sql.UseNetTopologySuite())
-                    .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
-
             services.AddScoped<IUnitOfWork<OpportunityDbContext>, UnitOfWork<OpportunityDbContext>>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IOpportunityRepository, OpportunityRepository>();
             services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
-            services.AddScoped<IOpportunityHandoffRepository, OpportunityHandoffRepository>();
             services.AddScoped<IOpportunityService, OpportunityService>();
-            services.AddScoped<IOpportunityHandoffService, OpportunityHandoffService>();
-            services.AddScoped<IOpportunityDashboardService, OpportunityDashboardService>();
-            services.AddScoped<IOpportunityMapper, OpportunityMapper>();
             services.AddScoped<IOpportunitySyncer, OpportunitySyncer>();
             services.AddScoped<IOpportunityModule, OpportunityModule>();
             services.AddScoped<OpportunityCancellationIntegrationEventHandler>();
@@ -72,7 +62,8 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IEntityTypeConfigurationProvider>(
                 sp => sp.GetRequiredService<OpportunityConfigurationProvider>());
 
-            services.AddValidatorsFromAssemblyContaining<OpportunityDtoValidator>();
+            services.AddValidatorsFromAssemblyContaining<OpportunityRequestValidator>(
+                includeInternalTypes: true);
 
             return services;
         }
