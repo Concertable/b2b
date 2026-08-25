@@ -12,6 +12,6 @@ internal interface IVerificationService
     /// <summary>Submits or resubmits evidence for the active tenant. Creates the first row when none exists;
     /// otherwise only legal while <see cref="Domain.Enums.TenantVerificationStatus.Rejected"/>.</summary>
     Task<Result<VerificationStatusDto, SubmitVerificationError>> SubmitAsync(
-        SubmitVerificationRequest request,
+        IReadOnlyList<EvidenceUpload> uploads,
         CancellationToken ct = default);
 }

@@ -6,7 +6,6 @@ using Concertable.B2B.Tenant.Domain.Enums;
 using Concertable.B2B.Tenant.Infrastructure.Services;
 using Concertable.Kernel.Identity;
 using Concertable.Shared.Blob.Application;
-using Microsoft.AspNetCore.Http;
 using Moq;
 
 namespace Concertable.B2B.Tenant.UnitTests;
@@ -30,11 +29,8 @@ public sealed class VerificationServiceTests
             TimeProvider.System);
     }
 
-    private static SubmitVerificationRequest BuildRequest() => new()
-    {
-        Files = new FormFileCollection { Mock.Of<IFormFile>(f => f.FileName == "licence.pdf") },
-        DocumentTypes = [VerificationDocumentType.Licence],
-    };
+    private static IReadOnlyList<EvidenceUpload> BuildUploads() =>
+        [new EvidenceUpload(Stream.Null, ".pdf", VerificationDocumentType.Licence)];
 
     #region GetOwnAsync
 
@@ -100,7 +96,7 @@ public sealed class VerificationServiceTests
             .Setup(r => r.InsertAsync(It.IsAny<TenantVerificationEntity>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((TenantVerificationEntity entity, CancellationToken _) => entity);
 
-        var result = await service.SubmitAsync(BuildRequest());
+        var result = await service.SubmitAsync(BuildUploads());
 
         Assert.True(result.TryGetValue(out var dto));
         Assert.Equal(TenantVerificationStatus.Pending, dto.Status);
@@ -129,7 +125,7 @@ public sealed class VerificationServiceTests
             .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(verification);
 
-        var result = await service.SubmitAsync(BuildRequest());
+        var result = await service.SubmitAsync(BuildUploads());
 
         Assert.True(result.TryGetError(out var error));
         var notEligible = Assert.IsType<SubmitVerificationError.NotEligible>(error);
@@ -153,7 +149,7 @@ public sealed class VerificationServiceTests
             .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(verification);
 
-        var result = await service.SubmitAsync(BuildRequest());
+        var result = await service.SubmitAsync(BuildUploads());
 
         Assert.True(result.TryGetValue(out var dto));
         Assert.Equal(TenantVerificationStatus.Pending, dto.Status);
