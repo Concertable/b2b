@@ -37,3 +37,5 @@ export function paymentSummary(amount: PaymentAmount): {
       };
   }
 }
+
+export const summaryFor = paymentSummary;
