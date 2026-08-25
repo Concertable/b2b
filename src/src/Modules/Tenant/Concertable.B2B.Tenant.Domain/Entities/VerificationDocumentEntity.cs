@@ -33,9 +33,10 @@ public sealed class VerificationDocumentEntity : IIdEntity
         };
     }
 
-    /// <summary>The evidence blob-naming convention — the domain's rule, not infrastructure's to invent
-    /// inline. <paramref name="fileExtension"/> includes the leading dot (as <see cref="Path.GetExtension"/>
-    /// returns it), or is empty for an extensionless upload.</summary>
-    public static string BuildBlobName(Guid tenantId, VerificationDocumentType documentType, string fileExtension) =>
-        $"verification-evidence/{tenantId}-{documentType}-{Guid.NewGuid()}{fileExtension}";
+    /// <summary>Creates evidence for an uploaded file, deriving its own blob name — the naming convention
+    /// is the domain's rule, not infrastructure's to invent inline. <paramref name="fileExtension"/>
+    /// includes the leading dot (as <see cref="Path.GetExtension"/> returns it), or is empty.</summary>
+    public static VerificationDocumentEntity Create(
+        Guid tenantId, VerificationDocumentType documentType, string fileExtension, DateTime uploadedAt) =>
+        Create(documentType, $"verification-evidence/{tenantId}-{documentType}-{Guid.NewGuid()}{fileExtension}", uploadedAt);
 }

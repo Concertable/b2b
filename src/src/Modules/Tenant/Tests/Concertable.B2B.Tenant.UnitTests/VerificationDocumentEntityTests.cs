@@ -39,24 +39,24 @@ public sealed class VerificationDocumentEntityTests
     }
 
     [Fact]
-    public void BuildBlobName_IncludesTenantDocumentTypeAndExtension()
+    public void Create_FromUpload_DerivesBlobNameFromTenantDocumentTypeAndExtension()
     {
         var tenantId = Guid.NewGuid();
 
-        var blobName = VerificationDocumentEntity.BuildBlobName(tenantId, VerificationDocumentType.Licence, ".pdf");
+        var document = VerificationDocumentEntity.Create(tenantId, VerificationDocumentType.Licence, ".pdf", UploadedAt);
 
-        Assert.StartsWith($"verification-evidence/{tenantId}-Licence-", blobName);
-        Assert.EndsWith(".pdf", blobName);
+        Assert.StartsWith($"verification-evidence/{tenantId}-Licence-", document.BlobName);
+        Assert.EndsWith(".pdf", document.BlobName);
     }
 
     [Fact]
-    public void BuildBlobName_CalledTwice_ReturnsDistinctNames()
+    public void Create_FromUpload_CalledTwice_ProducesDistinctBlobNames()
     {
         var tenantId = Guid.NewGuid();
 
-        var first = VerificationDocumentEntity.BuildBlobName(tenantId, VerificationDocumentType.Licence, ".pdf");
-        var second = VerificationDocumentEntity.BuildBlobName(tenantId, VerificationDocumentType.Licence, ".pdf");
+        var first = VerificationDocumentEntity.Create(tenantId, VerificationDocumentType.Licence, ".pdf", UploadedAt);
+        var second = VerificationDocumentEntity.Create(tenantId, VerificationDocumentType.Licence, ".pdf", UploadedAt);
 
-        Assert.NotEqual(first, second);
+        Assert.NotEqual(first.BlobName, second.BlobName);
     }
 }
