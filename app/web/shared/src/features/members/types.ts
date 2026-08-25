@@ -29,6 +29,4 @@ export interface Invitation {
   expiresAt: string;
 }
 
-export interface ChangeMemberRoleRequest {
-  role: TenantRole;
-}
+export type ChangeMemberRoleRequest = Pick<Member, "role">;

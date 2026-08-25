@@ -4,9 +4,9 @@ import { useForm } from "react-hook-form";
 import concertApi from "@concertable/shared/features/concerts/api/concertApi";
 import { concertKeys } from "@concertable/shared/features/concerts/hooks/useConcertQuery";
 import { updateConcertRequestSchema } from "@concertable/shared/features/concerts/schemas/updateConcertRequestSchema";
-import {
+import type {
   Concert,
-  type UpdateConcertRequest,
+  UpdateConcertRequest,
 } from "@concertable/shared/features/concerts/types";
 import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
 import { useConcertStore } from "../store/useConcertStore";
@@ -68,13 +68,11 @@ export function useMyConcert(id: number): UseMyConcertResult {
       queryClient.setQueryData<MyConcert>(concertKeys.my(id), (previous) =>
         previous ? { ...previous, ...saved } : undefined,
       );
-      reset(Concert.toUpdateRequest(saved));
       endEdit();
     },
   });
 
   const resetDraft = () => {
-    if (concert) reset(Concert.toUpdateRequest(concert));
     endEdit();
   };
 
@@ -82,8 +80,7 @@ export function useMyConcert(id: number): UseMyConcertResult {
     if (editMode) {
       resetDraft();
     } else if (concert) {
-      reset(Concert.toUpdateRequest(concert));
-      beginEdit(concert);
+      reset(beginEdit(concert));
     }
   };
 

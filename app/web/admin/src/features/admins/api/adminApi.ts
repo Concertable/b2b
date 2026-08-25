@@ -1,6 +1,9 @@
 import { apiClient } from "@concertable/web/lib/apiClient";
-import type { AdminInvitation, AdminOverview } from "../types";
-import type { InviteAdminRequest } from "../schemas/inviteAdminRequestSchema";
+import type {
+  AdminInvitation,
+  AdminOverview,
+  InviteAdminRequest,
+} from "../types";
 
 const BASE = "/Admin";
 const INVITATION_BASE = "/AdminInvitation";

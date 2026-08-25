@@ -7,7 +7,9 @@ export interface ConcertState {
     | Pick<Concert, "name" | "about" | "price" | "totalTickets">
     | undefined;
   editMode: boolean;
-  beginEdit: (concert: NonNullable<ConcertState["draft"]>) => void;
+  beginEdit: (
+    concert: NonNullable<ConcertState["draft"]>,
+  ) => NonNullable<ConcertState["draft"]>;
   endEdit: () => void;
   setName: (name: string) => void;
   setAbout: (about: string) => void;
@@ -19,16 +21,19 @@ export const useConcertStore = create<ConcertState>()(
   immer((set) => ({
     draft: undefined,
     editMode: false,
-    beginEdit: (concert) =>
+    beginEdit: (concert) => {
+      const draft = {
+        name: concert.name,
+        about: concert.about,
+        price: concert.price,
+        totalTickets: concert.totalTickets,
+      };
       set((state) => {
-        state.draft = {
-          name: concert.name,
-          about: concert.about,
-          price: concert.price,
-          totalTickets: concert.totalTickets,
-        };
+        state.draft = draft;
         state.editMode = true;
-      }),
+      });
+      return draft;
+    },
     endEdit: () =>
       set((state) => {
         state.draft = undefined;
