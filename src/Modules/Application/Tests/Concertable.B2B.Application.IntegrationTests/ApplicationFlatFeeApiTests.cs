@@ -78,6 +78,15 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
             .OfType<StandardApplication>()
             .FirstOrDefaultAsync(value => value.OpportunityId == opportunity.Id);
         Assert.NotNull(standard);
+        var emails = (await fixture.GetStagedEmailsAsync())
+            .Where(email => email.Subject == "Concert Application")
+            .ToList();
+        Assert.Equal(2, emails.Count);
+        Assert.Contains(emails, email => email.To == fixture.SeedState.VenueManager1.Email);
+        Assert.Contains(emails, email => email.To == fixture.SeedState.VenueManager3.Email);
+        Assert.All(emails, email => Assert.Equal(
+            $"{fixture.SeedState.ArtistManager1.Email} has applied to your concert opportunity",
+            email.Body));
     }
 
     [Fact]
@@ -90,6 +99,13 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
+        var acceptedEmail = Assert.Single(
+            await fixture.GetStagedEmailsAsync(),
+            email => email.Subject == "Concert Application Accepted");
+        Assert.Equal(fixture.SeedState.ArtistManager1.Email, acceptedEmail.To);
+        Assert.Equal(
+            "Your application was accepted! A concert has been scheduled for you.",
+            acceptedEmail.Body);
         await fixture.StripeClient.SendWebhookAsync();
 
         var response = await client.PostAsync(
