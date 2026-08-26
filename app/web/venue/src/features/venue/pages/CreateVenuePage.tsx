@@ -31,6 +31,8 @@ export function CreateVenuePage() {
   const avatar = useVenueStore((s) => s.avatar);
   const setName = useVenueStore((s) => s.setName);
   const setAbout = useVenueStore((s) => s.setAbout);
+  const setBanner = useVenueStore((s) => s.setBanner);
+  const setAvatar = useVenueStore((s) => s.setAvatar);
   const beginEdit = useVenueStore((s) => s.beginEdit);
   const endEdit = useVenueStore((s) => s.endEdit);
 
@@ -59,7 +61,14 @@ export function CreateVenuePage() {
 
   if (!draft) return null;
 
-  const hero = <VenueHero venue={draft} onNameChange={setName} />;
+  const hero = (
+    <VenueHero
+      venue={draft}
+      onNameChange={setName}
+      onBannerChange={setBanner}
+      onAvatarChange={setAvatar}
+    />
+  );
   const { about, location, concerts } = venueSections(draft, {
     onAboutChange: setAbout,
   });
