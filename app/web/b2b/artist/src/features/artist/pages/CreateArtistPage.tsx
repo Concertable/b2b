@@ -32,6 +32,8 @@ export function CreateArtistPage() {
   const avatar = useArtistStore((s) => s.avatar);
   const setName = useArtistStore((s) => s.setName);
   const setAbout = useArtistStore((s) => s.setAbout);
+  const setBanner = useArtistStore((s) => s.setBanner);
+  const setAvatar = useArtistStore((s) => s.setAvatar);
   const beginEdit = useArtistStore((s) => s.beginEdit);
   const endEdit = useArtistStore((s) => s.endEdit);
 
@@ -61,7 +63,14 @@ export function CreateArtistPage() {
 
   if (!draft) return null;
 
-  const hero = <ArtistHero artist={draft} onNameChange={setName} />;
+  const hero = (
+    <ArtistHero
+      artist={draft}
+      onNameChange={setName}
+      onBannerChange={setBanner}
+      onAvatarChange={setAvatar}
+    />
+  );
   const { about, location, concerts } = artistSections(draft, {
     onAboutChange: setAbout,
   });
