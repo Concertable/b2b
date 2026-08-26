@@ -2,6 +2,7 @@ using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Tenant.Domain.Enums;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
@@ -14,6 +15,7 @@ internal sealed class VerificationAdminService : IVerificationAdminService
     private readonly IVerificationNotifier notifier;
     private readonly ICurrentUser currentUser;
     private readonly TimeProvider timeProvider;
+    private readonly ILogger<VerificationAdminService> logger;
 
     public VerificationAdminService(
         IVerificationRepository repository,
@@ -22,7 +24,8 @@ internal sealed class VerificationAdminService : IVerificationAdminService
         IArtistModule artistModule,
         IVerificationNotifier notifier,
         ICurrentUser currentUser,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILogger<VerificationAdminService> logger)
     {
         this.repository = repository;
         this.tenantRepository = tenantRepository;
@@ -31,6 +34,7 @@ internal sealed class VerificationAdminService : IVerificationAdminService
         this.notifier = notifier;
         this.currentUser = currentUser;
         this.timeProvider = timeProvider;
+        this.logger = logger;
     }
 
     public async Task<IPagination<PendingVerificationDto>> GetPendingAsync(
@@ -38,7 +42,14 @@ internal sealed class VerificationAdminService : IVerificationAdminService
         CancellationToken ct = default)
     {
         var pending = await repository.GetPendingAsync(pageParams);
-        var rows = await Task.WhenAll(pending.Data.Select(p => ToDtoAsync(p, ct)));
+
+        // Sequential, not Task.WhenAll: two pending rows of the same TenantType would otherwise run
+        // concurrent queries against the same scoped Venue/ArtistReadDbContext instance, which EF Core
+        // forbids ("a second operation was started on this context before a previous operation completed").
+        var rows = new List<PendingVerificationDto>(pending.Data.Count);
+        foreach (var row in pending.Data)
+            rows.Add(await ToDtoAsync(row, ct));
+
         return new Pagination<PendingVerificationDto>(rows, pending.TotalCount, pending.PageNumber, pending.PageSize);
     }
 
@@ -74,9 +85,19 @@ internal sealed class VerificationAdminService : IVerificationAdminService
         transition(verification);
         await repository.SaveChangesAsync(ct);
 
-        var tenant = await tenantRepository.GetByIdAsync(tenantId, ct);
-        var contactEmail = tenant is null ? null : (await GetContactAsync(tenant.Type, tenantId, ct)).Email;
-        await notify(verification, contactEmail);
+        try
+        {
+            var tenant = await tenantRepository.GetByIdAsync(tenantId, ct);
+            var contactEmail = tenant is null ? null : (await GetContactAsync(tenant.Type, tenantId, ct)).Email;
+            await notify(verification, contactEmail);
+        }
+        catch (Exception exception)
+        {
+            // The persisted review decision is the record the admin action turns on; a notification
+            // failure must not fail a request whose write already committed, or a retry just hits
+            // VerificationReviewError.NotPending against the decision that already landed.
+            logger.VerificationReviewNotificationFailed(tenantId, exception);
+        }
 
         return new Success();
     }

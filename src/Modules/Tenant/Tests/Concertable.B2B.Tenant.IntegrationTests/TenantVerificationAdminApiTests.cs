@@ -123,6 +123,27 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         Assert.DoesNotContain(page!.Data, r => r.TenantId == TenantOf(fixture.SeedState.VenueManager1.Id));
     }
 
+    /// <summary>Pins that contact enrichment awaits sequentially: two pending rows sharing a
+    /// <see cref="TenantType"/> would run concurrent queries against the same scoped Venue/ArtistReadDbContext
+    /// instance if enrichment ran in parallel, which EF Core rejects.</summary>
+    [Fact]
+    public async Task GetPending_ShouldReturn200_WhenTwoPendingRowsShareTenantType()
+    {
+        var firstTenantId = TenantOf(fixture.SeedState.UnverifiedVenueManager.Id);
+        var secondTenantId = TenantOf(fixture.SeedState.VenueManagerNoVenue.Id);
+        var submittedAt = fixture.SeedNow.AddDays(-1);
+        await fixture.AddPendingVerificationAsync(firstTenantId, VerificationDocumentType.Licence, submittedAt);
+        await fixture.AddPendingVerificationAsync(secondTenantId, VerificationDocumentType.Licence, submittedAt);
+        var admin = fixture.CreateClient(fixture.SeedState.Admin);
+
+        var response = await admin.GetAsync("/api/tenant/verification/pending");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var page = await response.Content.ReadAsync<PendingVerificationPage>();
+        Assert.Contains(page!.Data, r => r.TenantId == firstTenantId);
+        Assert.Contains(page.Data, r => r.TenantId == secondTenantId);
+    }
+
     #endregion
 
     #region Approve
