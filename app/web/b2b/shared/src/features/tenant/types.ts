@@ -1,4 +1,4 @@
-import type { User } from "@concertable/web/features/auth";
+import type { User } from "@concertable/web/features/auth/types";
 import type { TENANT_ROLES } from "./constants";
 
 export type TenantType = "venue" | "artist";
