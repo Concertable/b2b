@@ -326,6 +326,12 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.NotFound
         },
         {
+            new OpportunityMutationError.VenueNotVerified(),
+            "opportunity.venue_not_verified",
+            "This venue is not yet verified.",
+            ErrorKind.Forbidden
+        },
+        {
             new OpportunityMutationError.VenueForbidden(),
             "opportunity.venue_forbidden",
             "You do not own this venue.",

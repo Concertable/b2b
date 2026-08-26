@@ -14,4 +14,9 @@ internal interface IVerificationService
     Task<Result<VerificationStatusDto, SubmitVerificationError>> SubmitAsync(
         IReadOnlyList<EvidenceUpload> uploads,
         CancellationToken ct = default);
+
+    /// <summary>Whether the given tenant is <see cref="Domain.Enums.TenantVerificationStatus.Approved"/> — false
+    /// when the tenant has never submitted (fail-closed) or is <c>Pending</c>/<c>Rejected</c>. Cross-module
+    /// consumers reach this through <see cref="Contracts.ITenantModule.IsVerifiedAsync"/>.</summary>
+    Task<bool> IsVerifiedAsync(Guid tenantId, CancellationToken ct = default);
 }

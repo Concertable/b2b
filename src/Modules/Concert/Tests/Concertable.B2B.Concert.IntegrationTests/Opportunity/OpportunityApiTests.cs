@@ -95,6 +95,23 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Create_ShouldReturn403_WhenVenueNotVerified()
+    {
+        // Arrange — SeedState.UnverifiedVenueManager owns a venue but has no verification row.
+        var client = fixture.CreateClient(fixture.SeedState.UnverifiedVenueManager);
+
+        // Act
+        var response = await client.PostAsync("/api/opportunity", BuildDefaultRequest(fixture.SeedNow));
+
+        // Assert
+        await response.ShouldBe(HttpStatusCode.Forbidden);
+        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.True(problem.Extensions.TryGetValue("code", out var code));
+        Assert.Equal("opportunity.venue_not_verified", code?.ToString());
+    }
+
+    [Fact]
     public async Task Create_ShouldReturn401_WhenUnauthenticated()
     {
         // Arrange
