@@ -48,28 +48,25 @@ See [`plans/platform/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/platform/SPLIT_TIM
 
 ---
 
-### `e2e-api-tests` intermittently fails at host startup with `IImageService` unresolvable
+## MED
 
-Confirmed across two genuinely unrelated PRs' own `merge_group` runs on 2026-08-26 — PR #802 ("Validate
-settlement gRPC request creation", Payment module, run `33008827828`/job `98314333161`) and PR #799 (this
-PR, run `33014869553`/job `98333791637`) — all 10 `Concertable.B2B.E2ETests` tests fail identically in
-~110ms with `System.InvalidOperationException: Unable to resolve service for type
-'Concertable.Shared.Imaging.Application.IImageService' while attempting to activate
-'Concertable.B2B.Venue.Infrastructure.Services.VenueService'`. `AddSharedImaging()`
-(`B2BWebHostExtensions.cs`) registers `IImageService` unconditionally, and neither PR's diff touches
-`VenueService`'s constructor or shared-imaging registration — the byte-identical signature across
-unrelated diffs, with 0/10 passing in a single ~110ms window, points to an intermittent race in test-host
-/ Aspire orchestration startup (the DI container for at least one host build never finishes assembling),
-not a caller defect. Not yet root-caused.
+### `Concertable.B2B.E2ETests/AppFixture.cs` hand-duplicates a subset of the real host's DI registrations, and can silently under-provision
 
-**Resolves when:** the intermittent startup race is found (candidate: resource startup ordering or
-container/host reuse across merge-queue retries in `Concertable.B2B.E2ETests/AppFixture.cs`) and fixed, so
-`e2e-api-tests` no longer needs a blind retry to pass. Until then, this exact signature on a `merge_group`
-failure is a known retry-and-continue case, not a defect to chase in the failing PR's own diff.
+The seed-only `Host` built in `AppFixture.cs` (`InitializeAsync`, ~line 157) re-lists its own subset of
+`B2BWebHostExtensions.AddB2BWebHost`'s registrations rather than reusing it, because it only needs enough
+to run `IDevSeeder`s. This drifted out of sync once: `ConcertDevSeeder` depends on `ITenantModule`, whose
+graph (via `IVerificationService`) now reaches `IVenueModule`/`IArtistModule` → `VenueService`/
+`ArtistService` → `IImageService` — a real, load-bearing dependency this seed host never registered
+(`services.AddSharedImaging()` was missing; added alongside this note). Nothing catches this class of gap
+at compile time; it only surfaces as an E2E `IDbInitializer` resolution failure the next time a module's
+cross-module facade graph grows to reach a shared service this host omits.
+
+**Resolves when:** the seed host's `ConfigureServices` is built from the same registration list as
+`AddB2BWebHost` (e.g. factoring the shared-service registrations `AddB2BWebHost` and this fixture both
+need into one call), so a facade graph reaching a new shared dependency can't silently leave one host
+under-provisioned relative to the other.
 
 ---
-
-## MED
 
 ### Venue opportunity counts are exposed by the write repository
 
