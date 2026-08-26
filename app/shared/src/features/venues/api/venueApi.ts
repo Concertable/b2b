@@ -3,7 +3,7 @@ import type {
   Venue,
   CreateVenueRequest,
   UpdateVenueRequest,
-} from "@concertable/shared/features/venues";
+} from "@concertable/shared/features/venues/types";
 
 type FormDataValue = Parameters<FormData["append"]>[1];
 

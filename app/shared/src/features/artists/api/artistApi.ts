@@ -3,7 +3,7 @@ import type {
   Artist,
   CreateArtistRequest,
   UpdateArtistRequest,
-} from "@concertable/shared/features/artists";
+} from "@concertable/shared/features/artists/types";
 
 type FormDataValue = Parameters<FormData["append"]>[1];
 

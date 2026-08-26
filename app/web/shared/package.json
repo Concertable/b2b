@@ -19,6 +19,11 @@
     "prepack": "npm run build"
   },
   "exports": {
+    "./features/*/types": {
+      "types": "./dist/features/*/types.d.ts",
+      "import": "./dist/features/*/types.js",
+      "default": "./dist/features/*/types.js"
+    },
     "./features/conversations": {
       "types": "./dist/features/conversations/index.d.ts",
       "import": "./dist/features/conversations/index.js",
