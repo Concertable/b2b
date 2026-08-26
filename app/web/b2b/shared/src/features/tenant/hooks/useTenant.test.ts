@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   invalidateRouter: vi.fn(),
   selectInStore: vi.fn(),
   synchronizeTenant: vi.fn(),
+  syncUser: vi.fn(),
 }));
 
 vi.mock("react", () => ({
@@ -38,6 +39,7 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("@concertable/web/features/user", () => ({
   meQueryKey: ["auth", "me"],
   useMeQuery: () => ({ data: mocks.identity }),
+  useSyncUser: mocks.syncUser,
 }));
 vi.mock("../api/identityApi", () => ({
   default: { getMe: mocks.getMe },
@@ -90,6 +92,7 @@ describe("useTenant selection", () => {
     });
 
     const { selectTenant } = useTenant("venue");
+    expect(mocks.syncUser).toHaveBeenCalledWith(mocks.getMe);
     await selectTenant("accepted-tenant");
 
     expect(mocks.fetchQuery).toHaveBeenCalledWith({
