@@ -9,15 +9,18 @@ internal sealed class OpportunitySyncer
 {
     private readonly IDealModule dealModule;
 
-    public OpportunitySyncer(IBaseRepository<OpportunityEntity> repo, IDealModule dealModule)
-        : base(repo)
+    public OpportunitySyncer(IWriteRepository<OpportunityEntity> repository, IDealModule dealModule)
+        : base(repository)
     {
         this.dealModule = dealModule;
     }
 
     protected override async Task<OpportunityEntity> CreateAsync(int venueId, OpportunityRequest dto)
     {
-        var dealId = await dealModule.CreateAsync(dto.Deal);
+        var result = await dealModule.CreateAsync(dto.Deal);
+        if (!result.TryGetValue(out var dealId))
+            throw new InvalidOperationException("Deal creation failed after successful validation.");
+
         return OpportunityEntity.Create(
             venueId,
             new DateRange(dto.StartDate, dto.EndDate),
@@ -27,7 +30,10 @@ internal sealed class OpportunitySyncer
 
     protected override async Task UpdateAsync(OpportunityEntity entity, OpportunityRequest dto)
     {
-        await dealModule.UpdateAsync(entity.DealId, dto.Deal);
+        var result = await dealModule.UpdateAsync(entity.DealId, dto.Deal);
+        if (result.IsFailure)
+            throw new InvalidOperationException("Deal update failed after successful validation.");
+
         entity.Update(new DateRange(dto.StartDate, dto.EndDate), entity.DealId, dto.Genres);
     }
 }

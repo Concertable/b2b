@@ -1,12 +1,12 @@
-import { TENANT_ROLES, type TenantRole } from "@b2b/features/tenant";
-import { Button } from "@/components/ui/button";
+import { TENANT_ROLES, tenantRoleLabel, type TenantRole } from "@b2b/features/tenant";
+import { Button } from "@concertable/web/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@concertable/web/components/ui/select";
 import {
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@concertable/web/components/ui/table";
 import { useMembersRoster } from "../hooks/useMembersRoster";
 import { Spinner } from "./Spinner";
 
@@ -63,13 +63,13 @@ export function MembersRoster({ canManageRoles, canRemove }: Readonly<Props>) {
                     <SelectContent>
                       {TENANT_ROLES.map((role) => (
                         <SelectItem key={role} value={role}>
-                          {role}
+                          {tenantRoleLabel(role)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 ) : (
-                  m.role
+                  tenantRoleLabel(m.role)
                 )}
               </TableCell>
               {canRemove && (

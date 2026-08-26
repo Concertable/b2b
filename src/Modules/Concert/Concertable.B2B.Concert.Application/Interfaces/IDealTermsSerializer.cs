@@ -11,5 +11,5 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// </summary>
 internal interface IDealTermsSerializer
 {
-    string Serialize(IDeal deal);
+    string Serialize(DealDto deal);
 }

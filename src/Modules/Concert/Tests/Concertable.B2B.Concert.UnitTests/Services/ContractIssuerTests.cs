@@ -29,13 +29,13 @@ public sealed class ContractIssuerTests
 
     public ContractIssuerTests()
     {
-        dealAccessor.SetupGet(c => c.Deal).Returns(new FlatFeeDeal { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
+        dealAccessor.SetupGet(c => c.Deal).Returns(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         applicationRepository
             .Setup(r => r.GetArtistAndVenueByIdAsync(It.IsAny<int>()))
             .ReturnsAsync(((ArtistReadModel, VenueReadModel)?)(
                 new ArtistReadModel { Id = 1, Name = "Artie Artist" },
                 new VenueReadModel { Id = 2, Name = "Vera Venue" }));
-        termsRenderer.Setup(r => r.Render(It.IsAny<IDeal>())).Returns("terms");
+        termsRenderer.Setup(r => r.Render(It.IsAny<DealDto>())).Returns("terms");
         currentUser.SetupGet(u => u.Id).Returns(Guid.NewGuid());
         clientContext.SetupGet(c => c.IpAddress).Returns(IPAddress.Loopback);
         clientContext.SetupGet(c => c.UserAgent).Returns("venue-agent");
@@ -62,17 +62,26 @@ public sealed class ContractIssuerTests
             .Callback<ContractEntity, CancellationToken>((a, _) => built = a)
             .ReturnsAsync((ContractEntity a, CancellationToken _) => a);
 
-        var application = StandardApplication.Create(artistId: 1, opportunityId: 10, DealType.FlatFee);
+        var application = StandardApplication.Create(
+            artistId: 1,
+            opportunityId: 10,
+            DealType.FlatFee,
+            Guid.NewGuid(),
+            Guid.NewGuid());
         application.Opportunity = OpportunityEntity.Create(
             venueId: 2,
             new DateRange(new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc), new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc)),
             dealId: 3);
         application.RecordArtistESignature(artistESignature, "fingerprint");
 
-        await issuer.IssueAsync(application, bookingId: 42, new ESignatureRequest { SignatoryName = "Vera Venue" });
+        var booking = StandardBooking.Create(application);
+
+        await issuer.IssueAsync(application, booking, new ESignatureRequest { SignatoryName = "Vera Venue" });
 
         Assert.NotNull(built);
         Assert.Equal(application.ArtistESignature, built.ArtistESignature);
         Assert.Equal("Vera Venue", built.VenueESignature.SignatoryName);
+        Assert.Equal(application.VenueTenantId, built.VenueTenantId);
+        Assert.Equal(application.ArtistTenantId, built.ArtistTenantId);
     }
 }

@@ -3,7 +3,7 @@ using Concertable.Testing.Integration;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-public interface IMockManagerPaymentClient : IManagerPaymentClient, IResettable
+public interface IMockManagerPaymentClient : IManagerPaymentOperationsClient, IManagerPaymentReportingClient, IResettable
 {
     List<(Guid PayerId, Guid PayeeId, decimal Amount, string PaymentMethodId, int BookingId)> Payments { get; }
 }

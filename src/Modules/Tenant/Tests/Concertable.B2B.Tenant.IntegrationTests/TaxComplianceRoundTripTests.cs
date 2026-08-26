@@ -45,6 +45,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
                 Country = "United Kingdom",
             },
             BankReference = "GB29NWBK60161331926819",
+            HoldsMusicLicence = true,
         },
     };
 
@@ -56,7 +57,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
         var expectedTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == manager.Id).Id;
 
         var client = fixture.CreateClient(manager);
-        var response = await client.GetAsync("/api/organizations");
+        var response = await client.GetAsync("/api/organization");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var organization = await response.Content.ReadAsync<TenantDetails>();
@@ -74,10 +75,10 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
         var request = BuildRequest();
 
         var client = fixture.CreateClient(manager);
-        var response = await client.PutAsJsonAsync("/api/organizations", request);
+        var response = await client.PutAsJsonAsync("/api/organization", request);
         await response.ShouldBe(HttpStatusCode.OK);
 
-        var read = await client.GetFromJsonAsync<TenantDetails>("/api/organizations");
+        var read = await client.GetFromJsonAsync<TenantDetails>("/api/organization");
         Assert.NotNull(read);
         Assert.Equal(request.LegalName, read!.LegalName);
         // Same DTO shape for read and write, so it round-trips by value; presence == complete.
@@ -85,11 +86,17 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
 
         var tenant = await fixture.Tenants.SingleOrDefaultAsync(t => t.Id == tenantId);
 
-        var expected = new TaxCompliance(
-            vatNumber: "GB123456789",
-            sellerIdentifier: "12345678",
-            registeredAddress: new RegisteredAddress("1 High Street", "Floor 2", "Manchester", "M1 1AA", "United Kingdom"),
-            bankReference: "GB29NWBK60161331926819");
+        var expected = RegisteredAddress
+            .Create("1 High Street", "Floor 2", "Manchester", "M1 1AA", "United Kingdom")
+            .Bind(address => TaxCompliance.Create(
+                "GB123456789",
+                "12345678",
+                address,
+                "GB29NWBK60161331926819",
+                true))
+            .Match(
+                compliance => compliance,
+                _ => throw new InvalidOperationException("Test tax compliance is invalid."));
         Assert.NotNull(tenant);
         Assert.Equal(expected, tenant!.TaxCompliance);
     }
@@ -100,7 +107,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
         var manager = fixture.SeedState.VenueManager1;
         var client = fixture.CreateClient(manager);
 
-        await (await client.PutAsJsonAsync("/api/organizations", BuildRequest())).ShouldBe(HttpStatusCode.OK);
+        await (await client.PutAsJsonAsync("/api/organization", BuildRequest())).ShouldBe(HttpStatusCode.OK);
 
         var replacement = new UpdateTenantRequest
         {
@@ -118,11 +125,12 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
                     Country = "United Kingdom",
                 },
                 BankReference = "GB94BARC10201530093459",
+                HoldsMusicLicence = false,
             },
         };
-        await (await client.PutAsJsonAsync("/api/organizations", replacement)).ShouldBe(HttpStatusCode.OK);
+        await (await client.PutAsJsonAsync("/api/organization", replacement)).ShouldBe(HttpStatusCode.OK);
 
-        var read = await client.GetFromJsonAsync<TenantDetails>("/api/organizations");
+        var read = await client.GetFromJsonAsync<TenantDetails>("/api/organization");
         Assert.NotNull(read);
         Assert.Equal(replacement.LegalName, read!.LegalName);
         Assert.Equal(replacement.TaxCompliance, read.TaxCompliance);
@@ -138,7 +146,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
         };
 
         var client = fixture.CreateClient(manager);
-        var response = await client.PutAsJsonAsync("/api/organizations", request);
+        var response = await client.PutAsJsonAsync("/api/organization", request);
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -148,7 +156,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.Admin);
 
-        var response = await client.GetAsync("/api/organizations");
+        var response = await client.GetAsync("/api/organization");
 
         await response.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -158,7 +166,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.Admin);
 
-        var response = await client.PutAsJsonAsync("/api/organizations", BuildRequest());
+        var response = await client.PutAsJsonAsync("/api/organization", BuildRequest());
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }

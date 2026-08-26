@@ -1,13 +1,12 @@
-using System.Text.Json.Serialization;
-
 namespace Concertable.B2B.Concert.Application.DTOs;
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
 internal enum ApplicationStatus
 {
     Pending,
     Rejected,
     Withdrawn,
     Accepted,
+    AwaitingPayment,
+    Confirmed,
     Cancelled
 }

@@ -9,5 +9,5 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// </summary>
 internal interface IDealTermsRenderer
 {
-    string Render(IDeal deal);
+    string Render(DealDto deal);
 }

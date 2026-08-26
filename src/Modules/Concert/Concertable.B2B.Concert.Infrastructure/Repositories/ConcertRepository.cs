@@ -10,16 +10,67 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRepository
 {
+    private readonly ConcertDbContext context;
     private readonly IEndedAndBookedSpecification endedAndBooked;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
+    private readonly TimeProvider timeProvider;
 
     public ConcertRepository(
         ConcertDbContext context,
         IEndedAndBookedSpecification endedAndBooked,
-        IDoorRevenueOutstandingSpecification doorRevenueOutstanding) : base(context)
+        IDoorRevenueOutstandingSpecification doorRevenueOutstanding,
+        TimeProvider timeProvider) : base(context)
     {
+        this.context = context;
         this.endedAndBooked = endedAndBooked;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
+        this.timeProvider = timeProvider;
+    }
+
+    public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForVenueTenantIdAsync(Guid venueTenantId)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        return await context.Concerts
+            .AsNoTracking()
+            .Where(c => c.Booking.Application.VenueTenantId == venueTenantId
+                        && c.Booking.Application.Opportunity.Period.End > now
+                        && c.DatePosted != null)
+            .OrderBy(c => c.Booking.Application.Opportunity.Period.Start)
+            .Take(5)
+            .Select(c => new ManagerConcertCard(
+                c.Id,
+                c.Name,
+                c.BannerUrl ?? c.Booking.Application.Artist.BannerUrl,
+                c.Booking.Application.Opportunity.Period.Start,
+                c.Booking.Application.Opportunity.Period.End,
+                c.Booking.Application.Artist.Name,
+                c.TicketsSold,
+                c.TotalTickets,
+                $"/_venue/my/concerts/concert/{c.Id}"))
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForArtistTenantIdAsync(Guid artistTenantId)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        return await context.Concerts
+            .AsNoTracking()
+            .Where(c => c.Booking.Application.ArtistTenantId == artistTenantId
+                        && c.Booking.Application.Opportunity.Period.End > now
+                        && c.DatePosted != null)
+            .OrderBy(c => c.Booking.Application.Opportunity.Period.Start)
+            .Take(5)
+            .Select(c => new ManagerConcertCard(
+                c.Id,
+                c.Name,
+                c.BannerUrl ?? c.Booking.Application.Artist.BannerUrl,
+                c.Booking.Application.Opportunity.Period.Start,
+                c.Booking.Application.Opportunity.Period.End,
+                c.Booking.Application.Opportunity.Venue.Name,
+                c.TicketsSold,
+                c.TotalTickets,
+                $"/_artist/my/concerts/concert/{c.Id}"))
+            .ToListAsync();
     }
 
     public async Task<ConcertEntity?> GetByIdWithArtistAndVenueAsync(int id)
@@ -28,6 +79,8 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .Where(e => e.Id == id)
             .Include(e => e.Artist)
             .Include(e => e.Venue)
+            .Include(e => e.Booking)
+                .ThenInclude(b => b.Application)
             .FirstOrDefaultAsync();
     }
 
@@ -51,7 +104,9 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
     /* Owner read by concert id. Concert itself is public/unfiltered, so scope by requiring a
        tenant-visible Booking (Bookings is tenant-filtered) — a non-party sees none and gets a 404,
        exactly like ContractRepository.GetByConcertIdAsync. */
-    public async Task<ConcertDetails?> GetDetailsByIdAsync(int id)
+    public async Task<ConcertDetails?> GetDetailsByIdAsync(
+        int id,
+        CancellationToken ct = default)
     {
         return await context.Concerts
             .Where(e => e.Id == id && context.Bookings.Any(b => b.Id == e.BookingId))
@@ -59,7 +114,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
                 context.ConcertRatingProjections,
                 context.ArtistRatingProjections,
                 context.VenueRatingProjections)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<ConcertDetails?> GetDetailsByApplicationIdAsync(int applicationId)

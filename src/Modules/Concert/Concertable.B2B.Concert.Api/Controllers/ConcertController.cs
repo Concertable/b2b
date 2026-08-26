@@ -3,149 +3,161 @@ using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.Kernel.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Concert.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[RequiredTenantType(TenantType.Venue)]
 internal sealed class ConcertController : ControllerBase
 {
     private readonly IConcertService concertService;
-    private readonly ICancelExecutor cancelExecutor;
     private readonly IContractService contractService;
     private readonly IInvoiceService invoiceService;
-    private readonly TimeProvider timeProvider;
 
     public ConcertController(
         IConcertService concertService,
-        ICancelExecutor cancelExecutor,
         IContractService contractService,
-        IInvoiceService invoiceService,
-        TimeProvider timeProvider)
+        IInvoiceService invoiceService)
     {
         this.concertService = concertService;
-        this.cancelExecutor = cancelExecutor;
         this.contractService = contractService;
         this.invoiceService = invoiceService;
-        this.timeProvider = timeProvider;
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("{id}")]
     public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
-        return Ok((await concertService.GetDetailsByIdAsync(id)).ToDetailsResponse());
+        return (await concertService.GetDetailsByIdAsync(id))
+            .ToOkOrProblem(concert => concert.ToDetailsResponse());
     }
 
-    // Current-user (party) read: tenant-scoped (404 for non-parties), so it carries the party-only
-    // action links. No [HasPermission] — both parties read it; the repository stance is the gate,
-    // not a role. Mirrors venue's GET /venue/user.
-    [HttpGet("user/{id}")]
-    public async Task<ActionResult<MyDetailsResponse>> GetDetailsForCurrentUser(int id)
-    {
-        return Ok((await concertService.GetDetailsForCurrentUserAsync(id))
-            .ToMyDetailsResponse(timeProvider.GetUtcNow().UtcDateTime));
-    }
+    [HasPermission(SharedPermissions.OperationsView)]
+    [HttpGet("/api/organization/concert/{concertId:int}")]
+    public async Task<ActionResult<MyDetailsResponse>> Get(
+        int concertId,
+        CancellationToken ct) =>
+        (await concertService.GetDetailsAsync(concertId, ct))
+            .ToOkOrProblem(concert => concert.ToMyDetailsResponse());
 
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("{id}/contract/pdf")]
-    public async Task<IActionResult> GetContractPdf(int id)
+    public async Task<ActionResult<FileDownload>> GetContractPdf(int id)
     {
-        var pdf = await contractService.GetPdfByConcertIdAsync(id);
-        return File(pdf.Content, pdf.ContentType, pdf.FileName);
+        return (await contractService.GetPdfByConcertIdAsync(id))
+            .ToActionResult(pdf => new ActionResult<FileDownload>(
+                File(pdf.Content, pdf.ContentType, pdf.FileName)));
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("{id}/invoice")]
     public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
     {
-        return Ok(await invoiceService.GetByConcertIdAsync(id));
+        return (await invoiceService.GetByConcertIdAsync(id))
+            .ToOkOrProblem();
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("{id}/invoice/pdf")]
-    public async Task<IActionResult> GetInvoicePdf(int id)
+    public async Task<ActionResult<FileDownload>> GetInvoicePdf(int id)
     {
-        var pdf = await invoiceService.GetPdfByConcertIdAsync(id);
-        return File(pdf.Content, pdf.ContentType, pdf.FileName);
+        return (await invoiceService.GetPdfByConcertIdAsync(id))
+            .ToActionResult(pdf => new ActionResult<FileDownload>(
+                File(pdf.Content, pdf.ContentType, pdf.FileName)));
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("application/{applicationId}")]
     public async Task<ActionResult<MyDetailsResponse>> GetDetailsByApplicationId(int applicationId)
     {
-        return Ok((await concertService.GetDetailsByApplicationIdAsync(applicationId))
-            .ToMyDetailsResponse(timeProvider.GetUtcNow().UtcDateTime));
+        return (await concertService.GetDetailsByApplicationIdAsync(applicationId))
+            .ToOkOrProblem(concert => concert.ToMyDetailsResponse());
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("upcoming/venue/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUpcomingByVenueId(int id)
     {
         return Ok((await concertService.GetUpcomingByVenueIdAsync(id)).ToSummaryResponses());
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("upcoming/artist/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUpcomingByArtistId(int id)
     {
         return Ok((await concertService.GetUpcomingByArtistIdAsync(id)).ToSummaryResponses());
     }
 
+    [HttpGet("upcoming/venue/current")]
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentVenue() =>
+        (await concertService.GetUpcomingForCurrentVenueAsync()).ToOkOrProblem();
+
+    [HttpGet("upcoming/artist/current")]
+    [RequiredTenantType(TenantType.Artist)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentArtist() =>
+        (await concertService.GetUpcomingForCurrentArtistAsync()).ToOkOrProblem();
+
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("history/venue/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetHistoryByVenueId(int id)
     {
         return Ok((await concertService.GetHistoryByVenueIdAsync(id)).ToSummaryResponses());
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("history/artist/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetHistoryByArtistId(int id)
     {
         return Ok((await concertService.GetHistoryByArtistIdAsync(id)).ToSummaryResponses());
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("unposted/venue/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUnpostedByVenueId(int id)
     {
         return Ok((await concertService.GetUnpostedByVenueIdAsync(id)).ToSummaryResponses());
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HttpGet("unposted/artist/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUnpostedByArtistId(int id)
     {
         return Ok((await concertService.GetUnpostedByArtistIdAsync(id)).ToSummaryResponses());
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HasPermission(VenuePermissions.ConcertsManage)]
     [HttpPut("{id}")]
     public async Task<ActionResult<ConcertUpdateResponse>> Update(int id, [FromBody] UpdateConcertRequest request)
     {
-        return Ok(await concertService.UpdateAsync(id, request));
+        return (await concertService.UpdateAsync(id, request)).ToOkOrProblem();
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HasPermission(VenuePermissions.ConcertsManage)]
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
     {
-        await concertService.PostAsync(id, request);
-        return NoContent();
+        return (await concertService.PostAsync(id, request)).ToNoContentOrProblem();
     }
 
+    [RequiredTenantType(TenantType.Venue)]
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
     {
-        var result = await cancelExecutor.CancelAsync(id, ct);
-        if (result.IsFailed)
-            throw new BadRequestException(result.Errors);
-        return NoContent();
+        return (await concertService.CancelAsync(id, ct)).ToNoContentOrProblem();
     }
 
-    /// <summary>
-    /// Venue declares the external door take (own-site + other ticketers + cash) for an ended,
-    /// still-Booked revenue-share gig, gating its settlement. Re-declarable until it settles, then frozen.
-    /// </summary>
+    [RequiredTenantType(TenantType.Venue)]
     [HasPermission(VenuePermissions.ConcertsManage)]
     [HttpPost("{id}/door-revenue")]
     public async Task<IActionResult> DeclareDoorRevenue(int id, [FromBody] DoorRevenueRequest request)
     {
-        await concertService.DeclareDoorRevenueAsync(id, request.DoorRevenue);
-        return NoContent();
+        return (await concertService.DeclareDoorRevenueAsync(id, request.DoorRevenue)).ToNoContentOrProblem();
     }
 }

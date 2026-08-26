@@ -1,11 +1,10 @@
 using Concertable.Contracts.Enums;
+using Reunion;
 
 namespace Concertable.B2B.Artist.Contracts;
 
 public interface IArtistModule
 {
-    Task<int?> GetIdForCurrentTenantAsync();
-    Task<ArtistSummary> GetSummaryAsync(int artistId);
-    Task<IReadOnlySet<Genre>> GetGenresAsync(int artistId);
-    Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+    Task<Option<ArtistSummary>> GetSummaryAsync(int artistId, CancellationToken ct = default);
+    Task<IReadOnlySet<Genre>> GetGenresAsync(int artistId, CancellationToken ct = default);
 }

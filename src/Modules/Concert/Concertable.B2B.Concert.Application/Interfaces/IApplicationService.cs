@@ -1,23 +1,40 @@
 ﻿using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Application.Responses;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.ReadModels;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IApplicationService
 {
-    Task<ApplicationDto> GetByIdAsync(int id);
-    Task<IEnumerable<ApplicationDto>> GetByOpportunityIdAsync(int id);
-    Task<IEnumerable<ApplicationDto>> GetPendingForArtistAsync();
-    Task<IEnumerable<ApplicationDto>> GetRecentDeniedForArtistAsync();
-    Task<ApplicationDto> ApplyAsync(int opportunityId, ESignatureRequest eSignature);
-    Task<ApplicationDto> ApplyAsync(int opportunityId, string paymentMethodId, ESignatureRequest eSignature);
-    Task<Checkout> ApplyCheckoutAsync(int opportunityId);
+    Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id);
+    Task<Option<FinancialOperation>> GetFinancialOperationAsync(
+        int applicationId,
+        CancellationToken ct = default);
+    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id);
+    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForArtistAsync();
+    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetRecentDeniedForArtistAsync();
+    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForCurrentVenueAsync();
+    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetCurrentForCurrentArtistAsync();
+    Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(int opportunityId, ESignatureRequest eSignature);
+    Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
+        int opportunityId,
+        string paymentMethodId,
+        ESignatureRequest eSignature);
+    Task<bool> CanApplyAsync(int opportunityId);
+    Task<bool> CanAcceptAsync(int applicationId);
+    Task<Result<Checkout, ApplicationEligibilityError>> ApplyCheckoutAsync(int opportunityId);
     Task<Checkout> AcceptCheckoutAsync(int applicationId);
-    Task AcceptAsync(int applicationId, string? paymentMethodId, ESignatureRequest eSignature);
-    Task WithdrawAsync(int applicationId);
-    Task RejectAsync(int applicationId);
-    Task CancelAsync(int applicationId);
-    Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id);
+    Task<UnitResult<AcceptApplicationError>> AcceptAsync(
+        int applicationId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature,
+        CancellationToken ct = default);
+    Task<UnitResult<CancelApplicationError>> WithdrawAsync(
+        int applicationId,
+        CancellationToken ct = default);
+    Task<UnitResult<RejectApplicationError>> RejectAsync(int applicationId);
+    Task<UnitResult<CancelApplicationError>> CancelAsync(int applicationId, CancellationToken ct = default);
+    Task<Option<(ArtistReadModel, VenueReadModel)>> GetArtistAndVenueByIdAsync(int id);
 }

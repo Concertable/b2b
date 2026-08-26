@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button";
+import { tenantRoleLabel } from "@b2b/features/tenant";
+import { Button } from "@concertable/web/components/ui/button";
 import { usePendingInvitations } from "../hooks/usePendingInvitations";
 import { Spinner } from "./Spinner";
 
@@ -30,7 +31,7 @@ export function PendingInvitations() {
               <div className="space-y-0.5">
                 <p className="text-sm font-medium">{inv.email}</p>
                 <p className="text-muted-foreground text-xs">
-                  {inv.role} · {expiresInLabel(inv.expiresAt)}
+                  {tenantRoleLabel(inv.role)} · {expiresInLabel(inv.expiresAt)}
                 </p>
               </div>
               <Button

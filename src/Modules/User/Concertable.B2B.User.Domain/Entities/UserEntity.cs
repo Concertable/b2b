@@ -19,7 +19,7 @@ public sealed class UserEntity : IGuidEntity
     public Point? Location { get; private set; }
     public string? Avatar { get; private set; }
 
-    public static UserEntity FromRegistration(Guid id, string email) =>
+    public static UserEntity Create(Guid id, string email) =>
         new(id, email);
 
     public void UpdateLocation(Point location, Address? address = null)

@@ -1,16 +1,17 @@
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
+using Concertable.Payment.Contracts.Errors;
 using Concertable.Payment.Contracts.Enums;
 using Concertable.Testing.Integration;
-using FluentResults;
+using Reunion;
 using Stripe;
 using Transfer = Concertable.Payment.Contracts.Transfer;
 using Refund = Concertable.Payment.Contracts.Refund;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-public sealed class MockEscrowClient : IEscrowClient, IResettable
+public sealed class MockEscrowClient : IEscrowOperationsClient, IResettable
 {
     private readonly MockStripeApiClient stripeApiClient;
 
@@ -31,11 +32,11 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
         Refunds.Clear();
     }
 
-    public async Task<Result<EscrowDeposit>> DepositAsync(Guid payerId, Guid payeeId, decimal amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
+    public async Task<Result<EscrowDeposit, EscrowDepositError>> DepositAsync(Guid payerId, Guid payeeId, Money amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
     {
         var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
         {
-            Amount = (long)(amount * 100),
+            Amount = amount.ToMinorUnits(),
             Metadata = new Dictionary<string, string>
             {
                 [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
@@ -43,28 +44,25 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
             }
         });
 
-        Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));
-        return Result.Ok(new EscrowDeposit(0, intent.Id, EscrowStatus.Held));
+        Holds.Add(new EscrowHold(payerId, payeeId, amount.Amount, bookingId));
+        return Result<EscrowDeposit, EscrowDepositError>.Success(new EscrowDeposit(0, intent.Id, EscrowStatus.Held));
     }
 
-    public async Task<Result<EscrowDeposit>> DepositBoundCommissionAsync(
+    public async Task<Result<EscrowDeposit, EscrowDepositError>> DepositBoundCommissionAsync(
         Guid payerId,
         Guid payeeId,
-        long grossMinor,
-        Currency currency,
+        Money gross,
         string paymentMethodId,
         PaymentSession session,
         int bookingId,
         Guid commissionBindingId,
         string externalReference,
-        long expectedCommissionMinor,
-        long expectedPayerTotalMinor,
         string? stripeSetupIntentId = null,
         CancellationToken ct = default)
     {
         var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
         {
-            Amount = expectedPayerTotalMinor,
+            Amount = gross.ToMinorUnits(),
             Metadata = new Dictionary<string, string>
             {
                 [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
@@ -72,11 +70,11 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
             }
         });
 
-        Holds.Add(new EscrowHold(payerId, payeeId, Money.FromMinorUnits(grossMinor, currency).Amount, bookingId));
-        return Result.Ok(new EscrowDeposit(0, intent.Id, EscrowStatus.Held));
+        Holds.Add(new EscrowHold(payerId, payeeId, gross.Amount, bookingId));
+        return Result<EscrowDeposit, EscrowDepositError>.Success(new EscrowDeposit(0, intent.Id, EscrowStatus.Held));
     }
 
-    public Task<Result<EscrowDeposit>> CaptureAsync(Guid payerId, Guid payeeId, decimal amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
+    public Task<Result<EscrowDeposit, EscrowCaptureError>> CaptureAsync(Guid payerId, Guid payeeId, Money amount, string paymentIntentId, int bookingId, CancellationToken ct = default)
     {
         stripeApiClient.UpdateLastMetadata(new Dictionary<string, string>
         {
@@ -84,21 +82,18 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
             [PaymentMetadataKeys.BookingId] = bookingId.ToString()
         });
 
-        Holds.Add(new EscrowHold(payerId, payeeId, amount, bookingId));
-        return Task.FromResult(Result.Ok(new EscrowDeposit(0, paymentIntentId, EscrowStatus.Held)));
+        Holds.Add(new EscrowHold(payerId, payeeId, amount.Amount, bookingId));
+        return Task.FromResult(Result<EscrowDeposit, EscrowCaptureError>.Success(new EscrowDeposit(0, paymentIntentId, EscrowStatus.Held)));
     }
 
-    public Task<Result<EscrowDeposit>> CaptureBoundCommissionAsync(
+    public Task<Result<EscrowDeposit, EscrowCaptureError>> CaptureBoundCommissionAsync(
         Guid payerId,
         Guid payeeId,
-        long grossMinor,
-        Currency currency,
+        Money gross,
         string paymentIntentId,
         int bookingId,
         Guid commissionBindingId,
         string externalReference,
-        long expectedCommissionMinor,
-        long expectedPayerTotalMinor,
         CancellationToken ct = default)
     {
         stripeApiClient.UpdateLastMetadata(new Dictionary<string, string>
@@ -107,23 +102,22 @@ public sealed class MockEscrowClient : IEscrowClient, IResettable
             [PaymentMetadataKeys.BookingId] = bookingId.ToString()
         });
 
-        Holds.Add(new EscrowHold(payerId, payeeId, Money.FromMinorUnits(grossMinor, currency).Amount, bookingId));
-        return Task.FromResult(Result.Ok(new EscrowDeposit(0, paymentIntentId, EscrowStatus.Held)));
+        Holds.Add(new EscrowHold(payerId, payeeId, gross.Amount, bookingId));
+        return Task.FromResult(Result<EscrowDeposit, EscrowCaptureError>.Success(new EscrowDeposit(0, paymentIntentId, EscrowStatus.Held)));
     }
 
-    public Task<Result<Transfer?>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result.Ok<Transfer?>(new Transfer("tr_mock")));
+    public Task<Result<Option<Transfer>, EscrowReleaseError>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
+        Task.FromResult(Result<Option<Transfer>, EscrowReleaseError>.Success(Option.Some(new Transfer("tr_mock"))));
 
-    public Task<Result<Refund?>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default)
+    public Task<Result<Option<Refund>, EscrowRefundError>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default)
     {
         Refunds.Add(bookingId);
-        return Task.FromResult(Result.Ok<Refund?>(new Refund("re_mock")));
+        return Task.FromResult(Result<Option<Refund>, EscrowRefundError>.Success(Option.Some(new Refund("re_mock"))));
     }
 
-    public Task<Result<Refund?>> RefundBoundCommissionByBookingIdAsync(
+    public Task<Result<Option<Refund>, EscrowRefundError>> RefundBoundCommissionByBookingIdAsync(
         int bookingId,
-        long grossMinor,
-        Currency currency,
+        Money gross,
         CancellationToken ct = default) =>
         RefundByBookingIdAsync(bookingId, ct);
 }

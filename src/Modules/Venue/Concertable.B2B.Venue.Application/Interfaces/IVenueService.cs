@@ -1,18 +1,28 @@
 using Concertable.B2B.Venue.Application.DTOs;
+using Concertable.B2B.Venue.Application.Errors;
 using Concertable.B2B.Venue.Application.Requests;
 
 namespace Concertable.B2B.Venue.Application.Interfaces;
 
 internal interface IVenueService
 {
-    Task<VenueDetails> GetDetailsByIdAsync(int id);
-    Task<VenueDetails?> GetDetailsForCurrentUserAsync();
-    Task<VenueDetails> CreateAsync(CreateVenueRequest request);
-    Task<VenueDetails> UpdateAsync(int id, UpdateVenueRequest request);
-    Task<int> GetIdForCurrentUserAsync();
-    Task<bool> OwnsVenueAsync(int venueId);
-    Task ApproveAsync(int id);
+    Task<Option<VenueDetails>> GetDetailsByIdAsync(
+        int id,
+        CancellationToken ct = default);
+    Task<Option<VenueDetails>> GetDetailsAsync(
+        CancellationToken ct = default);
+    Task<Result<VenueDetails, CreateVenueError>> CreateAsync(
+        CreateVenueRequest request,
+        CancellationToken ct = default);
+    Task<Result<VenueDetails, UpdateVenueError>> UpdateAsync(
+        UpdateVenueRequest request,
+        CancellationToken ct = default);
+    Task<bool> OwnsVenueAsync(int venueId, CancellationToken ct = default);
+    Task<UnitResult<ApproveVenueError>> ApproveAsync(
+        int id,
+        CancellationToken ct = default);
 
-    Task<VenueSummary> GetSummaryAsync(int id);
-    Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId);
+    Task<Option<VenueSummary>> GetSummaryAsync(int id, CancellationToken ct = default);
+
+    Task<IPagination<PendingVenue>> GetPendingApprovalAsync(IPageParams pageParams);
 }

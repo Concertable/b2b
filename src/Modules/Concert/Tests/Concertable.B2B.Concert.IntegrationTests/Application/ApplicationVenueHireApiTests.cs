@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Application.Responses;
@@ -6,9 +6,11 @@ using Concertable.B2B.Concert.Api.Responses;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Payment.Contracts;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Application;
@@ -35,7 +37,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/opportunity/{fixture.SeedState.VenueHireApp.OpportunityId}/checkout");
+        var response = await client.PostAsync($"/api/application/opportunity/{fixture.SeedState.VenueHireApp.OpportunityId}/checkout");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
@@ -53,7 +55,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/checkout");
+        var response = await client.PostAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}/checkout");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -69,17 +71,17 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             StartDate = DateTime.UtcNow.AddMonths(13),
             EndDate = DateTime.UtcNow.AddMonths(13).AddHours(3),
             Genres = [Genre.Rock],
-            Deal = new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
+            Deal = new VenueHireDealDto { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
         };
-        var oppResponse = await venueClient.PostAsync("/api/Opportunity", oppRequest);
+        var oppResponse = await venueClient.PostAsync("/api/opportunity", oppRequest);
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist runs apply-checkout, then applies with the PM
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var checkoutResponse = await artistClient.PostAsync($"/api/Application/opportunity/{opportunity!.Id}/checkout");
+        var checkoutResponse = await artistClient.PostAsync($"/api/application/opportunity/{opportunity!.Id}/checkout");
         await checkoutResponse.ShouldBe(HttpStatusCode.OK);
 
-        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity.Id}", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+        var applyResponse = await artistClient.PostAsync($"/api/application/{opportunity.Id}", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
         await applyResponse.ShouldBe(HttpStatusCode.Created);
 
         // Assert — a PrepaidApplication was created with the supplied PM
@@ -97,13 +99,13 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        await client.PostAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.StripeClient.SendWebhookAsync();
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        var response = await client.PostAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         // Assert
         await response.ShouldBe(HttpStatusCode.BadRequest);
-        Assert.Single(fixture.EscrowClient.Holds); // rejected second accept must not place a second hold
+        fixture.PaymentTransport.SingleCommand<DepositEscrowCommand>();
     }
 
     [Fact]
@@ -113,16 +115,16 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        await client.PostAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var applicationResponse = await client.GetAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}");
+        var applicationResponse = await client.GetAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}");
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
 
-        var concertResponse = await client.GetAsync($"/api/Concert/application/{fixture.SeedState.VenueHireApp.Id}");
+        var concertResponse = await client.GetAsync($"/api/concert/application/{fixture.SeedState.VenueHireApp.Id}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
         var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(concert);
@@ -136,10 +138,11 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync(b => b.ApplicationId == fixture.SeedState.VenueHireApp.Id);
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
         var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
-        var hold = Assert.Single(fixture.EscrowClient.Holds, h => h.BookingId == booking.Id); // exactly one hold — no double-charge
-        Assert.Equal(artistTenantId, hold.PayerId);
-        Assert.Equal(venueTenantId, hold.PayeeId);
-        Assert.Equal(fixture.SeedState.VenueHireAppDeal.HireFee, hold.Amount);
+        var command = fixture.PaymentTransport.SingleCommand<DepositEscrowCommand>();
+        Assert.Equal(booking.Id, command.BookingId);
+        Assert.Equal(artistTenantId, command.PayerId);
+        Assert.Equal(venueTenantId, command.PayeeId);
+        Assert.Equal((long)(fixture.SeedState.VenueHireAppDeal.HireFee * 100), command.AmountMinor);
     }
 
     [Fact]
@@ -149,7 +152,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        await client.PostAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.StripeClient.SendWebhookAsync();
         await fixture.StripeClient.SendWebhookAsync();
 
@@ -165,11 +168,11 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        await client.PostAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.StripeClient.SendWebhookAsync();
 
         // Assert
-        var applicationResponse = await client.GetAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}");
+        var applicationResponse = await client.GetAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}");
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
@@ -180,15 +183,17 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
     public async Task Accept_ShouldRejectAndNotCreateDraft_WhenPaymentFails()
     {
         // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1, o => o.UseFailingPayment());
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         // Act
-        var response = await client.PostAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        var response = await client.PostAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        // Assert — a failed hold rejects the accept, leaves it un-accepted, posts no concert, notifies nobody
-        await response.ShouldBe(HttpStatusCode.BadRequest);
-        var application = await (await client.GetAsync($"/api/Application/{fixture.SeedState.VenueHireApp.Id}")).Content.ReadAsync<ApplicationResponse>();
-        Assert.NotEqual(ApplicationStatus.Accepted, application!.Status);
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.RejectLatestFinancialOperationAsync();
+        var application = await fixture.ConcertReads.Set<ApplicationEntity>()
+            .AsNoTracking()
+            .SingleAsync(value => value.Id == fixture.SeedState.VenueHireApp.Id);
+        Assert.Equal(LifecycleState.PaymentFailed, application.State);
         var draft = await fixture.ConcertReads.Set<ConcertEntity>().FirstOrDefaultAsync(c => c.Booking.ApplicationId == fixture.SeedState.VenueHireApp.Id);
         Assert.Null(draft);
         Assert.Empty(fixture.NotificationService.DraftCreated);
@@ -204,14 +209,14 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             StartDate = DateTime.UtcNow.AddMonths(13),
             EndDate = DateTime.UtcNow.AddMonths(13).AddHours(3),
             Genres = [Genre.Rock],
-            Deal = new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
+            Deal = new VenueHireDealDto { PaymentMethod = PaymentMethod.Cash, HireFee = 250m }
         };
-        var oppResponse = await venueClient.PostAsync("/api/Opportunity", oppRequest);
+        var oppResponse = await venueClient.PostAsync("/api/opportunity", oppRequest);
         var opportunity = await oppResponse.Content.ReadAsync<OpportunityResponse>();
 
         // Act — artist applies directly with a payment method (no prior /checkout call)
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var applyResponse = await artistClient.PostAsync($"/api/Application/{opportunity!.Id}", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
+        var applyResponse = await artistClient.PostAsync($"/api/application/{opportunity!.Id}", new { eSignature = new { signatoryName = "Test Signatory" }, paymentMethodId = "pm_card_visa" });
 
         // Assert — 201 Created, PrepaidApplication row created with stored PM
         await applyResponse.ShouldBe(HttpStatusCode.Created);

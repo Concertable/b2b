@@ -1,7 +1,6 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Infrastructure;
-using Concertable.Kernel.Exceptions;
-using FluentResults;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
@@ -22,12 +21,13 @@ internal sealed class ConcertDraftService : IConcertDraftService
         this.logger = logger;
     }
 
-    public async Task<Result<ConcertEntity>> CreateAsync(int bookingId)
+    public async Task<Result<ConcertEntity, CreateConcertDraftError>> CreateAsync(int bookingId)
     {
         logger.CreatingConcertDraft(bookingId);
 
-        var bookingConcert = await bookingRepository.GetByIdAsync(bookingId)
-            .OrNotFound();
+        var bookingConcert = await bookingRepository.GetByIdAsync(bookingId);
+        if (bookingConcert is null)
+            return new CreateConcertDraftError.BookingNotFound(bookingId);
 
         var artist = bookingConcert.Application.Artist;
         var opportunity = bookingConcert.Application.Opportunity;
@@ -43,23 +43,19 @@ internal sealed class ConcertDraftService : IConcertDraftService
         if (!matchingGenres.Any())
         {
             logger.ConcertDraftCreationFailed(bookingId, artist.Id, opportunity.Id);
-            return Result.Fail("The artist does not match any genres required by the concert opportunity");
+            return new CreateConcertDraftError.GenreMismatch();
         }
 
         var concert = ConcertEntity.CreateDraft(
-            bookingConcert.Id,
+            bookingConcert,
             artist.Id,
             venue.Id,
             opportunity.Period,
             $"{artist.Name} performing at {venue.Name}",
             venue.About,
-            bookingConcert.DealType,
             matchingGenres);
 
-        concert.VenueTenantId = bookingConcert.VenueTenantId;
-        concert.ArtistTenantId = bookingConcert.ArtistTenantId;
-
-        bookingConcert.Confirm(concert);
+        bookingConcert.Confirm(concert, venue.Name, artist.Name);
         await bookingRepository.SaveChangesAsync();
 
         logger.ConcertDraftCreated(concert.Id, bookingId, artist.Id, venue.Id);
@@ -67,6 +63,6 @@ internal sealed class ConcertDraftService : IConcertDraftService
         await notifier.ConcertDraftCreatedAsync(artist.UserId.ToString(), concert.Id);
         await notifier.ConcertDraftCreatedAsync(venue.UserId.ToString(), concert.Id);
 
-        return Result.Ok(concert);
+        return concert;
     }
 }

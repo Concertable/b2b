@@ -1,6 +1,7 @@
-import { DetailsLayout, type DetailsSection } from "@/components/details/DetailsLayout";
-import { DetailsPageSkeleton } from "@/components/skeletons/DetailsPageSkeleton";
-import { useVenue, VenueHero, venueSections } from "@/features/venues";
+import { DetailsLayout, type DetailsSection } from "@concertable/web/components/details/DetailsLayout";
+import { DetailsPageSkeleton } from "@concertable/web/components/skeletons/DetailsPageSkeleton";
+import { useVenueById } from "@concertable/shared/features/venues";
+import { VenueHero, venueSections } from "@concertable/web/features/venues";
 import { VenueOpportunitiesSection } from "../components/VenueOpportunitiesSection";
 
 interface Props {
@@ -8,7 +9,7 @@ interface Props {
 }
 
 export function VenueDetailsPage({ id }: Readonly<Props>) {
-  const { venue, isLoading, isError } = useVenue(id);
+  const { venue, isLoading, isError } = useVenueById(id);
 
   if (isLoading) return <DetailsPageSkeleton sections={5} />;
   if (isError || !venue)

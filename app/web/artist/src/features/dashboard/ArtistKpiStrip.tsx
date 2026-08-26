@@ -1,8 +1,8 @@
 import { Calendar, CircleDollarSign, Clock, FileText } from "lucide-react";
 import { useArtistKpisQuery } from "./hooks";
 import { formatCurrency } from "@concertable/shared/lib";
-import { Skeleton } from "@/components/ui/skeleton";
-import { KpiTile } from "@/features/dashboard";
+import { Skeleton } from "@concertable/web/components/ui/skeleton";
+import { KpiTile } from "@concertable/web/features/dashboard";
 
 export function ArtistKpiStrip() {
   const { data, isLoading } = useArtistKpisQuery();
@@ -42,12 +42,6 @@ export function ArtistKpiStrip() {
     {
       label: "MTD payouts",
       value: formatCurrency(data.mtdPayoutsCents),
-      delta: data.mtdPayoutsDeltaPercent
-        ? {
-            value: `${data.mtdPayoutsDeltaPercent > 0 ? "+" : ""}${data.mtdPayoutsDeltaPercent}% vs last month`,
-            direction: (data.mtdPayoutsDeltaPercent > 0 ? "up" : "down") as "up" | "down",
-          }
-        : undefined,
       intent: "positive" as const,
       icon: CircleDollarSign,
       href: "/my",

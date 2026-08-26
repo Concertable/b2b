@@ -1,29 +1,30 @@
-using System.Collections.Frozen;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Application.Interfaces;
+using Concertable.B2B.Deal.Application.Strategies;
 using Concertable.B2B.Deal.Domain.Entities;
+using Reunion.Errors;
+using Reunion;
 
 namespace Concertable.B2B.Deal.Infrastructure.Services.Updaters;
 
 internal sealed class DealUpdater : IDealUpdater
 {
-    private readonly FrozenDictionary<DealType, IDealUpdater> updaters;
+    private readonly IDealStrategyFactory<IDealUpdater> strategies;
 
-    public DealUpdater(
-        FlatFeeDealUpdater flatFee,
-        DoorSplitDealUpdater doorSplit,
-        VersusDealUpdater versus,
-        VenueHireDealUpdater venueHire)
+    public DealUpdater(IDealStrategyFactory<IDealUpdater> strategies)
     {
-        updaters = new Dictionary<DealType, IDealUpdater>
-        {
-            [DealType.FlatFee] = flatFee,
-            [DealType.DoorSplit] = doorSplit,
-            [DealType.Versus] = versus,
-            [DealType.VenueHire] = venueHire,
-        }.ToFrozenDictionary();
+        this.strategies = strategies;
     }
 
-    public void Apply(DealEntity existing, IDeal source) =>
-        updaters[source.DealType].Apply(existing, source);
+    public UnitResult<ValidationErrors> Apply(DealEntity existing, DealDto source)
+    {
+        if (existing.DealType != source.DealType)
+        {
+            return new ValidationErrors([
+                new(nameof(source.DealType), $"A {source.DealType} deal cannot update a {existing.DealType} deal.")
+            ]);
+        }
+
+        return strategies.Create(source).Apply(existing, source);
+    }
 }

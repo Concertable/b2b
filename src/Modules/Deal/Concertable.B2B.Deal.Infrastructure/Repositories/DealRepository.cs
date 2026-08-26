@@ -9,10 +9,15 @@ namespace Concertable.B2B.Deal.Infrastructure.Repositories;
 internal sealed class DealRepository
     : TenantScopedRepository<DealEntity>, IDealRepository
 {
-    public DealRepository(DealDbContext context, ITenantContext tenant)
-        : base(context, tenant) { }
+    private readonly DealDbContext context;
 
-    public async Task<IEnumerable<DealEntity>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken ct = default) =>
+    public DealRepository(DealDbContext context, ITenantContext tenant)
+        : base(context, tenant)
+    {
+        this.context = context;
+    }
+
+    public async Task<IReadOnlyList<DealEntity>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken ct = default) =>
         await context.Deals
             .Where(c => ids.Contains(c.Id))
             .ToListAsync(ct);

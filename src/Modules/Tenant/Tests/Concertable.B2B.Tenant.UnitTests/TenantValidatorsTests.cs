@@ -24,6 +24,7 @@ public sealed class TenantValidatorsTests
             VatNumber = vatNumber,
             SellerIdentifier = "SID000001",
             BankReference = "GB00BANK00000000000001",
+            HoldsMusicLicence = false,
             RegisteredAddress = new RegisteredAddressDto
             {
                 Line1 = "1 Main St",

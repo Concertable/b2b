@@ -1,6 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "shared/index.css";
+import { ConsentProvider } from "@concertable/web/providers/ConsentProvider";
+import { CookieConsentBanner } from "@concertable/web/components/CookieConsentBanner";
+import { ManageCookiesButton } from "@concertable/web/components/ManageCookiesButton";
+import "@concertable/web/index.css";
 
 function BuildingIcon() {
   return (
@@ -91,14 +94,14 @@ function App() {
         <div className="grid w-full max-w-3xl grid-cols-2 gap-6">
         <GatewayCard
           testId="get-started-venue"
-          href={`${venueUrl}/login`}
+          href={`${venueUrl}/login?redirect=%2Fcreate`}
           icon={<BuildingIcon />}
           title="I manage a venue"
           description="Post opportunities, review applications, run shows and settle with artists."
         />
         <GatewayCard
           testId="get-started-artist"
-          href={`${artistUrl}/login`}
+          href={`${artistUrl}/login?redirect=%2Fcreate`}
           icon={<MusicIcon />}
           title="I represent artists"
           description="List your artists, apply to opportunities, manage bookings and get paid."
@@ -119,6 +122,15 @@ function App() {
             Go to concertable.co.uk
           </a>
         </p>
+        <nav className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground/60">
+          <a href="/cookies" className="hover:text-primary hover:underline">
+            Cookie policy
+          </a>
+          <a href="/privacy" className="hover:text-primary hover:underline">
+            Privacy
+          </a>
+          <ManageCookiesButton className="text-muted-foreground/60 hover:text-primary" />
+        </nav>
       </footer>
     </div>
   );
@@ -126,6 +138,9 @@ function App() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ConsentProvider>
+      <App />
+      <CookieConsentBanner />
+    </ConsentProvider>
   </StrictMode>,
 );

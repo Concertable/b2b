@@ -30,7 +30,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         var page = await GetInboxAsync(venue);
 
         var inbound = page.Data.Single(m => m.Content == "Test inbox message — artist to venue.");
-        Assert.Equal("Org", inbound.Sender.Kind);
+        Assert.Equal("org", inbound.Sender.Kind);
         Assert.Equal("The Rockers", inbound.Sender.DisplayName);
         Assert.Equal("Loughborough", inbound.Sender.Town);
     }
@@ -43,7 +43,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         var page = await GetInboxAsync(venue);
 
         var outbound = page.Data.Single(m => m.Content == "Test inbox message — venue to artist.");
-        Assert.Equal("Member", outbound.Sender.Kind);
+        Assert.Equal("member", outbound.Sender.Kind);
         Assert.Equal(SeedUsers.VenueManagerEmail(1), outbound.Sender.DisplayName);
     }
 
@@ -55,7 +55,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         var page = await GetInboxAsync(artist);
 
         var inbound = page.Data.Single(m => m.Content == "Test inbox message — venue to artist.");
-        Assert.Equal("Org", inbound.Sender.Kind);
+        Assert.Equal("org", inbound.Sender.Kind);
         Assert.Equal("The Grand Venue", inbound.Sender.DisplayName);
     }
 
@@ -83,6 +83,22 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         Assert.Equal(0, await GetUnreadCountAsync(venue));
     }
 
+    [Fact]
+    public async Task Previews_ReturnLatestMessageWithCounterpartyIdentity()
+    {
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await venue.GetAsync("/api/Message/previews");
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        var previews = await response.Content.ReadAsync<List<MessagePreview>>();
+        var preview = Assert.Single(previews!);
+        Assert.Equal("The Rockers", preview.OtherPartyName);
+        Assert.Equal("Test inbox message — venue to artist.", preview.Preview);
+        Assert.True(preview.Unread);
+        Assert.Equal("/_venue/?inbox=open", preview.Href);
+    }
+
     private static async Task<InboxPage> GetInboxAsync(HttpClient client) =>
         (await (await client.GetAsync("/api/Message/user")).Content.ReadAsync<InboxPage>())!;
 
@@ -92,4 +108,11 @@ public sealed class MessagingInboxTests : IAsyncLifetime
     private sealed record InboxPage(List<InboxMessage> Data, int TotalCount);
     private sealed record InboxMessage(int Id, InboxSender Sender, string Content);
     private sealed record InboxSender(string Kind, string DisplayName, string? County, string? Town);
+    private sealed record MessagePreview(
+        int Id,
+        string OtherPartyName,
+        string Preview,
+        DateTime At,
+        bool Unread,
+        string Href);
 }

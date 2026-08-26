@@ -1,6 +1,7 @@
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.Tenant.Application;
 using Concertable.B2B.Tenant.Application.Tax;
 using Concertable.B2B.Tenant.Application.Interfaces;
@@ -46,9 +47,15 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IVatPolicy, VatPolicy>();
 
         services.AddScoped<ITenantRepository, TenantRepository>();
+        services.AddScoped<IMembershipRepository, MembershipRepository>();
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IMembershipService, MembershipService>();
         services.AddScoped<IInvitationService, InvitationService>();
+        services.AddScoped<ITenantActivityRepository, TenantActivityRepository>();
+        services.AddScoped<ITenantActivityService, TenantActivityService>();
+        services.AddScoped<IVerificationRepository, VerificationRepository>();
+        services.AddScoped<IVerificationService, VerificationService>();
         services.AddScoped<ITenantModule, TenantModule>();
 
         services.AddScoped<TenantContext>();
@@ -69,7 +76,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, TenantProvisioningHandler>();
+        services.AddScoped<IIntegrationEventHandler<TenantActivityRecordedEvent>, TenantActivityRecordedHandler>();
         services.AddScoped<IDomainEventHandler<TenantCreatedDomainEvent>, TenantCreatedDomainEventHandler>();
+        services.AddScoped<IDomainEventHandler<TenantInvitationCreatedDomainEvent>, TenantInvitationCreatedDomainEventHandler>();
 
         // includeInternalTypes: the Tenant validators are internal — without it they're never registered and the VAT-format rule silently doesn't run (mirrors Concert).
         services.AddValidatorsFromAssemblyContaining<UpdateTenantRequestValidator>(includeInternalTypes: true);

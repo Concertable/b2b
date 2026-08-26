@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   TenantChooser,
   TenantSwitcher,
+  requireLocalB2bAuth,
   resolveTenantRoute,
   useTenant,
-} from "@b2b/features/tenant";
+} from "@concertable/web-b2b/features/tenant";
 import { useArtistNotifications } from "../../features/notifications";
 import { requireArtist } from "../../features/artist";
-import { AppLayout } from "@/components/AppLayout";
-import type { ProfileMenuItem } from "@/components/ProfileMenu";
+import { AppLayout } from "@concertable/web/components/AppLayout";
+import type { ProfileMenuItem } from "@concertable/web/components/ProfileMenu";
 
 const links = [
   { label: "Dashboard", to: "/" },
@@ -24,20 +25,24 @@ const profileItems: ProfileMenuItem[] = [
 
 function ArtistLayout() {
   useArtistNotifications();
-  const { selectionRequired } = useTenant("Artist");
-  if (selectionRequired) return <TenantChooser tenantType="Artist" />;
+  const { selectionRequired } = useTenant("artist");
+  if (selectionRequired) return <TenantChooser tenantType="artist" />;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher tenantType="Artist" />}
+      headerSlot={<TenantSwitcher tenantType="artist" />}
     />
   );
 }
 
 export const Route = createFileRoute("/_artist")({
   beforeLoad: async ({ location }) => {
-    const { selectionRequired } = await resolveTenantRoute("Artist");
+    if (location.pathname === "/create") {
+      await requireLocalB2bAuth({ location });
+      return;
+    }
+    const { selectionRequired } = await resolveTenantRoute("artist");
     if (selectionRequired) return;
     await requireArtist({ pathname: location.pathname });
   },

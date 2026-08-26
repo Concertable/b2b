@@ -1,6 +1,6 @@
 import type { User } from "@concertable/shared/features/auth";
 
-export type TenantType = "Venue" | "Artist";
+export type TenantType = "venue" | "artist";
 
 export interface Membership {
   tenantId: string;

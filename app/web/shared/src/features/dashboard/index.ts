@@ -1,5 +1,1 @@
-export type {
-  OpportunitySummary,
-  OpportunityWithCounts,
-  OpportunityCard,
-} from "./types";
+export type { OpportunitySummary } from "./types";

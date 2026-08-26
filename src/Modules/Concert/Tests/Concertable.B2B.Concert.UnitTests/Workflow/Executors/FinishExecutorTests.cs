@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
@@ -20,10 +21,10 @@ public sealed class FinishExecutorTests
             Mock.Of<IConcertWorkflowFactory>(),
             Mock.Of<IDealResolver>(),
             this.concertRepository.Object,
-            Mock.Of<ISettlementPayeeResolver>(),
-            Mock.Of<ITicketPayeeResolver>(),
+            Mock.Of<IDealPayeeResolver>(),
             Mock.Of<IInvoiceIssuer>(),
             Mock.Of<ITenantModule>(),
+            Mock.Of<ISelfBillingAgreementGate>(),
             TimeProvider.System,
             Mock.Of<ILogger<FinishExecutor>>());
     }

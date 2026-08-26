@@ -63,5 +63,7 @@
     </ItemGroup>
     <StripReqnrollHooks Files="@(_ReqnrollHooksFile)" />
   </Target>
+  <Import Project="$(MSBuildThisFileDirectory)../../../TestConventions.targets"
+          Condition="Exists('$(MSBuildThisFileDirectory)../../../TestConventions.targets')" />
 
 </Project>

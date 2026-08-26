@@ -4,19 +4,24 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import {
   serializeSearch,
   deserializeSearch,
-} from "shared/features/search";
-import { APIProvider as MapsProvider } from "@vis.gl/react-google-maps";
+} from "@concertable/web/features/search";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "react-oidc-context";
-import { userManager, onSigninCallback } from "shared/features/auth";
-import { queryClient } from "shared/lib/queryClient";
+import { userManager, onSigninCallback } from "@concertable/web/features/auth";
+import { queryClient } from "@concertable/web/lib/queryClient";
 import { routeTree } from "./routeTree.gen";
-import { ThemeProvider } from "shared/providers/ThemeProvider";
-import { TooltipProvider } from "shared/components/ui/tooltip";
-import "@b2b/lib/b2bClient";
-import "shared/lib/searchClient";
-import "shared/lib/geocoding";
-import "shared/index.css";
+import { ThemeProvider } from "@concertable/web/providers/ThemeProvider";
+import { TooltipProvider } from "@concertable/web/components/ui/tooltip";
+import { ConsentProvider } from "@concertable/web/providers/ConsentProvider";
+import { CookieConsentBanner } from "@concertable/web/components/CookieConsentBanner";
+import {
+  ReviewRouteProvider,
+  b2bReviewBasePath,
+} from "@concertable/web/features/reviews";
+import "@concertable/web-b2b/lib/b2bClient";
+import "@concertable/web/lib/searchClient";
+import "@concertable/web/lib/geocoding";
+import "@concertable/web/index.css";
 
 const router = createRouter({
   routeTree,
@@ -35,16 +40,16 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider userManager={userManager} onSigninCallback={onSigninCallback}>
       <QueryClientProvider client={queryClient}>
-        <MapsProvider
-          apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-          libraries={["places"]}
-        >
-          <ThemeProvider>
+        <ThemeProvider>
+          <ConsentProvider>
             <TooltipProvider>
-              <RouterProvider router={router} />
+              <ReviewRouteProvider basePath={b2bReviewBasePath}>
+                <RouterProvider router={router} />
+              </ReviewRouteProvider>
             </TooltipProvider>
-          </ThemeProvider>
-        </MapsProvider>
+            <CookieConsentBanner />
+          </ConsentProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </AuthProvider>
   </StrictMode>,

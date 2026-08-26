@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { messageApi } from "@concertable/web-b2b/features/conversations";
 import { DASHBOARD_POLLING } from "@concertable/shared/features/dashboard";
-import dashboardApi from "../dashboardApi";
 
 export function useVenueInboxQuery() {
   return useQuery({
     queryKey: ["dashboard", "venue", "inbox"],
-    queryFn: dashboardApi.getInbox,
+    queryFn: messageApi.getPreviews,
     refetchInterval: DASHBOARD_POLLING.fast,
   });
 }

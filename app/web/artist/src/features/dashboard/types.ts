@@ -4,7 +4,9 @@ import type {
   ReviewSummary,
   StripeConnectStatus,
 } from "@concertable/shared/features/dashboard";
-import type { OpportunitySummary } from "@b2b/features/dashboard";
+import type { OpportunitySummary } from "@concertable/web-b2b/features/dashboard";
+import type { Deal } from "@concertable/web-b2b/features/deals";
+import type { Genre } from "@concertable/shared/types/common";
 import type { ApplicationActions } from "./applicationActions";
 
 export interface ArtistDashboardOverview {
@@ -20,7 +22,6 @@ export interface ArtistDashboardKpis {
   acceptedAwaitingCheckout: number;
   upcomingConcerts: number;
   mtdPayoutsCents: number;
-  mtdPayoutsDeltaPercent?: number;
 }
 
 export interface Application {
@@ -28,4 +29,18 @@ export interface Application {
   status: DashboardApplicationStatus;
   opportunity: OpportunitySummary;
   actions: ApplicationActions;
+}
+
+export interface OpportunityMatch {
+  id: number;
+  venueId: number;
+  venueName: string;
+  county: string;
+  town: string;
+  startDate: string;
+  endDate: string;
+  genres: Genre[];
+  deal: Deal;
+  fitScore: number;
+  href: string;
 }

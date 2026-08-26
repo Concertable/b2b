@@ -5,6 +5,8 @@ namespace Concertable.B2B.Concert.Api.Mappers;
 
 internal interface IApplicationResponseMapper
 {
-    ApplicationResponse ToResponse(ApplicationDto dto);
-    IEnumerable<ApplicationResponse> ToResponses(IEnumerable<ApplicationDto> dtos);
+    ApplicationResponse<VenueApplicationActions> ToVenueResponse(ApplicationDto dto);
+    IEnumerable<ApplicationResponse<VenueApplicationActions>> ToVenueResponses(IEnumerable<ApplicationDto> dtos);
+    ApplicationResponse<ArtistApplicationActions> ToArtistResponse(ApplicationDto dto);
+    IEnumerable<ApplicationResponse<ArtistApplicationActions>> ToArtistResponses(IEnumerable<ApplicationDto> dtos);
 }

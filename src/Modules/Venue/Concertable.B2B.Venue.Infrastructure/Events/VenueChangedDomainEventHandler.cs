@@ -29,6 +29,9 @@ internal sealed class VenueChangedDomainEventHandler
             venue.Address.Town,
             venue.Location.Y,
             venue.Location.X,
-            venue.Email), ct);
+            venue.Email)
+        {
+            TenantId = venue.TenantId
+        }, ct);
     }
 }

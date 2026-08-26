@@ -5,15 +5,24 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class SequenceRepository<TSequence> : BaseRepository<TSequence>, ISequenceRepository<TSequence>
+internal sealed class SequenceRepository<TSequence> : ISequenceRepository<TSequence>
     where TSequence : class, ISequence<TSequence>
 {
-    public SequenceRepository(ConcertDbContext context) : base(context) { }
+    private readonly ConcertDbContext context;
+
+    public SequenceRepository(ConcertDbContext context)
+    {
+        this.context = context;
+    }
 
     public async Task<long> AllocateNextAsync(Guid tenantId, CancellationToken ct = default)
     {
-        var sequence = await context.Set<TSequence>().FirstOrDefaultAsync(s => s.TenantId == tenantId, ct)
-            ?? await base.AddAsync(TSequence.Create(tenantId), ct);
+        var sequence = await context.Set<TSequence>().FirstOrDefaultAsync(s => s.TenantId == tenantId, ct);
+        if (sequence is null)
+        {
+            sequence = TSequence.Create(tenantId);
+            await context.Set<TSequence>().AddAsync(sequence, ct);
+        }
 
         return sequence.Allocate();
     }

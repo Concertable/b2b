@@ -1,22 +1,23 @@
 using Concertable.B2B.Concert.Application.Workflow.Steps;
+using Concertable.B2B.Concert.Domain.Entities;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 
 internal sealed class PaidAcceptStep : IPaidAcceptStep
 {
     private readonly IBookingService bookingService;
-    private readonly IDealAccessor dealAccessor;
 
-    public PaidAcceptStep(
-        IBookingService bookingService,
-        IDealAccessor dealAccessor)
+    public PaidAcceptStep(IBookingService bookingService)
     {
         this.bookingService = bookingService;
-        this.dealAccessor = dealAccessor;
     }
 
-    public async Task ExecuteAsync(int applicationId, string paymentMethodId)
+    public async Task<UnitResult<AcceptApplicationError>> ExecuteAsync(
+        ApplicationEntity application,
+        string paymentMethodId,
+        CancellationToken ct = default)
     {
-        await bookingService.CreateDeferredAsync(applicationId, dealAccessor.Deal.DealType, paymentMethodId);
+        await bookingService.CreateDeferredAsync(application, paymentMethodId);
+        return new Success();
     }
 }

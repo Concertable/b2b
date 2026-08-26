@@ -7,15 +7,28 @@ namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
 internal sealed class ArtistRepository : TenantScopedRepository<ArtistEntity>, IArtistRepository
 {
-    public ArtistRepository(ArtistDbContext context, ITenantContext tenant) : base(context, tenant) { }
+    private readonly ArtistDbContext context;
 
-    public async Task<int?> GetIdForCurrentTenantAsync() =>
-        await base.CurrentTenant.AsNoTracking()
-            .Select(a => (int?)a.Id)
-            .FirstOrDefaultAsync();
+    public ArtistRepository(ArtistDbContext context, ITenantContext tenant) : base(context, tenant)
+    {
+        this.context = context;
+    }
 
-    public async Task<ArtistDetails?> GetDetailsForCurrentTenantAsync() =>
-        await base.CurrentTenant.AsNoTracking()
+    public async Task<ArtistEntity?> GetByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
+        await context.Artists.SingleOrDefaultAsync(a => a.TenantId == tenantId, ct);
+
+    public async Task<ArtistDetails?> GetDetailsByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
+        await context.Artists.AsNoTracking()
+            .Where(a => a.TenantId == tenantId)
             .ToDetails(context.ArtistRatingProjections.AsNoTracking())
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync(ct);
+
+    public async Task<bool> ExistsByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
+        await context.Artists.AnyAsync(a => a.TenantId == tenantId, ct);
 }

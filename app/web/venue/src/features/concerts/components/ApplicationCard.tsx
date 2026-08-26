@@ -1,9 +1,9 @@
-﻿import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@concertable/web/components/ui/button";
+import { Badge } from "@concertable/web/components/ui/badge";
 import { useImageUrlQuery } from "@concertable/shared/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import type { Application } from "@b2b/features/concerts";
+import type { Application } from "@concertable/web-b2b/features/concerts";
 
 interface Props {
   application: Application;
@@ -52,7 +52,7 @@ export function ApplicationCard({
 
         <div className="flex shrink-0 items-center gap-2">
           <Badge variant="outline">{status}</Badge>
-          {status === "Pending" && (
+          {status === "pending" && (
             <Button size="sm" onClick={handleAccept} data-testid="accept">
               Accept
             </Button>

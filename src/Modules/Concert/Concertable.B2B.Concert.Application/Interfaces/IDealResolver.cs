@@ -4,7 +4,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IDealResolver
 {
-    Task<IDeal> ResolveByOpportunityIdAsync(int opportunityId);
-    Task<IDeal> ResolveByApplicationIdAsync(int applicationId);
-    Task<IDeal> ResolveByConcertIdAsync(int concertId);
+    Task<DealDto> ResolveByOpportunityIdAsync(int opportunityId);
+    Task<DealDto> ResolveByApplicationIdAsync(int applicationId);
+    Task<DealDto> ResolveByConcertIdAsync(int concertId);
 }

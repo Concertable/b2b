@@ -7,8 +7,9 @@ internal sealed record OpportunityDto
 {
     public int Id { get; init; }
     public int VenueId { get; init; }
+    public required string VenueName { get; init; }
     public int DealId { get; init; }
-    public IDeal Deal { get; init; } = null!;
+    public DealDto Deal { get; init; } = null!;
     public DateTime StartDate { get; init; }
     public DateTime EndDate { get; init; }
     public IReadOnlyList<Genre> Genres { get; init; } = [];

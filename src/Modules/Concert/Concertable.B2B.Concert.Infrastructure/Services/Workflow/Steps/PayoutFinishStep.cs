@@ -3,7 +3,6 @@ using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Steps;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.Kernel.Enums;
-using Concertable.Kernel.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
@@ -13,14 +12,14 @@ internal sealed class PayoutFinishStep : IFinishStep
     private readonly IBookingService bookingService;
     private readonly ISettlementAmountResolver settlementAmountResolver;
     private readonly IDealAccessor dealAccessor;
-    private readonly IManagerPaymentClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly ILogger<PayoutFinishStep> logger;
 
     public PayoutFinishStep(
         IBookingService bookingService,
         ISettlementAmountResolver settlementAmountResolver,
         IDealAccessor dealAccessor,
-        IManagerPaymentClient managerPaymentClient,
+        IManagerPaymentOperationsClient managerPaymentClient,
         ILogger<PayoutFinishStep> logger)
     {
         this.bookingService = bookingService;
@@ -30,26 +29,24 @@ internal sealed class PayoutFinishStep : IFinishStep
         this.logger = logger;
     }
 
-    public async Task ExecuteAsync(int concertId)
+    public async Task<UnitResult<FinishConcertError>> ExecuteAsync(int concertId, CancellationToken ct = default)
     {
-        // Same resolver the invoice issuer uses, so the charged share and the invoiced gross can't diverge.
         var artistShare = await settlementAmountResolver.ResolveGrossAsync(concertId, dealAccessor.Deal);
 
-        logger.ArtistShareCalculated(concertId, artistShare);
-
-        /* DoorSplit/Versus: the venue tenant pays the artist tenant, per the booking's frozen snapshot. */
+        logger.ArtistShareCalculated(concertId, artistShare.Amount);
         var settlement = await bookingService.GetSettlementByConcertIdAsync(concertId);
 
-        logger.SettlingConcert(concertId, settlement.BookingId, artistShare, settlement.VenueTenantId, settlement.ArtistTenantId);
+        logger.SettlingConcert(concertId, settlement.BookingId, artistShare.Amount, settlement.VenueTenantId, settlement.ArtistTenantId);
 
-        var payment = await managerPaymentClient.PayAsync(
+        return (await managerPaymentClient.PayAsync(
             settlement.VenueTenantId,
             settlement.ArtistTenantId,
             artistShare,
             settlement.PaymentMethodId,
             PaymentSession.OffSession,
-            settlement.BookingId);
-        if (payment.IsFailed)
-            throw new BadRequestException(payment.Errors);
+            settlement.BookingId,
+            ct)).Bind(
+                _ => UnitResult.Success<FinishConcertError>(),
+                error => new FinishConcertError.ManagerPaymentFailure(error));
     }
 }

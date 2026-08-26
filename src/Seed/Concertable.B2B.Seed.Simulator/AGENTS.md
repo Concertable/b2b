@@ -10,11 +10,11 @@ The simulator is **not** registered in the umbrella `Concertable.AppHost`. Real 
 
 ## Why it exists
 
-Concertable is a multi-microservice system. Customer (and other downstream services) reference B2B only via `Concertable.B2B.X.Contracts` projects — the integration event records and DTO shapes. They never reference B2B's runtime code. See [`api/ARCHITECTURE.md`](../../../../ARCHITECTURE.md) for the full statement of the microservice premise.
+Concertable is a multi-microservice system. Customer (and other downstream services) reference B2B only via `Concertable.B2B.X.Contracts` projects — the integration event records and DTO shapes. They never reference B2B's runtime code. See the `microservice-boundaries` skill for the full statement of the microservice premise.
 
 This means `Concertable.Customer.AppHost` runs standalone with Auth + Customer.Web + Search + Payment + SPAs but **without B2B**. With no B2B running, Customer's projection event handlers receive nothing. Customer's projection tables (`[concert].[Concerts]`, `[venue].[Venues]`, `[artist].[Artists]`) stay empty. The Customer SPA shows nothing. Dev experience is unusable.
 
-The seeding convention (`api/agents/SEEDING_CONVENTIONS.md`) forbids the obvious hack — direct `context.XReadModels.AddRange(...)` — because read-models in production are written only by event handlers, never directly. Bypassing that flow in seeders would mean the seeding code path differs from production, which is exactly the bug-multiplier the convention exists to prevent.
+The seeding convention (the `dotnet-standards:seeding` and `dotnet:seeding` skills) forbids the obvious hack — direct `context.XReadModels.AddRange(...)` — because read-models in production are written only by event handlers, never directly. Bypassing that flow in seeders would mean the seeding code path differs from production, which is exactly the bug-multiplier the convention exists to prevent.
 
 The simulator is the convention-compliant answer. It runs as a Worker, publishes the same events real B2B would publish, exits. Customer's projection handlers do their normal work and populate the tables. Identical code path to production.
 
@@ -83,7 +83,7 @@ The failure modes I've personally hit during the design of this system:
 
 - **Don't add the simulator to `Concertable.AppHost`.** Real B2B is already running in the umbrella; the simulator there would double-publish (consumers are idempotent so it wouldn't corrupt data, but it's wasted work and confusing in logs).
 
-- **Don't run real B2B inside `Concertable.Customer.AppHost` to "solve" the empty-projection problem.** That re-monoliths the system. Customer's standalone AppHost exists precisely so Customer can be developed without B2B's runtime. If you find yourself adding `builder.AddProject<Projects.Concertable_B2B_Web>(...)` to Customer.AppHost, stop and re-read `api/ARCHITECTURE.md`.
+- **Don't run real B2B inside `Concertable.Customer.AppHost` to "solve" the empty-projection problem.** That re-monoliths the system. Customer's standalone AppHost exists precisely so Customer can be developed without B2B's runtime. If you find yourself adding `builder.AddProject<Projects.Concertable_B2B_Web>(...)` to Customer.AppHost, stop and re-read the `microservice-boundaries` skill.
 
 - **Don't seed projection tables from inside the E2E `AppFixture`.** The old `ProjectionSeeder.cs` published events from inside the test fixture's seed host. That worked but it was a test-only hack — dev wasn't covered, the fixture had to register an ASB transport just for seeding, and it lived in the wrong layer. The simulator replaces that hack at the AppHost level so dev gets the same flow.
 
@@ -142,8 +142,8 @@ If you're not sure you've kept things on the right side of the line, these grep 
 
 ## Related docs
 
-- [`api/ARCHITECTURE.md`](../../../../ARCHITECTURE.md) — microservice premise.
-- [`api/agents/SEEDING_CONVENTIONS.md`](../../../../agents/SEEDING_CONVENTIONS.md) — the no-direct-projection-seeding rule and the rest of the seeding conventions.
+- The `microservice-boundaries` skill — microservice premise.
+- The `dotnet-standards:seeding` and `dotnet:seeding` skills — the no-direct-projection-seeding rule and this system's forbidden-table roster.
 - `api/Concertable.B2B/src/Seed/Concertable.B2B.Seed.Infrastructure/` — B2B's own SeedState (consumes the catalog for venues/artists/concerts) plus the `Factories/` (`VenueFactory`/`ArtistFactory`/`ConcertFactory`).
 - `api/Concertable.B2B/src/Seed/Concertable.B2B.Seed.Contracts/` — the canonical `XSeedSpec` records and their `ToChangedEvent()` conversion.
 - `api/Concertable.Customer/Concertable.Customer.AppHost/Program.cs` — where the simulator is registered.

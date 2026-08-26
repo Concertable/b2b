@@ -6,7 +6,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class BookingRepository : VenueArtistTenantScopedRepository<BookingEntity>, IBookingRepository
 {
-    public BookingRepository(ConcertDbContext context) : base(context) { }
+    private readonly ConcertDbContext context;
+
+    public BookingRepository(ConcertDbContext context) : base(context)
+    {
+        this.context = context;
+    }
 
     public override async Task<BookingEntity?> GetByIdAsync(int id, CancellationToken ct = default)
     {
@@ -33,6 +38,11 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             .Include(b => b.Concert)
             .FirstOrDefaultAsync(ct);
     }
+
+    public Task<BookingEntity?> GetByConcertIdAsync(int concertId, CancellationToken ct = default) =>
+        context.Bookings
+            .Include(booking => booking.Application)
+            .SingleOrDefaultAsync(booking => booking.Concert!.Id == concertId, ct);
 
     public async Task<BookingEntity?> GetForSettlementByConcertIdAsync(int concertId)
     {

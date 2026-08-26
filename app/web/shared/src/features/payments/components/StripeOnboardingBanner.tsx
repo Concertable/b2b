@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@concertable/web/components/ui/button";
 import { useStripeAccount } from "../hooks/useStripeAccount";
 
 export function StripeOnboardingBanner() {

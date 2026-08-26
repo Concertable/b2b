@@ -12,14 +12,14 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
     private readonly IOpportunityRepository opportunityRepository;
     private readonly IUserModule userModule;
     private readonly IDealAccessor dealAccessor;
-    private readonly IManagerPaymentClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly ITenantContext tenantContext;
 
     public SetupCheckoutStep(
         IOpportunityRepository opportunityRepository,
         IUserModule userModule,
         IDealAccessor dealAccessor,
-        IManagerPaymentClient managerPaymentClient,
+        IManagerPaymentOperationsClient managerPaymentClient,
         ITenantContext tenantContext)
     {
         this.opportunityRepository = opportunityRepository;
@@ -34,8 +34,10 @@ internal sealed class SetupCheckoutStep : IApplyCheckoutStep
         var venueSummary = await opportunityRepository.GetVenueSummaryByIdAsync(opportunityId)
             .OrNotFound(DisplayNames.Opportunity);
         var manager = await userModule.GetManagerByIdAsync(venueSummary.UserId);
-        var venue = new PayeeSummary(venueSummary.Name, manager?.Email);
-        var deal = (VenueHireDeal)dealAccessor.Deal;
+        var venue = new PayeeSummary(
+            venueSummary.Name,
+            manager.Match(value => value.Email, () => null));
+        var deal = (VenueHireDealDto)dealAccessor.Deal;
 
         var metadata = new Dictionary<string, string>
         {

@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Application.DTOs;
+using Concertable.B2B.Concert.Application.Errors;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
@@ -8,7 +9,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// </summary>
 internal interface IContractService
 {
-    Task<ContractDto> GetByApplicationIdAsync(int applicationId);
-    Task<FileDownload> GetPdfByApplicationIdAsync(int applicationId);
-    Task<FileDownload> GetPdfByConcertIdAsync(int concertId);
+    Task<Result<ContractDto, ContractError>> GetByApplicationIdAsync(int applicationId);
+    Task<Result<FileDownload, ContractError>> GetPdfByApplicationIdAsync(int applicationId);
+    Task<Result<FileDownload, ContractError>> GetPdfByConcertIdAsync(int concertId);
 }

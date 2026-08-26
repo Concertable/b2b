@@ -1,6 +1,4 @@
 using System.Net;
-using Concertable.B2B.Concert.Application.DTOs;
-
 using Concertable.B2B.Concert.Api.Responses;
 using Xunit;
 using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
@@ -8,6 +6,7 @@ using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Microsoft.AspNetCore.Mvc;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
@@ -26,34 +25,60 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    public static TheoryData<IDeal> AllDealTypes =>
+    [Fact]
+    public async Task GetCurrentForVenue_ShouldReturnOpportunityList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync("/api/Opportunity/venue/current");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var opportunities = await response.Content.ReadAsync<System.Text.Json.JsonElement>();
+        Assert.Equal(System.Text.Json.JsonValueKind.Array, opportunities.ValueKind);
+    }
+
+    [Fact]
+    public async Task GetRecommendedForArtist_ShouldReturnOpportunityList()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await client.GetAsync("/api/Opportunity/artist/recommended");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var opportunities = await response.Content.ReadAsync<System.Text.Json.JsonElement>();
+        Assert.Equal(System.Text.Json.JsonValueKind.Array, opportunities.ValueKind);
+    }
+
+    public static TheoryData<DealDto> AllDealTypes =>
     [
-        new FlatFeeDeal { PaymentMethod = PaymentMethod.Cash, Fee = 500 },
-        new DoorSplitDeal { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 },
-        new VersusDeal { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 },
-        new VenueHireDeal { PaymentMethod = PaymentMethod.Cash, HireFee = 300 },
+        new FlatFeeDealDto { PaymentMethod = PaymentMethod.Cash, Fee = 500 },
+        new DoorSplitDealDto { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 70 },
+        new VersusDealDto { PaymentMethod = PaymentMethod.Cash, Guarantee = 200, ArtistDoorPercent = 60 },
+        new VenueHireDealDto { PaymentMethod = PaymentMethod.Cash, HireFee = 300 },
     ];
 
     #region Create
 
     [Theory]
     [MemberData(nameof(AllDealTypes))]
-    public async Task Create_ShouldReturnCreatedOpportunity(IDeal deal)
+    public async Task Create_ShouldReturnCreatedOpportunity(DealDto deal)
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var request = BuildRequest(deal);
+        var request = BuildRequest(deal, fixture.SeedNow);
 
         // Act
-        var response = await client.PostAsync("/api/Opportunity", request);
+        var response = await client.PostAsync("/api/opportunity", request);
 
         // Assert
-        var opportunity = await response.Content.ReadAsync<OpportunityDto>();
+        await response.ShouldBe(HttpStatusCode.Created);
+        var opportunity = await response.Content.ReadAsync<OpportunityResponse>();
         Assert.NotNull(opportunity);
         Assert.NotNull(opportunity.Id);
         Assert.Equal(request.StartDate, opportunity.StartDate);
         Assert.Equal(request.EndDate, opportunity.EndDate);
         Assert.Contains(Genre.Rock, opportunity.Genres);
+        Assert.Equal($"/api/opportunity/{opportunity.Id}", response.Headers.Location?.OriginalString);
     }
 
     [Fact]
@@ -63,10 +88,27 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         // Act
-        var response = await client.PostAsync("/api/Opportunity", BuildDefaultRequest());
+        var response = await client.PostAsync("/api/opportunity", BuildDefaultRequest(fixture.SeedNow));
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Create_ShouldReturn403_WhenVenueNotVerified()
+    {
+        // Arrange — SeedState.UnverifiedVenueManager owns a venue but has no verification row.
+        var client = fixture.CreateClient(fixture.SeedState.UnverifiedVenueManager);
+
+        // Act
+        var response = await client.PostAsync("/api/opportunity", BuildDefaultRequest(fixture.SeedNow));
+
+        // Assert
+        await response.ShouldBe(HttpStatusCode.Forbidden);
+        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.True(problem.Extensions.TryGetValue("code", out var code));
+        Assert.Equal("opportunity.venue_not_verified", code?.ToString());
     }
 
     [Fact]
@@ -76,10 +118,63 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         var client = fixture.CreateClient();
 
         // Act
-        var response = await client.PostAsync("/api/Opportunity", BuildDefaultRequest());
+        var response = await client.PostAsync("/api/opportunity", BuildDefaultRequest(fixture.SeedNow));
 
         // Assert
         await response.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Create_InvalidDeal_ReturnsValidationProblem()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var request = BuildRequest(new VersusDealDto
+        {
+            PaymentMethod = PaymentMethod.Cash,
+            Guarantee = -1,
+            ArtistDoorPercent = 101
+        }, fixture.SeedNow);
+
+        var response = await client.PostAsync("/api/opportunity", request);
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.True(problem.Extensions.TryGetValue("code", out var code));
+        Assert.Equal("opportunity.deal.invalid", code?.ToString());
+        Assert.Equal(["Guarantee must be zero or greater."], problem.Errors["Guarantee"]);
+        Assert.Equal(
+            ["Artist door percent must be between 0 and 100."],
+            problem.Errors["ArtistDoorPercent"]);
+    }
+
+    #endregion
+
+    #region Update
+
+    [Fact]
+    public async Task Update_InvalidDeal_ReturnsValidationProblem()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var request = BuildRequest(new VenueHireDealDto
+        {
+            PaymentMethod = PaymentMethod.Cash,
+            HireFee = 0
+        }, fixture.SeedNow) with
+        {
+            Id = fixture.SeedState.FreshVenueHireOpportunity.Id
+        };
+
+        var response = await client.PutAsync(
+            $"/api/venue/{fixture.SeedState.Venue.Id}/opportunities",
+            new[] { request });
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.True(problem.Extensions.TryGetValue("code", out var code));
+        Assert.Equal("opportunity.deal.invalid", code?.ToString());
+        Assert.Equal(["Hire fee must be greater than zero."], problem.Errors["HireFee"]);
     }
 
     #endregion
@@ -94,11 +189,11 @@ public sealed class OpportunityApiTests : IAsyncLifetime
 
         // Act
         var response = await client.GetAsync(
-            $"/api/Opportunity/active/venue/{fixture.SeedState.Venue.Id}");
+            $"/api/opportunity/active/venue/{fixture.SeedState.Venue.Id}");
 
         // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var result = await response.Content.ReadAsync<Pagination<OpportunityDto>>();
+        var result = await response.Content.ReadAsync<Pagination<OpportunityResponse>>();
         Assert.NotNull(result);
         Assert.Contains(result.Data, o => o.Id == fixture.SeedState.FreshVenueHireOpportunity.Id);
     }

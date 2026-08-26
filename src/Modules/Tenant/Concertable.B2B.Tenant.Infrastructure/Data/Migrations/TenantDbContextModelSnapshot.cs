@@ -23,6 +23,50 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantActivityEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "At");
+
+                    b.HasIndex("TenantId", "SourceKey")
+                        .IsUnique();
+
+                    b.ToTable("Activities", "tenant");
+                });
+
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -124,6 +168,68 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.ToTable("Memberships", "tenant");
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantVerificationEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ReviewedByAdminSub")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique();
+
+                    b.ToTable("Verifications", "tenant");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.VerificationDocumentEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BlobName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("DocumentType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantVerificationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantVerificationId");
+
+                    b.ToTable("VerificationDocuments", "tenant");
+                });
+
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
                 {
                     b.Property<Guid>("MessageId")
@@ -205,6 +311,9 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                                 .HasMaxLength(50)
                                 .HasColumnType("nvarchar(50)");
 
+                            b1.Property<bool>("HoldsMusicLicence")
+                                .HasColumnType("bit");
+
                             b1.Property<string>("SellerIdentifier")
                                 .IsRequired()
                                 .HasMaxLength(50)
@@ -263,6 +372,20 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         });
 
                     b.Navigation("TaxCompliance");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.VerificationDocumentEntity", b =>
+                {
+                    b.HasOne("Concertable.B2B.Tenant.Domain.Entities.TenantVerificationEntity", null)
+                        .WithMany("Documents")
+                        .HasForeignKey("TenantVerificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantVerificationEntity", b =>
+                {
+                    b.Navigation("Documents");
                 });
 #pragma warning restore 612, 618
         }
