@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <ConcertablePlatformVersion>0.1.0-alpha.0.1202</ConcertablePlatformVersion>
+    <ConcertablePlatformVersion>0.1.0-alpha.0.1206</ConcertablePlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -92,6 +92,7 @@
     <PackageVersion Include="Concertable.Seed.Shared" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Identity" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.AppHost.Shared" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Auth.Contracts" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Payment.Client" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Payment.Contracts" Version="$(ConcertablePlatformVersion)" />
