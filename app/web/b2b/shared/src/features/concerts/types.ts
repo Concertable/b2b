@@ -15,7 +15,7 @@ export type ApplicationStatus =
   | "settled";
 
 export interface OpportunityActions {
-  checkout?: ActionLink | null;
+  checkout?: ActionLink;
 }
 
 export interface OpportunityDraft {
@@ -49,23 +49,23 @@ export const Opportunity = {
 
 export interface ApplicationActions {
   accept: ActionLink;
-  checkout?: ActionLink | null;
-  withdraw?: ActionLink | null;
-  reject?: ActionLink | null;
-  cancel?: ActionLink | null;
-  contract?: ActionLink | null;
+  checkout?: ActionLink;
+  withdraw?: ActionLink;
+  reject?: ActionLink;
+  cancel?: ActionLink;
+  contract?: ActionLink;
 }
 
 export interface ConcertActions {
-  cancel?: ActionLink | null;
-  contract?: ActionLink | null;
-  declareDoorRevenue?: ActionLink | null;
-  invoice?: ActionLink | null;
+  cancel?: ActionLink;
+  contract?: ActionLink;
+  declareDoorRevenue?: ActionLink;
+  invoice?: ActionLink;
 }
 
 export interface MyConcert extends Concert {
   ticketsSold: number;
-  doorRevenue?: number | null;
+  doorRevenue?: number;
   actions: ConcertActions;
 }
 

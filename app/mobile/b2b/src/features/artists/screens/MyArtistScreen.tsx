@@ -2,10 +2,7 @@ import { useLayoutEffect } from "react";
 import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { notify } from "@concertable/mobile/lib/toast";
-import {
-  useMyArtist,
-  useArtistStore,
-} from "@concertable/shared/features/artists";
+import { useMyArtist } from "@concertable/shared/features/artists";
 import { EditableProvider } from "@concertable/shared/providers";
 import { Screen } from "@concertable/mobile/components/ui/Screen";
 import { Skeleton } from "@concertable/mobile/components/ui/skeleton";
@@ -18,24 +15,24 @@ export function MyArtistScreen() {
 
   const {
     artist,
+    draft,
     isLoading,
     isError,
     editMode,
     isDirty,
     isSaving,
+    canSave,
+    saveError,
     save,
     toggleEdit,
     resetDraft,
+    setName,
+    setAbout,
+    setBanner,
+    setAvatar,
   } = useMyArtist({
     onSuccess: () => notify("Artist saved!", "success"),
-    onError: () => notify("Failed to save artist.", "error"),
   });
-
-  const draft = useArtistStore((s) => s.draft);
-  const setName = useArtistStore((s) => s.setName);
-  const setAbout = useArtistStore((s) => s.setAbout);
-  const setBanner = useArtistStore((s) => s.setBanner);
-  const setAvatar = useArtistStore((s) => s.setAvatar);
 
   useLayoutEffect(() => {
     nav.setOptions({
@@ -44,13 +41,25 @@ export function MyArtistScreen() {
           editMode={editMode}
           isDirty={isDirty}
           isSaving={isSaving}
+          canSave={canSave}
+          error={saveError}
           onToggleEdit={toggleEdit}
           onSave={save}
           onCancel={resetDraft}
         />
       ),
     });
-  }, [nav, editMode, isDirty, isSaving, toggleEdit, save, resetDraft]);
+  }, [
+    nav,
+    editMode,
+    isDirty,
+    isSaving,
+    canSave,
+    saveError,
+    toggleEdit,
+    save,
+    resetDraft,
+  ]);
 
   if (isLoading) {
     return (

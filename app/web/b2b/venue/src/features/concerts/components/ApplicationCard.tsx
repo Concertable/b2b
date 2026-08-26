@@ -3,7 +3,7 @@ import { Badge } from "@concertable/web/components/ui/badge";
 import { useImageUrlQuery } from "@concertable/shared/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import type { Application } from "@concertable/web-b2b/features/concerts";
+import type { Application } from "@concertable/web-b2b/features/concerts/types";
 
 interface Props {
   application: Application;
