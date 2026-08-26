@@ -93,6 +93,19 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ## LOW
 
+### Admin verification queue enriches contact per row, not per page
+
+`VerificationAdminService.GetPendingAsync` (Tenant.Infrastructure) awaits `IVenueModule`/`IArtistModule`
+`GetContactByTenantIdAsync` once per pending row, sequentially (required — see the fixed concurrency bug
+this replaced: parallel calls hit the same scoped Venue/ArtistReadDbContext instance). Correct, but O(N)
+queries per page instead of one batched lookup per `TenantType` on the page.
+
+**Resolves when:** `IVenueModule`/`IArtistModule` gain a `GetContactsByTenantIdsAsync(IEnumerable<Guid>)`
+batch method, and the admin service groups pending rows by `TenantType` and issues one call per group
+instead of per row.
+
+---
+
 ### Application affordances are not yet modelled as role-and-state discriminated unions
 
 Application responses need different affordances for venue and artist callers, and those affordances also vary by

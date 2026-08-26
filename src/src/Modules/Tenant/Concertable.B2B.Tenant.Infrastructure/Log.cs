@@ -12,4 +12,13 @@ internal static partial class Log
     internal static partial void VerificationContactEmailMissing(this ILogger logger, Guid tenantId);
 
     #endregion
+
+    #region VerificationAdminService
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Verification review for tenant {TenantId} was recorded but its notification could not be sent")]
+    internal static partial void VerificationReviewNotificationFailed(this ILogger logger, Guid tenantId, Exception exception);
+
+    #endregion
 }
