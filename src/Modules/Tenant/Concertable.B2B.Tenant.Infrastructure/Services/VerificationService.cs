@@ -33,6 +33,9 @@ internal sealed class VerificationService : IVerificationService
         return (await repository.GetByTenantIdAsync(tenantId, ct))?.ToDto();
     }
 
+    public Task<bool> IsVerifiedAsync(Guid tenantId, CancellationToken ct = default) =>
+        repository.IsApprovedAsync(tenantId, ct);
+
     public async Task<Result<VerificationStatusDto, SubmitVerificationError>> SubmitAsync(
         IReadOnlyList<EvidenceUpload> uploads,
         CancellationToken ct = default)
