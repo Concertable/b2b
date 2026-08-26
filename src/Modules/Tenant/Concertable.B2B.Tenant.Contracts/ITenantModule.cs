@@ -6,6 +6,7 @@ public interface ITenantModule
     Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default);
     Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
     Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default);
+    Task<bool> IsVerifiedAsync(Guid tenantId, CancellationToken ct = default);
     Task<Option<TaxComplianceDto>> GetTaxComplianceAsync(Guid tenantId, CancellationToken ct = default);
     Task<Result<VatCalculation, VatCalculationError>> GetVatCalculationAsync(
         Guid tenantId,

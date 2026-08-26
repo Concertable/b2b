@@ -2,11 +2,13 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <ConcertablePlatformVersion>0.1.0-alpha.0.1171</ConcertablePlatformVersion>
+    <ConcertablePlatformVersion>0.1.0-alpha.0.1195</ConcertablePlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageVersion Include="Concertable.Testing" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Testing.Architecture" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Testing.Integration" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.1.2" />
     <PackageVersion Include="Aspire.Hosting.Azure.ServiceBus" Version="13.3.2" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.3.2" />
