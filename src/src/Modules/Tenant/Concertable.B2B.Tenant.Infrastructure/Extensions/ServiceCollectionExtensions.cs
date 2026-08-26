@@ -56,7 +56,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITenantActivityService, TenantActivityService>();
         services.AddScoped<IVerificationRepository, VerificationRepository>();
         services.AddScoped<IVerificationService, VerificationService>();
-        services.AddScoped<IVerificationAdminService, VerificationAdminService>();
         services.AddScoped<IVerificationNotifier, VerificationNotifier>();
         services.AddScoped<ITenantModule, TenantModule>();
 
