@@ -12,7 +12,7 @@ internal sealed class VerificationRepository(TenantDbContext context)
             .Include(v => v.Documents)
             .FirstOrDefaultAsync(v => v.TenantId == tenantId, ct);
 
-    public Task<bool> IsApprovedAsync(Guid tenantId, CancellationToken ct = default) =>
+    public Task<bool> IsApprovedByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         Context.Query<TenantVerificationEntity>()
             .AnyAsync(v => v.TenantId == tenantId && v.Status == TenantVerificationStatus.Approved, ct);
 }

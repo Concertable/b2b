@@ -10,5 +10,5 @@ internal interface IVerificationRepository : IRepository<TenantVerificationEntit
 
     /// <summary>Whether the tenant has a verification row in <see cref="Domain.Enums.TenantVerificationStatus.Approved"/> —
     /// false when no row exists (never submitted) or the row is <c>Pending</c>/<c>Rejected</c>.</summary>
-    Task<bool> IsApprovedAsync(Guid tenantId, CancellationToken ct = default);
+    Task<bool> IsApprovedByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }
