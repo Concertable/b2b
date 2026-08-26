@@ -10,17 +10,17 @@ using Xunit.Abstractions;
 namespace Concertable.B2B.Tenant.IntegrationTests;
 
 /// <summary>
-/// Admin review of tenant verification submissions on <c>api/tenant/verification</c> — the pending queue
+/// Admin review of tenant verification submissions on <c>api/verification</c> — the pending queue
 /// enriched with the owning venue/artist's contact, and the approve/reject actions (state transition,
 /// notification, and the illegal-transition/not-found error paths). Mirrors <c>VenueApiTests</c>'
 /// approve/pending-approval coverage.
 /// </summary>
 [Collection("Integration")]
-public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
+public sealed class VerificationAdminApiTests : IAsyncLifetime
 {
     private readonly TenantApiFixture fixture;
 
-    public TenantVerificationAdminApiTests(TenantApiFixture fixture, ITestOutputHelper output)
+    public VerificationAdminApiTests(TenantApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -55,7 +55,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient();
 
-        var response = await client.GetAsync("/api/tenant/verification/pending");
+        var response = await client.GetAsync("/api/verification/pending");
 
         await response.ShouldBe(HttpStatusCode.Unauthorized);
     }
@@ -65,7 +65,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        var response = await client.GetAsync("/api/tenant/verification/pending");
+        var response = await client.GetAsync("/api/verification/pending");
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -80,7 +80,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
             tenantId, VerificationDocumentType.Licence, fixture.SeedNow.AddDays(-1));
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
-        var response = await admin.GetAsync("/api/tenant/verification/pending");
+        var response = await admin.GetAsync("/api/verification/pending");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
@@ -101,7 +101,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
             tenantId, VerificationDocumentType.CompanyRegistration, fixture.SeedNow.AddDays(-1));
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
-        var response = await admin.GetAsync("/api/tenant/verification/pending");
+        var response = await admin.GetAsync("/api/verification/pending");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
@@ -116,7 +116,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
     {
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
-        var response = await admin.GetAsync("/api/tenant/verification/pending");
+        var response = await admin.GetAsync("/api/verification/pending");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
@@ -136,7 +136,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         await fixture.AddPendingVerificationAsync(secondTenantId, VerificationDocumentType.Licence, submittedAt);
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
-        var response = await admin.GetAsync("/api/tenant/verification/pending");
+        var response = await admin.GetAsync("/api/verification/pending");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
@@ -154,7 +154,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         var client = fixture.CreateClient();
 
         var response = await client.PostAsync(
-            $"/api/tenant/verification/{Guid.NewGuid()}/approve", null);
+            $"/api/verification/{Guid.NewGuid()}/approve", null);
 
         await response.ShouldBe(HttpStatusCode.Unauthorized);
     }
@@ -165,7 +165,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.PostAsync(
-            $"/api/tenant/verification/{Guid.NewGuid()}/approve", null);
+            $"/api/verification/{Guid.NewGuid()}/approve", null);
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -176,7 +176,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
         var response = await admin.PostAsync(
-            $"/api/tenant/verification/{Guid.NewGuid()}/approve", null);
+            $"/api/verification/{Guid.NewGuid()}/approve", null);
 
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -187,7 +187,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         var tenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
-        var response = await admin.PostAsync($"/api/tenant/verification/{tenantId}/approve", null);
+        var response = await admin.PostAsync($"/api/verification/{tenantId}/approve", null);
 
         await response.ShouldBe(HttpStatusCode.Conflict);
     }
@@ -202,7 +202,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
             tenantId, VerificationDocumentType.Licence, fixture.SeedNow.AddDays(-1));
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
-        var response = await admin.PostAsync($"/api/tenant/verification/{tenantId}/approve", null);
+        var response = await admin.PostAsync($"/api/verification/{tenantId}/approve", null);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         var verification = fixture.Verifications.Single(v => v.TenantId == tenantId);
@@ -220,7 +220,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         var client = fixture.CreateClient();
 
         var response = await client.PostAsJsonAsync(
-            $"/api/tenant/verification/{Guid.NewGuid()}/reject", new RejectVerificationRequest { Reason = "x" });
+            $"/api/verification/{Guid.NewGuid()}/reject", new RejectVerificationRequest { Reason = "x" });
 
         await response.ShouldBe(HttpStatusCode.Unauthorized);
     }
@@ -231,7 +231,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/tenant/verification/{Guid.NewGuid()}/reject", new RejectVerificationRequest { Reason = "x" });
+            $"/api/verification/{Guid.NewGuid()}/reject", new RejectVerificationRequest { Reason = "x" });
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -242,7 +242,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
         var response = await admin.PostAsJsonAsync(
-            $"/api/tenant/verification/{Guid.NewGuid()}/reject", new RejectVerificationRequest { Reason = "x" });
+            $"/api/verification/{Guid.NewGuid()}/reject", new RejectVerificationRequest { Reason = "x" });
 
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -254,7 +254,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
         var response = await admin.PostAsJsonAsync(
-            $"/api/tenant/verification/{tenantId}/reject", new RejectVerificationRequest { Reason = "x" });
+            $"/api/verification/{tenantId}/reject", new RejectVerificationRequest { Reason = "x" });
 
         await response.ShouldBe(HttpStatusCode.Conflict);
     }
@@ -270,7 +270,7 @@ public sealed class TenantVerificationAdminApiTests : IAsyncLifetime
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
         var response = await admin.PostAsJsonAsync(
-            $"/api/tenant/verification/{tenantId}/reject",
+            $"/api/verification/{tenantId}/reject",
             new RejectVerificationRequest { Reason = "Illegible scan." });
 
         await response.ShouldBe(HttpStatusCode.NoContent);

@@ -149,5 +149,5 @@ internal sealed class ArtistService : IArtistService
     public async Task<Option<TenantContact>> GetContactByTenantIdAsync(
         Guid tenantId,
         CancellationToken ct = default) =>
-        await readRepository.GetContactByTenantIdAsync(tenantId, ct);
+        (await readRepository.GetContactByTenantIdAsync(tenantId, ct)).ToOption();
 }

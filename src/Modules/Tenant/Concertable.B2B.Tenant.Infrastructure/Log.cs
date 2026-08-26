@@ -13,7 +13,7 @@ internal static partial class Log
 
     #endregion
 
-    #region VerificationAdminService
+    #region VerificationService
 
     [LoggerMessage(
         Level = LogLevel.Error,
