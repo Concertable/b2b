@@ -66,6 +66,14 @@ internal sealed class FinishExecutor : IFinishExecutor
             return SettlementOutcome.DeferredPendingTaxCompliance;
         }
 
+        var supplierVerified = await tenantModule.IsVerifiedAsync(supplierTenantId, ct);
+        var customerVerified = await tenantModule.IsVerifiedAsync(customerTenantId, ct);
+        if (!supplierVerified || !customerVerified)
+        {
+            logger.SettlementDeferredPendingVerification(concertId, supplierVerified ? customerTenantId : supplierTenantId);
+            return SettlementOutcome.DeferredPendingVerification;
+        }
+
         if (!await selfBillingAgreementGate.HasCurrentAsync(supplierTenantId, timeProvider.GetUtcNow().UtcDateTime, ct))
         {
             logger.SettlementDeferredPendingSelfBillingAgreement(concertId, supplierTenantId);

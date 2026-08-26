@@ -43,7 +43,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     [Fact]
     public async Task Get_NeverSubmitted_ReturnsNoContent()
     {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var client = fixture.CreateClient(fixture.SeedState.UnverifiedVenueManager);
 
         var response = await client.GetAsync("/api/organization/verification");
 
@@ -53,7 +53,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     [Fact]
     public async Task Get_AfterSubmission_ReturnsPendingWithDocuments()
     {
-        var owner = fixture.SeedState.VenueManager1;
+        var owner = fixture.SeedState.UnverifiedVenueManager;
         var client = fixture.CreateClient(owner);
         await Submit(client, (VerificationFileBuilder.Pdf(), VerificationDocumentType.Licence));
 
@@ -73,7 +73,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     [Fact]
     public async Task SubmitDocuments_FirstSubmission_PersistsPendingVerificationWithDocuments()
     {
-        var owner = fixture.SeedState.VenueManager1;
+        var owner = fixture.SeedState.UnverifiedVenueManager;
         var tenantId = TenantOf(owner.Id);
         var client = fixture.CreateClient(owner);
 
@@ -91,7 +91,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     [Fact]
     public async Task SubmitDocuments_WhilePending_ReturnsConflict_WithoutUploadingAgain()
     {
-        var owner = fixture.SeedState.VenueManager1;
+        var owner = fixture.SeedState.UnverifiedVenueManager;
         var tenantId = TenantOf(owner.Id);
         var client = fixture.CreateClient(owner);
         await Submit(client, (VerificationFileBuilder.Pdf(), VerificationDocumentType.Licence));
@@ -105,7 +105,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     [Fact]
     public async Task SubmitDocuments_AfterRejection_ResubmitsAndClearsReason()
     {
-        var owner = fixture.SeedState.VenueManager1;
+        var owner = fixture.SeedState.UnverifiedVenueManager;
         var tenantId = TenantOf(owner.Id);
         var rejected = await fixture.AddRejectedVerificationAsync(
             tenantId, VerificationDocumentType.Licence, "Illegible scan.", DateTime.UtcNow.AddDays(-1));
@@ -123,7 +123,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     [Fact]
     public async Task SubmitDocuments_DisallowedContentType_ReturnsBadRequest()
     {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var client = fixture.CreateClient(fixture.SeedState.UnverifiedVenueManager);
 
         var response = await Submit(client, (VerificationFileBuilder.TextFile(), VerificationDocumentType.Licence));
 
@@ -133,7 +133,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     [Fact]
     public async Task SubmitDocuments_NoFiles_ReturnsBadRequest()
     {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var client = fixture.CreateClient(fixture.SeedState.UnverifiedVenueManager);
 
         var response = await SubmitAsync(client, []);
 
@@ -143,7 +143,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     [Fact]
     public async Task SubmitDocuments_AsStaff_IsForbidden()
     {
-        var owner = fixture.SeedState.VenueManager1;
+        var owner = fixture.SeedState.UnverifiedVenueManager;
         var tenantId = TenantOf(owner.Id);
         var staff = fixture.SeedState.VenueManagerNoVenue;
         await fixture.AddMembershipAsync(tenantId, staff.Id, TenantRole.Staff);
