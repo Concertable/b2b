@@ -13,11 +13,8 @@ import { useTenantStore } from "../store/useTenantStore";
 import type { TenantType } from "../types";
 
 export function useTenantIdentity() {
-  return useMeQuery(identityApi.getMe);
-}
-
-export function useSyncTenantIdentity() {
   useSyncUser(identityApi.getMe);
+  return useMeQuery(identityApi.getMe);
 }
 
 export function useTenant(tenantType: TenantType) {
