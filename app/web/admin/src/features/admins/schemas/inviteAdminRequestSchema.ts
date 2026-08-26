@@ -1,0 +1,7 @@
+import { z } from "zod";
+
+export const inviteAdminRequestSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+});
+
+export type InviteAdminRequest = z.infer<typeof inviteAdminRequestSchema>;

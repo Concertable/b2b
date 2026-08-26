@@ -1,18 +1,20 @@
 using Concertable.B2B.Venue.Api.Mappers;
 using Concertable.B2B.Venue.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.User.Api.Authorization;
+using Concertable.B2B.Admin.Api.Authorization;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Application.Requests;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Venue.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-[RequiredTenantType(TenantType.Venue)]
+[Route($"api/{RouteSegment}")]
 internal sealed class VenueController : ControllerBase
 {
+    internal const string RouteSegment = "venue";
+
     private readonly IVenueService venueService;
 
     public VenueController(IVenueService venueService)
@@ -20,46 +22,61 @@ internal sealed class VenueController : ControllerBase
         this.venueService = venueService;
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
+    [HttpGet("{venueId:int}")]
+    public async Task<ActionResult<DetailsResponse>> GetDetailsById(
+        int venueId,
+        CancellationToken ct)
     {
-        return Ok((await venueService.GetDetailsByIdAsync(id)).ToDetailsResponse());
-    }
-
-    [HasPermission(SharedPermissions.OperationsView)]
-    [HttpGet("user")]
-    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser()
-    {
-        var venue = await venueService.GetDetailsForCurrentUserAsync();
-        return venue is null ? NoContent() : Ok(venue.ToDetailsResponse());
-    }
-
-    [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPost]
-    public async Task<IActionResult> Create([FromForm] CreateVenueRequest request)
-    {
-        var venueDto = await venueService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetDetailsById), new { Id = venueDto.Id }, venueDto);
-    }
-
-    [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromForm] UpdateVenueRequest request)
-    {
-        return Ok(await venueService.UpdateAsync(id, request));
+        return (await venueService.GetDetailsByIdAsync(venueId, ct))
+            .ToOkOrNotFound(venue => venue.ToDetailsResponse());
     }
 
     [Admin]
-    [HttpPatch("{id}/approve")]
-    public async Task<IActionResult> Approve(int id)
+    [HttpPatch("{venueId:int}/approve")]
+    public async Task<IActionResult> Approve(int venueId, CancellationToken ct)
     {
-        await venueService.ApproveAsync(id);
-        return NoContent();
+        return (await venueService.ApproveAsync(venueId, ct)).ToNoContentOrProblem();
     }
 
-    [HttpGet("{id}/ownership")]
-    public async Task<ActionResult<bool>> IsOwner(int id)
+    [Admin]
+    [HttpGet("pending-approval")]
+    public async Task<ActionResult<IPagination<PendingVenue>>> GetPendingApproval(
+        [FromQuery] PageParams pageParams) =>
+        Ok(await venueService.GetPendingApprovalAsync(pageParams));
+
+    [HttpGet("{venueId:int}/ownership")]
+    public async Task<ActionResult<bool>> IsOwner(int venueId, CancellationToken ct)
     {
-        return Ok(await venueService.OwnsVenueAsync(id));
+        return Ok(await venueService.OwnsVenueAsync(venueId, ct));
     }
+
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.OperationsView)]
+    [HttpGet($"/api/organization/{RouteSegment}")]
+    public async Task<ActionResult<DetailsResponse>> GetDetails(CancellationToken ct) =>
+        (await venueService.GetDetailsAsync(ct))
+            .ToOkOrNoContent(venue => venue.ToDetailsResponse());
+
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.ProfileEdit)]
+    [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
+    [HttpPost($"/api/organization/{RouteSegment}")]
+    public async Task<ActionResult<DetailsResponse>> Create(
+        [FromForm] CreateVenueRequest request,
+        CancellationToken ct) =>
+        (await venueService.CreateAsync(request, ct))
+            .ToCreatedOrProblem(
+                venue => venue.ToDetailsResponse(),
+                venue => $"/api/venue/{venue.Id}");
+
+    [RequiredTenantType(TenantType.Venue)]
+    [HasPermission(SharedPermissions.ProfileEdit)]
+    [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
+    [HttpPut($"/api/organization/{RouteSegment}")]
+    public async Task<ActionResult<DetailsResponse>> Update(
+        [FromForm] UpdateVenueRequest request,
+        CancellationToken ct) =>
+        (await venueService.UpdateAsync(request, ct))
+            .ToOkOrProblem(venue => venue.ToDetailsResponse());
 }

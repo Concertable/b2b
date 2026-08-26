@@ -14,4 +14,7 @@ public sealed record VenueChangedEvent(
     string Town,
     double Latitude,
     double Longitude,
-    string Email) : IIntegrationEvent;
+    string Email) : IIntegrationEvent
+{
+    public Guid TenantId { get; init; }
+}

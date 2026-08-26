@@ -9,8 +9,8 @@ const mocks = vi.hoisted(() => ({
       {
         tenantId: "existing-tenant",
         legalName: "Existing Venue",
-        type: "Venue",
-        role: "Staff",
+        type: "venue",
+        role: "staff",
       },
     ],
   },
@@ -35,8 +35,8 @@ vi.mock("@tanstack/react-router", () => ({
   useRouter: () => ({ invalidate: mocks.invalidateRouter }),
 }));
 
-vi.mock("@/features/user", () => ({ useSyncUser: vi.fn() }));
-vi.mock("@/features/user/hooks/useSyncUser", () => ({
+vi.mock("@concertable/web/features/user", () => ({ useSyncUser: vi.fn() }));
+vi.mock("@concertable/web/features/user/hooks/useSyncUser", () => ({
   meQueryKey: ["auth", "me"],
 }));
 vi.mock("../api/identityApi", () => ({
@@ -89,7 +89,7 @@ describe("useTenant selection", () => {
       order.push("queries");
     });
 
-    const { selectTenant } = useTenant("Venue");
+    const { selectTenant } = useTenant("venue");
     await selectTenant("accepted-tenant");
 
     expect(mocks.fetchQuery).toHaveBeenCalledWith({

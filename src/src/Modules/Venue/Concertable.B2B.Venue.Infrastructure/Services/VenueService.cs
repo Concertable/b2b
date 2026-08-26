@@ -1,5 +1,8 @@
-using Concertable.Kernel.Exceptions;
+using Concertable.B2B.Venue.Application.Errors;
+using Concertable.B2B.Venue.Application.Mappers;
 using Concertable.B2B.Venue.Application.Requests;
+using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel.Geometry;
 using Concertable.Kernel.Identity;
@@ -12,8 +15,8 @@ namespace Concertable.B2B.Venue.Infrastructure.Services;
 internal sealed class VenueService : IVenueService
 {
     private readonly IVenueRepository repository;
-    private readonly IPublicVenueRepository publicRepository;
-    private readonly IAdminVenueRepository adminRepository;
+    private readonly IVenueReadRepository readRepository;
+    private readonly IVenuePrivilegedRepository privilegedRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly ITenantContext tenantContext;
@@ -22,8 +25,8 @@ internal sealed class VenueService : IVenueService
 
     public VenueService(
         IVenueRepository repository,
-        IPublicVenueRepository publicRepository,
-        IAdminVenueRepository adminRepository,
+        IVenueReadRepository readRepository,
+        IVenuePrivilegedRepository privilegedRepository,
         IImageService imageService,
         ICurrentUser currentUser,
         ITenantContext tenantContext,
@@ -31,8 +34,8 @@ internal sealed class VenueService : IVenueService
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.repository = repository;
-        this.publicRepository = publicRepository;
-        this.adminRepository = adminRepository;
+        this.readRepository = readRepository;
+        this.privilegedRepository = privilegedRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
         this.tenantContext = tenantContext;
@@ -40,94 +43,120 @@ internal sealed class VenueService : IVenueService
         this.geometryProvider = geometryProvider;
     }
 
-    public async Task<VenueDetails> GetDetailsByIdAsync(int id)
+    public async Task<Option<VenueDetails>> GetDetailsByIdAsync(
+        int id,
+        CancellationToken ct = default) =>
+        await readRepository.GetDetailsByIdAsync(id, ct);
+
+    public async Task<Result<VenueDetails, CreateVenueError>> CreateAsync(
+        CreateVenueRequest request,
+        CancellationToken ct = default)
     {
-        return await publicRepository.GetDetailsByIdAsync(id)
-            .OrNotFound();
+        var tenantId = tenantContext.GetTenantId();
+
+        if (await repository.ExistsByTenantIdAsync(tenantId, ct))
+            return new CreateVenueError.VenueAlreadyExists();
+
+        return await VenueEntity.ValidateProfile(request.Name, request.About)
+            .BindAsync(async () =>
+            {
+                var bannerUrl = await imageService.UploadAsync(request.Banner);
+                var avatarUrl = await imageService.UploadAsync(request.Avatar);
+                var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
+                var coordinates = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
+
+                return await VenueEntity.Create(
+                    currentUser.GetId(),
+                    request.Name,
+                    request.About,
+                    bannerUrl,
+                    avatarUrl,
+                    coordinates,
+                    address,
+                    currentUser.Email!)
+                    .BindAsync(async venue =>
+                    {
+                        if (!(await repository.TryInsertAsync(venue, ct))
+                            .TryGetValue(out var createdVenue))
+                            return new CreateVenueError.VenueAlreadyExists();
+
+                        var details = await readRepository.GetDetailsByIdAsync(createdVenue.Id, ct)
+                            ?? throw new InvalidOperationException(
+                                $"Venue {createdVenue.Id} not found after creation.");
+                        return Result.Success<VenueDetails, CreateVenueError>(details);
+                    }, errors => new CreateVenueError.Invalid(errors));
+            }, errors => new CreateVenueError.Invalid(errors));
     }
 
-    public async Task<VenueDetails> CreateAsync(CreateVenueRequest request)
+    public async Task<Result<VenueDetails, UpdateVenueError>> UpdateAsync(
+        UpdateVenueRequest request,
+        CancellationToken ct = default)
     {
-        if (!tenantContext.HasTenant)
-            throw new ForbiddenException("No active tenant");
+        var tenantId = tenantContext.GetTenantId();
 
-        var bannerUrl = await imageService.UploadAsync(request.Banner);
-        var avatarUrl = await imageService.UploadAsync(request.Avatar);
-        var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
-        var coordinates = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
+        var venue = await repository.GetByTenantIdAsync(tenantId, ct);
+        if (venue is null)
+            return new UpdateVenueError.VenueNotFound();
 
-        var venue = VenueEntity.Create(
-            currentUser.GetId(),
-            request.Name,
-            request.About,
-            bannerUrl,
-            avatarUrl,
-            coordinates,
-            address,
-            currentUser.Email!);
+        return await VenueEntity.ValidateProfile(request.Name, request.About)
+            .BindAsync(async () =>
+            {
+                var bannerUrl = request.Banner is not null
+                    ? await imageService.ReplaceAsync(request.Banner, venue.BannerUrl)
+                    : venue.BannerUrl;
+                return await venue.Update(request.Name, request.About, bannerUrl)
+                    .BindAsync(async () =>
+                    {
+                        var address = await geocodingClient.GetLocationAsync(
+                            request.Latitude,
+                            request.Longitude);
+                        venue.UpdateLocation(
+                            geometryProvider.CreatePoint(request.Latitude, request.Longitude),
+                            address);
 
-        var createdVenue = await repository.AddAsync(venue);
-        await repository.SaveChangesAsync();
+                        if (request.Avatar is not null)
+                            venue.UpdateAvatar(await imageService.ReplaceAsync(request.Avatar, venue.Avatar));
 
-        return await publicRepository.GetDetailsByIdAsync(createdVenue.Id)
-            ?? throw new InternalServerException($"Venue {createdVenue.Id} not found after creation.");
+                        await repository.SaveChangesAsync(ct);
+
+                        var details = await readRepository.GetDetailsByIdAsync(venue.Id, ct)
+                            ?? throw new InvalidOperationException(
+                                $"Venue {venue.Id} not found after update.");
+                        return Result.Success<VenueDetails, UpdateVenueError>(details);
+                    }, errors => new UpdateVenueError.Invalid(errors));
+            }, errors => new UpdateVenueError.Invalid(errors));
     }
 
-    public async Task<VenueDetails> UpdateAsync(int id, UpdateVenueRequest request)
+    public async Task<Option<VenueDetails>> GetDetailsAsync(
+        CancellationToken ct = default)
     {
-        var venue = await repository.GetByIdAsync(id)
-            .OrNotFound();
+        var tenantId = tenantContext.GetTenantId();
 
-        var bannerUrl = request.Banner is not null
-            ? await imageService.ReplaceAsync(request.Banner, venue.BannerUrl)
-            : venue.BannerUrl;
-
-        venue.Update(request.Name, request.About, bannerUrl);
-
-        var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
-        venue.UpdateLocation(
-            geometryProvider.CreatePoint(request.Latitude, request.Longitude),
-            address);
-
-        if (request.Avatar is not null)
-            venue.UpdateAvatar(await imageService.ReplaceAsync(request.Avatar, venue.Avatar));
-
-        await repository.SaveChangesAsync();
-
-        return await publicRepository.GetDetailsByIdAsync(id)
-            ?? throw new InternalServerException($"Venue {id} not found after update.");
+        return await repository.GetDetailsByTenantIdAsync(tenantId, ct);
     }
 
-    public Task<VenueDetails?> GetDetailsForCurrentUserAsync() =>
-        repository.GetDetailsForCurrentTenantAsync();
+    public async Task<bool> OwnsVenueAsync(int venueId, CancellationToken ct = default) =>
+        tenantContext.TenantId is { } tenantId
+        && await repository.GetTenantIdByIdAsync(venueId, ct) == tenantId;
 
-    public async Task<int> GetIdForCurrentUserAsync()
+    public async Task<UnitResult<ApproveVenueError>> ApproveAsync(
+        int id,
+        CancellationToken ct = default)
     {
-        int? id = await repository.GetIdForCurrentTenantAsync();
-        ForbiddenException.ThrowIfNull(id, "You do not own a Venue");
-
-        return id.Value;
-    }
-
-    public async Task<bool> OwnsVenueAsync(int venueId)
-    {
-        var id = await repository.GetIdForCurrentTenantAsync();
-        return id == venueId;
-    }
-
-    public async Task ApproveAsync(int id)
-    {
-        var venue = await adminRepository.GetByIdAsync(id)
-            .OrNotFound();
+        var venue = await privilegedRepository.GetByIdAsync(id, ct);
+        if (venue is null)
+            return new ApproveVenueError.VenueNotFound(id);
 
         venue.Approve();
-        await adminRepository.SaveChangesAsync();
+        await privilegedRepository.SaveChangesAsync(ct);
+        return new Success();
     }
 
-    public async Task<VenueSummary> GetSummaryAsync(int id) =>
-        await publicRepository.GetSummaryAsync(id)
-            .OrNotFound();
+    public async Task<Option<VenueSummary>> GetSummaryAsync(
+        int id,
+        CancellationToken ct = default) =>
+        await readRepository.GetSummaryAsync(id, ct);
 
-    public Task<VenueOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
-        publicRepository.GetOrgIdentityByTenantIdAsync(tenantId);
+    public async Task<IPagination<PendingVenue>> GetPendingApprovalAsync(IPageParams pageParams) =>
+        (await privilegedRepository.GetPendingApprovalAsync(pageParams)).Map(v => v.ToPendingVenue());
 }

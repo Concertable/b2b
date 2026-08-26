@@ -6,8 +6,9 @@ any of these families, understand what each one is *for* — they are not interc
 choice (an "executor" that isn't a transition, a "capability" that's a dead marker) is the exact
 cargo-culting this doc exists to stop.
 
-Read [`../../../../agents/CODE_PATTERNS.md`](../../../../agents/CODE_PATTERNS.md) too — the keyed-strategy resolver
-and the dependency-holder (`IConcertWorkflow` impls) patterns live there and are assumed here.
+The `keyed-strategies` and `dependency-injection` skills own those two patterns — the keyed resolver and the
+dependency-holder shape the `IConcertWorkflow` impls use — and B2B's own families are rostered in
+[`../../../CODE_PATTERNS.md`](../../../CODE_PATTERNS.md). Both are assumed here.
 
 ## Vocabulary — the two tenants of a booking sit on TWO axes, not one
 
@@ -21,7 +22,8 @@ the wrong tenant half the time). Which axis a word belongs to:
   the `venue == me || artist == me` query filter.
 - **ROLE (flips per `DealType` — *what* the tenant does)** — resolved from identity, never stored fixed:
   - **money flow** → **`payee`** (receives the settlement) vs the counterparty. See
-    `SettlementPayeeResolver` / `TicketPayeeResolver` (inverse maps).
+    `DealPayeeResolver`, whose cohesive per-deal strategy resolves the ticket collector and inverse
+    settlement recipient directly.
   - **VAT invoice** → **`supplier`** (made the supply) / **`customer`** (billed). HMRC's legally-required
     words — you can't put "payee" on an invoice. Mapping: `supplier` = settlement payee, `customer` =
     ticket payee.

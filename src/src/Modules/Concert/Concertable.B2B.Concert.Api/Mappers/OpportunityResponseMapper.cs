@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Workflow;
@@ -21,7 +21,7 @@ internal sealed class OpportunityResponseMapper : IOpportunityResponseMapper
 
         var actions = new OpportunityActions(
             Checkout: registry.Has<IAppliesCheckout>(ct)
-                ? new ActionLink($"/api/Application/opportunity/{dto.Id}/checkout", HttpMethods.Post)
+                ? new ActionLink($"/api/application/opportunity/{dto.Id}/checkout", HttpMethods.Post)
                 : null);
 
         return new OpportunityResponse(
@@ -38,5 +38,5 @@ internal sealed class OpportunityResponseMapper : IOpportunityResponseMapper
         dtos.Select(ToResponse);
 
     public IPagination<OpportunityResponse> ToResponses(IPagination<OpportunityDto> page) =>
-        new Pagination<OpportunityResponse>(ToResponses(page.Data).ToList(), page.TotalCount, page.PageNumber, page.PageSize);
+        page.Map(ToResponse);
 }

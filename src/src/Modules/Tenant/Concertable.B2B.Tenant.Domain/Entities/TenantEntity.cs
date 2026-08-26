@@ -59,13 +59,25 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
 
     /// <summary>
     /// Tenant setup: replaces the provisioning placeholder legal name (the registration email)
-    /// and the tax-compliance details in one transition — the <c>/organizations</c> form submits them together.
+    /// and the tax-compliance details in one transition — the organization form submits them together.
     /// </summary>
-    public void UpdateLegalDetails(string legalName, TaxCompliance taxCompliance)
+    public UnitResult<ValidationErrors> UpdateLegalDetails(string legalName, TaxCompliance taxCompliance)
     {
-        DomainException.ThrowIfNullOrWhiteSpace(legalName, "Legal name");
-        DomainException.ThrowIfNull(taxCompliance, "Tax compliance");
+        var errors = new List<KeyValuePair<string, string>>();
+
+        if (string.IsNullOrWhiteSpace(legalName))
+            errors.Add(new(nameof(LegalName), "LegalName is required."));
+        else if (legalName.Length > 200)
+            errors.Add(new(nameof(LegalName), "LegalName must be 200 characters or fewer."));
+
+        if (taxCompliance is null)
+            errors.Add(new(nameof(TaxCompliance), "TaxCompliance is required."));
+
+        if (errors.Count > 0)
+            return new ValidationErrors(errors);
+
         LegalName = legalName;
         TaxCompliance = taxCompliance;
+        return new Success();
     }
 }

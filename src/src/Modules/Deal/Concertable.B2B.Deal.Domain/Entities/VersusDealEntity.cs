@@ -1,3 +1,6 @@
+using Reunion.Errors;
+using Reunion;
+
 namespace Concertable.B2B.Deal.Domain.Entities;
 
 public sealed class VersusDealEntity : DealEntity
@@ -8,34 +11,42 @@ public sealed class VersusDealEntity : DealEntity
     public decimal Guarantee { get; private set; }
     public decimal ArtistDoorPercent { get; private set; }
 
-    public static VersusDealEntity Create(decimal guarantee, decimal artistDoorPercent, PaymentMethod paymentMethod)
+    public static Result<VersusDealEntity, ValidationErrors> Create(decimal guarantee, decimal artistDoorPercent, PaymentMethod paymentMethod)
     {
-        ValidateGuarantee(guarantee);
-        ValidateArtistDoorPercent(artistDoorPercent);
-        return new() { Guarantee = guarantee, ArtistDoorPercent = artistDoorPercent, PaymentMethod = paymentMethod };
+        var validation = Validate(guarantee, artistDoorPercent);
+        return validation.Bind(() => Result.Success<VersusDealEntity, ValidationErrors>(
+            new VersusDealEntity
+            {
+                Guarantee = guarantee,
+                ArtistDoorPercent = artistDoorPercent,
+                PaymentMethod = paymentMethod
+            }));
     }
 
-    public void Update(decimal guarantee, decimal artistDoorPercent, PaymentMethod paymentMethod)
+    public UnitResult<ValidationErrors> Update(decimal guarantee, decimal artistDoorPercent, PaymentMethod paymentMethod)
     {
-        ValidateGuarantee(guarantee);
-        ValidateArtistDoorPercent(artistDoorPercent);
+        var validation = Validate(guarantee, artistDoorPercent);
+        if (validation.IsFailure)
+            return validation;
+
         Guarantee = guarantee;
         ArtistDoorPercent = artistDoorPercent;
         PaymentMethod = paymentMethod;
+        return new Success();
     }
 
-    private static void ValidateGuarantee(decimal guarantee)
+    private static UnitResult<ValidationErrors> Validate(decimal guarantee, decimal artistDoorPercent)
     {
+        var errors = new List<KeyValuePair<string, string>>();
+
         if (guarantee < 0)
-            throw new DomainException("Guarantee must be zero or greater.");
-    }
+            errors.Add(new(nameof(Guarantee), "Guarantee must be zero or greater."));
 
-    private static void ValidateArtistDoorPercent(decimal artistDoorPercent)
-    {
         if (artistDoorPercent < 0 || artistDoorPercent > 100)
-            throw new DomainException("Artist door percent must be between 0 and 100.");
-    }
+            errors.Add(new(nameof(ArtistDoorPercent), "Artist door percent must be between 0 and 100."));
 
-    public decimal CalculateArtistShare(decimal totalRevenue)
-        => Guarantee + (totalRevenue * (ArtistDoorPercent / 100));
+        return errors.Count == 0
+            ? new Success()
+            : new ValidationErrors(errors);
+    }
 }

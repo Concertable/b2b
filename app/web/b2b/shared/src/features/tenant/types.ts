@@ -1,7 +1,7 @@
-import type { User } from "@/features/auth";
+import type { User } from "@concertable/web/features/auth";
 import type { TENANT_ROLES } from "./constants";
 
-export type TenantType = "Venue" | "Artist";
+export type TenantType = "venue" | "artist";
 export type TenantRole = (typeof TENANT_ROLES)[number];
 
 export interface Membership {

@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests.Workflow.Executors;
@@ -14,12 +13,14 @@ public sealed class CancelExecutorTests
 
     public CancelExecutorTests()
     {
+        var behavior = new ImmediateBehavior();
         this.executor = new CancelExecutor(
             Mock.Of<ILifecycleTransitioner>(),
             Mock.Of<IConcertWorkflowFactory>(),
             Mock.Of<IDealResolver>(),
             this.concertRepository.Object,
-            Mock.Of<ILogger<CancelExecutor>>());
+            behavior,
+            behavior);
     }
 
     [Fact]
@@ -34,5 +35,12 @@ public sealed class CancelExecutorTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => this.executor.CancelAsync(42, cancellationToken));
+    }
+
+    private sealed class ImmediateBehavior : IUnitOfWorkBehavior, IOutboxUnitOfWorkBehavior
+    {
+        public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default) => action();
+
+        public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken = default) => action();
     }
 }

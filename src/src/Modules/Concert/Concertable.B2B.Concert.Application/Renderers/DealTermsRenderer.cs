@@ -1,27 +1,17 @@
-using System.Collections.Frozen;
 using Concertable.B2B.Concert.Application.Interfaces;
+using Concertable.B2B.Concert.Application.Strategies;
 
 namespace Concertable.B2B.Concert.Application.Renderers;
 
 internal sealed class DealTermsRenderer : IDealTermsRenderer
 {
-    private readonly FrozenDictionary<DealType, IDealTermsRenderer> renderers;
+    private readonly IConcertDealStrategyFactory<IDealTerms> terms;
 
-    public DealTermsRenderer(
-        FlatFeeTermsRenderer flatFee,
-        DoorSplitTermsRenderer doorSplit,
-        VersusTermsRenderer versus,
-        VenueHireTermsRenderer venueHire)
+    public DealTermsRenderer(IConcertDealStrategyFactory<IDealTerms> terms)
     {
-        renderers = new Dictionary<DealType, IDealTermsRenderer>
-        {
-            [DealType.FlatFee] = flatFee,
-            [DealType.DoorSplit] = doorSplit,
-            [DealType.Versus] = versus,
-            [DealType.VenueHire] = venueHire,
-        }.ToFrozenDictionary();
+        this.terms = terms;
     }
 
-    public string Render(IDeal deal) =>
-        renderers[deal.DealType].Render(deal);
+    public string Render(DealDto deal) =>
+        terms.Create(deal.DealType).Render(deal);
 }

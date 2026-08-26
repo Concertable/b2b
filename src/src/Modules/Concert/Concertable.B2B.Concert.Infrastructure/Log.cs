@@ -1,4 +1,3 @@
-using FluentResults;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure;
@@ -12,6 +11,9 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Escrow webhook received: payment intent {TransactionId} for booking {BookingId}")]
     internal static partial void EscrowWebhookReceived(this ILogger logger, string transactionId, int bookingId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Booking {BookingId} referenced by an escrow payment event was not found; skipping")]
+    internal static partial void BookingNotFoundForEscrowPayment(this ILogger logger, int bookingId);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Verify webhook received: payment intent {TransactionId} for application {ApplicationId}")]
     internal static partial void VerifyWebhookReceived(this ILogger logger, string transactionId, int applicationId);
@@ -50,6 +52,12 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "Settlement of concert {ConcertId} deferred: party tenant {IncompleteTenantId} tax identity is not complete for its jurisdiction; will retry on the next completion sweep once details are provided")]
     internal static partial void SettlementDeferredPendingTaxCompliance(this ILogger logger, int concertId, Guid incompleteTenantId);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Settlement of concert {ConcertId} deferred: supplier tenant {SupplierTenantId} holds no current self-billing agreement, so no self-billed invoice may be raised in their name; will retry on the next completion sweep once the supplier grants or renews consent")]
+    internal static partial void SettlementDeferredPendingSelfBillingAgreement(this ILogger logger, int concertId, Guid supplierTenantId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Settlement of concert {ConcertId} deferred: party tenant {UnverifiedTenantId} is not verified; will retry on the next completion sweep once verification is approved")]
+    internal static partial void SettlementDeferredPendingVerification(this ILogger logger, int concertId, Guid unverifiedTenantId);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to cancel concert {ConcertId}")]
     internal static partial void FailedToCancelConcert(this ILogger logger, int concertId, Exception ex);
 
@@ -80,11 +88,16 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "ConcertCompletionRunner: found {Count} ended confirmed concert(s) to settle")]
     internal static partial void FoundConcertsToSettle(this ILogger logger, int count);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to finish concert {ConcertId}: {Errors}")]
-    internal static partial void ConcertCompletionFailed(this ILogger logger, int concertId, IReadOnlyList<IError> errors);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not finish concert {ConcertId}: {Code} {Message}")]
+    internal static partial void ConcertCompletionRefused(
+        this ILogger logger,
+        int concertId,
+        string code,
+        string message);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Finished concert {ConcertId}")]
     internal static partial void ConcertFinished(this ILogger logger, int concertId);
+
 
     #endregion
 }

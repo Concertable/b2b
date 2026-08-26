@@ -10,7 +10,7 @@ marketplace is a later, optional add-on (that separation is the whole reason the
 was split). So this doc covers *only* venue↔artist obligations. Fan / ticket-buyer
 obligations (consumer refund rights, all-in pricing, fake-review controls, ticket-sale VAT
 posture) live in the separate Customer doc:
-[`../../../Concertable.Customer/LEGAL_REQUIREMENTS.md`](../../../Concertable.Customer/LEGAL_REQUIREMENTS.md).
+[`../../../../Concertable.Customer/LEGAL_REQUIREMENTS.md`](../../../../Concertable.Customer/LEGAL_REQUIREMENTS.md).
 Do not merge the two — they are two separate systems.
 
 ## The product these obligations protect: the contract engine
@@ -82,7 +82,7 @@ relevant party is not VAT-registered. VAT handling must branch on **contract typ
 
 **Build:** a per-contract VAT/settlement calculator that knows the supply direction, reads
 the supplier's VAT status (item 3), and produces net/VAT/gross + the correct invoice
-direction (item 4). `TicketPayeeResolver` already encodes the VenueHire direction flip — the
+direction (item 4). `DealPayeeResolver` already encodes the VenueHire direction flip — the
 VAT calculator needs the same awareness.
 
 ### Revenue source for DoorSplit / Versus (standalone-B2B lead)

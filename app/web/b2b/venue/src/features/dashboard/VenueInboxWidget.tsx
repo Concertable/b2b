@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import dayjs from "dayjs";
 import { useVenueInboxQuery } from "./hooks";
-import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@/features/dashboard";
+import { DashboardCard, WidgetEmpty, WidgetError, WidgetLoading } from "@concertable/web/features/dashboard";
 
 export function VenueInboxWidget() {
   const { data, isLoading, isError, refetch } = useVenueInboxQuery();

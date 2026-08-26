@@ -5,11 +5,22 @@ namespace Concertable.B2B.User.Infrastructure.Repositories;
 
 internal sealed class UserRepository : Repository<UserEntity>, IUserRepository
 {
-    public UserRepository(UserDbContext context) : base(context) { }
+    private readonly UserDbContext context;
+
+    public UserRepository(UserDbContext context) : base(context)
+    {
+        this.context = context;
+    }
 
     public Task<bool> ExistsByEmailAsync(string email) =>
         context.Users.AnyAsync(u => u.Email == email);
 
     public async Task<IReadOnlyCollection<UserEntity>> GetByIdsAsync(IEnumerable<Guid> ids) =>
         await context.Users.Where(u => ids.Contains(u.Id)).ToListAsync();
+
+    public async Task<Guid?> GetIdByEmailAsync(string email) =>
+        await context.Users
+            .Where(u => u.Email.ToLower() == email.ToLower())
+            .Select(u => (Guid?)u.Id)
+            .FirstOrDefaultAsync();
 }

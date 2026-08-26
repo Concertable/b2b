@@ -1,12 +1,13 @@
 using Concertable.B2B.Deal.Domain.Entities;
+using Reunion.Errors;
+using Reunion;
 
 namespace Concertable.B2B.Deal.Application.Interfaces;
 
-internal interface IDealMapper
+internal interface IDealMapper : IDealStrategy
 {
-    IDeal ToDeal(DealEntity entity);
-    DealEntity ToEntity(IDeal deal);
+    DealDto ToDeal(DealEntity entity);
+    Result<DealEntity, ValidationErrors> ToEntity(DealDto deal);
 
-    IEnumerable<IDeal> ToDeals(IEnumerable<DealEntity> entities) => entities.Select(ToDeal);
-    IEnumerable<DealEntity> ToEntities(IEnumerable<IDeal> deals) => deals.Select(ToEntity);
+    IReadOnlyList<DealDto> ToDeals(IEnumerable<DealEntity> entities) => entities.Select(ToDeal).ToList();
 }

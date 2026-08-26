@@ -3,7 +3,6 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;
-using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Application.Mappers;
 
@@ -18,38 +17,45 @@ internal sealed class OpportunityMapper : IOpportunityMapper
 
     public async Task<OpportunityDto> ToDtoAsync(OpportunityEntity opportunity)
     {
-        var deal = await dealModule.GetByIdAsync(opportunity.DealId)
-            .OrNotFound($"Deal {opportunity.DealId}");
+        var dealOption = await dealModule.GetByIdAsync(opportunity.DealId);
+        if (!dealOption.TryGetValue(out var deal))
+            throw new InvalidOperationException($"Opportunity {opportunity.Id} references missing deal {opportunity.DealId}.");
+
         return opportunity.ToDto(deal);
     }
 
-    public async Task<IEnumerable<OpportunityDto>> ToDtosAsync(IEnumerable<OpportunityEntity> opportunities)
+    public async Task<IReadOnlyList<OpportunityDto>> ToDtosAsync(IEnumerable<OpportunityEntity> opportunities)
     {
         var opportunityList = opportunities.ToList();
-        var dealMap = (await dealModule.GetByIdsAsync(opportunityList.Select(o => o.DealId).Distinct()))
-            .ToDictionary(c => c.Id);
+        var deals = await DealsByIdAsync(opportunityList);
 
-        return opportunityList.Select(o =>
-        {
-            if (!dealMap.TryGetValue(o.DealId, out var deal))
-                throw new NotFoundException($"Deal {o.DealId} not found");
-            return o.ToDto(deal);
-        });
+        return opportunityList.Select(o => ToDto(o, deals)).ToList();
     }
 
     public async Task<IPagination<OpportunityDto>> ToDtosAsync(IPagination<OpportunityEntity> opportunities)
     {
-        var dtos = await ToDtosAsync(opportunities.Data);
-        return new Pagination<OpportunityDto>(dtos.ToList(), opportunities.TotalCount, opportunities.PageNumber, opportunities.PageSize);
+        var deals = await DealsByIdAsync(opportunities.Data);
+
+        return opportunities.Map(o => ToDto(o, deals));
     }
+
+    private async Task<Dictionary<int, DealDto>> DealsByIdAsync(IReadOnlyCollection<OpportunityEntity> opportunities) =>
+        (await dealModule.GetByIdsAsync(opportunities.Select(o => o.DealId).Distinct()))
+            .ToDictionary(deal => deal.Id);
+
+    private static OpportunityDto ToDto(OpportunityEntity opportunity, Dictionary<int, DealDto> deals) =>
+        deals.TryGetValue(opportunity.DealId, out var deal)
+            ? opportunity.ToDto(deal)
+            : throw new InvalidOperationException($"Opportunity {opportunity.Id} references missing deal {opportunity.DealId}.");
 }
 
 internal static class OpportunityMappers
 {
-    public static OpportunityDto ToDto(this OpportunityEntity opportunity, IDeal deal) => new()
+    public static OpportunityDto ToDto(this OpportunityEntity opportunity, DealDto deal) => new()
     {
         Id = opportunity.Id,
         VenueId = opportunity.VenueId,
+        VenueName = opportunity.Venue.Name,
         DealId = opportunity.DealId,
         Deal = deal,
         StartDate = opportunity.Period.Start,

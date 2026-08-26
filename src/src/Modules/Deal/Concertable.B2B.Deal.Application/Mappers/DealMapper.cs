@@ -1,31 +1,23 @@
-using System.Collections.Frozen;
 using Concertable.B2B.Deal.Application.Interfaces;
+using Concertable.B2B.Deal.Application.Strategies;
 using Concertable.B2B.Deal.Domain.Entities;
+using Reunion.Errors;
+using Reunion;
 
 namespace Concertable.B2B.Deal.Application.Mappers;
 
 internal sealed class DealMapper : IDealMapper
 {
-    private readonly FrozenDictionary<DealType, IDealMapper> mappers;
+    private readonly IDealStrategyFactory<IDealMapper> strategies;
 
-    public DealMapper(
-        FlatFeeDealMapper flatFee,
-        DoorSplitDealMapper doorSplit,
-        VersusDealMapper versus,
-        VenueHireDealMapper venueHire)
+    public DealMapper(IDealStrategyFactory<IDealMapper> strategies)
     {
-        mappers = new Dictionary<DealType, IDealMapper>
-        {
-            [DealType.FlatFee] = flatFee,
-            [DealType.DoorSplit] = doorSplit,
-            [DealType.Versus] = versus,
-            [DealType.VenueHire] = venueHire,
-        }.ToFrozenDictionary();
+        this.strategies = strategies;
     }
 
-    public IDeal ToDeal(DealEntity entity) =>
-        mappers[entity.DealType].ToDeal(entity);
+    public DealDto ToDeal(DealEntity entity) =>
+        strategies.Create(entity).ToDeal(entity);
 
-    public DealEntity ToEntity(IDeal deal) =>
-        mappers[deal.DealType].ToEntity(deal);
+    public Result<DealEntity, ValidationErrors> ToEntity(DealDto deal) =>
+        strategies.Create(deal).ToEntity(deal);
 }

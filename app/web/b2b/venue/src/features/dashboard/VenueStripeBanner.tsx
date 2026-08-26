@@ -1,5 +1,5 @@
 import { useVenueOverviewQuery } from "./hooks";
-import { StripeConnectBanner } from "@/features/dashboard";
+import { StripeConnectBanner } from "@concertable/web/features/dashboard";
 
 export function VenueStripeBanner() {
   const { data } = useVenueOverviewQuery();

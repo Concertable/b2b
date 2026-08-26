@@ -8,7 +8,7 @@ export function useStripeAccount() {
   const { refetch, isFetching: isLoadingLink } = useStripeOnboardingQuery();
 
   return {
-    isVerified: accountStatus === "Verified",
+    isVerified: accountStatus === "verified",
     isLoading,
     isLoadingLink,
     beginOnboarding: refetch,

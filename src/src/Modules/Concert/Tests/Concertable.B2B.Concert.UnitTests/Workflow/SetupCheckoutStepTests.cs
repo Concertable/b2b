@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Steps;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
+using Reunion;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
 using Moq;
@@ -16,23 +17,23 @@ public sealed class SetupCheckoutStepTests
     private readonly Guid venueManagerId = Guid.NewGuid();
     private readonly Guid artistTenantId = Guid.NewGuid();
     private readonly CheckoutSession session = new("seti_secret", "cs", "cus");
-    private readonly VenueHireDeal deal = new() { PaymentMethod = PaymentMethod.Cash, HireFee = 300 };
+    private readonly VenueHireDealDto deal = new() { PaymentMethod = PaymentMethod.Cash, HireFee = 300 };
 
     private readonly Mock<IOpportunityRepository> opportunityRepository;
     private readonly Mock<IUserModule> userModule;
     private readonly Mock<IDealAccessor> dealAccessor;
-    private readonly Mock<IManagerPaymentClient> managerPaymentClient;
+    private readonly Mock<IManagerPaymentOperationsClient> managerPaymentClient;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly SetupCheckoutStep step;
 
-    private IDictionary<string, string>? capturedMetadata;
+    private IReadOnlyDictionary<string, string>? capturedMetadata;
 
     public SetupCheckoutStepTests()
     {
         this.opportunityRepository = new Mock<IOpportunityRepository>();
         this.userModule = new Mock<IUserModule>();
         this.dealAccessor = new Mock<IDealAccessor>();
-        this.managerPaymentClient = new Mock<IManagerPaymentClient>();
+        this.managerPaymentClient = new Mock<IManagerPaymentOperationsClient>();
         this.tenantContext = new Mock<ITenantContext>();
 
         opportunityRepository
@@ -40,12 +41,12 @@ public sealed class SetupCheckoutStepTests
             .ReturnsAsync(("Venue", venueManagerId));
         userModule
             .Setup(m => m.GetManagerByIdAsync(venueManagerId))
-            .ReturnsAsync(new ManagerDto { Id = venueManagerId, Email = "venue@example.com" });
+            .ReturnsAsync(Option.Some(new ManagerDto { Id = venueManagerId, Email = "venue@example.com" }));
         dealAccessor.SetupGet(c => c.Deal).Returns(deal);
         tenantContext.SetupGet(c => c.TenantId).Returns(artistTenantId);
         managerPaymentClient
-            .Setup(c => c.CreateSetupSessionAsync(It.IsAny<Guid>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
-            .Callback<Guid, IDictionary<string, string>, CancellationToken>((_, m, _) => capturedMetadata = m)
+            .Setup(c => c.CreateSetupSessionAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .Callback<Guid, IReadOnlyDictionary<string, string>, CancellationToken>((_, m, _) => capturedMetadata = m)
             .ReturnsAsync(session);
 
         this.step = new SetupCheckoutStep(
@@ -64,7 +65,7 @@ public sealed class SetupCheckoutStepTests
         Assert.Equal(new PayeeSummary("Venue", "venue@example.com"), checkout.Payee);
         Assert.Equal(session, checkout.Session);
         managerPaymentClient.Verify(
-            c => c.CreateSetupSessionAsync(artistTenantId, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()),
+            c => c.CreateSetupSessionAsync(artistTenantId, It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()),
             Times.Once);
         Assert.Equal(TransactionTypes.ApplicationApply, capturedMetadata![PaymentMetadataKeys.Type]);
         Assert.Equal(OpportunityId.ToString(), capturedMetadata[PaymentMetadataKeys.OpportunityId]);

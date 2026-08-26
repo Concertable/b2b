@@ -1,14 +1,15 @@
 import { useState, type FormEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { tenantRoleLabel } from "@b2b/features/tenant";
+import { Button } from "@concertable/web/components/ui/button";
+import { Input } from "@concertable/web/components/ui/input";
+import { Label } from "@concertable/web/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@concertable/web/components/ui/select";
 import {
   useInviteMember,
   type InviteBuffer,
@@ -17,7 +18,7 @@ import {
 export function InviteForm() {
   const { submit, validate, isPending, roleOptions } = useInviteMember();
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<InviteBuffer["role"]>("Manager");
+  const [role, setRole] = useState<InviteBuffer["role"]>("manager");
   const [touched, setTouched] = useState(false);
 
   const parsed = validate({ email, role });
@@ -27,7 +28,7 @@ export function InviteForm() {
     e.preventDefault();
     const result = submit({ email, role }, () => {
       setEmail("");
-      setRole("Manager");
+      setRole("manager");
       setTouched(false);
     });
     if (!result.success) setTouched(true);
@@ -65,7 +66,7 @@ export function InviteForm() {
             <SelectContent>
               {roleOptions.map((r) => (
                 <SelectItem key={r} value={r}>
-                  {r}
+                  {tenantRoleLabel(r)}
                 </SelectItem>
               ))}
             </SelectContent>

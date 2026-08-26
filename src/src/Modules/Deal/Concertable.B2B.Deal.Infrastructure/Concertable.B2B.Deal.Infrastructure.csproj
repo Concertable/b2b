@@ -11,9 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentResults" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
   </ItemGroup>
 
   <ItemGroup>

@@ -24,7 +24,7 @@ export function usePayoutAccount() {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === "stripe_return")
         refetchStatus().then(({ data: status }) => {
-          if (status === "Verified") toast.success("Payout account verified");
+          if (status === "verified") toast.success("Payout account verified");
           else
             toast.info(
               "Setup incomplete — finish the remaining steps to get verified",

@@ -1,4 +1,4 @@
-export { TENANT_HEADER, TENANT_ROLES } from "./constants";
+export { TENANT_HEADER, TENANT_ROLES, TENANT_ROLE_LABELS, tenantRoleLabel } from "./constants";
 export type { TenantType, TenantRole, Membership, B2bIdentity } from "./types";
 export { useTenant, useTenantIdentity } from "./hooks/useTenant";
 export { resolveTenantRoute, requireLocalB2bAuth } from "./guards";

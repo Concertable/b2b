@@ -48,16 +48,6 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
                     b.ToTable("Users", "user");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.User.Infrastructure.Data.AdminProfileEntity", b =>
-                {
-                    b.Property<Guid>("Sub")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Sub");
-
-                    b.ToTable("AdminProfiles", "user");
-                });
-
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
                 {
                     b.Property<Guid>("MessageId")

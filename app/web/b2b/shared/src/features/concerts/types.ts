@@ -4,15 +4,15 @@ import type { Concert } from "@concertable/shared/features/concerts/types";
 import type { Deal } from "@b2b/features/deals";
 
 export type ApplicationStatus =
-  | "Pending"
-  | "Rejected"
-  | "Withdrawn"
-  | "Accepted"
-  | "Cancelled"
-  | "AwaitingPayment"
-  | "Confirmed"
-  | "Complete"
-  | "Settled";
+  | "pending"
+  | "rejected"
+  | "withdrawn"
+  | "accepted"
+  | "cancelled"
+  | "awaitingPayment"
+  | "confirmed"
+  | "complete"
+  | "settled";
 
 export interface OpportunityActions {
   checkout?: ActionLink | null;
@@ -47,7 +47,7 @@ export interface ConcertActions {
   invoice?: ActionLink | null;
 }
 
-// The party-scoped owner read (GET /concert/user/{id}): the public concert plus the venue-private
+// The party-scoped owner read (GET /organization/concert/{id}): the public concert plus the venue-private
 // figures and party-only action links the anonymous marketplace read omits.
 export interface MyConcert extends Concert {
   ticketsSold: number;

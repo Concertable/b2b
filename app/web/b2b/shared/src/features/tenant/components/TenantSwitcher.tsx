@@ -5,7 +5,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@concertable/web/components/ui/select";
 import { useTenant } from "../hooks/useTenant";
 
 export function TenantSwitcher({ tenantType }: Readonly<{ tenantType: TenantType }>) {

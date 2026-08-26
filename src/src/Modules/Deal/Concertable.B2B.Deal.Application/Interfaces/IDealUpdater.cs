@@ -1,9 +1,11 @@
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
+using Reunion.Errors;
+using Reunion;
 
 namespace Concertable.B2B.Deal.Application.Interfaces;
 
-internal interface IDealUpdater
+internal interface IDealUpdater : IDealStrategy
 {
-    void Apply(DealEntity existing, IDeal source);
+    UnitResult<ValidationErrors> Apply(DealEntity existing, DealDto source);
 }

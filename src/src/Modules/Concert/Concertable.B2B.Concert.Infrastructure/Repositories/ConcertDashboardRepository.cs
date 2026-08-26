@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
@@ -33,44 +34,79 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         this.doorRevenueOutstanding = doorRevenueOutstanding;
     }
 
-    public Task<VenueDashboardCounts?> GetVenueCountsAsync(int venueId, CancellationToken ct = default)
+    public Task<VenueDashboardCounts?> GetVenueCountsAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default)
     {
         var applications = opportunityUpcoming.ApplyVia(
             context.Applications
-                .Where(a => a.State == LifecycleState.Applied && a.Opportunity.VenueId == venueId),
+                .Where(a => a.State == LifecycleState.Applied
+                    && a.VenueTenantId == venueTenantId),
             a => a.Opportunity);
 
         var openOpportunities = opportunityUpcoming.Apply(
             context.Opportunities
-                .Where(o => o.VenueId == venueId)
+                .Where(o => o.TenantId == venueTenantId)
                 .WhereOpen());
 
         var upcomingConcerts = concertUpcoming.Apply(
-            context.Concerts.Where(c => c.VenueId == venueId));
+            context.Concerts.Where(c => c.VenueTenantId == venueTenantId));
 
         var awaitingDoorRevenue = endedAndBooked
             .And(doorRevenueOutstanding)
-            .Apply(context.Concerts.Where(c => c.VenueId == venueId));
+            .Apply(context.Concerts.Where(c => c.VenueTenantId == venueTenantId));
 
         return context.VenueReadModels
-            .Where(v => v.Id == venueId)
+            .Where(v => v.TenantId == venueTenantId)
             .ToVenueCounts(applications, openOpportunities, upcomingConcerts, awaitingDoorRevenue)
             .FirstOrDefaultAsync(ct);
     }
 
-    public Task<ArtistDashboardCounts?> GetArtistCountsAsync(int artistId, CancellationToken ct = default)
+    public Task<ArtistDashboardCounts?> GetArtistCountsAsync(
+        Guid artistTenantId,
+        IReadOnlyCollection<DealType> checkoutCapableDealTypes,
+        CancellationToken ct = default)
     {
         var applications = opportunityUpcoming.ApplyVia(
             context.Applications
-                .Where(a => a.State == LifecycleState.Applied && a.ArtistId == artistId),
+                .Where(a => a.State == LifecycleState.Applied
+                    && a.ArtistTenantId == artistTenantId),
+            a => a.Opportunity);
+
+        var acceptedAwaitingCheckout = opportunityUpcoming.ApplyVia(
+            context.Applications
+                .Where(a => a.State == LifecycleState.Accepted
+                    && a.ArtistTenantId == artistTenantId
+                    && checkoutCapableDealTypes.Contains(a.DealType)),
             a => a.Opportunity);
 
         var upcomingConcerts = concertUpcoming.Apply(
-            context.Concerts.Where(c => c.ArtistId == artistId));
+            context.Concerts.Where(c => c.ArtistTenantId == artistTenantId));
 
         return context.ArtistReadModels
-            .Where(a => a.Id == artistId)
-            .ToArtistCounts(applications, upcomingConcerts)
+            .Where(a => a.TenantId == artistTenantId)
+            .ToArtistCounts(applications, acceptedAwaitingCheckout, upcomingConcerts)
             .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
+        IReadOnlyCollection<int> bookingIds,
+        CancellationToken ct = default)
+    {
+        if (bookingIds.Count == 0)
+            return [];
+
+        return await context.Bookings
+            .AsNoTracking()
+            .Where(b => bookingIds.Contains(b.Id) && b.Concert != null)
+            .Select(b => new ManagerSettlementContext(
+                b.Id,
+                b.Concert!.Id,
+                b.Concert.Name,
+                b.VenueTenantId,
+                b.ArtistTenantId,
+                b.Application.Opportunity.Venue.Name,
+                b.Application.Artist.Name))
+            .ToListAsync(ct);
     }
 }

@@ -1,93 +1,115 @@
 import { FileText } from "lucide-react";
 import dayjs from "dayjs";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useArtistApplicationsQuery } from "./hooks";
+import {
+  useArtistApplicationActions,
+  useArtistApplicationsQuery,
+} from "./hooks";
 import {
   APPLICATION_ACTION_LABELS,
   type ApplicationActionName,
 } from "./applicationActions";
 import type { Application } from "./types";
 import type { DashboardApplicationStatus } from "@concertable/shared/features/dashboard";
-import { dealSummary } from "@b2b/features/deals";
-import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/ui/data-table";
+import { dealSummary } from "@concertable/web-b2b/features/deals";
+import { ConfirmActionDialog } from "@concertable/web-b2b/features/concerts";
+import { Button } from "@concertable/web/components/ui/button";
+import { DataTable } from "@concertable/web/components/ui/data-table";
 import {
   DashboardCard,
   WidgetError,
   WidgetLoading,
-} from "@/features/dashboard";
+} from "@concertable/web/features/dashboard";
 
 const statusStyles: Record<
   DashboardApplicationStatus,
   { label: string; chip: string }
 > = {
-  AwaitingPayment: {
+  awaitingPayment: {
     label: "Awaiting payment",
     chip: "bg-amber-50 text-amber-700",
   },
-  Pending: { label: "Pending", chip: "bg-sky-50 text-sky-700" },
-  Accepted: { label: "Accepted", chip: "bg-emerald-50 text-emerald-700" },
-  Confirmed: { label: "Confirmed", chip: "bg-emerald-50 text-emerald-700" },
-  Rejected: { label: "Rejected", chip: "bg-muted text-muted-foreground" },
-  Withdrawn: { label: "Withdrawn", chip: "bg-muted text-muted-foreground" },
+  pending: { label: "Pending", chip: "bg-sky-50 text-sky-700" },
+  accepted: { label: "Accepted", chip: "bg-emerald-50 text-emerald-700" },
+  confirmed: { label: "Confirmed", chip: "bg-emerald-50 text-emerald-700" },
+  rejected: { label: "Rejected", chip: "bg-muted text-muted-foreground" },
+  withdrawn: { label: "Withdrawn", chip: "bg-muted text-muted-foreground" },
 };
 
 const actionVariants: Record<ApplicationActionName, "default" | "outline"> = {
-  checkout: "default",
   withdraw: "outline",
+  contract: "default",
 };
 
-const columns: ColumnDef<Application>[] = [
-  {
-    accessorKey: "opportunity",
-    header: "Venue",
-    cell: ({ row }) => {
-      const o = row.original.opportunity;
-      return (
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{o.venueName}</p>
-          <p className="text-muted-foreground text-xs">
-            {dayjs(o.startDate).format("ddd D MMM")} · {dealSummary(o.deal)}
-          </p>
-        </div>
-      );
+function createColumns(
+  onAction: (name: ApplicationActionName, application: Application) => void,
+): ColumnDef<Application>[] {
+  return [
+    {
+      accessorKey: "opportunity",
+      header: "Venue",
+      cell: ({ row }) => {
+        const o = row.original.opportunity;
+        return (
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{o.venueName}</p>
+            <p className="text-muted-foreground text-xs">
+              {dayjs(o.startDate).format("ddd D MMM")} · {dealSummary(o.deal)}
+            </p>
+          </div>
+        );
+      },
     },
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const style = statusStyles[row.original.status];
-      return (
-        <span
-          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${style.chip}`}
-        >
-          {style.label}
-        </span>
-      );
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const style = statusStyles[row.original.status];
+        return (
+          <span
+            className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${style.chip}`}
+          >
+            {style.label}
+          </span>
+        );
+      },
     },
-  },
-  {
-    id: "actions",
-    header: () => <div className="text-right">Actions</div>,
-    cell: ({ row }) => {
-      const actionNames = Object.keys(row.original.actions) as ApplicationActionName[];
-      if (actionNames.length === 0) return null;
-      return (
-        <div className="flex items-center justify-end gap-1">
-          {actionNames.map((name) => (
-            <Button key={name} size="xs" variant={actionVariants[name]}>
-              {APPLICATION_ACTION_LABELS[name]}
-            </Button>
-          ))}
-        </div>
-      );
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const actionNames = (
+          Object.entries(row.original.actions) as [
+            ApplicationActionName,
+            unknown,
+          ][]
+        )
+          .filter(([, action]) => action !== undefined)
+          .map(([name]) => name);
+        if (actionNames.length === 0) return null;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {actionNames.map((name) => (
+              <Button
+                key={name}
+                size="xs"
+                variant={actionVariants[name]}
+                onClick={() => onAction(name, row.original)}
+              >
+                {APPLICATION_ACTION_LABELS[name]}
+              </Button>
+            ))}
+          </div>
+        );
+      },
     },
-  },
-];
+  ];
+}
 
 export function ArtistApplicationsPipelineWidget() {
   const { data, isLoading, isError, refetch } = useArtistApplicationsQuery();
+  const applicationActions = useArtistApplicationActions();
+  const columns = createColumns(applicationActions.request);
 
   return (
     <DashboardCard
@@ -105,6 +127,18 @@ export function ArtistApplicationsPipelineWidget() {
           emptyMessage="No applications yet — find opportunities to apply to."
         />
       )}
+      <ConfirmActionDialog
+        open={applicationActions.isOpen}
+        title="Withdraw this application?"
+        description="Your application will be withdrawn and any payment made towards it will be refunded in full."
+        dismissLabel="Keep application"
+        confirmLabel="Withdraw application"
+        pendingLabel="Withdrawing..."
+        confirmTestId="dashboard-withdraw-confirm"
+        isPending={applicationActions.isPending}
+        onDismiss={applicationActions.dismiss}
+        onConfirm={applicationActions.confirm}
+      />
     </DashboardCard>
   );
 }

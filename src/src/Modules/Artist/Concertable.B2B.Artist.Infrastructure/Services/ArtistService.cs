@@ -1,5 +1,7 @@
 using Concertable.B2B.Artist.Application.Requests;
-using Concertable.Kernel.Exceptions;
+using Concertable.B2B.Artist.Application.Errors;
+using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Kernel.Geometry;
 using Concertable.Kernel.Identity;
@@ -12,7 +14,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Services;
 internal sealed class ArtistService : IArtistService
 {
     private readonly IArtistRepository repository;
-    private readonly IPublicArtistRepository publicRepository;
+    private readonly IArtistReadRepository readRepository;
     private readonly IImageService imageService;
     private readonly ICurrentUser currentUser;
     private readonly ITenantContext tenantContext;
@@ -21,7 +23,7 @@ internal sealed class ArtistService : IArtistService
 
     public ArtistService(
         IArtistRepository repository,
-        IPublicArtistRepository publicRepository,
+        IArtistReadRepository readRepository,
         IImageService imageService,
         ICurrentUser currentUser,
         ITenantContext tenantContext,
@@ -29,7 +31,7 @@ internal sealed class ArtistService : IArtistService
         [FromKeyedServices(GeometryProviderType.Geographic)] IGeometryProvider geometryProvider)
     {
         this.repository = repository;
-        this.publicRepository = publicRepository;
+        this.readRepository = readRepository;
         this.imageService = imageService;
         this.currentUser = currentUser;
         this.tenantContext = tenantContext;
@@ -37,87 +39,110 @@ internal sealed class ArtistService : IArtistService
         this.geometryProvider = geometryProvider;
     }
 
-    public Task<ArtistDetails?> GetDetailsForCurrentUserAsync() =>
-        repository.GetDetailsForCurrentTenantAsync();
-
-    public async Task<ArtistDetails> GetDetailsByIdAsync(int id) =>
-        await publicRepository.GetDetailsByIdAsync(id)
-            .OrNotFound();
-
-    public async Task<ArtistDetails> CreateAsync(CreateArtistRequest request)
+    public async Task<Option<ArtistDetails>> GetDetailsAsync(
+        CancellationToken ct = default)
     {
-        if (!tenantContext.HasTenant)
-            throw new ForbiddenException("No active tenant");
+        var tenantId = tenantContext.GetTenantId();
 
-        var bannerUrl = await imageService.UploadAsync(request.Banner);
-        var avatarUrl = await imageService.UploadAsync(request.Avatar);
-        var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
-        var coordinates = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
-
-        var artist = ArtistEntity.Create(
-            currentUser.GetId(),
-            request.Name,
-            request.About,
-            bannerUrl,
-            avatarUrl,
-            coordinates,
-            address,
-            currentUser.Email!,
-            request.Genres);
-
-        var createdArtist = await repository.AddAsync(artist);
-        await repository.SaveChangesAsync();
-
-        return await publicRepository.GetDetailsByIdAsync(createdArtist.Id)
-            ?? throw new InternalServerException($"Artist {createdArtist.Id} not found after creation.");
+        return await repository.GetDetailsByTenantIdAsync(tenantId, ct);
     }
 
-    public async Task<ArtistDetails> UpdateAsync(int id, UpdateArtistRequest request)
+    public async Task<Option<ArtistDetails>> GetDetailsByIdAsync(
+        int id,
+        CancellationToken ct = default) =>
+        await readRepository.GetDetailsByIdAsync(id, ct);
+
+    public async Task<Result<ArtistDetails, CreateArtistError>> CreateAsync(
+        CreateArtistRequest request,
+        CancellationToken ct = default)
     {
-        var artist = await repository.GetByIdAsync(id)
-            .OrNotFound();
+        var tenantId = tenantContext.GetTenantId();
 
-        var bannerUrl = request.Banner is not null
-            ? await imageService.ReplaceAsync(request.Banner, artist.BannerUrl)
-            : artist.BannerUrl;
+        if (await repository.ExistsByTenantIdAsync(tenantId, ct))
+            return new CreateArtistError.ArtistAlreadyExists();
 
-        artist.Update(request.Name, request.About, bannerUrl, request.Genres);
+        return await ArtistEntity.ValidateProfile(request.Name, request.About)
+            .BindAsync(async () =>
+            {
+                var bannerUrl = await imageService.UploadAsync(request.Banner);
+                var avatarUrl = await imageService.UploadAsync(request.Avatar);
+                var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
+                var coordinates = geometryProvider.CreatePoint(request.Latitude, request.Longitude);
 
-        var address = await geocodingClient.GetLocationAsync(request.Latitude, request.Longitude);
-        artist.UpdateLocation(
-            geometryProvider.CreatePoint(request.Latitude, request.Longitude),
-            address);
+                return await ArtistEntity.Create(
+                    currentUser.GetId(),
+                    request.Name,
+                    request.About,
+                    bannerUrl,
+                    avatarUrl,
+                    coordinates,
+                    address,
+                    currentUser.Email!,
+                    request.Genres)
+                    .BindAsync(async artist =>
+                    {
+                        if (!(await repository.TryInsertAsync(artist, ct))
+                            .TryGetValue(out var createdArtist))
+                            return new CreateArtistError.ArtistAlreadyExists();
 
-        if (request.Avatar is not null)
-            artist.UpdateAvatar(await imageService.ReplaceAsync(request.Avatar, artist.Avatar));
-
-        await repository.SaveChangesAsync();
-
-        return await publicRepository.GetDetailsByIdAsync(id)
-            ?? throw new InternalServerException($"Artist {id} not found after update.");
+                        var details = await readRepository.GetDetailsByIdAsync(createdArtist.Id, ct)
+                            ?? throw new InvalidOperationException(
+                                $"Artist {createdArtist.Id} not found after creation.");
+                        return Result.Success<ArtistDetails, CreateArtistError>(details);
+                    }, errors => new CreateArtistError.Invalid(errors));
+            }, errors => new CreateArtistError.Invalid(errors));
     }
 
-    public async Task<int> GetIdForCurrentUserAsync()
+    public async Task<Result<ArtistDetails, UpdateArtistError>> UpdateAsync(
+        UpdateArtistRequest request,
+        CancellationToken ct = default)
     {
-        int? id = await repository.GetIdForCurrentTenantAsync();
-        ForbiddenException.ThrowIfNull(id, "You do not own an Artist");
+        var tenantId = tenantContext.GetTenantId();
 
-        return id.Value;
+        var artist = await repository.GetByTenantIdAsync(tenantId, ct);
+        if (artist is null)
+            return new UpdateArtistError.ArtistNotFound();
+
+        return await ArtistEntity.ValidateProfile(request.Name, request.About)
+            .BindAsync(async () =>
+            {
+                var bannerUrl = request.Banner is not null
+                    ? await imageService.ReplaceAsync(request.Banner, artist.BannerUrl)
+                    : artist.BannerUrl;
+                return await artist.Update(request.Name, request.About, bannerUrl, request.Genres)
+                    .BindAsync(async () =>
+                    {
+                        var address = await geocodingClient.GetLocationAsync(
+                            request.Latitude,
+                            request.Longitude);
+                        artist.UpdateLocation(
+                            geometryProvider.CreatePoint(request.Latitude, request.Longitude),
+                            address);
+
+                        if (request.Avatar is not null)
+                            artist.UpdateAvatar(await imageService.ReplaceAsync(request.Avatar, artist.Avatar));
+
+                        await repository.SaveChangesAsync(ct);
+
+                        var details = await readRepository.GetDetailsByIdAsync(artist.Id, ct)
+                            ?? throw new InvalidOperationException(
+                                $"Artist {artist.Id} not found after update.");
+                        return Result.Success<ArtistDetails, UpdateArtistError>(details);
+                    }, errors => new UpdateArtistError.Invalid(errors));
+            }, errors => new UpdateArtistError.Invalid(errors));
     }
 
-    public async Task<bool> OwnsArtistAsync(int artistId)
-    {
-        var id = await repository.GetIdForCurrentTenantAsync();
-        return id == artistId;
-    }
+    public async Task<bool> OwnsArtistAsync(int artistId, CancellationToken ct = default) =>
+        tenantContext.TenantId is { } tenantId
+        && await repository.GetTenantIdByIdAsync(artistId, ct) == tenantId;
 
-    public async Task<ArtistSummary> GetSummaryAsync(int id) =>
-        await publicRepository.GetSummaryAsync(id)
-            .OrNotFound();
+    public async Task<Option<ArtistSummary>> GetSummaryAsync(
+        int id,
+        CancellationToken ct = default) =>
+        await readRepository.GetSummaryAsync(id, ct);
 
-    public Task<IReadOnlySet<Genre>> GetGenresAsync(int id) =>
-        publicRepository.GetGenresAsync(id);
-
-    public Task<ArtistOrgIdentity?> GetOrgIdentityByTenantIdAsync(Guid tenantId) =>
-        publicRepository.GetOrgIdentityByTenantIdAsync(tenantId);
+    public Task<IReadOnlySet<Genre>> GetGenresAsync(
+        int id,
+        CancellationToken ct = default) =>
+        readRepository.GetGenresAsync(id, ct);
 }

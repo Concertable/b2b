@@ -17,6 +17,9 @@
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Dunet" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
   </ItemGroup>
 
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->

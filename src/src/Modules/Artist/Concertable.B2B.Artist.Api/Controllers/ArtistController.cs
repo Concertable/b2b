@@ -2,14 +2,16 @@ using Concertable.B2B.Artist.Api.Mappers;
 using Concertable.B2B.Artist.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.B2B.Artist.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-[RequiredTenantType(TenantType.Artist)]
+[Route($"api/{RouteSegment}")]
 internal sealed class ArtistController : ControllerBase
 {
+    internal const string RouteSegment = "artist";
+
     private readonly IArtistService artistService;
 
     public ArtistController(IArtistService artistService)
@@ -17,32 +19,42 @@ internal sealed class ArtistController : ControllerBase
         this.artistService = artistService;
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
+    [HttpGet("{artistId:int}")]
+    public async Task<ActionResult<DetailsResponse>> GetDetailsById(
+        int artistId,
+        CancellationToken ct)
     {
-        return Ok((await artistService.GetDetailsByIdAsync(id)).ToDetailsResponse());
+        return (await artistService.GetDetailsByIdAsync(artistId, ct))
+            .ToOkOrNotFound(artist => artist.ToDetailsResponse());
     }
 
+    [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.OperationsView)]
-    [HttpGet("user")]
-    public async Task<ActionResult<DetailsResponse>> GetDetailsForCurrentUser()
-    {
-        var artist = await artistService.GetDetailsForCurrentUserAsync();
-        return artist is null ? NoContent() : Ok(artist.ToDetailsResponse());
-    }
+    [HttpGet($"/api/organization/{RouteSegment}")]
+    public async Task<ActionResult<DetailsResponse>> GetDetails(CancellationToken ct) =>
+        (await artistService.GetDetailsAsync(ct))
+            .ToOkOrNoContent(artist => artist.ToDetailsResponse());
 
+    [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPost]
-    public async Task<IActionResult> Create([FromForm] CreateArtistRequest request)
-    {
-        var artistDto = await artistService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetDetailsById), new { Id = artistDto.Id }, artistDto);
-    }
+    [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
+    [HttpPost($"/api/organization/{RouteSegment}")]
+    public async Task<ActionResult<DetailsResponse>> Create(
+        [FromForm] CreateArtistRequest request,
+        CancellationToken ct) =>
+        (await artistService.CreateAsync(request, ct))
+            .ToCreatedOrProblem(
+                artist => artist.ToDetailsResponse(),
+                artist => $"/api/artist/{artist.Id}");
 
+    [RequiredTenantType(TenantType.Artist)]
     [HasPermission(SharedPermissions.ProfileEdit)]
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromForm] UpdateArtistRequest request)
-    {
-        return Ok(await artistService.UpdateAsync(id, request));
-    }
+    [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
+    [HttpPut($"/api/organization/{RouteSegment}")]
+    public async Task<ActionResult<DetailsResponse>> Update(
+        [FromForm] UpdateArtistRequest request,
+        CancellationToken ct) =>
+        (await artistService.UpdateAsync(request, ct))
+            .ToOkOrProblem(artist => artist.ToDetailsResponse());
 }

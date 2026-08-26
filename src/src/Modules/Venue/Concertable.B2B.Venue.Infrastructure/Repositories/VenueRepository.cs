@@ -7,15 +7,28 @@ namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
 internal sealed class VenueRepository : TenantScopedRepository<VenueEntity>, IVenueRepository
 {
-    public VenueRepository(VenueDbContext context, ITenantContext tenant) : base(context, tenant) { }
+    private readonly VenueDbContext context;
 
-    public async Task<int?> GetIdForCurrentTenantAsync() =>
-        await base.CurrentTenant.AsNoTracking()
-            .Select(v => (int?)v.Id)
-            .FirstOrDefaultAsync();
+    public VenueRepository(VenueDbContext context, ITenantContext tenant) : base(context, tenant)
+    {
+        this.context = context;
+    }
 
-    public async Task<VenueDetails?> GetDetailsForCurrentTenantAsync() =>
-        await base.CurrentTenant.AsNoTracking()
+    public async Task<VenueEntity?> GetByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
+        await context.Venues.SingleOrDefaultAsync(v => v.TenantId == tenantId, ct);
+
+    public async Task<VenueDetails?> GetDetailsByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
+        await context.Venues.AsNoTracking()
+            .Where(v => v.TenantId == tenantId)
             .ToDetails(context.VenueRatingProjections.AsNoTracking())
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync(ct);
+
+    public async Task<bool> ExistsByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
+        await context.Venues.AnyAsync(v => v.TenantId == tenantId, ct);
 }

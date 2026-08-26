@@ -1,17 +1,15 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "@tanstack/react-router";
-import { usePayoutAccountStatusQuery, StripeOnboardingBanner } from "@b2b/features/payments";
-import { Button } from "@/components/ui/button";
+import { usePayoutAccountStatusQuery, StripeOnboardingBanner } from "@concertable/web-b2b/features/payments";
+import { Button } from "@concertable/web/components/ui/button";
 import dayjs from "dayjs";
-import type { ConcertDraftCreatedPayload } from "@/features/notifications";
 import {
   useApplicationQuery,
   useAcceptApplicationMutation,
   AcceptDealSummary,
   ESignaturePanel,
   useESignature,
-} from "@b2b/features/concerts";
-import { useCheckoutFlow } from "@/features/concerts/hooks/useCheckoutFlow";
+} from "@concertable/web-b2b/features/concerts";
 import { VenueAcceptCheckoutFlow } from "./VenueAcceptCheckoutPage";
 
 export function AcceptApplicationPage() {
@@ -24,14 +22,14 @@ export function AcceptApplicationPage() {
   const acceptMutation = useAcceptApplicationMutation(
     application?.opportunity.id ?? 0,
   );
-  const flow = useCheckoutFlow<ConcertDraftCreatedPayload>({ event: "ConcertDraftCreated" });
 
   if (isLoading || !application) return null;
 
   const { artist, opportunity, actions } = application;
   const requiresCheckout = actions.checkout != null;
 
-  if (accepted) return <VenueAcceptCheckoutFlow artistName={artist.name} flow={flow} />;
+  if (accepted)
+    return <VenueAcceptCheckoutFlow applicationId={applicationId} />;
 
   function handleConfirm() {
     if (requiresCheckout) {
@@ -85,7 +83,7 @@ export function AcceptApplicationPage() {
           Cancel
         </Button>
         <Button
-          disabled={accountStatus !== "Verified" || acceptMutation.isPending || (!requiresCheckout && !isValid)}
+          disabled={accountStatus !== "verified" || acceptMutation.isPending || (!requiresCheckout && !isValid)}
           onClick={handleConfirm}
           data-testid="confirm"
         >

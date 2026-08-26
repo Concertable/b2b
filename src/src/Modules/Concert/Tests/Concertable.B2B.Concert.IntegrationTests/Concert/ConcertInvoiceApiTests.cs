@@ -110,6 +110,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal(DealType.DoorSplit, invoice!.DealType);
         Assert.Equal(concert.ArtistTenantId, invoice.Supplier.TenantId);
         Assert.Equal(concert.VenueTenantId, invoice.Customer.TenantId);
+        Assert.Equal(280m, invoice.Amounts.Gross);
         Assert.Equal(0m, invoice.Amounts.Vat);
         Assert.Equal(invoice.Amounts.Gross, invoice.Amounts.Net);
 
@@ -131,6 +132,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.NotNull(invoice);
         Assert.Equal(DealType.Versus, invoice!.DealType);
         Assert.Equal(concert.ArtistTenantId, invoice.Supplier.TenantId);
+        Assert.Equal(254m, invoice.Amounts.Gross);
 
         var payout = fixture.ManagerPaymentClient.Payments.Single(p => p.BookingId == booking.Id);
         Assert.Equal(payout.Amount, invoice.Amounts.Gross);
@@ -205,7 +207,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
 
         var venueUser = fixture.SeedState.Users.Single(u => u.Id == TenantUserOf(concert.VenueTenantId));
         var party = fixture.CreateClient(venueUser);
-        var partyResponse = await party.GetAsync($"/api/Concert/{concert.Id}/invoice");
+        var partyResponse = await party.GetAsync($"/api/concert/{concert.Id}/invoice");
         await partyResponse.ShouldBe(HttpStatusCode.OK);
         Assert.Contains("INV-SEED000001-000001", await partyResponse.Content.ReadAsStringAsync());
 
@@ -213,7 +215,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
             ? fixture.SeedState.VenueManager2
             : fixture.SeedState.VenueManager1;
         var stranger = fixture.CreateClient(strangerUser);
-        await (await stranger.GetAsync($"/api/Concert/{concert.Id}/invoice")).ShouldBe(HttpStatusCode.NotFound);
+        await (await stranger.GetAsync($"/api/concert/{concert.Id}/invoice")).ShouldBe(HttpStatusCode.NotFound);
     }
 
     // --- PDF download: two-party scoped, lazy render, self-billing legends ---
@@ -228,7 +230,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         foreach (var tenantId in new[] { concert.VenueTenantId, concert.ArtistTenantId })
         {
             var party = fixture.CreateClient(UserOfTenant(tenantId));
-            var response = await party.GetAsync($"/api/Concert/{concert.Id}/invoice/pdf");
+            var response = await party.GetAsync($"/api/concert/{concert.Id}/invoice/pdf");
 
             await response.ShouldBe(HttpStatusCode.OK);
             Assert.Equal("application/pdf", response.Content.Headers.ContentType?.MediaType);
@@ -250,7 +252,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
             ? fixture.SeedState.VenueManager2
             : fixture.SeedState.VenueManager1;
 
-        var response = await fixture.CreateClient(strangerUser).GetAsync($"/api/Concert/{concert.Id}/invoice/pdf");
+        var response = await fixture.CreateClient(strangerUser).GetAsync($"/api/concert/{concert.Id}/invoice/pdf");
 
         // The two-party filter hides the deal document — 404, never a probe-able 403.
         await response.ShouldBe(HttpStatusCode.NotFound);
@@ -271,7 +273,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.StartsWith("invoices/", invoice!.PdfBlobName);
 
         var response = await fixture.CreateClient(UserOfTenant(concert.VenueTenantId))
-            .GetAsync($"/api/Concert/{concert.Id}/invoice/pdf");
+            .GetAsync($"/api/concert/{concert.Id}/invoice/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.Equal("%PDF", Encoding.ASCII.GetString(await response.Content.ReadAsByteArrayAsync(), 0, 4));
     }
@@ -286,7 +288,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concert.Id);
 
         var response = await fixture.CreateClient(UserOfTenant(concert.VenueTenantId))
-            .GetAsync($"/api/Concert/{concert.Id}/invoice/pdf");
+            .GetAsync($"/api/concert/{concert.Id}/invoice/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
         var text = Pdf.ExtractText(await response.Content.ReadAsByteArrayAsync());
 
@@ -307,15 +309,15 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         var party = fixture.CreateClient(UserOfTenant(concert.VenueTenantId));
 
         // Before settlement: the party reads its concert, but no invoice exists yet -> no link.
-        var before = await (await party.GetAsync($"/api/Concert/user/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
+        var before = await (await party.GetAsync($"/api/organization/concert/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(before!.Actions);
         Assert.Null(before.Actions!.Invoice);
 
         await fixture.FinishConcertAsync(concert.Id);
 
         // After settlement: the minted invoice surfaces its download link.
-        var after = await (await party.GetAsync($"/api/Concert/user/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
-        Assert.Equal($"/api/Concert/{concert.Id}/invoice/pdf", after!.Actions!.Invoice!.Href);
+        var after = await (await party.GetAsync($"/api/organization/concert/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
+        Assert.Equal($"/api/concert/{concert.Id}/invoice/pdf", after!.Actions!.Invoice!.Href);
     }
 
     private UserEntity UserOfTenant(Guid tenantId) =>

@@ -67,6 +67,9 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId")
+                        .IsUnique();
+
                     b.ToTable("Venues", "venue");
                 });
 
@@ -118,6 +121,9 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Details")
                         .HasColumnType("nvarchar(max)");

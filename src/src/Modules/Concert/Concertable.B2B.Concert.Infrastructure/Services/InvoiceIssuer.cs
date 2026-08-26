@@ -7,8 +7,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class InvoiceIssuer : IInvoiceIssuer
 {
     private readonly ISettlementAmountResolver settlementAmountResolver;
-    private readonly ISettlementPayeeResolver settlementPayeeResolver;
-    private readonly ITicketPayeeResolver ticketPayeeResolver;
+    private readonly IDealPayeeResolver dealPayeeResolver;
     private readonly IDealAccessor dealAccessor;
     private readonly ITenantModule tenantModule;
     private readonly IInvoiceRepository invoiceRepository;
@@ -17,8 +16,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
 
     public InvoiceIssuer(
         ISettlementAmountResolver settlementAmountResolver,
-        ISettlementPayeeResolver settlementPayeeResolver,
-        ITicketPayeeResolver ticketPayeeResolver,
+        IDealPayeeResolver dealPayeeResolver,
         IDealAccessor dealAccessor,
         ITenantModule tenantModule,
         IInvoiceRepository invoiceRepository,
@@ -26,8 +24,7 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
         TimeProvider timeProvider)
     {
         this.settlementAmountResolver = settlementAmountResolver;
-        this.settlementPayeeResolver = settlementPayeeResolver;
-        this.ticketPayeeResolver = ticketPayeeResolver;
+        this.dealPayeeResolver = dealPayeeResolver;
         this.dealAccessor = dealAccessor;
         this.tenantModule = tenantModule;
         this.invoiceRepository = invoiceRepository;
@@ -39,44 +36,46 @@ internal sealed class InvoiceIssuer : IInvoiceIssuer
     {
         var gross = await settlementAmountResolver.ResolveGrossAsync(concert.Id, dealAccessor.Deal, ct);
 
-        var supplierTenantId = settlementPayeeResolver.ResolveTenantId(concert);
-        var customerTenantId = ticketPayeeResolver.ResolveTenantId(concert);
+        var supplierTenantId = dealPayeeResolver.ResolveSettlementTenantId(concert);
+        var customerTenantId = dealPayeeResolver.ResolveTicketTenantId(concert);
 
-        var supplierTax = await tenantModule.GetTaxComplianceAsync(supplierTenantId, ct)
-            ?? throw new InvalidOperationException(
-                $"Supplier tenant {supplierTenantId} has no tax compliance at invoice time; the settlement tax-gate should guarantee it.");
-        var customerTax = await tenantModule.GetTaxComplianceAsync(customerTenantId, ct)
-            ?? throw new InvalidOperationException(
-                $"Customer tenant {customerTenantId} has no tax compliance at invoice time; the settlement tax-gate should guarantee it.");
+        var supplierTax = (await tenantModule.GetTaxComplianceAsync(supplierTenantId, ct)).Match(
+            value => value,
+            () => throw new InvalidOperationException(
+                $"Supplier tenant {supplierTenantId} has no tax compliance at invoice time; the settlement tax-gate should guarantee it."));
+        var customerTax = (await tenantModule.GetTaxComplianceAsync(customerTenantId, ct)).Match(
+            value => value,
+            () => throw new InvalidOperationException(
+                $"Customer tenant {customerTenantId} has no tax compliance at invoice time; the settlement tax-gate should guarantee it."));
 
         var supplier = await BuildPartyAsync(supplierTenantId, supplierTax, ct);
         var customer = await BuildPartyAsync(customerTenantId, customerTax, ct);
 
-        var vat = await tenantModule.GetVatCalculationAsync(supplierTenantId, gross, ct);
+        var vat = (await tenantModule.GetVatCalculationAsync(supplierTenantId, gross.Amount, ct)).Match(
+            value => value,
+            _ => throw new InvalidOperationException($"Supplier tenant {supplierTenantId} not found at invoice time."));
 
         var sequenceNumber = await sequenceRepository.AllocateNextAsync(supplierTenantId, ct);
         var invoiceNumber = $"INV-{supplierTax.SellerIdentifier}-{sequenceNumber:D6}";
 
         var invoice = InvoiceEntity.Create(
-            concert.BookingId,
+            concert,
             supplier,
             customer,
-            new VatBreakdown(vat.Net, vat.Vat, gross, vat.Rate),
+            new VatBreakdown(vat.Net, vat.Vat, gross.Amount, vat.Rate),
             sequenceNumber,
             invoiceNumber,
             concert.Period.End,
-            concert.DealType,
             timeProvider.GetUtcNow().UtcDateTime);
-        invoice.VenueTenantId = concert.VenueTenantId;
-        invoice.ArtistTenantId = concert.ArtistTenantId;
 
         await invoiceRepository.AddAsync(invoice, ct);
     }
 
     private async Task<InvoiceParty> BuildPartyAsync(Guid tenantId, TaxComplianceDto tax, CancellationToken ct)
     {
-        var tenant = await tenantModule.GetByIdAsync(tenantId, ct)
-            ?? throw new InvalidOperationException($"Tenant {tenantId} not found at invoice time.");
+        var tenant = (await tenantModule.GetByIdAsync(tenantId, ct)).Match(
+            value => value,
+            () => throw new InvalidOperationException($"Tenant {tenantId} not found at invoice time."));
         var address = tax.RegisteredAddress;
         return new InvoiceParty(
             tenantId,

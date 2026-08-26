@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Domain.Events;
+using Concertable.B2B.Concert.Domain.Errors;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts;
@@ -18,8 +19,8 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRaiser, IVenueArtistTenantScoped
 {
     public int Id { get; private set; }
-    public Guid VenueTenantId { get; set; }
-    public Guid ArtistTenantId { get; set; }
+    public Guid VenueTenantId { get; private set; }
+    public Guid ArtistTenantId { get; private set; }
     public int BookingId { get; private set; }
     public int ArtistId { get; private set; }
     public int VenueId { get; private set; }
@@ -33,8 +34,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public decimal? DoorRevenue { get; private set; }
     public DateRange Period { get; private set; } = null!;
     public DateTime? DatePosted { get; private set; }
-    public DealType DealType { get; private set; }
-    public BookingEntity Booking { get; set; } = null!;
+    public BookingEntity Booking { get; private set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
     public VenueReadModel Venue { get; set; } = null!;
     public List<Genre> Genres { get; private set; } = [];
@@ -47,34 +47,43 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     private ConcertEntity() { }
 
     public static ConcertEntity CreateDraft(
-        int bookingId,
+        BookingEntity booking,
         int artistId,
         int venueId,
         DateRange period,
         string name,
         string about,
-        DealType dealType,
-        IEnumerable<Genre> genres) => new()
+        IEnumerable<Genre> genres)
+    {
+        ArgumentNullException.ThrowIfNull(booking);
+        if (booking.VenueTenantId == Guid.Empty || booking.ArtistTenantId == Guid.Empty)
+            throw new InvalidOperationException("A concert cannot inherit unresolved booking tenants.");
+
+        return new()
         {
-            BookingId = bookingId,
+            Booking = booking,
+            BookingId = booking.Id,
+            VenueTenantId = booking.VenueTenantId,
+            ArtistTenantId = booking.ArtistTenantId,
             ArtistId = artistId,
             VenueId = venueId,
             Period = period,
             Name = name,
             About = about,
-            DealType = dealType,
             Genres = genres.ToList()
         };
+    }
 
     public void IncrementTicketsSold(int quantity) => TicketsSold += quantity;
 
     /* Venue-declared gross the artist's revenue share settles against (external ticketing + box
        office + cash on the door). A dead night is a real 0m; null means "not yet declared". */
-    public void DeclareDoorRevenue(decimal doorRevenue)
+    public UnitResult<DoorRevenueDeclarationError> DeclareDoorRevenue(decimal doorRevenue)
     {
         if (doorRevenue < 0)
-            throw new DomainException("Door revenue must be zero or greater.");
+            return new DoorRevenueDeclarationError.NegativeRevenue();
         DoorRevenue = doorRevenue;
+        return new Success();
     }
 
     public void Update(string name, string about, decimal price, int totalTickets)

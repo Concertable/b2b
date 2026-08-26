@@ -1,14 +1,16 @@
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Domain.Entities;
+using Reunion.Errors;
+using Reunion;
 
 namespace Concertable.B2B.Deal.Application.Mappers;
 
 internal sealed class DoorSplitDealMapper : IDealMapper
 {
-    public IDeal ToDeal(DealEntity entity)
+    public DealDto ToDeal(DealEntity entity)
     {
         var e = (DoorSplitDealEntity)entity;
-        return new DoorSplitDeal
+        return new DoorSplitDealDto
         {
             Id = e.Id,
             PaymentMethod = e.PaymentMethod,
@@ -16,9 +18,9 @@ internal sealed class DoorSplitDealMapper : IDealMapper
         };
     }
 
-    public DealEntity ToEntity(IDeal deal)
+    public Result<DealEntity, ValidationErrors> ToEntity(DealDto deal)
     {
-        var c = (DoorSplitDeal)deal;
-        return DoorSplitDealEntity.Create(c.ArtistDoorPercent, c.PaymentMethod);
+        var c = (DoorSplitDealDto)deal;
+        return DoorSplitDealEntity.Create(c.ArtistDoorPercent, c.PaymentMethod).Map<DealEntity>(entity => entity);
     }
 }

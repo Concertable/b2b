@@ -8,7 +8,7 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
 {
     private readonly ICurrentUser currentUser;
     private readonly IHttpContextAccessor httpContextAccessor;
-    private readonly ITenantRepository repository;
+    private readonly IMembershipRepository repository;
     private readonly IPermissionCatalog permissionCatalog;
 
     private Guid? tenantId;
@@ -19,7 +19,7 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
     public TenantContext(
         ICurrentUser currentUser,
         IHttpContextAccessor httpContextAccessor,
-        ITenantRepository repository,
+        IMembershipRepository repository,
         IPermissionCatalog permissionCatalog)
     {
         this.currentUser = currentUser;
@@ -31,6 +31,7 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
     public Guid? TenantId => tenantId;
 
     public TenantRole? Role => role;
+    public TenantType? Type => tenantType;
 
     /// <summary>
     /// No HTTP request in scope (worker, outbox dispatcher, event/projection handler) = system caller = filter bypass.

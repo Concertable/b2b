@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Reunion" />
     <PackageReference Include="Stripe.net" />
     <PackageReference Include="xunit" />
     <PackageReference Include="Concertable.Payment.Client" />

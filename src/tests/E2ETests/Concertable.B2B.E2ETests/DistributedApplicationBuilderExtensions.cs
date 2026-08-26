@@ -1,6 +1,8 @@
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
+using Concertable.Auth.Hosting;
+using Concertable.B2B.Hosting;
 using Concertable.Search.E2ETests.Helpers;
 using Microsoft.Extensions.Configuration;
 
@@ -8,32 +10,33 @@ namespace Concertable.B2B.E2ETests;
 
 internal static class DistributedApplicationBuilderExtensions
 {
-    public static IDistributedApplicationTestingBuilder AddB2BE2E(
+    public static IDistributedApplicationTestingBuilder AddE2EStack(
         this IDistributedApplicationTestingBuilder builder,
         string apiBaseUrl,
         string searchApiBaseUrl,
         string authBaseUrl,
-        string paymentBaseUrl)
+        string paymentBaseUrl,
+        StripeCustomerResolver stripeCustomers)
     {
         builder.PinAuthService(authBaseUrl);
-        builder.PinAuthB2BApi(apiBaseUrl);
-        builder.PinB2BWeb(apiBaseUrl, authBaseUrl, paymentBaseUrl);
+        builder.PinAuthApi(apiBaseUrl);
+        builder.PinWeb(apiBaseUrl, authBaseUrl, paymentBaseUrl);
         builder.PinWorkers(authBaseUrl, paymentBaseUrl);
         builder.AddSearchService(searchApiBaseUrl, authBaseUrl);
-        builder.PinPaymentWeb(paymentBaseUrl, authBaseUrl);
-        builder.PinPaymentWorkers();
+        builder.PinPaymentWeb(paymentBaseUrl, authBaseUrl, stripeCustomers);
+        builder.PinPaymentWorkers(stripeCustomers);
         builder.AddEphemeralSql();
         builder.PinStripeCli(paymentBaseUrl);
         return builder;
     }
 
-    private static void PinAuthB2BApi(
+    private static void PinAuthApi(
         this IDistributedApplicationTestingBuilder builder,
         string apiBaseUrl)
     {
         var auth = builder.Resources
             .OfType<ProjectResource>()
-            .Single(r => r.Name == AppHostConstants.ResourceNames.Auth);
+            .Single(r => r.Name == AuthConstants.Resource);
 
         auth.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
         {
@@ -48,16 +51,17 @@ internal static class DistributedApplicationBuilderExtensions
     {
         var workers = builder.Resources
             .OfType<ProjectResource>()
-            .Single(r => r.Name == AppHostConstants.ResourceNames.Workers);
+            .Single(r => r.Name == B2BConstants.WorkersResource);
 
         workers.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
         {
             context.EnvironmentVariables["Auth__Authority"] = authBaseUrl;
             context.EnvironmentVariables["services__payment-web__https__0"] = paymentBaseUrl;
+            context.EnvironmentVariables["ServiceAuth__ClientSecret"] = Concertable.Testing.E2E.DistributedApplicationBuilderExtensions.B2BServiceAuthSecret;
         }));
     }
 
-    private static void PinB2BWeb(
+    private static void PinWeb(
         this IDistributedApplicationTestingBuilder builder,
         string apiBaseUrl,
         string authBaseUrl,
@@ -65,7 +69,7 @@ internal static class DistributedApplicationBuilderExtensions
     {
         var b2bWeb = builder.Resources
             .OfType<ProjectResource>()
-            .Single(r => r.Name == AppHostConstants.ResourceNames.B2BWeb);
+            .Single(r => r.Name == B2BConstants.WebResource);
 
         var googleApiKey = builder.Configuration["GoogleApiKey"];
         var stripeSecretKey = builder.Configuration["Stripe:SecretKey"];
@@ -76,6 +80,7 @@ internal static class DistributedApplicationBuilderExtensions
             context.EnvironmentVariables["ASPNETCORE_URLS"] = apiBaseUrl;
             context.EnvironmentVariables["Auth__Authority"] = authBaseUrl;
             context.EnvironmentVariables["services__payment-web__https__0"] = paymentBaseUrl;
+            context.EnvironmentVariables["ServiceAuth__ClientSecret"] = Concertable.Testing.E2E.DistributedApplicationBuilderExtensions.B2BServiceAuthSecret;
             context.EnvironmentVariables["ExternalServices__UseRealStripe"] = "true";
             context.EnvironmentVariables["ExternalServices__UseRealEmail"] = "false";
             if (!string.IsNullOrEmpty(googleApiKey))

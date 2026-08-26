@@ -5,5 +5,5 @@ namespace Concertable.B2B.Deal.Application.Interfaces;
 
 internal interface IDealRepository : ITenantScopedRepository<DealEntity>
 {
-    Task<IEnumerable<DealEntity>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken ct = default);
+    Task<IReadOnlyList<DealEntity>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken ct = default);
 }

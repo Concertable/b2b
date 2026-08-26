@@ -1,11 +1,12 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
+using Concertable.B2B.Tenant.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Seeders;
 
@@ -16,20 +17,29 @@ internal sealed class ConcertDevSeeder : IDevSeeder
     private readonly ConcertDbContext context;
     private readonly SeedState seed;
     private readonly IDealModule deals;
+    private readonly IDealTermsRenderer termsRenderer;
     private readonly ITermsFingerprintCalculator fingerprint;
+    private readonly ITenantModule tenants;
+    private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
 
     public ConcertDevSeeder(
         ConcertDbContext context,
         SeedState seed,
         IDealModule deals,
+        IDealTermsRenderer termsRenderer,
         ITermsFingerprintCalculator fingerprint,
+        ITenantModule tenants,
+        IOptions<LegalSettings> legal,
         TimeProvider timeProvider)
     {
         this.context = context;
         this.seed = seed;
         this.deals = deals;
+        this.termsRenderer = termsRenderer;
         this.fingerprint = fingerprint;
+        this.tenants = tenants;
+        this.legal = legal.Value;
         this.timeProvider = timeProvider;
     }
 
@@ -37,37 +47,6 @@ internal sealed class ConcertDevSeeder : IDevSeeder
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        await context.VenueReadModels.SeedIfEmptyAsync(async () =>
-        {
-            context.VenueReadModels.AddRange(seed.Venues.Select(v => new VenueReadModel
-            {
-                Id = v.Id,
-                UserId = v.UserId,
-                Name = v.Name,
-                About = v.About,
-                Address = v.Address,
-                Location = v.Location
-            }));
-            await context.SaveChangesAsync(ct);
-        });
-
-        await context.ArtistReadModels.SeedIfEmptyAsync(async () =>
-        {
-            context.ArtistReadModels.AddRange(seed.Artists.Select(a => new ArtistReadModel
-            {
-                Id = a.Id,
-                UserId = a.UserId,
-                TenantId = a.TenantId,
-                Name = a.Name,
-                Avatar = a.Avatar,
-                BannerUrl = a.BannerUrl,
-                Address = a.Address,
-                Email = a.Email,
-                Genres = a.Genres.Select(g => new ArtistReadModelGenre { ArtistReadModelId = a.Id, Genre = g }).ToList()
-            }));
-            await context.SaveChangesAsync(ct);
-        });
-
         await context.Opportunities.SeedIfEmptyAsync(async () =>
         {
             context.Opportunities.AddRange(seed.Opportunities);
@@ -82,6 +61,32 @@ internal sealed class ConcertDevSeeder : IDevSeeder
             await context.SaveChangesAsync(ct);
 
             context.Concerts.AddRange(seed.Concerts);
+            await context.SaveChangesAsync(ct);
+        });
+
+        await context.Contracts.SeedIfEmptyAsync(async () =>
+        {
+            var bookedApplications = await context.Applications
+                .Include(application => application.Booking)
+                .Include(application => application.Opportunity)
+                .Where(application => application.Booking != null)
+                .ToListAsync(ct);
+            var contracts = await SeededContractFactory.CreateAsync(
+                seed,
+                bookedApplications,
+                deals,
+                termsRenderer,
+                legal.PlatformTermsVersion,
+                timeProvider.GetUtcNow().UtcDateTime,
+                ct);
+            context.Contracts.AddRange(contracts);
+            await context.SaveChangesAsync(ct);
+        });
+
+        await context.SelfBillingAgreements.SeedIfEmptyAsync(async () =>
+        {
+            await SeededSelfBillingAgreementGranter.GrantAsync(
+                context, seed, tenants, legal.PlatformTermsVersion, timeProvider.GetUtcNow().UtcDateTime, ct);
             await context.SaveChangesAsync(ct);
         });
     }

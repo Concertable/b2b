@@ -10,7 +10,7 @@ internal sealed class DealAccessor : IDealAccessor, IDealResolver
     private readonly IConcertRepository concertRepository;
     private readonly IDealModule dealModule;
 
-    private IDeal? deal;
+    private DealDto? deal;
 
     public DealAccessor(
         IApplicationRepository applicationRepository,
@@ -24,20 +24,20 @@ internal sealed class DealAccessor : IDealAccessor, IDealResolver
         this.dealModule = dealModule;
     }
 
-    public IDeal Deal => deal
+    public DealDto Deal => deal
         ?? throw new InvalidOperationException(
             "No deal resolved this scope — the operation's orchestrator must resolve the deal before a step reads it.");
 
-    public Task<IDeal> ResolveByOpportunityIdAsync(int opportunityId) =>
+    public Task<DealDto> ResolveByOpportunityIdAsync(int opportunityId) =>
         ResolveAsync(() => opportunityRepository.GetDealIdByIdAsync(opportunityId));
 
-    public Task<IDeal> ResolveByApplicationIdAsync(int applicationId) =>
+    public Task<DealDto> ResolveByApplicationIdAsync(int applicationId) =>
         ResolveAsync(() => applicationRepository.GetDealIdByIdAsync(applicationId));
 
-    public Task<IDeal> ResolveByConcertIdAsync(int concertId) =>
+    public Task<DealDto> ResolveByConcertIdAsync(int concertId) =>
         ResolveAsync(() => concertRepository.GetDealIdByIdAsync(concertId));
 
-    private async Task<IDeal> ResolveAsync(Func<Task<int?>> resolveDealId)
+    private async Task<DealDto> ResolveAsync(Func<Task<int?>> resolveDealId)
     {
         if (deal is not null)
             return deal;
@@ -45,7 +45,9 @@ internal sealed class DealAccessor : IDealAccessor, IDealResolver
         var dealId = await resolveDealId()
             ?? throw new NotFoundException("Deal not found for this entity");
 
-        return deal = await dealModule.GetByIdAsync(dealId)
-            ?? throw new NotFoundException($"No deal with id {dealId}");
+        var dealOption = await dealModule.GetByIdAsync(dealId);
+        return deal = dealOption.Match(
+            value => value,
+            () => throw new InvalidOperationException($"Entity references missing deal {dealId}."));
     }
 }

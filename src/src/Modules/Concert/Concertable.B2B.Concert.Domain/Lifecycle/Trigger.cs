@@ -11,6 +11,8 @@ public enum Trigger
     EscrowPaymentFailed,
     SettlementPaymentSucceeded,
     SettlementPaymentFailed,
+    RefundSucceeded,
+    RefundFailed,
     Finish,
     Cancel,
 }

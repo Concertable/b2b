@@ -1,8 +1,8 @@
 import { Calendar, CircleDollarSign, Inbox, Users } from "lucide-react";
 import { useVenueKpisQuery } from "./hooks";
 import { formatCurrency } from "@concertable/shared/lib";
-import { Skeleton } from "@/components/ui/skeleton";
-import { KpiTile } from "@/features/dashboard";
+import { Skeleton } from "@concertable/web/components/ui/skeleton";
+import { KpiTile } from "@concertable/web/features/dashboard";
 
 export function VenueKpiStrip() {
   const { data, isLoading } = useVenueKpisQuery();
@@ -21,12 +21,6 @@ export function VenueKpiStrip() {
     {
       label: "Apps to review",
       value: String(data.applicationsToReview),
-      delta: data.applicationsToReviewDelta
-        ? {
-            value: `${data.applicationsToReviewDelta > 0 ? "+" : ""}${data.applicationsToReviewDelta} since yesterday`,
-            direction: (data.applicationsToReviewDelta > 0 ? "up" : "down") as "up" | "down",
-          }
-        : undefined,
       intent: data.applicationsToReview > 0 ? ("urgent" as const) : ("neutral" as const),
       icon: Users,
       href: "/_venue/applications",
@@ -48,12 +42,6 @@ export function VenueKpiStrip() {
     {
       label: "MTD revenue",
       value: formatCurrency(data.mtdRevenueCents),
-      delta: data.mtdRevenueDeltaPercent
-        ? {
-            value: `${data.mtdRevenueDeltaPercent > 0 ? "+" : ""}${data.mtdRevenueDeltaPercent}% vs last month`,
-            direction: (data.mtdRevenueDeltaPercent > 0 ? "up" : "down") as "up" | "down",
-          }
-        : undefined,
       intent: "positive" as const,
       icon: CircleDollarSign,
       href: "/_venue/my",

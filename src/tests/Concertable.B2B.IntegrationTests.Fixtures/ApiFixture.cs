@@ -1,9 +1,12 @@
 using Concertable.Kernel.Notifications;
+using Concertable.Kernel.DependencyInjection;
 using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Events;
 using Concertable.Payment.Client;
 using Concertable.B2B.User.Contracts;
 using Concertable.B2B.User.Domain.Entities;
+using Concertable.Kernel;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Logging;
 using Concertable.Testing.Integration.Mocks;
@@ -11,6 +14,7 @@ using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
+using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
@@ -19,7 +23,6 @@ using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Seed.Infrastructure;
 using Concertable.Seed.Shared.Extensions;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -28,17 +31,19 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
-using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Messaging.Application;
 using Concertable.Messaging.Contracts;
+using Concertable.Messaging.Domain;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.Shared.Email.Application;
 using Concertable.Shared.Geocoding.Application;
 using Concertable.Shared.Imaging.Application;
 using Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 using Concertable.B2B.DataAccess.Infrastructure;
+using IDbInitializer = Concertable.DataAccess.Application.IDbInitializer;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
@@ -58,6 +63,7 @@ public class ApiFixture : IAsyncLifetime
     public IMockManagerPaymentClient ManagerPaymentClient { get; }
     public MockPayoutAccountClient PayoutAccountClient { get; } = new();
     public MockEscrowClient EscrowClient { get; }
+    public MockPaymentTransport PaymentTransport { get; } = new();
 
     public ApiFixture()
     {
@@ -66,6 +72,7 @@ public class ApiFixture : IAsyncLifetime
     }
     public IWebhookSimulator StripeClient { get; private set; } = null!;
     public SeedState SeedState { get; private set; } = null!;
+    public DateTime SeedNow => factory.Services.GetRequiredService<SeedCatalog>().Now;
 
     public async Task InitializeAsync()
     {
@@ -73,13 +80,12 @@ public class ApiFixture : IAsyncLifetime
         await sqlFixture.InitializeAsync();
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.UseEnvironment("Testing");
+            builder.UseEnvironment(Environments.Integration);
             builder.ConfigureAppConfiguration((_, config) =>
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:B2BDb"] = sqlFixture.ConnectionString,
-                    ["ConnectionStrings:PaymentDb"] = sqlFixture.ConnectionString,
                     ["ExternalServices:UseRealStripe"] = "false",
                     ["ExternalServices:UseRealBlob"] = "false",
                     ["ExternalServices:UseRealEmail"] = "false",
@@ -87,60 +93,46 @@ public class ApiFixture : IAsyncLifetime
                     ["Urls:Frontends:Artist"] = "https://localhost:5176",
                     ["BlobStorage:ContainerName"] = "images",
                 });
+                config.RelaxRateLimiting(RateLimitPolicies.All);
             });
 
             builder.ConfigureTestServices(services =>
             {
-                services.AddLogging(b =>
-                {
-                    b.ClearProviders();
-                    b.AddProvider(new XunitLoggerProvider(outputAccessor));
-                    b.SetMinimumLevel(LogLevel.Information);
-                });
-
-                var asbDescriptors = services
-                    .Where(d => d.ServiceType == typeof(IHostedService) &&
-                                d.ImplementationType?.Name == "AzureServiceBusReceiver")
-                    .ToList();
-                foreach (var d in asbDescriptors)
-                    services.Remove(d);
+                services.AddXunitLogging(outputAccessor);
+                services.RemoveAzureServiceBus();
                 services.AddTransient<IStartupFilter, TestClientIpStartupFilter>();
 
-                services.Replace(ServiceDescriptor.Singleton<IBusTransport, MockBusTransport>());
+                services.AddSingleton(PaymentTransport);
+                services.Replace(ServiceDescriptor.Singleton<IBusTransport>(PaymentTransport));
                 services.AddSingleton<INotificationClient>(NotificationService);
                 services.AddSingleton(StripeApiClient);
-                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient);
+                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient, PaymentTransport);
                 services.AddSingleton<IEmailTransport>(EmailSender);
 
-                services.AddSingleton<IManagerPaymentClient>(ManagerPaymentClient);
-                services.AddSingleton<IEscrowClient>(EscrowClient);
-                services.AddSingleton<IPayoutAccountClient>(PayoutAccountClient);
+                services.AddSingleton<IManagerPaymentOperationsClient>(ManagerPaymentClient);
+                services.AddSingleton<IManagerPaymentReportingClient>(ManagerPaymentClient);
+                services.AddSingleton<IEscrowOperationsClient>(EscrowClient);
+                services.AddSingleton<IPayoutAccountOperationsClient>(PayoutAccountClient);
 
                 services.AddSingleton<IWebhookSimulator, MockWebhookSimulator>();
                 services.Replace(ServiceDescriptor.Singleton<IHttpClientFactory>(_ => new WebApplicationHttpClientFactory(factory)));
                 services.AddScoped<IGeocodingClient, MockGeocodingClient>();
                 services.AddScoped<IImageService, MockImageService>();
-                services.AddScoped<IDbInitializer, TestDbInitializer>();
+                services.AddScoped<IDbInitializer, IntegrationDbInitializer>();
                 services.AddSeedingInfrastructure();
                 services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
                 services.AddSingleton<SeedCatalog>();
                 services.AddScoped<SeedState>();
                 services.AddUserTestSeeder();
                 services.AddTenantTestSeeder();
+                services.AddAdminTestSeeder();
                 services.AddArtistTestSeeder();
                 services.AddVenueTestSeeder();
                 services.AddDealTestSeeder();
                 services.AddConcertTestSeeder();
                 services.AddConversationsTestSeeder();
 
-                services.PostConfigure<AuthenticationOptions>(opts =>
-                {
-                    opts.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
-                    opts.DefaultChallengeScheme = TestAuthHandler.SchemeName;
-                    opts.DefaultScheme = TestAuthHandler.SchemeName;
-                });
-                services.AddAuthentication()
-                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
+                services.AddTestAuthentication();
             });
         });
 
@@ -179,20 +171,64 @@ public class ApiFixture : IAsyncLifetime
     /// <paramref name="bookingId"/> — the failure leg <see cref="IWebhookSimulator"/> cannot simulate.</summary>
     public async Task SendEscrowFailedWebhookAsync(int bookingId)
     {
-        using var eventScope = factory.Services.CreateScope();
-        var handlers = eventScope.ServiceProvider.GetServices<IIntegrationEventHandler<PaymentFailedEvent>>();
+        if (PaymentTransport.Commands.Any(command => command is CaptureEscrowCommand or DepositEscrowCommand))
+        {
+            await PaymentTransport.RejectLatestAcceptanceAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
+            return;
+        }
+
+        await SendPaymentFailedWebhookAsync(TransactionTypes.Escrow, bookingId);
+    }
+
+    public Task SendSettlementFailedWebhookAsync(int bookingId) =>
+        SendPaymentFailedWebhookAsync(TransactionTypes.Settlement, bookingId);
+
+    private Task SendPaymentFailedWebhookAsync(string transactionType, int bookingId)
+    {
         var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
         var evt = new PaymentFailedEvent($"pi_fail_{bookingId}", "card_declined", "Card was declined", new Dictionary<string, string>
         {
-            [PaymentMetadataKeys.Type] = TransactionTypes.Escrow,
+            [PaymentMetadataKeys.Type] = transactionType,
             [PaymentMetadataKeys.BookingId] = bookingId.ToString()
         });
 
-        foreach (var handler in handlers)
-            await handler.HandleAsync(evt, envelope, CancellationToken.None);
+        return factory.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<PaymentFailedEvent>>>>()
+            .RunAsync(async handlers =>
+            {
+                foreach (var handler in handlers)
+                    await handler.HandleAsync(evt, envelope);
+            });
     }
 
+    public Task CompleteLatestFinancialOperationAsync() =>
+        PaymentTransport.CompleteLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+    public Task CompleteLatestFinancialOperationAsync<TCommand>()
+        where TCommand : IIntegrationCommand =>
+        PaymentTransport.CompleteLatestAsync<TCommand>(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+    public Task RejectLatestFinancialOperationAsync() =>
+        PaymentTransport.RejectLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
     public IServiceProvider Services => factory.Services;
+
+    public async Task<IReadOnlyList<SendEmailCommand>> GetStagedEmailsAsync()
+    {
+        using var readScope = factory.Services.CreateScope();
+        var outbox = readScope.ServiceProvider.GetRequiredService<OutboxDbContext>();
+        var serializer = readScope.ServiceProvider.GetRequiredService<MessageSerializer>();
+        var messageType = MessageTypeAttribute.Resolve(typeof(SendEmailCommand));
+
+        var rows = await outbox.Set<OutboxMessageEntity>()
+            .AsNoTracking()
+            .Where(m => m.MessageType == messageType)
+            .OrderBy(m => m.OccurredAtUtc)
+            .ToListAsync();
+
+        return rows
+            .Select(r => (SendEmailCommand)serializer.Deserialize(BinaryData.FromString(r.Payload), typeof(SendEmailCommand)))
+            .ToList();
+    }
 
     public HttpClient CreateClient(UserEntity user)
     {

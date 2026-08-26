@@ -1,6 +1,11 @@
+using Concertable.B2B.Concert.Domain.Entities;
+
 namespace Concertable.B2B.Concert.Application.Workflow.Steps;
 
 internal interface IPaidAcceptStep : IConcertStep
 {
-    Task ExecuteAsync(int applicationId, string paymentMethodId);
+    Task<UnitResult<AcceptApplicationError>> ExecuteAsync(
+        ApplicationEntity application,
+        string paymentMethodId,
+        CancellationToken ct = default);
 }
