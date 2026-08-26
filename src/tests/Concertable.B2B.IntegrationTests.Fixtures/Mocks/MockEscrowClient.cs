@@ -109,6 +109,12 @@ public sealed class MockEscrowClient : IEscrowOperationsClient, IResettable
     public Task<Result<Option<Transfer>, EscrowReleaseError>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
         Task.FromResult(Result<Option<Transfer>, EscrowReleaseError>.Success(Option.Some(new Transfer("tr_mock"))));
 
+    public Task<Result<Option<Transfer>, EscrowReleaseOperationError>> ReleaseByBookingIdAsync(
+        Guid operationId,
+        int bookingId,
+        CancellationToken ct = default) =>
+        Task.FromResult(Result<Option<Transfer>, EscrowReleaseOperationError>.Success(Option.Some(new Transfer("tr_mock"))));
+
     public Task<Result<Option<Refund>, EscrowRefundError>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default)
     {
         Refunds.Add(bookingId);
