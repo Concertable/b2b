@@ -159,4 +159,9 @@ internal sealed class VenueService : IVenueService
 
     public async Task<IPagination<PendingVenue>> GetPendingApprovalAsync(IPageParams pageParams) =>
         (await privilegedRepository.GetPendingApprovalAsync(pageParams)).Map(v => v.ToPendingVenue());
+
+    public async Task<Option<TenantContact>> GetContactByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
+        await readRepository.GetContactByTenantIdAsync(tenantId, ct);
 }
