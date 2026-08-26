@@ -48,6 +48,27 @@ See [`plans/platform/SPLIT_TIME_E2E_STRATEGY.md`](../../plans/platform/SPLIT_TIM
 
 ---
 
+### `e2e-api-tests` intermittently fails at host startup with `IImageService` unresolvable
+
+Confirmed across two genuinely unrelated PRs' own `merge_group` runs on 2026-08-26 — PR #802 ("Validate
+settlement gRPC request creation", Payment module, run `33008827828`/job `98314333161`) and PR #799 (this
+PR, run `33014869553`/job `98333791637`) — all 10 `Concertable.B2B.E2ETests` tests fail identically in
+~110ms with `System.InvalidOperationException: Unable to resolve service for type
+'Concertable.Shared.Imaging.Application.IImageService' while attempting to activate
+'Concertable.B2B.Venue.Infrastructure.Services.VenueService'`. `AddSharedImaging()`
+(`B2BWebHostExtensions.cs`) registers `IImageService` unconditionally, and neither PR's diff touches
+`VenueService`'s constructor or shared-imaging registration — the byte-identical signature across
+unrelated diffs, with 0/10 passing in a single ~110ms window, points to an intermittent race in test-host
+/ Aspire orchestration startup (the DI container for at least one host build never finishes assembling),
+not a caller defect. Not yet root-caused.
+
+**Resolves when:** the intermittent startup race is found (candidate: resource startup ordering or
+container/host reuse across merge-queue retries in `Concertable.B2B.E2ETests/AppFixture.cs`) and fixed, so
+`e2e-api-tests` no longer needs a blind retry to pass. Until then, this exact signature on a `merge_group`
+failure is a known retry-and-continue case, not a defect to chase in the failing PR's own diff.
+
+---
+
 ## MED
 
 ### Venue opportunity counts are exposed by the write repository
