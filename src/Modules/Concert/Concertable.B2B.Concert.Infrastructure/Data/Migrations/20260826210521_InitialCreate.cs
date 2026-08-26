@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using NetTopologySuite.Geometries;
 
@@ -197,6 +197,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     RequiresDoorRevenue = table.Column<bool>(type: "bit", nullable: false),
                     State = table.Column<int>(type: "int", nullable: false),
                     CancellationOperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    SettlementOperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     FinancialOperationReferenceId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     FinancialFailureCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     FinancialFailureMessage = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
@@ -291,6 +292,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 column: "CancellationOperationId",
                 unique: true,
                 filter: "[CancellationOperationId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Concerts_SettlementOperationId",
+                schema: "concert",
+                table: "Concerts",
+                column: "SettlementOperationId",
+                unique: true,
+                filter: "[SettlementOperationId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Concerts_VenueId",

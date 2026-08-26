@@ -5,5 +5,5 @@ namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
 public interface IMockManagerPaymentClient : IManagerPaymentOperationsClient, IManagerPaymentReportingClient, IResettable
 {
-    List<(Guid PayerId, Guid PayeeId, decimal Amount, string PaymentMethodId, int BookingId)> Payments { get; }
+    List<(Guid PayerId, Guid PayeeId, decimal Amount, string PaymentMethodId, int BookingId, Guid OperationId)> Payments { get; }
 }

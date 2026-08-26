@@ -38,8 +38,19 @@ internal sealed class MockEscrowClientFail : IEscrowOperationsClient
         CancellationToken ct = default) =>
         Task.FromResult(Result<EscrowDeposit, EscrowCaptureError>.Failure(new EscrowCaptureError.PaymentFailure(new PaymentError.PaymentRejected())));
 
-    public Task<Result<Option<Transfer>, EscrowReleaseError>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result<Option<Transfer>, EscrowReleaseError>.Failure(new EscrowReleaseError.PaymentFailure(new PaymentError.PaymentRejected())));
+    public Task<Result<Option<Transfer>, EscrowReleaseOperationError>> ReleaseByBookingIdAsync(
+        Guid operationId,
+        int bookingId,
+        CancellationToken ct = default) =>
+        Task.FromResult(Result<Option<Transfer>, EscrowReleaseOperationError>.Failure(
+            new EscrowReleaseOperationError.ReleaseFailure(
+                new EscrowReleaseError.PaymentFailure(new PaymentError.PaymentRejected()))));
+
+    public Task<Result<Option<Transfer>, EscrowReleaseError>> ReleaseByBookingIdAsync(
+        int bookingId,
+        CancellationToken ct = default) =>
+        Task.FromResult(Result<Option<Transfer>, EscrowReleaseError>.Failure(
+            new EscrowReleaseError.PaymentFailure(new PaymentError.PaymentRejected())));
 
     public Task<Result<Option<Refund>, EscrowRefundError>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
         Task.FromResult(Result<Option<Refund>, EscrowRefundError>.Failure(new EscrowRefundError.PaymentFailure(new PaymentError.PaymentRejected())));

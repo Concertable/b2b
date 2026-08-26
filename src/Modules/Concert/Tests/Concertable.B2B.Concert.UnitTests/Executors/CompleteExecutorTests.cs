@@ -1,31 +1,31 @@
+using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
+using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Steps;
 using Concertable.B2B.Concert.Application.Strategies;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services.Executors;
-using Concertable.B2B.Tenant.Contracts;
-using Microsoft.Extensions.Logging;
+using Concertable.Kernel.ValueObjects;
 using Moq;
+using Reunion;
 
 namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class CompleteExecutorTests
 {
-    private readonly Mock<IConcertRepository> concertRepository = new();
+    private readonly Mock<ISettlementService> settlementService = new();
+    private readonly Mock<IConcertDealStrategyFactory<ICompleteStep>> concertDealStrategyFactory = new();
+    private readonly Mock<ICompleteStep> completeStep = new();
     private readonly CompleteExecutor executor;
 
     public CompleteExecutorTests()
     {
+        this.concertDealStrategyFactory
+            .Setup(factory => factory.Create(It.IsAny<DealType>()))
+            .Returns(this.completeStep.Object);
         this.executor = new CompleteExecutor(
-            this.concertRepository.Object,
-            Mock.Of<IConcertDealStrategyFactory<ICompleteStep>>(),
-            Mock.Of<IInvoiceIssuer>(),
-            Mock.Of<ITenantModule>(),
-            Mock.Of<ISelfBillingAgreementGate>(),
-            new ImmediateBehavior(),
-            TimeProvider.System,
-            Mock.Of<ILogger<CompleteExecutor>>());
+            this.settlementService.Object,
+            this.concertDealStrategyFactory.Object);
     }
 
     [Fact]
@@ -34,18 +34,51 @@ public sealed class CompleteExecutorTests
         using var cancellationSource = new CancellationTokenSource();
         await cancellationSource.CancelAsync();
         var cancellationToken = cancellationSource.Token;
-        this.concertRepository
-            .Setup(repository => repository.GetByIdAsync(It.IsAny<int>(), cancellationToken))
-            .Returns(Task.FromCanceled<ConcertEntity?>(cancellationToken));
+        this.settlementService
+            .Setup(service => service.ReserveAsync(It.IsAny<int>(), cancellationToken))
+            .Returns(Task.FromCanceled<Result<SettlementPreparation, FinishConcertError>>(
+                cancellationToken));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => this.executor.CompleteAsync(42, cancellationToken));
     }
 
-    private sealed class ImmediateBehavior : IUnitOfWorkBehavior
+    [Fact]
+    public async Task CompleteAsync_ExecutesPaymentBetweenReservationAndCompletion()
     {
-        public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default) => action();
+        var operationId = Guid.NewGuid();
+        var ready = new SettlementPreparation.Ready(
+            operationId,
+            42,
+            DealType.DoorSplit,
+            7,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Money.Gbp(125m),
+            "pm_test");
+        Result<SettlementPreparation, FinishConcertError> prepared = ready;
+        Result<SettlementConfirmation, FinishConcertError> executed =
+            new SettlementConfirmation.ManagerPaid("pi_test");
+        Result<SettlementOutcome, FinishConcertError> completed = SettlementOutcome.Settled;
+        this.settlementService
+            .Setup(service => service.ReserveAsync(42, default))
+            .ReturnsAsync(prepared);
+        this.completeStep
+            .Setup(step => step.ExecuteAsync(ready, default))
+            .ReturnsAsync(executed);
+        this.settlementService
+            .Setup(service => service.CompleteAsync(
+                42,
+                operationId,
+                It.Is<SettlementConfirmation.ManagerPaid>(value => value.TransactionId == "pi_test"),
+                default))
+            .ReturnsAsync(completed);
 
-        public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken = default) => action();
+        var result = await this.executor.CompleteAsync(42);
+
+        Assert.True(result.TryGetValue(out var outcome));
+        Assert.Equal(SettlementOutcome.Settled, outcome);
+        this.concertDealStrategyFactory.Verify(factory => factory.Create(DealType.DoorSplit));
+        this.completeStep.Verify(step => step.ExecuteAsync(ready, default));
     }
 }

@@ -44,8 +44,45 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         Assert.Equal(concert.BookingId, payment.BookingId);
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.AwaitingSettlement, persisted.State);
+        Assert.Equal(State.Complete, persisted.State);
+        Assert.Equal(payment.OperationId, persisted.SettlementOperationId);
+        Assert.NotNull(persisted.FinancialOperationReferenceId);
         Assert.NotNull(await fixture.Invoices.SingleOrDefaultAsync(invoice => invoice.BookingId == concert.BookingId));
+    }
+
+    [Fact]
+    public async Task Finish_WhenPersistenceFailsAfterPayment_RetryUsesTheSameOperation()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
+        await fixture.FailSettlementPersistenceAsync();
+
+        try
+        {
+            await Assert.ThrowsAnyAsync<DbUpdateException>(
+                () => fixture.CompleteConcertAsync(concert.Id));
+        }
+        finally
+        {
+            await fixture.RestoreSettlementPersistenceAsync();
+        }
+
+        var interrupted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(State.AwaitingSettlement, interrupted.State);
+        Assert.NotNull(interrupted.SettlementOperationId);
+        Assert.Null(interrupted.FinancialOperationReferenceId);
+
+        await fixture.RunCompletionAsync();
+
+        var payment = Assert.Single(
+            fixture.ManagerPaymentClient.Payments,
+            value => value.BookingId == concert.BookingId);
+        Assert.Equal(interrupted.SettlementOperationId, payment.OperationId);
+        var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(State.Complete, settled.State);
+        Assert.NotNull(settled.FinancialOperationReferenceId);
+        Assert.Equal(1, await fixture.Invoices.CountAsync(invoice => invoice.BookingId == concert.BookingId));
     }
 
     [Fact]
@@ -62,19 +99,19 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Finish_ShouldCompleteBooking_WhenFailedSettlementIsRetriedSuccessfully()
+    public async Task SettlementFailureAfterCompletion_IsIgnored()
     {
-        // Arrange
         var booking = fixture.SeedState.PastDoorSplitBooking;
         var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
         await fixture.FinishConcertAsync(concert.Id);
+        var completed = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
 
-        // Act
-        await fixture.SendSettlementFailedWebhookAsync(booking.Id);
+        await fixture.SendSettlementFailedWebhookAsync(
+            booking.Id,
+            completed.SettlementOperationId!.Value);
         await fixture.StripeClient.SendWebhookAsync();
 
-        // Assert
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(State.Complete, persisted.State);
     }
@@ -86,8 +123,21 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         var booking = fixture.SeedState.PastDoorSplitBooking;
         var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
-        await fixture.FinishConcertAsync(concert.Id);
-        await fixture.SendSettlementFailedWebhookAsync(booking.Id);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
+        await fixture.FailSettlementPersistenceAsync();
+        try
+        {
+            await Assert.ThrowsAnyAsync<DbUpdateException>(
+                () => fixture.CompleteConcertAsync(concert.Id));
+        }
+        finally
+        {
+            await fixture.RestoreSettlementPersistenceAsync();
+        }
+        var awaiting = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        await fixture.SendSettlementFailedWebhookAsync(
+            booking.Id,
+            awaiting.SettlementOperationId!.Value);
 
         var response = await client.PostAsync($"/api/concert/{concert.Id}/cancel");
 

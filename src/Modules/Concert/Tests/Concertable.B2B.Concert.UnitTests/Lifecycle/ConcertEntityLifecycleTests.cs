@@ -11,7 +11,8 @@ public sealed class ConcertEntityLifecycleTests
     public void Post_WhenAwaitingSettlement_LeavesStateSettlementAndEventsUnchanged()
     {
         var concert = ConcertEntity.CreateDraft(CreateBooking(), "Concert", "About", []);
-        Assert.False(concert.BeginSettlement("pi_123").TryGetError(out _));
+        Assert.True(concert.BeginSettlement().TryGetValue(out var operationId));
+        concert.RecordSettlementReference("pi_123");
         var events = concert.DomainEvents.ToArray();
 
         var result = concert.Post("Changed", "Changed", 20m, 200, DateTime.UtcNow);
@@ -19,6 +20,7 @@ public sealed class ConcertEntityLifecycleTests
         Assert.True(result.TryGetError(out var error));
         Assert.Equal(new TransitionError<State, Trigger>(State.AwaitingSettlement, Trigger.Post), error);
         Assert.Equal(State.AwaitingSettlement, concert.State);
+        Assert.Equal(operationId, concert.SettlementOperationId);
         Assert.Equal("pi_123", concert.FinancialOperationReferenceId);
         Assert.Equal("Concert", concert.Name);
         Assert.Equal("About", concert.About);
@@ -26,6 +28,23 @@ public sealed class ConcertEntityLifecycleTests
         Assert.Equal(0, concert.TotalTickets);
         Assert.Null(concert.DatePosted);
         Assert.Equal(events, concert.DomainEvents);
+    }
+
+    [Fact]
+    public void BeginSettlement_WhenPreviousAttemptFailed_ReusesTheOperation()
+    {
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), "Concert", "About", []);
+        Assert.True(concert.BeginSettlement().TryGetValue(out var firstOperationId));
+        concert.RecordSettlementReference("pi_failed");
+        Assert.False(concert.RecordSettlementFailure("pi_failed", "declined", "Declined").IsFailure);
+
+        var retry = concert.BeginSettlement();
+
+        Assert.True(retry.TryGetValue(out var retryOperationId));
+        Assert.Equal(firstOperationId, retryOperationId);
+        Assert.Equal(retryOperationId, concert.SettlementOperationId);
+        Assert.Equal("pi_failed", concert.FinancialOperationReferenceId);
+        Assert.Equal(State.AwaitingSettlement, concert.State);
     }
 
     private static ConfirmedBooking CreateBooking() => new(

@@ -184,17 +184,21 @@ public class ApiFixture : IAsyncLifetime
         await SendPaymentFailedWebhookAsync(TransactionTypes.Escrow, bookingId);
     }
 
-    public Task SendSettlementFailedWebhookAsync(int bookingId) =>
-        SendPaymentFailedWebhookAsync(TransactionTypes.Settlement, bookingId);
+    public Task SendSettlementFailedWebhookAsync(int bookingId, Guid operationId) =>
+        SendPaymentFailedWebhookAsync(TransactionTypes.Settlement, bookingId, operationId);
 
-    private Task SendPaymentFailedWebhookAsync(string transactionType, int bookingId)
+    private Task SendPaymentFailedWebhookAsync(string transactionType, int bookingId, Guid? operationId = null)
     {
         var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
-        var evt = new PaymentFailedEvent($"pi_fail_{bookingId}", "card_declined", "Card was declined", new Dictionary<string, string>
+        var metadata = new Dictionary<string, string>
         {
             [PaymentMetadataKeys.Type] = transactionType,
             [PaymentMetadataKeys.BookingId] = bookingId.ToString()
-        });
+        };
+        if (operationId is not null)
+            metadata[PaymentMetadataKeys.OperationId] = operationId.Value.ToString();
+        var evt = new PaymentFailedEvent(
+            $"pi_fail_{bookingId}", "card_declined", "Card was declined", metadata);
 
         return factory.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<PaymentFailedEvent>>>>()
             .RunAsync(async handlers =>

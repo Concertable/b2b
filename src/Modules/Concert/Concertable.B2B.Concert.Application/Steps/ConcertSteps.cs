@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Domain.Entities;
 
 namespace Concertable.B2B.Concert.Application.Steps;
@@ -9,7 +10,7 @@ internal interface ICancelStep
 
 internal interface ICompleteStep
 {
-    Task<UnitResult<FinishConcertError>> ExecuteAsync(
-        ConcertEntity concert,
+    Task<Result<SettlementConfirmation, FinishConcertError>> ExecuteAsync(
+        SettlementPreparation.Ready settlement,
         CancellationToken ct = default);
 }

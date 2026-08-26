@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Steps;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Kernel.Enums;
@@ -47,17 +48,18 @@ internal sealed class ReleaseEscrowCompleteStep : ICompleteStep
         this.escrowClient = escrowClient;
     }
 
-    public async Task<UnitResult<FinishConcertError>> ExecuteAsync(
-        ConcertEntity concert,
+    public async Task<Result<SettlementConfirmation, FinishConcertError>> ExecuteAsync(
+        SettlementPreparation.Ready settlement,
         CancellationToken ct = default)
     {
-        var result = await escrowClient.ReleaseByBookingIdAsync(concert.BookingId, ct);
+        var result = await escrowClient.ReleaseByBookingIdAsync(
+            settlement.OperationId,
+            settlement.BookingId,
+            ct);
         if (result.TryGetError(out var error))
             return new FinishConcertError.EscrowReleaseFailure(error);
 
-        if (concert.CompleteSettlement().TryGetError(out var transitionError))
-            return new FinishConcertError.InvalidTransition(transitionError);
-        return new Success();
+        return new SettlementConfirmation.EscrowReleased();
     }
 }
 
@@ -74,35 +76,35 @@ internal sealed class PayoutCompleteStep : ICompleteStep
         this.logger = logger;
     }
 
-    public async Task<UnitResult<FinishConcertError>> ExecuteAsync(
-        ConcertEntity concert,
+    public async Task<Result<SettlementConfirmation, FinishConcertError>> ExecuteAsync(
+        SettlementPreparation.Ready settlement,
         CancellationToken ct = default)
     {
-        var gross = Money.Gbp(concert.CalculateSettlementGross());
-        logger.ArtistShareCalculated(concert.Id, gross.Amount);
+        logger.ArtistShareCalculated(settlement.ConcertId, settlement.Gross.Amount);
         logger.SettlingConcert(
-            concert.Id,
-            concert.BookingId,
-            gross.Amount,
-            concert.SettlementPayerTenantId,
-            concert.SettlementPayeeTenantId);
+            settlement.ConcertId,
+            settlement.BookingId,
+            settlement.Gross.Amount,
+            settlement.PayerTenantId,
+            settlement.PayeeTenantId);
 
         var result = await managerPaymentClient.PayAsync(
-            concert.SettlementPayerTenantId,
-            concert.SettlementPayeeTenantId,
-            gross,
-            concert.SettlementPaymentMethodId
-                ?? throw new InvalidOperationException($"Concert {concert.Id} has no settlement payment method."),
+            settlement.OperationId,
+            settlement.PayerTenantId,
+            settlement.PayeeTenantId,
+            settlement.Gross,
+            settlement.PaymentMethodId
+                ?? throw new InvalidOperationException(
+                    $"Concert {settlement.ConcertId} has no settlement payment method."),
             PaymentSession.OffSession,
-            concert.BookingId,
+            settlement.BookingId,
             ct);
         if (result.TryGetError(out var error))
             return new FinishConcertError.ManagerPaymentFailure(error);
         if (!result.TryGetValue(out var outcome) || string.IsNullOrWhiteSpace(outcome.TransactionId))
-            throw new InvalidOperationException($"Settlement for concert {concert.Id} returned no transaction ID.");
+            throw new InvalidOperationException(
+                $"Settlement for concert {settlement.ConcertId} returned no transaction ID.");
 
-        if (concert.BeginSettlement(outcome.TransactionId).TryGetError(out var transitionError))
-            return new FinishConcertError.InvalidTransition(transitionError);
-        return new Success();
+        return new SettlementConfirmation.ManagerPaid(outcome.TransactionId);
     }
 }

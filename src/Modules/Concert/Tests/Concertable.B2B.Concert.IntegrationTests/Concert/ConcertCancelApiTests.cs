@@ -107,6 +107,33 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Cancel_WhenQueuedAfterSettlementReservation_LeavesSettlementInProgress()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+        await fixture.DeclareDoorRevenueAsync(concert.Id, 200m);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
+        await using var concertLock = await fixture.HoldConcertForUpdateAsync(concert.Id);
+        var completionTask = fixture.CompleteConcertAsync(concert.Id);
+        await fixture.WaitForConcertLockWaitersAsync(1);
+        var cancellationTask = client.PostAsync($"/api/concert/{concert.Id}/cancel", (object?)null);
+        await fixture.WaitForConcertLockWaitersAsync(2);
+
+        await concertLock.RollbackAsync();
+        var completion = await completionTask;
+        var cancellation = await cancellationTask;
+
+        Assert.True(completion.TryGetValue(out _));
+        await cancellation.ShouldBe(HttpStatusCode.BadRequest);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(State.AwaitingSettlement, persisted.State);
+        Assert.NotNull(persisted.SettlementOperationId);
+        Assert.Single(
+            fixture.ManagerPaymentClient.Payments,
+            value => value.BookingId == concert.BookingId);
+    }
+
+    [Fact]
     public async Task DeclareDoorRevenue_ShouldReturnBadRequest_AfterCancellation()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);

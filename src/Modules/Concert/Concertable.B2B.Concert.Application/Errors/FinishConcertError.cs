@@ -34,6 +34,6 @@ internal abstract partial record FinishConcertError : IError
     [ErrorCode("concert.finish.invalid_state")]
     public partial record InvalidTransition(TransitionError<State, Trigger> Error);
 
-    public partial record ManagerPaymentFailure(ManagerPaymentError Error);
-    public partial record EscrowReleaseFailure(EscrowReleaseError Error);
+    public partial record ManagerPaymentFailure(ManagerPaymentOperationError Error);
+    public partial record EscrowReleaseFailure(EscrowReleaseOperationError Error);
 }

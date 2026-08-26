@@ -49,7 +49,7 @@ public static class ServiceCollectionExtensions
     {
         public IServiceCollection AddConcertModule(IConfiguration configuration)
         {
-            services.AddDbContext<ConcertDbContext>((sp, opts) =>
+            services.AddDbContextFactory<ConcertDbContext>((sp, opts) =>
                 opts.UseSqlServer(
                         configuration.GetConnectionString(B2BDb.Name),
                         sql => sql.UseNetTopologySuite())
@@ -58,7 +58,7 @@ public static class ServiceCollectionExtensions
                         sp.GetRequiredService<TenantInterceptor>(),
                         sp.GetRequiredService<VenueArtistTenantInterceptor>(),
                         sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(sp));
+                    .UseSeedingSupport(sp), ServiceLifetime.Scoped);
 
             services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
                 opts.UseSqlServer(
@@ -75,17 +75,17 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IConcertService, ConcertService>();
             services.AddScoped<ICancelExecutor, CancelExecutor>();
             services.AddScoped<ICompleteExecutor, CompleteExecutor>();
+            services.AddScoped<ISettlementService, SettlementService>();
             services.AddScoped<IConcertNotifier, ConcertNotifier>();
             services.AddScoped<IBookingConfirmationEmailSender, BookingConfirmationEmailSender>();
             services.AddScoped<IConcertDashboardService, ConcertDashboardService>();
 
             services.Configure<LegalSettings>(configuration.GetSection(LegalSettings.SectionName));
             services.AddScoped<IPdfBlobCache, PdfBlobCache>();
-            services.AddScoped<IInvoiceIssuer, InvoiceIssuer>();
+            services.AddScoped<InvoiceIssuer>();
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<IInvoicePdfRenderer, InvoicePdfRenderer>();
             services.AddScoped<ISelfBillingAgreementService, SelfBillingAgreementService>();
-            services.AddScoped<ISelfBillingAgreementGate, SelfBillingAgreementGate>();
             services.AddScoped<IClientContext, ClientContextAccessor>();
             services.AddConcertDealStrategies();
 

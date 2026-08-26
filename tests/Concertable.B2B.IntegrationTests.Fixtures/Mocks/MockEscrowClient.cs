@@ -14,12 +14,14 @@ namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 public sealed class MockEscrowClient : IEscrowOperationsClient, IResettable
 {
     private readonly MockStripeApiClient stripeApiClient;
+    private readonly HashSet<Guid> releaseOperations = [];
 
     /// <summary>The escrow holds B2B initiated, in call order — assert B2B passed the right parties/booking.</summary>
     public List<EscrowHold> Holds { get; } = [];
 
     /// <summary>Booking ids B2B requested a refund for, in call order — assert cancel refunded the right booking.</summary>
     public List<int> Refunds { get; } = [];
+    public List<(int BookingId, Guid OperationId)> Releases { get; } = [];
 
     public MockEscrowClient(MockStripeApiClient stripeApiClient)
     {
@@ -30,6 +32,8 @@ public sealed class MockEscrowClient : IEscrowOperationsClient, IResettable
     {
         Holds.Clear();
         Refunds.Clear();
+        Releases.Clear();
+        releaseOperations.Clear();
     }
 
     public async Task<Result<EscrowDeposit, EscrowDepositError>> DepositAsync(Guid payerId, Guid payeeId, Money amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
@@ -106,8 +110,27 @@ public sealed class MockEscrowClient : IEscrowOperationsClient, IResettable
         return Task.FromResult(Result<EscrowDeposit, EscrowCaptureError>.Success(new EscrowDeposit(0, paymentIntentId, EscrowStatus.Held)));
     }
 
-    public Task<Result<Option<Transfer>, EscrowReleaseError>> ReleaseByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
-        Task.FromResult(Result<Option<Transfer>, EscrowReleaseError>.Success(Option.Some(new Transfer("tr_mock"))));
+    public Task<Result<Option<Transfer>, EscrowReleaseOperationError>> ReleaseByBookingIdAsync(
+        Guid operationId,
+        int bookingId,
+        CancellationToken ct = default)
+    {
+        lock (releaseOperations)
+        {
+            if (releaseOperations.Add(operationId))
+                Releases.Add((bookingId, operationId));
+        }
+        return Task.FromResult(
+            Result<Option<Transfer>, EscrowReleaseOperationError>.Success(
+                Option.Some(new Transfer("tr_mock"))));
+    }
+
+    public Task<Result<Option<Transfer>, EscrowReleaseError>> ReleaseByBookingIdAsync(
+        int bookingId,
+        CancellationToken ct = default) =>
+        Task.FromResult(
+            Result<Option<Transfer>, EscrowReleaseError>.Success(
+                Option.Some(new Transfer("tr_mock"))));
 
     public Task<Result<Option<Refund>, EscrowRefundError>> RefundByBookingIdAsync(int bookingId, CancellationToken ct = default)
     {

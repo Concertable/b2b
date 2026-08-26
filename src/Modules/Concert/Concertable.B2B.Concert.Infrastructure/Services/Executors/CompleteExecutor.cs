@@ -1,90 +1,53 @@
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Executors;
-using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Steps;
 using Concertable.B2B.Concert.Application.Strategies;
-using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Tenant.Contracts;
-using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Executors;
 
 internal sealed class CompleteExecutor : ICompleteExecutor
 {
-    private readonly IConcertRepository concerts;
-    private readonly IConcertDealStrategyFactory<ICompleteStep> steps;
-    private readonly IInvoiceIssuer invoiceIssuer;
-    private readonly ITenantModule tenants;
-    private readonly ISelfBillingAgreementGate selfBillingAgreements;
-    private readonly IUnitOfWorkBehavior unitOfWork;
-    private readonly TimeProvider timeProvider;
-    private readonly ILogger<CompleteExecutor> logger;
+    private readonly ISettlementService settlementService;
+    private readonly IConcertDealStrategyFactory<ICompleteStep> concertDealStrategyFactory;
 
     public CompleteExecutor(
-        IConcertRepository concerts,
-        IConcertDealStrategyFactory<ICompleteStep> steps,
-        IInvoiceIssuer invoiceIssuer,
-        ITenantModule tenants,
-        ISelfBillingAgreementGate selfBillingAgreements,
-        IUnitOfWorkBehavior unitOfWork,
-        TimeProvider timeProvider,
-        ILogger<CompleteExecutor> logger)
+        ISettlementService settlementService,
+        IConcertDealStrategyFactory<ICompleteStep> concertDealStrategyFactory)
     {
-        this.concerts = concerts;
-        this.steps = steps;
-        this.invoiceIssuer = invoiceIssuer;
-        this.tenants = tenants;
-        this.selfBillingAgreements = selfBillingAgreements;
-        this.unitOfWork = unitOfWork;
-        this.timeProvider = timeProvider;
-        this.logger = logger;
+        this.settlementService = settlementService;
+        this.concertDealStrategyFactory = concertDealStrategyFactory;
     }
 
-    public Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
+    public async Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
         int concertId,
-        CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync<Result<SettlementOutcome, FinishConcertError>>(async () =>
-        {
-            var concert = await concerts.GetByIdAsync(concertId, ct);
-            if (concert is null)
-                return new FinishConcertError.ConcertNotFound(concertId);
-            if (concert.State is State.Complete or State.AwaitingSettlement)
-                return SettlementOutcome.Settled;
-            if (concert.ValidateCompleteSettlement().TryGetError(out var transitionError))
-                return new FinishConcertError.InvalidTransition(transitionError);
-            if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
-                return new FinishConcertError.ConcertNotEnded();
-            if (concert.RequiresDoorRevenue && concert.DoorRevenue is null)
-                return new FinishConcertError.DoorRevenueRequired();
+        CancellationToken ct = default)
+    {
+        var prepared = await settlementService.ReserveAsync(concertId, ct);
+        if (prepared.TryGetError(out var error))
+            return error;
+        if (!prepared.TryGetValue(out var preparation))
+            throw new InvalidOperationException($"Concert {concertId} settlement preparation returned no value.");
 
-            var supplier = concert.SettlementPayeeTenantId;
-            var customer = concert.SettlementPayerTenantId;
-            var supplierComplete = await tenants.IsTaxComplianceCompleteAsync(supplier);
-            var customerComplete = await tenants.IsTaxComplianceCompleteAsync(customer);
-            if (!supplierComplete || !customerComplete)
-            {
-                logger.SettlementDeferredPendingTaxCompliance(
-                    concertId,
-                    supplierComplete ? customer : supplier);
-                return SettlementOutcome.DeferredPendingTaxCompliance;
-            }
+        if (preparation is SettlementPreparation.Terminal terminal)
+            return terminal.Outcome;
+        if (preparation is not SettlementPreparation.Ready ready)
+            throw new InvalidOperationException(
+                $"Concert {concertId} returned an unknown settlement preparation.");
 
-            if (!await selfBillingAgreements.HasCurrentAsync(
-                    supplier,
-                    timeProvider.GetUtcNow().UtcDateTime,
-                    ct))
-            {
-                logger.SettlementDeferredPendingSelfBillingAgreement(concertId, supplier);
-                return SettlementOutcome.DeferredPendingSelfBillingAgreement;
-            }
+        var executed = await concertDealStrategyFactory
+            .Create(ready.DealType)
+            .ExecuteAsync(ready, ct);
+        if (executed.TryGetError(out error))
+            return error;
+        if (!executed.TryGetValue(out var confirmation))
+            throw new InvalidOperationException(
+                $"Concert {concertId} settlement execution returned no confirmation.");
 
-            var completion = await steps.Create(concert.DealType).ExecuteAsync(concert, ct);
-            if (completion.TryGetError(out var error))
-                return error;
-            await invoiceIssuer.IssueAsync(concert, ct);
-
-            await concerts.SaveChangesAsync(ct);
-            return SettlementOutcome.Settled;
-        }, ct);
+        return await settlementService.CompleteAsync(
+            concertId,
+            ready.OperationId,
+            confirmation,
+            ct);
+    }
 }

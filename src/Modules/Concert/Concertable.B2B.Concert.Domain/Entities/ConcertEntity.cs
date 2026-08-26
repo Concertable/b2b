@@ -35,6 +35,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public bool RequiresDoorRevenue { get; private set; }
     public State State { get; private set; } = State.Draft;
     public Guid? CancellationOperationId { get; private set; }
+    public Guid? SettlementOperationId { get; private set; }
     public string? FinancialOperationReferenceId { get; private set; }
     public string? FinancialFailureCode { get; private set; }
     public string? FinancialFailureMessage { get; private set; }
@@ -183,15 +184,32 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
         return new Success();
     }
 
-    public UnitResult<TransitionError<State, Trigger>> BeginSettlement(string providerReferenceId)
+    public Result<Guid, TransitionError<State, Trigger>> BeginSettlement()
     {
         var transition = Apply(Trigger.BeginSettlement);
         if (transition.TryGetError(out var error))
             return error;
-        FinancialOperationReferenceId = providerReferenceId;
+        SettlementOperationId ??= Guid.NewGuid();
         FinancialFailureCode = null;
         FinancialFailureMessage = null;
-        return new Success();
+        return SettlementOperationId.Value;
+    }
+
+    internal void EnsureSettlementOperation(Guid operationId)
+    {
+        if (SettlementOperationId is null)
+            throw new InvalidOperationException($"Concert {Id} has no settlement operation.");
+        if (SettlementOperationId != operationId)
+            throw new InvalidOperationException(
+                $"Concert {Id} expects settlement operation {SettlementOperationId}, not {operationId}.");
+    }
+
+    public void RecordSettlementReference(string providerReferenceId)
+    {
+        if (State != State.AwaitingSettlement)
+            throw new InvalidOperationException(
+                $"Concert {Id} cannot record a settlement reference from {State}.");
+        EnsureSettlementReference(providerReferenceId);
     }
 
     public UnitResult<TransitionError<State, Trigger>> RecordSettlementFailure(string providerReferenceId, string code, string message)
@@ -259,8 +277,11 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
         TicketsSold * Price + DoorRevenue
         ?? throw new InvalidOperationException($"Concert {Id} has no declared door revenue.");
 
-    private void EnsureSettlementReference(string providerReferenceId)
+    internal void EnsureSettlementReference(string providerReferenceId)
     {
+        if (string.IsNullOrWhiteSpace(providerReferenceId))
+            throw new ArgumentException("A settlement reference is required.", nameof(providerReferenceId));
+        FinancialOperationReferenceId ??= providerReferenceId;
         if (FinancialOperationReferenceId != providerReferenceId)
             throw new InvalidOperationException(
                 $"Concert {Id} expects settlement {FinancialOperationReferenceId}, not {providerReferenceId}.");

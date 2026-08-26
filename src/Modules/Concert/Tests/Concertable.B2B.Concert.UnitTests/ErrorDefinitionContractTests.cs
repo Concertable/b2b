@@ -101,13 +101,16 @@ public sealed class ErrorDefinitionContractTests
         },
         {
             new FinishConcertError.ManagerPaymentFailure(
-                new ManagerPaymentError.PaymentFailure(new PaymentError.PaymentRejected())),
+                new ManagerPaymentOperationError.ManagerFailure(
+                    new ManagerPaymentError.PaymentFailure(new PaymentError.PaymentRejected()))),
             "payment.rejected",
             "The payment was rejected.",
             ErrorKind.PaymentRequired
         },
         {
-            new FinishConcertError.EscrowReleaseFailure(new EscrowReleaseError.EscrowNotHeld()),
+            new FinishConcertError.EscrowReleaseFailure(
+                new EscrowReleaseOperationError.ReleaseFailure(
+                    new EscrowReleaseError.EscrowNotHeld())),
             "escrow.release_not_held",
             "Only held escrow can be released.",
             ErrorKind.Conflict

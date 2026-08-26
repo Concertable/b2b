@@ -10,17 +10,67 @@ namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
 {
     private readonly MockStripeApiClient stripeApiClient;
+    private readonly Dictionary<Guid, PaymentOutcome> settlements = [];
+    private readonly SemaphoreSlim settlementSemaphore = new(1, 1);
 
-    public List<(Guid PayerId, Guid PayeeId, decimal Amount, string PaymentMethodId, int BookingId)> Payments { get; } = [];
+    public List<(Guid PayerId, Guid PayeeId, decimal Amount, string PaymentMethodId, int BookingId, Guid OperationId)> Payments { get; } = [];
 
     public MockManagerPaymentClient(MockStripeApiClient stripeApiClient)
     {
         this.stripeApiClient = stripeApiClient;
     }
 
-    public void Reset() => Payments.Clear();
+    public void Reset()
+    {
+        Payments.Clear();
+        settlements.Clear();
+    }
 
-    public async Task<Result<PaymentOutcome, ManagerPaymentError>> PayAsync(Guid payerId, Guid payeeId, Money amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
+    public async Task<Result<PaymentOutcome, ManagerPaymentOperationError>> PayAsync(
+        Guid operationId,
+        Guid payerId,
+        Guid payeeId,
+        Money amount,
+        string paymentMethodId,
+        PaymentSession session,
+        int bookingId,
+        CancellationToken ct = default)
+    {
+        await settlementSemaphore.WaitAsync(ct);
+        try
+        {
+            if (settlements.TryGetValue(operationId, out var existing))
+                return existing;
+
+            var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
+            {
+                Amount = amount.ToMinorUnits(),
+                Metadata = new Dictionary<string, string>
+                {
+                    [PaymentMetadataKeys.Type] = TransactionTypes.Settlement,
+                    [PaymentMetadataKeys.BookingId] = bookingId.ToString(),
+                    [PaymentMetadataKeys.OperationId] = operationId.ToString()
+                }
+            });
+            var outcome = new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id };
+            settlements.Add(operationId, outcome);
+            Payments.Add((payerId, payeeId, amount.Amount, paymentMethodId, bookingId, operationId));
+            return outcome;
+        }
+        finally
+        {
+            settlementSemaphore.Release();
+        }
+    }
+
+    public async Task<Result<PaymentOutcome, ManagerPaymentError>> PayAsync(
+        Guid payerId,
+        Guid payeeId,
+        Money amount,
+        string paymentMethodId,
+        PaymentSession session,
+        int bookingId,
+        CancellationToken ct = default)
     {
         var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
         {
@@ -31,8 +81,8 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
                 [PaymentMetadataKeys.BookingId] = bookingId.ToString()
             }
         });
-        Payments.Add((payerId, payeeId, amount.Amount, paymentMethodId, bookingId));
-        return Result<PaymentOutcome, ManagerPaymentError>.Success(new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id });
+        Payments.Add((payerId, payeeId, amount.Amount, paymentMethodId, bookingId, Guid.NewGuid()));
+        return new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id };
     }
 
     public async Task<Result<PaymentOutcome, ManagerPaymentError>> PayBoundCommissionAsync(
@@ -56,7 +106,7 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
                 [PaymentMetadataKeys.BookingId] = bookingId.ToString()
             }
         });
-        Payments.Add((payerId, payeeId, gross.Amount, paymentMethodId, bookingId));
+        Payments.Add((payerId, payeeId, gross.Amount, paymentMethodId, bookingId, commissionBindingId));
         return Result<PaymentOutcome, ManagerPaymentError>.Success(new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id });
     }
 

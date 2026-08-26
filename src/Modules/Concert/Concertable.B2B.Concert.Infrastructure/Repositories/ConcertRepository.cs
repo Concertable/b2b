@@ -78,6 +78,25 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         CancellationToken ct = default) =>
         context.Concerts.SingleOrDefaultAsync(concert => concert.BookingId == bookingId, ct);
 
+    public Task<ConcertEntity?> GetForUpdateByIdAsync(
+        int concertId,
+        CancellationToken ct = default)
+    {
+        var tracked = context.Concerts.Local.SingleOrDefault(concert => concert.Id == concertId);
+        if (tracked is not null)
+            context.Entry(tracked).State = EntityState.Detached;
+
+        var sql = $$"""
+            SELECT *
+            FROM [{{Schema.Name}}].[{{Schema.Tables.Concerts}}] WITH (UPDLOCK, ROWLOCK)
+            WHERE [Id] = {0}
+            """;
+
+        return context.Concerts
+            .FromSqlRaw(sql, concertId)
+            .SingleOrDefaultAsync(concert => concert.Id == concertId, ct);
+    }
+
     public async Task<ConcertEntity?> GetByIdWithArtistAndVenueAsync(int id)
     {
         return await context.Concerts
@@ -141,7 +160,8 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .Apply(context.Concerts.Where(concert =>
                 concert.State == State.Draft ||
                 concert.State == State.Posted ||
-                concert.State == State.SettlementFailed))
+                concert.State == State.SettlementFailed ||
+                concert.State == State.AwaitingSettlement))
             .Select(c => c.Id)
             .ToListAsync(ct);
 

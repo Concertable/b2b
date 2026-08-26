@@ -9,12 +9,6 @@ using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
-/// <summary>
-/// The self-billed VAT invoice minted at settlement (<c>IInvoiceIssuer</c>, inside the Finish transaction).
-/// Asserts the supply direction (supplier = settlement payee, customer = its inverse), the VAT decomposition
-/// (unregistered supplier ⇒ no VAT; registered ⇒ inclusive gross decomposed), gap-free per-supplier
-/// numbering, and that a deferred settlement mints nothing. Amounts are the seeded Past* bookings' fees.
-/// </summary>
 [Collection("Integration")]
 public sealed class ConcertInvoiceApiTests : IAsyncLifetime
 {

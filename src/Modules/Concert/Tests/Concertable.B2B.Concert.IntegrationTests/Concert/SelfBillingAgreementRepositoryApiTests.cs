@@ -5,20 +5,14 @@ using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
-/// <summary>
-/// The system self-billing gate (<c>ISelfBillingAgreementGate</c>) reads a supplier's agreements filter-free
-/// by explicit tenant id — the stance <c>FinishExecutor</c> and the tenant-less hourly sweep use. A supplier is
-/// in force only while an unexpired agreement exists; the frozen supplier identity + e-signature round-trip
-/// through the real DB. (Owner-scoped self-service reads + PDF download arrive with endpoints in Phase 2.)
-/// </summary>
 [Collection("Integration")]
-public sealed class SelfBillingAgreementGateApiTests : IAsyncLifetime
+public sealed class SelfBillingAgreementRepositoryApiTests : IAsyncLifetime
 {
     private static readonly DateTime Now = new(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
 
     private readonly ConcertApiFixture fixture;
 
-    public SelfBillingAgreementGateApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    public SelfBillingAgreementRepositoryApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -38,7 +32,7 @@ public sealed class SelfBillingAgreementGateApiTests : IAsyncLifetime
             acceptedAtUtc);
 
     [Fact]
-    public async Task Gate_IsInForceOnlyWhileACurrentAgreementExists_AndFrozenIdentityRoundTrips()
+    public async Task ExistsCurrentByTenantIdAsync_IsTrueOnlyForAnInForceAgreement()
     {
         var inForce = Guid.NewGuid();
         var lapsed = Guid.NewGuid();

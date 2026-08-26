@@ -7,7 +7,9 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Kernel.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Reunion;
 
@@ -17,10 +19,10 @@ public sealed class ConcertApiFixture : ApiFixture
 {
     private IConcertReadDbContext readDbContext = null!;
     private ConcertDbContext dbContext = null!;
-    private ICompleteExecutor completeExecutor = null!;
+    private IScoped<ICompleteExecutor> completeExecutor = null!;
     private IConcertCompletionRunner completionRunner = null!;
     private IConcertService concertService = null!;
-    private ISelfBillingAgreementGate selfBillingAgreementGate = null!;
+    private ISelfBillingAgreementRepository selfBillingAgreementRepository = null!;
 
     internal IQueryable<ConcertEntity> Concerts => readDbContext.Concerts;
     internal IQueryable<InvoiceEntity> Invoices => dbContext.Invoices.AsNoTracking();
@@ -30,19 +32,91 @@ public sealed class ConcertApiFixture : ApiFixture
     internal async Task<Result<SettlementOutcome, FinishConcertError>> FinishConcertAsync(int concertId)
     {
         await EnsureSupplierSelfBillingAgreementAsync(concertId);
-        return await completeExecutor.CompleteAsync(concertId);
+        return await completeExecutor.RunAsync(executor => executor.CompleteAsync(concertId));
     }
 
     internal Task<Result<SettlementOutcome, FinishConcertError>> CompleteConcertAsync(int concertId) =>
-        completeExecutor.CompleteAsync(concertId);
+        completeExecutor.RunAsync(executor => executor.CompleteAsync(concertId));
 
     internal Task DeclareDoorRevenueAsync(int concertId, decimal doorRevenue) =>
         concertService.DeclareDoorRevenueAsync(concertId, doorRevenue);
 
+    internal async Task<IDbContextTransaction> HoldConcertForUpdateAsync(int concertId)
+    {
+        var transaction = await dbContext.Database.BeginTransactionAsync();
+        try
+        {
+            _ = await dbContext.Database.SqlQuery<int>($"""
+                    SELECT [Id] AS [Value]
+                    FROM [concert].[Concerts] WITH (UPDLOCK, ROWLOCK)
+                    WHERE [Id] = {concertId}
+                    """)
+                .SingleAsync();
+            return transaction;
+        }
+        catch
+        {
+            await transaction.DisposeAsync();
+            throw;
+        }
+    }
+
+    internal async Task WaitForConcertLockWaitersAsync(int expectedCount)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow <= deadline)
+        {
+            var count = await dbContext.Database.SqlQuery<int>($"""
+                    SELECT COUNT(*) AS [Value]
+                    FROM sys.dm_exec_requests AS request
+                    CROSS APPLY sys.dm_exec_sql_text(request.sql_handle) AS batch
+                    WHERE request.wait_type LIKE N'LCK_M_%'
+                      AND CHARINDEX(
+                          N'FROM [concert].[Concerts] WITH (UPDLOCK, ROWLOCK)',
+                          batch.text) > 0
+                    """)
+                .SingleAsync();
+            if (count >= expectedCount)
+                return;
+
+            await Task.Delay(25);
+        }
+
+        throw new InvalidOperationException(
+            $"Expected {expectedCount} concert transition lock waiter(s).");
+    }
+
+    internal Task FailSettlementPersistenceAsync() =>
+        dbContext.Database.ExecuteSqlRawAsync("""
+            CREATE TRIGGER [concert].[TR_Concerts_FailSettlementPersistence_ForTest]
+            ON [concert].[Concerts]
+            AFTER UPDATE
+            AS
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM inserted AS current_row
+                    INNER JOIN deleted AS prior_row ON prior_row.[Id] = current_row.[Id]
+                    WHERE (
+                            current_row.[FinancialOperationReferenceId] IS NOT NULL
+                            AND prior_row.[FinancialOperationReferenceId] IS NULL
+                        ) OR (
+                            current_row.[State] <> prior_row.[State]
+                            AND prior_row.[SettlementOperationId] IS NOT NULL
+                        )
+                )
+                    THROW 51000, 'Forced settlement persistence failure.', 1;
+            END
+            """);
+
+    internal Task RestoreSettlementPersistenceAsync() =>
+        dbContext.Database.ExecuteSqlRawAsync(
+            "DROP TRIGGER IF EXISTS [concert].[TR_Concerts_FailSettlementPersistence_ForTest]");
+
     internal Task RunCompletionAsync() => completionRunner.RunAsync();
 
     internal Task<bool> HasCurrentSelfBillingAgreementAsync(Guid tenantId, DateTime now) =>
-        selfBillingAgreementGate.HasCurrentAsync(tenantId, now);
+        selfBillingAgreementRepository.ExistsCurrentByTenantIdAsync(tenantId, now);
 
     internal async Task RepointConcertTenantsAsync(
         int concertId,
@@ -75,14 +149,14 @@ public sealed class ConcertApiFixture : ApiFixture
     {
         readDbContext = scope.ServiceProvider.GetRequiredService<IConcertReadDbContext>();
         dbContext = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
-        completeExecutor = scope.ServiceProvider.GetRequiredService<ICompleteExecutor>();
+        completeExecutor = scope.ServiceProvider.GetRequiredService<IScoped<ICompleteExecutor>>();
         completionRunner = scope.ServiceProvider.GetRequiredService<IConcertCompletionRunner>();
         concertService = scope.ServiceProvider.GetRequiredService<IConcertService>();
-        selfBillingAgreementGate = scope.ServiceProvider
-            .GetRequiredService<ISelfBillingAgreementGate>();
+        selfBillingAgreementRepository = scope.ServiceProvider
+            .GetRequiredService<ISelfBillingAgreementRepository>();
     }
 
-    private async Task EnsureSupplierSelfBillingAgreementAsync(int concertId)
+    internal async Task EnsureSupplierSelfBillingAgreementAsync(int concertId)
     {
         var concert = await dbContext.Concerts.SingleOrDefaultAsync(value => value.Id == concertId);
         if (concert is null)

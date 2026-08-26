@@ -38,6 +38,63 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Finish_WhenPersistenceFailsAfterRelease_RetryUsesTheSameOperation()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
+        await fixture.FailSettlementPersistenceAsync();
+
+        try
+        {
+            await Assert.ThrowsAnyAsync<DbUpdateException>(
+                () => fixture.CompleteConcertAsync(concert.Id));
+        }
+        finally
+        {
+            await fixture.RestoreSettlementPersistenceAsync();
+        }
+
+        var interrupted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(State.AwaitingSettlement, interrupted.State);
+        Assert.NotNull(interrupted.SettlementOperationId);
+
+        var retry = await fixture.CompleteConcertAsync(concert.Id);
+
+        Assert.True(retry.TryGetValue(out var outcome));
+        Assert.Equal(SettlementOutcome.Settled, outcome);
+        var release = Assert.Single(
+            fixture.EscrowClient.Releases,
+            value => value.BookingId == concert.BookingId);
+        Assert.Equal(interrupted.SettlementOperationId, release.OperationId);
+        var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(State.Complete, settled.State);
+        Assert.NotNull(await fixture.Invoices.SingleOrDefaultAsync(invoice => invoice.BookingId == concert.BookingId));
+    }
+
+    [Fact]
+    public async Task Finish_WhenRequestsOverlap_ReleasesEscrowAndIssuesInvoiceOnce()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
+        await using var concertLock = await fixture.HoldConcertForUpdateAsync(concert.Id);
+        var first = fixture.CompleteConcertAsync(concert.Id);
+        var second = fixture.CompleteConcertAsync(concert.Id);
+        await fixture.WaitForConcertLockWaitersAsync(2);
+
+        await concertLock.RollbackAsync();
+        var results = await Task.WhenAll(first, second);
+
+        Assert.All(results, result => Assert.True(result.TryGetValue(out _)));
+        var release = Assert.Single(
+            fixture.EscrowClient.Releases,
+            value => value.BookingId == concert.BookingId);
+        var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(release.OperationId, settled.SettlementOperationId);
+        Assert.Equal(State.Complete, settled.State);
+        Assert.Equal(1, await fixture.Invoices.CountAsync(invoice => invoice.BookingId == concert.BookingId));
+    }
+
+    [Fact]
     public async Task Finish_ShouldFail_WhenConcertNotEnded()
     {
         // Arrange
