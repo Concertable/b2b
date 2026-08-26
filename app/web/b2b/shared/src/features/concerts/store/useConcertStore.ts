@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
-import type { Concert } from "@concertable/shared/features/concerts";
+import type { Concert } from "@concertable/shared/features/concerts/types";
 
 export interface ConcertState {
   draft:

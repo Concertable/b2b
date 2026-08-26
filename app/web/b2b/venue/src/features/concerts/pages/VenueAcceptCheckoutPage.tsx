@@ -11,8 +11,8 @@ import {
   useApplicationQuery,
   useESignature,
 } from "@concertable/web-b2b/features/concerts";
-import type { Application } from "@concertable/web-b2b/features/concerts";
-import type { Checkout } from "@concertable/web/features/concerts";
+import type { Application } from "@concertable/web-b2b/features/concerts/types";
+import type { Checkout } from "@concertable/web/features/concerts/types";
 import { CheckoutLayout } from "@concertable/web/features/concerts/components/checkout/CheckoutLayout";
 import { CheckoutSection } from "@concertable/web/features/concerts/components/checkout/CheckoutSection";
 import { CheckoutEventBanner } from "@concertable/web/features/concerts/components/checkout/CheckoutEventBanner";
