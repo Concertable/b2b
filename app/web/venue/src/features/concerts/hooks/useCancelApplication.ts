@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useCancelApplicationMutation } from "@concertable/web-b2b/features/concerts";
 
 export function useCancelApplication(opportunityId: number) {
-  const [target, setTarget] = useState<number | null>(null);
+  const [target, setTarget] = useState<number>();
   const mutation = useCancelApplicationMutation(opportunityId);
 
   function confirm() {
@@ -13,7 +13,7 @@ export function useCancelApplication(opportunityId: number) {
         toast.success(
           "Application cancelled. Any payment held is refunded in full.",
         );
-        setTarget(null);
+        setTarget(undefined);
       },
     });
   }
@@ -21,7 +21,7 @@ export function useCancelApplication(opportunityId: number) {
   return {
     isOpen: target != null,
     request: setTarget,
-    dismiss: () => setTarget(null),
+    dismiss: () => setTarget(undefined),
     confirm,
     isPending: mutation.isPending,
   };

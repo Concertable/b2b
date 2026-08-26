@@ -18,7 +18,3 @@ export const TENANT_ROLE_LABELS: Record<(typeof TENANT_ROLES)[number], string> =
     door: "Door",
     sound: "Sound",
   };
-
-export function tenantRoleLabel(role: (typeof TENANT_ROLES)[number]): string {
-  return TENANT_ROLE_LABELS[role];
-}

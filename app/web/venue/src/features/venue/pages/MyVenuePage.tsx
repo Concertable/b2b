@@ -2,23 +2,41 @@ import { ConfigBar } from "@concertable/web/components/ConfigBar";
 import { EditableProvider } from "@concertable/shared/providers";
 import { DetailsLayout, type DetailsSection } from "@concertable/web/components/details/DetailsLayout";
 import { DetailsPageSkeleton } from "@concertable/web/components/skeletons/DetailsPageSkeleton";
-import { useVenueStore, VenueHero, venueSections } from "@concertable/web/features/venues";
+import { VenueHero, venueSections } from "@concertable/web/features/venues";
 import { useMyVenue } from "../hooks/useMyVenue";
 import { MyOpportunitiesSection } from "../components/MyOpportunitiesSection";
 
 export function MyVenuePage() {
-  const { venue, isDirty, isSaving, isLoading, save, resetDraft, toggleEdit, editMode } =
-    useMyVenue();
-
-  const draft = useVenueStore((state) => state.draft);
-  const setName = useVenueStore((state) => state.setName);
-  const setAbout = useVenueStore((state) => state.setAbout);
+  const {
+    venue,
+    draft,
+    isDirty,
+    isSaving,
+    isLoading,
+    canSave,
+    saveError,
+    save,
+    resetDraft,
+    toggleEdit,
+    editMode,
+    setName,
+    setAbout,
+    setBanner,
+    setAvatar,
+  } = useMyVenue();
 
   if (!venue || isLoading) return <DetailsPageSkeleton sections={5} />;
 
   const display = draft ?? venue;
 
-  const hero = <VenueHero venue={display} onNameChange={setName} />;
+  const hero = (
+    <VenueHero
+      venue={display}
+      onNameChange={setName}
+      onBannerChange={setBanner}
+      onAvatarChange={setAvatar}
+    />
+  );
   const { about, location, concerts, reviews } = venueSections(display, {
     onAboutChange: setAbout,
   });
@@ -37,8 +55,10 @@ export function MyVenuePage() {
         editMode={editMode}
         isDirty={isDirty}
         isSaving={isSaving}
+        canSave={canSave}
+        error={saveError}
         onToggleEdit={toggleEdit}
-        onSave={() => save()}
+        onSave={save}
         onCancel={resetDraft}
       />
 

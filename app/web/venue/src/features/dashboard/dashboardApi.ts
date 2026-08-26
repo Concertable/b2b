@@ -4,7 +4,7 @@ import type {
   MonthlyRevenuePoint,
   ReviewExcerpt,
   Settlement,
-} from "@concertable/shared/features/dashboard";
+} from "@concertable/shared/features/dashboard/types";
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
   Application,

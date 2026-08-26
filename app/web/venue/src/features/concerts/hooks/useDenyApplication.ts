@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useRejectApplicationMutation } from "@concertable/web-b2b/features/concerts";
 
 export function useDenyApplication(opportunityId: number) {
-  const [target, setTarget] = useState<number | null>(null);
+  const [target, setTarget] = useState<number>();
   const mutation = useRejectApplicationMutation(opportunityId);
 
   function confirm() {
@@ -11,7 +11,7 @@ export function useDenyApplication(opportunityId: number) {
     mutation.mutate(target, {
       onSuccess: () => {
         toast.success("Application denied.");
-        setTarget(null);
+        setTarget(undefined);
       },
     });
   }
@@ -19,7 +19,7 @@ export function useDenyApplication(opportunityId: number) {
   return {
     isOpen: target != null,
     request: setTarget,
-    dismiss: () => setTarget(null),
+    dismiss: () => setTarget(undefined),
     confirm,
     isPending: mutation.isPending,
   };

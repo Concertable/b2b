@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MyConcert } from "@concertable/web-b2b/features/concerts";
+import type { MyConcert } from "@concertable/web-b2b/features/concerts/types";
 import { Button } from "@concertable/web/components/ui/button";
 import { NumberInput } from "@concertable/web/components/ui/NumberInput";
 import { Label } from "@concertable/web/components/ui/label";
@@ -24,7 +24,7 @@ export function DeclareDoorRevenueButton({ concert }: Readonly<Props>) {
   const { errorMessage, concertableSales, external, total, declare, isPending } =
     useDeclareDoorRevenue(concert, value);
 
-  const error = touched ? errorMessage : null;
+  const error = touched ? errorMessage : undefined;
 
   function handleConfirm() {
     const parsed = declare(() => {

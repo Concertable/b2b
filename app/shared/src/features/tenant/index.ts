@@ -1,12 +1,5 @@
 export { default as identityApi } from "./api/identityApi";
 export { TENANT_HEADER, TENANT_ROLES } from "./constants";
-export {
-  filterMembershipsByTenantType,
-  hasPendingTenantChoice,
-  resolveActiveMembership,
-  resolveTenant,
-} from "./memberships";
-export type { TenantResolution } from "./memberships";
 export { permissionsForRole } from "./permissions";
 export type { TenantPermission } from "./permissions";
 export {

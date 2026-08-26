@@ -1,6 +1,6 @@
 import { redirect } from "@tanstack/react-router";
 import { requireAuth } from "@concertable/web/features/auth";
-import { meQueryKey } from "@concertable/web/features/user/hooks/useSyncUser";
+import { meQueryKey } from "@concertable/web/features/user";
 import { queryClient } from "@concertable/web/lib/queryClient";
 import identityApi from "./api/identityApi";
 import type { Identity } from "./types";

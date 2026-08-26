@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useWithdrawApplicationMutation } from "@concertable/web-b2b/features/concerts";
 
 export function useWithdrawApplication() {
-  const [target, setTarget] = useState<number | null>(null);
+  const [target, setTarget] = useState<number>();
   const mutation = useWithdrawApplicationMutation();
 
   function confirm() {
@@ -11,7 +11,7 @@ export function useWithdrawApplication() {
     mutation.mutate(target, {
       onSuccess: () => {
         toast.success("Application withdrawn.");
-        setTarget(null);
+        setTarget(undefined);
       },
     });
   }
@@ -19,7 +19,7 @@ export function useWithdrawApplication() {
   return {
     isOpen: target != null,
     request: setTarget,
-    dismiss: () => setTarget(null),
+    dismiss: () => setTarget(undefined),
     confirm,
     isPending: mutation.isPending,
   };

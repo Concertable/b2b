@@ -1,7 +1,6 @@
 import { z } from "zod";
+import type { InviteAdminRequest } from "../types";
 
 export const inviteAdminRequestSchema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email address"),
-});
-
-export type InviteAdminRequest = z.infer<typeof inviteAdminRequestSchema>;
+}) satisfies z.ZodType<InviteAdminRequest>;
