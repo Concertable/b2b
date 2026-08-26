@@ -1,4 +1,4 @@
-import type { User } from "@concertable/shared/features/auth";
+import type { User } from "@concertable/shared/features/auth/types";
 
 export type TenantType = "venue" | "artist";
 

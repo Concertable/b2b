@@ -7,7 +7,7 @@ import {
   useApplyCheckoutQuery,
   useESignature,
 } from "@concertable/web-b2b/features/concerts";
-import type { Checkout } from "@concertable/web/features/concerts";
+import type { Checkout } from "@concertable/web/features/concerts/types";
 import applicationApi from "@concertable/web-b2b/features/concerts/api/applicationApi";
 import { CheckoutAwaiting } from "@concertable/web/features/concerts/components/checkout/CheckoutAwaiting";
 import { CheckoutLayout } from "@concertable/web/features/concerts/components/checkout/CheckoutLayout";
