@@ -31,6 +31,22 @@ export interface Opportunity extends OpportunityDraft {
   actions: OpportunityActions;
 }
 
+export interface OpportunityRequest extends OpportunityDraft {
+  id?: number;
+}
+
+export const Opportunity = {
+  toRequest(opportunity: Opportunity | OpportunityDraft): OpportunityRequest {
+    return {
+      id: "id" in opportunity ? opportunity.id : undefined,
+      startDate: opportunity.startDate,
+      endDate: opportunity.endDate,
+      genres: opportunity.genres,
+      deal: opportunity.deal,
+    };
+  },
+};
+
 export interface ApplicationActions {
   accept: ActionLink;
   checkout?: ActionLink | null;
@@ -47,11 +63,9 @@ export interface ConcertActions {
   invoice?: ActionLink | null;
 }
 
-// The party-scoped owner read (GET /organization/concert/{id}): the public concert plus the venue-private
-// figures and party-only action links the anonymous marketplace read omits.
 export interface MyConcert extends Concert {
   ticketsSold: number;
-  doorRevenue: number | null;
+  doorRevenue?: number | null;
   actions: ConcertActions;
 }
 

@@ -1,14 +1,10 @@
 import { toast } from "sonner";
-import {
-  inviteMemberRequestSchema,
-  type InviteMemberRequest,
-} from "../schemas/inviteMemberRequestSchema";
+import type { InviteMemberRequest } from "../types";
+import { INVITE_MEMBER_ROLES } from "../types";
+import { inviteMemberRequestSchema } from "../schemas/inviteMemberRequestSchema";
 import { useInviteMutation } from "./useInviteMutation";
 
-export interface InviteBuffer {
-  email: string;
-  role: InviteMemberRequest["role"];
-}
+export type InviteBuffer = InviteMemberRequest;
 
 export function useInviteMember() {
   const { mutate, isPending } = useInviteMutation();
@@ -32,6 +28,6 @@ export function useInviteMember() {
     submit,
     validate,
     isPending,
-    roleOptions: inviteMemberRequestSchema.shape.role.options,
+    roleOptions: INVITE_MEMBER_ROLES,
   };
 }

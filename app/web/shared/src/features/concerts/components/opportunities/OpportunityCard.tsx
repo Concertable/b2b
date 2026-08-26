@@ -29,15 +29,17 @@ import { X } from "lucide-react";
 import dayjs from "dayjs";
 import type { Opportunity, OpportunityDraft } from "../../types";
 import type { Deal, PaymentMethod } from "@b2b/features/deals";
-import type { Genre } from "@concertable/web/types/common";
-import { genreLabel } from "@concertable/web/types/common";
+import { GENRE_LABELS, type Genre } from "@concertable/web/types/common";
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
   actions?: ReactNode;
 }
 
-export function OpportunityCard({ opportunity, actions }: Readonly<OpportunityCardProps>) {
+export function OpportunityCard({
+  opportunity,
+  actions,
+}: Readonly<OpportunityCardProps>) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -72,7 +74,13 @@ export function OpportunityCard({ opportunity, actions }: Readonly<OpportunityCa
   );
 }
 
-function OpportunityRead({ opportunity, actions }: { opportunity: OpportunityDraft; actions?: ReactNode }) {
+function OpportunityRead({
+  opportunity,
+  actions,
+}: {
+  opportunity: OpportunityDraft;
+  actions?: ReactNode;
+}) {
   return (
     <>
       <div className="flex items-start justify-between gap-4">
@@ -93,7 +101,7 @@ function OpportunityRead({ opportunity, actions }: { opportunity: OpportunityDra
               key={genre}
               className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs"
             >
-              {genreLabel(genre)}
+              {GENRE_LABELS[genre]}
             </span>
           ))}
         </div>
@@ -115,7 +123,15 @@ interface OpportunityEditCardProps extends EditCallbacks {
   opportunity: OpportunityDraft;
 }
 
-export function OpportunityEditCard({ opportunity, onRemove, onSetDates, onSetDealType, onSetDeal, onSetPaymentMethod, onToggleGenre }: Readonly<OpportunityEditCardProps>) {
+export function OpportunityEditCard({
+  opportunity,
+  onRemove,
+  onSetDates,
+  onSetDealType,
+  onSetDeal,
+  onSetPaymentMethod,
+  onToggleGenre,
+}: Readonly<OpportunityEditCardProps>) {
   const { data: genres } = useGenresQuery();
   const deal = opportunity.deal;
 
@@ -142,11 +158,13 @@ export function OpportunityEditCard({ opportunity, onRemove, onSetDates, onSetDe
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(DEAL_TYPE_LABELS) as Deal["$type"][]).map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {DEAL_TYPE_LABELS[type]}
-                  </SelectItem>
-                ))}
+                {(Object.keys(DEAL_TYPE_LABELS) as Deal["$type"][]).map(
+                  (type) => (
+                    <SelectItem key={type} value={type}>
+                      {DEAL_TYPE_LABELS[type]}
+                    </SelectItem>
+                  ),
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -154,7 +172,9 @@ export function OpportunityEditCard({ opportunity, onRemove, onSetDates, onSetDe
           <DealFields deal={deal} onChange={onSetDeal} />
 
           <div>
-            <Label className="text-muted-foreground text-xs">Payment method</Label>
+            <Label className="text-muted-foreground text-xs">
+              Payment method
+            </Label>
             <Select
               value={deal.paymentMethod}
               onValueChange={(v) => onSetPaymentMethod(v as PaymentMethod)}
@@ -184,7 +204,7 @@ export function OpportunityEditCard({ opportunity, onRemove, onSetDates, onSetDe
                       checked={checked}
                       onCheckedChange={() => onToggleGenre(genre)}
                     />
-                    {genreLabel(genre)}
+                    {GENRE_LABELS[genre]}
                   </label>
                 );
               })}
