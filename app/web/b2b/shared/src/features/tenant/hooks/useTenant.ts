@@ -1,7 +1,11 @@
 import { useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { meQueryKey, useMeQuery } from "@concertable/web/features/user";
+import {
+  meQueryKey,
+  useMeQuery,
+  useSyncUser,
+} from "@concertable/web/features/user";
 import identityApi from "../api/identityApi";
 import { resolveTenant } from "../memberships";
 import { permissionsForRole } from "../permissions";
@@ -10,6 +14,10 @@ import type { TenantType } from "../types";
 
 export function useTenantIdentity() {
   return useMeQuery(identityApi.getMe);
+}
+
+export function useSyncTenantIdentity() {
+  useSyncUser(identityApi.getMe);
 }
 
 export function useTenant(tenantType: TenantType) {
