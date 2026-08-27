@@ -30,7 +30,7 @@
     <ProjectReference Include="..\..\src\Seed\Concertable.B2B.Seed.Simulator\Concertable.B2B.Seed.Simulator.csproj" />
     <ProjectReference Include="..\..\src\Concertable.B2B.AppHost\Concertable.B2B.AppHost.csproj" />
     <ProjectReference Include="..\..\src\Modules\**\*.IntegrationTests.csproj" />
-    <ProjectReference Include="..\..\..\Concertable.Shared\tests\Concertable.Testing\Concertable.Testing.csproj" />
+    <PackageReference Include="Concertable.Testing" />
     <ProjectReference Include="..\..\src\Modules\Admin\Concertable.B2B.Admin.Contracts\Concertable.B2B.Admin.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.IntegrationTests.Fixtures\Concertable.B2B.IntegrationTests.Fixtures.csproj" />
     <PackageReference Include="Concertable.Testing.Architecture" />
