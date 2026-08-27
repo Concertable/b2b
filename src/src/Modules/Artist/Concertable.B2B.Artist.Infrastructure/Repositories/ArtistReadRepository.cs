@@ -31,4 +31,9 @@ internal sealed class ArtistReadRepository : IArtistReadRepository
             .SelectMany(a => a.Genres)
             .ToHashSetAsync(ct);
 
+    public async Task<TenantContact?> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        await context.Artists
+            .Where(a => a.TenantId == tenantId)
+            .Select(a => new TenantContact(a.Name, a.Email))
+            .FirstOrDefaultAsync(ct);
 }
