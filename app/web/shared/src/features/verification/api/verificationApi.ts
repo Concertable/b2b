@@ -15,9 +15,12 @@ const DOCUMENT_TYPE_FIELD_VALUE: Record<VerificationDocumentType, string> = {
 };
 
 const verificationApi = {
-  get: async (): Promise<Verification | undefined> => {
+  get: async (): Promise<Verification | null> => {
     const { data, status } = await apiClient.get<Verification>(BASE);
-    return status === 204 ? undefined : data;
+    // 204 = no verification row yet (never submitted). Return null, not
+    // undefined — a query function that resolves to undefined throws in
+    // TanStack Query v5, and "never submitted" is the common case here.
+    return status === 204 ? null : data;
   },
 
   submitDocuments: async (

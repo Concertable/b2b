@@ -28,7 +28,12 @@ export function VerificationForm() {
     setBuffer((current) => ({ ...current, [documentType]: file }));
 
   const onSubmit = () => {
-    const attached = DOCUMENT_TYPES.filter((type) => buffer[type]);
+    // Same iteration order `useVerification.submit` builds the zod `documents`
+    // array in (`Object.entries(buffer)`), so a per-file issue at `documents[i]`
+    // maps back to the field the user actually attached — not the catalog order.
+    const attached = (Object.keys(buffer) as VerificationDocumentType[]).filter(
+      (type) => buffer[type],
+    );
     const parsed = submit(buffer, () => {
       setBuffer({});
       setErrors({ files: {} });
