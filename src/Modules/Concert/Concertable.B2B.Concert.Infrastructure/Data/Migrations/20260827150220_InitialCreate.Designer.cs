@@ -14,7 +14,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260826210521_InitialCreate")]
+    [Migration("20260827150220_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -132,6 +132,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Property<bool>("RequiresDoorRevenue")
                         .HasColumnType("bit");
+
+                    b.Property<decimal?>("SettlementGrossAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid?>("SettlementOperationId")
                         .HasColumnType("uniqueidentifier");

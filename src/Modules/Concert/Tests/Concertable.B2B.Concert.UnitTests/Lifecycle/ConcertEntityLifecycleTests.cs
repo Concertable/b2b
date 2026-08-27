@@ -47,6 +47,37 @@ public sealed class ConcertEntityLifecycleTests
         Assert.Equal(State.AwaitingSettlement, concert.State);
     }
 
+    [Fact]
+    public void BeginSettlement_WhenRetryingAfterLaterTicketSales_ReusesReservedGross()
+    {
+        var concert = ConcertEntity.CreateDraft(CreateDoorSplitBooking(), "Concert", "About", []);
+        concert.IncrementTicketsSold(10);
+        Assert.False(concert.DeclareDoorRevenue(100m).IsFailure);
+        Assert.True(concert.BeginSettlement().TryGetValue(out _));
+        concert.RecordSettlementReference("pi_failed");
+        Assert.False(concert.RecordSettlementFailure("pi_failed", "declined", "Declined").IsFailure);
+
+        concert.IncrementTicketsSold(10);
+
+        Assert.True(concert.BeginSettlement().TryGetValue(out _));
+        Assert.Equal(50m, concert.SettlementGross.Amount);
+    }
+
+    private static ConfirmedBooking CreateDoorSplitBooking() => new(
+        Guid.NewGuid(),
+        1,
+        2,
+        3,
+        4,
+        5,
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        DealType.DoorSplit,
+        true,
+        new DateTime(2030, 1, 1, 19, 0, 0, DateTimeKind.Utc),
+        new DateTime(2030, 1, 1, 22, 0, 0, DateTimeKind.Utc),
+        [],
+        new DoorSplitBookingTerms(50m, "pm_123"));
     private static ConfirmedBooking CreateBooking() => new(
         Guid.NewGuid(),
         1,

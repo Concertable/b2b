@@ -245,6 +245,6 @@ internal sealed class SettlementService : ISettlementService
             concert.BookingId,
             concert.SettlementPayerTenantId,
             concert.SettlementPayeeTenantId,
-            Money.Gbp(concert.CalculateSettlementGross()),
+            concert.SettlementGross,
             concert.SettlementPaymentMethodId);
 }

@@ -198,6 +198,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     State = table.Column<int>(type: "int", nullable: false),
                     CancellationOperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     SettlementOperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    SettlementGrossAmount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
                     FinancialOperationReferenceId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     FinancialFailureCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     FinancialFailureMessage = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),

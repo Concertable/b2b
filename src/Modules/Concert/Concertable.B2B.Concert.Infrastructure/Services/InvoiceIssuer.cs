@@ -26,7 +26,7 @@ internal sealed class InvoiceIssuer
         if (await context.Invoices.AnyAsync(invoice => invoice.BookingId == concert.BookingId, ct))
             return;
 
-        var gross = Money.Gbp(concert.CalculateSettlementGross());
+        var gross = concert.SettlementGross;
 
         var supplierTenantId = concert.SettlementPayeeTenantId;
         var customerTenantId = concert.SettlementPayerTenantId;

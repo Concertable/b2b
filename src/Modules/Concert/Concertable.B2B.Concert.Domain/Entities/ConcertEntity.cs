@@ -36,6 +36,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public State State { get; private set; } = State.Draft;
     public Guid? CancellationOperationId { get; private set; }
     public Guid? SettlementOperationId { get; private set; }
+    public decimal? SettlementGrossAmount { get; private set; }
     public string? FinancialOperationReferenceId { get; private set; }
     public string? FinancialFailureCode { get; private set; }
     public string? FinancialFailureMessage { get; private set; }
@@ -190,6 +191,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
         if (transition.TryGetError(out var error))
             return error;
         SettlementOperationId ??= Guid.NewGuid();
+        SettlementGrossAmount ??= CalculateSettlementGross();
         FinancialFailureCode = null;
         FinancialFailureMessage = null;
         return SettlementOperationId.Value;
@@ -257,6 +259,9 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
             State = next;
         return transition;
     }
+
+    public Money SettlementGross => Money.Gbp(SettlementGrossAmount
+        ?? throw new InvalidOperationException($"Concert {Id} has no settlement gross."));
 
     public decimal CalculateSettlementGross() => DealType switch
     {
