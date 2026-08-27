@@ -6,6 +6,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.DataAccess.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -13,7 +14,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 
 internal sealed class SettlementService : ISettlementService
 {
-    private readonly IDbContextFactory<ConcertDbContext> dbContextFactory;
+    private readonly IUnitOfWorkBoundary unitOfWorkBoundary;
     private readonly InvoiceIssuer invoiceIssuer;
     private readonly ITenantModule tenantModule;
     private readonly ISelfBillingAgreementRepository selfBillingAgreementRepository;
@@ -21,14 +22,14 @@ internal sealed class SettlementService : ISettlementService
     private readonly ILogger<SettlementService> logger;
 
     public SettlementService(
-        IDbContextFactory<ConcertDbContext> dbContextFactory,
+        IUnitOfWorkBoundary unitOfWorkBoundary,
         InvoiceIssuer invoiceIssuer,
         ITenantModule tenantModule,
         ISelfBillingAgreementRepository selfBillingAgreementRepository,
         TimeProvider timeProvider,
         ILogger<SettlementService> logger)
     {
-        this.dbContextFactory = dbContextFactory;
+        this.unitOfWorkBoundary = unitOfWorkBoundary;
         this.invoiceIssuer = invoiceIssuer;
         this.tenantModule = tenantModule;
         this.selfBillingAgreementRepository = selfBillingAgreementRepository;
@@ -40,8 +41,16 @@ internal sealed class SettlementService : ISettlementService
         int concertId,
         CancellationToken ct = default)
     {
-        await using var context = await dbContextFactory.CreateDbContextAsync(ct);
-        await using var transaction = await context.Database.BeginTransactionAsync(ct);
+        return await unitOfWorkBoundary.ExecuteAsync(
+            context => ReserveAsync(context, concertId, ct),
+            ct);
+    }
+
+    private async Task<Result<SettlementPreparation, FinishConcertError>> ReserveAsync(
+        ConcertDbContext context,
+        int concertId,
+        CancellationToken ct)
+    {
         var concert = await GetForUpdateByIdAsync(context, concertId, ct);
         if (concert is null)
             return new FinishConcertError.ConcertNotFound(concertId);
@@ -56,7 +65,6 @@ internal sealed class SettlementService : ISettlementService
                 concert.SettlementOperationId
                 ?? throw new InvalidOperationException(
                     $"Concert {concertId} awaits settlement without an operation."));
-            await transaction.CommitAsync(ct);
             return prepared;
         }
 
@@ -95,9 +103,6 @@ internal sealed class SettlementService : ISettlementService
         if (!reservation.TryGetValue(out var operationId))
             throw new InvalidOperationException(
                 $"Concert {concertId} settlement reservation returned no operation ID.");
-
-        await context.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
         return CreatePreparation(concert, operationId);
     }
 
@@ -108,8 +113,18 @@ internal sealed class SettlementService : ISettlementService
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(confirmation);
-        await using var context = await dbContextFactory.CreateDbContextAsync(ct);
-        await using var transaction = await context.Database.BeginTransactionAsync(ct);
+        return await unitOfWorkBoundary.ExecuteAsync(
+            context => CompleteAsync(context, concertId, operationId, confirmation, ct),
+            ct);
+    }
+
+    private async Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
+        ConcertDbContext context,
+        int concertId,
+        Guid operationId,
+        SettlementConfirmation confirmation,
+        CancellationToken ct)
+    {
         var concert = await GetForUpdateByIdAsync(context, concertId, ct);
         if (concert is null)
             return new FinishConcertError.ConcertNotFound(concertId);
@@ -137,8 +152,6 @@ internal sealed class SettlementService : ISettlementService
         }
 
         await invoiceIssuer.IssueAsync(context, concert, ct);
-        await context.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
         return SettlementOutcome.Settled;
     }
 
@@ -150,22 +163,39 @@ internal sealed class SettlementService : ISettlementService
         string message,
         CancellationToken ct = default)
     {
-        await using var context = await dbContextFactory.CreateDbContextAsync(ct);
-        await using var transaction = await context.Database.BeginTransactionAsync(ct);
+        await unitOfWorkBoundary.ExecuteAsync(
+            context => RecordFailureAsync(
+                context,
+                concertId,
+                operationId,
+                providerReferenceId,
+                code,
+                message,
+                ct),
+            ct);
+    }
+
+    private async Task RecordFailureAsync(
+        ConcertDbContext context,
+        int concertId,
+        Guid operationId,
+        string providerReferenceId,
+        string code,
+        string message,
+        CancellationToken ct)
+    {
         var concert = await GetForUpdateByIdAsync(context, concertId, ct)
             ?? throw new InvalidOperationException($"Settlement concert {concertId} was not found.");
         concert.EnsureSettlementOperation(operationId);
 
         if (concert.State is State.Complete)
         {
-            await transaction.CommitAsync(ct);
             return;
         }
 
         if (concert.State is State.SettlementFailed)
         {
             concert.EnsureSettlementReference(providerReferenceId);
-            await transaction.CommitAsync(ct);
             return;
         }
 
@@ -173,9 +203,6 @@ internal sealed class SettlementService : ISettlementService
         if (failure.TryGetError(out var transitionError))
             throw new InvalidOperationException(
                 $"Concert {concertId} cannot record settlement failure from {transitionError.Current}.");
-
-        await context.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
     }
 
     private static Task<ConcertEntity?> GetForUpdateByIdAsync(

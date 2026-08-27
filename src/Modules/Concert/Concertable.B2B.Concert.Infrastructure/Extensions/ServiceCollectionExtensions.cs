@@ -68,6 +68,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IConcertReadDbContext>(sp => sp.GetRequiredService<ConcertReadDbContext>());
 
             services.AddScoped<IUnitOfWork<ConcertDbContext>, UnitOfWork<ConcertDbContext>>();
+            services.AddScoped<IUnitOfWorkBoundary, UnitOfWorkBoundary>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
 
