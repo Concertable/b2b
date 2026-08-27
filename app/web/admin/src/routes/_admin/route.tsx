@@ -8,6 +8,7 @@ const links: NavLink[] = [
   { label: "Admins", to: "/" },
   { label: "Moderation", to: "/moderation" },
   { label: "Venues", to: "/venues" },
+  { label: "Verification", to: "/verification" },
 ];
 
 function AdminProfileSlot() {

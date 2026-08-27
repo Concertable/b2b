@@ -1,4 +1,5 @@
 import { TaxDetailsBanner } from "@concertable/web-b2b/features/organizations";
+import { VerificationBanner } from "@concertable/web-b2b/features/verification";
 import { SelfBillingAgreementBanner } from "@concertable/web-b2b/features/selfBilling";
 import { SectionGrid } from "@concertable/web/features/dashboard";
 import { ArtistActivityWidget } from "./ArtistActivityWidget";
@@ -24,6 +25,8 @@ export function ArtistDashboardPage() {
       </SectionGrid>
 
       <ArtistStripeBanner />
+
+      <VerificationBanner />
 
       <TaxDetailsBanner />
 

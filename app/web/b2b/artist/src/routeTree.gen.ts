@@ -23,6 +23,7 @@ import { Route as ArtistSettingsRouteRouteImport } from './routes/_artist/settin
 import { Route as ArtistSettingsIndexRouteImport } from './routes/_artist/settings/index'
 import { Route as ArtistMyIndexRouteImport } from './routes/_artist/my/index'
 import { Route as ArtistFindIndexRouteImport } from './routes/_artist/find/index'
+import { Route as ArtistSettingsVerificationRouteImport } from './routes/_artist/settings/verification'
 import { Route as ArtistSettingsSelfBillingAgreementRouteImport } from './routes/_artist/settings/self-billing-agreement'
 import { Route as ArtistSettingsPaymentRouteImport } from './routes/_artist/settings/payment'
 import { Route as ArtistSettingsOrganizationRouteImport } from './routes/_artist/settings/organization'
@@ -104,6 +105,12 @@ const ArtistFindIndexRoute = ArtistFindIndexRouteImport.update({
   path: '/find/',
   getParentRoute: () => ArtistRouteRoute,
 } as any)
+const ArtistSettingsVerificationRoute =
+  ArtistSettingsVerificationRouteImport.update({
+    id: '/verification',
+    path: '/verification',
+    getParentRoute: () => ArtistSettingsRouteRoute,
+  } as any)
 const ArtistSettingsSelfBillingAgreementRoute =
   ArtistSettingsSelfBillingAgreementRouteImport.update({
     id: '/self-billing-agreement',
@@ -181,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/settings/payment': typeof ArtistSettingsPaymentRoute
   '/settings/self-billing-agreement': typeof ArtistSettingsSelfBillingAgreementRoute
+  '/settings/verification': typeof ArtistSettingsVerificationRoute
   '/find/': typeof ArtistFindIndexRoute
   '/my/': typeof ArtistMyIndexRoute
   '/settings/': typeof ArtistSettingsIndexRoute
@@ -206,6 +214,7 @@ export interface FileRoutesByTo {
   '/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/settings/payment': typeof ArtistSettingsPaymentRoute
   '/settings/self-billing-agreement': typeof ArtistSettingsSelfBillingAgreementRoute
+  '/settings/verification': typeof ArtistSettingsVerificationRoute
   '/find': typeof ArtistFindIndexRoute
   '/my': typeof ArtistMyIndexRoute
   '/settings': typeof ArtistSettingsIndexRoute
@@ -234,6 +243,7 @@ export interface FileRoutesById {
   '/_artist/settings/organization': typeof ArtistSettingsOrganizationRoute
   '/_artist/settings/payment': typeof ArtistSettingsPaymentRoute
   '/_artist/settings/self-billing-agreement': typeof ArtistSettingsSelfBillingAgreementRoute
+  '/_artist/settings/verification': typeof ArtistSettingsVerificationRoute
   '/_artist/find/': typeof ArtistFindIndexRoute
   '/_artist/my/': typeof ArtistMyIndexRoute
   '/_artist/settings/': typeof ArtistSettingsIndexRoute
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/settings/organization'
     | '/settings/payment'
     | '/settings/self-billing-agreement'
+    | '/settings/verification'
     | '/find/'
     | '/my/'
     | '/settings/'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/settings/organization'
     | '/settings/payment'
     | '/settings/self-billing-agreement'
+    | '/settings/verification'
     | '/find'
     | '/my'
     | '/settings'
@@ -314,6 +326,7 @@ export interface FileRouteTypes {
     | '/_artist/settings/organization'
     | '/_artist/settings/payment'
     | '/_artist/settings/self-billing-agreement'
+    | '/_artist/settings/verification'
     | '/_artist/find/'
     | '/_artist/my/'
     | '/_artist/settings/'
@@ -437,6 +450,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtistFindIndexRouteImport
       parentRoute: typeof ArtistRouteRoute
     }
+    '/_artist/settings/verification': {
+      id: '/_artist/settings/verification'
+      path: '/verification'
+      fullPath: '/settings/verification'
+      preLoaderRoute: typeof ArtistSettingsVerificationRouteImport
+      parentRoute: typeof ArtistSettingsRouteRoute
+    }
     '/_artist/settings/self-billing-agreement': {
       id: '/_artist/settings/self-billing-agreement'
       path: '/self-billing-agreement'
@@ -522,6 +542,7 @@ interface ArtistSettingsRouteRouteChildren {
   ArtistSettingsOrganizationRoute: typeof ArtistSettingsOrganizationRoute
   ArtistSettingsPaymentRoute: typeof ArtistSettingsPaymentRoute
   ArtistSettingsSelfBillingAgreementRoute: typeof ArtistSettingsSelfBillingAgreementRoute
+  ArtistSettingsVerificationRoute: typeof ArtistSettingsVerificationRoute
   ArtistSettingsIndexRoute: typeof ArtistSettingsIndexRoute
 }
 
@@ -531,6 +552,7 @@ const ArtistSettingsRouteRouteChildren: ArtistSettingsRouteRouteChildren = {
   ArtistSettingsPaymentRoute: ArtistSettingsPaymentRoute,
   ArtistSettingsSelfBillingAgreementRoute:
     ArtistSettingsSelfBillingAgreementRoute,
+  ArtistSettingsVerificationRoute: ArtistSettingsVerificationRoute,
   ArtistSettingsIndexRoute: ArtistSettingsIndexRoute,
 }
 
