@@ -17,7 +17,6 @@ internal static class VenueResponseMappers
         Town = dto.Town,
         Email = dto.Email,
         Latitude = dto.Latitude,
-        Longitude = dto.Longitude,
-        Approved = dto.Approved
+        Longitude = dto.Longitude
     };
 }
