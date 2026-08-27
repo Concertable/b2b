@@ -1,0 +1,11 @@
+{
+  "//": "Copy this file to appsettings.Development.json (gitignored) — or run ./scripts/setup-local-dev.ps1.",
+  "//2": "Allows the venue/artist/business SPAs' localhost origins through CORS so /api/auth/me etc. succeed. No secrets here.",
+  "Cors": {
+    "AllowedOrigins": [
+      "https://localhost:5175",
+      "https://localhost:5176",
+      "https://localhost:5177"
+    ]
+  }
+}
