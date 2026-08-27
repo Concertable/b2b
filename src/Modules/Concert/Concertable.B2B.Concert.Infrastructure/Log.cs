@@ -77,9 +77,9 @@ internal static partial class Log
 
     #endregion
 
-    #region ConcertCompletionRunner
+    #region CompletionRunner
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "ConcertCompletionRunner: found {Count} ended confirmed concert(s) to settle")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "CompletionRunner: found {Count} ended confirmed concert(s) to settle")]
     internal static partial void FoundConcertsToSettle(this ILogger logger, int count);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not finish concert {ConcertId}: {Code} {Message}")]

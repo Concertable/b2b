@@ -7,9 +7,9 @@ namespace Concertable.B2B.Booking.Infrastructure.Events;
 internal sealed class ApplicationAcceptedDomainEventHandler
     : IPreCommitDomainEventHandler<ApplicationAcceptedDomainEvent>
 {
-    private readonly IBookingConfirmationExecutor confirmation;
+    private readonly IConfirmationExecutor confirmation;
 
-    public ApplicationAcceptedDomainEventHandler(IBookingConfirmationExecutor confirmation)
+    public ApplicationAcceptedDomainEventHandler(IConfirmationExecutor confirmation)
     {
         this.confirmation = confirmation;
     }

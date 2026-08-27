@@ -113,10 +113,10 @@ public static class ServiceCollectionExtensions
 
             services.TryAddScoped<IKeyedServiceProvider>(provider => (IKeyedServiceProvider)provider);
             services.TryAddScoped(
-                typeof(IBookingDealStrategyFactory<>),
-                typeof(BookingDealStrategyFactory<>));
-            services.TryAddScoped<IBookingConfirmationExecutor, BookingConfirmationExecutor>();
-            services.TryAddScoped<IBookingCancellationExecutor, BookingCancellationExecutor>();
+                typeof(IDealStrategyFactory<>),
+                typeof(DealStrategyFactory<>));
+            services.TryAddScoped<IConfirmationExecutor, ConfirmationExecutor>();
+            services.TryAddScoped<ICancellationExecutor, CancellationExecutor>();
             return services;
         }
 

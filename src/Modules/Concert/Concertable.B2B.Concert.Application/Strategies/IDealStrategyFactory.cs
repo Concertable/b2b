@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Concert.Application.Strategies;
 
-internal interface IConcertDealStrategyFactory<TStrategy>
+internal interface IDealStrategyFactory<TStrategy>
     where TStrategy : class
 {
     TStrategy Create(DealType dealType);

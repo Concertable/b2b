@@ -3,12 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Strategies;
 
-internal sealed class ConcertDealStrategyFactory<TStrategy> : IConcertDealStrategyFactory<TStrategy>
+internal sealed class DealStrategyFactory<TStrategy> : IDealStrategyFactory<TStrategy>
     where TStrategy : class
 {
     private readonly IKeyedServiceProvider services;
 
-    public ConcertDealStrategyFactory(IKeyedServiceProvider services)
+    public DealStrategyFactory(IKeyedServiceProvider services)
     {
         this.services = services;
     }

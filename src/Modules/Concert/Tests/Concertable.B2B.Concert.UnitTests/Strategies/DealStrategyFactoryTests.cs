@@ -8,7 +8,7 @@ using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests;
 
-public sealed class ConcertDealStrategyFactoryTests
+public sealed class DealStrategyFactoryTests
 {
     [Theory]
     [InlineData(DealType.FlatFee, typeof(VenuePaysArtistDealPayeeResolver))]
@@ -27,7 +27,7 @@ public sealed class ConcertDealStrategyFactoryTests
         });
         using var scope = provider.CreateScope();
         var factory = scope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
 
         var strategy = factory.Create(dealType);
 
@@ -51,7 +51,7 @@ public sealed class ConcertDealStrategyFactoryTests
         });
         using var scope = provider.CreateScope();
         var factory = scope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<ISettlementAmountResolver>>();
+            .GetRequiredService<IDealStrategyFactory<ISettlementAmountResolver>>();
 
         var strategy = factory.Create(dealType);
 
@@ -71,16 +71,16 @@ public sealed class ConcertDealStrategyFactoryTests
         using var secondScope = provider.CreateScope();
 
         var first = firstScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
         var sameScope = firstScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
         var second = secondScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
 
         Assert.Same(first, sameScope);
         Assert.NotSame(first, second);
         Assert.Throws<InvalidOperationException>(() =>
-            provider.GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>());
+            provider.GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>());
     }
 
     [Fact]
@@ -96,10 +96,10 @@ public sealed class ConcertDealStrategyFactoryTests
         using var secondScope = provider.CreateScope();
 
         var first = firstScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>()
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>()
             .Create(DealType.FlatFee);
         var second = secondScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<IDealPayeeResolver>>()
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>()
             .Create(DealType.FlatFee);
 
         Assert.Same(first, second);
@@ -122,13 +122,13 @@ public sealed class ConcertDealStrategyFactoryTests
         using var firstScope = provider.CreateScope();
         using var secondScope = provider.CreateScope();
         var firstFactory = firstScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<ITestStrategy>>();
+            .GetRequiredService<IDealStrategyFactory<ITestStrategy>>();
 
         var fromFactory = firstFactory.Create(DealType.FlatFee);
         var fromFirstScope = firstScope.ServiceProvider
             .GetRequiredKeyedService<ITestStrategy>(DealType.FlatFee);
         var fromSecondScope = secondScope.ServiceProvider
-            .GetRequiredService<IConcertDealStrategyFactory<ITestStrategy>>()
+            .GetRequiredService<IDealStrategyFactory<ITestStrategy>>()
             .Create(DealType.FlatFee);
 
         Assert.Same(fromFirstScope, fromFactory);
@@ -139,7 +139,7 @@ public sealed class ConcertDealStrategyFactoryTests
 
     [Theory]
     [InlineData(typeof(IKeyedServiceProvider))]
-    [InlineData(typeof(IConcertDealStrategyFactory<>))]
+    [InlineData(typeof(IDealStrategyFactory<>))]
     [InlineData(typeof(IDealPayeeResolver))]
     [InlineData(typeof(ISettlementAmountResolver))]
     public void AddConcertDealStrategies_ScopeCapturingServices_RegistersScoped(Type serviceType)

@@ -14,7 +14,7 @@ namespace Concertable.B2B.Concert.UnitTests;
 public sealed class CompleteExecutorTests
 {
     private readonly Mock<ISettlementService> settlementService = new();
-    private readonly Mock<IConcertDealStrategyFactory<ICompleteStep>> concertDealStrategyFactory = new();
+    private readonly Mock<IDealStrategyFactory<ICompleteStep>> concertDealStrategyFactory = new();
     private readonly Mock<ICompleteStep> completeStep = new();
     private readonly CompleteExecutor executor;
 

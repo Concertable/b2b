@@ -6,16 +6,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Completion;
 
-internal sealed class ConcertCompletionRunner : IConcertCompletionRunner
+internal sealed class CompletionRunner : ICompletionRunner
 {
     private readonly IConcertRepository concertRepository;
     private readonly IScoped<ICompleteExecutor> completion;
-    private readonly ILogger<ConcertCompletionRunner> logger;
+    private readonly ILogger<CompletionRunner> logger;
 
-    public ConcertCompletionRunner(
+    public CompletionRunner(
         IConcertRepository concertRepository,
         IScoped<ICompleteExecutor> completion,
-        ILogger<ConcertCompletionRunner> logger)
+        ILogger<CompletionRunner> logger)
     {
         this.concertRepository = concertRepository;
         this.completion = completion;

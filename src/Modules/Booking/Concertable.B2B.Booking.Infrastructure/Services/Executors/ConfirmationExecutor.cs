@@ -6,13 +6,13 @@ using Concertable.B2B.Booking.Domain.Lifecycle;
 
 namespace Concertable.B2B.Booking.Infrastructure.Services;
 
-internal sealed class BookingConfirmationExecutor : IBookingConfirmationExecutor
+internal sealed class ConfirmationExecutor : IConfirmationExecutor
 {
-    private readonly IBookingDealStrategyFactory<IConfirmStep> steps;
+    private readonly IDealStrategyFactory<IConfirmStep> steps;
     private readonly IOutboxUnitOfWorkBehavior outbox;
 
-    public BookingConfirmationExecutor(
-        IBookingDealStrategyFactory<IConfirmStep> steps,
+    public ConfirmationExecutor(
+        IDealStrategyFactory<IConfirmStep> steps,
         IOutboxUnitOfWorkBehavior outbox)
     {
         this.steps = steps;

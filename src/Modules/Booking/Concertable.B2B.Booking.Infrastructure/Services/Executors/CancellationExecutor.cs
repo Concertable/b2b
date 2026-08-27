@@ -4,11 +4,11 @@ using Concertable.B2B.Booking.Domain.Lifecycle;
 
 namespace Concertable.B2B.Booking.Infrastructure.Services;
 
-internal sealed class BookingCancellationExecutor : IBookingCancellationExecutor
+internal sealed class CancellationExecutor : ICancellationExecutor
 {
-    private readonly IBookingDealStrategyFactory<ICancelStep> steps;
+    private readonly IDealStrategyFactory<ICancelStep> steps;
 
-    public BookingCancellationExecutor(IBookingDealStrategyFactory<ICancelStep> steps)
+    public CancellationExecutor(IDealStrategyFactory<ICancelStep> steps)
     {
         this.steps = steps;
     }

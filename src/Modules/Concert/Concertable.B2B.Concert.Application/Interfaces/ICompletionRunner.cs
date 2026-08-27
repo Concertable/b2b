@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
-internal interface IConcertCompletionRunner
+internal interface ICompletionRunner
 {
     Task RunAsync(CancellationToken ct = default);
 }

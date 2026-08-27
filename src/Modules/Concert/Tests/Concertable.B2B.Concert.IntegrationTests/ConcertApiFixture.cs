@@ -20,7 +20,7 @@ public sealed class ConcertApiFixture : ApiFixture
     private IConcertReadDbContext readDbContext = null!;
     private ConcertDbContext dbContext = null!;
     private IScoped<ICompleteExecutor> completeExecutor = null!;
-    private IConcertCompletionRunner completionRunner = null!;
+    private ICompletionRunner completionRunner = null!;
     private IConcertService concertService = null!;
     private ISelfBillingAgreementRepository selfBillingAgreementRepository = null!;
 
@@ -150,7 +150,7 @@ public sealed class ConcertApiFixture : ApiFixture
         readDbContext = scope.ServiceProvider.GetRequiredService<IConcertReadDbContext>();
         dbContext = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
         completeExecutor = scope.ServiceProvider.GetRequiredService<IScoped<ICompleteExecutor>>();
-        completionRunner = scope.ServiceProvider.GetRequiredService<IConcertCompletionRunner>();
+        completionRunner = scope.ServiceProvider.GetRequiredService<ICompletionRunner>();
         concertService = scope.ServiceProvider.GetRequiredService<IConcertService>();
         selfBillingAgreementRepository = scope.ServiceProvider
             .GetRequiredService<ISelfBillingAgreementRepository>();

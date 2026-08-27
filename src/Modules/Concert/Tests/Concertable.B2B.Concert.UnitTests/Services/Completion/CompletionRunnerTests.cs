@@ -9,16 +9,16 @@ using Reunion;
 
 namespace Concertable.B2B.Concert.UnitTests.Services.Completion;
 
-public sealed class ConcertCompletionRunnerTests
+public sealed class CompletionRunnerTests
 {
     private readonly Mock<IConcertRepository> repository = new();
     private readonly Mock<ICompleteExecutor> executor = new();
     private readonly Mock<IScoped<ICompleteExecutor>> completion = new();
-    private readonly ConcertCompletionRunner sut;
+    private readonly CompletionRunner sut;
 
-    public ConcertCompletionRunnerTests()
+    public CompletionRunnerTests()
     {
-        sut = new ConcertCompletionRunner(repository.Object, completion.Object, Mock.Of<ILogger<ConcertCompletionRunner>>());
+        sut = new CompletionRunner(repository.Object, completion.Object, Mock.Of<ILogger<CompletionRunner>>());
         executor.Setup(e => e.CompleteAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<SettlementOutcome, FinishConcertError>(SettlementOutcome.Settled));
         completion.Setup(s => s.RunAsync(It.IsAny<Func<ICompleteExecutor, Task<Result<SettlementOutcome, FinishConcertError>>>>()))

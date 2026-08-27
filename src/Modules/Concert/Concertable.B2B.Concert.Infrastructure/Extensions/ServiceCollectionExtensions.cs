@@ -95,7 +95,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IConcertAvailability, ConcertAvailability>();
 
             services.TryAddSingleton(typeof(IScoped<>), typeof(Scoped<>));
-            services.AddScoped<IConcertCompletionRunner, ConcertCompletionRunner>();
+            services.AddScoped<ICompletionRunner, CompletionRunner>();
 
             // Repositories
             services.AddScoped<IConcertRepository, ConcertRepository>();
@@ -184,7 +184,7 @@ public static class ServiceCollectionExtensions
             builder.Build();
 
             services.TryAddScoped<IKeyedServiceProvider>(sp => (IKeyedServiceProvider)sp);
-            services.TryAddScoped(typeof(IConcertDealStrategyFactory<>), typeof(ConcertDealStrategyFactory<>));
+            services.TryAddScoped(typeof(IDealStrategyFactory<>), typeof(DealStrategyFactory<>));
             return services;
         }
 

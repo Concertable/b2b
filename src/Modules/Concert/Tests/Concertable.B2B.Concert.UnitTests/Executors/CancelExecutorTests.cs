@@ -17,7 +17,7 @@ public sealed class CancelExecutorTests
         var behavior = new ImmediateBehavior();
         this.executor = new CancelExecutor(
             this.concertRepository.Object,
-            Mock.Of<IConcertDealStrategyFactory<ICancelStep>>(),
+            Mock.Of<IDealStrategyFactory<ICancelStep>>(),
             behavior,
             behavior);
     }

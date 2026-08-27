@@ -19,7 +19,7 @@ internal sealed class BookingService : IBookingService
     private readonly IUnitOfWorkBehavior unitOfWork;
     private readonly IBus bus;
     private readonly IOutboxUnitOfWorkBehavior outbox;
-    private readonly IBookingCancellationExecutor cancellation;
+    private readonly ICancellationExecutor cancellation;
     private readonly TimeProvider timeProvider;
 
     public BookingService(
@@ -28,7 +28,7 @@ internal sealed class BookingService : IBookingService
         IUnitOfWorkBehavior unitOfWork,
         IBus bus,
         IOutboxUnitOfWorkBehavior outbox,
-        IBookingCancellationExecutor cancellation,
+        ICancellationExecutor cancellation,
         TimeProvider timeProvider)
     {
         this.bookings = bookings;

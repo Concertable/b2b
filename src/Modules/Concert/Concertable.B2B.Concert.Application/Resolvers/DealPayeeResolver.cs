@@ -6,9 +6,9 @@ namespace Concertable.B2B.Concert.Application.Resolvers;
 
 internal sealed class DealPayeeResolver : IDealPayeeResolver
 {
-    private readonly IConcertDealStrategyFactory<IDealPayeeResolver> resolvers;
+    private readonly IDealStrategyFactory<IDealPayeeResolver> resolvers;
 
-    public DealPayeeResolver(IConcertDealStrategyFactory<IDealPayeeResolver> resolvers)
+    public DealPayeeResolver(IDealStrategyFactory<IDealPayeeResolver> resolvers)
     {
         this.resolvers = resolvers;
     }
