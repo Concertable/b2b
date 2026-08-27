@@ -1,11 +1,14 @@
+using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.Tenant.Domain.Enums;
 using Concertable.B2B.Tenant.Infrastructure.Services;
+using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Shared.Blob.Application;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Concertable.B2B.Tenant.UnitTests;
@@ -13,20 +16,38 @@ namespace Concertable.B2B.Tenant.UnitTests;
 public sealed class VerificationServiceTests
 {
     private readonly Mock<IVerificationRepository> repository;
+    private readonly Mock<ITenantRepository> tenantRepository;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly Mock<IBlobStorageService> blobStorage;
+    private readonly Mock<IVenueModule> venueModule;
+    private readonly Mock<IArtistModule> artistModule;
+    private readonly Mock<IVerificationNotifier> notifier;
+    private readonly Mock<ICurrentUser> currentUser;
+    private readonly Mock<ILogger<VerificationService>> logger;
     private readonly VerificationService service;
 
     public VerificationServiceTests()
     {
         this.repository = new Mock<IVerificationRepository>();
+        this.tenantRepository = new Mock<ITenantRepository>();
         this.tenantContext = new Mock<ITenantContext>();
         this.blobStorage = new Mock<IBlobStorageService>();
+        this.venueModule = new Mock<IVenueModule>();
+        this.artistModule = new Mock<IArtistModule>();
+        this.notifier = new Mock<IVerificationNotifier>();
+        this.currentUser = new Mock<ICurrentUser>();
+        this.logger = new Mock<ILogger<VerificationService>>();
         this.service = new VerificationService(
             repository.Object,
+            tenantRepository.Object,
             tenantContext.Object,
             blobStorage.Object,
-            TimeProvider.System);
+            venueModule.Object,
+            artistModule.Object,
+            notifier.Object,
+            currentUser.Object,
+            TimeProvider.System,
+            logger.Object);
     }
 
     private static IReadOnlyList<EvidenceUpload> BuildUploads() =>

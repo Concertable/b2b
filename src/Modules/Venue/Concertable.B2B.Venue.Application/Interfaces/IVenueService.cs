@@ -31,4 +31,6 @@ internal interface IVenueService
     Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
     Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
     Task<IPagination<PendingVenue>> GetPendingApprovalAsync(IPageParams pageParams);
+
+    Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

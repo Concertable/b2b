@@ -67,6 +67,22 @@ public sealed class TenantApiFixture : ApiFixture
         return verification;
     }
 
+    /// <summary>Inserts a pending verification directly — arranges the admin-review case (approve/reject)
+    /// without depending on the tenant-facing submit endpoint. Documents carry an arbitrary seeded blob name;
+    /// no real blob is written.</summary>
+    public async Task<TenantVerificationEntity> AddPendingVerificationAsync(
+        Guid tenantId, VerificationDocumentType documentType, DateTime submittedAt)
+    {
+        var verification = TenantVerificationEntity.Submit(
+            tenantId,
+            [VerificationDocumentEntity.Create(documentType, $"seed-{Guid.NewGuid()}", submittedAt)],
+            submittedAt);
+        verification.ClearDomainEvents();
+        tenantDb.Verifications.Add(verification);
+        await tenantDb.SaveChangesAsync();
+        return verification;
+    }
+
     protected override void OnReset(IServiceScope scope)
     {
         tenantDb = scope.ServiceProvider.GetRequiredService<TenantDbContext>();

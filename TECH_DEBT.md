@@ -50,6 +50,24 @@ Tracked by [`plans/platform/REPOSITORY_PER_MICROSERVICE_MIGRATION_PLAN.md`](../.
 
 ## MED
 
+### `Concertable.B2B.E2ETests/AppFixture.cs` hand-duplicates a subset of the real host's DI registrations, and can silently under-provision
+
+The seed-only `Host` built in `AppFixture.cs` (`InitializeAsync`, ~line 157) re-lists its own subset of
+`B2BWebHostExtensions.AddB2BWebHost`'s registrations rather than reusing it, because it only needs enough
+to run `IDevSeeder`s. This drifted out of sync once: `ConcertDevSeeder` depends on `ITenantModule`, whose
+graph (via `IVerificationService`) now reaches `IVenueModule`/`IArtistModule` → `VenueService`/
+`ArtistService` → `IImageService` — a real, load-bearing dependency this seed host never registered
+(`services.AddSharedImaging()` was missing; added alongside this note). Nothing catches this class of gap
+at compile time; it only surfaces as an E2E `IDbInitializer` resolution failure the next time a module's
+cross-module facade graph grows to reach a shared service this host omits.
+
+**Resolves when:** the seed host's `ConfigureServices` is built from the same registration list as
+`AddB2BWebHost` (e.g. factoring the shared-service registrations `AddB2BWebHost` and this fixture both
+need into one call), so a facade graph reaching a new shared dependency can't silently leave one host
+under-provisioned relative to the other.
+
+---
+
 ### Venue opportunity counts are exposed by the write repository
 
 `IOpportunityRepository.GetOpenWithApplicationCountsByVenueTenantIdAsync` is a read-only dashboard
@@ -92,6 +110,49 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 ---
 
 ## LOW
+
+### Admin verification queue enriches contact per row, not per page
+
+`VerificationService.GetPendingAsync` (Tenant.Infrastructure) awaits `IVenueModule`/`IArtistModule`
+`GetContactByTenantIdAsync` once per pending row, sequentially (required — see the fixed concurrency bug
+this replaced: parallel calls hit the same scoped Venue/ArtistReadDbContext instance). Correct, but O(N)
+queries per page instead of one batched lookup per `TenantType` on the page.
+
+**Resolves when:** `IVenueModule`/`IArtistModule` gain a `GetContactsByTenantIdsAsync(IEnumerable<Guid>)`
+batch method, and the admin service groups pending rows by `TenantType` and issues one call per group
+instead of per row.
+
+---
+
+### `VerificationService.GetContactAsync` branches on `TenantType` instead of using a keyed strategy
+
+`GetContactAsync` (and its callers `GetPendingAsync`/`ReviewAsync`) injects both `IVenueModule` and
+`IArtistModule` and does `if (type == TenantType.Venue) ... else ...` to pick one — exactly the
+"branching on the key inside a key-agnostic component" anti-pattern the `keyed-strategies` standard
+names directly, plus dual-injecting two collaborators only one of which is ever used per call. Confirmed
+via grep this is not (yet) scattered elsewhere in the codebase — it's confined to this one method today —
+but it's the shape that would proliferate the next time venue-vs-artist branching is needed for a
+tenant-scoped concern, and this codebase already has the template to prevent that: `DealType`-keyed
+strategy families (see the `keyed-strategies` standard and its `CODE_PATTERNS.md` roster).
+
+**Resolves when:** this is replaced with a `TenantType`-keyed strategy family, matching this codebase's
+existing `DealType`-keyed pattern — module-local `ITenantStrategy`/`ITenantStrategyFactory<TStrategy>`
+spine (mirroring `IDealStrategy`/`IDealStrategyFactory<TStrategy>`), with `ITenantContactResolver` as the
+first family member and `VenueTenantContactResolver`/`ArtistTenantContactResolver` as its keyed leaves,
+matching this codebase's `XResolver` naming for "compute a value via a keyed strategy" (`DealPayeeResolver`,
+`SettlementAmountResolver`). `VerificationService` then injects `ITenantContactResolver` directly instead
+of both cross-module facades.
+
+**Same PR, related but separate cause:** `Venue.Contracts.TenantContact`/`Artist.Contracts.TenantContact`
+are two copies of an identical shape today (a deliberate, published-package-boundary-driven duplication —
+see the plan/ledger for the reasoning), and `VerificationService` currently unwraps each into a plain
+`(string? Name, string? Email)` tuple because there's nowhere Tenant-owned to canonicalize into. Once
+`ITenantContactResolver.ResolveAsync` exists, its return type is exactly that missing Tenant-owned
+canonical shape — a genuine, non-published-boundary-crossing "shared place" for Venue's and Artist's
+contact data as Tenant module sees it, replacing the tuple. Land both in the same change: the keyed
+strategy needs a return type anyway, and that return type is the fix for the tuple.
+
+---
 
 ### Application affordances are not yet modelled as role-and-state discriminated unions
 
