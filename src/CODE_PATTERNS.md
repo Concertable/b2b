@@ -14,7 +14,7 @@ The bases live in `B2B.DataAccess.Infrastructure`; each concrete context lives i
 | Tenant-filtered, venue↔artist pair | `VenueArtistTenantScopedDbContext` | `ConcertDbContext` |
 | Tenant-filtered, single owner | `TenantScopedDbContext` | `VenueDbContext` (filters `Venue`/`VenueImage`), `ArtistDbContext` |
 | Tenant-independent read, `SaveChanges` throws | `ReadDbContext` (shared DataAccess) | `ConcertReadDbContext` |
-| Unscoped but writable | `PrivilegedDbContext` | `VenuePrivilegedDbContext` (venue approval), `ConversationsPrivilegedDbContext` |
+| Unscoped but writable | `PrivilegedDbContext` | `ConversationsPrivilegedDbContext` (moderation) |
 
 Filters are declared per entity through the abstract `ApplyTenantFilters` hook —
 `modelBuilder.ApplyVenueArtist<TEntity>(this)` or `modelBuilder.ApplySingleOwner<TEntity>(this)` — never
@@ -22,7 +22,7 @@ auto-derived from the `IVenueArtistTenantScoped` / `ITenantScoped` marker.
 
 Query classes split by stance: `XRepository` (tenant-bound), `XReadRepository` (`XReadDbContext`),
 `XPrivilegedRepository` (writable `PrivilegedDbContext`, only where a cross-tenant write flow exists, e.g.
-`VenuePrivilegedRepository`, `MessagePrivilegedRepository`, `ContentReportPrivilegedRepository`). A service holding both `repository` and `readRepository` is the convention when it
+`MessagePrivilegedRepository`, `ContentReportPrivilegedRepository`). A service holding both `repository` and `readRepository` is the convention when it
 injects both stances of its own aggregate. A domain fact that is not naturally an entity repository may get
 its own purpose-named abstraction over the read context — `IConcertAvailability`.
 
