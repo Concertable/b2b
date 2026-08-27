@@ -45,8 +45,8 @@ internal sealed class VenueReadRepository : IVenueReadRepository
             .ToProfiles()
             .FirstOrDefaultAsync(ct);
 
-    public Task<TenantContact?> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
-        context.Venues
+    public async Task<TenantContact?> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        await context.Venues
             .Where(venue => venue.TenantId == tenantId)
             .Select(venue => new TenantContact(venue.Name, venue.Email))
             .FirstOrDefaultAsync(ct);
