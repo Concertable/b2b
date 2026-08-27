@@ -14,4 +14,5 @@ public interface IArtistModule
     Task<Option<ArtistProfile>> GetProfileAsync(int artistId, CancellationToken ct = default);
     Task<Option<ArtistProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
     Task<ReviewSummary> GetReviewSummaryAsync(int artistId, CancellationToken ct = default);
+    Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

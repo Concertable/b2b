@@ -13,4 +13,5 @@ internal interface IArtistReadRepository
     Task<IReadOnlySet<Genre>> GetGenresAsync(int id, CancellationToken ct = default);
     Task<ArtistProfile?> GetProfileAsync(int id, CancellationToken ct = default);
     Task<ArtistProfile?> GetProfileByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+    Task<TenantContact?> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

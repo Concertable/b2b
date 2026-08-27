@@ -11,4 +11,5 @@ internal interface IVenueReadRepository
         IReadOnlyCollection<int> ids,
         CancellationToken ct = default);
     Task<VenueProfile?> GetProfileByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+    Task<TenantContact?> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

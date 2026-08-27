@@ -36,4 +36,7 @@ internal sealed class VenueModule : IVenueModule
         int venueId,
         CancellationToken ct = default) =>
         reviewService.GetSummaryAsync(venueId, ct);
+
+    public Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        venueService.GetContactByTenantIdAsync(tenantId, ct);
 }

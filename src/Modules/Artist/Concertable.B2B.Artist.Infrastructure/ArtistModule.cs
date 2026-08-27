@@ -43,4 +43,7 @@ internal sealed class ArtistModule : IArtistModule
         int artistId,
         CancellationToken ct = default) =>
         reviewService.GetSummaryAsync(artistId, ct);
+
+    public Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        artistService.GetContactByTenantIdAsync(tenantId, ct);
 }

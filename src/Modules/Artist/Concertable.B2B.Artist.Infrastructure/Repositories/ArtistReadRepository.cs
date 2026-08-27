@@ -50,4 +50,10 @@ internal sealed class ArtistReadRepository : IArtistReadRepository
             .Where(artist => artist.TenantId == tenantId)
             .ToProfile()
             .FirstOrDefaultAsync(ct);
+
+    public Task<TenantContact?> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        context.Artists
+            .Where(artist => artist.TenantId == tenantId)
+            .Select(artist => new TenantContact(artist.Name, artist.Email))
+            .FirstOrDefaultAsync(ct);
 }
