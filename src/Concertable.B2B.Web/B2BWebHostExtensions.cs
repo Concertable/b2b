@@ -20,6 +20,7 @@ using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.B2B.Tenant.Api.Extensions;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.User.Api.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
@@ -58,6 +59,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using B2BPayoutOwnerRegisteredEvent = Concertable.B2B.Tenant.Contracts.Events.PayoutOwnerRegisteredEvent;
 
 namespace Concertable.B2B.Web;
 
@@ -157,8 +159,8 @@ public static class B2BWebHostExtensions
                     reg.Publishes<BookingCancelledEvent>();
                     reg.Publishes<ConcertCancelledEvent>();
                     reg.Publishes<ConcertCreatedEvent>();
-                    reg.Publishes<Concertable.B2B.Tenant.Contracts.Events.PayoutOwnerRegisteredEvent>();
-                    reg.Publishes<Concertable.B2B.Tenant.Contracts.Events.TenantActivityRecordedEvent>();
+                    reg.Publishes<B2BPayoutOwnerRegisteredEvent>();
+                    reg.Publishes<TenantActivityRecordedEvent>();
                     reg.SendsTo<CaptureEscrowCommand>(PaymentServiceIdentity.Name);
                     reg.SendsTo<DepositEscrowCommand>(PaymentServiceIdentity.Name);
                     reg.SendsTo<RefundEscrowCommand>(PaymentServiceIdentity.Name);

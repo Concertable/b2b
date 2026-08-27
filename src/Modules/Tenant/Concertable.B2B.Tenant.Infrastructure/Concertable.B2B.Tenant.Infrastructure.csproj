@@ -34,6 +34,7 @@
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Messaging.Contracts" />
     <PackageReference Include="Concertable.Seed.Shared" />
+    <PackageReference Include="Concertable.Shared.Blob.Application" />
     <PackageReference Include="Concertable.Shared.Email.Application" />
   </ItemGroup>
 

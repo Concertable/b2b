@@ -47,6 +47,27 @@ public sealed class SeedState
     /// founding-Owner rows are ever seeded; invitation-derived memberships are handler/API-written, never seeded.</summary>
     public IReadOnlyList<TenantMembershipEntity> Memberships { get; }
 
+    /// <summary>An <c>Approved</c> verification row per tenant that also has tax compliance complete — the
+    /// verification gate's fail-closed default would otherwise defer every seeded opportunity-publish and
+    /// settlement in the suite. The two bare operators (<see cref="VenueManagerNoVenue"/>,
+    /// <see cref="ArtistManagerNoArtist"/>) deliberately have no row, staying unverified alongside their
+    /// incomplete tax compliance — the same "registered but never completed onboarding" fixture, for both
+    /// dimensions.</summary>
+    public IReadOnlyList<TenantVerificationEntity> Verifications { get; }
+
+    private static readonly Guid UnverifiedTenantUserId = new("c1000000-0000-0000-0000-000000000001");
+
+    /// <summary>Tax-complete but never submitted for verification — deliberately not one of
+    /// <see cref="Tenants"/>' bare operators, which are also tax-incomplete. Isolates the verification
+    /// gate from the tax-compliance gate for <c>TenantVerificationGateApiTests</c>. Owns
+    /// <see cref="UnverifiedVenueManager"/>'s venue, so the same fixture also drives the opportunity-
+    /// publication gate test.</summary>
+    public TenantEntity UnverifiedTenant { get; }
+
+    /// <summary>Founding owner of <see cref="UnverifiedTenant"/> — authenticates the opportunity-creation
+    /// gate test.</summary>
+    public UserEntity UnverifiedVenueManager { get; }
+
     public IReadOnlyList<ArtistEntity> Artists { get; }
     public IReadOnlyList<VenueEntity> Venues { get; }
 
@@ -161,7 +182,15 @@ public sealed class SeedState
             new Address("Leicestershire", "Loughborough"),
             "avatar.jpg");
 
-        Users = [Admin, .. ArtistManagers, .. VenueManagers];
+        UnverifiedVenueManager = UserFactory.FromRegistration(
+            UnverifiedTenantUserId, "tenant-verification-gate@test.com");
+        // Tax-complete but never submitted for verification, unlike SeedUsers' bare operators below (also
+        // tax-incomplete) — isolates the verification gate from the tax-compliance gate. See the property doc.
+        UnverifiedTenant = TenantFactory.Create(
+            UnverifiedTenantUserId, "tenant-verification-gate@test.com", TenantType.Venue, now,
+            taxComplianceComplete: true);
+
+        Users = [Admin, .. ArtistManagers, .. VenueManagers, UnverifiedVenueManager];
 
         Venues = catalog.Venues.Select(s => VenueFactory.Create(
             id: s.VenueId, userId: s.UserId,
@@ -171,6 +200,16 @@ public sealed class SeedState
             address: new Address(s.County, s.Town),
             email: s.Email)).ToList();
         Venue = Venues[0];
+
+        // TenantId is assigned below by the same generic tenantByVenueId loop every other venue goes through.
+        var unverifiedVenue = VenueFactory.Create(
+            id: 9001, userId: UnverifiedTenantUserId,
+            name: "Unverified Venue", about: "Seeded for the tenant-verification gate test.",
+            bannerUrl: "grandvenue.jpg", avatar: "avatar.jpg",
+            location: new Point(0.0, 51.0) { SRID = 4326 },
+            address: new Address("Test County", "Test Town"),
+            email: "tenant-verification-gate@test.com");
+        Venues = [.. Venues, unverifiedVenue];
 
         Artists = catalog.Artists.Select(s => ArtistFactory.Create(
             id: s.ArtistId, userId: s.UserId,
@@ -310,9 +349,19 @@ public sealed class SeedState
                 m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantType.Venue : TenantType.Artist, now,
                 taxComplianceComplete: !bareTenantUserIds.Contains(m.Id)))
             .ToList();
+        Verifications = SeedUsers.Managers
+            .Zip(Tenants)
+            .Where(pair => !bareTenantUserIds.Contains(pair.First.Id))
+            .Select(pair => VerificationFactory.Approved(pair.Second.Id, now))
+            .ToList();
+
+        // UnverifiedTenant (built above, alongside UnverifiedVenueManager) is not one of SeedUsers.Managers,
+        // so it needs its own Tenants entry and founding-owner membership.
+        Tenants = [.. Tenants, UnverifiedTenant];
         var memberships = SeedUsers.Managers
             .Select(m => MembershipFactory.FoundingOwner(m.TenantId, m.Id, now))
             .ToList();
+        memberships.Add(MembershipFactory.FoundingOwner(UnverifiedTenant.Id, UnverifiedTenantUserId, now));
         // VenueManager3 is also a member of VenueManager1's tenant, giving one tenant two members for the group-inbox tests.
         memberships.Add(MembershipFactory.Member(
             TenantSeedIds.For(VenueManager1.Id), VenueManager3.Id, TenantRole.Manager, invitedBy: VenueManager1.Id, now));

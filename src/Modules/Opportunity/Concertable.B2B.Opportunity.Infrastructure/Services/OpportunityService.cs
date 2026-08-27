@@ -3,6 +3,7 @@ using Concertable.B2B.Opportunity.Application.Mappers;
 using Concertable.B2B.Opportunity.Contracts.Errors;
 using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Contracts;
 using Reunion;
 using Concertable.Kernel.Identity;
@@ -17,6 +18,7 @@ internal sealed class OpportunityService : IOpportunityService
     private readonly IDealModule dealModule;
     private readonly IOpportunitySyncer syncer;
     private readonly ITenantContext tenantContext;
+    private readonly ITenantModule tenantModule;
     private readonly IUnitOfWorkBehavior uowBehavior;
 
     public OpportunityService(
@@ -26,6 +28,7 @@ internal sealed class OpportunityService : IOpportunityService
         IDealModule dealModule,
         IOpportunitySyncer syncer,
         ITenantContext tenantContext,
+        ITenantModule tenantModule,
         IUnitOfWorkBehavior uowBehavior)
     {
         this.repository = repository;
@@ -34,6 +37,7 @@ internal sealed class OpportunityService : IOpportunityService
         this.dealModule = dealModule;
         this.syncer = syncer;
         this.tenantContext = tenantContext;
+        this.tenantModule = tenantModule;
         this.uowBehavior = uowBehavior;
     }
 
@@ -42,6 +46,9 @@ internal sealed class OpportunityService : IOpportunityService
         var venue = await venueModule.GetCurrentIdAsync();
         if (!venue.TryGetValue(out var venueId))
             return new OpportunityMutationError.VenueNotFound();
+
+        if (!await tenantModule.IsVerifiedAsync(tenantContext.GetTenantId()))
+            return new OpportunityMutationError.VenueNotVerified();
 
         var creation = await uowBehavior.ExecuteAsync(async () =>
         {
@@ -124,6 +131,9 @@ internal sealed class OpportunityService : IOpportunityService
         var venue = await venueModule.GetCurrentIdAsync();
         if (!venue.TryGetValue(out var venueId))
             return new OpportunityMutationError.VenueNotFound();
+
+        if (!await tenantModule.IsVerifiedAsync(tenantContext.GetTenantId()))
+            return new OpportunityMutationError.VenueNotVerified();
 
         var validation = ValidateDeals(requestList.Select(request => request.Deal));
         if (validation.IsFailure)

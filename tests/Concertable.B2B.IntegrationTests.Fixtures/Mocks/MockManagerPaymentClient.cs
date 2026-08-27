@@ -85,6 +85,25 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
         return new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id };
     }
 
+    public async Task<Result<PaymentOutcome, ManagerPaymentOperationError>> PayAsync(
+        Guid operationId,
+        Guid payerId,
+        Guid payeeId,
+        Money amount,
+        string paymentMethodId,
+        PaymentSession session,
+        int bookingId,
+        CancellationToken ct = default)
+    {
+        var result = await PayAsync(payerId, payeeId, amount, paymentMethodId, session, bookingId, ct);
+        if (result.TryGetValue(out var outcome))
+            return Result<PaymentOutcome, ManagerPaymentOperationError>.Success(outcome);
+
+        result.TryGetError(out var error);
+        return Result<PaymentOutcome, ManagerPaymentOperationError>.Failure(
+            new ManagerPaymentOperationError.ManagerFailure(error!));
+    }
+
     public async Task<Result<PaymentOutcome, ManagerPaymentError>> PayBoundCommissionAsync(
         Guid payerId,
         Guid payeeId,

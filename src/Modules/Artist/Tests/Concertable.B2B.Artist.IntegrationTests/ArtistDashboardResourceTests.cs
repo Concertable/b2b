@@ -43,6 +43,18 @@ public sealed class ArtistDashboardResourceTests : IAsyncLifetime
         Assert.Equal($"/_artist/find/artist/{fixture.SeedState.Artist.Id}", review.Href);
     }
 
+    [Fact]
+    public async Task RecentReviews_NoCurrentArtist_ReturnsEmptyArray()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
+
+        var response = await client.GetAsync("/api/organization/artist/review/recent");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var reviews = await response.Content.ReadAsync<List<RecentReviewResponse>>();
+        Assert.Empty(reviews!);
+    }
+
     private Task SubmitReviewAsync(
         IIntegrationEventHandler<CustomerReviewSubmittedEvent> handler,
         string email,

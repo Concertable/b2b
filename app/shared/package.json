@@ -19,6 +19,11 @@
     "prepack": "npm run build"
   },
   "exports": {
+    "./features/*/types": {
+      "types": "./dist/features/*/types.d.ts",
+      "import": "./dist/features/*/types.js",
+      "default": "./dist/features/*/types.js"
+    },
     "./features/artists": {
       "types": "./dist/features/artists/index.d.ts",
       "import": "./dist/features/artists/index.js",

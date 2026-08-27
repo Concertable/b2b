@@ -19,10 +19,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\tests\Concertable.B2B.IntegrationTests.Fixtures\Concertable.B2B.IntegrationTests.Fixtures.csproj" />
-    <ProjectReference Include="..\..\..\..\..\..\Concertable.Shared\tests\Concertable.Testing\Concertable.Testing.csproj" />
+    <PackageReference Include="Concertable.Testing" />
+    <PackageReference Include="Concertable.Messaging.Domain" />
+    <PackageReference Include="Concertable.Messaging.Infrastructure" />
     <ProjectReference Include="..\..\Concertable.B2B.Concert.Domain\Concertable.B2B.Concert.Domain.csproj" />
-    <ProjectReference Include="..\..\Concertable.B2B.Concert.Application\Concertable.B2B.Concert.Application.csproj" />
-    <ProjectReference Include="..\..\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
   </ItemGroup>
 
 

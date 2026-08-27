@@ -3,6 +3,7 @@ using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Payment.Contracts.Events;
@@ -27,7 +28,7 @@ public static class B2BTopology
             .Publish<ConcertCancelledEvent>()
             .Publish<ConcertCreatedEvent>()
             .Publish<B2BPayoutOwnerRegisteredEvent>()
-            .Publish<Concertable.B2B.Tenant.Contracts.Events.TenantActivityRecordedEvent>()
+            .Publish<TenantActivityRecordedEvent>()
             .Subscribe<CustomerReviewSubmittedEvent>(B2BConstants.ServiceName)
             .Subscribe<CredentialRegisteredEvent>(B2BConstants.ServiceName)
             .Subscribe<PaymentSucceededEvent>(B2BConstants.ServiceName)

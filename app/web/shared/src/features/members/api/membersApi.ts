@@ -1,6 +1,10 @@
 import { apiClient } from "@concertable/shared/lib/apiClient";
-import type { Member, Invitation, ChangeMemberRoleRequest } from "../types";
-import type { InviteMemberRequest } from "../schemas/inviteMemberRequestSchema";
+import type {
+  Member,
+  Invitation,
+  ChangeMemberRoleRequest,
+  InviteMemberRequest,
+} from "../types";
 
 const membersApi = {
   listMembers: async (): Promise<Member[]> => {

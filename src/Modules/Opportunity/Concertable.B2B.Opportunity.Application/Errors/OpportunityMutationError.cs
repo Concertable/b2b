@@ -13,6 +13,8 @@ internal abstract partial record OpportunityMutationError : IError
                 "No venue was found for the current organization."),
         VenueForbidden =>
             ErrorDefinition.Forbidden<VenueForbidden>("You do not own this venue."),
+        VenueNotVerified =>
+            ErrorDefinition.Forbidden<VenueNotVerified>("This venue is not yet verified."),
         InvalidDeal(var errors) =>
             ErrorDefinition.Validation<InvalidDeal>(
                 "The opportunity deal is invalid.",
@@ -24,6 +26,9 @@ internal abstract partial record OpportunityMutationError : IError
 
     [ErrorCode("opportunity.venue_forbidden")]
     public partial record VenueForbidden;
+
+    [ErrorCode("opportunity.venue_not_verified")]
+    public partial record VenueNotVerified;
 
     [ErrorCode("opportunity.deal.invalid")]
     public partial record InvalidDeal(ValidationErrors Errors);

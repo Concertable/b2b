@@ -35,7 +35,9 @@ export function ESignaturePanel({
   const nameResult =
     eSignatureRequestSchema.shape.signatoryName.safeParse(value.signatoryName);
   const nameError =
-    touched && !nameResult.success ? nameResult.error.issues[0].message : null;
+    touched && !nameResult.success
+      ? nameResult.error.issues[0].message
+      : undefined;
 
   return (
     <div className="border-border bg-card space-y-4 rounded-xl border p-4">
