@@ -1,3 +1,4 @@
+global using Concertable.B2B.Deal.Contracts;
 global using Concertable.B2B.Booking.Application.Interfaces;
 global using Concertable.B2B.Booking.Domain.Entities;
 global using Concertable.B2B.DataAccess.Application;

@@ -1,6 +1,5 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Resolvers;
-using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +7,7 @@ using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests;
 
-public sealed class DealStrategyFactoryTests
+public sealed class DealTypeStrategyFactoryTests
 {
     [Theory]
     [InlineData(DealType.FlatFee, typeof(VenuePaysArtistDealPayeeResolver))]
@@ -27,7 +26,7 @@ public sealed class DealStrategyFactoryTests
         });
         using var scope = provider.CreateScope();
         var factory = scope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>();
 
         var strategy = factory.Create(dealType);
 
@@ -51,7 +50,7 @@ public sealed class DealStrategyFactoryTests
         });
         using var scope = provider.CreateScope();
         var factory = scope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<ISettlementAmountResolver>>();
+            .GetRequiredService<IDealTypeStrategyFactory<ISettlementAmountResolver>>();
 
         var strategy = factory.Create(dealType);
 
@@ -71,16 +70,16 @@ public sealed class DealStrategyFactoryTests
         using var secondScope = provider.CreateScope();
 
         var first = firstScope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>();
         var sameScope = firstScope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>();
         var second = secondScope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>();
 
         Assert.Same(first, sameScope);
         Assert.NotSame(first, second);
         Assert.Throws<InvalidOperationException>(() =>
-            provider.GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>());
+            provider.GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>());
     }
 
     [Fact]
@@ -96,10 +95,10 @@ public sealed class DealStrategyFactoryTests
         using var secondScope = provider.CreateScope();
 
         var first = firstScope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>()
+            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>()
             .Create(DealType.FlatFee);
         var second = secondScope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>()
+            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>()
             .Create(DealType.FlatFee);
 
         Assert.Same(first, second);
@@ -122,13 +121,13 @@ public sealed class DealStrategyFactoryTests
         using var firstScope = provider.CreateScope();
         using var secondScope = provider.CreateScope();
         var firstFactory = firstScope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<ITestStrategy>>();
+            .GetRequiredService<IDealTypeStrategyFactory<ITestStrategy>>();
 
         var fromFactory = firstFactory.Create(DealType.FlatFee);
         var fromFirstScope = firstScope.ServiceProvider
             .GetRequiredKeyedService<ITestStrategy>(DealType.FlatFee);
         var fromSecondScope = secondScope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<ITestStrategy>>()
+            .GetRequiredService<IDealTypeStrategyFactory<ITestStrategy>>()
             .Create(DealType.FlatFee);
 
         Assert.Same(fromFirstScope, fromFactory);
@@ -139,13 +138,12 @@ public sealed class DealStrategyFactoryTests
 
     [Theory]
     [InlineData(typeof(IKeyedServiceProvider))]
-    [InlineData(typeof(IDealStrategyFactory<>))]
+    [InlineData(typeof(IDealTypeStrategyFactory<>))]
     [InlineData(typeof(IDealPayeeResolver))]
     [InlineData(typeof(ISettlementAmountResolver))]
-    public void AddConcertDealStrategies_ScopeCapturingServices_RegistersScoped(Type serviceType)
+    public void AddDealTypeStrategies_ScopeCapturingServices_RegistersScoped(Type serviceType)
     {
         var services = CreateServices();
-
         services.AddConcertDealStrategies();
 
         var descriptor = Assert.Single(

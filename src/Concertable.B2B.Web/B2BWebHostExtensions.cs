@@ -119,7 +119,6 @@ public static class B2BWebHostExtensions
             });
 
             var services = builder.Services;
-            services.AddScoped<IKeyedServiceProvider>(sp => (IKeyedServiceProvider)sp);
             services.AddInfrastructure(builder.Configuration);
             services.AddClientCredentials(opts =>
             {

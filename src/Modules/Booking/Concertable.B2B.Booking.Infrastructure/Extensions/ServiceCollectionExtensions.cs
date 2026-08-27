@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.Interfaces;
@@ -111,10 +112,7 @@ public static class ServiceCollectionExtensions
             configure(builder);
             builder.Build();
 
-            services.TryAddScoped<IKeyedServiceProvider>(provider => (IKeyedServiceProvider)provider);
-            services.TryAddScoped(
-                typeof(IDealStrategyFactory<>),
-                typeof(DealStrategyFactory<>));
+            services.AddDealTypeStrategies();
             services.TryAddScoped<IConfirmationExecutor, ConfirmationExecutor>();
             services.TryAddScoped<ICancellationExecutor, CancellationExecutor>();
             return services;

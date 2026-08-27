@@ -2,7 +2,6 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Executors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Steps;
-using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Executors;
@@ -10,13 +9,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Executors;
 internal sealed class CancelExecutor : ICancelExecutor
 {
     private readonly IConcertRepository concerts;
-    private readonly IDealStrategyFactory<ICancelStep> steps;
+    private readonly IDealTypeStrategyFactory<ICancelStep> steps;
     private readonly IUnitOfWorkBehavior unitOfWork;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public CancelExecutor(
         IConcertRepository concerts,
-        IDealStrategyFactory<ICancelStep> steps,
+        IDealTypeStrategyFactory<ICancelStep> steps,
         IUnitOfWorkBehavior unitOfWork,
         IOutboxUnitOfWorkBehavior outboxBehavior)
     {

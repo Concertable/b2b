@@ -1,14 +1,13 @@
 using System.Globalization;
 using Concertable.B2B.Application.Application.Interfaces;
-using Concertable.B2B.Application.Application.Strategies;
 
 namespace Concertable.B2B.Application.Application.Renderers;
 
 internal sealed class DealTermsRenderer : IDealTermsRenderer
 {
-    private readonly IApplicationDealStrategyFactory<IDealTerms> terms;
+    private readonly IDealTypeStrategyFactory<IDealTerms> terms;
 
-    public DealTermsRenderer(IApplicationDealStrategyFactory<IDealTerms> terms)
+    public DealTermsRenderer(IDealTypeStrategyFactory<IDealTerms> terms)
     {
         this.terms = terms;
     }

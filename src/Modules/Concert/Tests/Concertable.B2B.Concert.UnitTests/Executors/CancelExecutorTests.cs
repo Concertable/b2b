@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Application.Steps;
-using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services.Executors;
@@ -17,7 +16,7 @@ public sealed class CancelExecutorTests
         var behavior = new ImmediateBehavior();
         this.executor = new CancelExecutor(
             this.concertRepository.Object,
-            Mock.Of<IDealStrategyFactory<ICancelStep>>(),
+            Mock.Of<IDealTypeStrategyFactory<ICancelStep>>(),
             behavior,
             behavior);
     }

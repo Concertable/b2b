@@ -2,21 +2,20 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Executors;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Steps;
-using Concertable.B2B.Concert.Application.Strategies;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Executors;
 
 internal sealed class CompleteExecutor : ICompleteExecutor
 {
     private readonly ISettlementService settlementService;
-    private readonly IDealStrategyFactory<ICompleteStep> concertDealStrategyFactory;
+    private readonly IDealTypeStrategyFactory<ICompleteStep> steps;
 
     public CompleteExecutor(
         ISettlementService settlementService,
-        IDealStrategyFactory<ICompleteStep> concertDealStrategyFactory)
+        IDealTypeStrategyFactory<ICompleteStep> steps)
     {
         this.settlementService = settlementService;
-        this.concertDealStrategyFactory = concertDealStrategyFactory;
+        this.steps = steps;
     }
 
     public async Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
@@ -35,7 +34,7 @@ internal sealed class CompleteExecutor : ICompleteExecutor
             throw new InvalidOperationException(
                 $"Concert {concertId} returned an unknown settlement preparation.");
 
-        var executed = await concertDealStrategyFactory
+        var executed = await steps
             .Create(ready.DealType)
             .ExecuteAsync(ready, ct);
         if (executed.TryGetError(out error))

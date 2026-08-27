@@ -1,14 +1,13 @@
 using Concertable.B2B.Concert.Application.Interfaces;
-using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Domain.Entities;
 
 namespace Concertable.B2B.Concert.Application.Resolvers;
 
 internal sealed class DealPayeeResolver : IDealPayeeResolver
 {
-    private readonly IDealStrategyFactory<IDealPayeeResolver> resolvers;
+    private readonly IDealTypeStrategyFactory<IDealPayeeResolver> resolvers;
 
-    public DealPayeeResolver(IDealStrategyFactory<IDealPayeeResolver> resolvers)
+    public DealPayeeResolver(IDealTypeStrategyFactory<IDealPayeeResolver> resolvers)
     {
         this.resolvers = resolvers;
     }

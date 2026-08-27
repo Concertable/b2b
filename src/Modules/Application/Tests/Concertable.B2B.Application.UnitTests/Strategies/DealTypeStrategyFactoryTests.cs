@@ -1,7 +1,6 @@
 using Concertable.B2B.Application.Application.Interfaces;
 using Concertable.B2B.Application.Application.Renderers;
 using Concertable.B2B.Application.Application.Steps;
-using Concertable.B2B.Application.Application.Strategies;
 using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
@@ -9,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Application.UnitTests;
 
-public sealed class ApplicationDealStrategyFactoryTests
+public sealed class DealTypeStrategyFactoryTests
 {
     [Fact]
     public void Create_DealTerms_ResolvesEveryDeclaredDealType()
@@ -23,7 +22,7 @@ public sealed class ApplicationDealStrategyFactoryTests
         };
         using var scope = CreateProvider().CreateScope();
         var factory = scope.ServiceProvider
-            .GetRequiredService<IApplicationDealStrategyFactory<IDealTerms>>();
+            .GetRequiredService<IDealTypeStrategyFactory<IDealTerms>>();
 
         Assert.Equal(Enum.GetValues<DealType>(), expected.Keys.Order());
         foreach (var (dealType, implementationType) in expected)

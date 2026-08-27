@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
@@ -6,7 +7,6 @@ using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Concert.Application.Mappers;
 using Concertable.B2B.Concert.Application.Renderers;
 using Concertable.B2B.Concert.Application.Resolvers;
-using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Application.Executors;
 using Concertable.B2B.Concert.Application.Steps;
 using Concertable.B2B.Concert.Application.Validators;
@@ -183,8 +183,8 @@ public static class ServiceCollectionExtensions
             configure(builder);
             builder.Build();
 
-            services.TryAddScoped<IKeyedServiceProvider>(sp => (IKeyedServiceProvider)sp);
-            services.TryAddScoped(typeof(IDealStrategyFactory<>), typeof(DealStrategyFactory<>));
+            services.AddDealTypeStrategies();
+
             return services;
         }
 

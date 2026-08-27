@@ -3,7 +3,6 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Steps;
-using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Infrastructure.Services.Executors;
 using Concertable.Kernel.ValueObjects;
 using Moq;
@@ -14,18 +13,18 @@ namespace Concertable.B2B.Concert.UnitTests;
 public sealed class CompleteExecutorTests
 {
     private readonly Mock<ISettlementService> settlementService = new();
-    private readonly Mock<IDealStrategyFactory<ICompleteStep>> concertDealStrategyFactory = new();
+    private readonly Mock<IDealTypeStrategyFactory<ICompleteStep>> steps = new();
     private readonly Mock<ICompleteStep> completeStep = new();
     private readonly CompleteExecutor executor;
 
     public CompleteExecutorTests()
     {
-        this.concertDealStrategyFactory
+        this.steps
             .Setup(factory => factory.Create(It.IsAny<DealType>()))
             .Returns(this.completeStep.Object);
         this.executor = new CompleteExecutor(
             this.settlementService.Object,
-            this.concertDealStrategyFactory.Object);
+            this.steps.Object);
     }
 
     [Fact]
@@ -78,7 +77,7 @@ public sealed class CompleteExecutorTests
 
         Assert.True(result.TryGetValue(out var outcome));
         Assert.Equal(SettlementOutcome.Settled, outcome);
-        this.concertDealStrategyFactory.Verify(factory => factory.Create(DealType.DoorSplit));
+        this.steps.Verify(factory => factory.Create(DealType.DoorSplit));
         this.completeStep.Verify(step => step.ExecuteAsync(ready, default));
     }
 }

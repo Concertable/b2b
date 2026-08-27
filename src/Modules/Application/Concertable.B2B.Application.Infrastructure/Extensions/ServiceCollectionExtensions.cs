@@ -1,8 +1,8 @@
+using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Application.Application.Interfaces;
 using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Application.Renderers;
 using Concertable.B2B.Application.Application.Steps;
-using Concertable.B2B.Application.Application.Strategies;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Infrastructure.Data;
@@ -121,10 +121,7 @@ public static class ServiceCollectionExtensions
             configure(builder);
             builder.Build();
 
-            services.TryAddScoped<IKeyedServiceProvider>(provider => (IKeyedServiceProvider)provider);
-            services.TryAddScoped(
-                typeof(IApplicationDealStrategyFactory<>),
-                typeof(ApplicationDealStrategyFactory<>));
+            services.AddDealTypeStrategies();
             return services;
         }
 

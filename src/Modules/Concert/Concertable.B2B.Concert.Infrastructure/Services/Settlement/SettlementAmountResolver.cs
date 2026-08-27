@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Application.Interfaces;
-using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Kernel.ValueObjects;
 
@@ -7,9 +6,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 
 internal sealed class SettlementAmountResolver : ISettlementAmountResolver
 {
-    private readonly IDealStrategyFactory<ISettlementAmountResolver> resolvers;
+    private readonly IDealTypeStrategyFactory<ISettlementAmountResolver> resolvers;
 
-    public SettlementAmountResolver(IDealStrategyFactory<ISettlementAmountResolver> resolvers)
+    public SettlementAmountResolver(IDealTypeStrategyFactory<ISettlementAmountResolver> resolvers)
     {
         this.resolvers = resolvers;
     }
