@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import concertApi from "@concertable/shared/features/concerts/api/concertApi";
-import type { MyConcert } from "@concertable/web-b2b/features/concerts";
+import type { MyConcert } from "@concertable/web-b2b/features/concerts/types";
 import {
   doorRevenueRequestSchema,
   type DoorRevenueRequest,
@@ -12,7 +12,9 @@ export function useDeclareDoorRevenue(concert: MyConcert, rawValue: string) {
   const queryClient = useQueryClient();
 
   const parsed = doorRevenueRequestSchema.safeParse({ doorRevenue: Number(rawValue) });
-  const errorMessage = parsed.success ? null : parsed.error.issues[0].message;
+  const errorMessage = parsed.success
+    ? undefined
+    : parsed.error.issues[0].message;
 
   const external = Number(rawValue) || 0;
   const concertableSales = concert.ticketsSold * concert.price;

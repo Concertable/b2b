@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@concertable/web/features/user/hooks/useSyncUser", () => ({
+vi.mock("@concertable/web/features/user", () => ({
   meQueryKey: ["auth", "me"],
 }));
 vi.mock("@concertable/web/lib/queryClient", () => ({

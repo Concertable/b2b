@@ -1,16 +1,15 @@
 import { useCallback, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { useSyncUser } from "@concertable/web/features/user";
-import { meQueryKey } from "@concertable/web/features/user/hooks/useSyncUser";
+import { meQueryKey, useMeQuery } from "@concertable/web/features/user";
 import identityApi from "../api/identityApi";
 import { resolveTenant } from "../memberships";
 import { permissionsForRole } from "../permissions";
 import { useTenantStore } from "../store/useTenantStore";
-import type { B2bIdentity, TenantType } from "../types";
+import type { TenantType } from "../types";
 
-export function useTenantIdentity(): void {
-  useSyncUser(identityApi.getMe);
+export function useTenantIdentity() {
+  return useMeQuery(identityApi.getMe);
 }
 
 export function useTenant(tenantType: TenantType) {
@@ -21,11 +20,7 @@ export function useTenant(tenantType: TenantType) {
   const synchronizeTenant = useTenantStore(
     (state) => state.synchronizeTenant,
   );
-  const { data: identity } = useQuery<B2bIdentity>({
-    queryKey: meQueryKey,
-    queryFn: identityApi.getMe,
-    enabled: false,
-  });
+  const { data: identity } = useTenantIdentity();
   const resolution = resolveTenant(
     identity?.memberships ?? [],
     tenantType,

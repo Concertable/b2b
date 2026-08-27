@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
 import { notificationConnection } from "@concertable/web/lib/signalr";
-import type { ConcertDraftCreatedPayload } from "@concertable/web/features/notifications";
+import type { ConcertDraftCreatedPayload } from "@concertable/web/features/notifications/types";
 
 export function useVenueNotifications() {
   const router = useRouter();

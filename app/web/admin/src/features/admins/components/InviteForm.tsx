@@ -4,10 +4,8 @@ import { Button } from "@concertable/web/components/ui/button";
 import { Input } from "@concertable/web/components/ui/input";
 import { Label } from "@concertable/web/components/ui/label";
 import { useInviteAdmin } from "../hooks/useInviteAdmin";
-import {
-  inviteAdminRequestSchema,
-  type InviteAdminRequest,
-} from "../schemas/inviteAdminRequestSchema";
+import { inviteAdminRequestSchema } from "../schemas/inviteAdminRequestSchema";
+import type { InviteAdminRequest } from "../types";
 
 export function InviteForm() {
   const { submit, isPending } = useInviteAdmin();
