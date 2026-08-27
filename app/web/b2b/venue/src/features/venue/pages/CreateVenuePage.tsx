@@ -1,79 +1,50 @@
-import { useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { EditableProvider } from "@concertable/shared/providers";
-import venueApi from "@concertable/shared/features/venues/api/venueApi";
-import { venueKeys } from "@concertable/shared/features/venues";
-import type { Venue } from "@concertable/shared/features/venues/types";
 import { CreateBar } from "@concertable/web/components/CreateBar";
 import { DetailsLayout } from "@concertable/web/components/details/DetailsLayout";
-import { useVenueStore, VenueHero, venueSections } from "@concertable/web/features/venues";
-
-const blank: Venue = {
-  id: 0,
-  name: "",
-  about: "",
-  bannerUrl: "",
-  rating: 0,
-  county: "",
-  town: "",
-  email: "",
-  latitude: 51.5074,
-  longitude: -0.1278,
-};
+import {
+  VenueHero,
+  venueSections,
+} from "@concertable/web/features/venues";
+import { useCreateVenue } from "../hooks/useCreateVenue";
 
 export function CreateVenuePage() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const {
+    draft,
+    isCreating,
+    canCreate,
+    createError,
+    create,
+    setName,
+    setAbout,
+    setBanner,
+    setAvatar,
+  } = useCreateVenue();
 
-  const draft = useVenueStore((s) => s.draft);
-  const banner = useVenueStore((s) => s.banner);
-  const avatar = useVenueStore((s) => s.avatar);
-  const setName = useVenueStore((s) => s.setName);
-  const setAbout = useVenueStore((s) => s.setAbout);
-  const beginEdit = useVenueStore((s) => s.beginEdit);
-  const endEdit = useVenueStore((s) => s.endEdit);
-
-  useEffect(() => {
-    beginEdit(blank);
-    return endEdit;
-  }, [beginEdit, endEdit]);
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      venueApi.createVenue({
-        name: draft!.name,
-        about: draft!.about,
-        latitude: draft!.latitude,
-        longitude: draft!.longitude,
-        banner: banner! as unknown as File,
-        avatar: avatar! as unknown as File,
-      }),
-    onSuccess: (saved) => {
-      queryClient.setQueryData(venueKeys.my(), saved);
-      navigate({ to: "/" });
-    },
-  });
-
-  const canSubmit = !!(draft?.name && draft.about && banner && avatar);
-
-  if (!draft) return null;
-
-  const hero = <VenueHero venue={draft} onNameChange={setName} />;
+  const hero = (
+    <VenueHero
+      venue={draft}
+      onNameChange={setName}
+      onBannerChange={setBanner}
+      onAvatarChange={setAvatar}
+    />
+  );
   const { about, location, concerts } = venueSections(draft, {
     onAboutChange: setAbout,
   });
-  const sections = [about, location, concerts];
 
   return (
     <div>
       <CreateBar
-        isSaving={mutation.isPending}
-        canSubmit={canSubmit}
-        onCreate={() => mutation.mutate()}
+        isSaving={isCreating}
+        canSubmit={canCreate}
+        error={createError}
+        onCreate={create}
       />
       <EditableProvider editMode>
-        <DetailsLayout hero={hero} sections={sections} />
+        <DetailsLayout
+          hero={hero}
+          sections={[about, location, concerts]}
+        />
       </EditableProvider>
     </div>
   );

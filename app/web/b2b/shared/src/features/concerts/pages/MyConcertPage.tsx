@@ -6,7 +6,6 @@ import { DetailsPageSkeleton } from "@concertable/web/components/skeletons/Detai
 import type { MyConcert } from "../types";
 import { useMyConcert } from "../hooks/useMyConcert";
 import { useDownloadContractMutation } from "../hooks/useDownloadContractMutation";
-import { useConcertStore } from "../store/useConcertStore";
 import { ConcertDetails } from "@concertable/web/features/concerts";
 
 interface Props {
@@ -27,16 +26,16 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
     resetDraft,
     toggleEdit,
     editMode,
+    draft,
+    setName,
+    setAbout,
   } = useMyConcert(id);
 
-  const draft = useConcertStore((state) => state.draft);
-  const setName = useConcertStore((state) => state.setName);
-  const setAbout = useConcertStore((state) => state.setAbout);
   const downloadContract = useDownloadContractMutation();
 
   if (!concert) return <DetailsPageSkeleton sections={4} />;
 
-  const display = draft ?? concert;
+  const display = { ...concert, ...draft };
   const actions = renderActions?.(concert);
 
   return (
@@ -48,7 +47,7 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
         canSave={canSave}
         error={saveError}
         onToggleEdit={toggleEdit}
-        onSave={() => save()}
+        onSave={save}
         onCancel={resetDraft}
         actions={
           <>

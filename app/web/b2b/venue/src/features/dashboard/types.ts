@@ -3,9 +3,9 @@ import type {
   ProfileHealth,
   ReviewSummary,
   StripeConnectStatus,
-} from "@concertable/shared/features/dashboard";
-import type { OpportunitySummary } from "@concertable/web-b2b/features/dashboard";
-import type { ArtistSummary } from "@concertable/shared/features/artists";
+} from "@concertable/shared/features/dashboard/types";
+import type { OpportunitySummary } from "@concertable/web-b2b/features/dashboard/types";
+import type { ArtistSummary } from "@concertable/shared/features/artists/types";
 import type { ApplicationActions } from "./applicationActions";
 
 export interface VenueDashboardOverview {

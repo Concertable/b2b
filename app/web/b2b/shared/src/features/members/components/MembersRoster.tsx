@@ -1,4 +1,8 @@
-import { TENANT_ROLES, tenantRoleLabel, type TenantRole } from "@b2b/features/tenant";
+import {
+  TENANT_ROLES,
+  TENANT_ROLE_LABELS,
+  type TenantRole,
+} from "@b2b/features/tenant";
 import { Button } from "@concertable/web/components/ui/button";
 import {
   Select,
@@ -63,13 +67,13 @@ export function MembersRoster({ canManageRoles, canRemove }: Readonly<Props>) {
                     <SelectContent>
                       {TENANT_ROLES.map((role) => (
                         <SelectItem key={role} value={role}>
-                          {tenantRoleLabel(role)}
+                          {TENANT_ROLE_LABELS[role]}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 ) : (
-                  tenantRoleLabel(m.role)
+                  TENANT_ROLE_LABELS[m.role]
                 )}
               </TableCell>
               {canRemove && (

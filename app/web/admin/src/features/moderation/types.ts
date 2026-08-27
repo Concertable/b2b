@@ -1,4 +1,4 @@
-import type { ReportCategory } from "@concertable/shared/features/messaging";
+import type { ReportCategory } from "@concertable/shared/features/messaging/types";
 
 export type { ReportCategory };
 
