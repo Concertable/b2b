@@ -2,6 +2,7 @@ using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Entities;
+using Concertable.B2B.Tenant.Domain.Enums;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.Messaging.Contracts;
@@ -18,6 +19,8 @@ public sealed class TenantApiFixture : ApiFixture
     public IQueryable<TenantEntity> Tenants => dbContext.Tenants.AsNoTracking();
     public IQueryable<TenantMembershipEntity> Memberships => dbContext.Memberships.AsNoTracking();
     public IQueryable<TenantInvitationEntity> Invitations => dbContext.Invitations.AsNoTracking();
+    public IQueryable<TenantVerificationEntity> Verifications =>
+        dbContext.Verifications.Include(verification => verification.Documents).AsNoTracking();
 
     public Task ProvisionAsync(CredentialRegisteredEvent @event, MessageEnvelope? envelope = null) =>
         provisioning.HandleAsync(
@@ -56,6 +59,23 @@ public sealed class TenantApiFixture : ApiFixture
         dbContext.Invitations.Add(invitation);
         await dbContext.SaveChangesAsync();
         return invitation;
+    }
+
+    public async Task<TenantVerificationEntity> AddRejectedVerificationAsync(
+        Guid tenantId,
+        VerificationDocumentType documentType,
+        string rejectionReason,
+        DateTime rejectedAt)
+    {
+        var verification = TenantVerificationEntity.Submit(
+            tenantId,
+            [VerificationDocumentEntity.Create(documentType, $"seed-{Guid.NewGuid()}", rejectedAt)],
+            rejectedAt);
+        verification.Reject(Guid.NewGuid(), rejectionReason, rejectedAt);
+        verification.ClearDomainEvents();
+        dbContext.Verifications.Add(verification);
+        await dbContext.SaveChangesAsync();
+        return verification;
     }
 
     protected override void OnReset(IServiceScope scope)

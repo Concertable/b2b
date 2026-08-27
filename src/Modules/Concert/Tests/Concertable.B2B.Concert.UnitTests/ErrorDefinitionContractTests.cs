@@ -146,30 +146,6 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.NotFound
         },
         {
-            new OpportunityError.NotFound(42),
-            "opportunity.get.not_found",
-            "Opportunity 42 was not found.",
-            ErrorKind.NotFound
-        },
-        {
-            new OpportunityMutationError.VenueNotFound(),
-            "opportunity.venue_not_found",
-            "No venue was found for the current organization.",
-            ErrorKind.NotFound
-        },
-        {
-            new OpportunityMutationError.VenueNotVerified(),
-            "opportunity.venue_not_verified",
-            "This venue is not yet verified.",
-            ErrorKind.Forbidden
-        },
-        {
-            new OpportunityMutationError.VenueForbidden(),
-            "opportunity.venue_forbidden",
-            "You do not own this venue.",
-            ErrorKind.Forbidden
-        },
-        {
             new PostConcertError.ConcertNotFound(42),
             "concert.post.not_found",
             "Concert 42 was not found.",

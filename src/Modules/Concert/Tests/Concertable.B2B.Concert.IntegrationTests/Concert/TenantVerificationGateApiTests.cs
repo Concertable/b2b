@@ -38,31 +38,31 @@ public sealed class TenantVerificationGateApiTests : IAsyncLifetime
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.ArtistTenantId, artistTenantId));
     }
 
-    private Task<ApplicationEntity> ApplicationAsync(int applicationId) =>
-        fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == applicationId);
+    private Task<ConcertEntity> ConcertAsync(int concertId) =>
+        fixture.Concerts.FirstAsync(concert => concert.Id == concertId);
 
     [Fact]
     public async Task Finish_Defers_WhenPayeeArtistNotVerified_EvenThoughTaxComplianceComplete()
     {
-        var concertId = fixture.SeedState.PastFlatFeeBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking).Id;
         await RepointArtistTenantAsync(concertId, fixture.SeedState.UnverifiedTenant.Id);
 
         await fixture.FinishConcertAsync(concertId);
 
-        var application = await ApplicationAsync(fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var concert = await ConcertAsync(concertId);
+        Assert.Equal(State.Draft, concert.State);
     }
 
     [Fact]
     public async Task Finish_Settles_WhenBothTenantsVerified()
     {
         // Default seeded state: both parties are Approved-verified and tax-compliant.
-        var concertId = fixture.SeedState.PastVersusBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastVersusBooking).Id;
         await fixture.DeclareDoorRevenueAsync(concertId, 200m);
 
         await fixture.FinishConcertAsync(concertId);
 
-        var application = await ApplicationAsync(fixture.SeedState.PastVersusApp.Id);
-        Assert.Equal(LifecycleState.AwaitingSettlement, application.State);
+        var concert = await ConcertAsync(concertId);
+        Assert.Equal(State.AwaitingSettlement, concert.State);
     }
 }
