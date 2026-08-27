@@ -11,15 +11,15 @@ import {
   useApplicationQuery,
   useESignature,
 } from "@concertable/web-b2b/features/concerts";
-import type { Application } from "@concertable/web-b2b/features/concerts";
-import type { Checkout } from "@concertable/web/features/concerts";
+import type { Application } from "@concertable/web-b2b/features/concerts/types";
+import type { Checkout } from "@concertable/web/features/concerts/types";
 import { CheckoutLayout } from "@concertable/web/features/concerts/components/checkout/CheckoutLayout";
 import { CheckoutSection } from "@concertable/web/features/concerts/components/checkout/CheckoutSection";
 import { CheckoutEventBanner } from "@concertable/web/features/concerts/components/checkout/CheckoutEventBanner";
 import { OrderSummaryCard } from "@concertable/web/features/concerts/components/checkout/OrderSummaryCard";
 import { CheckoutAwaiting } from "@concertable/web/features/concerts/components/checkout/CheckoutAwaiting";
 import { StripePaymentForm } from "@concertable/web/features/concerts/components/checkout/StripePaymentForm";
-import { summaryFor } from "@concertable/web-b2b/features/concerts/utils/acceptCheckoutFormat";
+import { paymentSummary } from "@concertable/web-b2b/features/concerts/utils/acceptCheckoutFormat";
 import { useConcertByApplicationQuery } from "../hooks/useConcertByApplicationQuery";
 
 export function VenueAcceptCheckoutPage() {
@@ -130,26 +130,40 @@ interface VenueAcceptCheckoutFormProps {
   checkout: Checkout;
 }
 
-function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Readonly<VenueAcceptCheckoutFormProps>) {
+function VenueAcceptCheckoutForm({
+  applicationId,
+  application,
+  checkout,
+}: Readonly<VenueAcceptCheckoutFormProps>) {
   const [submitted, setSubmitted] = useState(false);
   const { signature, setSignature, isValid } = useESignature();
-  const [error, setError] = useState<string | null>(null);
-  const acceptMutation = useAcceptApplicationMutation(application.opportunity.id);
+  const [error, setError] = useState<string>();
+  const acceptMutation = useAcceptApplicationMutation(
+    application.opportunity.id,
+  );
   const { artist, opportunity } = application;
   const { labels } = checkout;
 
   if (submitted)
     return <VenueAcceptCheckoutFlow applicationId={applicationId} />;
 
-  const summary = summaryFor(checkout.amount);
+  const summary = paymentSummary(checkout.amount);
 
   async function handleAccept(paymentMethodId: string) {
-    setError(null);
+    setError(undefined);
     try {
-      await acceptMutation.mutateAsync({ applicationId, eSignature: signature, body: { paymentMethodId } });
+      await acceptMutation.mutateAsync({
+        applicationId,
+        eSignature: signature,
+        body: { paymentMethodId },
+      });
       setSubmitted(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Acceptance failed. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Acceptance failed. Please try again.",
+      );
     }
   }
 
@@ -188,7 +202,11 @@ function VenueAcceptCheckoutForm({ applicationId, application, checkout }: Reado
           />
         </div>
       </CheckoutSection>
-      {error && <p data-testid="payment-error" className="text-destructive text-sm">{error}</p>}
+      {error && (
+        <p data-testid="payment-error" className="text-destructive text-sm">
+          {error}
+        </p>
+      )}
     </CheckoutLayout>
   );
 }

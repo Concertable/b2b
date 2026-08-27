@@ -2,22 +2,39 @@ import { ConfigBar } from "@concertable/web/components/ConfigBar";
 import { EditableProvider } from "@concertable/shared/providers";
 import { DetailsLayout } from "@concertable/web/components/details/DetailsLayout";
 import { DetailsPageSkeleton } from "@concertable/web/components/skeletons/DetailsPageSkeleton";
-import { useArtistStore, ArtistHero, artistSections } from "@concertable/web/features/artists";
+import { ArtistHero, artistSections } from "@concertable/web/features/artists";
 import { useMyArtist } from "../hooks/useMyArtist";
 
 export function MyArtistPage() {
-  const { artist, isDirty, isSaving, save, resetDraft, toggleEdit, editMode } =
-    useMyArtist();
-
-  const draft = useArtistStore((state) => state.draft);
-  const setName = useArtistStore((state) => state.setName);
-  const setAbout = useArtistStore((state) => state.setAbout);
+  const {
+    artist,
+    draft,
+    isDirty,
+    isSaving,
+    canSave,
+    saveError,
+    save,
+    resetDraft,
+    toggleEdit,
+    editMode,
+    setName,
+    setAbout,
+    setBanner,
+    setAvatar,
+  } = useMyArtist();
 
   if (!artist) return <DetailsPageSkeleton sections={5} />;
 
   const display = draft ?? artist;
 
-  const hero = <ArtistHero artist={display} onNameChange={setName} />;
+  const hero = (
+    <ArtistHero
+      artist={display}
+      onNameChange={setName}
+      onBannerChange={setBanner}
+      onAvatarChange={setAvatar}
+    />
+  );
   const { about, location, concerts, reviews } = artistSections(display, {
     onAboutChange: setAbout,
   });
@@ -29,8 +46,10 @@ export function MyArtistPage() {
         editMode={editMode}
         isDirty={isDirty}
         isSaving={isSaving}
+        canSave={canSave}
+        error={saveError}
         onToggleEdit={toggleEdit}
-        onSave={() => save()}
+        onSave={save}
         onCancel={resetDraft}
       />
 

@@ -14,3 +14,5 @@ export interface AdminOverview {
   admins: Admin[];
   pendingInvitations: AdminInvitation[];
 }
+
+export type InviteAdminRequest = Pick<AdminInvitation, "email">;

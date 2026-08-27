@@ -3,9 +3,9 @@ import type {
   ProfileHealth,
   ReviewSummary,
   StripeConnectStatus,
-} from "@concertable/shared/features/dashboard";
-import type { OpportunitySummary } from "@concertable/web-b2b/features/dashboard";
-import type { Deal } from "@concertable/web-b2b/features/deals";
+} from "@concertable/shared/features/dashboard/types";
+import type { OpportunitySummary } from "@concertable/web-b2b/features/dashboard/types";
+import type { Deal } from "@concertable/web-b2b/features/deals/types";
 import type { Genre } from "@concertable/shared/types/common";
 import type { ApplicationActions } from "./applicationActions";
 

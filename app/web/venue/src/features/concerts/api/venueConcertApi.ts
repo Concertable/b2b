@@ -1,5 +1,5 @@
 import { apiClient } from "@concertable/shared/lib/apiClient";
-import type { MyConcert } from "@concertable/web-b2b/features/concerts";
+import type { MyConcert } from "@concertable/web-b2b/features/concerts/types";
 
 const venueConcertApi = {
   getByApplication: async (
