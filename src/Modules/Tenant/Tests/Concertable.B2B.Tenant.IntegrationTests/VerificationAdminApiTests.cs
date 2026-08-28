@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
@@ -86,8 +86,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
         var row = page!.Data.Single(r => r.TenantId == tenantId);
         Assert.Equal(TenantType.Venue, row.TenantType);
-        Assert.Equal(venue.Name, row.Name);
-        Assert.Equal(venue.Email, row.Email);
+        Assert.Equal(new TenantContact(venue.Name, venue.Email), row.Contact);
     }
 
     [Fact]
@@ -107,8 +106,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
         var row = page!.Data.Single(r => r.TenantId == tenantId);
         Assert.Equal(TenantType.Artist, row.TenantType);
-        Assert.Equal("New Artist", row.Name);
-        Assert.Equal(owner.Email, row.Email);
+        Assert.Equal(new TenantContact("New Artist", owner.Email), row.Contact);
     }
 
     [Fact]
@@ -208,6 +206,28 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         var verification = fixture.Verifications.Single(v => v.TenantId == tenantId);
         Assert.Equal(TenantVerificationStatus.Approved, verification.Status);
         Assert.Contains(fixture.EmailSender.Sent, e => e.To == venue.Email);
+    }
+
+    /// <summary>Mirrors <see cref="GetPending_ShouldReturn200_WithArtistContactEnrichment"/>'s proof that
+    /// <see cref="Concertable.B2B.Seed.Infrastructure.SeedState.ArtistManagerNoArtist"/> owns no artist
+    /// by default (that test explicitly creates one before asserting on it) — this test deliberately does not,
+    /// so the tenant is provably contactless.</summary>
+    [Fact]
+    public async Task Approve_ShouldReturn204_AndSendNothing_WhenTenantOwnsNoProfile()
+    {
+        var owner = fixture.SeedState.ArtistManagerNoArtist;
+        var tenantId = TenantOf(owner.Id);
+        await fixture.AddPendingVerificationAsync(
+            tenantId, VerificationDocumentType.CompanyRegistration, fixture.SeedNow.AddDays(-1));
+        var admin = fixture.CreateClient(fixture.SeedState.Admin);
+        var alreadySent = fixture.EmailSender.Sent.Count;
+
+        var response = await admin.PostAsync($"/api/verification/{tenantId}/approve", null);
+
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        var verification = fixture.Verifications.Single(v => v.TenantId == tenantId);
+        Assert.Equal(TenantVerificationStatus.Approved, verification.Status);
+        Assert.Equal(alreadySent, fixture.EmailSender.Sent.Count);
     }
 
     #endregion
