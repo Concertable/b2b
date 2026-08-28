@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Application.DTOs;
-using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Contracts;

@@ -13,13 +13,13 @@ internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
     private readonly IContractService contractService;
-    private readonly IApplicationResponseMapper mapper;
+    private readonly IApplicationMapper mapper;
     private readonly IMembershipContext membership;
 
     public ApplicationController(
         IApplicationService applicationService,
         IContractService contractService,
-        IApplicationResponseMapper mapper,
+        IApplicationMapper mapper,
         IMembershipContext membership)
     {
         this.applicationService = applicationService;
