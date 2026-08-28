@@ -28,32 +28,29 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     [Fact]
     public async Task Cancel_ShouldMarkCancelledAndNotifyArtist()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
-        // Act
         var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
-        // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
         Assert.Equal(State.Cancelled, application.State);
         Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
-            e.To == fixture.SeedState.ArtistManager1.Email && e.Subject == "Concert Application Cancelled");
+            e.To == fixture.SeedState.ArtistManager1.Email &&
+            e.Subject == "Concert Application Cancelled" &&
+            e.Body.Contains("application was cancelled by the venue"));
+        Assert.Empty(fixture.PaymentTransport.Commands);
     }
 
     [Fact]
     public async Task Cancel_ShouldReturn403_WhenCallerIsArtist()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
-        // Act
         var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
-        // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
         Assert.Equal(State.Applied, application.State);
@@ -62,44 +59,35 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     [Fact]
     public async Task Cancel_ShouldReturn404_WhenCallerIsDifferentVenueManager()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
-        // Act
         var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
-        // Assert
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task Cancel_ShouldReturn409_WhenAlreadyCancelled()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var firstResponse = await client.PostAsync($"/api/application/{appId}/cancel");
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        // Act
         var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
-        // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
     }
 
     [Fact]
     public async Task Cancel_ShouldReturn409_WhenApplicationAlreadyAccepted()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.AwaitingPaymentApp.Id;
 
-        // Act
         var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
-        // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
         Assert.Equal(State.Accepted, application.State);
@@ -108,15 +96,12 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     [Fact]
     public async Task Cancel_ShouldLeaveOpportunityOpenToOtherArtists()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
 
-        // Act
         var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel");
 
-        // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         var opportunitiesResponse = await client.GetAsync($"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
         await opportunitiesResponse.ShouldBe(HttpStatusCode.OK);
@@ -131,7 +116,6 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     [Fact]
     public async Task GetById_ShouldOfferVenueCancel_OnlyWhilePending()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var beforeResponse = await client.GetAsync($"/api/application/{appId}");
@@ -141,10 +125,8 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         Assert.NotNull(before.Actions.Cancel);
         Assert.Equal($"/api/application/{appId}/cancel", before.Actions.Cancel.Href);
 
-        // Act
         var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel");
 
-        // Assert
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         var afterResponse = await client.GetAsync($"/api/application/{appId}");
         await afterResponse.ShouldBe(HttpStatusCode.OK);
@@ -158,14 +140,11 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     [Fact]
     public async Task GetById_ShouldNotOfferVenueCancel_OnceAccepted()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.AwaitingPaymentApp.Id;
 
-        // Act
         var response = await client.GetAsync($"/api/application/{appId}");
 
-        // Assert
         await response.ShouldBe(HttpStatusCode.OK);
         var application = await response.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
         Assert.Null(application!.Actions.Cancel);
@@ -174,14 +153,11 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     [Fact]
     public async Task GetById_ShouldNotOfferArtistCancel_WhilePending()
     {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
-        // Act
         var response = await client.GetAsync($"/api/application/{appId}");
 
-        // Assert
         await response.ShouldBe(HttpStatusCode.OK);
         var application = await response.Content.ReadAsync<ApplicationResponse<ArtistApplicationActions>>();
         Assert.NotNull(application!.Actions.Withdraw);

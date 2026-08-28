@@ -47,9 +47,11 @@ internal sealed class ApplicationCounterpartyNotifiedDomainEventHandler
             ("Concert Application Accepted", "Your application was accepted! A concert has been scheduled for you."),
         ApplicationNotification.Rejected =>
             ("Concert Application Update", "Your application was not selected for this concert opportunity."),
+        ApplicationNotification.BookingCancelled =>
+            ("Concert Booking Cancelled", "Your booking has been cancelled."),
         ApplicationNotification.ConcertCancelled =>
-            ("Concert Application Cancelled", "Your scheduled concert has been cancelled."),
-        ApplicationNotification.Cancelled =>
+            ("Concert Cancelled", "Your scheduled concert has been cancelled."),
+        ApplicationNotification.ApplicationCancelled =>
             ("Concert Application Cancelled", "Your application was cancelled by the venue."),
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
     };

@@ -11,6 +11,42 @@ namespace Concertable.B2B.Application.UnitTests;
 public sealed class ApplicationEntityLifecycleTests
 {
     [Fact]
+    public void Cancel_WhenApplied_TransitionsToCancelled()
+    {
+        var application = StandardApplication.Create(
+            1,
+            2,
+            DealType.FlatFee,
+            Guid.NewGuid(),
+            Guid.NewGuid());
+
+        var result = application.Cancel();
+
+        Assert.False(result.TryGetError(out _));
+        Assert.Equal(State.Cancelled, application.State);
+    }
+
+    [Fact]
+    public void Cancel_WhenAlreadyCancelled_LeavesStateAndEventsUnchanged()
+    {
+        var application = StandardApplication.Create(
+            1,
+            2,
+            DealType.FlatFee,
+            Guid.NewGuid(),
+            Guid.NewGuid());
+        Assert.False(application.Cancel().TryGetError(out _));
+        var events = application.DomainEvents.ToArray();
+
+        var result = application.Cancel();
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Equal(new TransitionError<State, Trigger>(State.Cancelled, Trigger.Cancel), error);
+        Assert.Equal(State.Cancelled, application.State);
+        Assert.Equal(events, application.DomainEvents);
+    }
+
+    [Fact]
     public void Accept_WhenAlreadyAccepted_LeavesStateAcceptanceAndEventsUnchanged()
     {
         var application = StandardApplication.Create(

@@ -29,8 +29,7 @@ public sealed class VenueHireJourneyTests : IAsyncLifetime
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         var accepted = await GetApplicationAsync(client, applicationId);
         Assert.Equal(ApplicationBoundaryStatus.Accepted, accepted.Status);
-        Assert.NotNull(accepted.Actions.Cancel);
-        var bookingId = int.Parse(accepted.Actions.Cancel.Href.Split('/')[3]);
+        Assert.Null(accepted.Actions.Cancel);
         await fixture.StripeClient.SendWebhookAsync();
 
         var concert = await GetConcertAsync(client, applicationId);
@@ -52,7 +51,7 @@ public sealed class VenueHireJourneyTests : IAsyncLifetime
             .Single(tenant => tenant.CreatedByUserId == fixture.SeedState.VenueManager1.Id)
             .Id;
         var command = fixture.PaymentTransport.SingleCommand<DepositEscrowCommand>();
-        Assert.Equal(bookingId, command.BookingId);
+        Assert.Equal(financial.BookingId, command.BookingId);
         Assert.Equal(artistTenantId, command.PayerId);
         Assert.Equal(venueTenantId, command.PayeeId);
         Assert.Equal(
@@ -160,7 +159,7 @@ public sealed class VenueHireJourneyTests : IAsyncLifetime
     private sealed record ApplicationActionsBoundaryResponse(ActionBoundaryResponse? Cancel);
     private sealed record ActionBoundaryResponse(string Href);
     private sealed record ConcertBoundaryResponse(int Id, DateTime? DatePosted);
-    private sealed record FinancialOperationBoundaryResponse(BookingBoundaryState Status);
+    private sealed record FinancialOperationBoundaryResponse(int BookingId, BookingBoundaryState Status);
 
     private enum ApplicationBoundaryStatus
     {

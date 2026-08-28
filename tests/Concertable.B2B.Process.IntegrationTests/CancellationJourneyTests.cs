@@ -46,7 +46,7 @@ public sealed class CancellationJourneyTests : IAsyncLifetime
         Assert.Null(after.Actions.Reject);
         Assert.Contains(await fixture.GetStagedEmailsAsync(), email =>
             email.To == fixture.SeedState.ArtistManager1.Email &&
-            email.Subject == "Concert Application Cancelled");
+            email.Subject == "Concert Booking Cancelled");
         Assert.Contains(await GetOpportunitiesAsync(client), value => value.Id == opportunityId);
     }
 

@@ -426,7 +426,7 @@ internal sealed class ApplicationService : IApplicationService
             return new CancelApplicationError.ApplicationNotFound(applicationId);
         if (application.Cancel().TryGetError(out var transitionError))
             return new CancelApplicationError.InvalidTransition(transitionError);
-        application.NotifyCounterparty(ApplicationNotification.Cancelled);
+        application.NotifyCounterparty(ApplicationNotification.ApplicationCancelled);
         await repository.SaveChangesAsync(ct);
         await notifier.CancelledAsync(applicationId);
         return new Success();

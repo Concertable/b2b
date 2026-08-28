@@ -8,8 +8,9 @@ public enum ApplicationNotification
     Accepted,
     Withdrawn,
     Rejected,
+    BookingCancelled,
     ConcertCancelled,
-    Cancelled
+    ApplicationCancelled
 }
 
 public sealed record ApplicationCounterpartyNotifiedDomainEvent(

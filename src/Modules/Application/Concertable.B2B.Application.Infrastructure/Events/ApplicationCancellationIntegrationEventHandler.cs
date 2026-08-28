@@ -26,16 +26,25 @@ internal sealed class ApplicationCancellationIntegrationEventHandler :
         BookingCancelledEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        ProcessAsync(@event.ApplicationId, envelope, ct);
+        ProcessAsync(
+            @event.ApplicationId,
+            ApplicationNotification.BookingCancelled,
+            envelope,
+            ct);
 
     public Task HandleAsync(
         ConcertCancelledEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        ProcessAsync(@event.ApplicationId, envelope, ct);
+        ProcessAsync(
+            @event.ApplicationId,
+            ApplicationNotification.ConcertCancelled,
+            envelope,
+            ct);
 
     private Task ProcessAsync(
         int applicationId,
+        ApplicationNotification notification,
         MessageEnvelope envelope,
         CancellationToken ct) =>
         unitOfWork.ExecuteAsync(async () =>
@@ -47,6 +56,6 @@ internal sealed class ApplicationCancellationIntegrationEventHandler :
             context.AddInboxMessage(envelope, handler);
             var application = await context.Applications
                 .SingleOrDefaultAsync(value => value.Id == applicationId, ct);
-            application?.NotifyCounterparty(ApplicationNotification.ConcertCancelled);
+            application?.NotifyCounterparty(notification);
         }, ct);
 }
