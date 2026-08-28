@@ -1,4 +1,4 @@
-# Concertable.B2B — Technical Debt
+﻿# Concertable.B2B — Technical Debt
 
 When an item is fixed, update both this file and [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
@@ -139,7 +139,7 @@ are response mappers and the `default:` arm is an authorization decision that mu
 as an explicit check, not silently become a composition-time coverage failure.
 
 **Resolves when:** Concert declares a `TenantType`-keyed family over the shared `KeyedStrategyBuilder<TKey>`
-(`src/Concertable.B2B.Composition`) with the venue/artist response mappers as its keyed leaves, and
+(`src/Concertable.B2B.KeyedStrategies`) with the venue/artist response mappers as its keyed leaves, and
 `GetById` selects through it — the not-a-party case staying an explicit authorization check ahead of the
 lookup rather than a missing key.
 

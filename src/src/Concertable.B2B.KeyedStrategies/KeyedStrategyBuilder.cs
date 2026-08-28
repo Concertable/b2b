@@ -1,6 +1,6 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace Concertable.B2B.Composition.Strategies;
+namespace Concertable.B2B.KeyedStrategies;
 
 public sealed class KeyedStrategyBuilder<TKey>
     where TKey : struct, Enum
