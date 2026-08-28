@@ -16,7 +16,7 @@ internal abstract partial record FinishConcertError : IError
             "The concert cannot be finished before it has ended."),
         DoorRevenueRequired => ErrorDefinition.Invalid<DoorRevenueRequired>(
             "Door revenue must be declared before the concert can be finished."),
-        InvalidTransition(var error) => ErrorDefinition.Invalid<InvalidTransition>(
+        InvalidTransition(var error) => ErrorDefinition.Conflict<InvalidTransition>(
             $"A concert in {error.Current} cannot be finished."),
         ManagerPaymentFailure(var error) => error.Definition,
         EscrowReleaseFailure(var error) => error.Definition

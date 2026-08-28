@@ -3,9 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
 
-internal static class ServiceCollectionExtensions
+public static class ServiceCollectionExtensions
 {
-    internal static IServiceCollection AddResettables(
+    public static IServiceCollection AddResettables(
         this IServiceCollection services,
         params IResettable[] resettables)
     {

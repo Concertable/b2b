@@ -141,6 +141,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("State")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
 
                     b.Property<int>("TicketsSold")

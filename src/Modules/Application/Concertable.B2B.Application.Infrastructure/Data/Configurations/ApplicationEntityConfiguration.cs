@@ -15,11 +15,12 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<ApplicationEntity> builder)
     {
         builder.ToTable(Schema.Tables.Applications, Schema.Name);
-        builder.Property(application => application.State).IsRequired();
+        builder.Property(application => application.State).IsRequired().IsConcurrencyToken();
         builder.HasOne(application => application.VerifyPayment)
             .WithOne()
             .HasForeignKey<VerifyPaymentEntity>(payment => payment.ApplicationId)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(application => application.VerifyPayment).AutoInclude();
         builder.HasIndex(application => application.AcceptanceOperationId)
             .IsUnique()
             .HasFilter("[AcceptanceOperationId] IS NOT NULL");

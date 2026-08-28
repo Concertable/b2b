@@ -12,7 +12,9 @@ internal abstract partial record CancelApplicationError : IError
         ApplicationNotFound(var applicationId) =>
             ErrorDefinition.NotFound<ApplicationNotFound>($"Application {applicationId} was not found."),
         InvalidTransition(var error) =>
-            ErrorDefinition.Conflict<InvalidTransition>($"Cannot cancel an application from {error.Current}.")
+            ErrorDefinition.Conflict<InvalidTransition>($"Cannot cancel an application from {error.Current}."),
+        Superseded(var applicationId) => ErrorDefinition.Conflict<Superseded>(
+            $"Application {applicationId} changed while this cancel was in flight.")
     };
 
     [ErrorCode("application.cancel.not_found")]
@@ -20,4 +22,7 @@ internal abstract partial record CancelApplicationError : IError
 
     [ErrorCode("application.cancel.invalid_state")]
     public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+
+    [ErrorCode("application.cancel.superseded")]
+    public partial record Superseded(int ApplicationId);
 }

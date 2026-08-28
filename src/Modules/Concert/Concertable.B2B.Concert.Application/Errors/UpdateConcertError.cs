@@ -13,7 +13,9 @@ internal abstract partial record UpdateConcertError : IError
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The concert update is invalid.",
-                errors)
+                errors),
+        Superseded(var concertId) => ErrorDefinition.Conflict<Superseded>(
+            $"Concert {concertId} changed while this update was in flight.")
     };
 
     [ErrorCode("concert.update.not_found")]
@@ -21,4 +23,7 @@ internal abstract partial record UpdateConcertError : IError
 
     [ErrorCode("concert.update.invalid")]
     public partial record Invalid(ValidationErrors Errors);
+
+    [ErrorCode("concert.update.superseded")]
+    public partial record Superseded(int ConcertId);
 }

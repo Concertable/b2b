@@ -36,7 +36,7 @@ public sealed class ErrorDefinitionContractTests
                 new TransitionError<State, Trigger>(State.Complete, Trigger.BeginCancellation)),
             "concert.cancel.invalid_state",
             "A concert in Complete cannot be cancelled.",
-            ErrorKind.Invalid
+            ErrorKind.Conflict
         },
         {
             new DeclareDoorRevenueError.ConcertNotFound(42),
@@ -97,7 +97,7 @@ public sealed class ErrorDefinitionContractTests
                 new TransitionError<State, Trigger>(State.Cancelled, Trigger.CompleteSettlement)),
             "concert.finish.invalid_state",
             "A concert in Cancelled cannot be finished.",
-            ErrorKind.Invalid
+            ErrorKind.Conflict
         },
         {
             new FinishConcertError.ManagerPaymentFailure(

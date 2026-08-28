@@ -51,7 +51,7 @@ internal sealed class SettlementService : ISettlementService
         int concertId,
         CancellationToken ct)
     {
-        var concert = await GetForUpdateByIdAsync(context, concertId, ct);
+        var concert = await context.Concerts.SingleOrDefaultAsync(concert => concert.Id == concertId, ct);
         if (concert is null)
             return new FinishConcertError.ConcertNotFound(concertId);
 
@@ -125,7 +125,7 @@ internal sealed class SettlementService : ISettlementService
         SettlementConfirmation confirmation,
         CancellationToken ct)
     {
-        var concert = await GetForUpdateByIdAsync(context, concertId, ct);
+        var concert = await context.Concerts.SingleOrDefaultAsync(concert => concert.Id == concertId, ct);
         if (concert is null)
             return new FinishConcertError.ConcertNotFound(concertId);
 
@@ -184,7 +184,7 @@ internal sealed class SettlementService : ISettlementService
         string message,
         CancellationToken ct)
     {
-        var concert = await GetForUpdateByIdAsync(context, concertId, ct)
+        var concert = await context.Concerts.SingleOrDefaultAsync(concert => concert.Id == concertId, ct)
             ?? throw new InvalidOperationException($"Settlement concert {concertId} was not found.");
         concert.EnsureSettlementOperation(operationId);
 
@@ -203,22 +203,6 @@ internal sealed class SettlementService : ISettlementService
         if (failure.TryGetError(out var transitionError))
             throw new InvalidOperationException(
                 $"Concert {concertId} cannot record settlement failure from {transitionError.Current}.");
-    }
-
-    private static Task<ConcertEntity?> GetForUpdateByIdAsync(
-        ConcertDbContext context,
-        int concertId,
-        CancellationToken ct)
-    {
-        var sql = $$"""
-            SELECT *
-            FROM [{{Schema.Name}}].[{{Schema.Tables.Concerts}}] WITH (UPDLOCK, ROWLOCK)
-            WHERE [Id] = {0}
-            """;
-
-        return context.Concerts
-            .FromSqlRaw(sql, concertId)
-            .SingleOrDefaultAsync(concert => concert.Id == concertId, ct);
     }
 
     private static void EnsureConfirmationMatches(

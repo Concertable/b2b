@@ -24,7 +24,9 @@ internal abstract partial record DeclareDoorRevenueError : IError
                 "Door revenue can only be declared before the concert has settled."),
         Negative =>
             ErrorDefinition.Invalid<Negative>(
-                "Door revenue must be zero or greater.")
+                "Door revenue must be zero or greater."),
+        Superseded(var concertId) => ErrorDefinition.Conflict<Superseded>(
+            $"Concert {concertId} changed while this declaration was in flight.")
     };
 
     [ErrorCode("concert.door_revenue.not_found")]
@@ -43,4 +45,7 @@ internal abstract partial record DeclareDoorRevenueError : IError
     public partial record AlreadySettled;
 
     public partial record Negative;
+
+    [ErrorCode("concert.door_revenue.superseded")]
+    public partial record Superseded(int ConcertId);
 }

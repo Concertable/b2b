@@ -6,7 +6,12 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IConcertRepository : IRepository<ConcertEntity>
 {
-    Task<ConcertEntity?> GetForUpdateByIdAsync(int concertId, CancellationToken ct = default);
+    /// <summary>
+    /// Saves pending changes. A lost race on the aggregate's <c>State</c> concurrency token returns
+    /// <see langword="false"/>; every other failure propagates.
+    /// </summary>
+    Task<bool> TrySaveChangesAsync(CancellationToken ct = default);
+
     Task<ConcertEntity?> GetByBookingIdAsync(int bookingId, CancellationToken ct = default);
     Task<ConcertEntity?> GetByIdWithArtistAndVenueAsync(int id);
     Task<ConcertEntity?> GetByIdWithVenueAsync(int id);

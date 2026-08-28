@@ -12,7 +12,9 @@ internal abstract partial record RejectApplicationError : IError
         ApplicationNotFound(var applicationId) =>
             ErrorDefinition.NotFound<ApplicationNotFound>($"Application {applicationId} was not found."),
         InvalidTransition(var error) =>
-            ErrorDefinition.Conflict<InvalidTransition>($"Cannot reject an application from {error.Current}.")
+            ErrorDefinition.Conflict<InvalidTransition>($"Cannot reject an application from {error.Current}."),
+        Superseded(var applicationId) => ErrorDefinition.Conflict<Superseded>(
+            $"Application {applicationId} changed while this reject was in flight.")
     };
 
     [ErrorCode("application.reject.not_found")]
@@ -20,4 +22,7 @@ internal abstract partial record RejectApplicationError : IError
 
     [ErrorCode("application.reject.invalid_state")]
     public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+
+    [ErrorCode("application.reject.superseded")]
+    public partial record Superseded(int ApplicationId);
 }

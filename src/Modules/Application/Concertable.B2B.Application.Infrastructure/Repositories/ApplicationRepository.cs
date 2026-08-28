@@ -2,6 +2,7 @@ using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Application.Models;
 using Concertable.B2B.Application.Infrastructure.Data;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Repositories;
@@ -72,22 +73,6 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         return row is null ? null : (row.VenueTenantId, row.ArtistTenantId);
     }
 
-    public Task<ApplicationEntity?> GetForUpdateByIdAsync(
-        int applicationId,
-        CancellationToken ct = default)
-    {
-        var sql = $$"""
-            SELECT *
-            FROM [{{Schema.Name}}].[{{Schema.Tables.Applications}}] WITH (UPDLOCK, ROWLOCK)
-            WHERE [Id] = {0}
-            """;
-
-        return context.Applications
-            .FromSqlRaw(sql, applicationId)
-            .Include(application => application.VerifyPayment)
-            .SingleOrDefaultAsync(application => application.Id == applicationId, ct);
-    }
-
     public async Task RejectAllExceptAsync(
         int opportunityId,
         int applicationId,
@@ -154,4 +139,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .Distinct()
             .ToListAsync(ct))
         .ToHashSet();
+
+    public Task<bool> TrySaveChangesAsync(CancellationToken ct = default) =>
+        context.TrySaveChangesAsync(ct);
 }

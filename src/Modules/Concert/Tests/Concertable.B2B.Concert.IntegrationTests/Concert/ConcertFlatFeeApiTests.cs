@@ -72,19 +72,21 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Finish_WhenRequestsOverlap_ReleasesEscrowAndIssuesInvoiceOnce()
+    public async Task Finish_WhenAnotherFinishWinsTheRace_ReleasesEscrowAndIssuesInvoiceOnce()
     {
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking);
         await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
-        await using var concertLock = await fixture.HoldConcertForUpdateAsync(concert.Id);
-        var first = fixture.CompleteConcertAsync(concert.Id);
-        var second = fixture.CompleteConcertAsync(concert.Id);
-        await fixture.WaitForConcertLockWaitersAsync(2);
+        fixture.ArmConcertConflict(async () =>
+        {
+            var winner = await fixture.CompleteConcertAsync(concert.Id);
+            Assert.True(winner.TryGetValue(out _));
+        });
 
-        await concertLock.RollbackAsync();
-        var results = await Task.WhenAll(first, second);
+        var loser = await fixture.CompleteConcertAsync(concert.Id);
 
-        Assert.All(results, result => Assert.True(result.TryGetValue(out _)));
+        Assert.True(loser.TryGetValue(out var outcome));
+        Assert.Equal(SettlementOutcome.Settled, outcome);
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var release = Assert.Single(
             fixture.EscrowClient.Releases,
             value => value.BookingId == concert.BookingId);

@@ -9,7 +9,7 @@ internal sealed class BookingEntityConfiguration : IEntityTypeConfiguration<Book
     public void Configure(EntityTypeBuilder<BookingEntity> builder)
     {
         builder.ToTable(Schema.Tables.Bookings, Schema.Name);
-        builder.Property(booking => booking.State).IsRequired();
+        builder.Property(booking => booking.State).IsRequired().IsConcurrencyToken();
         builder.Property(booking => booking.ExpectedFinancialOperation).IsRequired();
         builder.Property(booking => booking.FinancialOperationReferenceId).HasMaxLength(255);
         builder.Property(booking => booking.FinancialFailureCode).HasMaxLength(100);

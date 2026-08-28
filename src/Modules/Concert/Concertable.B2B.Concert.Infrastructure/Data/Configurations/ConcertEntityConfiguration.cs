@@ -9,7 +9,7 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
     public void Configure(EntityTypeBuilder<ConcertEntity> builder)
     {
         builder.ToTable(Schema.Tables.Concerts, Schema.Name);
-        builder.Property(e => e.State).IsRequired();
+        builder.Property(e => e.State).IsRequired().IsConcurrencyToken();
         builder.Property(e => e.SettlementGrossAmount).HasPrecision(18, 2);
         builder.Property(e => e.FinancialOperationReferenceId).HasMaxLength(255);
         builder.Property(e => e.FinancialFailureCode).HasMaxLength(100);

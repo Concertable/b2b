@@ -4,8 +4,8 @@ using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Kernel;
 using Concertable.Kernel.DependencyInjection;
 using Concertable.Messaging.Domain;
+using Concertable.Testing.Integration;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Booking.IntegrationTests;
@@ -15,69 +15,36 @@ public sealed class BookingApiFixture : ApiFixture
     private IBookingReadDbContext readDbContext = null!;
     private BookingDbContext dbContext = null!;
 
+    internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
+
     internal IQueryable<BookingEntity> Bookings => readDbContext.Bookings;
     internal IQueryable<ContractEntity> Contracts => readDbContext.Contracts;
     internal IQueryable<InboxMessageEntity> InboxMessages => dbContext.Set<InboxMessageEntity>().AsNoTracking();
 
-    internal async Task<IDbContextTransaction> HoldBookingForUpdateAsync(int bookingId)
-    {
-        var transaction = await dbContext.Database.BeginTransactionAsync();
-        try
-        {
-            _ = await dbContext.Database.SqlQuery<int>($"""
-                    SELECT [Id] AS [Value]
-                    FROM [booking].[Bookings] WITH (UPDLOCK, ROWLOCK)
-                    WHERE [Id] = {bookingId}
-                    """)
-                .SingleAsync();
-            return transaction;
-        }
-        catch
-        {
-            await transaction.DisposeAsync();
-            throw;
-        }
-    }
+    /// <summary>
+    /// Commits <paramref name="competingChange"/> between the next booking transition's read and its
+    /// update, so that transition loses the race and has to rerun against the winner's state.
+    /// </summary>
+    internal void ArmBookingConflict(Func<Task> competingChange) =>
+        Conflicts.ArmOnce<BookingEntity>(competingChange);
 
-    internal async Task WaitForBookingLockWaitersAsync(int expectedCount)
-    {
-        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
-        while (DateTimeOffset.UtcNow <= deadline)
-        {
-            var count = await dbContext.Database.SqlQuery<int>($"""
-                    SELECT COUNT(*) AS [Value]
-                    FROM sys.dm_exec_requests AS request
-                    CROSS APPLY sys.dm_exec_sql_text(request.sql_handle) AS batch
-                    WHERE request.wait_type LIKE N'LCK_M_%'
-                      AND CHARINDEX(
-                          N'FROM [booking].[Bookings] WITH (UPDLOCK, ROWLOCK)',
-                          batch.text) > 0
-                    """)
-                .SingleAsync();
-            if (count >= expectedCount)
-                return;
-
-            await Task.Delay(25);
-        }
-
-        throw new InvalidOperationException(
-            $"Expected {expectedCount} booking transition lock waiter(s).");
-    }
-
+    // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause,
+    // and SQL Server rejects OUTPUT against a table that has an enabled trigger.
+    // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause,
+    // and SQL Server rejects OUTPUT against a table that has an enabled trigger.
     internal Task FailBookingUpdatesAsync() =>
         dbContext.Database.ExecuteSqlRawAsync("""
-            CREATE TRIGGER [booking].[TR_Bookings_FailUpdate_ForTest]
-            ON [booking].[Bookings]
-            AFTER UPDATE
-            AS
-            BEGIN
-                THROW 51000, 'Forced booking update failure.', 1;
-            END
+            ALTER TABLE [booking].[Bookings] WITH NOCHECK
+            ADD CONSTRAINT [CK_Bookings_FailUpdate_ForTest] CHECK ([Id] < 0)
             """);
 
     internal Task RestoreBookingUpdatesAsync() =>
-        dbContext.Database.ExecuteSqlRawAsync(
-            "DROP TRIGGER IF EXISTS [booking].[TR_Bookings_FailUpdate_ForTest]");
+        dbContext.Database.ExecuteSqlRawAsync("""
+            IF EXISTS (
+                SELECT 1 FROM sys.check_constraints
+                WHERE [name] = 'CK_Bookings_FailUpdate_ForTest')
+                ALTER TABLE [booking].[Bookings] DROP CONSTRAINT [CK_Bookings_FailUpdate_ForTest]
+            """);
 
     internal Task<int> GetConcertCountAsync(int bookingId) =>
         dbContext.Database.SqlQuery<int>($"""
@@ -95,6 +62,13 @@ public sealed class BookingApiFixture : ApiFixture
                 foreach (var handler in handlers)
                     await handler.HandleAsync(@event);
             });
+
+    protected override void OnConfigureServices(IServiceCollection services)
+    {
+        services.AddResettables(Conflicts);
+        services.ConfigureDbContext<BookingDbContext>(
+            (_, options) => options.AddInterceptors(Conflicts));
+    }
 
     protected override void OnReset(IServiceScope scope)
     {

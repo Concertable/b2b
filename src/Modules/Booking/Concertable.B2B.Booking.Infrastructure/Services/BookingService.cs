@@ -14,8 +14,8 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 
 internal sealed class BookingService : IBookingService
 {
-    private readonly IBookingRepository bookings;
-    private readonly IContractRepository contracts;
+    private readonly IBookingRepository bookingRepository;
+    private readonly IContractRepository contractRepository;
     private readonly IUnitOfWorkBehavior unitOfWork;
     private readonly IBus bus;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
@@ -23,16 +23,16 @@ internal sealed class BookingService : IBookingService
     private readonly TimeProvider timeProvider;
 
     public BookingService(
-        IBookingRepository bookings,
-        IContractRepository contracts,
+        IBookingRepository bookingRepository,
+        IContractRepository contractRepository,
         IUnitOfWorkBehavior unitOfWork,
         IBus bus,
         IOutboxUnitOfWorkBehavior outboxBehavior,
         ICancellationExecutor cancellation,
         TimeProvider timeProvider)
     {
-        this.bookings = bookings;
-        this.contracts = contracts;
+        this.bookingRepository = bookingRepository;
+        this.contractRepository = contractRepository;
         this.unitOfWork = unitOfWork;
         this.bus = bus;
         this.outboxBehavior = outboxBehavior;
@@ -64,18 +64,18 @@ internal sealed class BookingService : IBookingService
     public async Task<BookingDto?> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        (await bookings.GetByApplicationIdAsync(applicationId, ct))?.ToDto();
+        (await bookingRepository.GetByApplicationIdAsync(applicationId, ct))?.ToDto();
 
     public Task<int?> GetIdByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        bookings.GetIdByApplicationIdAsync(applicationId, ct);
+        bookingRepository.GetIdByApplicationIdAsync(applicationId, ct);
 
     public async Task<BookingSummaryDto?> GetSummaryByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default)
     {
-        var booking = await bookings.GetByApplicationIdAsync(applicationId, ct);
+        var booking = await bookingRepository.GetByApplicationIdAsync(applicationId, ct);
         return booking is null
             ? null
             : new BookingSummaryDto(
@@ -90,7 +90,7 @@ internal sealed class BookingService : IBookingService
     public async Task<IReadOnlyList<BookingSummaryDto>> GetSummariesByApplicationIdsAsync(
         IReadOnlyCollection<int> applicationIds,
         CancellationToken ct = default) =>
-        (await bookings.GetByApplicationIdsAsync(applicationIds, ct))
+        (await bookingRepository.GetByApplicationIdsAsync(applicationIds, ct))
             .Select(booking => new BookingSummaryDto(
                 booking.Id,
                 booking.ApplicationId,
@@ -103,7 +103,7 @@ internal sealed class BookingService : IBookingService
     public Task<int> GetArtistAwaitingCheckoutCountAsync(
         Guid artistTenantId,
         CancellationToken ct = default) =>
-        bookings.GetAwaitingCheckoutCountByArtistTenantIdAsync(
+        bookingRepository.GetAwaitingCheckoutCountByArtistTenantIdAsync(
             artistTenantId,
             timeProvider.GetUtcNow().UtcDateTime,
             ct);
@@ -114,7 +114,7 @@ internal sealed class BookingService : IBookingService
         unitOfWork.ExecuteAsync(
             () => outboxBehavior.ExecuteAsync(async () =>
             {
-                var booking = await bookings.GetForUpdateByIdAsync(bookingId, ct);
+                var booking = await bookingRepository.GetByIdAsync(bookingId, ct);
                 if (booking is null)
                     return (UnitResult<CancelBookingError>)new CancelBookingError.BookingNotFound(bookingId);
                 if (booking.State is State.Cancelled or State.CancellationPending)
@@ -123,8 +123,13 @@ internal sealed class BookingService : IBookingService
                     return new CancelBookingError.InvalidTransition(transitionError);
 
                 await this.cancellation.ExecuteAsync(booking, ct);
-                await bookings.SaveChangesAsync(ct);
-                return UnitResult.Success<CancelBookingError>();
+                if (await bookingRepository.TrySaveChangesAsync(ct))
+                    return UnitResult.Success<CancelBookingError>();
+
+                booking = await bookingRepository.GetByIdAsync(bookingId, ct);
+                return booking?.State is State.Cancelled or State.CancellationPending
+                    ? UnitResult.Success<CancelBookingError>()
+                    : new CancelBookingError.Superseded(bookingId);
             }, ct),
             ct);
 
@@ -145,7 +150,7 @@ internal sealed class BookingService : IBookingService
         FinancialOperationSucceeded operation,
         CancellationToken ct)
     {
-        var booking = await bookings.GetForUpdateByIdAsync(bookingId, ct)
+        var booking = await bookingRepository.GetByIdAsync(bookingId, ct)
             ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
         Validate(bookingId, booking, operation);
 
@@ -167,7 +172,7 @@ internal sealed class BookingService : IBookingService
 
         if (booking.RecordFinancialConfirmation(operation.ProviderReferenceId).TryGetError(out var transitionError))
             throw new InvalidOperationException($"Booking cannot confirm from {transitionError.Current}.");
-        await bookings.SaveChangesAsync(ct);
+        await bookingRepository.SaveChangesAsync(ct);
     }
 
     private async Task RecordFailedCoreAsync(
@@ -175,7 +180,7 @@ internal sealed class BookingService : IBookingService
         FinancialOperationFailed operation,
         CancellationToken ct)
     {
-        var booking = await bookings.GetForUpdateByIdAsync(bookingId, ct)
+        var booking = await bookingRepository.GetByIdAsync(bookingId, ct)
             ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
         Validate(bookingId, booking, operation);
 
@@ -185,7 +190,7 @@ internal sealed class BookingService : IBookingService
         {
             if (booking.Cancel().TryGetError(out var transitionError))
                 throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
-            await bookings.SaveChangesAsync(ct);
+            await bookingRepository.SaveChangesAsync(ct);
             return;
         }
         if (IsDuplicateFailure(booking, operation))
@@ -207,7 +212,7 @@ internal sealed class BookingService : IBookingService
             default:
                 throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
         }
-        await bookings.SaveChangesAsync(ct);
+        await bookingRepository.SaveChangesAsync(ct);
     }
 
     private static void Validate(
@@ -268,14 +273,14 @@ internal sealed class BookingService : IBookingService
         AcceptedApplication application,
         CancellationToken ct)
     {
-        await bookings.AddAsync(booking, ct);
-        await bookings.SaveChangesAsync(ct);
+        await bookingRepository.AddAsync(booking, ct);
+        await bookingRepository.SaveChangesAsync(ct);
 
         var contract = ContractEntity.Create(
             booking.Id,
             application,
             timeProvider.GetUtcNow().UtcDateTime);
-        await contracts.AddAsync(contract, ct);
-        await contracts.SaveChangesAsync(ct);
+        await contractRepository.AddAsync(contract, ct);
+        await contractRepository.SaveChangesAsync(ct);
     }
 }

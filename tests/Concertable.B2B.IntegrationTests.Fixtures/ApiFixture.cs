@@ -139,6 +139,7 @@ public class ApiFixture : IAsyncLifetime
                 services.AddConversationsTestSeeder();
 
                 services.AddTestAuthentication();
+                OnConfigureServices(services);
             });
         });
 
@@ -172,6 +173,9 @@ public class ApiFixture : IAsyncLifetime
     }
 
     protected virtual void OnReset(IServiceScope scope) { }
+
+    /// <summary>Per-module fixture wiring, applied after the shared test services.</summary>
+    protected virtual void OnConfigureServices(IServiceCollection services) { }
 
     public async Task SendEscrowFailedWebhookAsync(int bookingId)
     {

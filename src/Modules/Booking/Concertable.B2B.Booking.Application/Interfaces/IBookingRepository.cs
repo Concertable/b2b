@@ -5,6 +5,12 @@ namespace Concertable.B2B.Booking.Application.Interfaces;
 
 internal interface IBookingRepository : IVenueArtistTenantScopedRepository<BookingEntity>
 {
+    /// <summary>
+    /// Saves pending changes. A lost race on the aggregate's <c>State</c> concurrency token returns
+    /// <see langword="false"/>; every other failure propagates.
+    /// </summary>
+    Task<bool> TrySaveChangesAsync(CancellationToken ct = default);
+
     Task<BookingEntity?> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);
@@ -16,9 +22,6 @@ internal interface IBookingRepository : IVenueArtistTenantScopedRepository<Booki
         CancellationToken ct = default);
     Task<BookingEntity?> GetByOperationIdAsync(
         Guid operationId,
-        CancellationToken ct = default);
-    Task<BookingEntity?> GetForUpdateByIdAsync(
-        int bookingId,
         CancellationToken ct = default);
     Task<int?> GetApplicationIdByIdAsync(
         int bookingId,

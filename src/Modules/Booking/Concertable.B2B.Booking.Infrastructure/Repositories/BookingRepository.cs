@@ -3,6 +3,7 @@ using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Repositories;
@@ -43,21 +44,6 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             booking => booking.OperationId == operationId,
             ct);
 
-    public Task<BookingEntity?> GetForUpdateByIdAsync(
-        int bookingId,
-        CancellationToken ct = default)
-    {
-        var sql = $$"""
-            SELECT *
-            FROM [{{Schema.Name}}].[{{Schema.Tables.Bookings}}] WITH (UPDLOCK, ROWLOCK)
-            WHERE [Id] = {0}
-            """;
-
-        return context.Bookings
-            .FromSqlRaw(sql, bookingId)
-            .SingleOrDefaultAsync(booking => booking.Id == bookingId, ct);
-    }
-
     public Task<int?> GetApplicationIdByIdAsync(
         int bookingId,
         CancellationToken ct = default) =>
@@ -78,4 +64,7 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
                 (booking.State == State.AwaitingConfirmation ||
                  booking.State == State.ConfirmationFailed),
             ct);
+
+    public Task<bool> TrySaveChangesAsync(CancellationToken ct = default) =>
+        context.TrySaveChangesAsync(ct);
 }

@@ -18,7 +18,7 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ApplicationService : IApplicationService
 {
-    private readonly IApplicationRepository repository;
+    private readonly IApplicationRepository applicationRepository;
     private readonly IApplicationValidator validator;
     private readonly IApplicationNotifier notifier;
     private readonly IArtistModule artists;
@@ -38,7 +38,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IUnitOfWorkBehavior unitOfWork;
 
     public ApplicationService(
-        IApplicationRepository repository,
+        IApplicationRepository applicationRepository,
         IApplicationValidator validator,
         IApplicationNotifier notifier,
         IArtistModule artists,
@@ -57,7 +57,7 @@ internal sealed class ApplicationService : IApplicationService
         IOptions<LegalSettings> legal,
         IUnitOfWorkBehavior unitOfWork)
     {
-        this.repository = repository;
+        this.applicationRepository = applicationRepository;
         this.validator = validator;
         this.notifier = notifier;
         this.artists = artists;
@@ -78,7 +78,7 @@ internal sealed class ApplicationService : IApplicationService
     }
 
     public Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id) =>
-        repository.GetByIdAsync(id)
+        applicationRepository.GetByIdAsync(id)
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
             .MapAsync(mapper.ToDtoAsync);
@@ -90,7 +90,7 @@ internal sealed class ApplicationService : IApplicationService
             opportunity.VenueTenantId != tenantContext.TenantId)
             return new ApplicationError.OpportunityForbidden(id);
 
-        var applications = await repository.GetByOpportunityIdAsync(id);
+        var applications = await applicationRepository.GetByOpportunityIdAsync(id);
         return new Success<IReadOnlyList<ApplicationDto>>(await mapper.ToDtosAsync(applications));
     }
 
@@ -100,7 +100,7 @@ internal sealed class ApplicationService : IApplicationService
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationError.MissingArtist();
 
-        var applications = await repository.GetByArtistTenantIdAndStateAsync(
+        var applications = await applicationRepository.GetByArtistTenantIdAndStateAsync(
             artist.TenantId,
             State.Applied);
         var dtos = await mapper.ToDtosAsync(applications);
@@ -115,7 +115,7 @@ internal sealed class ApplicationService : IApplicationService
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationError.MissingArtist();
 
-        var applications = await repository.GetByArtistTenantIdAndStateAsync(
+        var applications = await applicationRepository.GetByArtistTenantIdAndStateAsync(
             artist.TenantId,
             State.Rejected);
         var dtos = await mapper.ToDtosAsync(applications);
@@ -130,7 +130,7 @@ internal sealed class ApplicationService : IApplicationService
         if (tenantContext.TenantId is not { } tenantId)
             return new ApplicationError.MissingVenue();
 
-        var applications = await repository.GetByVenueTenantIdAndStateAsync(
+        var applications = await applicationRepository.GetByVenueTenantIdAndStateAsync(
             tenantId,
             State.Applied);
         var now = timeProvider.GetUtcNow();
@@ -148,7 +148,7 @@ internal sealed class ApplicationService : IApplicationService
         if (tenantContext.TenantId is not { } tenantId)
             return new ApplicationError.MissingArtist();
 
-        var applications = await repository.GetCurrentByArtistTenantIdAsync(tenantId);
+        var applications = await applicationRepository.GetCurrentByArtistTenantIdAsync(tenantId);
         var now = timeProvider.GetUtcNow();
         var dtos = await mapper.ToDtosAsync(applications);
         return new Success<IReadOnlyList<ApplicationDto>>(
@@ -180,7 +180,7 @@ internal sealed class ApplicationService : IApplicationService
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
-        if (await repository.ExistsForOpportunityAndArtistTenantAsync(opportunityId, artist.TenantId))
+        if (await applicationRepository.ExistsForOpportunityAndArtistTenantAsync(opportunityId, artist.TenantId))
             return new ApplyApplicationError.AlreadyApplied();
 
         var validation = await validator.CanApplyAsync(opportunity, artist.Id);
@@ -228,10 +228,10 @@ internal sealed class ApplicationService : IApplicationService
                 new DateRange(opportunity.StartDate, opportunity.EndDate)));
         application.NotifyCounterparty(ApplicationNotification.Applied);
 
-        await repository.AddAsync(application);
+        await applicationRepository.AddAsync(application);
         try
         {
-            await repository.SaveChangesAsync();
+            await applicationRepository.SaveChangesAsync();
         }
         catch (DbUpdateException exception) when (exception.IsDuplicateKey())
         {
@@ -281,7 +281,7 @@ internal sealed class ApplicationService : IApplicationService
         ESignatureRequest eSignature,
         CancellationToken ct)
     {
-        var application = await repository.GetForUpdateByIdAsync(applicationId, ct);
+        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
         if (application is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
@@ -366,8 +366,8 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Accept(acceptedApplication).TryGetError(out var transitionError))
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
-        await repository.SaveChangesAsync(ct);
-        await repository.RejectAllExceptAsync(application.OpportunityId, application.Id, ct);
+        await applicationRepository.SaveChangesAsync(ct);
+        await applicationRepository.RejectAllExceptAsync(application.OpportunityId, application.Id, ct);
         await notifier.AcceptedAsync(applicationId);
         return new Success();
     }
@@ -381,13 +381,20 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        var application = await repository.GetForUpdateByIdAsync(applicationId, ct);
+        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
         if (application is null)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
         if (application.Withdraw().TryGetError(out var transitionError))
             return new WithdrawApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Withdrawn);
-        await repository.SaveChangesAsync(ct);
+        if (!await applicationRepository.TrySaveChangesAsync(ct))
+        {
+            application = await applicationRepository.GetByIdAsync(applicationId, ct);
+            return application?.State == State.Withdrawn
+                ? new Success()
+                : new WithdrawApplicationError.Superseded(applicationId);
+        }
+
         await notifier.WithdrawnAsync(applicationId);
         return new Success();
     }
@@ -401,13 +408,20 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        var application = await repository.GetForUpdateByIdAsync(applicationId, ct);
+        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
         if (application is null)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
         if (application.Reject().TryGetError(out var transitionError))
             return new RejectApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Rejected);
-        await repository.SaveChangesAsync(ct);
+        if (!await applicationRepository.TrySaveChangesAsync(ct))
+        {
+            application = await applicationRepository.GetByIdAsync(applicationId, ct);
+            return application?.State == State.Rejected
+                ? new Success()
+                : new RejectApplicationError.Superseded(applicationId);
+        }
+
         await notifier.RejectedAsync(applicationId);
         return new Success();
     }
@@ -421,13 +435,20 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        var application = await repository.GetForUpdateByIdAsync(applicationId, ct);
+        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
         if (application is null)
             return new CancelApplicationError.ApplicationNotFound(applicationId);
         if (application.Cancel().TryGetError(out var transitionError))
             return new CancelApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.ApplicationCancelled);
-        await repository.SaveChangesAsync(ct);
+        if (!await applicationRepository.TrySaveChangesAsync(ct))
+        {
+            application = await applicationRepository.GetByIdAsync(applicationId, ct);
+            return application?.State == State.Cancelled
+                ? new Success()
+                : new CancelApplicationError.Superseded(applicationId);
+        }
+
         await notifier.CancelledAsync(applicationId);
         return new Success();
     }
@@ -450,7 +471,7 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanAcceptAsync(int applicationId)
     {
-        var application = await repository.GetByIdAsync(applicationId);
+        var application = await applicationRepository.GetByIdAsync(applicationId);
         if (application is null)
             return new ApplicationEligibilityError.ApplicationNotFound();
 

@@ -19,7 +19,7 @@ internal sealed class PaymentVerificationRecorder : IPaymentVerificationRecorder
         unitOfWork.ExecuteAsync(async () =>
         {
             var application = await applications
-                .GetForUpdateByIdAsync(payment.ApplicationId, ct)
+                .GetByIdAsync(payment.ApplicationId, ct)
                 .OrNotFound();
             application.RecordVerifyPayment(payment);
         }, ct);

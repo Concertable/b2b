@@ -12,7 +12,9 @@ internal abstract partial record WithdrawApplicationError : IError
         ApplicationNotFound(var applicationId) =>
             ErrorDefinition.NotFound<ApplicationNotFound>($"Application {applicationId} was not found."),
         InvalidTransition(var error) =>
-            ErrorDefinition.Conflict<InvalidTransition>($"Cannot withdraw an application from {error.Current}.")
+            ErrorDefinition.Conflict<InvalidTransition>($"Cannot withdraw an application from {error.Current}."),
+        Superseded(var applicationId) => ErrorDefinition.Conflict<Superseded>(
+            $"Application {applicationId} changed while this withdraw was in flight.")
     };
 
     [ErrorCode("application.withdraw.not_found")]
@@ -20,4 +22,7 @@ internal abstract partial record WithdrawApplicationError : IError
 
     [ErrorCode("application.withdraw.invalid_state")]
     public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+
+    [ErrorCode("application.withdraw.superseded")]
+    public partial record Superseded(int ApplicationId);
 }

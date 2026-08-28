@@ -13,12 +13,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class ConcertService : IConcertService
 {
-    private readonly IConcertRepository repository;
+    private readonly IConcertRepository concertRepository;
     private readonly IConcertReadRepository readRepository;
     private readonly IInvoiceRepository invoiceRepository;
     private readonly IConcertValidator concertValidator;
-    private readonly IArtistReadModelRepository artists;
-    private readonly IVenueReadModelRepository venues;
+    private readonly IArtistReadModelRepository artistRepository;
+    private readonly IVenueReadModelRepository venueRepository;
     private readonly IBookingConfirmationEmailSender emailSender;
     private readonly IBus bus;
     private readonly IBookingModule bookingModule;
@@ -27,12 +27,12 @@ internal sealed class ConcertService : IConcertService
     private readonly ILogger<ConcertService> logger;
 
     public ConcertService(
-        IConcertRepository repository,
+        IConcertRepository concertRepository,
         IConcertReadRepository readRepository,
         IInvoiceRepository invoiceRepository,
         IConcertValidator concertValidator,
-        IArtistReadModelRepository artists,
-        IVenueReadModelRepository venues,
+        IArtistReadModelRepository artistRepository,
+        IVenueReadModelRepository venueRepository,
         IBookingConfirmationEmailSender emailSender,
         IBus bus,
         IBookingModule bookingModule,
@@ -40,12 +40,12 @@ internal sealed class ConcertService : IConcertService
         ITenantContext tenantContext,
         ILogger<ConcertService> logger)
     {
-        this.repository = repository;
+        this.concertRepository = concertRepository;
         this.readRepository = readRepository;
         this.invoiceRepository = invoiceRepository;
         this.concertValidator = concertValidator;
-        this.artists = artists;
-        this.venues = venues;
+        this.artistRepository = artistRepository;
+        this.venueRepository = venueRepository;
         this.emailSender = emailSender;
         this.bus = bus;
         this.bookingModule = bookingModule;
@@ -58,13 +58,13 @@ internal sealed class ConcertService : IConcertService
     {
         logger.CreatingConcertDraft(booking.BookingId);
 
-        if (await repository.GetByBookingIdAsync(booking.BookingId, ct) is not null)
+        if (await concertRepository.GetByBookingIdAsync(booking.BookingId, ct) is not null)
             return;
 
-        var artist = await artists.GetByTenantIdAsync(booking.ArtistTenantId, ct)
+        var artist = await artistRepository.GetByTenantIdAsync(booking.ArtistTenantId, ct)
             ?? throw new InvalidOperationException(
                 $"Artist projection {booking.ArtistTenantId} was not found for booking {booking.BookingId}.");
-        var venue = await venues.GetByTenantIdAsync(booking.VenueTenantId, ct)
+        var venue = await venueRepository.GetByTenantIdAsync(booking.VenueTenantId, ct)
             ?? throw new InvalidOperationException(
                 $"Venue projection {booking.VenueTenantId} was not found for booking {booking.BookingId}.");
         if (artist.Id != booking.ArtistId || venue.Id != booking.VenueId)
@@ -87,8 +87,8 @@ internal sealed class ConcertService : IConcertService
             $"{artist.Name} performing at {venue.Name}",
             venue.About,
             matchingGenres);
-        await repository.AddAsync(concert, ct);
-        await repository.SaveChangesAsync(ct);
+        await concertRepository.AddAsync(concert, ct);
+        await concertRepository.SaveChangesAsync(ct);
 
         await bus.PublishAsync(new ConcertCreatedEvent(
             concert.Id,
@@ -120,7 +120,7 @@ internal sealed class ConcertService : IConcertService
             return new ConcertError.MissingVenue();
 
         return new Success<IReadOnlyList<ManagerConcertCard>>(
-            await repository.GetUpcomingCardsForVenueTenantIdAsync(tenantId));
+            await concertRepository.GetUpcomingCardsForVenueTenantIdAsync(tenantId));
     }
 
     public async Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentArtistAsync()
@@ -129,7 +129,7 @@ internal sealed class ConcertService : IConcertService
             return new ConcertError.MissingArtist();
 
         return new Success<IReadOnlyList<ManagerConcertCard>>(
-            await repository.GetUpcomingCardsForArtistTenantIdAsync(tenantId));
+            await concertRepository.GetUpcomingCardsForArtistTenantIdAsync(tenantId));
     }
 
     public async Task<IReadOnlyList<ConcertSummary>> GetHistoryByArtistIdAsync(int id) =>
@@ -147,7 +147,7 @@ internal sealed class ConcertService : IConcertService
         int id,
         CancellationToken ct = default)
     {
-        return await repository.GetDetailsByIdAsync(id, ct)
+        return await concertRepository.GetDetailsByIdAsync(id, ct)
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.NotFound(id))
             .MapAsync(async details =>
@@ -161,7 +161,7 @@ internal sealed class ConcertService : IConcertService
         int id,
         CancellationToken ct = default)
     {
-        var concert = await repository.GetByIdAsync(id, ct);
+        var concert = await concertRepository.GetByIdAsync(id, ct);
         if (concert is null)
             return new ConcertError.NotFound(id);
 
@@ -173,7 +173,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<Result<ConcertDetails, ConcertError>> GetDetailsByApplicationIdAsync(int applicationId)
     {
-        return await repository.GetDetailsByApplicationIdAsync(applicationId)
+        return await concertRepository.GetDetailsByApplicationIdAsync(applicationId)
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.ApplicationNotFound(applicationId))
             .MapAsync(async details =>
@@ -185,7 +185,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<Result<ConcertUpdateResponse, UpdateConcertError>> UpdateAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await repository.GetByIdAsync(id);
+        var concertEntity = await concertRepository.GetByIdAsync(id);
         if (concertEntity is null)
             return new UpdateConcertError.ConcertNotFound(id);
 
@@ -195,7 +195,8 @@ internal sealed class ConcertService : IConcertService
 
         concertEntity.Update(request.Name, request.About, request.Price, request.TotalTickets);
 
-        await repository.SaveChangesAsync();
+        if (!await concertRepository.TrySaveChangesAsync())
+            return new UpdateConcertError.Superseded(id);
 
         return new ConcertUpdateResponse
         {
@@ -210,7 +211,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<UnitResult<PostConcertError>> PostAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await repository.GetByIdAsync(id);
+        var concertEntity = await concertRepository.GetByIdAsync(id);
         if (concertEntity is null)
             return new PostConcertError.ConcertNotFound(id);
 
@@ -222,13 +223,18 @@ internal sealed class ConcertService : IConcertService
             .TryGetError(out var transitionError))
             return new PostConcertError.InvalidTransition(transitionError);
 
-        await repository.SaveChangesAsync();
-        return new Success();
+        if (await concertRepository.TrySaveChangesAsync())
+            return new Success();
+
+        concertEntity = await concertRepository.GetByIdAsync(id);
+        return concertEntity?.State == State.Posted
+            ? new Success()
+            : new PostConcertError.Superseded(id);
     }
 
     public async Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueAsync(int id, decimal doorRevenue)
     {
-        var concert = await repository.GetByIdAsync(id);
+        var concert = await concertRepository.GetByIdAsync(id);
         if (concert is null)
             return new DeclareDoorRevenueError.ConcertNotFound(id);
 
@@ -242,16 +248,19 @@ internal sealed class ConcertService : IConcertService
         if (concert.State is not (State.Draft or State.Posted))
             return new DeclareDoorRevenueError.AlreadySettled();
 
-        return await concert.DeclareDoorRevenue(doorRevenue)
-            .MapError(error => error.ToDeclareDoorRevenueError())
-            .TapAsync(() => repository.SaveChangesAsync());
+        if (concert.DeclareDoorRevenue(doorRevenue).TryGetError(out var revenueError))
+            return revenueError.ToDeclareDoorRevenueError();
+
+        return await concertRepository.TrySaveChangesAsync()
+            ? new Success()
+            : new DeclareDoorRevenueError.Superseded(id);
     }
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByArtistIdAsync(int id) =>
-        (await repository.GetUnpostedByArtistIdAsync(id)).ToList();
+        (await concertRepository.GetUnpostedByArtistIdAsync(id)).ToList();
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByVenueIdAsync(int id) =>
-        (await repository.GetUnpostedByVenueIdAsync(id)).ToList();
+        (await concertRepository.GetUnpostedByVenueIdAsync(id)).ToList();
 
     private ConcertDetails WithActions(ConcertDetails details) => details with
     {

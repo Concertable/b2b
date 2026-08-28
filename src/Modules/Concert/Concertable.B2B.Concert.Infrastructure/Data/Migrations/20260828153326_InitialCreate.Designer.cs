@@ -14,7 +14,7 @@ using NetTopologySuite.Geometries;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20260827150220_InitialCreate")]
+    [Migration("20260828153326_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -144,6 +144,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("State")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
 
                     b.Property<int>("TicketsSold")

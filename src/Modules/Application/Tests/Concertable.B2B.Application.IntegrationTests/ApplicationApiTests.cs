@@ -230,84 +230,142 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     #region Accept
 
     [Fact]
-    public async Task Accept_WhenQueuedBeforeWithdraw_WinsTheLifecycleTransition()
+    public async Task Accept_WhenRejectWinsTheRace_ReturnsConflictAndLeavesTheApplicationRejected()
+    {
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        fixture.ArmApplicationConflict(async () =>
+        {
+            var winner = await competitor.PostAsync($"/api/application/{applicationId}/reject");
+            await winner.ShouldBe(HttpStatusCode.NoContent);
+        });
+
+        var accept = await venue.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+
+        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.invalid_state");
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        Assert.Equal(
+            State.Rejected,
+            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+    }
+
+    [Fact]
+    public async Task Reject_WhenAcceptWinsTheRace_ReturnsConflictAndLeavesTheApplicationAccepted()
+    {
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        fixture.ArmApplicationConflict(async () =>
+        {
+            var winner = await competitor.PostAsync(
+                $"/api/application/{applicationId}/accept",
+                new { eSignature = new { signatoryName = "Test Signatory" } });
+            await winner.ShouldBe(HttpStatusCode.NoContent);
+        });
+
+        var reject = await venue.PostAsync($"/api/application/{applicationId}/reject");
+
+        await AssertProblemCodeAsync(reject, HttpStatusCode.Conflict, "application.reject.invalid_state");
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        Assert.Equal(
+            State.Accepted,
+            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+    }
+
+    [Fact]
+    public async Task Accept_WhenCancellationWinsTheRace_ReturnsConflictAndLeavesTheApplicationCancelled()
+    {
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        fixture.ArmApplicationConflict(async () =>
+        {
+            var winner = await competitor.PostAsync($"/api/application/{applicationId}/cancel");
+            await winner.ShouldBe(HttpStatusCode.NoContent);
+        });
+
+        var accept = await venue.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+
+        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.invalid_state");
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        Assert.Equal(
+            State.Cancelled,
+            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+    }
+
+    [Fact]
+    public async Task Cancel_WhenAcceptWinsTheRace_ReturnsConflict()
+    {
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        fixture.ArmApplicationConflict(async () =>
+        {
+            var winner = await competitor.PostAsync(
+                $"/api/application/{applicationId}/accept",
+                new { eSignature = new { signatoryName = "Test Signatory" } });
+            await winner.ShouldBe(HttpStatusCode.NoContent);
+        });
+
+        var cancel = await venue.PostAsync($"/api/application/{applicationId}/cancel");
+
+        await AssertProblemCodeAsync(cancel, HttpStatusCode.Conflict, "application.cancel.invalid_state");
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        Assert.Equal(
+            State.Accepted,
+            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+    }
+
+    [Fact]
+    public async Task Accept_WhenWithdrawWinsTheRace_ReturnsConflictAndLeavesTheApplicationWithdrawn()
     {
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        await using var applicationLock = await fixture.HoldApplicationForUpdateAsync(applicationId);
-        var acceptTask = venue.PostAsync(
+        fixture.ArmApplicationConflict(async () =>
+        {
+            var winner = await artist.PostAsync($"/api/application/{applicationId}/withdraw");
+            await winner.ShouldBe(HttpStatusCode.NoContent);
+        });
+
+        var accept = await venue.PostAsync(
             $"/api/application/{applicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
-        await fixture.WaitForApplicationLockWaitersAsync(1);
-        var withdrawTask = artist.PostAsync(
-            $"/api/application/{applicationId}/withdraw",
-            (object?)null);
-        await fixture.WaitForApplicationLockWaitersAsync(2);
 
-        await applicationLock.RollbackAsync();
-        var accept = await acceptTask;
-        var withdraw = await withdrawTask;
-
-        await accept.ShouldBe(HttpStatusCode.NoContent);
-        await withdraw.ShouldBe(HttpStatusCode.Conflict);
+        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.invalid_state");
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
-            State.Accepted,
+            State.Withdrawn,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
     }
 
     [Fact]
-    public async Task Accept_WhenQueuedBeforeReject_WinsTheLifecycleTransition()
-    {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
-        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await using var applicationLock = await fixture.HoldApplicationForUpdateAsync(applicationId);
-        var acceptTask = venue.PostAsync(
-            $"/api/application/{applicationId}/accept",
-            new { eSignature = new { signatoryName = "Test Signatory" } });
-        await fixture.WaitForApplicationLockWaitersAsync(1);
-        var rejectTask = venue.PostAsync(
-            $"/api/application/{applicationId}/reject",
-            (object?)null);
-        await fixture.WaitForApplicationLockWaitersAsync(2);
-
-        await applicationLock.RollbackAsync();
-        var accept = await acceptTask;
-        var reject = await rejectTask;
-
-        await accept.ShouldBe(HttpStatusCode.NoContent);
-        await reject.ShouldBe(HttpStatusCode.Conflict);
-        Assert.Equal(
-            State.Accepted,
-            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
-    }
-
-    [Fact]
-    public async Task Accept_WhenVerificationOverlapsApplicationTransition_ConfirmsBooking()
+    public async Task Accept_WhenPaymentVerificationWinsTheRace_StillConfirmsTheBooking()
     {
         var applicationId = fixture.SeedState.DoorSplitApp.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var checkout = await client.PostAsync($"/api/application/{applicationId}/checkout");
         await checkout.ShouldBe(HttpStatusCode.OK);
+        fixture.ArmApplicationConflict(() => fixture.StripeClient.SendWebhookAsync());
 
-        await using var applicationLock = await fixture.HoldApplicationForUpdateAsync(applicationId);
-        var acceptTask = client.PostAsync(
+        var accept = await client.PostAsync(
             $"/api/application/{applicationId}/accept",
             new
             {
                 paymentMethodId = "pm_card_visa",
                 eSignature = new { signatoryName = "Test Signatory" }
             });
-        await fixture.WaitForApplicationLockWaitersAsync(1);
-
-        var verificationTask = fixture.StripeClient.SendWebhookAsync();
-        await fixture.WaitForApplicationLockWaitersAsync(2);
-        await applicationLock.RollbackAsync();
-
-        var accept = await acceptTask;
-        await verificationTask;
 
         await accept.ShouldBe(HttpStatusCode.NoContent);
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        Assert.Equal(
+            State.Accepted,
+            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
         var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}");
         await bookingResponse.ShouldBe(HttpStatusCode.OK);
         var booking = await bookingResponse.Content.ReadAsync<JsonElement>();

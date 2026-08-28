@@ -13,7 +13,9 @@ internal abstract partial record CancelBookingError : IError
         BookingNotFound(var bookingId) => ErrorDefinition.NotFound<BookingNotFound>(
             $"Booking {bookingId} was not found."),
         InvalidTransition(var error) => ErrorDefinition.Conflict<InvalidTransition>(
-            $"A booking in {error.Current} cannot be cancelled.")
+            $"A booking in {error.Current} cannot be cancelled."),
+        Superseded(var bookingId) => ErrorDefinition.Conflict<Superseded>(
+            $"Booking {bookingId} changed while this cancellation was in flight.")
     };
 
     [ErrorCode("booking.cancel.not_found")]
@@ -21,4 +23,7 @@ internal abstract partial record CancelBookingError : IError
 
     [ErrorCode("booking.cancel.invalid_state")]
     public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+
+    [ErrorCode("booking.cancel.superseded")]
+    public partial record Superseded(int BookingId);
 }

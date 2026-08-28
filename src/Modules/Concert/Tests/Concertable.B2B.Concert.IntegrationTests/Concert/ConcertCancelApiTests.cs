@@ -1,6 +1,7 @@
 using System.Net;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 using Concertable.Payment.Contracts;
@@ -105,33 +106,94 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(State.Cancelled, persisted.State);
     }
+    #region Cancel under concurrency
 
     [Fact]
-    public async Task Cancel_WhenQueuedAfterSettlementReservation_LeavesSettlementInProgress()
+    public async Task Cancel_WhenSettlementReservationWinsTheRace_ReturnsConflictAndLeavesSettlementInProgress()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, 200m);
         await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
-        await using var concertLock = await fixture.HoldConcertForUpdateAsync(concert.Id);
-        var completionTask = fixture.CompleteConcertAsync(concert.Id);
-        await fixture.WaitForConcertLockWaitersAsync(1);
-        var cancellationTask = client.PostAsync($"/api/concert/{concert.Id}/cancel", (object?)null);
-        await fixture.WaitForConcertLockWaitersAsync(2);
+        fixture.ArmConcertConflict(async () =>
+        {
+            var settlement = await fixture.CompleteConcertAsync(concert.Id);
+            Assert.True(settlement.TryGetValue(out _));
+        });
 
-        await concertLock.RollbackAsync();
-        var completion = await completionTask;
-        var cancellation = await cancellationTask;
+        var cancellation = await client.PostAsync($"/api/concert/{concert.Id}/cancel", (object?)null);
 
-        Assert.True(completion.TryGetValue(out _));
-        await cancellation.ShouldBe(HttpStatusCode.BadRequest);
+        await cancellation.ShouldBe(HttpStatusCode.Conflict);
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(State.AwaitingSettlement, persisted.State);
         Assert.NotNull(persisted.SettlementOperationId);
+        Assert.Null(persisted.CancellationOperationId);
         Assert.Single(
             fixture.ManagerPaymentClient.Payments,
             value => value.BookingId == concert.BookingId);
     }
+
+    [Fact]
+    public async Task Settle_WhenCancellationWinsTheRace_ReturnsConflictAndLeavesTheConcertCancelling()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+        await fixture.DeclareDoorRevenueAsync(concert.Id, 200m);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
+        fixture.ArmConcertConflict(async () =>
+        {
+            var cancellation = await client.PostAsync($"/api/concert/{concert.Id}/cancel", (object?)null);
+            await cancellation.ShouldBe(HttpStatusCode.NoContent);
+        });
+
+        var settlement = await fixture.CompleteConcertAsync(concert.Id);
+
+        Assert.True(settlement.TryGetError(out var error));
+        Assert.IsType<FinishConcertError.InvalidTransition>(error);
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(State.Cancelled, persisted.State);
+        Assert.Null(persisted.SettlementOperationId);
+        Assert.DoesNotContain(
+            fixture.ManagerPaymentClient.Payments,
+            value => value.BookingId == concert.BookingId);
+    }
+
+    [Fact]
+    public async Task Cancel_WhenAnotherCancellationWinsTheRace_SucceedsWithoutASecondRefund()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var appId = fixture.SeedState.FlatFeeApp.Id;
+        await client.PostAsync($"/api/application/{appId}/checkout");
+        var acceptResponse = await client.PostAsync(
+            $"/api/application/{appId}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+        await fixture.StripeClient.SendWebhookAsync();
+        var concertResponse = await client.GetAsync($"/api/concert/application/{appId}");
+        await concertResponse.ShouldBe(HttpStatusCode.OK);
+        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
+        var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        fixture.ArmConcertConflict(async () =>
+        {
+            var winner = await competitor.PostAsync($"/api/concert/{concert!.Id}/cancel", (object?)null);
+            await winner.ShouldBe(HttpStatusCode.NoContent);
+        });
+
+        var loser = await client.PostAsync($"/api/concert/{concert!.Id}/cancel", (object?)null);
+
+        await loser.ShouldBe(HttpStatusCode.NoContent);
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(State.CancellationPending, persisted.State);
+        Assert.Single(
+            fixture.PaymentTransport.Commands,
+            command => command is RefundEscrowCommand refund && refund.BookingId == persisted.BookingId);
+    }
+
+    #endregion
+
 
     [Fact]
     public async Task DeclareDoorRevenue_ShouldReturnBadRequest_AfterCancellation()

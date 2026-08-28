@@ -4,12 +4,13 @@ using Concertable.B2B.Concert.Application.Executors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Testing.Integration;
 using Concertable.Kernel.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Reunion;
 
@@ -23,6 +24,8 @@ public sealed class ConcertApiFixture : ApiFixture
     private ICompletionRunner completionRunner = null!;
     private IConcertService concertService = null!;
     private ISelfBillingAgreementRepository selfBillingAgreementRepository = null!;
+
+    internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
 
     internal IQueryable<ConcertEntity> Concerts => readDbContext.Concerts;
     internal IQueryable<InvoiceEntity> Invoices => dbContext.Invoices.AsNoTracking();
@@ -41,77 +44,33 @@ public sealed class ConcertApiFixture : ApiFixture
     internal Task DeclareDoorRevenueAsync(int concertId, decimal doorRevenue) =>
         concertService.DeclareDoorRevenueAsync(concertId, doorRevenue);
 
-    internal async Task<IDbContextTransaction> HoldConcertForUpdateAsync(int concertId)
-    {
-        var transaction = await dbContext.Database.BeginTransactionAsync();
-        try
-        {
-            _ = await dbContext.Database.SqlQuery<int>($"""
-                    SELECT [Id] AS [Value]
-                    FROM [concert].[Concerts] WITH (UPDLOCK, ROWLOCK)
-                    WHERE [Id] = {concertId}
-                    """)
-                .SingleAsync();
-            return transaction;
-        }
-        catch
-        {
-            await transaction.DisposeAsync();
-            throw;
-        }
-    }
+    /// <summary>
+    /// Commits <paramref name="competingChange"/> between the next concert transition's read and its
+    /// update, so that transition loses the race and has to rerun against the winner's state.
+    /// </summary>
+    internal void ArmConcertConflict(Func<Task> competingChange) =>
+        Conflicts.ArmOnce<ConcertEntity>(competingChange);
 
-    internal async Task WaitForConcertLockWaitersAsync(int expectedCount)
-    {
-        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
-        while (DateTimeOffset.UtcNow <= deadline)
-        {
-            var count = await dbContext.Database.SqlQuery<int>($"""
-                    SELECT COUNT(*) AS [Value]
-                    FROM sys.dm_exec_requests AS request
-                    CROSS APPLY sys.dm_exec_sql_text(request.sql_handle) AS batch
-                    WHERE request.wait_type LIKE N'LCK_M_%'
-                      AND CHARINDEX(
-                          N'FROM [concert].[Concerts] WITH (UPDLOCK, ROWLOCK)',
-                          batch.text) > 0
-                    """)
-                .SingleAsync();
-            if (count >= expectedCount)
-                return;
-
-            await Task.Delay(25);
-        }
-
-        throw new InvalidOperationException(
-            $"Expected {expectedCount} concert transition lock waiter(s).");
-    }
-
+    // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause,
+    // and SQL Server rejects OUTPUT against a table that has an enabled trigger. Stated over the new
+    // row alone, it still admits the settlement reservation and rejects only what follows it.
     internal Task FailSettlementPersistenceAsync() =>
-        dbContext.Database.ExecuteSqlRawAsync("""
-            CREATE TRIGGER [concert].[TR_Concerts_FailSettlementPersistence_ForTest]
-            ON [concert].[Concerts]
-            AFTER UPDATE
-            AS
-            BEGIN
-                IF EXISTS (
-                    SELECT 1
-                    FROM inserted AS current_row
-                    INNER JOIN deleted AS prior_row ON prior_row.[Id] = current_row.[Id]
-                    WHERE (
-                            current_row.[FinancialOperationReferenceId] IS NOT NULL
-                            AND prior_row.[FinancialOperationReferenceId] IS NULL
-                        ) OR (
-                            current_row.[State] <> prior_row.[State]
-                            AND prior_row.[SettlementOperationId] IS NOT NULL
-                        )
-                )
-                    THROW 51000, 'Forced settlement persistence failure.', 1;
-            END
+        dbContext.Database.ExecuteSqlRawAsync($"""
+            ALTER TABLE [concert].[Concerts] WITH NOCHECK
+            ADD CONSTRAINT [CK_Concerts_FailSettlementPersistence_ForTest] CHECK (
+                [FinancialOperationReferenceId] IS NULL
+                AND ([SettlementOperationId] IS NULL
+                     OR [State] = {(int)State.AwaitingSettlement}))
             """);
 
     internal Task RestoreSettlementPersistenceAsync() =>
-        dbContext.Database.ExecuteSqlRawAsync(
-            "DROP TRIGGER IF EXISTS [concert].[TR_Concerts_FailSettlementPersistence_ForTest]");
+        dbContext.Database.ExecuteSqlRawAsync("""
+            IF EXISTS (
+                SELECT 1 FROM sys.check_constraints
+                WHERE [name] = 'CK_Concerts_FailSettlementPersistence_ForTest')
+                ALTER TABLE [concert].[Concerts]
+                DROP CONSTRAINT [CK_Concerts_FailSettlementPersistence_ForTest]
+            """);
 
     internal Task RunCompletionAsync() => completionRunner.RunAsync();
 
@@ -144,6 +103,13 @@ public sealed class ConcertApiFixture : ApiFixture
 
     internal Task AddSelfBillingAgreementAsync(Guid tenantId, DateTime acceptedAtUtc) =>
         AddSelfBillingAgreementsAsync(CreateAgreement(tenantId, acceptedAtUtc));
+
+    protected override void OnConfigureServices(IServiceCollection services)
+    {
+        services.AddResettables(Conflicts);
+        services.ConfigureDbContext<ConcertDbContext>(
+            (_, options) => options.AddInterceptors(Conflicts));
+    }
 
     protected override void OnReset(IServiceScope scope)
     {
