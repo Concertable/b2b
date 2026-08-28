@@ -13,5 +13,6 @@ internal sealed record PendingVerificationDto
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public TenantContact? Contact { get; init; }
+
     public required DateTime SubmittedAt { get; init; }
 }
