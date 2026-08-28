@@ -6,38 +6,40 @@ import type {
   InviteMemberRequest,
 } from "../types";
 
+const BASE = "/organization";
+
 const membersApi = {
   listMembers: async (): Promise<Member[]> => {
-    const { data } = await apiClient.get<Member[]>("/organization/members");
+    const { data } = await apiClient.get<Member[]>(`${BASE}/members`);
     return data;
   },
 
   listInvitations: async (): Promise<Invitation[]> => {
-    const { data } = await apiClient.get<Invitation[]>("/organization/invitations");
+    const { data } = await apiClient.get<Invitation[]>(`${BASE}/invitations`);
     return data;
   },
 
   invite: async (body: InviteMemberRequest): Promise<Invitation> => {
     const { data } = await apiClient.post<Invitation>(
-      "/organization/invitations",
+      `${BASE}/invitations`,
       body,
     );
     return data;
   },
 
   revokeInvitation: async (id: string): Promise<void> => {
-    await apiClient.delete(`/organization/invitations/${id}`);
+    await apiClient.delete(`${BASE}/invitations/${id}`);
   },
 
   changeRole: async (
     userId: string,
     body: ChangeMemberRoleRequest,
   ): Promise<void> => {
-    await apiClient.put(`/organization/members/${userId}/role`, body);
+    await apiClient.put(`${BASE}/members/${userId}/role`, body);
   },
 
   removeMember: async (userId: string): Promise<void> => {
-    await apiClient.delete(`/organization/members/${userId}`);
+    await apiClient.delete(`${BASE}/members/${userId}`);
   },
 };
 
