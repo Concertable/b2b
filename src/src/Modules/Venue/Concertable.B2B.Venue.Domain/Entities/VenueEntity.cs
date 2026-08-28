@@ -19,7 +19,6 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
     public string Name { get; private set; } = null!;
     public string About { get; private set; } = null!;
     public string BannerUrl { get; private set; } = null!;
-    public bool Approved { get; private set; }
     public Point Location { get; private set; } = null!;
     public Address Address { get; private set; } = null!;
     public string Avatar { get; private set; } = null!;
@@ -71,12 +70,6 @@ public sealed class VenueEntity : IIdEntity, IHasName, IEventRaiser, ITenantScop
         BannerUrl = bannerUrl;
         events.Raise(new VenueChangedDomainEvent(this));
         return new Success();
-    }
-
-    public void Approve()
-    {
-        Approved = true;
-        events.Raise(new VenueChangedDomainEvent(this));
     }
 
     public void UpdateAvatar(string avatar)

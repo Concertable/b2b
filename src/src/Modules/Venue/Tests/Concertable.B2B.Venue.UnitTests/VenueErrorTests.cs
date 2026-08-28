@@ -8,12 +8,6 @@ public sealed class VenueErrorTests
     public static TheoryData<IError, string, string, ErrorKind> Cases => new()
     {
         {
-            new ApproveVenueError.VenueNotFound(42),
-            "venue.approve_not_found",
-            "Venue 42 was not found.",
-            ErrorKind.NotFound
-        },
-        {
             new CreateVenueError.VenueAlreadyExists(),
             "venue.create.active_tenant_already_has_venue",
             "A venue profile already exists.",

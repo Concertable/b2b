@@ -19,8 +19,7 @@ internal static class VenueMappers
             Town = dto.Town,
             Email = dto.Email,
             Latitude = dto.Latitude,
-            Longitude = dto.Longitude,
-            Approved = dto.Approved
+            Longitude = dto.Longitude
         };
     }
 }
