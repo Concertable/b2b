@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Artist.Infrastructure.Data;
+using Concertable.B2B.Artist.Infrastructure.Data;
 using Concertable.B2B.Artist.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
 
