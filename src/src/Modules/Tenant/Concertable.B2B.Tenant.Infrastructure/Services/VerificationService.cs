@@ -162,7 +162,7 @@ internal sealed class VerificationService : IVerificationService
         {
             TenantId = pending.TenantId,
             TenantType = pending.TenantType,
-            Contact = contact.Match<TenantContact?>(value => value, () => null),
+            Contact = contact.ToNullable(),
             SubmittedAt = pending.SubmittedAt,
         };
     }
