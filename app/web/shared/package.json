@@ -69,6 +69,11 @@
       "import": "./dist/features/tenant/index.js",
       "default": "./dist/features/tenant/index.js"
     },
+    "./features/verification": {
+      "types": "./dist/features/verification/index.d.ts",
+      "import": "./dist/features/verification/index.js",
+      "default": "./dist/features/verification/index.js"
+    },
     "./features/*": {
       "types": "./dist/features/*.d.ts",
       "import": "./dist/features/*.js",

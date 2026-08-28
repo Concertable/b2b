@@ -1,9 +1,11 @@
 using System.Net;
 using Concertable.B2B.Venue.Application.DTOs;
+using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.B2B.Venue.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
-using Microsoft.EntityFrameworkCore;
+using Concertable.B2B.IntegrationTests.Fixtures;
+using Microsoft.Extensions.DependencyInjection;
 using static Concertable.B2B.Venue.IntegrationTests.VenueRequestBuilders;
 using Xunit.Abstractions;
 
@@ -13,9 +15,9 @@ namespace Concertable.B2B.Venue.IntegrationTests;
 
 public sealed class VenueApiTests : IAsyncLifetime
 {
-    private readonly VenueApiFixture fixture;
+    private readonly ApiFixture fixture;
 
-    public VenueApiTests(VenueApiFixture fixture, ITestOutputHelper output)
+    public VenueApiTests(ApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -169,7 +171,6 @@ public sealed class VenueApiTests : IAsyncLifetime
         Assert.Equal("Test County", venue.County);
         Assert.Equal("Test Town", venue.Town);
         Assert.Equal("venuemanager35@test.com", venue.Email);
-        Assert.False(venue.Approved);
         Assert.EndsWith(".jpg", venue.BannerUrl);
         Assert.True(Guid.TryParse(Path.GetFileNameWithoutExtension(venue.BannerUrl), out _));
         Assert.Equal($"/api/venue/{venue.Id}", response.Headers.Location?.OriginalString);
@@ -234,9 +235,9 @@ public sealed class VenueApiTests : IAsyncLifetime
 
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Created));
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Conflict));
-        var profiles = await fixture.Venues
-            .Where(value => value.TenantId == tenantId)
-            .ToListAsync();
+        using var scope = fixture.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IVenueRepository>();
+        var profiles = await repository.GetAllByTenantIdAsync(tenantId);
         Assert.Single(profiles);
     }
 
@@ -336,114 +337,26 @@ public sealed class VenueApiTests : IAsyncLifetime
 
     #endregion
 
-    #region Approve
+    #region Dashboard
 
     [Fact]
-    public async Task Approve_ShouldReturn401_WhenUnauthenticated()
+    public async Task GetDashboardKpis_ShouldReturn200_WhenProfileExists()
     {
-        // Arrange
-        var client = fixture.CreateClient();
-
-        // Act
-        var response = await client.PatchAsync($"/api/venue/{fixture.SeedState.Venue.Id}/approve", null);
-
-        // Assert
-        await response.ShouldBe(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task Approve_ShouldReturn403_WhenNotAdmin()
-    {
-        // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        // Act
-        var response = await client.PatchAsync($"/api/venue/{fixture.SeedState.Venue.Id}/approve", null);
+        var response = await client.GetAsync("/api/venue-dashboard/kpis");
 
-        // Assert
-        await response.ShouldBe(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task Approve_ShouldReturn404_WhenVenueDoesNotExist()
-    {
-        // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.Admin);
-
-        // Act
-        var response = await client.PatchAsync("/api/venue/99999/approve", null);
-
-        // Assert
-        await response.ShouldBe(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
-    public async Task Approve_ShouldReturn204_AndApproveVenue()
-    {
-        // Arrange
-        var adminClient = fixture.CreateClient(fixture.SeedState.Admin);
-        var client = fixture.CreateClient();
-
-        // Act
-        var response = await adminClient.PatchAsync($"/api/venue/{fixture.SeedState.Venue.Id}/approve", null);
-
-        // Assert
-        await response.ShouldBe(HttpStatusCode.NoContent);
-        var venueResponse = await client.GetAsync($"/api/venue/{fixture.SeedState.Venue.Id}");
-        await venueResponse.ShouldBe(HttpStatusCode.OK);
-        var venue = await venueResponse.Content.ReadAsync<DetailsResponse>();
-        Assert.True(venue!.Approved);
-    }
-
-    #endregion
-
-    #region GetPendingApproval
-
-    [Fact]
-    public async Task GetPendingApproval_ShouldReturn401_WhenUnauthenticated()
-    {
-        // Arrange
-        var client = fixture.CreateClient();
-
-        // Act
-        var response = await client.GetAsync("/api/venue/pending-approval");
-
-        // Assert
-        await response.ShouldBe(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task GetPendingApproval_ShouldReturn403_WhenNotAdmin()
-    {
-        // Arrange
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-
-        // Act
-        var response = await client.GetAsync("/api/venue/pending-approval");
-
-        // Assert
-        await response.ShouldBe(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task GetPendingApproval_ShouldReturn200_WithOnlyUnapprovedVenues()
-    {
-        // Arrange
-        var creator = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
-        var created = await (await creator.PostAsync(
-            "/api/organization/venue",
-            await BuildCreateRequest().ToFormContent())).Content.ReadAsync<DetailsResponse>();
-        var admin = fixture.CreateClient(fixture.SeedState.Admin);
-
-        // Act
-        var response = await admin.GetAsync("/api/venue/pending-approval");
-
-        // Assert
         await response.ShouldBe(HttpStatusCode.OK);
-        var page = await response.Content.ReadAsync<PendingVenuePage>();
-        Assert.NotNull(page);
-        Assert.Contains(page.Data, v => v.Id == created!.Id);
-        Assert.DoesNotContain(page.Data, v => v.Id == fixture.SeedState.Venue.Id);
+    }
+
+    [Fact]
+    public async Task GetDashboardKpis_ShouldReturn204_WhenProfileDoesNotExist()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManagerNoVenue);
+
+        var response = await client.GetAsync("/api/venue-dashboard/kpis");
+
+        await response.ShouldBe(HttpStatusCode.NoContent);
     }
 
     #endregion
@@ -481,7 +394,4 @@ public sealed class VenueApiTests : IAsyncLifetime
     }
 
     #endregion
-
-    private sealed record PendingVenuePage(List<PendingVenue> Data);
-    private sealed record PendingVenue(int Id, string Name, string Email);
 }

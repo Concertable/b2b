@@ -18,10 +18,6 @@ internal interface IVenueService
         UpdateVenueRequest request,
         CancellationToken ct = default);
     Task<bool> OwnsVenueAsync(int venueId, CancellationToken ct = default);
-    Task<UnitResult<ApproveVenueError>> ApproveAsync(
-        int id,
-        CancellationToken ct = default);
-
     Task<Option<VenueSummary>> GetSummaryAsync(int id, CancellationToken ct = default);
     Task<Option<int>> GetCurrentIdAsync(CancellationToken ct = default);
     Task<Option<VenueProfile>> GetProfileAsync(int id, CancellationToken ct = default);
@@ -30,6 +26,4 @@ internal interface IVenueService
         CancellationToken ct = default);
     Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
     Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
-    Task<IPagination<PendingVenue>> GetPendingApprovalAsync(IPageParams pageParams);
-
 }

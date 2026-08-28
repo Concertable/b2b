@@ -28,7 +28,6 @@ internal static class QueryableVenueMappers
                 About = v.About,
                 BannerUrl = v.BannerUrl,
                 Avatar = v.Avatar,
-                Approved = v.Approved,
                 County = v.Address.County,
                 Town = v.Address.Town,
                 Email = v.Email,
