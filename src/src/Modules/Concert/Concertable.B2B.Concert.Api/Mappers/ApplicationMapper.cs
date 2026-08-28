@@ -8,11 +8,11 @@ using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
 
-internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
+internal sealed class ApplicationMapper : IApplicationMapper
 {
     private readonly IConcertWorkflowCapabilityRegistry registry;
 
-    public ApplicationResponseMapper(IConcertWorkflowCapabilityRegistry registry)
+    public ApplicationMapper(IConcertWorkflowCapabilityRegistry registry)
         => this.registry = registry;
 
     public ApplicationResponse<VenueApplicationActions> ToVenueResponse(ApplicationDto dto)

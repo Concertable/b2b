@@ -8,11 +8,11 @@ using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
 
-internal sealed class OpportunityResponseMapper : IOpportunityResponseMapper
+internal sealed class OpportunityMapper : IOpportunityMapper
 {
     private readonly IConcertWorkflowCapabilityRegistry registry;
 
-    public OpportunityResponseMapper(IConcertWorkflowCapabilityRegistry registry)
+    public OpportunityMapper(IConcertWorkflowCapabilityRegistry registry)
         => this.registry = registry;
 
     public OpportunityResponse ToResponse(OpportunityDto dto)
