@@ -19,7 +19,6 @@ public sealed class VenueServiceTests
 {
     private readonly Mock<IVenueRepository> repository;
     private readonly Mock<IVenueReadRepository> readRepository;
-    private readonly Mock<IVenuePrivilegedRepository> privilegedRepository;
     private readonly Mock<IImageService> imageService;
     private readonly Mock<ICurrentUser> currentUser;
     private readonly Mock<ITenantContext> tenantContext;
@@ -31,7 +30,6 @@ public sealed class VenueServiceTests
     {
         this.repository = new Mock<IVenueRepository>();
         this.readRepository = new Mock<IVenueReadRepository>();
-        this.privilegedRepository = new Mock<IVenuePrivilegedRepository>();
         this.imageService = new Mock<IImageService>();
         this.currentUser = new Mock<ICurrentUser>();
         this.tenantContext = new Mock<ITenantContext>();
@@ -40,7 +38,6 @@ public sealed class VenueServiceTests
         this.service = new VenueService(
             this.repository.Object,
             this.readRepository.Object,
-            this.privilegedRepository.Object,
             this.imageService.Object,
             this.currentUser.Object,
             this.tenantContext.Object,

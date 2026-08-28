@@ -1,7 +1,6 @@
 using Concertable.B2B.Venue.Api.Mappers;
 using Concertable.B2B.Venue.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Admin.Api.Authorization;
 using Concertable.B2B.Venue.Application.Interfaces;
 using Concertable.B2B.Venue.Application.Requests;
 using Microsoft.AspNetCore.Mvc;
@@ -31,19 +30,6 @@ internal sealed class VenueController : ControllerBase
         return (await venueService.GetDetailsByIdAsync(venueId, ct))
             .ToOkOrNotFound(venue => venue.ToDetailsResponse());
     }
-
-    [Admin]
-    [HttpPatch("{venueId:int}/approve")]
-    public async Task<IActionResult> Approve(int venueId, CancellationToken ct)
-    {
-        return (await venueService.ApproveAsync(venueId, ct)).ToNoContentOrProblem();
-    }
-
-    [Admin]
-    [HttpGet("pending-approval")]
-    public async Task<ActionResult<IPagination<PendingVenue>>> GetPendingApproval(
-        [FromQuery] PageParams pageParams) =>
-        Ok(await venueService.GetPendingApprovalAsync(pageParams));
 
     [HttpGet("{venueId:int}/ownership")]
     public async Task<ActionResult<bool>> IsOwner(int venueId, CancellationToken ct)

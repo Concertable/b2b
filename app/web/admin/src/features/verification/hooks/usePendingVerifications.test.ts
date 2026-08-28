@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { usePendingVenues } from "./usePendingVenues";
+import { usePendingVerifications } from "./usePendingVerifications";
 
 const mocks = vi.hoisted(() => ({
   approve: vi.fn(),
@@ -18,31 +18,31 @@ vi.mock("@concertable/web/hooks/usePagination", () => ({
     prevPage: vi.fn(),
   }),
 }));
-vi.mock("./usePendingVenuesQuery", () => ({
-  usePendingVenuesQuery: () => ({
+vi.mock("./usePendingVerificationsQuery", () => ({
+  usePendingVerificationsQuery: () => ({
     data: {
-      data: [{ id: 42 }],
+      data: [{ tenantId: "t-1" }],
       totalPages: 2,
     },
     isLoading: false,
     isError: false,
   }),
 }));
-vi.mock("./useApproveVenueMutation", () => ({
-  useApproveVenueMutation: () => ({ mutate: mocks.approve }),
+vi.mock("./useApproveVerificationMutation", () => ({
+  useApproveVerificationMutation: () => ({ mutate: mocks.approve }),
 }));
 
-describe("usePendingVenues approval", () => {
+describe("usePendingVerifications approval", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns to the previous page after approving its sole venue", () => {
-    const { approve } = usePendingVenues();
-    approve(42);
+  it("returns to the previous page after approving its sole row", () => {
+    const { approve } = usePendingVerifications();
+    approve("t-1");
 
     const options = mocks.approve.mock.calls[0][1];
     options.onSuccess();
 
     expect(mocks.setPage).toHaveBeenCalledWith(1);
-    expect(mocks.toastSuccess).toHaveBeenCalledWith("Venue approved");
+    expect(mocks.toastSuccess).toHaveBeenCalledWith("Organisation verified");
   });
 });

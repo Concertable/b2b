@@ -17,6 +17,5 @@ internal sealed record VenueDetails : IAddress
     public required string Avatar { get; init; }
     public required string County { get; init; }
     public required string Town { get; init; }
-    public bool Approved { get; init; }
     public required string Email { get; init; }
 }
