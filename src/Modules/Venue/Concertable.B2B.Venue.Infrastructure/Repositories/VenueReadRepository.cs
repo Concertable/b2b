@@ -1,4 +1,4 @@
-using Concertable.B2B.Venue.Infrastructure.Data;
+﻿using Concertable.B2B.Venue.Infrastructure.Data;
 using Concertable.B2B.Venue.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,6 +28,6 @@ internal sealed class VenueReadRepository : IVenueReadRepository
     public async Task<TenantContact?> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         await context.Venues
             .Where(v => v.TenantId == tenantId)
-            .Select(v => new TenantContact(v.Name, v.Email))
+            .Select(v => (TenantContact?)new TenantContact(v.Name, v.Email))
             .FirstOrDefaultAsync(ct);
 }

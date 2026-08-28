@@ -1,4 +1,4 @@
-using Concertable.B2B.Artist.Infrastructure.Data;
+﻿using Concertable.B2B.Artist.Infrastructure.Data;
 using Concertable.B2B.Artist.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +34,6 @@ internal sealed class ArtistReadRepository : IArtistReadRepository
     public async Task<TenantContact?> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         await context.Artists
             .Where(a => a.TenantId == tenantId)
-            .Select(a => new TenantContact(a.Name, a.Email))
+            .Select(a => (TenantContact?)new TenantContact(a.Name, a.Email))
             .FirstOrDefaultAsync(ct);
 }
