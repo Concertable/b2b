@@ -119,7 +119,7 @@ internal sealed class VerificationService : IVerificationService
     private async Task<UnitResult<VerificationReviewError>> ReviewAsync(
         Guid tenantId,
         Action<TenantVerificationEntity> transition,
-        Func<TenantVerificationEntity, string?, Task> notify,
+        Func<TenantVerificationEntity, string, Task> notify,
         CancellationToken ct)
     {
         var verification = await repository.GetByTenantIdAsync(tenantId, ct);
@@ -134,12 +134,14 @@ internal sealed class VerificationService : IVerificationService
         try
         {
             var tenant = await tenantRepository.GetByIdAsync(tenantId, ct);
-            var contactEmail = tenant is null
-                ? null
-                : (await contactResolver.ResolveAsync(tenant.Type, tenantId, ct))
-                    .Match<string?>(contact => contact.Email, () => null);
+            var resolved = tenant is null
+                ? Option.None<TenantContact>()
+                : await contactResolver.ResolveAsync(tenant.Type, tenantId, ct);
 
-            await notify(verification, contactEmail);
+            if (resolved.TryGetValue(out var contact))
+                await notify(verification, contact.Email);
+            else
+                logger.VerificationContactEmailMissing(tenantId);
         }
         catch (Exception exception)
         {
@@ -154,15 +156,13 @@ internal sealed class VerificationService : IVerificationService
 
     private async Task<PendingVerificationDto> ToDtoAsync(PendingVerificationProjection pending, CancellationToken ct)
     {
-        var contact = (await contactResolver.ResolveAsync(pending.TenantType, pending.TenantId, ct))
-            .Match<TenantContact?>(value => value, () => null);
+        var contact = await contactResolver.ResolveAsync(pending.TenantType, pending.TenantId, ct);
 
         return new PendingVerificationDto
         {
             TenantId = pending.TenantId,
             TenantType = pending.TenantType,
-            Name = contact?.Name,
-            Email = contact?.Email,
+            Contact = contact.Match<TenantContact?>(value => value, () => null),
             SubmittedAt = pending.SubmittedAt,
         };
     }
