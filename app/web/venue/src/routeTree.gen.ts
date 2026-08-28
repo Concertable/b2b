@@ -23,6 +23,7 @@ import { Route as VenueSettingsRouteRouteImport } from './routes/_venue/settings
 import { Route as VenueSettingsIndexRouteImport } from './routes/_venue/settings/index'
 import { Route as VenueMyIndexRouteImport } from './routes/_venue/my/index'
 import { Route as VenueFindIndexRouteImport } from './routes/_venue/find/index'
+import { Route as VenueSettingsVerificationRouteImport } from './routes/_venue/settings/verification'
 import { Route as VenueSettingsSelfBillingAgreementRouteImport } from './routes/_venue/settings/self-billing-agreement'
 import { Route as VenueSettingsPaymentRouteImport } from './routes/_venue/settings/payment'
 import { Route as VenueSettingsOrganizationRouteImport } from './routes/_venue/settings/organization'
@@ -105,6 +106,12 @@ const VenueFindIndexRoute = VenueFindIndexRouteImport.update({
   path: '/find/',
   getParentRoute: () => VenueRouteRoute,
 } as any)
+const VenueSettingsVerificationRoute =
+  VenueSettingsVerificationRouteImport.update({
+    id: '/verification',
+    path: '/verification',
+    getParentRoute: () => VenueSettingsRouteRoute,
+  } as any)
 const VenueSettingsSelfBillingAgreementRoute =
   VenueSettingsSelfBillingAgreementRouteImport.update({
     id: '/self-billing-agreement',
@@ -188,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/settings/organization': typeof VenueSettingsOrganizationRoute
   '/settings/payment': typeof VenueSettingsPaymentRoute
   '/settings/self-billing-agreement': typeof VenueSettingsSelfBillingAgreementRoute
+  '/settings/verification': typeof VenueSettingsVerificationRoute
   '/find/': typeof VenueFindIndexRoute
   '/my/': typeof VenueMyIndexRoute
   '/settings/': typeof VenueSettingsIndexRoute
@@ -214,6 +222,7 @@ export interface FileRoutesByTo {
   '/settings/organization': typeof VenueSettingsOrganizationRoute
   '/settings/payment': typeof VenueSettingsPaymentRoute
   '/settings/self-billing-agreement': typeof VenueSettingsSelfBillingAgreementRoute
+  '/settings/verification': typeof VenueSettingsVerificationRoute
   '/find': typeof VenueFindIndexRoute
   '/my': typeof VenueMyIndexRoute
   '/settings': typeof VenueSettingsIndexRoute
@@ -243,6 +252,7 @@ export interface FileRoutesById {
   '/_venue/settings/organization': typeof VenueSettingsOrganizationRoute
   '/_venue/settings/payment': typeof VenueSettingsPaymentRoute
   '/_venue/settings/self-billing-agreement': typeof VenueSettingsSelfBillingAgreementRoute
+  '/_venue/settings/verification': typeof VenueSettingsVerificationRoute
   '/_venue/find/': typeof VenueFindIndexRoute
   '/_venue/my/': typeof VenueMyIndexRoute
   '/_venue/settings/': typeof VenueSettingsIndexRoute
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/settings/organization'
     | '/settings/payment'
     | '/settings/self-billing-agreement'
+    | '/settings/verification'
     | '/find/'
     | '/my/'
     | '/settings/'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/settings/organization'
     | '/settings/payment'
     | '/settings/self-billing-agreement'
+    | '/settings/verification'
     | '/find'
     | '/my'
     | '/settings'
@@ -326,6 +338,7 @@ export interface FileRouteTypes {
     | '/_venue/settings/organization'
     | '/_venue/settings/payment'
     | '/_venue/settings/self-billing-agreement'
+    | '/_venue/settings/verification'
     | '/_venue/find/'
     | '/_venue/my/'
     | '/_venue/settings/'
@@ -451,6 +464,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VenueFindIndexRouteImport
       parentRoute: typeof VenueRouteRoute
     }
+    '/_venue/settings/verification': {
+      id: '/_venue/settings/verification'
+      path: '/verification'
+      fullPath: '/settings/verification'
+      preLoaderRoute: typeof VenueSettingsVerificationRouteImport
+      parentRoute: typeof VenueSettingsRouteRoute
+    }
     '/_venue/settings/self-billing-agreement': {
       id: '/_venue/settings/self-billing-agreement'
       path: '/self-billing-agreement'
@@ -543,6 +563,7 @@ interface VenueSettingsRouteRouteChildren {
   VenueSettingsOrganizationRoute: typeof VenueSettingsOrganizationRoute
   VenueSettingsPaymentRoute: typeof VenueSettingsPaymentRoute
   VenueSettingsSelfBillingAgreementRoute: typeof VenueSettingsSelfBillingAgreementRoute
+  VenueSettingsVerificationRoute: typeof VenueSettingsVerificationRoute
   VenueSettingsIndexRoute: typeof VenueSettingsIndexRoute
 }
 
@@ -552,6 +573,7 @@ const VenueSettingsRouteRouteChildren: VenueSettingsRouteRouteChildren = {
   VenueSettingsPaymentRoute: VenueSettingsPaymentRoute,
   VenueSettingsSelfBillingAgreementRoute:
     VenueSettingsSelfBillingAgreementRoute,
+  VenueSettingsVerificationRoute: VenueSettingsVerificationRoute,
   VenueSettingsIndexRoute: VenueSettingsIndexRoute,
 }
 

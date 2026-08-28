@@ -59,7 +59,6 @@ namespace Concertable.B2B.Venue.Infrastructure.Data.Migrations
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     About = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BannerUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Approved = table.Column<bool>(type: "bit", nullable: false),
                     Location = table.Column<Point>(type: "geography", nullable: false),
                     County = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Town = table.Column<string>(type: "nvarchar(max)", nullable: false),
