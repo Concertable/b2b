@@ -139,7 +139,8 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
         Assert.Contains(page!.Data, r => r.TenantId == firstTenantId);
-        Assert.Contains(page.Data, r => r.TenantId == secondTenantId);
+        var contactless = page.Data.Single(r => r.TenantId == secondTenantId);
+        Assert.Null(contactless.Contact);
     }
 
     #endregion
@@ -206,6 +207,24 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         var verification = fixture.Verifications.Single(v => v.TenantId == tenantId);
         Assert.Equal(TenantVerificationStatus.Approved, verification.Status);
         Assert.Contains(fixture.EmailSender.Sent, e => e.To == venue.Email);
+    }
+
+    [Fact]
+    public async Task Approve_ShouldReturn204_AndSendNothing_WhenTenantOwnsNoProfile()
+    {
+        var owner = fixture.SeedState.VenueManagerNoVenue;
+        var tenantId = TenantOf(owner.Id);
+        await fixture.AddPendingVerificationAsync(
+            tenantId, VerificationDocumentType.Licence, fixture.SeedNow.AddDays(-1));
+        var admin = fixture.CreateClient(fixture.SeedState.Admin);
+        var alreadySent = fixture.EmailSender.Sent.Count;
+
+        var response = await admin.PostAsync($"/api/verification/{tenantId}/approve", null);
+
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        var verification = fixture.Verifications.Single(v => v.TenantId == tenantId);
+        Assert.Equal(TenantVerificationStatus.Approved, verification.Status);
+        Assert.Equal(alreadySent, fixture.EmailSender.Sent.Count);
     }
 
     #endregion
