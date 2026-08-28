@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Application.DTOs;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
 
-internal interface IApplicationResponseMapper
+internal interface IApplicationMapper
 {
     ApplicationResponse<VenueApplicationActions> ToVenueResponse(ApplicationDto dto);
     IEnumerable<ApplicationResponse<VenueApplicationActions>> ToVenueResponses(IEnumerable<ApplicationDto> dtos);

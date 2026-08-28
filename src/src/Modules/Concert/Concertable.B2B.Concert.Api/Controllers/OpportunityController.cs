@@ -13,12 +13,12 @@ internal sealed class OpportunityController : ControllerBase
 {
     private readonly IOpportunityService opportunityService;
     private readonly IOpportunityDashboardService dashboardService;
-    private readonly IOpportunityResponseMapper mapper;
+    private readonly IOpportunityMapper mapper;
 
     public OpportunityController(
         IOpportunityService opportunityService,
         IOpportunityDashboardService dashboardService,
-        IOpportunityResponseMapper mapper)
+        IOpportunityMapper mapper)
     {
         this.opportunityService = opportunityService;
         this.dashboardService = dashboardService;

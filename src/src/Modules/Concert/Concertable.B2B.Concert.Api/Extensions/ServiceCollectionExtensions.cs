@@ -14,8 +14,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddConcertApi(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddConcertModule(configuration);
-        services.AddSingleton<IApplicationResponseMapper, ApplicationResponseMapper>();
-        services.AddSingleton<IOpportunityResponseMapper, OpportunityResponseMapper>();
+        services.AddSingleton<IApplicationMapper, ApplicationMapper>();
+        services.AddSingleton<IOpportunityMapper, OpportunityMapper>();
         services.AddValidatorsFromAssemblyContaining<ApplyRequestValidator>(includeInternalTypes: true);
         services.AddControllers()
             .AddInternalControllers(typeof(ConcertController).Assembly);

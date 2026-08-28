@@ -1,5 +1,6 @@
 using Concertable.B2B.Deal.Application.Errors;
 using Concertable.B2B.Deal.Application.Interfaces;
+using Concertable.B2B.Deal.Application.Mappers;
 using Concertable.B2B.Deal.Contracts.Errors;
 using Concertable.B2B.Deal.Domain.Entities;
 using Reunion.Errors;

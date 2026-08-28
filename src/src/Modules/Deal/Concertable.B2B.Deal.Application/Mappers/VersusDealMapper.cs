@@ -1,4 +1,3 @@
-using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Domain.Entities;
 using Reunion.Errors;
 using Reunion;
