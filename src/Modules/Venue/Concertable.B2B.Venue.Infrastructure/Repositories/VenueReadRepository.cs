@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Venue.Infrastructure.Data;
+using Concertable.B2B.Venue.Infrastructure.Data;
 using Concertable.B2B.Venue.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
 
