@@ -29,12 +29,13 @@ public sealed class CancellationJourneyTests : IAsyncLifetime
 
         var before = await GetApplicationAsync(client, applicationId);
         Assert.Equal(ApplicationBoundaryStatus.Accepted, before.Status);
-        Assert.NotNull(before.Actions.Cancel);
+        Assert.Null(before.Actions.Cancel);
         Assert.Null(before.Actions.Withdraw);
         Assert.Null(before.Actions.Reject);
         Assert.DoesNotContain(await GetOpportunitiesAsync(client), value => value.Id == opportunityId);
 
-        var cancelResponse = await client.PostAsync(before.Actions.Cancel.Href, (object?)null);
+        var bookingId = (await GetBookingAsync(client, applicationId)).BookingId;
+        var cancelResponse = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
 
@@ -56,10 +57,10 @@ public sealed class CancellationJourneyTests : IAsyncLifetime
         var applicationId = fixture.SeedState.VenueHireApp.Id;
         await AcceptAsync(client, applicationId);
         var application = await GetApplicationAsync(client, applicationId);
-        Assert.NotNull(application.Actions.Cancel);
-        var bookingId = int.Parse(application.Actions.Cancel.Href.Split('/')[3]);
+        Assert.Null(application.Actions.Cancel);
+        var bookingId = (await GetBookingAsync(client, applicationId)).BookingId;
 
-        var cancelResponse = await client.PostAsync(application.Actions.Cancel.Href, (object?)null);
+        var cancelResponse = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.StripeClient.SendWebhookAsync();
         var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
@@ -77,15 +78,16 @@ public sealed class CancellationJourneyTests : IAsyncLifetime
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
         await AcceptFlatFeeAsync(client, applicationId);
         var application = await GetApplicationAsync(client, applicationId);
-        Assert.NotNull(application.Actions.Cancel);
+        Assert.Null(application.Actions.Cancel);
+        var bookingId = (await GetBookingAsync(client, applicationId)).BookingId;
 
-        var firstResponse = await client.PostAsync(application.Actions.Cancel.Href, (object?)null);
+        var firstResponse = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
         var firstRefund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
         await fixture.RejectLatestFinancialOperationAsync();
         Assert.Equal(BookingStatus.CancellationFailed, (await GetBookingAsync(client, applicationId)).Status);
 
-        var retryResponse = await client.PostAsync(application.Actions.Cancel.Href, (object?)null);
+        var retryResponse = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
         await retryResponse.ShouldBe(HttpStatusCode.NoContent);
         var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
         var retryRefund = refunds.Last();
@@ -104,8 +106,8 @@ public sealed class CancellationJourneyTests : IAsyncLifetime
         var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
         await AcceptFlatFeeAsync(client, applicationId);
         var accepted = await GetApplicationAsync(client, applicationId);
-        Assert.NotNull(accepted.Actions.Cancel);
-        var bookingId = int.Parse(accepted.Actions.Cancel.Href.Split('/')[3]);
+        Assert.Null(accepted.Actions.Cancel);
+        var bookingId = (await GetBookingAsync(client, applicationId)).BookingId;
         await fixture.StripeClient.SendWebhookAsync();
         Assert.DoesNotContain(await GetOpportunitiesAsync(client), value => value.Id == opportunityId);
         var concertResponse = await client.GetAsync($"/api/concert/application/{applicationId}");

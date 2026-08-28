@@ -33,4 +33,7 @@ internal interface IApplicationService
     Task<UnitResult<RejectApplicationError>> RejectAsync(
         int applicationId,
         CancellationToken ct = default);
+    Task<UnitResult<CancelApplicationError>> CancelAsync(
+        int applicationId,
+        CancellationToken ct = default);
 }

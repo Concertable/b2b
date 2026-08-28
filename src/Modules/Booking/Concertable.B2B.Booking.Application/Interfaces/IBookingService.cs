@@ -29,9 +29,6 @@ internal interface IBookingService
     Task<int> GetArtistAwaitingCheckoutCountAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
-    Task<UnitResult<CancelBookingError>> CancelByApplicationIdAsync(
-        int applicationId,
-        CancellationToken ct = default);
     Task<UnitResult<CancelBookingError>> CancelAsync(
         int bookingId,
         CancellationToken ct = default);

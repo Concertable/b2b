@@ -8,6 +8,7 @@ public enum ApplicationNotification
     Accepted,
     Withdrawn,
     Rejected,
+    ConcertCancelled,
     Cancelled
 }
 

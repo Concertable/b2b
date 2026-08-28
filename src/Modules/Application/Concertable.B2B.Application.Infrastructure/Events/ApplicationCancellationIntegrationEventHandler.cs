@@ -47,6 +47,6 @@ internal sealed class ApplicationCancellationIntegrationEventHandler :
             context.AddInboxMessage(envelope, handler);
             var application = await context.Applications
                 .SingleOrDefaultAsync(value => value.Id == applicationId, ct);
-            application?.NotifyCounterparty(ApplicationNotification.Cancelled);
+            application?.NotifyCounterparty(ApplicationNotification.ConcertCancelled);
         }, ct);
 }

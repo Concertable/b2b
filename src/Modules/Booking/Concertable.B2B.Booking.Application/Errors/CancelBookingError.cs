@@ -13,7 +13,7 @@ internal abstract partial record CancelBookingError : IError
         BookingNotFound(var bookingId) => ErrorDefinition.NotFound<BookingNotFound>(
             $"Booking {bookingId} was not found."),
         InvalidTransition(var error) => ErrorDefinition.Conflict<InvalidTransition>(
-            $"A booking in {error.Current} cannot be cancelled through the application endpoint.")
+            $"A booking in {error.Current} cannot be cancelled.")
     };
 
     [ErrorCode("booking.cancel.not_found")]

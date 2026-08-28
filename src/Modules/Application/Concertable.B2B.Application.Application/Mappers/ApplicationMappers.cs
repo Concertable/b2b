@@ -13,6 +13,7 @@ internal static class ApplicationMappers
             State.Rejected => ApplicationStatus.Rejected,
             State.Withdrawn => ApplicationStatus.Withdrawn,
             State.Accepted => ApplicationStatus.Accepted,
+            State.Cancelled => ApplicationStatus.Cancelled,
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
         };
     }

@@ -208,7 +208,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         Assert.Equal(ApplicationStatus.Pending, before!.Status);
         Assert.NotNull(before.Actions.Accept);
         Assert.NotNull(before.Actions.Decline);
-        Assert.Null(before.Actions.Cancel);
+        Assert.NotNull(before.Actions.Cancel);
 
         // Act
         var rejectResponse = await client.PostAsync($"/api/application/{appId}/reject");

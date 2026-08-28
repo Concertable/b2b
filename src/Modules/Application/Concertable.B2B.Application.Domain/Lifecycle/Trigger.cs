@@ -4,5 +4,6 @@ public enum Trigger
 {
     Accept,
     Reject,
-    Withdraw
+    Withdraw,
+    Cancel
 }

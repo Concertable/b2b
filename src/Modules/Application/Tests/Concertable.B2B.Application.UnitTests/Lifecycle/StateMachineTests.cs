@@ -11,7 +11,8 @@ public sealed class StateMachineTests
         {
             [(State.Applied, Trigger.Accept)] = State.Accepted,
             [(State.Applied, Trigger.Reject)] = State.Rejected,
-            [(State.Applied, Trigger.Withdraw)] = State.Withdrawn
+            [(State.Applied, Trigger.Withdraw)] = State.Withdrawn,
+            [(State.Applied, Trigger.Cancel)] = State.Cancelled
         };
         var machine = new StateMachine();
 

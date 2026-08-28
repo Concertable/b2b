@@ -40,8 +40,6 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
         BookingSummary? booking)
     {
         var isPending = dto.State == State.Applied;
-        var isCancellable = booking?.Status is
-            BookingStatus.AwaitingConfirmation or BookingStatus.ConfirmationFailed;
         var status = booking?.Status == BookingStatus.Cancelled
             ? ApplicationStatus.Cancelled
             : dto.Status;
@@ -59,8 +57,8 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
                 Decline: isPending
                     ? new ActionLink($"/api/application/{dto.Id}/reject", HttpMethods.Post)
                     : null,
-                Cancel: isCancellable
-                    ? new ActionLink($"/api/booking/{booking!.BookingId}/cancel", HttpMethods.Post)
+                Cancel: isPending && booking is null
+                    ? new ActionLink($"/api/application/{dto.Id}/cancel", HttpMethods.Post)
                     : null,
                 Contract: booking is not null
                     ? new ActionLink($"/api/application/{dto.Id}/contract/pdf", HttpMethods.Get)

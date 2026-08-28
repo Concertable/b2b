@@ -100,6 +100,7 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
     internal UnitResult<TransitionError<State, Trigger>> ValidateAccept() => Validate(Trigger.Accept);
     internal UnitResult<TransitionError<State, Trigger>> Reject() => Apply(Trigger.Reject);
     internal UnitResult<TransitionError<State, Trigger>> Withdraw() => Apply(Trigger.Withdraw);
+    internal UnitResult<TransitionError<State, Trigger>> Cancel() => Apply(Trigger.Cancel);
 
     private UnitResult<TransitionError<State, Trigger>> Validate(Trigger trigger)
     {

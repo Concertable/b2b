@@ -44,6 +44,12 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
             "Your application was not selected for this concert opportunity",
             MessageAction.ApplicationRejected);
 
+    public Task CancelledAsync(int applicationId) =>
+        NotifyArtistAsync(
+            applicationId,
+            "Your application was cancelled by the venue",
+            MessageAction.ApplicationCancelled);
+
     private async Task NotifyVenueAsync(
         int applicationId,
         string content,

@@ -5,5 +5,6 @@ public enum State
     Applied,
     Accepted,
     Rejected,
-    Withdrawn
+    Withdrawn,
+    Cancelled
 }

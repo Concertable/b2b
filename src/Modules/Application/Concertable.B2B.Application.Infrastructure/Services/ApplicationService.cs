@@ -412,6 +412,26 @@ internal sealed class ApplicationService : IApplicationService
         return new Success();
     }
 
+    public async Task<UnitResult<CancelApplicationError>> CancelAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        await unitOfWork.ExecuteAsync(() => CancelCoreAsync(applicationId, ct), ct);
+
+    private async Task<UnitResult<CancelApplicationError>> CancelCoreAsync(
+        int applicationId,
+        CancellationToken ct)
+    {
+        var application = await repository.GetForUpdateByIdAsync(applicationId, ct);
+        if (application is null)
+            return new CancelApplicationError.ApplicationNotFound(applicationId);
+        if (application.Cancel().TryGetError(out var transitionError))
+            return new CancelApplicationError.InvalidTransition(transitionError);
+        application.NotifyCounterparty(ApplicationNotification.Cancelled);
+        await repository.SaveChangesAsync(ct);
+        await notifier.CancelledAsync(applicationId);
+        return new Success();
+    }
+
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
         var artistOption = await artists.GetCurrentProfileAsync();

@@ -108,16 +108,6 @@ internal sealed class BookingService : IBookingService
             timeProvider.GetUtcNow().UtcDateTime,
             ct);
 
-    public async Task<UnitResult<CancelBookingError>> CancelByApplicationIdAsync(
-        int applicationId,
-        CancellationToken ct = default)
-    {
-        var booking = await bookings.GetByApplicationIdAsync(applicationId, ct);
-        return booking is null
-            ? new CancelBookingError.BookingNotFound(applicationId)
-            : await CancelAsync(booking.Id, ct);
-    }
-
     public Task<UnitResult<CancelBookingError>> CancelAsync(
         int bookingId,
         CancellationToken ct = default) =>
