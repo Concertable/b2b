@@ -17,18 +17,18 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
     private readonly BookingDbContext context;
     private readonly IBookingService bookings;
     private readonly IUnitOfWorkBehavior unitOfWork;
-    private readonly IOutboxUnitOfWorkBehavior outbox;
+    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public AcceptanceFinancialOperationOutcomeProcessor(
         BookingDbContext context,
         IBookingService bookings,
         IUnitOfWorkBehavior unitOfWork,
-        IOutboxUnitOfWorkBehavior outbox)
+        IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.context = context;
         this.bookings = bookings;
         this.unitOfWork = unitOfWork;
-        this.outbox = outbox;
+        this.outboxBehavior = outboxBehavior;
     }
 
     public Task HandleAsync(
@@ -125,7 +125,7 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
         Func<Task> action,
         CancellationToken ct) =>
         unitOfWork.ExecuteAsync(
-            () => outbox.ExecuteAsync(async () =>
+            () => outboxBehavior.ExecuteAsync(async () =>
             {
                 var handler = nameof(AcceptanceFinancialOperationOutcomeProcessor);
                 if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))

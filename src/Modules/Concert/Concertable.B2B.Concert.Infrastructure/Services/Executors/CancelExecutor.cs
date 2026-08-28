@@ -9,18 +9,18 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Executors;
 internal sealed class CancelExecutor : ICancelExecutor
 {
     private readonly IConcertRepository concerts;
-    private readonly IDealTypeStrategyFactory<ICancelStep> steps;
+    private readonly IDealTypeStrategyFactory<ICancelStep> cancelStepFactory;
     private readonly IUnitOfWorkBehavior unitOfWork;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public CancelExecutor(
         IConcertRepository concerts,
-        IDealTypeStrategyFactory<ICancelStep> steps,
+        IDealTypeStrategyFactory<ICancelStep> cancelStepFactory,
         IUnitOfWorkBehavior unitOfWork,
         IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.concerts = concerts;
-        this.steps = steps;
+        this.cancelStepFactory = cancelStepFactory;
         this.unitOfWork = unitOfWork;
         this.outboxBehavior = outboxBehavior;
     }
@@ -39,7 +39,7 @@ internal sealed class CancelExecutor : ICancelExecutor
                 if (concert.ValidateBeginCancellation().TryGetError(out var transitionError))
                     return new CancelConcertError.InvalidTransition(transitionError);
 
-                await steps.Create(concert.DealType).ExecuteAsync(concert, ct);
+                await cancelStepFactory.Create(concert.DealType).ExecuteAsync(concert, ct);
                 await concerts.SaveChangesAsync(ct);
                 return UnitResult.Success<CancelConcertError>();
             }, ct),

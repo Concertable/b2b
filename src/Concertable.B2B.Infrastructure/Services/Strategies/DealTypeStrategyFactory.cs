@@ -7,13 +7,13 @@ namespace Concertable.B2B.Infrastructure.Services.Strategies;
 internal sealed class DealTypeStrategyFactory<TStrategy> : IDealTypeStrategyFactory<TStrategy>
     where TStrategy : class
 {
-    private readonly IKeyedServiceProvider services;
+    private readonly IKeyedServiceProvider serviceProvider;
 
-    public DealTypeStrategyFactory(IKeyedServiceProvider services)
+    public DealTypeStrategyFactory(IKeyedServiceProvider serviceProvider)
     {
-        this.services = services;
+        this.serviceProvider = serviceProvider;
     }
 
     public TStrategy Create(DealType dealType) =>
-        this.services.GetRequiredKeyedService<TStrategy>(dealType);
+        this.serviceProvider.GetRequiredKeyedService<TStrategy>(dealType);
 }

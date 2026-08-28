@@ -5,13 +5,13 @@ namespace Concertable.B2B.Application.Infrastructure.Services.Strategies;
 
 internal sealed class AcceptFactory : IAcceptFactory
 {
-    private readonly IKeyedServiceProvider services;
+    private readonly IKeyedServiceProvider serviceProvider;
 
-    public AcceptFactory(IKeyedServiceProvider services)
+    public AcceptFactory(IKeyedServiceProvider serviceProvider)
     {
-        this.services = services;
+        this.serviceProvider = serviceProvider;
     }
 
     public IAccept Create(DealDto deal) =>
-        services.GetRequiredKeyedService<IAccept>(deal.DealType);
+        serviceProvider.GetRequiredKeyedService<IAccept>(deal.DealType);
 }

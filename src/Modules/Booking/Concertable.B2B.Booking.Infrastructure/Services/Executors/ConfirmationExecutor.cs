@@ -8,21 +8,21 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 
 internal sealed class ConfirmationExecutor : IConfirmationExecutor
 {
-    private readonly IDealTypeStrategyFactory<IConfirmStep> steps;
-    private readonly IOutboxUnitOfWorkBehavior outbox;
+    private readonly IDealTypeStrategyFactory<IConfirmStep> confirmStepFactory;
+    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public ConfirmationExecutor(
-        IDealTypeStrategyFactory<IConfirmStep> steps,
-        IOutboxUnitOfWorkBehavior outbox)
+        IDealTypeStrategyFactory<IConfirmStep> confirmStepFactory,
+        IOutboxUnitOfWorkBehavior outboxBehavior)
     {
-        this.steps = steps;
-        this.outbox = outbox;
+        this.confirmStepFactory = confirmStepFactory;
+        this.outboxBehavior = outboxBehavior;
     }
 
     public Task<BookingDto> ExecuteAsync(
         AcceptedApplication application,
         CancellationToken ct = default) =>
-        this.outbox.ExecuteAsync(
-            () => this.steps.Create(application.DealType).ExecuteAsync(application, ct),
+        this.outboxBehavior.ExecuteAsync(
+            () => this.confirmStepFactory.Create(application.DealType).ExecuteAsync(application, ct),
             ct);
 }

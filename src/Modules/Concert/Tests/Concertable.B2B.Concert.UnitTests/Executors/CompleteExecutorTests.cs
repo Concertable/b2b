@@ -13,18 +13,18 @@ namespace Concertable.B2B.Concert.UnitTests;
 public sealed class CompleteExecutorTests
 {
     private readonly Mock<ISettlementService> settlementService = new();
-    private readonly Mock<IDealTypeStrategyFactory<ICompleteStep>> steps = new();
+    private readonly Mock<IDealTypeStrategyFactory<ICompleteStep>> completeStepFactory = new();
     private readonly Mock<ICompleteStep> completeStep = new();
     private readonly CompleteExecutor executor;
 
     public CompleteExecutorTests()
     {
-        this.steps
+        this.completeStepFactory
             .Setup(factory => factory.Create(It.IsAny<DealType>()))
             .Returns(this.completeStep.Object);
         this.executor = new CompleteExecutor(
             this.settlementService.Object,
-            this.steps.Object);
+            this.completeStepFactory.Object);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class CompleteExecutorTests
 
         Assert.True(result.TryGetValue(out var outcome));
         Assert.Equal(SettlementOutcome.Settled, outcome);
-        this.steps.Verify(factory => factory.Create(DealType.DoorSplit));
+        this.completeStepFactory.Verify(factory => factory.Create(DealType.DoorSplit));
         this.completeStep.Verify(step => step.ExecuteAsync(ready, default));
     }
 }

@@ -6,13 +6,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 
 internal sealed class SettlementAmountResolver : ISettlementAmountResolver
 {
-    private readonly IDealTypeStrategyFactory<ISettlementAmountResolver> resolvers;
+    private readonly IDealTypeStrategyFactory<ISettlementAmountResolver> amountResolverFactory;
 
-    public SettlementAmountResolver(IDealTypeStrategyFactory<ISettlementAmountResolver> resolvers)
+    public SettlementAmountResolver(IDealTypeStrategyFactory<ISettlementAmountResolver> amountResolverFactory)
     {
-        this.resolvers = resolvers;
+        this.amountResolverFactory = amountResolverFactory;
     }
 
     public Task<Money> ResolveGrossAsync(int concertId, DealDto deal, CancellationToken ct = default) =>
-        resolvers.Create(deal.DealType).ResolveGrossAsync(concertId, deal, ct);
+        amountResolverFactory.Create(deal.DealType).ResolveGrossAsync(concertId, deal, ct);
 }

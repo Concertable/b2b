@@ -6,13 +6,13 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 
 internal sealed class CancellationExecutor : ICancellationExecutor
 {
-    private readonly IDealTypeStrategyFactory<ICancelStep> steps;
+    private readonly IDealTypeStrategyFactory<ICancelStep> cancelStepFactory;
 
-    public CancellationExecutor(IDealTypeStrategyFactory<ICancelStep> steps)
+    public CancellationExecutor(IDealTypeStrategyFactory<ICancelStep> cancelStepFactory)
     {
-        this.steps = steps;
+        this.cancelStepFactory = cancelStepFactory;
     }
 
     public Task ExecuteAsync(BookingEntity booking, CancellationToken ct = default) =>
-        this.steps.Create(booking.DealType).ExecuteAsync(booking, ct);
+        this.cancelStepFactory.Create(booking.DealType).ExecuteAsync(booking, ct);
 }

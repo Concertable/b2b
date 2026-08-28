@@ -8,14 +8,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Executors;
 internal sealed class CompleteExecutor : ICompleteExecutor
 {
     private readonly ISettlementService settlementService;
-    private readonly IDealTypeStrategyFactory<ICompleteStep> steps;
+    private readonly IDealTypeStrategyFactory<ICompleteStep> completeStepFactory;
 
     public CompleteExecutor(
         ISettlementService settlementService,
-        IDealTypeStrategyFactory<ICompleteStep> steps)
+        IDealTypeStrategyFactory<ICompleteStep> completeStepFactory)
     {
         this.settlementService = settlementService;
-        this.steps = steps;
+        this.completeStepFactory = completeStepFactory;
     }
 
     public async Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
@@ -34,7 +34,7 @@ internal sealed class CompleteExecutor : ICompleteExecutor
             throw new InvalidOperationException(
                 $"Concert {concertId} returned an unknown settlement preparation.");
 
-        var executed = await steps
+        var executed = await completeStepFactory
             .Create(ready.DealType)
             .ExecuteAsync(ready, ct);
         if (executed.TryGetError(out error))

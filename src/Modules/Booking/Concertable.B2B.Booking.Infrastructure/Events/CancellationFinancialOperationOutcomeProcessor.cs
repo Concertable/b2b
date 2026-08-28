@@ -13,14 +13,14 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
     IIntegrationEventHandler<RefundEscrowRejectedEvent>
 {
     private readonly BookingDbContext context;
-    private readonly IOutboxUnitOfWorkBehavior outbox;
+    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public CancellationFinancialOperationOutcomeProcessor(
         BookingDbContext context,
-        IOutboxUnitOfWorkBehavior outbox)
+        IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.context = context;
-        this.outbox = outbox;
+        this.outboxBehavior = outboxBehavior;
     }
 
     public Task HandleAsync(
@@ -54,7 +54,7 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
         MessageEnvelope envelope,
         Action<BookingEntity> action,
         CancellationToken ct) =>
-        outbox.ExecuteAsync(async () =>
+        outboxBehavior.ExecuteAsync(async () =>
         {
             var handler = nameof(CancellationFinancialOperationOutcomeProcessor);
             if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))

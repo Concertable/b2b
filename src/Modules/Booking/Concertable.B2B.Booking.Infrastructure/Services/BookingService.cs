@@ -18,7 +18,7 @@ internal sealed class BookingService : IBookingService
     private readonly IContractRepository contracts;
     private readonly IUnitOfWorkBehavior unitOfWork;
     private readonly IBus bus;
-    private readonly IOutboxUnitOfWorkBehavior outbox;
+    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
     private readonly ICancellationExecutor cancellation;
     private readonly TimeProvider timeProvider;
 
@@ -27,7 +27,7 @@ internal sealed class BookingService : IBookingService
         IContractRepository contracts,
         IUnitOfWorkBehavior unitOfWork,
         IBus bus,
-        IOutboxUnitOfWorkBehavior outbox,
+        IOutboxUnitOfWorkBehavior outboxBehavior,
         ICancellationExecutor cancellation,
         TimeProvider timeProvider)
     {
@@ -35,7 +35,7 @@ internal sealed class BookingService : IBookingService
         this.contracts = contracts;
         this.unitOfWork = unitOfWork;
         this.bus = bus;
-        this.outbox = outbox;
+        this.outboxBehavior = outboxBehavior;
         this.cancellation = cancellation;
         this.timeProvider = timeProvider;
     }
@@ -122,7 +122,7 @@ internal sealed class BookingService : IBookingService
         int bookingId,
         CancellationToken ct = default) =>
         unitOfWork.ExecuteAsync(
-            () => outbox.ExecuteAsync(async () =>
+            () => outboxBehavior.ExecuteAsync(async () =>
             {
                 var booking = await bookings.GetForUpdateByIdAsync(bookingId, ct);
                 if (booking is null)

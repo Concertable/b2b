@@ -5,11 +5,11 @@ namespace Concertable.B2B.Concert.Application.Resolvers;
 
 internal sealed class DealPayeeResolver : IDealPayeeResolver
 {
-    private readonly IDealTypeStrategyFactory<IDealPayeeResolver> resolvers;
+    private readonly IDealTypeStrategyFactory<IDealPayeeResolver> payeeResolverFactory;
 
-    public DealPayeeResolver(IDealTypeStrategyFactory<IDealPayeeResolver> resolvers)
+    public DealPayeeResolver(IDealTypeStrategyFactory<IDealPayeeResolver> payeeResolverFactory)
     {
-        this.resolvers = resolvers;
+        this.payeeResolverFactory = payeeResolverFactory;
     }
 
     public Guid ResolveTicketUserId(ConcertEntity concert) =>
@@ -22,5 +22,5 @@ internal sealed class DealPayeeResolver : IDealPayeeResolver
         Resolve(concert).ResolveSettlementTenantId(concert);
 
     private IDealPayeeResolver Resolve(ConcertEntity concert) =>
-        resolvers.Create(concert.DealType);
+        payeeResolverFactory.Create(concert.DealType);
 }
