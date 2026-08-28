@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
@@ -86,8 +86,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
         var row = page!.Data.Single(r => r.TenantId == tenantId);
         Assert.Equal(TenantType.Venue, row.TenantType);
-        Assert.Equal(venue.Name, row.Name);
-        Assert.Equal(venue.Email, row.Email);
+        Assert.Equal(new TenantContact(venue.Name, venue.Email), row.Contact);
     }
 
     [Fact]
@@ -107,8 +106,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
         var row = page!.Data.Single(r => r.TenantId == tenantId);
         Assert.Equal(TenantType.Artist, row.TenantType);
-        Assert.Equal("New Artist", row.Name);
-        Assert.Equal(owner.Email, row.Email);
+        Assert.Equal(new TenantContact("New Artist", owner.Email), row.Contact);
     }
 
     [Fact]
