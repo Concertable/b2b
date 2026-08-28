@@ -156,6 +156,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<Guid>("VenueTenantId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Period", "Concertable.B2B.Concert.Domain.Entities.ConcertEntity.Period#DateRange", b1 =>
                         {
                             b1.IsRequired();

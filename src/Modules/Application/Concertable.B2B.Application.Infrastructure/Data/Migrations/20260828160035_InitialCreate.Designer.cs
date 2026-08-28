@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260828152322_InitialCreate")]
+    [Migration("20260828160035_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -65,6 +65,12 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
 
                     b.Property<Guid>("VenueTenantId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "ArtistESignature", "Concertable.B2B.Application.Domain.Entities.ApplicationEntity.ArtistESignature#Signature", b1 =>
                         {

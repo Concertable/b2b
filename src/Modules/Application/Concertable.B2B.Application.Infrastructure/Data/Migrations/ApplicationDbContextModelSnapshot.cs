@@ -63,6 +63,12 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                     b.Property<Guid>("VenueTenantId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "ArtistESignature", "Concertable.B2B.Application.Domain.Entities.ApplicationEntity.ArtistESignature#Signature", b1 =>
                         {
                             b1.IsRequired();

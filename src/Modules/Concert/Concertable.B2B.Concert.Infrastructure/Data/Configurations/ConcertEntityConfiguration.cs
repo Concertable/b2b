@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -9,6 +10,7 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
     public void Configure(EntityTypeBuilder<ConcertEntity> builder)
     {
         builder.ToTable(Schema.Tables.Concerts, Schema.Name);
+        builder.HasConcurrencyVersion();
         builder.Property(e => e.State).IsRequired().IsConcurrencyToken();
         builder.Property(e => e.SettlementGrossAmount).HasPrecision(18, 2);
         builder.Property(e => e.FinancialOperationReferenceId).HasMaxLength(255);

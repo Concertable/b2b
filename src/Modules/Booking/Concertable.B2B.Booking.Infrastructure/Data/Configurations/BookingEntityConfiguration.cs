@@ -1,4 +1,5 @@
 using Concertable.B2B.Booking.Domain.Entities;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -9,6 +10,7 @@ internal sealed class BookingEntityConfiguration : IEntityTypeConfiguration<Book
     public void Configure(EntityTypeBuilder<BookingEntity> builder)
     {
         builder.ToTable(Schema.Tables.Bookings, Schema.Name);
+        builder.HasConcurrencyVersion();
         builder.Property(booking => booking.State).IsRequired().IsConcurrencyToken();
         builder.Property(booking => booking.ExpectedFinancialOperation).IsRequired();
         builder.Property(booking => booking.FinancialOperationReferenceId).HasMaxLength(255);

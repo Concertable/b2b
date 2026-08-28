@@ -13,11 +13,12 @@ using Reunion;
 namespace Concertable.B2B.Booking.Domain.Entities;
 
 [DisplayName(Booking.Contracts.DisplayNames.Booking)]
-public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IEventRaiser
+public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
 {
     private static readonly StateMachine stateMachine = new();
 
     public int Id { get; private set; }
+    public byte[] Version { get; private set; } = null!;
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public Guid OperationId { get; private set; }

@@ -18,11 +18,12 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// so the Concert module can satisfy queries in a single DB context without crossing module boundaries.
 /// </summary>
 [DisplayName(DisplayNames.Concert)]
-public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRaiser, IVenueArtistTenantScoped
+public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurrencyVersioned, IEventRaiser, IVenueArtistTenantScoped
 {
     private static readonly StateMachine stateMachine = new();
 
     public int Id { get; private set; }
+    public byte[] Version { get; private set; } = null!;
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public Guid OperationId { get; private set; }

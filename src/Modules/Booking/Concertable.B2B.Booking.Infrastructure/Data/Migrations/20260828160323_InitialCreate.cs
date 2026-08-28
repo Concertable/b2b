@@ -21,6 +21,7 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    Version = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false),
                     VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     OperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),

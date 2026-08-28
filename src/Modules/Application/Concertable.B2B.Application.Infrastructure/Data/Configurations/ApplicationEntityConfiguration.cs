@@ -1,6 +1,7 @@
 using System.Net;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -15,6 +16,7 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<ApplicationEntity> builder)
     {
         builder.ToTable(Schema.Tables.Applications, Schema.Name);
+        builder.HasConcurrencyVersion();
         builder.Property(application => application.State).IsRequired().IsConcurrencyToken();
         builder.HasOne(application => application.VerifyPayment)
             .WithOne()

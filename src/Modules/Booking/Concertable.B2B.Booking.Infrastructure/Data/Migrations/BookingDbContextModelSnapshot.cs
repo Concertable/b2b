@@ -96,6 +96,12 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.Property<Guid>("VenueTenantId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ApplicationId")

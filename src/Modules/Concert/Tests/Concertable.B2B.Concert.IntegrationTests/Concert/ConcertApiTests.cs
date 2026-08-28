@@ -85,6 +85,39 @@ public sealed class ConcertApiTests : IAsyncLifetime
         fixture.CreateClient(fixture.SeedState.ArtistManagers.Single(manager =>
             manager.Id == fixture.SeedState.Artists.Single(artist => artist.Id == artistId).UserId));
 
+    #region Update
+
+    [Fact]
+    public async Task Update_WhenAnotherUpdateWinsTheRace_ReturnsConflictAndPreservesWinner()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
+        var client = CreateOwningVenueClient(concert.VenueId);
+        var competitor = CreateOwningVenueClient(concert.VenueId);
+        HttpResponseMessage? winnerResponse = null;
+        fixture.ArmConcertConflict(async () =>
+        {
+            winnerResponse = await competitor.PutAsync(
+                $"/api/concert/{concert.Id}",
+                BuildPostRequest(name: "Winner"));
+        });
+
+        var response = await client.PutAsync(
+            $"/api/concert/{concert.Id}",
+            BuildPostRequest(name: "Loser"));
+
+        Assert.NotNull(winnerResponse);
+        await winnerResponse.ShouldBe(HttpStatusCode.OK);
+        await response.ShouldBe(HttpStatusCode.Conflict);
+        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal("concert.update.superseded", problem.Extensions["code"]?.ToString());
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal("Winner", persisted.Name);
+    }
+
+    #endregion
+
     #region Post
 
     [Fact]
