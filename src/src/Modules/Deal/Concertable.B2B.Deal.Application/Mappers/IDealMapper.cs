@@ -2,7 +2,7 @@ using Concertable.B2B.Deal.Domain.Entities;
 using Reunion.Errors;
 using Reunion;
 
-namespace Concertable.B2B.Deal.Application.Interfaces;
+namespace Concertable.B2B.Deal.Application.Mappers;
 
 internal interface IDealMapper : IDealStrategy
 {

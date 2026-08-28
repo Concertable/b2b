@@ -1,0 +1,25 @@
+using Concertable.B2B.Venue.Api.Responses;
+using Concertable.B2B.Venue.Application.DTOs;
+
+namespace Concertable.B2B.Venue.Api.Mappers;
+
+internal static class VenueMappers
+{
+    extension(VenueDetails dto)
+    {
+        public DetailsResponse ToDetailsResponse() => new()
+        {
+            Id = dto.Id,
+            Name = dto.Name,
+            About = dto.About,
+            BannerUrl = dto.BannerUrl,
+            Avatar = dto.Avatar,
+            Rating = dto.Rating,
+            County = dto.County,
+            Town = dto.Town,
+            Email = dto.Email,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude
+        };
+    }
+}
