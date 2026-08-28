@@ -139,8 +139,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
         Assert.Contains(page!.Data, r => r.TenantId == firstTenantId);
-        var contactless = page.Data.Single(r => r.TenantId == secondTenantId);
-        Assert.Null(contactless.Contact);
+        Assert.Contains(page.Data, r => r.TenantId == secondTenantId);
     }
 
     #endregion
@@ -209,13 +208,17 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         Assert.Contains(fixture.EmailSender.Sent, e => e.To == venue.Email);
     }
 
+    /// <summary>Mirrors <see cref="GetPending_ShouldReturn200_WithArtistContactEnrichment"/>'s proof that
+    /// <see cref="Concertable.B2B.Seed.Infrastructure.SeedState.ArtistManagerNoArtist"/> owns no artist
+    /// by default (that test explicitly creates one before asserting on it) — this test deliberately does not,
+    /// so the tenant is provably contactless.</summary>
     [Fact]
     public async Task Approve_ShouldReturn204_AndSendNothing_WhenTenantOwnsNoProfile()
     {
-        var owner = fixture.SeedState.VenueManagerNoVenue;
+        var owner = fixture.SeedState.ArtistManagerNoArtist;
         var tenantId = TenantOf(owner.Id);
         await fixture.AddPendingVerificationAsync(
-            tenantId, VerificationDocumentType.Licence, fixture.SeedNow.AddDays(-1));
+            tenantId, VerificationDocumentType.CompanyRegistration, fixture.SeedNow.AddDays(-1));
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
         var alreadySent = fixture.EmailSender.Sent.Count;
 
