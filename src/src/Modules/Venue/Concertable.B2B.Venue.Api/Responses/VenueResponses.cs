@@ -13,5 +13,4 @@ public sealed record DetailsResponse
     public required string Email { get; init; }
     public double Latitude { get; init; }
     public double Longitude { get; init; }
-    public bool Approved { get; init; }
 }

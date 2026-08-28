@@ -18,12 +18,10 @@ public static class VenueFactory
         Address address,
         string email)
     {
-        var venue = VenueEntity
+        return VenueEntity
             .Create(userId, name, about, bannerUrl, avatar, location, address, email)
             .Match(
                 venue => venue.WithId(id),
                 _ => throw new InvalidOperationException($"Seed venue {id} is invalid."));
-        venue.Approve();
-        return venue;
     }
 }
