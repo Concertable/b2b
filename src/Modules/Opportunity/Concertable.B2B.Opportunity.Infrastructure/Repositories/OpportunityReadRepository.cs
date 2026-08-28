@@ -84,7 +84,7 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
     {
         var excludedIds = excludedOpportunityIds.ToArray();
         return await context.Opportunities
-            .WhereActive(timeProvider.GetUtcNow())
+            .WhereActive(timeProvider.GetUtcNow().UtcDateTime)
             .Where(opportunity => !excludedIds.Contains(opportunity.Id))
             .WhereEmptyOrOverlaps(
                 OpportunityEntityConfiguration.PersistedGenresProperty,
@@ -95,5 +95,5 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
     }
 
     private IQueryable<OpportunityEntity> ActiveForVenue(int venueId) =>
-        context.Opportunities.ActiveForVenue(venueId, timeProvider.GetUtcNow());
+        context.Opportunities.ActiveForVenue(venueId, timeProvider.GetUtcNow().UtcDateTime);
 }

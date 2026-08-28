@@ -48,6 +48,30 @@ public sealed class ConcertEntityLifecycleTests
     }
 
     [Fact]
+    public void RecordSettlementFailure_WhenTransitionRejected_LeavesReferenceUnset()
+    {
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), "Concert", "About", []);
+
+        var result = concert.RecordSettlementFailure("pi_123", "declined", "Declined");
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Equal(new TransitionError<State, Trigger>(State.Draft, Trigger.RecordSettlementFailure), error);
+        Assert.Null(concert.FinancialOperationReferenceId);
+    }
+
+    [Fact]
+    public void CompleteSettlement_WhenTransitionRejected_LeavesReferenceUnset()
+    {
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), "Concert", "About", []);
+
+        var result = concert.CompleteSettlement("pi_123");
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Equal(new TransitionError<State, Trigger>(State.Draft, Trigger.CompleteSettlement), error);
+        Assert.Null(concert.FinancialOperationReferenceId);
+    }
+
+    [Fact]
     public void BeginSettlement_WhenRetryingAfterLaterTicketSales_ReusesReservedGross()
     {
         var concert = ConcertEntity.CreateDraft(CreateDoorSplitBooking(), "Concert", "About", []);

@@ -1,4 +1,5 @@
 using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Application.Models;
 using Concertable.B2B.Application.Infrastructure.Data;
@@ -73,7 +74,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         return row is null ? null : (row.VenueTenantId, row.ArtistTenantId);
     }
 
-    public async Task RejectAllExceptAsync(
+    public async Task<IReadOnlyList<int>> RejectAllExceptAsync(
         int opportunityId,
         int applicationId,
         CancellationToken ct = default)
@@ -90,9 +91,11 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             if (application.Reject().TryGetError(out var error))
                 throw new InvalidOperationException(
                     $"Application {application.Id} could not be rejected from {error.Current}.");
+            application.NotifyCounterparty(ApplicationNotification.Rejected);
         }
 
         await context.SaveChangesAsync(ct);
+        return applications.Select(application => application.Id).ToList();
     }
 
     public async Task<IReadOnlyList<ApplicationDashboardProjection>> GetVenueDashboardProjectionsAsync(

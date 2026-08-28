@@ -42,7 +42,7 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, booking =>
         {
-            if (booking.State == State.CancellationFailed)
+            if (booking.State is State.CancellationFailed or State.Cancelled)
                 return;
 
             if (booking.RecordCancellationFailure(@event.Code, @event.Message).TryGetError(out var transitionError))

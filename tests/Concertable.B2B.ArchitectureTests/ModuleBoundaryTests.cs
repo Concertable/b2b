@@ -14,8 +14,13 @@ namespace Concertable.B2B.ArchitectureTests;
 /// </summary>
 public sealed class ModuleBoundaryTests
 {
+    // Each entry is a full module namespace segment under `Concertable.B2B.` — bare for an ordinary module,
+    // dotted for a nested sub-module family (Dashboard has no layer of its own; only its sub-modules do).
     private static readonly string[] Modules =
-        ["Application", "Artist", "Booking", "Concert", "Conversations", "Deal", "Opportunity", "Tenant", "User", "Venue"];
+        [
+            "Application", "Artist", "Booking", "Concert", "Conversations", "Deal", "Opportunity", "Tenant", "User", "Venue",
+            @"Dashboard\.Artist", @"Dashboard\.Opportunity", @"Dashboard\.Venue"
+        ];
 
     private static readonly string ModsAlt = string.Join("|", Modules);
 

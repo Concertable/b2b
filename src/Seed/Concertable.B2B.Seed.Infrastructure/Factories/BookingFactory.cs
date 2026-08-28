@@ -1,5 +1,7 @@
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Booking.Application.Mappers;
 using Concertable.B2B.Booking.Domain.Entities;
+using Concertable.B2B.Booking.Domain.ValueObjects;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;
@@ -12,19 +14,16 @@ public static class BookingFactory
         DateTime createdAtUtc,
         bool confirmed)
     {
-        BookingEntity booking = application switch
+        var acceptance = application.ToBookingAcceptance();
+        BookingEntity booking = acceptance switch
         {
-            FlatFeeAcceptedApplication or VenueHireAcceptedApplication =>
-                StandardBooking.Create(application),
-            DoorSplitAcceptedApplication doorSplit =>
-                DeferredBooking.Create(application, doorSplit.PaymentMethodId),
-            VersusAcceptedApplication versus =>
-                DeferredBooking.Create(application, versus.PaymentMethodId),
-            _ => throw new ArgumentOutOfRangeException(nameof(application), application, null)
+            StandardBookingAcceptance standard => StandardBooking.Create(standard),
+            DeferredBookingAcceptance deferred => DeferredBooking.Create(deferred),
+            _ => throw new ArgumentOutOfRangeException(nameof(acceptance), acceptance, null)
         };
         booking.WithId(id);
 
-        var contract = ContractEntity.Create(id, application, createdAtUtc)
+        var contract = ContractEntity.Create(id, acceptance, createdAtUtc)
             .WithId(id)
             .With(nameof(ContractEntity.PdfBlobName), $"contracts/{id}-seed.pdf");
 

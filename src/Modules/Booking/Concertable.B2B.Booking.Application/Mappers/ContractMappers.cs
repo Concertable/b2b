@@ -1,7 +1,7 @@
 using System.Net.Mime;
-using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.DTOs;
 using Concertable.B2B.Booking.Domain.Entities;
+using Concertable.B2B.Booking.Domain.ValueObjects;
 
 namespace Concertable.B2B.Booking.Application.Mappers;
 

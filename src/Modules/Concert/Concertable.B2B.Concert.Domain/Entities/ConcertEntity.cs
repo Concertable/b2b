@@ -217,10 +217,10 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
     public UnitResult<TransitionError<State, Trigger>> RecordSettlementFailure(string providerReferenceId, string code, string message)
     {
-        EnsureSettlementReference(providerReferenceId);
         var transition = Apply(Trigger.RecordSettlementFailure);
         if (transition.TryGetError(out var error))
             return error;
+        EnsureSettlementReference(providerReferenceId);
         FinancialFailureCode = code;
         FinancialFailureMessage = message;
         return new Success();
@@ -228,11 +228,11 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
     public UnitResult<TransitionError<State, Trigger>> CompleteSettlement(string? providerReferenceId = null)
     {
-        if (providerReferenceId is not null)
-            EnsureSettlementReference(providerReferenceId);
         var transition = Apply(Trigger.CompleteSettlement);
         if (transition.TryGetError(out var error))
             return error;
+        if (providerReferenceId is not null)
+            EnsureSettlementReference(providerReferenceId);
         FinancialFailureCode = null;
         FinancialFailureMessage = null;
         return new Success();

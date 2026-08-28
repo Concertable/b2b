@@ -6,14 +6,14 @@ internal static class QueryableOpportunityExtensions
 {
     extension(IQueryable<OpportunityEntity> query)
     {
-        public IQueryable<OpportunityEntity> WhereActive(DateTimeOffset now) =>
+        public IQueryable<OpportunityEntity> WhereActive(DateTime now) =>
             query
                 .Where(o => o.Period.Start >= now)
                 .Where(o => o.State == OpportunityState.Open);
 
         public IQueryable<OpportunityEntity> ActiveForVenue(
             int venueId,
-            DateTimeOffset now) =>
+            DateTime now) =>
             query
                 .Where(o => o.VenueId == venueId)
                 .WhereActive(now)

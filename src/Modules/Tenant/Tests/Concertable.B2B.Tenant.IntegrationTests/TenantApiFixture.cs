@@ -78,6 +78,21 @@ public sealed class TenantApiFixture : ApiFixture
         return verification;
     }
 
+    public async Task<TenantVerificationEntity> AddPendingVerificationAsync(
+        Guid tenantId,
+        VerificationDocumentType documentType,
+        DateTime submittedAt)
+    {
+        var verification = TenantVerificationEntity.Submit(
+            tenantId,
+            [VerificationDocumentEntity.Create(documentType, $"seed-{Guid.NewGuid()}", submittedAt)],
+            submittedAt);
+        verification.ClearDomainEvents();
+        dbContext.Verifications.Add(verification);
+        await dbContext.SaveChangesAsync();
+        return verification;
+    }
+
     protected override void OnReset(IServiceScope scope)
     {
         dbContext = scope.ServiceProvider.GetRequiredService<TenantDbContext>();

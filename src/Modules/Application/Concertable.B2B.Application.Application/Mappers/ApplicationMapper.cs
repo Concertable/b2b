@@ -9,21 +9,21 @@ namespace Concertable.B2B.Application.Application.Mappers;
 
 internal sealed class ApplicationMapper : IApplicationMapper
 {
-    private readonly IArtistModule artists;
-    private readonly IOpportunityModule opportunities;
-    private readonly IVenueModule venues;
-    private readonly IDealModule deals;
+    private readonly IArtistModule artistModule;
+    private readonly IOpportunityModule opportunityModule;
+    private readonly IVenueModule venueModule;
+    private readonly IDealModule dealModule;
 
     public ApplicationMapper(
-        IArtistModule artists,
-        IOpportunityModule opportunities,
-        IVenueModule venues,
-        IDealModule deals)
+        IArtistModule artistModule,
+        IOpportunityModule opportunityModule,
+        IVenueModule venueModule,
+        IDealModule dealModule)
     {
-        this.artists = artists;
-        this.opportunities = opportunities;
-        this.venues = venues;
-        this.deals = deals;
+        this.artistModule = artistModule;
+        this.opportunityModule = opportunityModule;
+        this.venueModule = venueModule;
+        this.dealModule = dealModule;
     }
 
     public async Task<ApplicationDto> ToDtoAsync(ApplicationEntity application) =>
@@ -32,16 +32,16 @@ internal sealed class ApplicationMapper : IApplicationMapper
     public async Task<IReadOnlyList<ApplicationDto>> ToDtosAsync(IEnumerable<ApplicationEntity> applications)
     {
         var applicationList = applications.ToList();
-        var artistsById = (await artists.GetSummariesAsync(
+        var artistsById = (await this.artistModule.GetSummariesAsync(
                 applicationList.Select(application => application.ArtistId).Distinct().ToArray()))
             .ToDictionary(artist => artist.Id);
-        var opportunitiesById = (await opportunities.GetAsync(
+        var opportunitiesById = (await this.opportunityModule.GetAsync(
                 applicationList.Select(application => application.OpportunityId).Distinct().ToArray()))
             .ToDictionary(opportunity => opportunity.Id);
-        var dealsById = (await deals.GetByIdsAsync(
+        var dealsById = (await this.dealModule.GetByIdsAsync(
                 opportunitiesById.Values.Select(opportunity => opportunity.DealId).Distinct()))
             .ToDictionary(deal => deal.Id);
-        var venuesById = (await venues.GetProfilesAsync(
+        var venuesById = (await this.venueModule.GetProfilesAsync(
                 opportunitiesById.Values.Select(opportunity => opportunity.VenueId).Distinct().ToArray()))
             .ToDictionary(venue => venue.Id);
 

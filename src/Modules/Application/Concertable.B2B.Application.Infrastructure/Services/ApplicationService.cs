@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Mappers;
-using Concertable.B2B.Application.Application.Steps;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
@@ -21,16 +20,15 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IApplicationRepository applicationRepository;
     private readonly IApplicationValidator validator;
     private readonly IApplicationNotifier notifier;
-    private readonly IArtistModule artists;
-    private readonly IOpportunityModule opportunities;
-    private readonly IVenueModule venues;
-    private readonly IDealModule deals;
+    private readonly IArtistModule artistModule;
+    private readonly IOpportunityModule opportunityModule;
+    private readonly IVenueModule venueModule;
+    private readonly IDealModule dealModule;
     private readonly ITenantContext tenantContext;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
     private readonly ITermsFingerprintCalculator termsFingerprint;
     private readonly IDealTermsRenderer termsRenderer;
-    private readonly IAcceptFactory acceptFactory;
     private readonly IApplicationCheckoutService checkout;
     private readonly IApplicationMapper mapper;
     private readonly TimeProvider timeProvider;
@@ -41,16 +39,15 @@ internal sealed class ApplicationService : IApplicationService
         IApplicationRepository applicationRepository,
         IApplicationValidator validator,
         IApplicationNotifier notifier,
-        IArtistModule artists,
-        IOpportunityModule opportunities,
-        IVenueModule venues,
-        IDealModule deals,
+        IArtistModule artistModule,
+        IOpportunityModule opportunityModule,
+        IVenueModule venueModule,
+        IDealModule dealModule,
         ITenantContext tenantContext,
         ICurrentUser currentUser,
         IClientContext clientContext,
         ITermsFingerprintCalculator termsFingerprint,
         IDealTermsRenderer termsRenderer,
-        IAcceptFactory acceptFactory,
         IApplicationCheckoutService checkout,
         IApplicationMapper mapper,
         TimeProvider timeProvider,
@@ -60,16 +57,15 @@ internal sealed class ApplicationService : IApplicationService
         this.applicationRepository = applicationRepository;
         this.validator = validator;
         this.notifier = notifier;
-        this.artists = artists;
-        this.opportunities = opportunities;
-        this.venues = venues;
-        this.deals = deals;
+        this.artistModule = artistModule;
+        this.opportunityModule = opportunityModule;
+        this.venueModule = venueModule;
+        this.dealModule = dealModule;
         this.tenantContext = tenantContext;
         this.currentUser = currentUser;
         this.clientContext = clientContext;
         this.termsFingerprint = termsFingerprint;
         this.termsRenderer = termsRenderer;
-        this.acceptFactory = acceptFactory;
         this.checkout = checkout;
         this.mapper = mapper;
         this.timeProvider = timeProvider;
@@ -85,7 +81,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id)
     {
-        var opportunityOption = await opportunities.GetAsync(id);
+        var opportunityOption = await this.opportunityModule.GetAsync(id);
         if (!opportunityOption.TryGetValue(out var opportunity) ||
             opportunity.VenueTenantId != tenantContext.TenantId)
             return new ApplicationError.OpportunityForbidden(id);
@@ -96,7 +92,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForArtistAsync()
     {
-        var artistOption = await artists.GetCurrentProfileAsync();
+        var artistOption = await this.artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationError.MissingArtist();
 
@@ -111,7 +107,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetRecentDeniedForArtistAsync()
     {
-        var artistOption = await artists.GetCurrentProfileAsync();
+        var artistOption = await this.artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationError.MissingArtist();
 
@@ -169,14 +165,14 @@ internal sealed class ApplicationService : IApplicationService
         string? paymentMethodId,
         ESignatureRequest eSignature)
     {
-        var artistOption = await artists.GetCurrentProfileAsync();
+        var artistOption = await this.artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))
             return new ApplyApplicationError.MissingArtist();
 
         if (tenantContext.TenantId is not { } artistTenantId)
             return new ApplyApplicationError.MissingTenant();
 
-        var opportunityOption = await opportunities.GetOpenAsync(opportunityId);
+        var opportunityOption = await this.opportunityModule.GetOpenAsync(opportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
@@ -190,7 +186,7 @@ internal sealed class ApplicationService : IApplicationService
         if (opportunity.Genres.Count > 0 && !artist.Genres.Overlaps(opportunity.Genres))
             return new ApplyApplicationError.GenreMismatch();
 
-        var dealOption = await deals.GetByIdAsync(opportunity.DealId);
+        var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId);
         if (!dealOption.TryGetValue(out var deal))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
@@ -291,19 +287,19 @@ internal sealed class ApplicationService : IApplicationService
         if (application.ValidateAccept().TryGetError(out var acceptError))
             return new AcceptApplicationError.InvalidTransition(acceptError);
 
-        var opportunityOption = await opportunities.GetAsync(application.OpportunityId, ct);
+        var opportunityOption = await this.opportunityModule.GetAsync(application.OpportunityId, ct);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
-        var dealOption = await deals.GetByIdAsync(opportunity.DealId, ct);
+        var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId, ct);
         if (!dealOption.TryGetValue(out var deal))
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
-        var artistOption = await artists.GetProfileAsync(application.ArtistId, ct);
+        var artistOption = await this.artistModule.GetProfileAsync(application.ArtistId, ct);
         if (!artistOption.TryGetValue(out var artist))
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
-        var venueOption = await venues.GetProfileAsync(opportunity.VenueId, ct);
+        var venueOption = await this.venueModule.GetProfileAsync(opportunity.VenueId, ct);
         if (!venueOption.TryGetValue(out var venue))
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
@@ -319,44 +315,47 @@ internal sealed class ApplicationService : IApplicationService
                 new ApplicationEligibilityError.ApplicationNotFound());
 
         var operationId = application.AcceptanceOperationId ?? Guid.NewGuid();
-        var facts = new AcceptedApplicationFacts(
-            operationId,
-            application.Id,
-            application.OpportunityId,
-            application.ArtistId,
-            opportunity.VenueId,
-            application.VenueTenantId,
-            application.ArtistTenantId,
-            deal.PaymentMethod,
-            opportunity.StartDate,
-            opportunity.EndDate,
-            opportunity.Genres.ToList(),
-            artist.Name,
-            venue.Name,
-            termsRenderer.Render(deal),
-            legal.PlatformTermsVersion,
-            application.ArtistESignature,
-            new Signature(
-                userId,
-                timeProvider.GetUtcNow().UtcDateTime,
-                clientContext.IpAddress,
-                clientContext.UserAgent,
-                eSignature.SignatoryName,
-                eSignature.DrawnSignatureImage));
-        var accepted = acceptFactory.Create(deal) switch
+        var venueSignature = new Signature(
+            userId,
+            timeProvider.GetUtcNow().UtcDateTime,
+            clientContext.IpAddress,
+            clientContext.UserAgent,
+            eSignature.SignatoryName,
+            eSignature.DrawnSignatureImage);
+        Result<AcceptedApplication, AcceptApplicationError> accepted = deal switch
         {
-            IStandardAccept method => method.Create(facts, application, deal),
-            IPrepaidAccept method when !string.IsNullOrWhiteSpace(paymentMethodId) =>
-                method.Create(facts, application, deal, paymentMethodId),
-            IPrepaidAccept => new AcceptApplicationError.PaymentMethodRequired(),
-            _ => throw new UnreachableException()
+            FlatFeeDealDto flatFee => new FlatFeeAcceptedApplication(
+                operationId, application.Id, application.OpportunityId, application.ArtistId, opportunity.VenueId,
+                application.VenueTenantId, application.ArtistTenantId, deal.PaymentMethod, opportunity.StartDate,
+                opportunity.EndDate, opportunity.Genres.ToList(), artist.Name, venue.Name, termsRenderer.Render(deal),
+                legal.PlatformTermsVersion, application.ArtistESignature.ToDto(), venueSignature.ToDto(), flatFee.Fee),
+            DoorSplitDealDto doorSplit when !string.IsNullOrWhiteSpace(paymentMethodId) => new DoorSplitAcceptedApplication(
+                operationId, application.Id, application.OpportunityId, application.ArtistId, opportunity.VenueId,
+                application.VenueTenantId, application.ArtistTenantId, deal.PaymentMethod, opportunity.StartDate,
+                opportunity.EndDate, opportunity.Genres.ToList(), artist.Name, venue.Name, termsRenderer.Render(deal),
+                legal.PlatformTermsVersion, application.ArtistESignature.ToDto(), venueSignature.ToDto(),
+                doorSplit.ArtistDoorPercent, paymentMethodId, application.Verification?.ToVerifyPayment()),
+            VersusDealDto versus when !string.IsNullOrWhiteSpace(paymentMethodId) => new VersusAcceptedApplication(
+                operationId, application.Id, application.OpportunityId, application.ArtistId, opportunity.VenueId,
+                application.VenueTenantId, application.ArtistTenantId, deal.PaymentMethod, opportunity.StartDate,
+                opportunity.EndDate, opportunity.Genres.ToList(), artist.Name, venue.Name, termsRenderer.Render(deal),
+                legal.PlatformTermsVersion, application.ArtistESignature.ToDto(), venueSignature.ToDto(),
+                versus.Guarantee, versus.ArtistDoorPercent, paymentMethodId, application.Verification?.ToVerifyPayment()),
+            VenueHireDealDto venueHire when application is PrepaidApplication prepaid => new VenueHireAcceptedApplication(
+                operationId, application.Id, application.OpportunityId, application.ArtistId, opportunity.VenueId,
+                application.VenueTenantId, application.ArtistTenantId, deal.PaymentMethod, opportunity.StartDate,
+                opportunity.EndDate, opportunity.Genres.ToList(), artist.Name, venue.Name, termsRenderer.Render(deal),
+                legal.PlatformTermsVersion, application.ArtistESignature.ToDto(), venueSignature.ToDto(),
+                venueHire.HireFee, prepaid.PaymentMethodId),
+            DoorSplitDealDto or VersusDealDto or VenueHireDealDto => new AcceptApplicationError.PaymentMethodRequired(),
+            _ => throw new ArgumentOutOfRangeException(nameof(deal), deal, null)
         };
         if (accepted.TryGetError(out var acceptanceError))
             return acceptanceError;
         if (!accepted.TryGetValue(out var acceptedApplication))
             throw new InvalidOperationException("Acceptance succeeded without an accepted application fact.");
 
-        if ((await opportunities.FillAsync(
+        if ((await this.opportunityModule.FillAsync(
                 application.OpportunityId,
                 application.VenueTenantId,
                 ct)).IsFailure)
@@ -367,7 +366,10 @@ internal sealed class ApplicationService : IApplicationService
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
         await applicationRepository.SaveChangesAsync(ct);
-        await applicationRepository.RejectAllExceptAsync(application.OpportunityId, application.Id, ct);
+        var rejectedApplicationIds = await applicationRepository.RejectAllExceptAsync(
+            application.OpportunityId, application.Id, ct);
+        foreach (var rejectedApplicationId in rejectedApplicationIds)
+            await notifier.RejectedAsync(rejectedApplicationId);
         await notifier.AcceptedAsync(applicationId);
         return new Success();
     }
@@ -455,11 +457,11 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
-        var artistOption = await artists.GetCurrentProfileAsync();
+        var artistOption = await this.artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationEligibilityError.MissingArtist();
 
-        var opportunityOption = await opportunities.GetOpenAsync(opportunityId);
+        var opportunityOption = await this.opportunityModule.GetOpenAsync(opportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationEligibilityError.OpportunityNotFound();
 
@@ -482,7 +484,7 @@ internal sealed class ApplicationService : IApplicationService
         ApplicationEntity application,
         CancellationToken ct = default)
     {
-        var opportunityOption = await opportunities.GetAsync(application.OpportunityId, ct);
+        var opportunityOption = await this.opportunityModule.GetAsync(application.OpportunityId, ct);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationEligibilityError.OpportunityNotFound();
 

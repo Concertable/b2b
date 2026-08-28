@@ -1,4 +1,5 @@
 global using Concertable.Kernel;
+global using Concertable.B2B.RequestContext;
 global using Reunion.Errors;
 global using Reunion;
 global using Concertable.Kernel.ValueObjects;

@@ -92,6 +92,21 @@ should not be solved by restoring a general-purpose `Query` escape hatch.
 
 ---
 
+### Architecture tests hardcode the module list instead of discovering it by reflection
+
+`Concertable.B2B.ArchitectureTests/ModuleBoundaryTests.cs`'s `Modules` array and
+`IntegrationTestBoundaryTests.cs`'s path/name filters name every module and sub-module by hand. This already
+caused a real gap: the Dashboard module family shipped with zero boundary enforcement until a review caught it,
+because nobody remembered to add it to the hardcoded list. The same class of gap exists for
+`IntegrationTestBoundaryTests`'s `Process.IntegrationTests` special-case. A new module or test project is
+silently unenforced until someone remembers to update these lists by hand.
+
+**Resolves when:** both tests discover modules and their layer/sub-module structure by reflection over the
+loaded `Concertable.B2B.*` assemblies (or by scanning `src/Modules/*` directories) instead of a maintained
+string array, so a new module is enforced automatically the moment its assembly exists.
+
+---
+
 ## RESOLVED
 
 ### ✅ Seed `TicketsSold` depends on the Payment seed simulator

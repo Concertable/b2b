@@ -58,6 +58,7 @@ internal static class ServiceCollectionExtensions
         services.AddDataAccessSpecifications();
 
         services.AddGeometry();
+        services.AddClientContext();
 
         services.AddCurrentUser();
         services.AddAdminModule(configuration);

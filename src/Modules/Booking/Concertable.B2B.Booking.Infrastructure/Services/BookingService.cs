@@ -45,8 +45,11 @@ internal sealed class BookingService : IBookingService
         CancellationToken ct = default) =>
         unitOfWork.ExecuteAsync(async () =>
         {
-            var booking = StandardBooking.Create(application);
-            await PersistAsync(booking, application, ct);
+            var acceptance = application.ToBookingAcceptance();
+            if (acceptance is not StandardBookingAcceptance standardAcceptance)
+                throw new InvalidOperationException($"Application {application.ApplicationId} does not create a standard booking.");
+            var booking = StandardBooking.Create(standardAcceptance);
+            await PersistAsync(booking, acceptance, ct);
             return (StandardBookingDto)booking.ToDto();
         }, ct);
 
@@ -56,8 +59,13 @@ internal sealed class BookingService : IBookingService
         CancellationToken ct = default) =>
         unitOfWork.ExecuteAsync(async () =>
         {
-            var booking = DeferredBooking.Create(application, paymentMethodId);
-            await PersistAsync(booking, application, ct);
+            var acceptance = application.ToBookingAcceptance();
+            if (acceptance is not DeferredBookingAcceptance deferredAcceptance)
+                throw new InvalidOperationException($"Application {application.ApplicationId} does not create a deferred booking.");
+            if (deferredAcceptance.PaymentMethodId != paymentMethodId)
+                throw new InvalidOperationException($"Application {application.ApplicationId} has a different payment method.");
+            var booking = DeferredBooking.Create(deferredAcceptance);
+            await PersistAsync(booking, acceptance, ct);
             return (DeferredBookingDto)booking.ToDto();
         }, ct);
 
@@ -186,6 +194,8 @@ internal sealed class BookingService : IBookingService
 
         if (booking.State == State.Confirmed)
             return;
+        if (booking.State is State.CancellationFailed or State.Cancelled)
+            return;
         if (booking.State == State.CancellationPending)
         {
             if (booking.Cancel().TryGetError(out var transitionError))
@@ -270,7 +280,7 @@ internal sealed class BookingService : IBookingService
 
     private async Task PersistAsync(
         BookingEntity booking,
-        AcceptedApplication application,
+        BookingAcceptance acceptance,
         CancellationToken ct)
     {
         await bookingRepository.AddAsync(booking, ct);
@@ -278,7 +288,7 @@ internal sealed class BookingService : IBookingService
 
         var contract = ContractEntity.Create(
             booking.Id,
-            application,
+            acceptance,
             timeProvider.GetUtcNow().UtcDateTime);
         await contractRepository.AddAsync(contract, ct);
         await contractRepository.SaveChangesAsync(ct);

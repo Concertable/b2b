@@ -15,38 +15,38 @@ public sealed class VerifyPaymentTests
         Assert.Throws<ArgumentException>(() => new VerifyPaymentError("card_declined", " "));
 
     [Fact]
-    public void RecordVerifyPayment_Success_StoresAndRaisesCaseSpecificFact()
+    public void RecordPaymentVerification_Success_StoresAndRaisesCaseSpecificFact()
     {
         var application = CreateApplication();
         var payment = new VerifyPaymentSucceeded(application.Id, "seti_123");
 
-        application.RecordVerifyPayment(payment);
+        application.RecordPaymentVerification(payment);
 
         Assert.Equal(payment, application.Verification);
         Assert.Same(payment, Assert.Single(application.DomainEvents));
     }
 
     [Fact]
-    public void RecordVerifyPayment_DuplicateDelivery_DoesNotRaiseAgain()
+    public void RecordPaymentVerification_DuplicateDelivery_DoesNotRaiseAgain()
     {
         var application = CreateApplication();
         var payment = new VerifyPaymentSucceeded(application.Id, "seti_123");
-        application.RecordVerifyPayment(payment);
+        application.RecordPaymentVerification(payment);
         application.ClearDomainEvents();
 
-        application.RecordVerifyPayment(payment);
+        application.RecordPaymentVerification(payment);
 
         Assert.Empty(application.DomainEvents);
     }
 
     [Fact]
-    public void RecordVerifyPayment_ConflictingOutcomeForTransaction_ThrowsInvalidOperationException()
+    public void RecordPaymentVerification_ConflictingOutcomeForTransaction_ThrowsInvalidOperationException()
     {
         var application = CreateApplication();
-        application.RecordVerifyPayment(new VerifyPaymentSucceeded(application.Id, "seti_123"));
+        application.RecordPaymentVerification(new VerifyPaymentSucceeded(application.Id, "seti_123"));
         application.ClearDomainEvents();
 
-        var action = () => application.RecordVerifyPayment(new VerifyPaymentFailed(
+        var action = () => application.RecordPaymentVerification(new VerifyPaymentFailed(
             application.Id,
             "seti_123",
             new VerifyPaymentError("card_declined", "Declined")));

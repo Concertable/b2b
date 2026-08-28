@@ -14,35 +14,35 @@ namespace Concertable.B2B.Dashboard.Artist.Infrastructure;
 
 internal sealed class ArtistDashboardService : IArtistDashboardService
 {
-    private readonly IApplicationModule applications;
-    private readonly IArtistModule artists;
-    private readonly IBookingModule bookings;
-    private readonly IConcertModule concerts;
+    private readonly IApplicationModule applicationModule;
+    private readonly IArtistModule artistModule;
+    private readonly IBookingModule bookingModule;
+    private readonly IConcertModule concertModule;
     private readonly IManagerPaymentReportingClient paymentReportingClient;
     private readonly IPayoutAccountOperationsClient payoutAccountClient;
     private readonly ITenantContext tenantContext;
-    private readonly ITenantModule tenants;
+    private readonly ITenantModule tenantModule;
     private readonly TimeProvider timeProvider;
 
     public ArtistDashboardService(
-        IApplicationModule applications,
-        IArtistModule artists,
-        IBookingModule bookings,
-        IConcertModule concerts,
+        IApplicationModule applicationModule,
+        IArtistModule artistModule,
+        IBookingModule bookingModule,
+        IConcertModule concertModule,
         IManagerPaymentReportingClient paymentReportingClient,
         IPayoutAccountOperationsClient payoutAccountClient,
         ITenantContext tenantContext,
-        ITenantModule tenants,
+        ITenantModule tenantModule,
         TimeProvider timeProvider)
     {
-        this.applications = applications;
-        this.artists = artists;
-        this.bookings = bookings;
-        this.concerts = concerts;
+        this.applicationModule = applicationModule;
+        this.artistModule = artistModule;
+        this.bookingModule = bookingModule;
+        this.concertModule = concertModule;
         this.paymentReportingClient = paymentReportingClient;
         this.payoutAccountClient = payoutAccountClient;
         this.tenantContext = tenantContext;
-        this.tenants = tenants;
+        this.tenantModule = tenantModule;
         this.timeProvider = timeProvider;
     }
 
@@ -50,9 +50,9 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
     {
         var tenantId = tenantContext.GetTenantId();
         var period = DashboardReportingPeriod.From(timeProvider.GetUtcNow().UtcDateTime);
-        var pendingTask = applications.GetArtistPendingCountAsync(tenantId, ct);
-        var awaitingCheckoutTask = bookings.GetArtistAwaitingCheckoutCountAsync(tenantId, ct);
-        var concertCountsTask = concerts.GetArtistDashboardCountsAsync(tenantId, ct);
+        var pendingTask = applicationModule.GetArtistPendingCountAsync(tenantId, ct);
+        var awaitingCheckoutTask = bookingModule.GetArtistAwaitingCheckoutCountAsync(tenantId, ct);
+        var concertCountsTask = concertModule.GetArtistDashboardCountsAsync(tenantId, ct);
         var payoutsTask = period.HasElapsedTime
             ? paymentReportingClient.GetSettlementPayoutsAsync(
                 tenantId,
@@ -75,11 +75,11 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
 
     public async Task<Option<ArtistDashboardOverview>> GetOverviewAsync(
         CancellationToken ct = default) =>
-        await (await artists.GetCurrentProfileAsync(ct))
+        await (await artistModule.GetCurrentProfileAsync(ct))
             .MapAsync(async artist =>
             {
                 var tenantId = tenantContext.GetTenantId();
-                var reviewSummaryTask = artists.GetReviewSummaryAsync(artist.Id, ct);
+                var reviewSummaryTask = artistModule.GetReviewSummaryAsync(artist.Id, ct);
                 var payoutStatusTask = payoutAccountClient.GetAccountStatusAsync(tenantId, ct);
                 await Task.WhenAll(reviewSummaryTask, payoutStatusTask);
 
@@ -108,5 +108,5 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
 
     public Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(
         CancellationToken ct = default) =>
-        tenants.GetRecentActivityAsync(tenantContext.GetTenantId(), 10, ct);
+        tenantModule.GetRecentActivityAsync(tenantContext.GetTenantId(), 10, ct);
 }

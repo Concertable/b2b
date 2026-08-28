@@ -80,6 +80,7 @@ internal sealed class ApplicationController : ControllerBase
         return (await result.MapAsync(mapper.ToArtistResponsesAsync)).ToOkOrProblem();
     }
 
+    [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("{id}")]
     public async Task<ActionResult<ApplicationResponse>> GetById(int id)
     {

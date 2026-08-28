@@ -30,8 +30,6 @@ public sealed class BookingApiFixture : ApiFixture
 
     // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause,
     // and SQL Server rejects OUTPUT against a table that has an enabled trigger.
-    // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause,
-    // and SQL Server rejects OUTPUT against a table that has an enabled trigger.
     internal Task FailBookingUpdatesAsync() =>
         dbContext.Database.ExecuteSqlRawAsync("""
             ALTER TABLE [booking].[Bookings] WITH NOCHECK

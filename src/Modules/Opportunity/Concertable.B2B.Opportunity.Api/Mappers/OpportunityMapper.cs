@@ -8,18 +8,18 @@ namespace Concertable.B2B.Opportunity.Api.Mappers;
 
 internal sealed class OpportunityMapper : IOpportunityMapper
 {
-    private readonly IDealModule deals;
+    private readonly IDealModule dealModule;
 
-    public OpportunityMapper(IDealModule deals)
+    public OpportunityMapper(IDealModule dealModule)
     {
-        this.deals = deals;
+        this.dealModule = dealModule;
     }
 
     public async Task<OpportunityResponse> ToResponseAsync(
         OpportunityDto opportunity,
         CancellationToken ct = default)
     {
-        var dealOption = await deals.GetByIdAsync(opportunity.DealId, ct);
+        var dealOption = await dealModule.GetByIdAsync(opportunity.DealId, ct);
         if (!dealOption.TryGetValue(out var deal))
             throw MissingDeal(opportunity);
 
@@ -27,29 +27,29 @@ internal sealed class OpportunityMapper : IOpportunityMapper
     }
 
     public async Task<IReadOnlyList<OpportunityResponse>> ToResponsesAsync(
-        IReadOnlyCollection<OpportunityDto> opportunities,
+        IReadOnlyCollection<OpportunityDto> opportunityModule,
         CancellationToken ct = default)
     {
-        var dealsById = await GetDealsByIdAsync(opportunities, ct);
-        return opportunities
+        var dealsById = await GetDealsByIdAsync(opportunityModule, ct);
+        return opportunityModule
             .Select(opportunity => opportunity.ToResponse(GetDeal(opportunity, dealsById)))
             .ToList();
     }
 
     public async Task<IPagination<OpportunityResponse>> ToResponsesAsync(
-        IPagination<OpportunityDto> opportunities,
+        IPagination<OpportunityDto> opportunityModule,
         CancellationToken ct = default)
     {
-        var dealsById = await GetDealsByIdAsync(opportunities.Data, ct);
-        return opportunities.Map(
+        var dealsById = await GetDealsByIdAsync(opportunityModule.Data, ct);
+        return opportunityModule.Map(
             opportunity => opportunity.ToResponse(GetDeal(opportunity, dealsById)));
     }
 
     private async Task<IReadOnlyDictionary<int, DealDto>> GetDealsByIdAsync(
-        IReadOnlyCollection<OpportunityDto> opportunities,
+        IReadOnlyCollection<OpportunityDto> opportunityModule,
         CancellationToken ct) =>
-        (await deals.GetByIdsAsync(
-            opportunities.Select(opportunity => opportunity.DealId).Distinct(),
+        (await dealModule.GetByIdsAsync(
+            opportunityModule.Select(opportunity => opportunity.DealId).Distinct(),
             ct)).ToDictionary(deal => deal.Id);
 
     private static DealDto GetDeal(

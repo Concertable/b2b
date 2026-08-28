@@ -1,4 +1,5 @@
 global using Concertable.B2B.Application.Contracts;
+global using Concertable.B2B.RequestContext;
 global using Concertable.B2B.Deal.Contracts;
 global using Concertable.B2B.Deal.Contracts.Enums;
 global using Concertable.Contracts;

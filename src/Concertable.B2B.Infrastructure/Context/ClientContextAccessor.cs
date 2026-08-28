@@ -1,7 +1,8 @@
 using System.Net;
+using Concertable.B2B.RequestContext;
 using Microsoft.AspNetCore.Http;
 
-namespace Concertable.B2B.Application.Infrastructure.Services;
+namespace Concertable.B2B.Infrastructure.Context;
 
 internal sealed class ClientContextAccessor(IHttpContextAccessor httpContextAccessor) : IClientContext
 {

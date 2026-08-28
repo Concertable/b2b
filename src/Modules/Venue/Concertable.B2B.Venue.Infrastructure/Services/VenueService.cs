@@ -142,7 +142,10 @@ internal sealed class VenueService : IVenueService
 
     public async Task<Option<int>> GetCurrentIdAsync(CancellationToken ct = default)
     {
-        var venue = await repository.GetByTenantIdAsync(tenantContext.GetTenantId(), ct);
+        if (tenantContext.TenantId is not { } tenantId)
+            return Option.None<int>();
+
+        var venue = await repository.GetByTenantIdAsync(tenantId, ct);
         return venue is null ? Option.None<int>() : Option.Some(venue.Id);
     }
 

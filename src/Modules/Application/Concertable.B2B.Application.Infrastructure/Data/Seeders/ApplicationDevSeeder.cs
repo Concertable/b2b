@@ -32,11 +32,5 @@ internal sealed class ApplicationDevSeeder : IDevSeeder
             context.Applications.AddRange(seed.Applications);
             await context.SaveChangesAsync(ct);
         });
-
-        await context.ConcertAvailabilities.SeedIfEmptyAsync(async () =>
-        {
-            context.ConcertAvailabilities.AddRange(seed.ConcertAvailabilities);
-            await context.SaveChangesAsync(ct);
-        });
     }
 }

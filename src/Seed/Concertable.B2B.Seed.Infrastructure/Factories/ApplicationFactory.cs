@@ -4,6 +4,7 @@ using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Application.Domain.ValueObjects;
 using Concertable.B2B.Artist.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
@@ -44,28 +45,28 @@ public static class ApplicationFactory
                 opportunity.TenantId, artist.TenantId, deal.PaymentMethod,
                 opportunity.Period.Start, opportunity.Period.End, genres,
                 artist.Name, venue.Name, termsText, "2026-07",
-                application.ArtistESignature, venueSignature, flatFee.Fee),
+                ToDto(application.ArtistESignature), ToDto(venueSignature), flatFee.Fee),
             DoorSplitDealEntity doorSplit => new DoorSplitAcceptedApplication(
                 operationId, application.Id, opportunity.Id, artist.Id, venue.Id,
                 opportunity.TenantId, artist.TenantId, deal.PaymentMethod,
                 opportunity.Period.Start, opportunity.Period.End, genres,
                 artist.Name, venue.Name, termsText, "2026-07",
-                application.ArtistESignature, venueSignature, doorSplit.ArtistDoorPercent,
-                SeedPaymentMethodId, application.Verification),
+                ToDto(application.ArtistESignature), ToDto(venueSignature), doorSplit.ArtistDoorPercent,
+                SeedPaymentMethodId, ToContract(application.Verification)),
             VersusDealEntity versus => new VersusAcceptedApplication(
                 operationId, application.Id, opportunity.Id, artist.Id, venue.Id,
                 opportunity.TenantId, artist.TenantId, deal.PaymentMethod,
                 opportunity.Period.Start, opportunity.Period.End, genres,
                 artist.Name, venue.Name, termsText, "2026-07",
-                application.ArtistESignature, venueSignature, versus.Guarantee,
+                ToDto(application.ArtistESignature), ToDto(venueSignature), versus.Guarantee,
                 versus.ArtistDoorPercent, SeedPaymentMethodId,
-                application.Verification),
+                ToContract(application.Verification)),
             VenueHireDealEntity venueHire => new VenueHireAcceptedApplication(
                 operationId, application.Id, opportunity.Id, artist.Id, venue.Id,
                 opportunity.TenantId, artist.TenantId, deal.PaymentMethod,
                 opportunity.Period.Start, opportunity.Period.End, genres,
                 artist.Name, venue.Name, termsText, "2026-07",
-                application.ArtistESignature, venueSignature, venueHire.HireFee,
+                ToDto(application.ArtistESignature), ToDto(venueSignature), venueHire.HireFee,
                 ((PrepaidApplication)application).PaymentMethodId),
             _ => throw new ArgumentOutOfRangeException(nameof(deal), deal, null)
         };
@@ -112,20 +113,6 @@ public static class ApplicationFactory
         => InState<PrepaidApplication>(artistId, opportunityId, State.Accepted)
             .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
 
-    public static StandardApplication Booked(int artistId, int opportunityId)
-        => InState<StandardApplication>(artistId, opportunityId, State.Accepted);
-
-    public static PrepaidApplication BookedPrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
-        => InState<PrepaidApplication>(artistId, opportunityId, State.Accepted)
-            .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
-
-    public static StandardApplication Complete(int artistId, int opportunityId)
-        => InState<StandardApplication>(artistId, opportunityId, State.Accepted);
-
-    public static PrepaidApplication CompletePrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
-        => InState<PrepaidApplication>(artistId, opportunityId, State.Accepted)
-            .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
-
     private static TApplication InState<TApplication>(int artistId, int opportunityId, State state)
         where TApplication : ApplicationEntity =>
         New<TApplication>()
@@ -161,6 +148,28 @@ public static class ApplicationFactory
             HireFee = venueHire.HireFee
         },
         _ => throw new ArgumentOutOfRangeException(nameof(deal), deal, null)
+    };
+
+    private static SignatureDto ToDto(Signature signature) =>
+        new(
+            signature.UserId,
+            signature.AtUtc,
+            signature.Ip,
+            signature.UserAgent,
+            signature.SignatoryName,
+            signature.DrawnSignatureImage);
+
+    private static VerifyPayment? ToContract(PaymentVerification? verification) => verification switch
+    {
+        SuccessfulPaymentVerification succeeded =>
+            new VerifyPaymentSucceeded(succeeded.ApplicationId, succeeded.ProviderTransactionId),
+        FailedPaymentVerification failed =>
+            new VerifyPaymentFailed(
+                failed.ApplicationId,
+                failed.ProviderTransactionId,
+                new VerifyPaymentError(failed.Failure.Code, failed.Failure.Message)),
+        null => null,
+        _ => throw new ArgumentOutOfRangeException(nameof(verification), verification, null)
     };
 
     private static string RenderTerms(DealEntity deal) => deal switch

@@ -13,12 +13,3 @@ internal sealed record OpportunityResponse(
     OpportunityActions Actions);
 
 internal sealed record OpportunityActions(ActionLink? Checkout);
-
-internal sealed record OpportunitySummaryResponse(
-    int Id,
-    int VenueId,
-    string VenueName,
-    DateTime StartDate,
-    DateTime EndDate,
-    IReadOnlyList<Genre> Genres,
-    DealDto Deal);

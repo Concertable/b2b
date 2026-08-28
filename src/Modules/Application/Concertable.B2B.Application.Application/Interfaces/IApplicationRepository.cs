@@ -34,7 +34,7 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
     Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(
         int applicationId,
         CancellationToken ct = default);
-    Task RejectAllExceptAsync(
+    Task<IReadOnlyList<int>> RejectAllExceptAsync(
         int opportunityId,
         int applicationId,
         CancellationToken ct = default);

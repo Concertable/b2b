@@ -21,8 +21,9 @@ public sealed class IntegrationTestBoundaryTests
         var violations = FindB2BRoot()
             .EnumerateFiles("Concertable.B2B.*.IntegrationTests.csproj", SearchOption.AllDirectories)
             .Where(project => project.FullName.Contains(
-                $"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}Modules{Path.DirectorySeparatorChar}",
-                StringComparison.Ordinal))
+                    $"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}Modules{Path.DirectorySeparatorChar}",
+                    StringComparison.Ordinal) ||
+                project.Name == "Concertable.B2B.Process.IntegrationTests.csproj")
             .SelectMany(FindCrossModuleProjectReferences)
             .Order()
             .ToArray();

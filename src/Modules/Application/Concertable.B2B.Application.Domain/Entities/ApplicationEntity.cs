@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Application.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Kernel;
@@ -20,13 +21,13 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
     public Guid ArtistTenantId { get; private set; }
     internal State State { get; private set; } = State.Applied;
     internal VerifyPaymentEntity? VerifyPayment { get; private set; }
-    internal VerifyPayment? Verification => VerifyPayment?.ToContract();
+    internal PaymentVerification? Verification => VerifyPayment?.ToValue();
     public int OpportunityId { get; private set; }
     public int ArtistId { get; private set; }
     public DealType DealType { get; private set; }
     public Guid? AcceptanceOperationId { get; private set; }
 
-    public Signature ArtistESignature { get; private set; } = null!;
+    internal Signature ArtistESignature { get; private set; } = null!;
     public string TermsFingerprint { get; private set; } = null!;
 
     protected ApplicationEntity() { }
@@ -62,25 +63,27 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
         return AcceptanceOperationId.Value;
     }
 
-    internal void RecordVerifyPayment(VerifyPayment payment)
+    internal void RecordPaymentVerification(PaymentVerification verification)
     {
-        ArgumentNullException.ThrowIfNull(payment);
-        if (payment.ApplicationId != Id)
+        ArgumentNullException.ThrowIfNull(verification);
+        if (verification.ApplicationId != Id)
             throw new InvalidOperationException(
-                $"Verify payment for application {payment.ApplicationId} cannot be recorded against application {Id}.");
+                $"Verify payment for application {verification.ApplicationId} cannot be recorded against application {Id}.");
 
-        var existing = VerifyPayment?.ToContract();
-        if (existing == payment)
+        var existing = VerifyPayment?.ToValue();
+        if (existing == verification)
             return;
-        if (existing?.ProviderTransactionId == payment.ProviderTransactionId)
-            throw new InvalidOperationException(
-                $"Verify payment {payment.ProviderTransactionId} cannot change its recorded outcome.");
+        if (existing?.ProviderTransactionId == verification.ProviderTransactionId)
+            throw new DomainException(
+                $"Verify payment {verification.ProviderTransactionId} cannot change its recorded outcome.");
+        if (existing is SuccessfulPaymentVerification)
+            return;
 
-        VerifyPayment = VerifyPaymentEntity.Create(payment);
-        events.Raise(payment);
+        VerifyPayment = VerifyPaymentEntity.Create(verification);
+        events.Raise(new PaymentVerificationRecordedDomainEvent(verification));
     }
 
-    public void RecordArtistESignature(Signature eSignature, string termsFingerprint)
+    internal void RecordArtistESignature(Signature eSignature, string termsFingerprint)
     {
         ArtistESignature = eSignature;
         TermsFingerprint = termsFingerprint;

@@ -35,9 +35,10 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
                     b.Property<int>("DealId")
                         .HasColumnType("int");
 
-                    b.PrimitiveCollection<string>("Genres")
+                    b.PrimitiveCollection<string>("PersistedGenres")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Genres");
 
                     b.Property<int>("State")
                         .HasColumnType("int");

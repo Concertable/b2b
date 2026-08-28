@@ -8,14 +8,14 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 internal sealed class ApplicationDashboardService : IApplicationDashboardService
 {
     private readonly IApplicationRepository repository;
-    private readonly IOpportunityModule opportunities;
+    private readonly IOpportunityModule opportunityModule;
 
     public ApplicationDashboardService(
         IApplicationRepository repository,
-        IOpportunityModule opportunities)
+        IOpportunityModule opportunityModule)
     {
         this.repository = repository;
-        this.opportunities = opportunities;
+        this.opportunityModule = opportunityModule;
     }
 
     public async Task<int> GetVenuePendingCountAsync(
@@ -51,7 +51,7 @@ internal sealed class ApplicationDashboardService : IApplicationDashboardService
     private Task<IReadOnlySet<int>> GetUpcomingOpportunityIdsAsync(
         IEnumerable<ApplicationDashboardProjection> applications,
         CancellationToken ct) =>
-        opportunities.GetUpcomingIdsAsync(
+        this.opportunityModule.GetUpcomingIdsAsync(
             applications.Select(application => application.OpportunityId).Distinct().ToArray(),
             ct);
 }

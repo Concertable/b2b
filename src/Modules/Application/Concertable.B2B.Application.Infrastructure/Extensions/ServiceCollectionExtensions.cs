@@ -2,7 +2,6 @@ using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Application.Application.Interfaces;
 using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Application.Renderers;
-using Concertable.B2B.Application.Application.Steps;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Infrastructure.Data;
@@ -66,6 +65,8 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, VerifyPaymentFailedProcessor>();
             services.AddScoped<IDomainEventHandler<ApplicationCounterpartyNotifiedDomainEvent>,
                 ApplicationCounterpartyNotifiedDomainEventHandler>();
+            services.AddScoped<IDomainEventHandler<PaymentVerificationRecordedDomainEvent>,
+                PaymentVerificationRecordedDomainEventHandler>();
             services.AddScoped<ApplicationCancellationIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<BookingCancelledEvent>>(provider =>
                 provider.GetRequiredService<ApplicationCancellationIntegrationEventHandler>());
@@ -79,7 +80,6 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IApplicationCheckoutService, ApplicationCheckoutService>();
             services.AddApplicationDealStrategies();
             services.AddScoped<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
-            services.AddScoped<IClientContext, ClientContextAccessor>();
             services.AddScoped<IApplicationModule, ApplicationModule>();
 
             services.AddSingleton<ApplicationConfigurationProvider>();
@@ -92,25 +92,18 @@ public static class ServiceCollectionExtensions
         internal IServiceCollection AddApplicationDealStrategies()
         {
             services.AddScoped<IDealTermsRenderer, DealTermsRenderer>();
-            services.AddScoped<IAcceptFactory, AcceptFactory>();
-
             return services.AddApplicationDealStrategies(strategies =>
             {
                 strategies.For(DealType.FlatFee)
-                    .AddSingleton<IDealTerms, FlatFeeDealTerms>()
-                    .AddSingleton<IAccept, FlatFeeAccept>();
+                    .AddSingleton<IDealTerms, FlatFeeDealTerms>();
                 strategies.For(DealType.DoorSplit)
-                    .AddSingleton<IDealTerms, DoorSplitDealTerms>()
-                    .AddSingleton<IAccept, DoorSplitAccept>();
+                    .AddSingleton<IDealTerms, DoorSplitDealTerms>();
                 strategies.For(DealType.Versus)
-                    .AddSingleton<IDealTerms, VersusDealTerms>()
-                    .AddSingleton<IAccept, VersusAccept>();
+                    .AddSingleton<IDealTerms, VersusDealTerms>();
                 strategies.For(DealType.VenueHire)
-                    .AddSingleton<IDealTerms, VenueHireDealTerms>()
-                    .AddSingleton<IAccept, VenueHireAccept>();
+                    .AddSingleton<IDealTerms, VenueHireDealTerms>();
 
                 strategies.RequireAll<IDealTerms>();
-                strategies.RequireAll<IAccept>();
             });
         }
 

@@ -11,27 +11,27 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 {
     private readonly IApplicationRepository applications;
-    private readonly IArtistModule artists;
-    private readonly IOpportunityModule opportunities;
-    private readonly IVenueModule venues;
-    private readonly IDealModule deals;
+    private readonly IArtistModule artistModule;
+    private readonly IOpportunityModule opportunityModule;
+    private readonly IVenueModule venueModule;
+    private readonly IDealModule dealModule;
     private readonly IManagerPaymentOperationsClient managerPaymentClient;
     private readonly ITenantContext tenantContext;
 
     public ApplicationCheckoutService(
         IApplicationRepository applications,
-        IArtistModule artists,
-        IOpportunityModule opportunities,
-        IVenueModule venues,
-        IDealModule deals,
+        IArtistModule artistModule,
+        IOpportunityModule opportunityModule,
+        IVenueModule venueModule,
+        IDealModule dealModule,
         IManagerPaymentOperationsClient managerPaymentClient,
         ITenantContext tenantContext)
     {
         this.applications = applications;
-        this.artists = artists;
-        this.opportunities = opportunities;
-        this.venues = venues;
-        this.deals = deals;
+        this.artistModule = artistModule;
+        this.opportunityModule = opportunityModule;
+        this.venueModule = venueModule;
+        this.dealModule = dealModule;
         this.managerPaymentClient = managerPaymentClient;
         this.tenantContext = tenantContext;
     }
@@ -39,17 +39,17 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     public async Task<Result<Checkout, ApplicationCheckoutError>> CreateApplyCheckoutAsync(
         int opportunityId)
     {
-        var opportunityOption = await opportunities.GetOpenAsync(opportunityId);
+        var opportunityOption = await this.opportunityModule.GetOpenAsync(opportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationCheckoutError.OpportunityNotFound();
 
-        var dealOption = await deals.GetByIdAsync(opportunity.DealId);
+        var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId);
         if (!dealOption.TryGetValue(out var deal))
             return new ApplicationCheckoutError.DealNotFound();
         if (deal is not VenueHireDealDto venueHire)
             return new ApplicationCheckoutError.ApplyCheckoutUnsupported(deal.DealType);
 
-        var venueOption = await venues.GetProfileAsync(opportunity.VenueId);
+        var venueOption = await this.venueModule.GetProfileAsync(opportunity.VenueId);
         if (!venueOption.TryGetValue(out var venue))
             return new ApplicationCheckoutError.VenueNotFound();
         if (tenantContext.TenantId is not { } artistTenantId)
@@ -73,19 +73,19 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         if (application is null)
             return new ApplicationCheckoutError.ApplicationNotFound();
 
-        var opportunityOption = await opportunities.GetAsync(application.OpportunityId);
+        var opportunityOption = await this.opportunityModule.GetAsync(application.OpportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationCheckoutError.OpportunityNotFound();
 
-        var dealOption = await deals.GetByIdAsync(opportunity.DealId);
+        var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId);
         if (!dealOption.TryGetValue(out var deal))
             return new ApplicationCheckoutError.DealNotFound();
 
-        var artistOption = await artists.GetProfileAsync(application.ArtistId);
+        var artistOption = await this.artistModule.GetProfileAsync(application.ArtistId);
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationCheckoutError.ArtistNotFound();
 
-        var venueOption = await venues.GetProfileAsync(opportunity.VenueId);
+        var venueOption = await this.venueModule.GetProfileAsync(opportunity.VenueId);
         if (!venueOption.TryGetValue(out var venue))
             return new ApplicationCheckoutError.VenueNotFound();
         var metadata = new Dictionary<string, string>

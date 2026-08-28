@@ -21,8 +21,8 @@ public abstract record AcceptedApplication(
     string VenueName,
     string TermsText,
     string PlatformTermsVersion,
-    Signature ArtistSignature,
-    Signature VenueSignature);
+    SignatureDto ArtistSignature,
+    SignatureDto VenueSignature);
 
 public sealed record FlatFeeAcceptedApplication(
     Guid OperationId,
@@ -40,8 +40,8 @@ public sealed record FlatFeeAcceptedApplication(
     string VenueName,
     string TermsText,
     string PlatformTermsVersion,
-    Signature ArtistSignature,
-    Signature VenueSignature,
+    SignatureDto ArtistSignature,
+    SignatureDto VenueSignature,
     decimal Fee)
     : AcceptedApplication(
         OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
@@ -65,8 +65,8 @@ public sealed record DoorSplitAcceptedApplication(
     string VenueName,
     string TermsText,
     string PlatformTermsVersion,
-    Signature ArtistSignature,
-    Signature VenueSignature,
+    SignatureDto ArtistSignature,
+    SignatureDto VenueSignature,
     decimal ArtistDoorPercent,
     string PaymentMethodId,
     VerifyPayment? Verification)
@@ -92,8 +92,8 @@ public sealed record VersusAcceptedApplication(
     string VenueName,
     string TermsText,
     string PlatformTermsVersion,
-    Signature ArtistSignature,
-    Signature VenueSignature,
+    SignatureDto ArtistSignature,
+    SignatureDto VenueSignature,
     decimal Guarantee,
     decimal ArtistDoorPercent,
     string PaymentMethodId,
@@ -120,8 +120,8 @@ public sealed record VenueHireAcceptedApplication(
     string VenueName,
     string TermsText,
     string PlatformTermsVersion,
-    Signature ArtistSignature,
-    Signature VenueSignature,
+    SignatureDto ArtistSignature,
+    SignatureDto VenueSignature,
     decimal HireFee,
     string PaymentMethodId)
     : AcceptedApplication(

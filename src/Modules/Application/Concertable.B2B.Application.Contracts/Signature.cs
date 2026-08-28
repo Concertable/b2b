@@ -2,7 +2,7 @@ using System.Net;
 
 namespace Concertable.B2B.Application.Contracts;
 
-public sealed record Signature(
+public sealed record SignatureDto(
     Guid UserId,
     DateTime AtUtc,
     IPAddress Ip,

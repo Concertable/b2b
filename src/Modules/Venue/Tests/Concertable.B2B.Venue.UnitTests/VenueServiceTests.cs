@@ -60,6 +60,16 @@ public sealed class VenueServiceTests
     }
 
     [Fact]
+    public async Task GetCurrentIdAsync_NoTenant_ReturnsNone()
+    {
+        tenantContext.SetupGet(context => context.TenantId).Returns((Guid?)null);
+
+        var result = await this.service.GetCurrentIdAsync();
+
+        Assert.True(result.IsNone);
+    }
+
+    [Fact]
     public async Task CreateAsync_InvalidProfile_MapsStructuredDomainFailure()
     {
         tenantContext.SetupGet(context => context.TenantId).Returns(Guid.NewGuid());

@@ -1,4 +1,4 @@
-using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Domain.ValueObjects;
 
 namespace Concertable.B2B.Application.Domain.Entities;
 
@@ -10,19 +10,19 @@ internal abstract class VerifyPaymentEntity
 
     protected VerifyPaymentEntity() { }
 
-    protected VerifyPaymentEntity(VerifyPayment payment)
+    protected VerifyPaymentEntity(PaymentVerification verification)
     {
-        this.ApplicationId = payment.ApplicationId;
-        this.ProviderTransactionId = payment.ProviderTransactionId;
+        this.ApplicationId = verification.ApplicationId;
+        this.ProviderTransactionId = verification.ProviderTransactionId;
     }
 
-    internal abstract VerifyPayment ToContract();
+    internal abstract PaymentVerification ToValue();
 
-    internal static VerifyPaymentEntity Create(VerifyPayment payment) => payment switch
+    internal static VerifyPaymentEntity Create(PaymentVerification verification) => verification switch
     {
-        VerifyPaymentSucceeded succeeded => new SucceededVerifyPaymentEntity(succeeded),
-        VerifyPaymentFailed failed => new FailedVerifyPaymentEntity(failed),
-        _ => throw new ArgumentOutOfRangeException(nameof(payment), payment, null)
+        SuccessfulPaymentVerification succeeded => new SucceededVerifyPaymentEntity(succeeded),
+        FailedPaymentVerification failed => new FailedVerifyPaymentEntity(failed),
+        _ => throw new ArgumentOutOfRangeException(nameof(verification), verification, null)
     };
 }
 
@@ -30,10 +30,10 @@ internal sealed class SucceededVerifyPaymentEntity : VerifyPaymentEntity
 {
     private SucceededVerifyPaymentEntity() { }
 
-    internal SucceededVerifyPaymentEntity(VerifyPaymentSucceeded payment) : base(payment) { }
+    internal SucceededVerifyPaymentEntity(SuccessfulPaymentVerification verification) : base(verification) { }
 
-    internal override VerifyPayment ToContract() =>
-        new VerifyPaymentSucceeded(ApplicationId, ProviderTransactionId);
+    internal override PaymentVerification ToValue() =>
+        new SuccessfulPaymentVerification(ApplicationId, ProviderTransactionId);
 }
 
 internal sealed class FailedVerifyPaymentEntity : VerifyPaymentEntity
@@ -43,15 +43,15 @@ internal sealed class FailedVerifyPaymentEntity : VerifyPaymentEntity
 
     private FailedVerifyPaymentEntity() { }
 
-    internal FailedVerifyPaymentEntity(VerifyPaymentFailed payment) : base(payment)
+    internal FailedVerifyPaymentEntity(FailedPaymentVerification verification) : base(verification)
     {
-        this.Code = payment.Error.Code;
-        this.Message = payment.Error.Message;
+        this.Code = verification.Failure.Code;
+        this.Message = verification.Failure.Message;
     }
 
-    internal override VerifyPayment ToContract() =>
-        new VerifyPaymentFailed(
+    internal override PaymentVerification ToValue() =>
+        new FailedPaymentVerification(
             ApplicationId,
             ProviderTransactionId,
-            new VerifyPaymentError(Code, Message));
+            new PaymentVerificationFailure(Code, Message));
 }

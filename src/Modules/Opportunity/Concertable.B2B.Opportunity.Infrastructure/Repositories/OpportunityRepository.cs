@@ -19,7 +19,7 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
 
     public async Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId) =>
         await context.Opportunities
-            .ActiveForVenue(venueId, timeProvider.GetUtcNow())
+            .ActiveForVenue(venueId, timeProvider.GetUtcNow().UtcDateTime)
             .ToListAsync();
 
     public Task<int?> GetDealIdByIdAsync(int opportunityId) =>
@@ -54,7 +54,7 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
         await context.Opportunities
             .AsNoTracking()
             .Where(opportunity => opportunity.TenantId == venueTenantId)
-            .WhereActive(timeProvider.GetUtcNow())
+            .WhereActive(timeProvider.GetUtcNow().UtcDateTime)
             .OrderBy(opportunity => opportunity.Period.Start)
             .Take(5)
             .ToListAsync(ct);

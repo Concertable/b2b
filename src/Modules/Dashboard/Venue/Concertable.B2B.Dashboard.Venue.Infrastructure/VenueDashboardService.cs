@@ -14,45 +14,45 @@ namespace Concertable.B2B.Dashboard.Venue.Infrastructure;
 
 internal sealed class VenueDashboardService : IVenueDashboardService
 {
-    private readonly IApplicationModule applications;
-    private readonly IConcertModule concerts;
-    private readonly IOpportunityModule opportunities;
+    private readonly IApplicationModule applicationModule;
+    private readonly IConcertModule concertModule;
+    private readonly IOpportunityModule opportunityModule;
     private readonly IManagerPaymentReportingClient paymentReportingClient;
     private readonly IPayoutAccountOperationsClient payoutAccountClient;
     private readonly ITenantContext tenantContext;
-    private readonly ITenantModule tenants;
+    private readonly ITenantModule tenantModule;
     private readonly TimeProvider timeProvider;
-    private readonly IVenueModule venues;
+    private readonly IVenueModule venueModule;
 
     public VenueDashboardService(
-        IApplicationModule applications,
-        IConcertModule concerts,
-        IOpportunityModule opportunities,
+        IApplicationModule applicationModule,
+        IConcertModule concertModule,
+        IOpportunityModule opportunityModule,
         IManagerPaymentReportingClient paymentReportingClient,
         IPayoutAccountOperationsClient payoutAccountClient,
         ITenantContext tenantContext,
-        ITenantModule tenants,
+        ITenantModule tenantModule,
         TimeProvider timeProvider,
-        IVenueModule venues)
+        IVenueModule venueModule)
     {
-        this.applications = applications;
-        this.concerts = concerts;
-        this.opportunities = opportunities;
+        this.applicationModule = applicationModule;
+        this.concertModule = concertModule;
+        this.opportunityModule = opportunityModule;
         this.paymentReportingClient = paymentReportingClient;
         this.payoutAccountClient = payoutAccountClient;
         this.tenantContext = tenantContext;
-        this.tenants = tenants;
+        this.tenantModule = tenantModule;
         this.timeProvider = timeProvider;
-        this.venues = venues;
+        this.venueModule = venueModule;
     }
 
     public async Task<Option<VenueDashboardKpis>> GetAsync(CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
         var period = DashboardReportingPeriod.From(timeProvider.GetUtcNow().UtcDateTime);
-        var pendingApplications = await applications.GetVenuePendingCountAsync(tenantId, ct);
-        var openOpportunitiesTask = opportunities.GetOpenCountAsync(tenantId, ct);
-        var concertCountsTask = concerts.GetVenueDashboardCountsAsync(tenantId, ct);
+        var pendingApplicationsTask = applicationModule.GetVenuePendingCountAsync(tenantId, ct);
+        var openOpportunitiesTask = opportunityModule.GetOpenCountAsync(tenantId, ct);
+        var concertCountsTask = concertModule.GetVenueDashboardCountsAsync(tenantId, ct);
         var revenueTask = period.HasElapsedTime
             ? paymentReportingClient.GetTicketRevenueAsync(
                 tenantId,
@@ -60,13 +60,13 @@ internal sealed class VenueDashboardService : IVenueDashboardService
                 ct)
             : Task.FromResult(Money.Gbp(0m));
 
-        await Task.WhenAll(openOpportunitiesTask, concertCountsTask, revenueTask);
+        await Task.WhenAll(pendingApplicationsTask, openOpportunitiesTask, concertCountsTask, revenueTask);
         var concertCounts = await concertCountsTask;
         if (!concertCounts.TryGetValue(out var counts))
             return null;
 
         return new VenueDashboardKpis(
-            pendingApplications,
+            await pendingApplicationsTask,
             null,
             await openOpportunitiesTask,
             counts.UpcomingConcerts,
@@ -77,11 +77,11 @@ internal sealed class VenueDashboardService : IVenueDashboardService
 
     public async Task<Option<VenueDashboardOverview>> GetOverviewAsync(
         CancellationToken ct = default) =>
-        await (await venues.GetCurrentProfileAsync(ct))
+        await (await venueModule.GetCurrentProfileAsync(ct))
             .MapAsync(async venue =>
             {
                 var tenantId = tenantContext.GetTenantId();
-                var reviewSummaryTask = venues.GetReviewSummaryAsync(venue.Id, ct);
+                var reviewSummaryTask = venueModule.GetReviewSummaryAsync(venue.Id, ct);
                 var payoutStatusTask = payoutAccountClient.GetAccountStatusAsync(tenantId, ct);
                 await Task.WhenAll(reviewSummaryTask, payoutStatusTask);
 
@@ -113,7 +113,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
     {
         var tenantId = tenantContext.GetTenantId();
         var settlements = await paymentReportingClient.GetRecentSettlementsAsync(tenantId, 5, ct);
-        var contexts = await concerts.GetManagerSettlementContextsAsync(
+        var contexts = await concertModule.GetManagerSettlementContextsAsync(
             settlements.Select(settlement => settlement.BookingId).Distinct().ToArray(),
             ct);
         var contextsByBooking = contexts.ToDictionary(context => context.BookingId);
@@ -144,5 +144,5 @@ internal sealed class VenueDashboardService : IVenueDashboardService
 
     public Task<IReadOnlyList<ActivityItemDto>> GetActivityAsync(
         CancellationToken ct = default) =>
-        tenants.GetRecentActivityAsync(tenantContext.GetTenantId(), 10, ct);
+        tenantModule.GetRecentActivityAsync(tenantContext.GetTenantId(), 10, ct);
 }

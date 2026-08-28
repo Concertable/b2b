@@ -378,20 +378,20 @@ public sealed class SeedState
             if (tenantByDealId.TryGetValue(deal.Id, out var tenantId))
                 deal.TenantId = tenantId;
 
-        ConfirmedApp = Link(1, ApplicationFactory.Booked(1, 6));
-        PostedDoorSplitApp = Link(2, ApplicationFactory.Booked(1, 53));
-        PostedVersusApp = Link(3, ApplicationFactory.Booked(2, 54));
-        PostedFlatFeeApp = Link(4, ApplicationFactory.Complete(2, 31));
-        PostedVenueHireApp = Link(5, ApplicationFactory.CompletePrepaid(1, 21));
+        ConfirmedApp = Link(1, ApplicationFactory.Accepted(1, 6));
+        PostedDoorSplitApp = Link(2, ApplicationFactory.Accepted(1, 53));
+        PostedVersusApp = Link(3, ApplicationFactory.Accepted(2, 54));
+        PostedFlatFeeApp = Link(4, ApplicationFactory.Accepted(2, 31));
+        PostedVenueHireApp = Link(5, ApplicationFactory.AcceptedPrepaid(1, 21));
         AwaitingPaymentApp = Link(6, ApplicationFactory.Accepted(1, 33));
-        FinishedDoorSplitApp = Link(7, ApplicationFactory.Complete(1, 50));
-        FinishedVersusApp = Link(8, ApplicationFactory.Complete(1, 51));
-        PastVersusApp = Link(9, ApplicationFactory.Booked(1, Opportunities[63].Id));
-        PastFlatFeeApp = Link(10, ApplicationFactory.Booked(1, Opportunities[64].Id));
-        PastVenueHireApp = Link(11, ApplicationFactory.BookedPrepaid(1, Opportunities[65].Id));
-        PastDoorSplitApp = Link(12, ApplicationFactory.Booked(1, Opportunities[66].Id));
-        UpcomingFlatFeeApp = Link(13, ApplicationFactory.Booked(2, 58));
-        UpcomingVenueHireApp = Link(14, ApplicationFactory.BookedPrepaid(1, 59));
+        FinishedDoorSplitApp = Link(7, ApplicationFactory.Accepted(1, 50));
+        FinishedVersusApp = Link(8, ApplicationFactory.Accepted(1, 51));
+        PastVersusApp = Link(9, ApplicationFactory.Accepted(1, Opportunities[63].Id));
+        PastFlatFeeApp = Link(10, ApplicationFactory.Accepted(1, Opportunities[64].Id));
+        PastVenueHireApp = Link(11, ApplicationFactory.AcceptedPrepaid(1, Opportunities[65].Id));
+        PastDoorSplitApp = Link(12, ApplicationFactory.Accepted(1, Opportunities[66].Id));
+        UpcomingFlatFeeApp = Link(13, ApplicationFactory.Accepted(2, 58));
+        UpcomingVenueHireApp = Link(14, ApplicationFactory.AcceptedPrepaid(1, 59));
 
         DoorSplitApp = ApplicationFactory.Create(1, Opportunities[55].Id, Deals[55].DealType);
         VersusApp = ApplicationFactory.Create(1, Opportunities[56].Id, Deals[56].DealType);
@@ -401,32 +401,32 @@ public sealed class SeedState
 
         Applications =
         [
-            Link(15, ApplicationFactory.Complete(1, 1)),
-            Link(16, ApplicationFactory.Complete(2, 1)),
-            Link(17, ApplicationFactory.Complete(3, 1)),
-            Link(18, ApplicationFactory.Complete(4, 1)),
-            Link(19, ApplicationFactory.Complete(1, 2)),
-            Link(20, ApplicationFactory.Complete(2, 2)),
-            Link(21, ApplicationFactory.Complete(5, 2)),
-            Link(22, ApplicationFactory.Complete(6, 2)),
-            Link(23, ApplicationFactory.Complete(1, 3)),
-            Link(24, ApplicationFactory.Complete(2, 3)),
-            Link(25, ApplicationFactory.Complete(7, 3)),
-            Link(26, ApplicationFactory.Complete(8, 3)),
-            Link(27, ApplicationFactory.Complete(1, 4)),
-            Link(28, ApplicationFactory.Complete(2, 4)),
-            Link(29, ApplicationFactory.Complete(9, 4)),
-            Link(30, ApplicationFactory.Complete(10, 4)),
-            Link(31, ApplicationFactory.Complete(1, 5)),
-            Link(32, ApplicationFactory.Complete(2, 5)),
-            Link(33, ApplicationFactory.Complete(11, 5)),
-            Link(34, ApplicationFactory.Complete(12, 5)),
+            Link(15, ApplicationFactory.Accepted(1, 1)),
+            Link(16, ApplicationFactory.Accepted(2, 1)),
+            Link(17, ApplicationFactory.Accepted(3, 1)),
+            Link(18, ApplicationFactory.Accepted(4, 1)),
+            Link(19, ApplicationFactory.Accepted(1, 2)),
+            Link(20, ApplicationFactory.Accepted(2, 2)),
+            Link(21, ApplicationFactory.Accepted(5, 2)),
+            Link(22, ApplicationFactory.Accepted(6, 2)),
+            Link(23, ApplicationFactory.Accepted(1, 3)),
+            Link(24, ApplicationFactory.Accepted(2, 3)),
+            Link(25, ApplicationFactory.Accepted(7, 3)),
+            Link(26, ApplicationFactory.Accepted(8, 3)),
+            Link(27, ApplicationFactory.Accepted(1, 4)),
+            Link(28, ApplicationFactory.Accepted(2, 4)),
+            Link(29, ApplicationFactory.Accepted(9, 4)),
+            Link(30, ApplicationFactory.Accepted(10, 4)),
+            Link(31, ApplicationFactory.Accepted(1, 5)),
+            Link(32, ApplicationFactory.Accepted(2, 5)),
+            Link(33, ApplicationFactory.Accepted(11, 5)),
+            Link(34, ApplicationFactory.Accepted(12, 5)),
             ConfirmedApp,
-            Link(35, ApplicationFactory.Complete(2, 6)),
-            Link(36, ApplicationFactory.Complete(13, 6)),
-            Link(37, ApplicationFactory.Complete(14, 6)),
-            Link(38, ApplicationFactory.Complete(1, 7)),
-            Link(39, ApplicationFactory.Complete(2, 7)),
+            Link(35, ApplicationFactory.Accepted(2, 6)),
+            Link(36, ApplicationFactory.Accepted(13, 6)),
+            Link(37, ApplicationFactory.Accepted(14, 6)),
+            Link(38, ApplicationFactory.Accepted(1, 7)),
+            Link(39, ApplicationFactory.Accepted(2, 7)),
             ApplicationFactory.Create(15, 7),
             ApplicationFactory.Create(16, 7),
             ApplicationFactory.Create(1, 8),
@@ -435,17 +435,17 @@ public sealed class SeedState
             ApplicationFactory.Create(18, 8),
             ApplicationFactory.Create(17, 40),
             ApplicationFactory.Create(18, 41),
-            Link(40, ApplicationFactory.Booked(1, 14)),
+            Link(40, ApplicationFactory.Accepted(1, 14)),
             ApplicationFactory.Create(2, 14),
             ApplicationFactory.Create(3, 14),
             ApplicationFactory.Create(4, 14),
             PostedDoorSplitApp,
             DoorSplitApp,
             ApplicationFactory.Create(7, 15),
-            Link(41, ApplicationFactory.Booked(8, 15)),
+            Link(41, ApplicationFactory.Accepted(8, 15)),
             ApplicationFactory.CreatePrepaid(9, 16),
             ApplicationFactory.CreatePrepaid(10, 16),
-            Link(42, ApplicationFactory.BookedPrepaid(11, 16)),
+            Link(42, ApplicationFactory.AcceptedPrepaid(11, 16)),
             ApplicationFactory.CreatePrepaid(12, 16),
             VersusApp,
             ApplicationFactory.Create(14, 17),
@@ -484,20 +484,20 @@ public sealed class SeedState
             PastDoorSplitApp,
             UpcomingFlatFeeApp,
             UpcomingVenueHireApp,
-            Link(43, ApplicationFactory.Booked(3, 34)),
+            Link(43, ApplicationFactory.Accepted(3, 34)),
             ApplicationFactory.Create(4, 34),
             ApplicationFactory.Create(5, 34),
-            Link(44, ApplicationFactory.Booked(1, 35)),
+            Link(44, ApplicationFactory.Accepted(1, 35)),
             ApplicationFactory.Create(2, 35),
             ApplicationFactory.Create(4, 35),
             ApplicationFactory.Create(5, 35),
-            Link(45, ApplicationFactory.Booked(4, 46)),
+            Link(45, ApplicationFactory.Accepted(4, 46)),
             ApplicationFactory.Create(5, 46),
             ApplicationFactory.Create(6, 46),
-            Link(46, ApplicationFactory.Booked(5, 47)),
+            Link(46, ApplicationFactory.Accepted(5, 47)),
             ApplicationFactory.Create(6, 47),
             ApplicationFactory.Create(7, 47),
-            Link(47, ApplicationFactory.BookedPrepaid(6, 48)),
+            Link(47, ApplicationFactory.AcceptedPrepaid(6, 48)),
             ApplicationFactory.CreatePrepaid(7, 48),
             ApplicationFactory.CreatePrepaid(8, 48),
             InProgressApplication,

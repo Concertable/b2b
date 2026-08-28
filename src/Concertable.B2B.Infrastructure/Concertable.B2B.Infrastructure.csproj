@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Concertable.B2B.RequestContext\Concertable.B2B.RequestContext.csproj" />
     <ProjectReference Include="..\Modules\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
     <ProjectReference Include="..\Modules\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
   </ItemGroup>

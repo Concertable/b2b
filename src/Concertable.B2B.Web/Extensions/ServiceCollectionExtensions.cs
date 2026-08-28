@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddGeometry();
+        services.AddClientContext();
         services.AddUris(configuration);
 
         return services;

@@ -1,6 +1,6 @@
 using System.ComponentModel;
-using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Kernel;
@@ -24,16 +24,16 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
     public PaymentMethod PaymentMethod { get; private set; }
     public string TermsText { get; private set; } = null!;
     public string PlatformTermsVersion { get; private set; } = null!;
-    public Signature ArtistSignature { get; private set; } = null!;
-    public Signature VenueSignature { get; private set; } = null!;
+    internal Signature ArtistSignature { get; private set; } = null!;
+    internal Signature VenueSignature { get; private set; } = null!;
     public string? PdfBlobName { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
     private ContractEntity() { }
 
-    public static ContractEntity Create(
+    internal static ContractEntity Create(
         int bookingId,
-        AcceptedApplication application,
+        BookingAcceptance acceptance,
         DateTime createdAtUtc)
     {
         if (bookingId <= 0)
@@ -42,19 +42,19 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
         return new ContractEntity
         {
             BookingId = bookingId,
-            VenueTenantId = application.VenueTenantId,
-            ArtistTenantId = application.ArtistTenantId,
-            VenueId = application.VenueId,
-            VenueName = application.VenueName,
-            ArtistId = application.ArtistId,
-            ArtistName = application.ArtistName,
-            Period = new DateRange(application.StartDate, application.EndDate),
-            DealType = application.DealType,
-            PaymentMethod = application.PaymentMethod,
-            TermsText = application.TermsText,
-            PlatformTermsVersion = application.PlatformTermsVersion,
-            ArtistSignature = application.ArtistSignature,
-            VenueSignature = application.VenueSignature,
+            VenueTenantId = acceptance.VenueTenantId,
+            ArtistTenantId = acceptance.ArtistTenantId,
+            VenueId = acceptance.VenueId,
+            VenueName = acceptance.VenueName,
+            ArtistId = acceptance.ArtistId,
+            ArtistName = acceptance.ArtistName,
+            Period = new DateRange(acceptance.StartDate, acceptance.EndDate),
+            DealType = acceptance.DealType,
+            PaymentMethod = acceptance.PaymentMethod,
+            TermsText = acceptance.TermsText,
+            PlatformTermsVersion = acceptance.PlatformTermsVersion,
+            ArtistSignature = acceptance.ArtistSignature,
+            VenueSignature = acceptance.VenueSignature,
             CreatedAtUtc = createdAtUtc,
             PdfBlobName = $"contracts/{bookingId}-{Guid.NewGuid():N}.pdf"
         };

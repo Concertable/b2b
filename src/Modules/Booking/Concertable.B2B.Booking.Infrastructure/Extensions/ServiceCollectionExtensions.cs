@@ -63,6 +63,8 @@ public static class ServiceCollectionExtensions
                 VerifyPaymentFailedHandler>();
             services.AddScoped<IDomainEventHandler<BookingCancelledDomainEvent>,
                 BookingCancelledDomainEventHandler>();
+            services.AddScoped<IDomainEventHandler<BookingConfirmedDomainEvent>,
+                BookingConfirmedDomainEventHandler>();
             services.AddScoped<AcceptanceFinancialOperationOutcomeProcessor>();
             services.AddScoped<IIntegrationEventHandler<CaptureEscrowSucceededEvent>>(provider =>
                 provider.GetRequiredService<AcceptanceFinancialOperationOutcomeProcessor>());
