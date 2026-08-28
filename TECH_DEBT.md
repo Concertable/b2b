@@ -86,7 +86,7 @@ should not be solved by restoring a general-purpose `Query` escape hatch.
 
 ### `DELETE api/organization` is a local hard-delete with no cross-module / cross-service teardown
 
-`TenantService.DeleteAsync` deletes the tenant row and cascades only the Tenant module's own children (memberships, invitations). It emits **no `TenantDeletedEvent`** and touches nothing outside the `tenant` schema, so deleting an organization silently **orphans** everything provisioned off it: the Payment Stripe payout account (provisioned by `CredentialRegisteredHandler`), the venues/artists/concerts owned by the tenant (separate modules/contexts, no cross-schema FK — so no error, just dangling rows), and downstream Search projections. The create path deliberately re-raises `TenantCreatedEvent` via `Announce()` for exactly this cross-service reason; delete has no symmetric path. Landed as a simple synchronous endpoint in the member-management phase (Phase 6.2); the full teardown is its own design (a new integration event + a Payment consumer that deactivates the connected account + module-owned cleanup of venue/artist/concert data).
+`TenantService.DeleteAsync` deletes the tenant row and cascades only the Tenant module's own children (memberships, invitations). It emits **no `TenantDeletedEvent`** and touches nothing outside the `tenant` schema, so deleting an organization silently **orphans** everything provisioned off it: the Payment Stripe payout account (provisioned by `CredentialRegisteredHandler`), the venues/artists/concerts owned by the tenant (separate modules/contexts, no cross-schema FK — so no error, just dangling rows), and downstream Search projections. The create path deliberately re-raises `TenantCreatedDomainEvent` via `Announce()`, which `TenantCreatedDomainEventHandler` turns into the integration `PayoutOwnerRegisteredEvent`, for exactly this cross-service reason; delete has no symmetric path. Landed as a simple synchronous endpoint in the member-management phase (Phase 6.2); the full teardown is its own design (a new integration event + a Payment consumer that deactivates the connected account + module-owned cleanup of venue/artist/concert data).
 
 **Resolves when:** tenant deletion publishes a `TenantDeletedEvent` (registered `Publishes<>`), Payment deactivates/closes the connected Stripe account on it, the Venue/Artist/Concert modules clean up (or soft-delete) their tenant-owned rows via their own handlers, and Search drops the corresponding projections — no owned data outlives the tenant.
 
@@ -116,8 +116,12 @@ repository, and no cross-module consumer wants them yet.
 
 **Resolves when:** each new cross-module tenant-keyed need joins the `ITenantStrategy` family as its own
 member instead of dual-injecting both facades, and the parallel four-method surface has a declared shape so
-a new `TenantType` does not mean a third verbatim copy. The next member is already known — see the tenant
-deletion teardown entry above, whose per-module cleanup is a `TenantType`-keyed operation.
+a new `TenantType` does not mean a third verbatim copy.
+
+No second member is queued today. The tenant-deletion teardown above is **not** one: it is pub/sub fan-out —
+each module handles the integration event for its own rows, mirroring how creation fans out — so it selects
+nothing by key. The realistic next member is a cross-module *read* that varies by tenant type, such as a
+Tenant-side "has this tenant provisioned its profile yet?" over `ExistsByTenantIdAsync`.
 
 ---
 
