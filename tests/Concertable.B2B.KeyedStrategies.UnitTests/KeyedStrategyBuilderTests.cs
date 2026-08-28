@@ -1,7 +1,7 @@
-using Concertable.B2B.Composition.Strategies;
+﻿using Concertable.B2B.KeyedStrategies;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Concertable.B2B.Composition.UnitTests;
+namespace Concertable.B2B.KeyedStrategies.UnitTests;
 
 public sealed class KeyedStrategyBuilderTests
 {

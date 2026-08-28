@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Composition.Strategies;
+﻿using Concertable.B2B.KeyedStrategies;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Tenant.Contracts;
