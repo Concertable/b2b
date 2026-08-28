@@ -272,10 +272,10 @@ internal sealed class ApplicationService : IApplicationService
         ESignatureRequest eSignature,
         CancellationToken ct = default) =>
         await unitOfWork.ExecuteAsync(
-            () => AcceptCoreAsync(applicationId, paymentMethodId, eSignature, ct),
+            () => AcceptApplicationAsync(applicationId, paymentMethodId, eSignature, ct),
             ct);
 
-    private async Task<UnitResult<AcceptApplicationError>> AcceptCoreAsync(
+    private async Task<UnitResult<AcceptApplicationError>> AcceptApplicationAsync(
         int applicationId,
         string? paymentMethodId,
         ESignatureRequest eSignature,
