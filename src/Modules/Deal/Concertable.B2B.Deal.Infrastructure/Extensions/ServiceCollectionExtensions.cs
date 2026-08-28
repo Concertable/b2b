@@ -1,3 +1,4 @@
+using Concertable.B2B.Composition.Strategies;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess;
 using Concertable.Seed.Shared;
@@ -71,9 +72,9 @@ public static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddDealStrategies(
         this IServiceCollection services,
-        Action<DealStrategyBuilder> configure)
+        Action<KeyedStrategyBuilder<DealType>> configure)
     {
-        var builder = new DealStrategyBuilder(services);
+        var builder = new KeyedStrategyBuilder<DealType>(services);
         configure(builder);
         builder.Build();
 
