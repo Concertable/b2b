@@ -124,33 +124,24 @@ instead of per row.
 
 ---
 
-### `VerificationService.GetContactAsync` branches on `TenantType` instead of using a keyed strategy
+### `ApplicationController.GetById` branches on `TenantType` to pick a response mapper
 
-`GetContactAsync` (and its callers `GetPendingAsync`/`ReviewAsync`) injects both `IVenueModule` and
-`IArtistModule` and does `if (type == TenantType.Venue) ... else ...` to pick one — exactly the
-"branching on the key inside a key-agnostic component" anti-pattern the `keyed-strategies` standard
-names directly, plus dual-injecting two collaborators only one of which is ever used per call. Confirmed
-via grep this is not (yet) scattered elsewhere in the codebase — it's confined to this one method today —
-but it's the shape that would proliferate the next time venue-vs-artist branching is needed for a
-tenant-scoped concern, and this codebase already has the template to prevent that: `DealType`-keyed
-strategy families (see the `keyed-strategies` standard and its `CODE_PATTERNS.md` roster).
+`GetById` (Concert.Api) switches on `membership.Type` to choose between `mapper.ToVenueResponse` and
+`mapper.ToArtistResponse`, with a `default:` arm returning `Forbid()` — the same "branching on the key
+inside a key-agnostic component" anti-pattern the `keyed-strategies` standard names, in a controller
+that is otherwise key-agnostic. Found while resolving the Tenant-side equivalent, whose entry asserted
+the branch was confined to `VerificationService.GetContactAsync`; it was not.
 
-**Resolves when:** this is replaced with a `TenantType`-keyed strategy family, matching this codebase's
-existing `DealType`-keyed pattern — module-local `ITenantStrategy`/`ITenantStrategyFactory<TStrategy>`
-spine (mirroring `IDealStrategy`/`IDealStrategyFactory<TStrategy>`), with `ITenantContactResolver` as the
-first family member and `VenueTenantContactResolver`/`ArtistTenantContactResolver` as its keyed leaves,
-matching this codebase's `XResolver` naming for "compute a value via a keyed strategy" (`DealPayeeResolver`,
-`SettlementAmountResolver`). `VerificationService` then injects `ITenantContactResolver` directly instead
-of both cross-module facades.
+Deliberately left out of that fix for two reasons. It lives in the **Concert** module, so it needs
+Concert's own `TenantType`-keyed spine rather than Tenant's — factories and key enums stay module-local.
+And what varies is an Api-layer *response shape* rather than an application-layer value, so the leaves
+are response mappers and the `default:` arm is an authorization decision that must survive the refactor
+as an explicit check, not silently become a composition-time coverage failure.
 
-**Same PR, related but separate cause:** `Venue.Contracts.TenantContact`/`Artist.Contracts.TenantContact`
-are two copies of an identical shape today (a deliberate, published-package-boundary-driven duplication —
-see the plan/ledger for the reasoning), and `VerificationService` currently unwraps each into a plain
-`(string? Name, string? Email)` tuple because there's nowhere Tenant-owned to canonicalize into. Once
-`ITenantContactResolver.ResolveAsync` exists, its return type is exactly that missing Tenant-owned
-canonical shape — a genuine, non-published-boundary-crossing "shared place" for Venue's and Artist's
-contact data as Tenant module sees it, replacing the tuple. Land both in the same change: the keyed
-strategy needs a return type anyway, and that return type is the fix for the tuple.
+**Resolves when:** Concert declares a `TenantType`-keyed family over the shared `KeyedStrategyBuilder<TKey>`
+(`src/Concertable.B2B.Composition`) with the venue/artist response mappers as its keyed leaves, and
+`GetById` selects through it — the not-a-party case staying an explicit authorization check ahead of the
+lookup rather than a missing key.
 
 ---
 

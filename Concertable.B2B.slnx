@@ -1,4 +1,4 @@
-<Solution>
+﻿<Solution>
   <Project Path="src/Concertable.B2B.AppHost/Concertable.B2B.AppHost.csproj" />
   <Project Path="src/Concertable.B2B.Hosting/Concertable.B2B.Hosting.csproj" />
   <Project Path="../Concertable.Search/src/Concertable.Search.Hosting/Concertable.Search.Hosting.csproj" />
@@ -114,6 +114,7 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/Concertable.B2B.ArchitectureTests/Concertable.B2B.ArchitectureTests.csproj" />
+    <Project Path="tests/Concertable.B2B.Composition.UnitTests/Concertable.B2B.Composition.UnitTests.csproj" />
     <Project Path="tests/Concertable.B2B.IntegrationTests.Fixtures/Concertable.B2B.IntegrationTests.Fixtures.csproj" />
     <Project Path="tests/Concertable.B2B.Workers.UnitTests/Concertable.B2B.Workers.UnitTests.csproj" />
   </Folder>
