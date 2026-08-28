@@ -92,6 +92,35 @@ should not be solved by restoring a general-purpose `Query` escape hatch.
 
 ---
 
+### Venue and Artist duplicate a four-method tenant-keyed surface with no shared seam
+
+`IVenueRepository` and `IArtistRepository` each declare the same four tenant-keyed reads —
+`GetByTenantIdAsync`, `GetDetailsByTenantIdAsync`, `ExistsByTenantIdAsync` and `GetContactByTenantIdAsync` —
+differing only in the module-owned return type (`VenueEntity`/`ArtistEntity`, `VenueDetails`/`ArtistDetails`),
+and `VenueService`/`ArtistService` consume them in matching shapes. Today the duplication sits *inside* each
+module rather than as a branch in a key-agnostic consumer, which is why it reads as ordinary module
+separation rather than a smell.
+
+Two things make it debt rather than acceptable symmetry. A third `TenantType` would need a third verbatim
+copy of the whole surface, so the shape has a scaling cliff nobody has priced. And there is no declared seam
+for a cross-module consumer, so the next component needing "the venue-or-artist thing for this tenant" will
+reach for dual-injection and a `TenantType` branch — which is exactly the debt just resolved in
+`VerificationService`, re-created one module over.
+
+What exists now is the `ITenantStrategy` / `ITenantStrategyFactory<TStrategy>` spine in the Tenant module
+over the shared `KeyedStrategyBuilder<TKey>` (`src/Concertable.B2B.KeyedStrategies`), with
+`ITenantContactResolver` as its only member. Only `GetContactByTenantIdAsync` is promoted to the module
+facades, and after that change nothing in production injects both `IVenueModule` and `IArtistModule`. The
+other three reads are deliberately **not** promoted — a facade adapts a use case rather than mirroring a
+repository, and no cross-module consumer wants them yet.
+
+**Resolves when:** each new cross-module tenant-keyed need joins the `ITenantStrategy` family as its own
+member instead of dual-injecting both facades, and the parallel four-method surface has a declared shape so
+a new `TenantType` does not mean a third verbatim copy. The next member is already known — see the tenant
+deletion teardown entry above, whose per-module cleanup is a `TenantType`-keyed operation.
+
+---
+
 ## RESOLVED
 
 ### ✅ Seed `TicketsSold` depends on the Payment seed simulator
