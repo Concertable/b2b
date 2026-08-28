@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Application.DTOs;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
 
-internal static class OpportunityDashboardResponseMappers
+internal static class OpportunityDashboardMappers
 {
     extension(IEnumerable<OpportunityApplicationMetrics> metrics)
     {

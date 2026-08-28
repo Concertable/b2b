@@ -4,7 +4,7 @@ using Concertable.Contracts;
 
 namespace Concertable.B2B.Concert.Api.Mappers;
 
-internal interface IOpportunityResponseMapper
+internal interface IOpportunityMapper
 {
     OpportunityResponse ToResponse(OpportunityDto dto);
     IEnumerable<OpportunityResponse> ToResponses(IEnumerable<OpportunityDto> dtos);
