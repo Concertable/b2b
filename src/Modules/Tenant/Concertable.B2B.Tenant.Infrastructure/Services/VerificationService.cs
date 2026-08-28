@@ -134,13 +134,10 @@ internal sealed class VerificationService : IVerificationService
         try
         {
             var tenant = await tenantRepository.GetByIdAsync(tenantId, ct);
-            string? contactEmail = null;
-            if (tenant is not null)
-            {
-                var resolved = await contactResolver.ResolveAsync(tenant.Type, tenantId, ct);
-                if (resolved.TryGetValue(out var contact))
-                    contactEmail = contact.Email;
-            }
+            var contactEmail = tenant is null
+                ? null
+                : (await contactResolver.ResolveAsync(tenant.Type, tenantId, ct))
+                    .Match<string?>(contact => contact.Email, () => null);
 
             await notify(verification, contactEmail);
         }
@@ -157,8 +154,8 @@ internal sealed class VerificationService : IVerificationService
 
     private async Task<PendingVerificationDto> ToDtoAsync(PendingVerificationProjection pending, CancellationToken ct)
     {
-        var resolved = await contactResolver.ResolveAsync(pending.TenantType, pending.TenantId, ct);
-        TenantContact? contact = resolved.TryGetValue(out var value) ? value : null;
+        var contact = (await contactResolver.ResolveAsync(pending.TenantType, pending.TenantId, ct))
+            .Match<TenantContact?>(value => value, () => null);
 
         return new PendingVerificationDto
         {
