@@ -53,7 +53,7 @@ internal sealed class ArtistReadRepository : IArtistReadRepository
 
     public async Task<TenantContact?> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         await context.Artists
-            .Where(artist => artist.TenantId == tenantId)
-            .Select(artist => new TenantContact(artist.Name, artist.Email))
+            .Where(a => a.TenantId == tenantId)
+            .Select(a => (TenantContact?)new TenantContact(a.Name, a.Email))
             .FirstOrDefaultAsync(ct);
 }

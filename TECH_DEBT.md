@@ -1,4 +1,4 @@
-# Concertable.B2B — Technical Debt
+﻿# Concertable.B2B — Technical Debt
 
 When an item is fixed, update both this file and [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
@@ -86,7 +86,7 @@ should not be solved by restoring a general-purpose `Query` escape hatch.
 
 ### `DELETE api/organization` is a local hard-delete with no cross-module / cross-service teardown
 
-`TenantService.DeleteAsync` deletes the tenant row and cascades only the Tenant module's own children (memberships, invitations). It emits **no `TenantDeletedEvent`** and touches nothing outside the `tenant` schema, so deleting an organization silently **orphans** everything provisioned off it: the Payment Stripe payout account (provisioned by `CredentialRegisteredHandler`), the venues/artists/concerts owned by the tenant (separate modules/contexts, no cross-schema FK — so no error, just dangling rows), and downstream Search projections. The create path deliberately re-raises `TenantCreatedEvent` via `Announce()` for exactly this cross-service reason; delete has no symmetric path. Landed as a simple synchronous endpoint in the member-management phase (Phase 6.2); the full teardown is its own design (a new integration event + a Payment consumer that deactivates the connected account + module-owned cleanup of venue/artist/concert data).
+`TenantService.DeleteAsync` deletes the tenant row and cascades only the Tenant module's own children (memberships, invitations). It emits **no `TenantDeletedEvent`** and touches nothing outside the `tenant` schema, so deleting an organization silently **orphans** everything provisioned off it: the Payment Stripe payout account (provisioned by `CredentialRegisteredHandler`), the venues/artists/concerts owned by the tenant (separate modules/contexts, no cross-schema FK — so no error, just dangling rows), and downstream Search projections. The create path deliberately re-raises `TenantCreatedDomainEvent` via `Announce()`, which `TenantCreatedDomainEventHandler` turns into the integration `PayoutOwnerRegisteredEvent`, for exactly this cross-service reason; delete has no symmetric path. Landed as a simple synchronous endpoint in the member-management phase (Phase 6.2); the full teardown is its own design (a new integration event + a Payment consumer that deactivates the connected account + module-owned cleanup of venue/artist/concert data).
 
 **Resolves when:** tenant deletion publishes a `TenantDeletedEvent` (registered `Publishes<>`), Payment deactivates/closes the connected Stripe account on it, the Venue/Artist/Concert modules clean up (or soft-delete) their tenant-owned rows via their own handlers, and Search drops the corresponding projections — no owned data outlives the tenant.
 
@@ -104,6 +104,39 @@ silently unenforced until someone remembers to update these lists by hand.
 **Resolves when:** both tests discover modules and their layer/sub-module structure by reflection over the
 loaded `Concertable.B2B.*` assemblies (or by scanning `src/Modules/*` directories) instead of a maintained
 string array, so a new module is enforced automatically the moment its assembly exists.
+
+---
+
+### Venue and Artist duplicate a four-method tenant-keyed surface with no shared seam
+
+`IVenueRepository` and `IArtistRepository` each declare the same four tenant-keyed reads —
+`GetByTenantIdAsync`, `GetDetailsByTenantIdAsync`, `ExistsByTenantIdAsync` and `GetContactByTenantIdAsync` —
+differing only in the module-owned return type (`VenueEntity`/`ArtistEntity`, `VenueDetails`/`ArtistDetails`),
+and `VenueService`/`ArtistService` consume them in matching shapes. Today the duplication sits *inside* each
+module rather than as a branch in a key-agnostic consumer, which is why it reads as ordinary module
+separation rather than a smell.
+
+Two things make it debt rather than acceptable symmetry. A third `TenantType` would need a third verbatim
+copy of the whole surface, so the shape has a scaling cliff nobody has priced. And there is no declared seam
+for a cross-module consumer, so the next component needing "the venue-or-artist thing for this tenant" will
+reach for dual-injection and a `TenantType` branch — which is exactly the debt just resolved in
+`VerificationService`, re-created one module over.
+
+What exists now is the `ITenantStrategy` / `ITenantStrategyFactory<TStrategy>` spine in the Tenant module
+over the shared `KeyedStrategyBuilder<TKey>` (`src/Concertable.B2B.KeyedStrategies`), with
+`ITenantContactResolver` as its only member. Only `GetContactByTenantIdAsync` is promoted to the module
+facades, and after that change nothing in production injects both `IVenueModule` and `IArtistModule`. The
+other three reads are deliberately **not** promoted — a facade adapts a use case rather than mirroring a
+repository, and no cross-module consumer wants them yet.
+
+**Resolves when:** each new cross-module tenant-keyed need joins the `ITenantStrategy` family as its own
+member instead of dual-injecting both facades, and the parallel four-method surface has a declared shape so
+a new `TenantType` does not mean a third verbatim copy.
+
+No second member is queued today. The tenant-deletion teardown above is **not** one: it is pub/sub fan-out —
+each module handles the integration event for its own rows, mirroring how creation fans out — so it selects
+nothing by key. The realistic next member is a cross-module *read* that varies by tenant type, such as a
+Tenant-side "has this tenant provisioned its profile yet?" over `ExistsByTenantIdAsync`.
 
 ---
 
@@ -139,33 +172,24 @@ instead of per row.
 
 ---
 
-### `VerificationService.GetContactAsync` branches on `TenantType` instead of using a keyed strategy
+### `ApplicationController.GetById` branches on `TenantType` to pick a response mapper
 
-`GetContactAsync` (and its callers `GetPendingAsync`/`ReviewAsync`) injects both `IVenueModule` and
-`IArtistModule` and does `if (type == TenantType.Venue) ... else ...` to pick one — exactly the
-"branching on the key inside a key-agnostic component" anti-pattern the `keyed-strategies` standard
-names directly, plus dual-injecting two collaborators only one of which is ever used per call. Confirmed
-via grep this is not (yet) scattered elsewhere in the codebase — it's confined to this one method today —
-but it's the shape that would proliferate the next time venue-vs-artist branching is needed for a
-tenant-scoped concern, and this codebase already has the template to prevent that: `DealType`-keyed
-strategy families (see the `keyed-strategies` standard and its `CODE_PATTERNS.md` roster).
+`GetById` (Concert.Api) switches on `membership.Type` to choose between `mapper.ToVenueResponse` and
+`mapper.ToArtistResponse`, with a `default:` arm returning `Forbid()` — the same "branching on the key
+inside a key-agnostic component" anti-pattern the `keyed-strategies` standard names, in a controller
+that is otherwise key-agnostic. Found while resolving the Tenant-side equivalent, whose entry asserted
+the branch was confined to `VerificationService.GetContactAsync`; it was not.
 
-**Resolves when:** this is replaced with a `TenantType`-keyed strategy family, matching this codebase's
-existing `DealType`-keyed pattern — module-local `ITenantStrategy`/`ITenantStrategyFactory<TStrategy>`
-spine (mirroring `IDealStrategy`/`IDealStrategyFactory<TStrategy>`), with `ITenantContactResolver` as the
-first family member and `VenueTenantContactResolver`/`ArtistTenantContactResolver` as its keyed leaves,
-matching this codebase's `XResolver` naming for "compute a value via a keyed strategy" (`DealPayeeResolver`,
-`SettlementAmountResolver`). `VerificationService` then injects `ITenantContactResolver` directly instead
-of both cross-module facades.
+Deliberately left out of that fix for two reasons. It lives in the **Concert** module, so it needs
+Concert's own `TenantType`-keyed spine rather than Tenant's — factories and key enums stay module-local.
+And what varies is an Api-layer *response shape* rather than an application-layer value, so the leaves
+are response mappers and the `default:` arm is an authorization decision that must survive the refactor
+as an explicit check, not silently become a composition-time coverage failure.
 
-**Same PR, related but separate cause:** `Venue.Contracts.TenantContact`/`Artist.Contracts.TenantContact`
-are two copies of an identical shape today (a deliberate, published-package-boundary-driven duplication —
-see the plan/ledger for the reasoning), and `VerificationService` currently unwraps each into a plain
-`(string? Name, string? Email)` tuple because there's nowhere Tenant-owned to canonicalize into. Once
-`ITenantContactResolver.ResolveAsync` exists, its return type is exactly that missing Tenant-owned
-canonical shape — a genuine, non-published-boundary-crossing "shared place" for Venue's and Artist's
-contact data as Tenant module sees it, replacing the tuple. Land both in the same change: the keyed
-strategy needs a return type anyway, and that return type is the fix for the tuple.
+**Resolves when:** Concert declares a `TenantType`-keyed family over the shared `KeyedStrategyBuilder<TKey>`
+(`src/Concertable.B2B.KeyedStrategies`) with the venue/artist response mappers as its keyed leaves, and
+`GetById` selects through it — the not-a-party case staying an explicit authorization check ahead of the
+lookup rather than a missing key.
 
 ---
 

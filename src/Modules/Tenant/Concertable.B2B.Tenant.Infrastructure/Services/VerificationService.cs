@@ -1,8 +1,6 @@
-using Concertable.B2B.Artist.Contracts;
-using Concertable.B2B.DataAccess.Infrastructure.Extensions;
+﻿using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Domain.Enums;
-using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Shared.Blob.Application;
 using Microsoft.Extensions.Logging;
@@ -15,8 +13,7 @@ internal sealed class VerificationService : IVerificationService
     private readonly ITenantRepository tenantRepository;
     private readonly ITenantContext tenantContext;
     private readonly IBlobStorageService blobStorage;
-    private readonly IVenueModule venueModule;
-    private readonly IArtistModule artistModule;
+    private readonly ITenantContactResolver contactResolver;
     private readonly IVerificationNotifier notifier;
     private readonly ICurrentUser currentUser;
     private readonly TimeProvider timeProvider;
@@ -27,8 +24,7 @@ internal sealed class VerificationService : IVerificationService
         ITenantRepository tenantRepository,
         ITenantContext tenantContext,
         IBlobStorageService blobStorage,
-        IVenueModule venueModule,
-        IArtistModule artistModule,
+        ITenantContactResolver contactResolver,
         IVerificationNotifier notifier,
         ICurrentUser currentUser,
         TimeProvider timeProvider,
@@ -38,8 +34,7 @@ internal sealed class VerificationService : IVerificationService
         this.tenantRepository = tenantRepository;
         this.tenantContext = tenantContext;
         this.blobStorage = blobStorage;
-        this.venueModule = venueModule;
-        this.artistModule = artistModule;
+        this.contactResolver = contactResolver;
         this.notifier = notifier;
         this.currentUser = currentUser;
         this.timeProvider = timeProvider;
@@ -124,7 +119,7 @@ internal sealed class VerificationService : IVerificationService
     private async Task<UnitResult<VerificationReviewError>> ReviewAsync(
         Guid tenantId,
         Action<TenantVerificationEntity> transition,
-        Func<TenantVerificationEntity, string?, Task> notify,
+        Func<TenantVerificationEntity, string, Task> notify,
         CancellationToken ct)
     {
         var verification = await repository.GetByTenantIdAsync(tenantId, ct);
@@ -139,8 +134,14 @@ internal sealed class VerificationService : IVerificationService
         try
         {
             var tenant = await tenantRepository.GetByIdAsync(tenantId, ct);
-            var contactEmail = tenant is null ? null : (await GetContactAsync(tenant.Type, tenantId, ct)).Email;
-            await notify(verification, contactEmail);
+            var resolved = tenant is null
+                ? Option.None<TenantContact>()
+                : await contactResolver.ResolveAsync(tenant.Type, tenantId, ct);
+
+            if (resolved.TryGetValue(out var contact))
+                await notify(verification, contact.Email);
+            else
+                logger.VerificationContactEmailMissing(tenantId);
         }
         catch (Exception exception)
         {
@@ -155,30 +156,15 @@ internal sealed class VerificationService : IVerificationService
 
     private async Task<PendingVerificationDto> ToDtoAsync(PendingVerificationProjection pending, CancellationToken ct)
     {
-        var contact = await GetContactAsync(pending.TenantType, pending.TenantId, ct);
+        var contact = await contactResolver.ResolveAsync(pending.TenantType, pending.TenantId, ct);
+
         return new PendingVerificationDto
         {
             TenantId = pending.TenantId,
             TenantType = pending.TenantType,
-            Name = contact.Name,
-            Email = contact.Email,
+            Contact = contact.ToNullable(),
             SubmittedAt = pending.SubmittedAt,
         };
-    }
-
-    private async Task<(string? Name, string? Email)> GetContactAsync(
-        TenantType type,
-        Guid tenantId,
-        CancellationToken ct)
-    {
-        if (type == TenantType.Venue)
-        {
-            var venueContact = await venueModule.GetContactByTenantIdAsync(tenantId, ct);
-            return venueContact.TryGetValue(out var venue) ? (venue.Name, venue.Email) : (null, null);
-        }
-
-        var artistContact = await artistModule.GetContactByTenantIdAsync(tenantId, ct);
-        return artistContact.TryGetValue(out var artist) ? (artist.Name, artist.Email) : (null, null);
     }
 
     private async Task<IReadOnlyList<VerificationDocumentEntity>> UploadEvidenceAsync(
