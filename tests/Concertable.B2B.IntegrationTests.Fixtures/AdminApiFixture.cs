@@ -20,6 +20,15 @@ public sealed class AdminApiFixture : ApiFixture
 
     public Task<bool> IsAdminAsync(Guid sub) => adminDb.AdminProfiles.AnyAsync(p => p.Sub == sub);
 
+    /// <summary>Simulates the first authenticated request after login (what every SPA calls right after
+    /// signin) — reads back the real persisted email for <paramref name="userId"/> rather than accepting a
+    /// caller-supplied copy that could silently drift from the row <c>RegisterAsync</c> actually wrote.</summary>
+    public async Task<HttpResponseMessage> LogInAsync(Guid userId)
+    {
+        var user = await userDb.Users.AsNoTracking().SingleAsync(u => u.Id == userId);
+        return await CreateClient(user).GetAsync("/api/auth/me");
+    }
+
     /// <summary>Removes every seeded admin — profile and underlying user row alike — arranging the "no admin
     /// exists yet, and the bootstrap email is free to register" precondition the bootstrap path requires,
     /// which the standard seed graph never holds (it always seeds one admin at <c>SeedUsers.AdminEmail</c>).</summary>
