@@ -55,10 +55,10 @@ internal sealed class SettlementService : ISettlementService
         if (concert is null)
             return new FinishConcertError.ConcertNotFound(concertId);
 
-        if (concert.State is State.Complete)
+        if (concert.State is ConcertState.Complete)
             return new SettlementPreparation.Terminal(SettlementOutcome.Settled);
 
-        if (concert.State is State.AwaitingSettlement)
+        if (concert.State is ConcertState.AwaitingSettlement)
         {
             var prepared = CreatePreparation(
                 concert,
@@ -132,7 +132,7 @@ internal sealed class SettlementService : ISettlementService
         concert.EnsureSettlementOperation(operationId);
         EnsureConfirmationMatches(concert, confirmation);
 
-        if (concert.State is State.Complete)
+        if (concert.State is ConcertState.Complete)
         {
             if (confirmation is SettlementConfirmation.ManagerPaid paid)
                 concert.EnsureSettlementReference(paid.TransactionId);
@@ -188,12 +188,12 @@ internal sealed class SettlementService : ISettlementService
             ?? throw new InvalidOperationException($"Settlement concert {concertId} was not found.");
         concert.EnsureSettlementOperation(operationId);
 
-        if (concert.State is State.Complete)
+        if (concert.State is ConcertState.Complete)
         {
             return;
         }
 
-        if (concert.State is State.SettlementFailed)
+        if (concert.State is ConcertState.SettlementFailed)
         {
             concert.EnsureSettlementReference(providerReferenceId);
             return;

@@ -22,7 +22,7 @@ internal abstract partial record CancelBookingError : IError
     public partial record BookingNotFound(int BookingId);
 
     [ErrorCode("booking.cancel.invalid_state")]
-    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+    public partial record InvalidTransition(TransitionError<BookingState, BookingTrigger> Error);
 
     [ErrorCode("booking.cancel.superseded")]
     public partial record Superseded(int BookingId);

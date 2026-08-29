@@ -13,13 +13,13 @@ namespace Concertable.B2B.Application.Domain.Entities;
 [DisplayName(DisplayNames.Application)]
 public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
 {
-    private static readonly StateMachine stateMachine = new();
+    private static readonly ApplicationStateMachine stateMachine = new();
 
     public int Id { get; private set; }
     public byte[] Version { get; private set; } = null!;
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
-    internal State State { get; private set; } = State.Applied;
+    internal ApplicationState State { get; private set; } = ApplicationState.Applied;
     internal VerifyPaymentEntity? VerifyPayment { get; private set; }
     internal PaymentVerification? Verification => VerifyPayment?.ToValue();
     public int OpportunityId { get; private set; }
@@ -89,36 +89,36 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
         TermsFingerprint = termsFingerprint;
     }
 
-    internal UnitResult<TransitionError<State, Trigger>> Accept(AcceptedApplication application)
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Accept(AcceptedApplication application)
     {
         if (application.ApplicationId != Id || application.OperationId != AcceptanceOperationId)
             throw new InvalidOperationException("Accepted application facts do not match the application transition.");
 
-        var transition = Transition(Trigger.Accept);
+        var transition = Transition(ApplicationTrigger.Accept);
         if (transition.TryGetError(out var error))
             return error;
         events.Raise(new ApplicationAcceptedDomainEvent(application));
         return new Success();
     }
 
-    internal UnitResult<TransitionError<State, Trigger>> ValidateAccept() => Validate(Trigger.Accept);
-    internal UnitResult<TransitionError<State, Trigger>> Reject() => Apply(Trigger.Reject);
-    internal UnitResult<TransitionError<State, Trigger>> Withdraw() => Apply(Trigger.Withdraw);
-    internal UnitResult<TransitionError<State, Trigger>> Cancel() => Apply(Trigger.Cancel);
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> ValidateAccept() => Validate(ApplicationTrigger.Accept);
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Reject() => Apply(ApplicationTrigger.Reject);
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Withdraw() => Apply(ApplicationTrigger.Withdraw);
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Cancel() => Apply(ApplicationTrigger.Cancel);
 
-    private UnitResult<TransitionError<State, Trigger>> Validate(Trigger trigger)
+    private UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Validate(ApplicationTrigger trigger)
     {
         var transition = stateMachine.Transition(State, trigger);
         return transition.TryGetError(out var error) ? error : new Success();
     }
 
-    private UnitResult<TransitionError<State, Trigger>> Apply(Trigger trigger)
+    private UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Apply(ApplicationTrigger trigger)
     {
         var transition = Transition(trigger);
         return transition.TryGetError(out var error) ? error : new Success();
     }
 
-    private Result<State, TransitionError<State, Trigger>> Transition(Trigger trigger)
+    private Result<ApplicationState, TransitionError<ApplicationState, ApplicationTrigger>> Transition(ApplicationTrigger trigger)
     {
         var transition = stateMachine.Transition(State, trigger);
         if (transition.TryGetValue(out var next))

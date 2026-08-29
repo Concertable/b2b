@@ -125,7 +125,7 @@ internal sealed class BookingService : IBookingService
                 var booking = await bookingRepository.GetByIdAsync(bookingId, ct);
                 if (booking is null)
                     return (UnitResult<CancelBookingError>)new CancelBookingError.BookingNotFound(bookingId);
-                if (booking.State is State.Cancelled or State.CancellationPending)
+                if (booking.State is BookingState.Cancelled or BookingState.CancellationPending)
                     return UnitResult.Success<CancelBookingError>();
                 if (booking.ValidateBeginCancellation().TryGetError(out var transitionError))
                     return new CancelBookingError.InvalidTransition(transitionError);
@@ -135,7 +135,7 @@ internal sealed class BookingService : IBookingService
                     return UnitResult.Success<CancelBookingError>();
 
                 booking = await bookingRepository.GetByIdAsync(bookingId, ct);
-                return booking?.State is State.Cancelled or State.CancellationPending
+                return booking?.State is BookingState.Cancelled or BookingState.CancellationPending
                     ? UnitResult.Success<CancelBookingError>()
                     : new CancelBookingError.Superseded(bookingId);
             }, ct),
@@ -162,7 +162,7 @@ internal sealed class BookingService : IBookingService
             ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
         Validate(bookingId, booking, operation);
 
-        if (booking.State == State.CancellationPending)
+        if (booking.State == BookingState.CancellationPending)
         {
             await bus.SendAsync(new RefundEscrowCommand(
                 booking.CancellationOperationId!.Value,
@@ -170,9 +170,9 @@ internal sealed class BookingService : IBookingService
                 RefundReasonCodes.RequestedByCustomer), ct);
             return;
         }
-        if (booking.State is State.CancellationFailed or State.Cancelled)
+        if (booking.State is BookingState.CancellationFailed or BookingState.Cancelled)
             return;
-        if (booking.State == State.Confirmed)
+        if (booking.State == BookingState.Confirmed)
         {
             EnsureSameProviderReference(booking, operation);
             return;
@@ -192,11 +192,11 @@ internal sealed class BookingService : IBookingService
             ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
         Validate(bookingId, booking, operation);
 
-        if (booking.State == State.Confirmed)
+        if (booking.State == BookingState.Confirmed)
             return;
-        if (booking.State is State.CancellationFailed or State.Cancelled)
+        if (booking.State is BookingState.CancellationFailed or BookingState.Cancelled)
             return;
-        if (booking.State == State.CancellationPending)
+        if (booking.State == BookingState.CancellationPending)
         {
             if (booking.Cancel().TryGetError(out var transitionError))
                 throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
@@ -258,7 +258,7 @@ internal sealed class BookingService : IBookingService
     private static bool IsDuplicateFailure(
         BookingEntity booking,
         FinancialOperationFailed operation) =>
-        booking.State == State.ConfirmationFailed && operation switch
+        booking.State == BookingState.ConfirmationFailed && operation switch
         {
             VerifyPaymentFailedEvidence verified =>
                 booking.FinancialOperationReferenceId == verified.ProviderReferenceId,

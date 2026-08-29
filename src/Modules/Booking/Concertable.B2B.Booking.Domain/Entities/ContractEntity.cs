@@ -8,7 +8,7 @@ using Concertable.Kernel.ValueObjects;
 
 namespace Concertable.B2B.Booking.Domain.Entities;
 
-[DisplayName(Booking.Contracts.DisplayNames.Contract)]
+[DisplayName(DisplayNames.Contract)]
 public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
 {
     public int Id { get; private set; }

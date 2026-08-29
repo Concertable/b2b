@@ -34,7 +34,7 @@ internal sealed class ApplicationDashboardService : IApplicationDashboardService
         var applications = await repository.GetArtistDashboardProjectionsAsync(artistTenantId, ct);
         var upcomingOpportunityIds = await GetUpcomingOpportunityIdsAsync(applications, ct);
         return applications.Count(application =>
-            application.State == State.Applied &&
+            application.State == ApplicationState.Applied &&
             upcomingOpportunityIds.Contains(application.OpportunityId));
     }
 

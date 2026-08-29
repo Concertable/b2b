@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Concert.Domain.Lifecycle;
 
-public enum Trigger
+public enum ConcertTrigger
 {
     Post,
     BeginCancellation,

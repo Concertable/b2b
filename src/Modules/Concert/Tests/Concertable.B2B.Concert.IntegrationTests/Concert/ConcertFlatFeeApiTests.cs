@@ -33,7 +33,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
 
         // Assert
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(State.Complete, concert.State);
+        Assert.Equal(ConcertState.Complete, concert.State);
         Assert.Empty(fixture.ManagerPaymentClient.Payments);
     }
 
@@ -55,7 +55,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         }
 
         var interrupted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.AwaitingSettlement, interrupted.State);
+        Assert.Equal(ConcertState.AwaitingSettlement, interrupted.State);
         Assert.NotNull(interrupted.SettlementOperationId);
 
         var retry = await fixture.CompleteConcertAsync(concert.Id);
@@ -67,7 +67,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
             value => value.BookingId == concert.BookingId);
         Assert.Equal(interrupted.SettlementOperationId, release.OperationId);
         var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Complete, settled.State);
+        Assert.Equal(ConcertState.Complete, settled.State);
         Assert.NotNull(await fixture.Invoices.SingleOrDefaultAsync(invoice => invoice.BookingId == concert.BookingId));
     }
 
@@ -92,7 +92,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
             value => value.BookingId == concert.BookingId);
         var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(release.OperationId, settled.SettlementOperationId);
-        Assert.Equal(State.Complete, settled.State);
+        Assert.Equal(ConcertState.Complete, settled.State);
         Assert.Equal(1, await fixture.Invoices.CountAsync(invoice => invoice.BookingId == concert.BookingId));
     }
 
@@ -108,7 +108,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<FinishConcertError.ConcertNotEnded>(error);
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(State.Draft, concert.State);
+        Assert.Equal(ConcertState.Draft, concert.State);
     }
 
     [Fact]
@@ -124,6 +124,6 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         Assert.True(result.TryGetValue(out var outcome));
         Assert.Equal(SettlementOutcome.Settled, outcome);
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(State.Complete, concert.State);
+        Assert.Equal(ConcertState.Complete, concert.State);
     }
 }

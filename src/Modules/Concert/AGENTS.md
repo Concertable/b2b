@@ -40,26 +40,26 @@ deal the artist is. That's why identity and role must stay separate words.
 There is no per-`DealType` state machine and no shared workflow object. Concert owns one configured machine
 for its own stage, in `Domain/Lifecycle/`:
 
-- **`State`** — `Draft, Posted, CancellationPending, CancellationFailed, AwaitingSettlement,
+- **`ConcertState`** — `Draft, Posted, CancellationPending, CancellationFailed, AwaitingSettlement,
   SettlementFailed, Complete, Cancelled`.
-- **`Trigger`** — `Post, BeginCancellation, RecordCancellationFailure, Cancel, BeginSettlement,
+- **`ConcertTrigger`** — `Post, BeginCancellation, RecordCancellationFailure, Cancel, BeginSettlement,
   RecordSettlementFailure, CompleteSettlement`.
-- **`StateMachine`** — `internal sealed class StateMachine : IStateMachine<State, Trigger>` whose sixteen
-  legal edges are copied into a `Concertable.Kernel.StateMachine<State, Trigger>` frozen table (the
-  `state-machines` skill owns the shared algorithm). It stores no entity state; a rejected edge returns
-  `TransitionError<State, Trigger>`.
+- **`ConcertStateMachine`** — `internal sealed class ConcertStateMachine : Concertable.Kernel.StateMachine<ConcertState, ConcertTrigger>`,
+  inheriting the shared algorithm directly (the `state-machines` skill owns it) and configuring its sixteen
+  legal edges through the base constructor. It stores no entity state; a rejected edge returns
+  `TransitionError<ConcertState, ConcertTrigger>`.
 
-`ConcertEntity` holds `State` with a private setter and one `private static readonly StateMachine`. Every
-lifecycle mutation funnels through the aggregate's private `Transition(Trigger)` helper, which assigns
-`State = next` **only** from the success value, then mutates operation-specific data and raises domain
-events; a rejected transition leaves state, auxiliary facts, and events untouched. Callers invoke the
+`ConcertEntity` holds `State` with a private setter and one `private static readonly ConcertStateMachine`.
+Every lifecycle mutation funnels through the aggregate's private `Transition(ConcertTrigger)` helper, which
+assigns `State = next` **only** from the success value, then mutates operation-specific data and raises
+domain events; a rejected transition leaves state, auxiliary facts, and events untouched. Callers invoke the
 semantic operations (`Post`, `BeginCancellation`, `Cancel`, `BeginSettlement`, `RecordSettlementFailure`,
 `CompleteSettlement`) — never a public generic `Transition`. `LifecycleStateOwnershipTests` in the
 architecture suite mechanically fails any `State` assignment outside that private path.
 
 Operation errors are operation-owned closed unions (`PostConcertError`, `CancelConcertError`,
-`FinishConcertError`), each carrying `InvalidTransition(TransitionError<State, Trigger>)` for a rejected edge
-and its own additional expected cases. There is no shared error base or `IError` widening.
+`FinishConcertError`), each carrying `InvalidTransition(TransitionError<ConcertState, ConcertTrigger>)` for a
+rejected edge and its own additional expected cases. There is no shared error base or `IError` widening.
 
 ## The pieces
 

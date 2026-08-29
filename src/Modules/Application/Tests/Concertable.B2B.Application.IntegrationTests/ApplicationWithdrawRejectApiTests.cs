@@ -39,7 +39,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
-        Assert.Equal(State.Withdrawn, application.State);
+        Assert.Equal(ApplicationState.Withdrawn, application.State);
         Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
             e.To == fixture.SeedState.VenueManager1.Email && e.Subject == "Concert Application Withdrawn");
     }
@@ -57,7 +57,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
-        Assert.Equal(State.Applied, application.State);
+        Assert.Equal(ApplicationState.Applied, application.State);
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.Conflict);
         var application = await fixture.Applications.FirstAsync(value => value.Id == applicationId);
-        Assert.Equal(State.Accepted, application.State);
+        Assert.Equal(ApplicationState.Accepted, application.State);
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         // Assert
         await response.ShouldBe(HttpStatusCode.NoContent);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
-        Assert.Equal(State.Rejected, application.State);
+        Assert.Equal(ApplicationState.Rejected, application.State);
         Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
             e.To == fixture.SeedState.ArtistManager1.Email && e.Subject == "Concert Application Update");
     }
@@ -159,7 +159,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         // Assert
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
-        Assert.Equal(State.Applied, application.State);
+        Assert.Equal(ApplicationState.Applied, application.State);
     }
 
     [Fact]
@@ -189,7 +189,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         // Assert
         await response.ShouldBe(HttpStatusCode.Conflict);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
-        Assert.Equal(State.Accepted, application.State);
+        Assert.Equal(ApplicationState.Accepted, application.State);
     }
 
     #endregion

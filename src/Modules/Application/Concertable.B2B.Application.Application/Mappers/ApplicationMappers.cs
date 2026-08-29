@@ -5,15 +5,15 @@ namespace Concertable.B2B.Application.Application.Mappers;
 
 internal static class ApplicationMappers
 {
-    extension(State state)
+    extension(ApplicationState state)
     {
         public ApplicationStatus ToStatus() => state switch
         {
-            State.Applied => ApplicationStatus.Pending,
-            State.Rejected => ApplicationStatus.Rejected,
-            State.Withdrawn => ApplicationStatus.Withdrawn,
-            State.Accepted => ApplicationStatus.Accepted,
-            State.Cancelled => ApplicationStatus.Cancelled,
+            ApplicationState.Applied => ApplicationStatus.Pending,
+            ApplicationState.Rejected => ApplicationStatus.Rejected,
+            ApplicationState.Withdrawn => ApplicationStatus.Withdrawn,
+            ApplicationState.Accepted => ApplicationStatus.Accepted,
+            ApplicationState.Cancelled => ApplicationStatus.Cancelled,
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
         };
     }

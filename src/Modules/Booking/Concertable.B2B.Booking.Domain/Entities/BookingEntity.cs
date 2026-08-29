@@ -12,10 +12,10 @@ using Reunion;
 
 namespace Concertable.B2B.Booking.Domain.Entities;
 
-[DisplayName(Booking.Contracts.DisplayNames.Booking)]
+[DisplayName(DisplayNames.Booking)]
 public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
 {
-    private static readonly StateMachine stateMachine = new();
+    private static readonly BookingStateMachine stateMachine = new();
 
     public int Id { get; private set; }
     public byte[] Version { get; private set; } = null!;
@@ -32,7 +32,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
     public DateTime StartDate { get; private set; }
     public DateTime EndDate { get; private set; }
     public List<Genre> Genres { get; private set; } = [];
-    internal State State { get; private set; } = State.AwaitingConfirmation;
+    internal BookingState State { get; private set; } = BookingState.AwaitingConfirmation;
     public Guid? CancellationOperationId { get; private set; }
     public string? FinancialFailureCode { get; private set; }
     public string? FinancialFailureMessage { get; private set; }
@@ -71,9 +71,9 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
         ArtistTenantId = acceptance.ArtistTenantId;
     }
 
-    internal UnitResult<TransitionError<State, Trigger>> RecordFinancialConfirmation(string providerReferenceId)
+    internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialConfirmation(string providerReferenceId)
     {
-        var transition = Apply(Trigger.Confirm);
+        var transition = Apply(BookingTrigger.Confirm);
         if (transition.TryGetError(out var error))
             return error;
         FinancialOperationReferenceId = providerReferenceId;
@@ -97,12 +97,12 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
         return new Success();
     }
 
-    internal UnitResult<TransitionError<State, Trigger>> RecordFinancialFailure(
+    internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialFailure(
         string providerReferenceId,
         string code,
         string message)
     {
-        var transition = Apply(Trigger.RecordConfirmationFailure);
+        var transition = Apply(BookingTrigger.RecordConfirmationFailure);
         if (transition.TryGetError(out var error))
             return error;
         FinancialOperationReferenceId = providerReferenceId;
@@ -111,9 +111,9 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
         return new Success();
     }
 
-    internal UnitResult<TransitionError<State, Trigger>> RecordFinancialRejection(string code, string message)
+    internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialRejection(string code, string message)
     {
-        var transition = Apply(Trigger.RecordConfirmationFailure);
+        var transition = Apply(BookingTrigger.RecordConfirmationFailure);
         if (transition.TryGetError(out var error))
             return error;
         FinancialOperationReferenceId = null;
@@ -122,21 +122,21 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
         return new Success();
     }
 
-    internal Result<Guid, TransitionError<State, Trigger>> BeginCancellation()
+    internal Result<Guid, TransitionError<BookingState, BookingTrigger>> BeginCancellation()
     {
-        var transition = Apply(Trigger.BeginCancellation);
+        var transition = Apply(BookingTrigger.BeginCancellation);
         if (transition.TryGetError(out var error))
             return error;
         CancellationOperationId = Guid.NewGuid();
         return CancellationOperationId.Value;
     }
 
-    internal UnitResult<TransitionError<State, Trigger>> ValidateBeginCancellation() =>
-        Validate(Trigger.BeginCancellation);
+    internal UnitResult<TransitionError<BookingState, BookingTrigger>> ValidateBeginCancellation() =>
+        Validate(BookingTrigger.BeginCancellation);
 
-    internal UnitResult<TransitionError<State, Trigger>> RecordCancellationFailure(string code, string message)
+    internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordCancellationFailure(string code, string message)
     {
-        var transition = Apply(Trigger.RecordCancellationFailure);
+        var transition = Apply(BookingTrigger.RecordCancellationFailure);
         if (transition.TryGetError(out var error))
             return error;
         FinancialFailureCode = code;
@@ -144,9 +144,9 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
         return new Success();
     }
 
-    internal UnitResult<TransitionError<State, Trigger>> Cancel()
+    internal UnitResult<TransitionError<BookingState, BookingTrigger>> Cancel()
     {
-        var transition = Apply(Trigger.Cancel);
+        var transition = Apply(BookingTrigger.Cancel);
         if (transition.TryGetError(out var error))
             return error;
         FinancialFailureCode = null;
@@ -155,19 +155,19 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
         return new Success();
     }
 
-    private UnitResult<TransitionError<State, Trigger>> Apply(Trigger trigger)
+    private UnitResult<TransitionError<BookingState, BookingTrigger>> Apply(BookingTrigger trigger)
     {
         var transition = Transition(trigger);
         return transition.TryGetError(out var error) ? error : new Success();
     }
 
-    private UnitResult<TransitionError<State, Trigger>> Validate(Trigger trigger)
+    private UnitResult<TransitionError<BookingState, BookingTrigger>> Validate(BookingTrigger trigger)
     {
         var transition = stateMachine.Transition(State, trigger);
         return transition.TryGetError(out var error) ? error : new Success();
     }
 
-    private Result<State, TransitionError<State, Trigger>> Transition(Trigger trigger)
+    private Result<BookingState, TransitionError<BookingState, BookingTrigger>> Transition(BookingTrigger trigger)
     {
         var transition = stateMachine.Transition(State, trigger);
         if (transition.TryGetValue(out var next))

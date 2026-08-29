@@ -78,7 +78,7 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var application = await fixture.Applications.FirstAsync(value => value.Id == applicationId);
-        Assert.Equal(State.Applied, application.State);
+        Assert.Equal(ApplicationState.Applied, application.State);
         var financial = await venueClient.GetAsync(
             $"/api/application/{applicationId}/financial-operation");
         await financial.ShouldBe(HttpStatusCode.NotFound);
@@ -102,7 +102,7 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.Conflict);
         var application = await fixture.Applications.FirstAsync(value => value.Id == applicationId);
-        Assert.Equal(State.Applied, application.State);
+        Assert.Equal(ApplicationState.Applied, application.State);
         var contract = await venueClient.GetAsync($"/api/application/{applicationId}/contract");
         await contract.ShouldBe(HttpStatusCode.NotFound);
     }

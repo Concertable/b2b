@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Booking.Domain.Lifecycle;
 
-internal enum State
+internal enum BookingState
 {
     AwaitingConfirmation,
     ConfirmationFailed,

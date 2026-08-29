@@ -5,5 +5,5 @@ namespace Concertable.B2B.Application.Application.Models;
 
 internal sealed record ApplicationDashboardProjection(
     int OpportunityId,
-    State State,
+    ApplicationState State,
     DealType DealType);

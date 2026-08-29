@@ -140,10 +140,10 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         CancellationToken ct = default) =>
         await ended.And(doorRevenueOutstanding.Not())
             .Apply(context.Concerts.Where(concert =>
-                concert.State == State.Draft ||
-                concert.State == State.Posted ||
-                concert.State == State.SettlementFailed ||
-                concert.State == State.AwaitingSettlement))
+                concert.State == ConcertState.Draft ||
+                concert.State == ConcertState.Posted ||
+                concert.State == ConcertState.SettlementFailed ||
+                concert.State == ConcertState.AwaitingSettlement))
             .Select(c => c.Id)
             .ToListAsync(ct);
 

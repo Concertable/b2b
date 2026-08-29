@@ -18,7 +18,7 @@ internal sealed class EscrowCancelStep : ICancelStep
 
     public async Task ExecuteAsync(BookingEntity booking, CancellationToken ct = default)
     {
-        if (booking.State == State.ConfirmationFailed)
+        if (booking.State == BookingState.ConfirmationFailed)
         {
             if (booking.BeginCancellation().TryGetError(out var beginError))
                 throw new InvalidOperationException($"Booking cannot begin cancellation from {beginError.Current}.");

@@ -29,7 +29,7 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, booking =>
         {
-            if (booking.State == State.Cancelled)
+            if (booking.State == BookingState.Cancelled)
                 return;
 
             if (booking.Cancel().TryGetError(out var transitionError))
@@ -42,7 +42,7 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, booking =>
         {
-            if (booking.State is State.CancellationFailed or State.Cancelled)
+            if (booking.State is BookingState.CancellationFailed or BookingState.Cancelled)
                 return;
 
             if (booking.RecordCancellationFailure(@event.Code, @event.Message).TryGetError(out var transitionError))

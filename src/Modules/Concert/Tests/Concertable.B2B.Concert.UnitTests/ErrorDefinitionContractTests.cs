@@ -33,7 +33,7 @@ public sealed class ErrorDefinitionContractTests
         },
         {
             new CancelConcertError.InvalidTransition(
-                new TransitionError<State, Trigger>(State.Complete, Trigger.BeginCancellation)),
+                new TransitionError<ConcertState, ConcertTrigger>(ConcertState.Complete, ConcertTrigger.BeginCancellation)),
             "concert.cancel.invalid_state",
             "A concert in Complete cannot be cancelled.",
             ErrorKind.Conflict
@@ -94,7 +94,7 @@ public sealed class ErrorDefinitionContractTests
         },
         {
             new FinishConcertError.InvalidTransition(
-                new TransitionError<State, Trigger>(State.Cancelled, Trigger.CompleteSettlement)),
+                new TransitionError<ConcertState, ConcertTrigger>(ConcertState.Cancelled, ConcertTrigger.CompleteSettlement)),
             "concert.finish.invalid_state",
             "A concert in Cancelled cannot be finished.",
             ErrorKind.Conflict

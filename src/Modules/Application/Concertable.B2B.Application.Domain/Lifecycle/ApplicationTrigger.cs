@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Application.Domain.Lifecycle;
 
-public enum Trigger
+public enum ApplicationTrigger
 {
     Accept,
     Reject,

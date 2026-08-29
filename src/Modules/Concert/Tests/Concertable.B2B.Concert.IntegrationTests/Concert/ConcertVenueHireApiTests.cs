@@ -32,7 +32,7 @@ public sealed class ConcertVenueHireApiTests : IAsyncLifetime
 
         // Assert
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(State.Complete, concert.State);
+        Assert.Equal(ConcertState.Complete, concert.State);
         Assert.Empty(fixture.ManagerPaymentClient.Payments);
     }
 
@@ -48,6 +48,6 @@ public sealed class ConcertVenueHireApiTests : IAsyncLifetime
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<FinishConcertError.ConcertNotEnded>(error);
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(State.Draft, concert.State);
+        Assert.Equal(ConcertState.Draft, concert.State);
     }
 }

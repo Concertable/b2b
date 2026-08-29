@@ -25,7 +25,7 @@ internal abstract partial record AcceptApplicationError : IError
     public partial record Ineligible(ApplicationEligibilityError Error);
 
     [ErrorCode("application.accept.invalid_state")]
-    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+    public partial record InvalidTransition(TransitionError<ApplicationState, ApplicationTrigger> Error);
 
     [ErrorCode("application.accept.terms_changed")]
     public partial record TermsChanged;

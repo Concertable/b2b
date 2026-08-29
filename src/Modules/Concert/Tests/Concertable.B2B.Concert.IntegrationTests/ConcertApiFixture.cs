@@ -60,7 +60,7 @@ public sealed class ConcertApiFixture : ApiFixture
             ADD CONSTRAINT [CK_Concerts_FailSettlementPersistence_ForTest] CHECK (
                 [FinancialOperationReferenceId] IS NULL
                 AND ([SettlementOperationId] IS NULL
-                     OR [State] = {(int)State.AwaitingSettlement}))
+                     OR [State] = {(int)ConcertState.AwaitingSettlement}))
             """);
 
     internal Task RestoreSettlementPersistenceAsync() =>

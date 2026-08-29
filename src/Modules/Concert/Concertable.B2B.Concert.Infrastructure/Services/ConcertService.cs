@@ -227,7 +227,7 @@ internal sealed class ConcertService : IConcertService
             return new Success();
 
         concertEntity = await concertRepository.GetByIdAsync(id);
-        return concertEntity?.State == State.Posted
+        return concertEntity?.State == ConcertState.Posted
             ? new Success()
             : new PostConcertError.Superseded(id);
     }
@@ -245,7 +245,7 @@ internal sealed class ConcertService : IConcertService
             return new DeclareDoorRevenueError.WrongDealType();
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
             return new DeclareDoorRevenueError.TooEarly();
-        if (concert.State is not (State.Draft or State.Posted))
+        if (concert.State is not (ConcertState.Draft or ConcertState.Posted))
             return new DeclareDoorRevenueError.AlreadySettled();
 
         if (concert.DeclareDoorRevenue(doorRevenue).TryGetError(out var revenueError))
@@ -264,8 +264,8 @@ internal sealed class ConcertService : IConcertService
 
     private ConcertDetails WithActions(ConcertDetails details) => details with
     {
-        CanCancel = details.State is State.Draft or State.Posted or State.CancellationFailed,
-        CanDeclareDoorRevenue = details.State is State.Draft or State.Posted
+        CanCancel = details.State is ConcertState.Draft or ConcertState.Posted or ConcertState.CancellationFailed,
+        CanDeclareDoorRevenue = details.State is ConcertState.Draft or ConcertState.Posted
             && details.IsRevenueShare
             && details.DoorRevenue is null
             && details.EndDate < timeProvider.GetUtcNow().UtcDateTime

@@ -98,7 +98,7 @@ internal sealed class ApplicationService : IApplicationService
 
         var applications = await applicationRepository.GetByArtistTenantIdAndStateAsync(
             artist.TenantId,
-            State.Applied);
+            ApplicationState.Applied);
         var dtos = await mapper.ToDtosAsync(applications);
         return new Success<IReadOnlyList<ApplicationDto>>(
             dtos.Where(application => application.Opportunity.StartDate > timeProvider.GetUtcNow())
@@ -113,7 +113,7 @@ internal sealed class ApplicationService : IApplicationService
 
         var applications = await applicationRepository.GetByArtistTenantIdAndStateAsync(
             artist.TenantId,
-            State.Rejected);
+            ApplicationState.Rejected);
         var dtos = await mapper.ToDtosAsync(applications);
         return new Success<IReadOnlyList<ApplicationDto>>(
             dtos.OrderByDescending(application => application.Opportunity.EndDate)
@@ -128,7 +128,7 @@ internal sealed class ApplicationService : IApplicationService
 
         var applications = await applicationRepository.GetByVenueTenantIdAndStateAsync(
             tenantId,
-            State.Applied);
+            ApplicationState.Applied);
         var now = timeProvider.GetUtcNow();
         var dtos = await mapper.ToDtosAsync(applications);
         return new Success<IReadOnlyList<ApplicationDto>>(
@@ -392,7 +392,7 @@ internal sealed class ApplicationService : IApplicationService
         if (!await applicationRepository.TrySaveChangesAsync(ct))
         {
             application = await applicationRepository.GetByIdAsync(applicationId, ct);
-            return application?.State == State.Withdrawn
+            return application?.State == ApplicationState.Withdrawn
                 ? new Success()
                 : new WithdrawApplicationError.Superseded(applicationId);
         }
@@ -419,7 +419,7 @@ internal sealed class ApplicationService : IApplicationService
         if (!await applicationRepository.TrySaveChangesAsync(ct))
         {
             application = await applicationRepository.GetByIdAsync(applicationId, ct);
-            return application?.State == State.Rejected
+            return application?.State == ApplicationState.Rejected
                 ? new Success()
                 : new RejectApplicationError.Superseded(applicationId);
         }
@@ -446,7 +446,7 @@ internal sealed class ApplicationService : IApplicationService
         if (!await applicationRepository.TrySaveChangesAsync(ct))
         {
             application = await applicationRepository.GetByIdAsync(applicationId, ct);
-            return application?.State == State.Cancelled
+            return application?.State == ApplicationState.Cancelled
                 ? new Success()
                 : new CancelApplicationError.Superseded(applicationId);
         }

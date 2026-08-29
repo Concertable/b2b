@@ -21,7 +21,7 @@ internal abstract partial record WithdrawApplicationError : IError
     public partial record ApplicationNotFound(int ApplicationId);
 
     [ErrorCode("application.withdraw.invalid_state")]
-    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+    public partial record InvalidTransition(TransitionError<ApplicationState, ApplicationTrigger> Error);
 
     [ErrorCode("application.withdraw.superseded")]
     public partial record Superseded(int ApplicationId);

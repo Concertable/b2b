@@ -43,7 +43,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         Assert.Equal(concert.BookingId, payment.BookingId);
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.AwaitingSettlement, persisted.State);
+        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
     }
 
     [Fact]
@@ -59,6 +59,6 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
 
         // Assert
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Complete, persisted.State);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 }

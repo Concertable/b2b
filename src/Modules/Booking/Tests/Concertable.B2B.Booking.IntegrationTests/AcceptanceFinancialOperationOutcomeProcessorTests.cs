@@ -48,7 +48,7 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
         await fixture.DispatchIntegrationEventAsync(succeeded, envelope);
 
         var booking = await fixture.Bookings.SingleAsync(value => value.Id == command.BookingId);
-        Assert.Equal(State.Confirmed, booking.State);
+        Assert.Equal(BookingState.Confirmed, booking.State);
         Assert.Equal("pi_capture_123", booking.FinancialOperationReferenceId);
         var inbox = await fixture.InboxMessages
             .Where(message =>
@@ -94,7 +94,7 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
         }
 
         var booking = await fixture.Bookings.SingleAsync(value => value.Id == command.BookingId);
-        Assert.Equal(State.AwaitingConfirmation, booking.State);
+        Assert.Equal(BookingState.AwaitingConfirmation, booking.State);
         Assert.Null(booking.FinancialOperationReferenceId);
         Assert.Equal(0, await fixture.GetConcertCountAsync(command.BookingId));
         var inbox = await fixture.InboxMessages

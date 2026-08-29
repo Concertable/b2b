@@ -22,11 +22,11 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
         CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetByArtistTenantIdAndStateAsync(
         Guid artistTenantId,
-        State state,
+        ApplicationState state,
         CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetByVenueTenantIdAndStateAsync(
         Guid venueTenantId,
-        State state,
+        ApplicationState state,
         CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetCurrentByArtistTenantIdAsync(
         Guid artistTenantId,

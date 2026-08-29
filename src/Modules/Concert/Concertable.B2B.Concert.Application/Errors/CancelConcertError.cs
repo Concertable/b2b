@@ -21,7 +21,7 @@ internal abstract partial record CancelConcertError : IError
     public partial record ConcertNotFound(int ConcertId);
 
     [ErrorCode("concert.cancel.invalid_state")]
-    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+    public partial record InvalidTransition(TransitionError<ConcertState, ConcertTrigger> Error);
 
     [ErrorCode("concert.cancel.superseded")]
     public partial record Superseded(int ConcertId);

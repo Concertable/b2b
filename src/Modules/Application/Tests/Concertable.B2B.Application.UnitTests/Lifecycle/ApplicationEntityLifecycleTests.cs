@@ -25,7 +25,7 @@ public sealed class ApplicationEntityLifecycleTests
         var result = application.Cancel();
 
         Assert.False(result.TryGetError(out _));
-        Assert.Equal(State.Cancelled, application.State);
+        Assert.Equal(ApplicationState.Cancelled, application.State);
     }
 
     [Fact]
@@ -43,8 +43,8 @@ public sealed class ApplicationEntityLifecycleTests
         var result = application.Cancel();
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal(new TransitionError<State, Trigger>(State.Cancelled, Trigger.Cancel), error);
-        Assert.Equal(State.Cancelled, application.State);
+        Assert.Equal(new TransitionError<ApplicationState, ApplicationTrigger>(ApplicationState.Cancelled, ApplicationTrigger.Cancel), error);
+        Assert.Equal(ApplicationState.Cancelled, application.State);
         Assert.Equal(events, application.DomainEvents);
     }
 
@@ -65,8 +65,8 @@ public sealed class ApplicationEntityLifecycleTests
         var result = application.Accept(accepted);
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal(new TransitionError<State, Trigger>(State.Accepted, Trigger.Accept), error);
-        Assert.Equal(State.Accepted, application.State);
+        Assert.Equal(new TransitionError<ApplicationState, ApplicationTrigger>(ApplicationState.Accepted, ApplicationTrigger.Accept), error);
+        Assert.Equal(ApplicationState.Accepted, application.State);
         Assert.Equal(operationId, application.AcceptanceOperationId);
         Assert.Equal(events, application.DomainEvents);
     }

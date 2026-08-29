@@ -21,7 +21,7 @@ internal abstract partial record CancelApplicationError : IError
     public partial record ApplicationNotFound(int ApplicationId);
 
     [ErrorCode("application.cancel.invalid_state")]
-    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+    public partial record InvalidTransition(TransitionError<ApplicationState, ApplicationTrigger> Error);
 
     [ErrorCode("application.cancel.superseded")]
     public partial record Superseded(int ApplicationId);

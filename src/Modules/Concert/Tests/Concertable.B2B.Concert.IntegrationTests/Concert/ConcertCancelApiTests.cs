@@ -52,7 +52,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         Assert.Equal(booking.BookingId, refund.BookingId);
         Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Cancelled, persisted.State);
+        Assert.Equal(ConcertState.Cancelled, persisted.State);
 
         var afterResponse = await client.GetAsync($"/api/concert/application/{appId}");
         var after = await afterResponse.Content.ReadAsync<MyDetailsResponse>();
@@ -80,7 +80,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(booking.BookingId, fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>().BookingId);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Cancelled, persisted.State);
+        Assert.Equal(ConcertState.Cancelled, persisted.State);
     }
 
     [Fact]
@@ -104,7 +104,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         Assert.DoesNotContain(fixture.PaymentTransport.Commands, command => command is RefundEscrowCommand);
         Assert.Empty(fixture.EscrowClient.Holds);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Cancelled, persisted.State);
+        Assert.Equal(ConcertState.Cancelled, persisted.State);
     }
     #region Cancel under concurrency
 
@@ -126,7 +126,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await cancellation.ShouldBe(HttpStatusCode.Conflict);
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.AwaitingSettlement, persisted.State);
+        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
         Assert.NotNull(persisted.SettlementOperationId);
         Assert.Null(persisted.CancellationOperationId);
         Assert.Single(
@@ -153,7 +153,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         Assert.IsType<FinishConcertError.InvalidTransition>(error);
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Cancelled, persisted.State);
+        Assert.Equal(ConcertState.Cancelled, persisted.State);
         Assert.Null(persisted.SettlementOperationId);
         Assert.DoesNotContain(
             fixture.ManagerPaymentClient.Payments,
@@ -186,7 +186,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await loser.ShouldBe(HttpStatusCode.NoContent);
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.CancellationPending, persisted.State);
+        Assert.Equal(ConcertState.CancellationPending, persisted.State);
         Assert.Single(
             fixture.PaymentTransport.Commands,
             command => command is RefundEscrowCommand refund && refund.BookingId == persisted.BookingId);
@@ -210,7 +210,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Cancelled, persisted.State);
+        Assert.Equal(ConcertState.Cancelled, persisted.State);
         Assert.Null(persisted.DoorRevenue);
     }
 
@@ -232,7 +232,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         // Assert — cancelling is a venue decision; the artist lacks the permission.
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Draft, persisted.State);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 
     private static async Task<BookingSummary> GetBookingAsync(HttpClient client, int applicationId)

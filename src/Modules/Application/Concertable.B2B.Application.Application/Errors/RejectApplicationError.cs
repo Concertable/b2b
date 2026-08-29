@@ -21,7 +21,7 @@ internal abstract partial record RejectApplicationError : IError
     public partial record ApplicationNotFound(int ApplicationId);
 
     [ErrorCode("application.reject.invalid_state")]
-    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+    public partial record InvalidTransition(TransitionError<ApplicationState, ApplicationTrigger> Error);
 
     [ErrorCode("application.reject.superseded")]
     public partial record Superseded(int ApplicationId);

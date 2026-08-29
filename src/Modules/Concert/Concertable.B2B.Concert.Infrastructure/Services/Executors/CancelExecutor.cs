@@ -34,7 +34,7 @@ internal sealed class CancelExecutor : ICancelExecutor
                 var concert = await concertRepository.GetByIdAsync(concertId, ct);
                 if (concert is null)
                     return (UnitResult<CancelConcertError>)new CancelConcertError.ConcertNotFound(concertId);
-                if (concert.State is State.Cancelled or State.CancellationPending)
+                if (concert.State is ConcertState.Cancelled or ConcertState.CancellationPending)
                     return UnitResult.Success<CancelConcertError>();
                 if (concert.ValidateBeginCancellation().TryGetError(out var transitionError))
                     return new CancelConcertError.InvalidTransition(transitionError);
@@ -44,7 +44,7 @@ internal sealed class CancelExecutor : ICancelExecutor
                     return UnitResult.Success<CancelConcertError>();
 
                 concert = await concertRepository.GetByIdAsync(concertId, ct);
-                return concert?.State is State.Cancelled or State.CancellationPending
+                return concert?.State is ConcertState.Cancelled or ConcertState.CancellationPending
                     ? UnitResult.Success<CancelConcertError>()
                     : new CancelConcertError.Superseded(concertId);
             }, ct),

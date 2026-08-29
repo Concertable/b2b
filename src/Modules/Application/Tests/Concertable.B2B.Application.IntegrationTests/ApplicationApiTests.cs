@@ -248,7 +248,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.invalid_state");
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
-            State.Rejected,
+            ApplicationState.Rejected,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
     }
 
@@ -271,7 +271,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await AssertProblemCodeAsync(reject, HttpStatusCode.Conflict, "application.reject.invalid_state");
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
-            State.Accepted,
+            ApplicationState.Accepted,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
     }
 
@@ -294,7 +294,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.invalid_state");
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
-            State.Cancelled,
+            ApplicationState.Cancelled,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
     }
 
@@ -317,7 +317,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await AssertProblemCodeAsync(cancel, HttpStatusCode.Conflict, "application.cancel.invalid_state");
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
-            State.Accepted,
+            ApplicationState.Accepted,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
     }
 
@@ -340,7 +340,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.invalid_state");
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
-            State.Withdrawn,
+            ApplicationState.Withdrawn,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
     }
 
@@ -364,7 +364,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await accept.ShouldBe(HttpStatusCode.NoContent);
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
-            State.Accepted,
+            ApplicationState.Accepted,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
         var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}");
         await bookingResponse.ShouldBe(HttpStatusCode.OK);

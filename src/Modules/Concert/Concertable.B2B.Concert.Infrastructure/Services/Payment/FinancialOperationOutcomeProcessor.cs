@@ -27,7 +27,7 @@ internal sealed class FinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, concert =>
         {
-            if (concert.State is State.Cancelled)
+            if (concert.State is ConcertState.Cancelled)
                 return Task.CompletedTask;
 
             if (concert.Cancel().TryGetError(out var transitionError))
@@ -41,7 +41,7 @@ internal sealed class FinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, concert =>
         {
-            if (concert.State is State.CancellationFailed)
+            if (concert.State is ConcertState.CancellationFailed)
                 return Task.CompletedTask;
 
             if (concert.RecordCancellationFailure(@event.Code, @event.Message).TryGetError(out var transitionError))

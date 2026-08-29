@@ -18,8 +18,8 @@ public sealed class ConcertEntityLifecycleTests
         var result = concert.Post("Changed", "Changed", 20m, 200, DateTime.UtcNow);
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal(new TransitionError<State, Trigger>(State.AwaitingSettlement, Trigger.Post), error);
-        Assert.Equal(State.AwaitingSettlement, concert.State);
+        Assert.Equal(new TransitionError<ConcertState, ConcertTrigger>(ConcertState.AwaitingSettlement, ConcertTrigger.Post), error);
+        Assert.Equal(ConcertState.AwaitingSettlement, concert.State);
         Assert.Equal(operationId, concert.SettlementOperationId);
         Assert.Equal("pi_123", concert.FinancialOperationReferenceId);
         Assert.Equal("Concert", concert.Name);
@@ -44,7 +44,7 @@ public sealed class ConcertEntityLifecycleTests
         Assert.Equal(firstOperationId, retryOperationId);
         Assert.Equal(retryOperationId, concert.SettlementOperationId);
         Assert.Equal("pi_failed", concert.FinancialOperationReferenceId);
-        Assert.Equal(State.AwaitingSettlement, concert.State);
+        Assert.Equal(ConcertState.AwaitingSettlement, concert.State);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class ConcertEntityLifecycleTests
         var result = concert.RecordSettlementFailure("pi_123", "declined", "Declined");
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal(new TransitionError<State, Trigger>(State.Draft, Trigger.RecordSettlementFailure), error);
+        Assert.Equal(new TransitionError<ConcertState, ConcertTrigger>(ConcertState.Draft, ConcertTrigger.RecordSettlementFailure), error);
         Assert.Null(concert.FinancialOperationReferenceId);
     }
 
@@ -69,7 +69,7 @@ public sealed class ConcertEntityLifecycleTests
         var result = concert.CompleteSettlement("pi_123");
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal(new TransitionError<State, Trigger>(State.Cancelled, Trigger.CompleteSettlement), error);
+        Assert.Equal(new TransitionError<ConcertState, ConcertTrigger>(ConcertState.Cancelled, ConcertTrigger.CompleteSettlement), error);
         Assert.Null(concert.FinancialOperationReferenceId);
     }
 

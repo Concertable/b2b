@@ -39,7 +39,7 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
             .And(doorRevenueOutstanding)
             .Apply(context.Concerts.Where(c =>
                 c.VenueTenantId == venueTenantId &&
-                (c.State == State.Draft || c.State == State.Posted)));
+                (c.State == ConcertState.Draft || c.State == ConcertState.Posted)));
 
         return context.VenueReadModels
             .Where(v => v.TenantId == venueTenantId)

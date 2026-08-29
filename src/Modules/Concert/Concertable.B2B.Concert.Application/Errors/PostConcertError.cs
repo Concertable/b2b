@@ -28,7 +28,7 @@ internal abstract partial record PostConcertError : IError
     [ErrorCode("concert.post.invalid")]
     public partial record Invalid(ValidationErrors Errors);
 
-    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+    public partial record InvalidTransition(TransitionError<ConcertState, ConcertTrigger> Error);
 
     [ErrorCode("concert.post.superseded")]
     public partial record Superseded(int ConcertId);

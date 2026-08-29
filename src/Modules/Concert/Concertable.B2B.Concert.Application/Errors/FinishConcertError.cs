@@ -32,7 +32,7 @@ internal abstract partial record FinishConcertError : IError
     public partial record DoorRevenueRequired;
 
     [ErrorCode("concert.finish.invalid_state")]
-    public partial record InvalidTransition(TransitionError<State, Trigger> Error);
+    public partial record InvalidTransition(TransitionError<ConcertState, ConcertTrigger> Error);
 
     public partial record ManagerPaymentFailure(ManagerPaymentOperationError Error);
     public partial record EscrowReleaseFailure(EscrowReleaseOperationError Error);

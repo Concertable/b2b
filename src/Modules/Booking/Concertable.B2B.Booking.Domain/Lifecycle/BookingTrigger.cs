@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Booking.Domain.Lifecycle;
 
-public enum Trigger
+public enum BookingTrigger
 {
     Confirm,
     RecordConfirmationFailure,

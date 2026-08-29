@@ -53,7 +53,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         Assert.DoesNotContain(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
         var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(State.Draft, persisted.State);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         Assert.Contains(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
         var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(State.AwaitingSettlement, persisted.State);
+        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
     }
 
     // --- Fixed-fee (ReleaseEscrowFinishStep): the artist is the payee ---
@@ -81,7 +81,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(State.Draft, persisted.State);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(State.Complete, persisted.State);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 
     // --- VenueHire direction-flip: the venue is the payee, so it is the tenant gated ---
@@ -106,6 +106,6 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastVenueHireApp.Id);
-        Assert.Equal(State.Draft, persisted.State);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 }

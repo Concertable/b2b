@@ -61,8 +61,8 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
                 booking.ArtistTenantId == artistTenantId &&
                 booking.EndDate > now &&
                 booking.DealType != DealType.VenueHire &&
-                (booking.State == State.AwaitingConfirmation ||
-                 booking.State == State.ConfirmationFailed),
+                (booking.State == BookingState.AwaitingConfirmation ||
+                 booking.State == BookingState.ConfirmationFailed),
             ct);
 
     public Task<bool> TrySaveChangesAsync(CancellationToken ct = default) =>

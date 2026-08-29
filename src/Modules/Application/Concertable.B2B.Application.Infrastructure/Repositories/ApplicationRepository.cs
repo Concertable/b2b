@@ -33,7 +33,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
 
     public async Task<IReadOnlyList<ApplicationEntity>> GetByArtistTenantIdAndStateAsync(
         Guid artistTenantId,
-        State state,
+        ApplicationState state,
         CancellationToken ct = default) =>
         await context.Applications
             .Where(application =>
@@ -43,7 +43,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
 
     public async Task<IReadOnlyList<ApplicationEntity>> GetByVenueTenantIdAndStateAsync(
         Guid venueTenantId,
-        State state,
+        ApplicationState state,
         CancellationToken ct = default) =>
         await context.Applications
             .AsNoTracking()
@@ -59,7 +59,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .AsNoTracking()
             .Where(application =>
                 application.ArtistTenantId == artistTenantId &&
-                application.State != State.Withdrawn)
+                application.State != ApplicationState.Withdrawn)
             .ToListAsync(ct);
 
     public async Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(
@@ -83,7 +83,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .Where(application =>
                 application.OpportunityId == opportunityId &&
                 application.Id != applicationId &&
-                application.State == State.Applied)
+                application.State == ApplicationState.Applied)
             .ToListAsync(ct);
 
         foreach (var application in applications)
@@ -104,7 +104,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         await context.Applications
             .Where(application =>
                 application.VenueTenantId == venueTenantId &&
-                application.State == State.Applied)
+                application.State == ApplicationState.Applied)
             .Select(application => new ApplicationDashboardProjection(
                 application.OpportunityId,
                 application.State,
@@ -117,8 +117,8 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         await context.Applications
             .Where(application =>
                 application.ArtistTenantId == artistTenantId &&
-                (application.State == State.Applied ||
-                 application.State == State.Accepted))
+                (application.State == ApplicationState.Applied ||
+                 application.State == ApplicationState.Accepted))
             .Select(application => new ApplicationDashboardProjection(
                 application.OpportunityId,
                 application.State,

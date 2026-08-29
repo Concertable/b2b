@@ -35,7 +35,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
-        Assert.Equal(State.Cancelled, application.State);
+        Assert.Equal(ApplicationState.Cancelled, application.State);
         Assert.Contains(await fixture.GetStagedEmailsAsync(), e =>
             e.To == fixture.SeedState.ArtistManager1.Email &&
             e.Subject == "Concert Application Cancelled" &&
@@ -53,7 +53,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
-        Assert.Equal(State.Applied, application.State);
+        Assert.Equal(ApplicationState.Applied, application.State);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.Conflict);
         var application = await fixture.Applications.FirstAsync(a => a.Id == appId);
-        Assert.Equal(State.Accepted, application.State);
+        Assert.Equal(ApplicationState.Accepted, application.State);
     }
 
     [Fact]

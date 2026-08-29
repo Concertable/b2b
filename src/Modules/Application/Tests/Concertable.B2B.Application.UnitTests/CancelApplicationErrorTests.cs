@@ -22,7 +22,7 @@ public sealed class CancelApplicationErrorTests
     [Fact]
     public void Definition_InvalidTransition_ReturnsConflictContract()
     {
-        var transition = new TransitionError<State, Trigger>(State.Accepted, Trigger.Cancel);
+        var transition = new TransitionError<ApplicationState, ApplicationTrigger>(ApplicationState.Accepted, ApplicationTrigger.Cancel);
         var error = new CancelApplicationError.InvalidTransition(transition);
 
         var definition = error.Definition;

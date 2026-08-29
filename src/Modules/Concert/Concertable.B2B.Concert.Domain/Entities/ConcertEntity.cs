@@ -20,7 +20,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 [DisplayName(DisplayNames.Concert)]
 public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurrencyVersioned, IEventRaiser, IVenueArtistTenantScoped
 {
-    private static readonly StateMachine stateMachine = new();
+    private static readonly ConcertStateMachine stateMachine = new();
 
     public int Id { get; private set; }
     public byte[] Version { get; private set; } = null!;
@@ -34,7 +34,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
     public int VenueId { get; private set; }
     public DealType DealType { get; private set; }
     public bool RequiresDoorRevenue { get; private set; }
-    public State State { get; private set; } = State.Draft;
+    public ConcertState State { get; private set; } = ConcertState.Draft;
     public Guid? CancellationOperationId { get; private set; }
     public Guid? SettlementOperationId { get; private set; }
     public decimal? SettlementGrossAmount { get; private set; }
@@ -138,9 +138,9 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         events.Raise(new ConcertChangedDomainEvent(Id, totalTickets, price, Period, DatePosted));
     }
 
-    public UnitResult<TransitionError<State, Trigger>> Post(string name, string about, decimal price, int totalTickets, DateTime now)
+    public UnitResult<TransitionError<ConcertState, ConcertTrigger>> Post(string name, string about, decimal price, int totalTickets, DateTime now)
     {
-        var transition = Apply(Trigger.Post);
+        var transition = Apply(ConcertTrigger.Post);
         if (transition.TryGetError(out var error))
             return error;
         Name = name;
@@ -153,21 +153,21 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         return new Success();
     }
 
-    public Result<Guid, TransitionError<State, Trigger>> BeginCancellation()
+    public Result<Guid, TransitionError<ConcertState, ConcertTrigger>> BeginCancellation()
     {
-        var transition = Apply(Trigger.BeginCancellation);
+        var transition = Apply(ConcertTrigger.BeginCancellation);
         if (transition.TryGetError(out var error))
             return error;
         CancellationOperationId = Guid.NewGuid();
         return CancellationOperationId.Value;
     }
 
-    internal UnitResult<TransitionError<State, Trigger>> ValidateBeginCancellation() =>
-        Validate(Trigger.BeginCancellation);
+    internal UnitResult<TransitionError<ConcertState, ConcertTrigger>> ValidateBeginCancellation() =>
+        Validate(ConcertTrigger.BeginCancellation);
 
-    public UnitResult<TransitionError<State, Trigger>> RecordCancellationFailure(string code, string message)
+    public UnitResult<TransitionError<ConcertState, ConcertTrigger>> RecordCancellationFailure(string code, string message)
     {
-        var transition = Apply(Trigger.RecordCancellationFailure);
+        var transition = Apply(ConcertTrigger.RecordCancellationFailure);
         if (transition.TryGetError(out var error))
             return error;
         FinancialFailureCode = code;
@@ -175,9 +175,9 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         return new Success();
     }
 
-    public UnitResult<TransitionError<State, Trigger>> Cancel()
+    public UnitResult<TransitionError<ConcertState, ConcertTrigger>> Cancel()
     {
-        var transition = Apply(Trigger.Cancel);
+        var transition = Apply(ConcertTrigger.Cancel);
         if (transition.TryGetError(out var error))
             return error;
         FinancialFailureCode = null;
@@ -186,9 +186,9 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         return new Success();
     }
 
-    public Result<Guid, TransitionError<State, Trigger>> BeginSettlement()
+    public Result<Guid, TransitionError<ConcertState, ConcertTrigger>> BeginSettlement()
     {
-        var transition = Apply(Trigger.BeginSettlement);
+        var transition = Apply(ConcertTrigger.BeginSettlement);
         if (transition.TryGetError(out var error))
             return error;
         SettlementOperationId ??= Guid.NewGuid();
@@ -209,15 +209,15 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
     public void RecordSettlementReference(string providerReferenceId)
     {
-        if (State != State.AwaitingSettlement)
+        if (State != ConcertState.AwaitingSettlement)
             throw new InvalidOperationException(
                 $"Concert {Id} cannot record a settlement reference from {State}.");
         EnsureSettlementReference(providerReferenceId);
     }
 
-    public UnitResult<TransitionError<State, Trigger>> RecordSettlementFailure(string providerReferenceId, string code, string message)
+    public UnitResult<TransitionError<ConcertState, ConcertTrigger>> RecordSettlementFailure(string providerReferenceId, string code, string message)
     {
-        var transition = Apply(Trigger.RecordSettlementFailure);
+        var transition = Apply(ConcertTrigger.RecordSettlementFailure);
         if (transition.TryGetError(out var error))
             return error;
         EnsureSettlementReference(providerReferenceId);
@@ -226,9 +226,9 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         return new Success();
     }
 
-    public UnitResult<TransitionError<State, Trigger>> CompleteSettlement(string? providerReferenceId = null)
+    public UnitResult<TransitionError<ConcertState, ConcertTrigger>> CompleteSettlement(string? providerReferenceId = null)
     {
-        var transition = Apply(Trigger.CompleteSettlement);
+        var transition = Apply(ConcertTrigger.CompleteSettlement);
         if (transition.TryGetError(out var error))
             return error;
         if (providerReferenceId is not null)
@@ -238,22 +238,22 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         return new Success();
     }
 
-    internal UnitResult<TransitionError<State, Trigger>> ValidateCompleteSettlement() =>
-        Validate(Trigger.CompleteSettlement);
+    internal UnitResult<TransitionError<ConcertState, ConcertTrigger>> ValidateCompleteSettlement() =>
+        Validate(ConcertTrigger.CompleteSettlement);
 
-    private UnitResult<TransitionError<State, Trigger>> Apply(Trigger trigger)
+    private UnitResult<TransitionError<ConcertState, ConcertTrigger>> Apply(ConcertTrigger trigger)
     {
         var transition = Transition(trigger);
         return transition.TryGetError(out var error) ? error : new Success();
     }
 
-    private UnitResult<TransitionError<State, Trigger>> Validate(Trigger trigger)
+    private UnitResult<TransitionError<ConcertState, ConcertTrigger>> Validate(ConcertTrigger trigger)
     {
         var transition = stateMachine.Transition(State, trigger);
         return transition.TryGetError(out var error) ? error : new Success();
     }
 
-    private Result<State, TransitionError<State, Trigger>> Transition(Trigger trigger)
+    private Result<ConcertState, TransitionError<ConcertState, ConcertTrigger>> Transition(ConcertTrigger trigger)
     {
         var transition = stateMachine.Transition(State, trigger);
         if (transition.TryGetValue(out var next))

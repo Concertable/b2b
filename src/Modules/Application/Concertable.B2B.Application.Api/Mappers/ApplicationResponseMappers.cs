@@ -13,7 +13,7 @@ internal static class ApplicationResponseMappers
     {
         public ApplicationResponse<VenueApplicationActions> ToVenueResponse(BookingSummary? booking)
         {
-            var isPending = dto.State == State.Applied;
+            var isPending = dto.State == ApplicationState.Applied;
             var status = booking?.Status == BookingStatus.Cancelled
                 ? ApplicationStatus.Cancelled
                 : dto.Status;
@@ -56,7 +56,7 @@ internal static class ApplicationResponseMappers
                 dto,
                 status,
                 new ArtistApplicationActions(
-                    Withdraw: dto.State == State.Applied
+                    Withdraw: dto.State == ApplicationState.Applied
                         ? new ActionLink($"/api/application/{dto.Id}/withdraw", HttpMethods.Post)
                         : null,
                     Contract: booking is not null

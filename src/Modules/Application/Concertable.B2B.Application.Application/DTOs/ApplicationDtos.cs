@@ -8,7 +8,7 @@ internal sealed record ApplicationDto(
     ArtistSummary Artist,
     OpportunitySummary Opportunity,
     ApplicationStatus Status,
-    State State);
+    ApplicationState State);
 
 internal sealed record OpportunitySummary(
     int Id,

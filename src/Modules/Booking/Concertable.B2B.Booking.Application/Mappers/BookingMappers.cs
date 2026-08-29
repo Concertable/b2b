@@ -33,16 +33,16 @@ internal static class BookingMappers
                 booking.FailureMessage);
     }
 
-    extension(State state)
+    extension(BookingState state)
     {
         public BookingStatus ToStatus() => state switch
         {
-            State.AwaitingConfirmation => BookingStatus.AwaitingConfirmation,
-            State.ConfirmationFailed => BookingStatus.ConfirmationFailed,
-            State.Confirmed => BookingStatus.Confirmed,
-            State.CancellationPending => BookingStatus.CancellationPending,
-            State.CancellationFailed => BookingStatus.CancellationFailed,
-            State.Cancelled => BookingStatus.Cancelled,
+            BookingState.AwaitingConfirmation => BookingStatus.AwaitingConfirmation,
+            BookingState.ConfirmationFailed => BookingStatus.ConfirmationFailed,
+            BookingState.Confirmed => BookingStatus.Confirmed,
+            BookingState.CancellationPending => BookingStatus.CancellationPending,
+            BookingState.CancellationFailed => BookingStatus.CancellationFailed,
+            BookingState.Cancelled => BookingStatus.Cancelled,
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
         };
     }

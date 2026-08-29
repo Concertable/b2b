@@ -90,30 +90,32 @@ never reaches back to mutate an earlier aggregate, and no aggregate inspects ano
 
 ### 2.1 Per-module state, trigger, and machine
 
-Application, Booking, and Concert each own `Domain/Lifecycle/{State,Trigger,StateMachine}.cs`. The types use
-the same short contextual names because their module namespace is the context:
+Application, Booking, and Concert each own `Domain/Lifecycle/{XState,XTrigger,XStateMachine}.cs`, named for
+the module's own domain concept rather than the shared algorithm's generic vocabulary (the `state-machines`
+skill's rule — contextual names, not `State`/`Trigger`):
 
-| Module | `State` | `Trigger` |
+| Module | State type | Trigger type |
 |---|---|---|
-| **Application** | `Applied, Accepted, Rejected, Withdrawn` | `Accept, Reject, Withdraw` |
-| **Booking** | `AwaitingConfirmation, ConfirmationFailed, Confirmed, CancellationPending, CancellationFailed, Cancelled` | `Confirm, RecordConfirmationFailure, BeginCancellation, RecordCancellationFailure, Cancel` |
-| **Concert** | `Draft, Posted, CancellationPending, CancellationFailed, AwaitingSettlement, SettlementFailed, Complete, Cancelled` | `Post, BeginCancellation, RecordCancellationFailure, Cancel, BeginSettlement, RecordSettlementFailure, CompleteSettlement` |
+| **Application** | `ApplicationState`: `Applied, Accepted, Rejected, Withdrawn, Cancelled` | `ApplicationTrigger`: `Accept, Reject, Withdraw, Cancel` |
+| **Booking** | `BookingState`: `AwaitingConfirmation, ConfirmationFailed, Confirmed, CancellationPending, CancellationFailed, Cancelled` | `BookingTrigger`: `Confirm, RecordConfirmationFailure, BeginCancellation, RecordCancellationFailure, Cancel` |
+| **Concert** | `ConcertState`: `Draft, Posted, CancellationPending, CancellationFailed, AwaitingSettlement, SettlementFailed, Complete, Cancelled` | `ConcertTrigger`: `Post, BeginCancellation, RecordCancellationFailure, Cancel, BeginSettlement, RecordSettlementFailure, CompleteSettlement` |
 
-Each `StateMachine` is an `internal sealed class StateMachine : IStateMachine<State, Trigger>` whose legal
-edges are copied into a `Concertable.Kernel.StateMachine<State, Trigger>` frozen table (the shared,
-stateless lookup algorithm — the `state-machines` skill). A defined edge returns the next `State`; an
-undefined one returns `TransitionError<State, Trigger>`. The machines share only that algorithm — never a
-configured table, state, trigger, or error. `DealType` changes the *behaviour inside* a stage, never the
-legal edges, so there is exactly one configured machine per owning module.
+Each `XStateMachine` (e.g. `internal sealed class ApplicationStateMachine() : Concertable.Kernel.StateMachine<ApplicationState, ApplicationTrigger>(edges)`)
+inherits the shared, stateless lookup algorithm directly (the `state-machines` skill) and configures its
+legal edges through the base constructor — no wrapping field, no forwarded `Transition`. A defined edge
+returns the next state; an undefined one returns `TransitionError<XState, XTrigger>`. The machines share
+only that base algorithm — never a configured table, state, trigger, or error. `DealType` changes the
+*behaviour inside* a stage, never the legal edges, so there is exactly one configured machine per owning
+module.
 
 ### 2.2 The aggregate owns its transition
 
 There is no `ConcertWorkflowBuilder`, `IConcertStateMachineRegistry`, or `ILifecycleTransitioner`. Each
 aggregate (`ApplicationEntity`, `BookingEntity`, `ConcertEntity`) holds one `private static readonly
-StateMachine` and mutates only through a private helper:
+XStateMachine` and mutates only through a private helper — Concert's, for example:
 
 ```csharp
-private Result<State, TransitionError<State, Trigger>> Transition(Trigger trigger)
+private Result<ConcertState, TransitionError<ConcertState, ConcertTrigger>> Transition(ConcertTrigger trigger)
 {
     var transition = stateMachine.Transition(State, trigger);
     if (transition.TryGetValue(out var next))
@@ -132,11 +134,12 @@ helper, and any EF bulk-update that would bypass it.
 
 ### 2.3 Transition failures are operation-owned errors
 
-An operation composes the rejected `TransitionError<State, Trigger>` into its own closed error union rather
-than throwing: each error type (e.g. `AcceptApplicationError`, `CancelBookingError`, `CancelConcertError`,
-`PostConcertError`, `FinishConcertError`) declares an `InvalidTransition(TransitionError<State, Trigger>)`
-case alongside its other expected failures. There is no shared error base, `NotFound` base, or `IError`
-widening. An operation with no failure beyond the rejected edge returns the transition error directly.
+An operation composes the rejected `TransitionError<XState, XTrigger>` into its own closed error union
+rather than throwing: each error type (e.g. `AcceptApplicationError`, `CancelBookingError`,
+`CancelConcertError`, `PostConcertError`, `FinishConcertError`) declares an
+`InvalidTransition(TransitionError<XState, XTrigger>)` case alongside its other expected failures. There is
+no shared error base, `NotFound` base, or `IError` widening. An operation with no failure beyond the
+rejected edge returns the transition error directly.
 
 ### 2.4 Each module owns its own operations — there is no cross-module workflow
 
@@ -241,9 +244,9 @@ so consumers never branch on deal type or invert one role to infer another.
 
 | Entity | Owns lifecycle `State`? | Role | TPH subtypes |
 |---|---|---|---|
-| `ApplicationEntity` | **Yes** — `Application.Lifecycle.State` | Terminal after its own decision (accept/reject/withdraw) | `StandardApplication`, `PrepaidApplication { PaymentMethodId }` (VenueHire) |
-| `BookingEntity` | **Yes** — `Booking.Lifecycle.State` | Owns confirmation, failure/retry, and pre-Concert cancellation | `StandardBooking`, `DeferredBooking { PaymentMethodId }` (DoorSplit/Versus) |
-| `ConcertEntity` | **Yes** — `Concert.Lifecycle.State` | The live concert: draft/post, cancellation, settlement, completion | (single type) |
+| `ApplicationEntity` | **Yes** — `Application.Lifecycle.ApplicationState` | Terminal after its own decision (accept/reject/withdraw) | `StandardApplication`, `PrepaidApplication { PaymentMethodId }` (VenueHire) |
+| `BookingEntity` | **Yes** — `Booking.Lifecycle.BookingState` | Owns confirmation, failure/retry, and pre-Concert cancellation | `StandardBooking`, `DeferredBooking { PaymentMethodId }` (DoorSplit/Versus) |
+| `ConcertEntity` | **Yes** — `Concert.Lifecycle.ConcertState` | The live concert: draft/post, cancellation, settlement, completion | (single type) |
 | `ContractEntity` | No | The signed binding artifact (see below) | (single type) |
 
 FK chain: `OpportunityEntity (1)→(N) ApplicationEntity (1)→(0..1) BookingEntity (1)→(0..1)

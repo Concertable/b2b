@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Application.Domain.Lifecycle;
 
-public enum State
+public enum ApplicationState
 {
     Applied,
     Accepted,

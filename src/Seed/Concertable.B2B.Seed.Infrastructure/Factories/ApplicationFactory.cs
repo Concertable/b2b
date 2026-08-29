@@ -107,13 +107,13 @@ public static class ApplicationFactory
             .With(nameof(ApplicationEntity.DealType), dealType);
 
     public static StandardApplication Accepted(int artistId, int opportunityId)
-        => InState<StandardApplication>(artistId, opportunityId, State.Accepted);
+        => InState<StandardApplication>(artistId, opportunityId, ApplicationState.Accepted);
 
     public static PrepaidApplication AcceptedPrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
-        => InState<PrepaidApplication>(artistId, opportunityId, State.Accepted)
+        => InState<PrepaidApplication>(artistId, opportunityId, ApplicationState.Accepted)
             .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
 
-    private static TApplication InState<TApplication>(int artistId, int opportunityId, State state)
+    private static TApplication InState<TApplication>(int artistId, int opportunityId, ApplicationState state)
         where TApplication : ApplicationEntity =>
         New<TApplication>()
             .With(nameof(ApplicationEntity.ArtistId), artistId)

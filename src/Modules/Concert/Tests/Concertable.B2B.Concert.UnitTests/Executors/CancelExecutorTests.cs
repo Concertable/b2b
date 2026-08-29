@@ -67,7 +67,7 @@ public sealed class CancelExecutorTests
 
         Assert.True(result.TryGetError(out var error));
         var invalidTransition = Assert.IsType<CancelConcertError.InvalidTransition>(error);
-        Assert.Equal(new TransitionError<State, Trigger>(State.AwaitingSettlement, Trigger.BeginCancellation), invalidTransition.Error);
+        Assert.Equal(new TransitionError<ConcertState, ConcertTrigger>(ConcertState.AwaitingSettlement, ConcertTrigger.BeginCancellation), invalidTransition.Error);
         this.cancelStepFactory.Verify(factory => factory.Create(It.IsAny<DealType>()), Times.Never);
     }
 

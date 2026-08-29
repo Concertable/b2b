@@ -44,7 +44,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         Assert.Equal(concert.BookingId, payment.BookingId);
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Complete, persisted.State);
+        Assert.Equal(ConcertState.Complete, persisted.State);
         Assert.Equal(payment.OperationId, persisted.SettlementOperationId);
         Assert.NotNull(persisted.FinancialOperationReferenceId);
         Assert.NotNull(await fixture.Invoices.SingleOrDefaultAsync(invoice => invoice.BookingId == concert.BookingId));
@@ -69,7 +69,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         }
 
         var interrupted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.AwaitingSettlement, interrupted.State);
+        Assert.Equal(ConcertState.AwaitingSettlement, interrupted.State);
         Assert.NotNull(interrupted.SettlementOperationId);
         Assert.Null(interrupted.FinancialOperationReferenceId);
 
@@ -80,7 +80,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
             value => value.BookingId == concert.BookingId);
         Assert.Equal(interrupted.SettlementOperationId, payment.OperationId);
         var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Complete, settled.State);
+        Assert.Equal(ConcertState.Complete, settled.State);
         Assert.NotNull(settled.FinancialOperationReferenceId);
         Assert.Equal(1, await fixture.Invoices.CountAsync(invoice => invoice.BookingId == concert.BookingId));
     }
@@ -95,7 +95,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         Assert.DoesNotContain(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Draft, persisted.State);
+        Assert.Equal(ConcertState.Draft, persisted.State);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.StripeClient.SendWebhookAsync();
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Complete, persisted.State);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.Conflict);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.SettlementFailed, persisted.State);
+        Assert.Equal(ConcertState.SettlementFailed, persisted.State);
     }
 
     [Fact]
@@ -160,6 +160,6 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         // Assert
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(State.Complete, persisted.State);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 }
