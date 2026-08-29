@@ -144,14 +144,14 @@ public sealed class DealStrategyArchitectureTests
     {
         "Concertable.B2B/src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
         "Concertable.B2B/src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
-        "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-        "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/Strategies/ConcertDealStrategyFactory.cs"
+        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
+        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Services/Strategies/DealTypeStrategyFactory.cs"
     };
 
     public static TheoryData<string> StrategyFactoryFiles { get; } = new()
     {
         "Concertable.B2B/src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
-        "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/Strategies/ConcertDealStrategyFactory.cs"
+        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Services/Strategies/DealTypeStrategyFactory.cs"
     };
 
     public static TheoryData<string, string> RequiredCoverageDeclarations { get; } = new()
