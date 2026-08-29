@@ -4,9 +4,11 @@ import type { Organization, UpdateOrganizationRequest } from "../types";
 const BASE = "/organization";
 
 const organizationApi = {
-  get: async (): Promise<Organization | undefined> => {
+  get: async (): Promise<Organization | null> => {
     const { data, status } = await apiClient.get<Organization>(BASE);
-    return status === 204 ? undefined : data;
+    // 204 = no organization row yet. Return null, not undefined — a query function that
+    // resolves to undefined throws in TanStack Query v5.
+    return status === 204 ? null : data;
   },
 
   update: async (body: UpdateOrganizationRequest): Promise<Organization> => {
