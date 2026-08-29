@@ -6,14 +6,6 @@ using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
-/// <summary>
-/// The fail-closed self-billing gate (<c>FinishExecutor</c>, after the tax gate): the settlement's supplier — the
-/// seller in whose name the self-billed invoice is raised — must hold a current self-billing agreement, or the
-/// concert is not transitioned and no invoice is minted (it self-heals on the next sweep once the supplier grants).
-/// The supplier is direction-dependent: the artist for revenue-share/fixed-fee, the venue for VenueHire. These drive
-/// finish directly (not the auto-granting <c>FinishConcertAsync</c> helper) so a tax-complete supplier reaches this
-/// gate with no agreement. Because a deferral returns before the invoice is minted, no per-supplier number is burned.
-/// </summary>
 [Collection("Integration")]
 public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
 {

@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Application.Errors;
-using Concertable.B2B.Concert.Application.Executors;
+using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.Kernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,9 +19,9 @@ internal sealed class DevController : ControllerBase
     [HttpPost("complete")]
     public async Task<IActionResult> Complete(
         [FromQuery] int concertId,
-        [FromServices] ICompleteExecutor completeExecutor)
+        [FromServices] IConcertWorkflow workflow)
     {
-        return (await completeExecutor.CompleteAsync(concertId))
+        return (await workflow.CompleteAsync(concertId))
             .Bind(_ => UnitResult.Success<FinishConcertError>())
             .ToNoContentOrProblem();
     }

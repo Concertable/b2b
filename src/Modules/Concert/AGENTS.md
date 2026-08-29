@@ -37,8 +37,8 @@ deal the artist is. That's why identity and role must stay separate words.
 
 ## The lifecycle — module-owned state, Kernel-backed transitions
 
-There is no per-`DealType` state machine and no shared workflow object. Concert owns one configured machine
-for its own stage, in `Domain/Lifecycle/`:
+There is no per-`DealType` state machine and no cross-module workflow object. Concert owns one configured
+machine for its own stage, in `Domain/Lifecycle/`:
 
 - **`ConcertState`** — `Draft, Posted, CancellationPending, CancellationFailed, AwaitingSettlement,
   SettlementFailed, Complete, Cancelled`.
@@ -66,32 +66,27 @@ rejected edge and its own additional expected cases. There is no shared error ba
 - **Creation** — `IConcertService.CreateAsync(ConfirmedBooking)` owns uniform draft creation from the
   immutable Booking handoff. It is the same projection-lookup/genre-intersection/persist/notify/email path
   for every `DealType`; the immutable terms cases supply different data to `ConcertEntity.CreateDraft`, they
-  do not select different creation behaviour. Creation is **not** an executor and selects no keyed step.
+  do not select different creation behaviour. Creation stays on `IConcertService` and performs no Deal selection.
   Post-commit notification is staged through the outbox and delivered only after the shared confirmation
   transaction commits.
 
-- **Executors** (`Application/Executors` interface, `Infrastructure/Services/Executors` impl) — Concert has
-  exactly **two**, one per named lifecycle operation: `ICancelExecutor.CancelAsync(concertId)` →
-  `UnitResult<CancelConcertError>`, and `ICompleteExecutor.CompleteAsync(concertId)` →
-  `Result<SettlementOutcome, FinishConcertError>`. Cancel and Complete stay separate executors because each
-  is one operation with its own validation, persistence, transaction, IO, and typed failure contract.
-  There is **no** multi-operation `IConcertExecutor` combining them.
+- **Workflow** (`Application/Interfaces/IConcertWorkflow`, `Infrastructure/Services/ConcertWorkflow`) — the
+  module-local executable coordinator for Cancel and Complete. It owns each operation's loading, validation,
+  transaction boundary, Deal selection, persistence, IO, and typed failure contract. HTTP entry points begin
+  at `IConcertService`; background completion invokes the workflow directly through a fresh scope.
 
-- **Steps** (`Application/Steps`) — the per-`DealType` unit of work an operation performs:
-  `ICancelStep.ExecuteAsync(ConcertEntity)` and
-  `ICompleteStep.ExecuteAsync(ConcertEntity) → UnitResult<FinishConcertError>`. The downstream Deal-dispatch
-  plan classifies them: cancellation is a direct refund collaborator because every Deal case is identical;
-  completion retains validated keyed release/payout implementations because it is one homogeneous operation
-  with materially different effect graphs. Exact per-`DealType` coverage is registered at this module's own
-  composition root.
+- **Deal-selected implementations** (`Application/Strategies/<Operation>` contracts,
+  `Infrastructure/Strategies/<Operation>` implementations) — `ICancel.CancelAsync(ConcertEntity)` and
+  `IComplete.CompleteAsync(SettlementPreparation.Ready)`. Each is a homogeneous operation selected through
+  `IDealStrategyFactory<T>`, with exact per-`DealType` coverage registered at this module's composition root.
 
-The old `IConcertWorkflow`, `*Workflow` dependency-holders, `ConcertWorkflowBuilder`,
-`ILifecycleTransitioner`, `IConcertStateMachineRegistry`, the reflection capability registry, and the
-combined per-`DealType` `LifecycleStateMachine` no longer exist. Do not reintroduce them.
+The old cross-stage `IConcertWorkflow` dependency-holder, `ConcertWorkflowBuilder`,
+`ILifecycleTransitioner`, `IConcertStateMachineRegistry`, reflection capability registry, and combined
+per-`DealType` `LifecycleStateMachine` no longer exist. Do not reintroduce those shapes.
 
-## The rule: when is it an Executor (and when is it just a service method)?
+## The rule: when does work belong in the workflow?
 
-An Executor is warranted when the operation is a named Concert lifecycle transition and owns the command or
+A method belongs in `IConcertWorkflow` when it is a named Concert lifecycle operation and owns the command or
 outcome that advances that lifecycle.
 
 **Litmus test before you add one:** *"Is this a named operation in the lifecycle, or merely a guarded
@@ -103,6 +98,6 @@ service (`ConcertService`), guarded and persisted directly, exactly like `Concer
 - does **not** move the lifecycle machine (the gig stays `Posted`; settlement fires later off the sweep), and
 - has **one** behaviour for every revenue-share type (load concert, guard, set a field, save).
 
-So it is `ConcertService.DeclareDoorRevenueAsync` — a guarded mutation, not an executor. Likewise, "is this a
-revenue-share settlement?" is already a real type (`Booking is DeferredBooking`), not a marker capability.
-Don't invent a step, executor, or marker for a question the type system already answers.
+So it is `ConcertService.DeclareDoorRevenueAsync` — a guarded mutation, not a workflow operation. Likewise,
+"is this a revenue-share settlement?" is already a real type (`Booking is DeferredBooking`), not a marker capability.
+Don't invent a strategy contract or marker for a question the type system already answers.

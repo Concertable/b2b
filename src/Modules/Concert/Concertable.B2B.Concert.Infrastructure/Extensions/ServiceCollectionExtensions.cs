@@ -7,8 +7,7 @@ using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Concert.Application.Mappers;
 using Concertable.B2B.Concert.Application.Resolvers;
-using Concertable.B2B.Concert.Application.Executors;
-using Concertable.B2B.Concert.Application.Steps;
+using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Application.Validators;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Contracts.Events;
@@ -24,7 +23,7 @@ using Concertable.B2B.Concert.Infrastructure.Handlers;
 using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Services;
-using Concertable.B2B.Concert.Infrastructure.Services.Executors;
+using Concertable.B2B.Concert.Infrastructure.Strategies;
 using Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
 using Concertable.B2B.Concert.Infrastructure.Services.Payment;
@@ -74,8 +73,7 @@ public static class ServiceCollectionExtensions
 
             // Services
             services.AddScoped<IConcertService, ConcertService>();
-            services.AddScoped<ICancelExecutor, CancelExecutor>();
-            services.AddScoped<ICompleteExecutor, CompleteExecutor>();
+            services.AddScoped<IConcertWorkflow, ConcertWorkflow>();
             services.AddScoped<ISettlementService, SettlementService>();
             services.AddScoped<IConcertNotifier, ConcertNotifier>();
             services.AddScoped<IBookingConfirmationEmailSender, BookingConfirmationEmailSender>();
@@ -143,31 +141,31 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IDealPayeeResolver, DealPayeeResolver>();
             services.AddScoped<ISettlementAmountResolver, SettlementAmountResolver>();
 
-            return services.AddConcertDealStrategies(strategies =>
+            return services.AddConcertDealStrategies(builder =>
             {
-                strategies.For(DealType.FlatFee)
+                builder.For(DealType.FlatFee)
                     .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                     .AddSingleton<ISettlementAmountResolver, FlatFeeSettlementAmount>()
-                    .AddScoped<ICancelStep, RefundEscrowCancelStep>()
-                    .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>();
+                    .AddScoped<ICancel, RefundEscrowCancel>()
+                    .AddScoped<IComplete, ReleaseEscrowComplete>();
 
-                strategies.For(DealType.DoorSplit)
+                builder.For(DealType.DoorSplit)
                     .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                     .AddScoped<ISettlementAmountResolver, DoorSplitSettlementAmount>()
-                    .AddScoped<ICancelStep, ImmediateCancelStep>()
-                    .AddScoped<ICompleteStep, PayoutCompleteStep>();
+                    .AddScoped<ICancel, ImmediateCancel>()
+                    .AddScoped<IComplete, PayoutComplete>();
 
-                strategies.For(DealType.Versus)
+                builder.For(DealType.Versus)
                     .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                     .AddScoped<ISettlementAmountResolver, VersusSettlementAmount>()
-                    .AddScoped<ICancelStep, ImmediateCancelStep>()
-                    .AddScoped<ICompleteStep, PayoutCompleteStep>();
+                    .AddScoped<ICancel, ImmediateCancel>()
+                    .AddScoped<IComplete, PayoutComplete>();
 
-                strategies.For(DealType.VenueHire)
+                builder.For(DealType.VenueHire)
                     .AddSingleton<IDealPayeeResolver, ArtistPaysVenueDealPayeeResolver>()
                     .AddSingleton<ISettlementAmountResolver, VenueHireSettlementAmount>()
-                    .AddScoped<ICancelStep, RefundEscrowCancelStep>()
-                    .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>();
+                    .AddScoped<ICancel, RefundEscrowCancel>()
+                    .AddScoped<IComplete, ReleaseEscrowComplete>();
             });
         }
 

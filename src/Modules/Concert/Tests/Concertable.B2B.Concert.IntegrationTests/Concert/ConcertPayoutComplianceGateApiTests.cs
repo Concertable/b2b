@@ -6,13 +6,6 @@ using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
-/// <summary>
-/// The fail-closed tax-compliance payout gate (<c>FinishExecutor</c>): a settlement's payee — the seller who
-/// receives the money — must hold complete, jurisdiction-valid tax details, or the concert is not transitioned
-/// and not paid (it self-heals on the next sweep once the seller completes onboarding). The payee is
-/// direction-dependent: the artist for revenue-share/fixed-fee, the venue for VenueHire. These arrange an
-/// incomplete payee by repointing the concert at a seeded operator who never completed organization setup.
-/// </summary>
 [Collection("Integration")]
 public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 {
@@ -39,8 +32,6 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
     private Task<ConcertEntity> ConcertAsync(int applicationId) =>
         fixture.Concerts.FirstAsync(value => value.ApplicationId == applicationId);
-
-    // --- Revenue-share (PayoutFinishStep): the artist is the payee ---
 
     [Fact]
     public async Task Finish_RevenueShare_Defers_WhenPayeeArtistTaxComplianceIncomplete()
@@ -70,8 +61,6 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
     }
 
-    // --- Fixed-fee (ReleaseEscrowFinishStep): the artist is the payee ---
-
     [Fact]
     public async Task Finish_FixedFee_Defers_WhenPayeeArtistTaxComplianceIncomplete()
     {
@@ -94,8 +83,6 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
     }
-
-    // --- VenueHire direction-flip: the venue is the payee, so it is the tenant gated ---
 
     [Fact]
     public async Task Finish_VenueHire_Defers_WhenPayeeVenueTaxComplianceIncomplete()

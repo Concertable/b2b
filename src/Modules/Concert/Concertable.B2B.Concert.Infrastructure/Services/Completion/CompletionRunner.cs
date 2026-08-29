@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Application.Models;
-using Concertable.B2B.Concert.Application.Executors;
+using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.DataAccess.Application;
 using Microsoft.Extensions.Logging;
@@ -9,16 +9,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Completion;
 internal sealed class CompletionRunner : ICompletionRunner
 {
     private readonly IConcertRepository concertRepository;
-    private readonly IScoped<ICompleteExecutor> completion;
+    private readonly IScoped<IConcertWorkflow> workflow;
     private readonly ILogger<CompletionRunner> logger;
 
     public CompletionRunner(
         IConcertRepository concertRepository,
-        IScoped<ICompleteExecutor> completion,
+        IScoped<IConcertWorkflow> workflow,
         ILogger<CompletionRunner> logger)
     {
         this.concertRepository = concertRepository;
-        this.completion = completion;
+        this.workflow = workflow;
         this.logger = logger;
     }
 
@@ -30,7 +30,7 @@ internal sealed class CompletionRunner : ICompletionRunner
 
         foreach (var concertId in concertIds)
         {
-            var result = await completion.RunAsync(executor => executor.CompleteAsync(concertId, ct));
+            var result = await workflow.RunAsync(workflow => workflow.CompleteAsync(concertId, ct));
 
             if (result.TryGetError(out var error))
                 logger.ConcertCompletionRefused(

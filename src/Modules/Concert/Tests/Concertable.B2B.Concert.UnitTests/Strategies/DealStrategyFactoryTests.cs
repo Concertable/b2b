@@ -108,10 +108,10 @@ public sealed class DealStrategyFactoryTests
     public void Create_ScopedStrategy_UsesCurrentScopeKeyedProvider()
     {
         var services = CreateServices();
-        services.AddConcertDealStrategies(strategies =>
+        services.AddConcertDealStrategies(builder =>
         {
             foreach (var dealType in Enum.GetValues<DealType>())
-                strategies.For(dealType).AddScoped<ITestStrategy, TestStrategy>();
+                builder.For(dealType).AddScoped<ITestStrategy, TestStrategy>();
         });
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {

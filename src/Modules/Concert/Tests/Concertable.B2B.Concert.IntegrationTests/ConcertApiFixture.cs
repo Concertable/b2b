@@ -1,6 +1,5 @@
 using System.Net;
 using Concertable.B2B.Concert.Application.Errors;
-using Concertable.B2B.Concert.Application.Executors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Domain.Entities;
@@ -20,7 +19,7 @@ public sealed class ConcertApiFixture : ApiFixture
 {
     private IConcertReadDbContext readDbContext = null!;
     private ConcertDbContext dbContext = null!;
-    private IScoped<ICompleteExecutor> completeExecutor = null!;
+    private IScoped<IConcertWorkflow> workflow = null!;
     private ICompletionRunner completionRunner = null!;
     private IConcertService concertService = null!;
     private ISelfBillingAgreementRepository selfBillingAgreementRepository = null!;
@@ -35,11 +34,11 @@ public sealed class ConcertApiFixture : ApiFixture
     internal async Task<Result<SettlementOutcome, FinishConcertError>> FinishConcertAsync(int concertId)
     {
         await EnsureSupplierSelfBillingAgreementAsync(concertId);
-        return await completeExecutor.RunAsync(executor => executor.CompleteAsync(concertId));
+        return await workflow.RunAsync(workflow => workflow.CompleteAsync(concertId));
     }
 
     internal Task<Result<SettlementOutcome, FinishConcertError>> CompleteConcertAsync(int concertId) =>
-        completeExecutor.RunAsync(executor => executor.CompleteAsync(concertId));
+        workflow.RunAsync(workflow => workflow.CompleteAsync(concertId));
 
     internal Task DeclareDoorRevenueAsync(int concertId, decimal doorRevenue) =>
         concertService.DeclareDoorRevenueAsync(concertId, doorRevenue);
@@ -115,7 +114,7 @@ public sealed class ConcertApiFixture : ApiFixture
     {
         readDbContext = scope.ServiceProvider.GetRequiredService<IConcertReadDbContext>();
         dbContext = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
-        completeExecutor = scope.ServiceProvider.GetRequiredService<IScoped<ICompleteExecutor>>();
+        workflow = scope.ServiceProvider.GetRequiredService<IScoped<IConcertWorkflow>>();
         completionRunner = scope.ServiceProvider.GetRequiredService<ICompletionRunner>();
         concertService = scope.ServiceProvider.GetRequiredService<IConcertService>();
         selfBillingAgreementRepository = scope.ServiceProvider

@@ -1,33 +1,25 @@
+using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.DTOs;
 using Concertable.B2B.Booking.Application.Errors;
 using Concertable.B2B.Booking.Application.Models;
 
 namespace Concertable.B2B.Booking.Application.Interfaces;
 
-internal interface IBookingService
+internal interface IBookingWorkflow
 {
-    Task<BookingDto?> GetByApplicationIdAsync(
-        int applicationId,
+    Task<BookingDto> ConfirmAsync(
+        AcceptedApplication application,
         CancellationToken ct = default);
-    Task<int?> GetIdByApplicationIdAsync(
-        int applicationId,
-        CancellationToken ct = default);
-    Task<BookingSummaryDto?> GetSummaryByApplicationIdAsync(
-        int applicationId,
-        CancellationToken ct = default);
-    Task<IReadOnlyList<BookingSummaryDto>> GetSummariesByApplicationIdsAsync(
-        IReadOnlyCollection<int> applicationIds,
-        CancellationToken ct = default);
-    Task<int> GetArtistAwaitingCheckoutCountAsync(
-        Guid artistTenantId,
-        CancellationToken ct = default);
+
     Task<UnitResult<CancelBookingError>> CancelAsync(
         int bookingId,
         CancellationToken ct = default);
+
     Task RecordSucceededAsync(
         int bookingId,
         FinancialOperationSucceeded operation,
         CancellationToken ct = default);
+
     Task RecordFailedAsync(
         int bookingId,
         FinancialOperationFailed operation,

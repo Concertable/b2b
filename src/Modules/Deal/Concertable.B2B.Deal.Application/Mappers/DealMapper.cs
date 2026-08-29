@@ -7,16 +7,16 @@ namespace Concertable.B2B.Deal.Application.Mappers;
 
 internal sealed class DealMapper : IDealMapper
 {
-    private readonly IDealStrategyFactory<IDealMapper> strategies;
+    private readonly IDealStrategyFactory<IDealMapper> factory;
 
-    public DealMapper(IDealStrategyFactory<IDealMapper> strategies)
+    public DealMapper(IDealStrategyFactory<IDealMapper> factory)
     {
-        this.strategies = strategies;
+        this.factory = factory;
     }
 
     public DealDto ToDeal(DealEntity entity) =>
-        strategies.Create(entity.DealType).ToDeal(entity);
+        factory.Create(entity.DealType).ToDeal(entity);
 
     public Result<DealEntity, ValidationErrors> ToEntity(DealDto deal) =>
-        strategies.Create(deal.DealType).ToEntity(deal);
+        factory.Create(deal.DealType).ToEntity(deal);
 }

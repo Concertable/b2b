@@ -11,9 +11,9 @@ public sealed class DealStrategyBuilderTests
         var services = new ServiceCollection();
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.AddDealStrategies(strategies =>
+            services.AddDealStrategies(builder =>
             {
-                strategies.For(DealType.FlatFee)
+                builder.For(DealType.FlatFee)
                     .AddSingleton<ITestStrategy, TestStrategy>()
                     .AddSingleton<ITestStrategy, OtherTestStrategy>();
             }));
@@ -28,9 +28,9 @@ public sealed class DealStrategyBuilderTests
         var services = new ServiceCollection();
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.AddDealStrategies(strategies =>
+            services.AddDealStrategies(builder =>
             {
-                strategies.For(DealType.FlatFee)
+                builder.For(DealType.FlatFee)
                     .AddSingleton<ITestStrategy, TestStrategy>();
             }));
 
@@ -44,15 +44,15 @@ public sealed class DealStrategyBuilderTests
         var services = new ServiceCollection();
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.AddDealStrategies(strategies =>
+            services.AddDealStrategies(builder =>
             {
-                strategies.For(DealType.FlatFee)
+                builder.For(DealType.FlatFee)
                     .AddSingleton<ITestStrategy, TestStrategy>();
-                strategies.For(DealType.DoorSplit)
+                builder.For(DealType.DoorSplit)
                     .AddScoped<ITestStrategy, TestStrategy>();
-                strategies.For(DealType.Versus)
+                builder.For(DealType.Versus)
                     .AddScoped<ITestStrategy, TestStrategy>();
-                strategies.For(DealType.VenueHire)
+                builder.For(DealType.VenueHire)
                     .AddScoped<ITestStrategy, TestStrategy>();
             }));
 

@@ -56,6 +56,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IUnitOfWork<ApplicationDbContext>, UnitOfWork<ApplicationDbContext>>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IApplicationRepository, ApplicationRepository>();
+            services.AddScoped<IApplicationWorkflow, ApplicationWorkflow>();
             services.AddScoped<IApplicationService, ApplicationService>();
             services.AddScoped<IApplicationDashboardService, ApplicationDashboardService>();
             services.AddScoped<IApplicationMapper, ApplicationMapper>();
@@ -95,15 +96,15 @@ public static class ServiceCollectionExtensions
         internal IServiceCollection AddApplicationDealStrategies()
         {
             services.AddScoped<IDealTermsRenderer, DealTermsRenderer>();
-            return services.AddApplicationDealStrategies(strategies =>
+            return services.AddApplicationDealStrategies(builder =>
             {
-                strategies.For(DealType.FlatFee)
+                builder.For(DealType.FlatFee)
                     .AddSingleton<IDealTerms, FlatFeeDealTerms>();
-                strategies.For(DealType.DoorSplit)
+                builder.For(DealType.DoorSplit)
                     .AddSingleton<IDealTerms, DoorSplitDealTerms>();
-                strategies.For(DealType.Versus)
+                builder.For(DealType.Versus)
                     .AddSingleton<IDealTerms, VersusDealTerms>();
-                strategies.For(DealType.VenueHire)
+                builder.For(DealType.VenueHire)
                     .AddSingleton<IDealTerms, VenueHireDealTerms>();
             });
         }

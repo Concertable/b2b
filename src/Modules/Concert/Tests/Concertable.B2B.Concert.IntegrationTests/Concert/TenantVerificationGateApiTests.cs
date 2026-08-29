@@ -9,13 +9,6 @@ using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
-/// <summary>
-/// The fail-closed tenant-verification payout gate (<c>FinishExecutor</c>): a settlement's supplier and customer
-/// tenants must both be <c>Approved</c>-verified, or the concert is not transitioned and not paid (it self-heals
-/// on the next sweep once verification is approved). <see cref="SeedState.UnverifiedTenant"/> is tax-compliant
-/// but has no verification row, isolating this gate from <c>ConcertPayoutComplianceGateApiTests</c>' tax-
-/// compliance gate.
-/// </summary>
 [Collection("Integration")]
 public sealed class TenantVerificationGateApiTests : IAsyncLifetime
 {

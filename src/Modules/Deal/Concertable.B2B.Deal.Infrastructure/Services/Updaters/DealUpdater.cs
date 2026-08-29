@@ -8,11 +8,11 @@ namespace Concertable.B2B.Deal.Infrastructure.Services.Updaters;
 
 internal sealed class DealUpdater : IDealUpdater
 {
-    private readonly IDealStrategyFactory<IDealUpdater> strategies;
+    private readonly IDealStrategyFactory<IDealUpdater> factory;
 
-    public DealUpdater(IDealStrategyFactory<IDealUpdater> strategies)
+    public DealUpdater(IDealStrategyFactory<IDealUpdater> factory)
     {
-        this.strategies = strategies;
+        this.factory = factory;
     }
 
     public UnitResult<ValidationErrors> Apply(DealEntity existing, DealDto source)
@@ -24,6 +24,6 @@ internal sealed class DealUpdater : IDealUpdater
             ]);
         }
 
-        return strategies.Create(source.DealType).Apply(existing, source);
+        return factory.Create(source.DealType).Apply(existing, source);
     }
 }

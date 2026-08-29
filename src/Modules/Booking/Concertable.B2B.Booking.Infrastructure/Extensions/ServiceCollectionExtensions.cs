@@ -3,11 +3,13 @@ using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.Interfaces;
+using Concertable.B2B.Booking.Application.Strategies;
 using Concertable.B2B.Booking.Infrastructure.Events;
 using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Booking.Infrastructure.Data.Seeders;
 using Concertable.B2B.Booking.Infrastructure.Repositories;
 using Concertable.B2B.Booking.Infrastructure.Services;
+using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.B2B.Booking.Domain.Events;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess.Application;
@@ -16,7 +18,6 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
@@ -50,6 +51,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
             services.AddScoped<IBookingRepository, BookingRepository>();
             services.AddScoped<IContractRepository, ContractRepository>();
+            services.AddScoped<IBookingWorkflow, BookingWorkflow>();
             services.AddScoped<IBookingService, BookingService>();
             services.AddScoped<IContractService, ContractService>();
             services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
@@ -88,20 +90,20 @@ public static class ServiceCollectionExtensions
         }
 
         internal IServiceCollection AddBookingDealStrategies() =>
-            services.AddBookingDealStrategies(strategies =>
+            services.AddBookingDealStrategies(builder =>
             {
-                strategies.For(DealType.FlatFee)
-                    .AddScoped<IConfirmStep, FlatFeeConfirmStep>()
-                    .AddScoped<ICancelStep, EscrowCancelStep>();
-                strategies.For(DealType.DoorSplit)
-                    .AddScoped<IConfirmStep, DoorSplitConfirmStep>()
-                    .AddScoped<ICancelStep, ImmediateCancelStep>();
-                strategies.For(DealType.Versus)
-                    .AddScoped<IConfirmStep, VersusConfirmStep>()
-                    .AddScoped<ICancelStep, ImmediateCancelStep>();
-                strategies.For(DealType.VenueHire)
-                    .AddScoped<IConfirmStep, VenueHireConfirmStep>()
-                    .AddScoped<ICancelStep, EscrowCancelStep>();
+                builder.For(DealType.FlatFee)
+                    .AddScoped<IConfirm, FlatFeeConfirm>()
+                    .AddScoped<ICancel, EscrowCancel>();
+                builder.For(DealType.DoorSplit)
+                    .AddScoped<IConfirm, DoorSplitConfirm>()
+                    .AddScoped<ICancel, ImmediateCancel>();
+                builder.For(DealType.Versus)
+                    .AddScoped<IConfirm, VersusConfirm>()
+                    .AddScoped<ICancel, ImmediateCancel>();
+                builder.For(DealType.VenueHire)
+                    .AddScoped<IConfirm, VenueHireConfirm>()
+                    .AddScoped<ICancel, EscrowCancel>();
             });
 
         internal IServiceCollection AddBookingDealStrategies(
@@ -110,9 +112,6 @@ public static class ServiceCollectionExtensions
             var builder = new DealStrategyBuilder(services);
             configure(builder);
             builder.Build();
-
-            services.TryAddScoped<IConfirmationExecutor, ConfirmationExecutor>();
-            services.TryAddScoped<ICancellationExecutor, CancellationExecutor>();
             return services;
         }
 

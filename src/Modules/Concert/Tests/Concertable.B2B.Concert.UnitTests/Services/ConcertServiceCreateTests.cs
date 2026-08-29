@@ -74,6 +74,7 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<IConcertReadRepository>(),
             Mock.Of<IInvoiceRepository>(),
             Mock.Of<IConcertValidator>(),
+            Mock.Of<IConcertWorkflow>(),
             artists.Object,
             venues.Object,
             Mock.Of<IBookingConfirmationEmailSender>(),

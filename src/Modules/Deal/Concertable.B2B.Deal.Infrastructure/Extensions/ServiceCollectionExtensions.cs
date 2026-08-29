@@ -49,18 +49,18 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDealMapper, DealMapper>();
         services.AddScoped<IDealUpdater, DealUpdater>();
 
-        return services.AddDealStrategies(strategies =>
+        return services.AddDealStrategies(builder =>
         {
-            strategies.For(DealType.FlatFee)
+            builder.For(DealType.FlatFee)
                 .AddSingleton<IDealMapper, FlatFeeDealMapper>()
                 .AddSingleton<IDealUpdater, FlatFeeDealUpdater>();
-            strategies.For(DealType.DoorSplit)
+            builder.For(DealType.DoorSplit)
                 .AddSingleton<IDealMapper, DoorSplitDealMapper>()
                 .AddSingleton<IDealUpdater, DoorSplitDealUpdater>();
-            strategies.For(DealType.Versus)
+            builder.For(DealType.Versus)
                 .AddSingleton<IDealMapper, VersusDealMapper>()
                 .AddSingleton<IDealUpdater, VersusDealUpdater>();
-            strategies.For(DealType.VenueHire)
+            builder.For(DealType.VenueHire)
                 .AddSingleton<IDealMapper, VenueHireDealMapper>()
                 .AddSingleton<IDealUpdater, VenueHireDealUpdater>();
         });

@@ -17,6 +17,7 @@ internal sealed class ConcertService : IConcertService
     private readonly IConcertReadRepository readRepository;
     private readonly IInvoiceRepository invoiceRepository;
     private readonly IConcertValidator concertValidator;
+    private readonly IConcertWorkflow workflow;
     private readonly IArtistReadModelRepository artistRepository;
     private readonly IVenueReadModelRepository venueRepository;
     private readonly IBookingConfirmationEmailSender emailSender;
@@ -31,6 +32,7 @@ internal sealed class ConcertService : IConcertService
         IConcertReadRepository readRepository,
         IInvoiceRepository invoiceRepository,
         IConcertValidator concertValidator,
+        IConcertWorkflow workflow,
         IArtistReadModelRepository artistRepository,
         IVenueReadModelRepository venueRepository,
         IBookingConfirmationEmailSender emailSender,
@@ -44,6 +46,7 @@ internal sealed class ConcertService : IConcertService
         this.readRepository = readRepository;
         this.invoiceRepository = invoiceRepository;
         this.concertValidator = concertValidator;
+        this.workflow = workflow;
         this.artistRepository = artistRepository;
         this.venueRepository = venueRepository;
         this.emailSender = emailSender;
@@ -261,6 +264,11 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByVenueIdAsync(int id) =>
         (await concertRepository.GetUnpostedByVenueIdAsync(id)).ToList();
+
+    public Task<UnitResult<CancelConcertError>> CancelAsync(
+        int concertId,
+        CancellationToken ct = default) =>
+        workflow.CancelAsync(concertId, ct);
 
     private ConcertDetails WithActions(ConcertDetails details) => details with
     {
