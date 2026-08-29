@@ -14,6 +14,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IApplicationValidator validator;
     private readonly IApplicationNotifier notifier;
     private readonly IApplicationWorkflow workflow;
+    private readonly IApplicationEligibility eligibility;
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
     private readonly ITenantContext tenantContext;
@@ -27,6 +28,7 @@ internal sealed class ApplicationService : IApplicationService
         IApplicationValidator validator,
         IApplicationNotifier notifier,
         IApplicationWorkflow workflow,
+        IApplicationEligibility eligibility,
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
         ITenantContext tenantContext,
@@ -39,6 +41,7 @@ internal sealed class ApplicationService : IApplicationService
         this.validator = validator;
         this.notifier = notifier;
         this.workflow = workflow;
+        this.eligibility = eligibility;
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
         this.tenantContext = tenantContext;
@@ -282,13 +285,7 @@ internal sealed class ApplicationService : IApplicationService
         ApplicationEntity application,
         CancellationToken ct = default)
     {
-        var opportunityOption = await this.opportunityModule.GetAsync(application.OpportunityId, ct);
-        if (!opportunityOption.TryGetValue(out var opportunity))
-            return new ApplicationEligibilityError.OpportunityNotFound();
-
-        var validation = await validator.CanAcceptAsync(opportunity, application);
-        return validation.TryGetErrors(out var errors)
-            ? new ApplicationEligibilityError.Invalid(new ValidationErrors(errors.ToDictionary()))
-            : new Success();
+        var result = await eligibility.CanAcceptAsync(application, ct);
+        return result.TryGetError(out var error) ? error : new Success();
     }
 }

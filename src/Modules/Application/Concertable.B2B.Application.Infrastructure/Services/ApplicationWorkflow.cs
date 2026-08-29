@@ -21,6 +21,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly IApplicationRepository applicationRepository;
     private readonly IApplicationValidator validator;
     private readonly IApplicationNotifier notifier;
+    private readonly IApplicationEligibility eligibility;
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
     private readonly IVenueModule venueModule;
@@ -39,6 +40,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IApplicationRepository applicationRepository,
         IApplicationValidator validator,
         IApplicationNotifier notifier,
+        IApplicationEligibility eligibility,
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
         IVenueModule venueModule,
@@ -56,6 +58,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.applicationRepository = applicationRepository;
         this.validator = validator;
         this.notifier = notifier;
+        this.eligibility = eligibility;
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
         this.venueModule = venueModule;
@@ -177,15 +180,12 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
 
-        var opportunityOption = await this.opportunityModule.GetAsync(application.OpportunityId, ct);
-        if (!opportunityOption.TryGetValue(out var opportunity))
-            return new AcceptApplicationError.Ineligible(
-                new ApplicationEligibilityError.OpportunityNotFound());
-
-        var validation = await validator.CanAcceptAsync(opportunity, application);
-        if (validation.TryGetErrors(out var errors))
-            return new AcceptApplicationError.Ineligible(
-                new ApplicationEligibilityError.Invalid(new ValidationErrors(errors.ToDictionary())));
+        var eligibilityResult = await eligibility.CanAcceptAsync(application, ct)
+            .MapError(error => (AcceptApplicationError)new AcceptApplicationError.Ineligible(error));
+        if (eligibilityResult.TryGetError(out var eligibilityError))
+            return eligibilityError;
+        if (!eligibilityResult.TryGetValue(out var opportunity))
+            throw new InvalidOperationException("Eligibility check succeeded without an opportunity value.");
         if (application.ValidateAccept().TryGetError(out var acceptError))
             return new AcceptApplicationError.InvalidTransition(acceptError);
 

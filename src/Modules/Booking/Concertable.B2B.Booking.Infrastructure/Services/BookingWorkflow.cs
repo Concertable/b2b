@@ -48,9 +48,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     public Task<BookingDto> ConfirmAsync(
         AcceptedApplication application,
         CancellationToken ct = default) =>
-        outboxBehavior.ExecuteAsync(
-            () => unitOfWork.ExecuteAsync(() => ConfirmCoreAsync(application, ct), ct),
-            ct);
+        outboxBehavior.ExecuteAsync(() => ConfirmCoreAsync(application, ct), ct);
 
     public Task<UnitResult<CancelBookingError>> CancelAsync(
         int bookingId,
@@ -93,7 +91,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         AcceptedApplication application,
         CancellationToken ct)
     {
-        var booking = await CreateAsync(application, ct);
+        var booking = await unitOfWork.ExecuteAsync(() => CreateAsync(application, ct), ct);
         await confirmFactory
             .Create(application.DealType)
             .ConfirmAsync(application, booking, ct);

@@ -143,17 +143,19 @@ rejected edge returns the transition error directly.
 
 ### 2.4 Each module owns its own operations — there is no cross-module workflow
 
-`IConcertWorkflow`, its concrete `*Workflow` dependency-holders, the workflow factory, the checkout
-dispatcher, and the capability registry are gone. No type spans the stages. Instead each module owns the
-operations that act on its own aggregate:
+The old cross-module `IConcertWorkflow`, its concrete `*Workflow` dependency-holders, the workflow
+factory, the checkout dispatcher, and the capability registry are gone. No type spans the stages.
+Instead each module owns the operations that act on its own aggregate, each through its own module-local
+executable workflow:
 
-- **Application** owns apply, checkout, accept, reject, and withdraw. Accept produces the immutable
-  `AcceptedApplication` handoff (`Application.Contracts`) that Booking consumes.
+- **Application** owns apply, checkout, accept, reject, and withdraw, through `IApplicationWorkflow`
+  (Apply and Accept). Accept produces the immutable `AcceptedApplication` handoff
+  (`Application.Contracts`) that Booking consumes.
 - **Booking** owns confirmation, payment failure/retry, and pre-Concert cancellation, plus Booking and
-  Contract formation from the accepted handoff.
+  Contract formation from the accepted handoff, through `IBookingWorkflow`.
 - **Concert** owns creation from the `ConfirmedBooking` handoff, cancellation, and completion/settlement —
-  its two executors (`ICancelExecutor`, `ICompleteExecutor`, §2.5) plus the uniform
-  `IConcertService.CreateAsync(ConfirmedBooking)`.
+  its own module-local `IConcertWorkflow` (unrelated to the old cross-module type of the same name;
+  Cancel and Complete, §2.5) plus the uniform `IConcertService.CreateAsync(ConfirmedBooking)`.
 
 ### 2.5 Deal-varying methods use honest method-header unions, not a keyed workflow
 
@@ -180,9 +182,9 @@ return acceptFactory.Create(deal.DealType) switch
 };
 ```
 
-Concert's homogeneous Cancel/Complete steps (`ICancelStep`, `ICompleteStep`) use the shared Deal strategy
-factory. `IKeyedServiceProvider` never escapes into a consumer. Concert creation is uniform across
-`DealType` and selects no keyed step.
+Concert's homogeneous Cancel/Complete strategies (`ICancel`, `IComplete`, under
+`Strategies/<Operation>`) use the shared Deal strategy factory. `IKeyedServiceProvider` never escapes
+into a consumer. Concert creation is uniform across `DealType` and selects no keyed strategy.
 
 ### 2.6 How the Concert module reads deal terms
 

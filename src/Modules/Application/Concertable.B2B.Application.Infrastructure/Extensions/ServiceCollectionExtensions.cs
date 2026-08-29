@@ -56,6 +56,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IUnitOfWork<ApplicationDbContext>, UnitOfWork<ApplicationDbContext>>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IApplicationRepository, ApplicationRepository>();
+            services.AddScoped<IApplicationEligibility, ApplicationEligibility>();
             services.AddScoped<IApplicationWorkflow, ApplicationWorkflow>();
             services.AddScoped<IApplicationService, ApplicationService>();
             services.AddScoped<IApplicationDashboardService, ApplicationDashboardService>();
