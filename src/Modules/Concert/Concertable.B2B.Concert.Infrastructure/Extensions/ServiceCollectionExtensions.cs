@@ -1,4 +1,5 @@
 using Concertable.B2B.Infrastructure.Extensions;
+using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
@@ -24,7 +25,6 @@ using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.B2B.Concert.Infrastructure.Services.Executors;
-using Concertable.B2B.Concert.Infrastructure.Services.Strategies;
 using Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
 using Concertable.B2B.Concert.Infrastructure.Services.Payment;
@@ -168,22 +168,15 @@ public static class ServiceCollectionExtensions
                     .AddSingleton<ISettlementAmountResolver, VenueHireSettlementAmount>()
                     .AddScoped<ICancelStep, RefundEscrowCancelStep>()
                     .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>();
-
-                strategies.RequireAll<IDealPayeeResolver>();
-                strategies.RequireAll<ISettlementAmountResolver>();
-                strategies.RequireAll<ICancelStep>();
-                strategies.RequireAll<ICompleteStep>();
             });
         }
 
         internal IServiceCollection AddConcertDealStrategies(
-            Action<ConcertDealStrategyBuilder> configure)
+            Action<DealStrategyBuilder> configure)
         {
-            var builder = new ConcertDealStrategyBuilder(services);
+            var builder = new DealStrategyBuilder(services);
             configure(builder);
             builder.Build();
-
-            services.AddDealTypeStrategies();
 
             return services;
         }

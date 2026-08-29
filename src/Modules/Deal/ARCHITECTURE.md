@@ -51,12 +51,11 @@ api/.../Modules/Deal/
 │  ├─ PaymentMethod.cs               enum { Cash, Transfer }
 │  ├─ IDeal.cs                       interface (+ [JsonDerivedType] per subtype for the SPA wire)
 │  ├─ FlatFeeDeal.cs / DoorSplitDeal.cs / …   records implementing IDeal
-│  └─ IDealModule.cs                 cross-module facade (Get / Create / Update / Delete)
+│  ├─ IDealModule.cs                 cross-module facade (Get / Create / Update / Delete)
+│  └─ Strategies/                    IDealStrategy and shared factory contracts
 ├─ Concertable.B2B.Deal.Application/
 │  ├─ Mappers/                       typed leaves + named DealMapper facade
-│  └─ Strategies/IDealStrategyFactory.cs
 └─ Concertable.B2B.Deal.Infrastructure/
-   ├─ Services/Strategies/           module-local keyed factory + validated builder
    ├─ Services/Updaters/             typed leaves + named DealUpdater facade
    └─ EF configs, DbContext, repositories, and DI
 ```
@@ -69,9 +68,10 @@ Key invariants:
 - **`PaymentMethod`** (`Cash | Transfer`) is metadata for the off-platform settlement channel — it
   does **not** drive workflow timing. What decides "when money moves" is which lifecycle stage a step
   is wired to, not this field.
-- **Deal strategy registration is vertical and module-local.** `DealMapper` and `DealUpdater` delegate
-  through the scoped `IDealStrategyFactory<T>`; one validated `strategies.For(DealType.X)` block owns
-  both keyed families and requires exact coverage. Payment remains deal-type-agnostic.
+- **Deal strategy registration is vertical at each owning module's composition root.** `DealMapper` and
+  `DealUpdater` delegate through the shared scoped `IDealStrategyFactory<T>` contract. The shared
+  `DealStrategyBuilder` fixes the key to `DealType` and requires complete coverage for every registered
+  family. Payment remains deal-type-agnostic.
 - **`Concert.Opportunity.DealId`** is a satellite FK into the Deal module's DB (no nav back, no SQL FK
   across the context boundary). The Concert module reads deals through `IDealAccessor` /
   `IDealResolver` (§2.6), which delegate to `IDealModule`.
@@ -155,33 +155,34 @@ operations that act on its own aggregate:
   its two executors (`ICancelExecutor`, `ICompleteExecutor`, §2.5) plus the uniform
   `IConcertService.CreateAsync(ConfirmedBooking)`.
 
-### 2.5 Deal-varying operations use honest method-header factories, not a keyed workflow
+### 2.5 Deal-varying methods use honest method-header unions, not a keyed workflow
 
 Deal-varying methods are classified by invocation shape, per module, with no shared registry:
 
-- A **genuine same-interface family** (e.g. Application's `IDealTerms`) is selected through the module's
-  invariant `IApplicationDealStrategyFactory<TStrategy>` / `BookingDealStrategyFactory`, with exact
-  `DealType` coverage proven at the module's own composition root.
-- A **heterogeneous method** whose implementations need different parameters gets one interface per honest
-  method header plus a dedicated factory. Application's accept is the worked example
-  (`Application/Steps/AcceptSteps.cs`): a marker `IAccept`, header interfaces `IStandardAccept` (FlatFee,
-  VenueHire) and `IPrepaidAccept` (DoorSplit, Versus — takes `paymentMethodId`), and `IAcceptFactory.Create(deal)`.
-  The caller matches by header type, never by the four Deal cases:
+- A **same-interface family** such as Application's deal-terms rendering is selected through the shared
+  `IDealStrategyFactory<TStrategy>`. `DealStrategyBuilder` proves complete `DealType` coverage at the owning
+  module's composition root.
+- A **heterogeneous method** gets one interface per honest method header and a Dunet union over those
+  interfaces. `DealUnionBuilder<TUnion>` composes the generic keyed-union builder with `DealType` and
+  `IDealStrategy`, requiring exactly one case for every deal type. Application accept is the worked example:
+  `IAccept` covers the header without a payment-method parameter, while `IAcceptPaid` covers the header that
+  requires one. FlatFee and VenueHire map to `IAccept`; DoorSplit and Versus map to `IAcceptPaid`. The caller
+  matches the interface-bearing union case, never the four Deal cases:
 
 ```csharp
-return acceptFactory.Create(deal) switch
+return acceptFactory.Create(deal.DealType) switch
 {
-    IStandardAccept method => method.Create(facts, application, deal),
-    IPrepaidAccept method when paymentMethodId is not null =>
-        method.Create(facts, application, deal, paymentMethodId),
-    IPrepaidAccept => new AcceptApplicationError.PaymentMethodRequired(),
+    Accept.Standard(var accept) => accept.Accept(facts, application, deal),
+    Accept.Paid when string.IsNullOrWhiteSpace(paymentMethodId) =>
+        new AcceptApplicationError.PaymentMethodRequired(),
+    Accept.Paid(var accept) => accept.Accept(facts, application, deal, paymentMethodId),
     _ => throw new UnreachableException()
 };
 ```
 
-Concert's Cancel/Complete steps (`ICancelStep`, `ICompleteStep`) are selected the same module-local way;
-`IKeyedServiceProvider` never escapes into a consumer. Concert creation is uniform across `DealType` — it
-selects no keyed step at all.
+Concert's homogeneous Cancel/Complete steps (`ICancelStep`, `ICompleteStep`) use the shared Deal strategy
+factory. `IKeyedServiceProvider` never escapes into a consumer. Concert creation is uniform across
+`DealType` and selects no keyed step.
 
 ### 2.6 How the Concert module reads deal terms
 
@@ -274,25 +275,25 @@ capture), the client-supplied `UserAgent` stays optional.
 ## 4. Adding a new deal type
 
 A new deal type touches each module's Deal-varying leaves, not a shared workflow. The lifecycle machines are
-`DealType`-agnostic (the legal edges never vary by deal) and need no changes; only the per-module step
-behaviour and strategy leaves do. Each owning module's composition root declares exact `DealType` coverage
-independently, so an unhandled new type fails composition/tests there.
+`DealType`-agnostic (the legal edges never vary by deal) and need no changes; only the per-module method
+implementations and strategy leaves do. The Deal-specific builders enforce complete coverage, so an
+unhandled new type fails composition/tests in each owning module.
 
 1. **`Deal.Contracts`** — add the case to `DealType.cs`; add an `XDeal : IDeal` record + a
    `[JsonDerivedType]` line on `IDeal.cs`.
 2. **`Deal.Domain` / `.Application` / `.Infrastructure`** — add `XDealEntity : DealEntity` (typed
    columns + `Create`/`Update`/validator), an `XDealMapper`, an `XDealUpdater`, and an EF config. Add
    both strategy leaves to the new deal's vertical `strategies.For(DealType.X)` block; the builder's
-   exact-coverage gate fails until both families are present.
+   coverage gate fails until both families are present.
 3. **Migrations** — re-scaffold: run `./initial-migrations.ps1` from `api/` (per the `migrations` skill; never
    an additive migration).
 4. **Per-module steps** — in each stage that behaves differently for the new deal, reuse an existing step
    where the money shape fits or add a concrete implementation of the module's step/method-header interface
    (Application accept/checkout, Booking confirm/cancel, Concert cancel/complete) only where the movement is
    genuinely new.
-5. **Per-module registration** — register the new implementations against the honest method-header interface
-   or same-interface strategy family in the owning module's composition root, extending its exact-coverage
-   declaration. No workflow type and no capability interface exist to add.
+5. **Per-module registration** — register the new implementation against an honest method-header union case
+   or a same-interface strategy family in the owning module's composition root. The builder discovers the new
+   enum member and fails until the mapping exists. No workflow type exists to add.
 6. **Deal strategy leaves** — add the deal's mapper/updater/terms/settlement leaves to the vertical
    `strategies.For(DealType.X)` block in the module that owns each family; the builder's exact-coverage gate
    fails until every family is present. A revenue-share settlement leaf reuses the shared revenue-loading
@@ -360,9 +361,9 @@ Its generic strategy factory selects FlatFee, DoorSplit, Versus, or VenueHire le
 registration. DoorSplit and Versus share only revenue loading; each leaf owns its complete formula.
 Deal entities carry economic inputs and validation but do not duplicate the runtime calculation.
 
-### 6.2 Deal strategy selection is module-local
+### 6.2 Deal strategy mappings are module-local
 
-Deal and Concert each own a scoped generic strategy factory plus a validated vertical builder. Named
-facades remain the operation-specific API, and only the module factory implementation performs keyed
-lookup. There is no shared marker or cross-module runtime registry; Payment remains unaware of
-`DealType`.
+Shared B2B Infrastructure owns the scoped Deal strategy and union factories plus the Deal-specific builders
+that compose the business-agnostic keyed builders. Each module owns only its strategy implementations and
+the mappings at its composition root. Named facades remain the method-specific API, and keyed lookup stays
+inside the shared factories. Payment remains unaware of `DealType`.

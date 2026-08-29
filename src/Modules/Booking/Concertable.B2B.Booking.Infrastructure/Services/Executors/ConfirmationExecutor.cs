@@ -8,11 +8,11 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 
 internal sealed class ConfirmationExecutor : IConfirmationExecutor
 {
-    private readonly IDealTypeStrategyFactory<IConfirmStep> confirmStepFactory;
+    private readonly IDealStrategyFactory<IConfirmStep> confirmStepFactory;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public ConfirmationExecutor(
-        IDealTypeStrategyFactory<IConfirmStep> confirmStepFactory,
+        IDealStrategyFactory<IConfirmStep> confirmStepFactory,
         IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.confirmStepFactory = confirmStepFactory;

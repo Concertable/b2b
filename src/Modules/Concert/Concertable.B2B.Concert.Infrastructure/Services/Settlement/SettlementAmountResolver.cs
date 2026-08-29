@@ -6,9 +6,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 
 internal sealed class SettlementAmountResolver : ISettlementAmountResolver
 {
-    private readonly IDealTypeStrategyFactory<ISettlementAmountResolver> amountResolverFactory;
+    private readonly IDealStrategyFactory<ISettlementAmountResolver> amountResolverFactory;
 
-    public SettlementAmountResolver(IDealTypeStrategyFactory<ISettlementAmountResolver> amountResolverFactory)
+    public SettlementAmountResolver(IDealStrategyFactory<ISettlementAmountResolver> amountResolverFactory)
     {
         this.amountResolverFactory = amountResolverFactory;
     }

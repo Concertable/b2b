@@ -6,9 +6,9 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 
 internal sealed class CancellationExecutor : ICancellationExecutor
 {
-    private readonly IDealTypeStrategyFactory<ICancelStep> cancelStepFactory;
+    private readonly IDealStrategyFactory<ICancelStep> cancelStepFactory;
 
-    public CancellationExecutor(IDealTypeStrategyFactory<ICancelStep> cancelStepFactory)
+    public CancellationExecutor(IDealStrategyFactory<ICancelStep> cancelStepFactory)
     {
         this.cancelStepFactory = cancelStepFactory;
     }

@@ -9,13 +9,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Executors;
 internal sealed class CancelExecutor : ICancelExecutor
 {
     private readonly IConcertRepository concertRepository;
-    private readonly IDealTypeStrategyFactory<ICancelStep> cancelStepFactory;
+    private readonly IDealStrategyFactory<ICancelStep> cancelStepFactory;
     private readonly IUnitOfWorkBehavior unitOfWork;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public CancelExecutor(
         IConcertRepository concertRepository,
-        IDealTypeStrategyFactory<ICancelStep> cancelStepFactory,
+        IDealStrategyFactory<ICancelStep> cancelStepFactory,
         IUnitOfWorkBehavior unitOfWork,
         IOutboxUnitOfWorkBehavior outboxBehavior)
     {

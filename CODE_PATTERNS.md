@@ -34,15 +34,13 @@ its own purpose-named abstraction over the read context — `IConcertAvailabilit
 
 ## The `DealType` strategy families
 
-Declared vertically at the Deal module's composition root through `AddDealStrategies`, resolved by the
-module-local `IDealStrategyFactory<TStrategy>`. Named facades are the business API: `DealMapper`,
-`DealUpdater`, `DealTermsRenderer`, `SettlementAmountResolver`. `IConcertWorkflowFactory` stays a *named*
-factory because its caller genuinely needs the selected workflow instance.
+Declared vertically at each owning module's composition root through `DealStrategyBuilder`, then resolved
+through the shared scoped `IDealStrategyFactory<TStrategy>`. Named facades remain the business API:
+`DealMapper`, `DealUpdater`, `DealTermsRenderer`, and `SettlementAmountResolver`.
 
-Every family declares `RequireAll<T>()` or `RequireExactly<T>(...)`, so adding a `DealType` member fails
-composition until the new type is handled. `DealStrategyArchitectureTests` guards the shape.
-
-Deal and Concert own separate factory implementations — different runtime concerns, module-local by rule.
+The Deal-specific builder composes `KeyedStrategyBuilder<DealType>` and makes complete `DealType` coverage
+innate for every registered strategy family. Adding a `DealType` member therefore fails composition until
+every family handles it. `DealStrategyArchitectureTests` guards the shape.
 
 ## The workflow steps a `DealType` selects
 

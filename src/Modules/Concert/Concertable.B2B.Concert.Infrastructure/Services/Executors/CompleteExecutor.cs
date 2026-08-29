@@ -8,11 +8,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Executors;
 internal sealed class CompleteExecutor : ICompleteExecutor
 {
     private readonly ISettlementService settlementService;
-    private readonly IDealTypeStrategyFactory<ICompleteStep> completeStepFactory;
+    private readonly IDealStrategyFactory<ICompleteStep> completeStepFactory;
 
     public CompleteExecutor(
         ISettlementService settlementService,
-        IDealTypeStrategyFactory<ICompleteStep> completeStepFactory)
+        IDealStrategyFactory<ICompleteStep> completeStepFactory)
     {
         this.settlementService = settlementService;
         this.completeStepFactory = completeStepFactory;

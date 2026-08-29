@@ -7,7 +7,7 @@ using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests;
 
-public sealed class DealTypeStrategyFactoryTests
+public sealed class DealStrategyFactoryTests
 {
     [Theory]
     [InlineData(DealType.FlatFee, typeof(VenuePaysArtistDealPayeeResolver))]
@@ -26,7 +26,7 @@ public sealed class DealTypeStrategyFactoryTests
         });
         using var scope = provider.CreateScope();
         var factory = scope.ServiceProvider
-            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
 
         var strategy = factory.Create(dealType);
 
@@ -50,7 +50,7 @@ public sealed class DealTypeStrategyFactoryTests
         });
         using var scope = provider.CreateScope();
         var factory = scope.ServiceProvider
-            .GetRequiredService<IDealTypeStrategyFactory<ISettlementAmountResolver>>();
+            .GetRequiredService<IDealStrategyFactory<ISettlementAmountResolver>>();
 
         var strategy = factory.Create(dealType);
 
@@ -70,16 +70,16 @@ public sealed class DealTypeStrategyFactoryTests
         using var secondScope = provider.CreateScope();
 
         var first = firstScope.ServiceProvider
-            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
         var sameScope = firstScope.ServiceProvider
-            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
         var second = secondScope.ServiceProvider
-            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>();
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>();
 
         Assert.Same(first, sameScope);
         Assert.NotSame(first, second);
         Assert.Throws<InvalidOperationException>(() =>
-            provider.GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>());
+            provider.GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>());
     }
 
     [Fact]
@@ -95,10 +95,10 @@ public sealed class DealTypeStrategyFactoryTests
         using var secondScope = provider.CreateScope();
 
         var first = firstScope.ServiceProvider
-            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>()
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>()
             .Create(DealType.FlatFee);
         var second = secondScope.ServiceProvider
-            .GetRequiredService<IDealTypeStrategyFactory<IDealPayeeResolver>>()
+            .GetRequiredService<IDealStrategyFactory<IDealPayeeResolver>>()
             .Create(DealType.FlatFee);
 
         Assert.Same(first, second);
@@ -110,9 +110,8 @@ public sealed class DealTypeStrategyFactoryTests
         var services = CreateServices();
         services.AddConcertDealStrategies(strategies =>
         {
-            strategies.For(DealType.FlatFee)
-                .AddScoped<ITestStrategy, TestStrategy>();
-            strategies.RequireExactly<ITestStrategy>(DealType.FlatFee);
+            foreach (var dealType in Enum.GetValues<DealType>())
+                strategies.For(dealType).AddScoped<ITestStrategy, TestStrategy>();
         });
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -121,13 +120,13 @@ public sealed class DealTypeStrategyFactoryTests
         using var firstScope = provider.CreateScope();
         using var secondScope = provider.CreateScope();
         var firstFactory = firstScope.ServiceProvider
-            .GetRequiredService<IDealTypeStrategyFactory<ITestStrategy>>();
+            .GetRequiredService<IDealStrategyFactory<ITestStrategy>>();
 
         var fromFactory = firstFactory.Create(DealType.FlatFee);
         var fromFirstScope = firstScope.ServiceProvider
             .GetRequiredKeyedService<ITestStrategy>(DealType.FlatFee);
         var fromSecondScope = secondScope.ServiceProvider
-            .GetRequiredService<IDealTypeStrategyFactory<ITestStrategy>>()
+            .GetRequiredService<IDealStrategyFactory<ITestStrategy>>()
             .Create(DealType.FlatFee);
 
         Assert.Same(fromFirstScope, fromFactory);
@@ -138,10 +137,10 @@ public sealed class DealTypeStrategyFactoryTests
 
     [Theory]
     [InlineData(typeof(IKeyedServiceProvider))]
-    [InlineData(typeof(IDealTypeStrategyFactory<>))]
+    [InlineData(typeof(IDealStrategyFactory<>))]
     [InlineData(typeof(IDealPayeeResolver))]
     [InlineData(typeof(ISettlementAmountResolver))]
-    public void AddDealTypeStrategies_ScopeCapturingServices_RegistersScoped(Type serviceType)
+    public void AddDealStrategyFactory_ScopeCapturingServices_RegistersScoped(Type serviceType)
     {
         var services = CreateServices();
         services.AddConcertDealStrategies();
@@ -159,7 +158,7 @@ public sealed class DealTypeStrategyFactoryTests
         return services;
     }
 
-    private interface ITestStrategy;
+    private interface ITestStrategy : IDealStrategy;
 
     private sealed class TestStrategy : ITestStrategy;
 }

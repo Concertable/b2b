@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Mappers;
+using Concertable.B2B.Application.Application.Strategies;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
@@ -11,7 +12,6 @@ using Concertable.B2B.Venue.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
@@ -28,11 +28,11 @@ internal sealed class ApplicationService : IApplicationService
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
     private readonly ITermsFingerprintCalculator termsFingerprint;
-    private readonly IDealTermsRenderer termsRenderer;
+    private readonly IDealUnionFactory<Apply> applyFactory;
+    private readonly IDealUnionFactory<Accept> acceptFactory;
     private readonly IApplicationCheckoutService checkout;
     private readonly IApplicationMapper mapper;
     private readonly TimeProvider timeProvider;
-    private readonly LegalSettings legal;
     private readonly IUnitOfWorkBehavior unitOfWork;
 
     public ApplicationService(
@@ -47,11 +47,11 @@ internal sealed class ApplicationService : IApplicationService
         ICurrentUser currentUser,
         IClientContext clientContext,
         ITermsFingerprintCalculator termsFingerprint,
-        IDealTermsRenderer termsRenderer,
+        IDealUnionFactory<Apply> applyFactory,
+        IDealUnionFactory<Accept> acceptFactory,
         IApplicationCheckoutService checkout,
         IApplicationMapper mapper,
         TimeProvider timeProvider,
-        IOptions<LegalSettings> legal,
         IUnitOfWorkBehavior unitOfWork)
     {
         this.applicationRepository = applicationRepository;
@@ -65,11 +65,11 @@ internal sealed class ApplicationService : IApplicationService
         this.currentUser = currentUser;
         this.clientContext = clientContext;
         this.termsFingerprint = termsFingerprint;
-        this.termsRenderer = termsRenderer;
+        this.applyFactory = applyFactory;
+        this.acceptFactory = acceptFactory;
         this.checkout = checkout;
         this.mapper = mapper;
         this.timeProvider = timeProvider;
-        this.legal = legal.Value;
         this.unitOfWork = unitOfWork;
     }
 
@@ -190,23 +190,31 @@ internal sealed class ApplicationService : IApplicationService
         if (!dealOption.TryGetValue(out var deal))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
-        if (deal.DealType == DealType.VenueHire && string.IsNullOrWhiteSpace(paymentMethodId))
-            return new ApplyApplicationError.UnsupportedDeal(deal.DealType);
-
-        ApplicationEntity application = deal.DealType == DealType.VenueHire
-            ? PrepaidApplication.Create(
-                artist.Id,
-                opportunityId,
-                deal.DealType,
-                paymentMethodId!,
-                opportunity.VenueTenantId,
-                artistTenantId)
-            : StandardApplication.Create(
-                artist.Id,
-                opportunityId,
-                deal.DealType,
-                opportunity.VenueTenantId,
-                artistTenantId);
+        ApplicationEntity application;
+        switch (this.applyFactory.Create(deal.DealType))
+        {
+            case Apply.Standard(var apply):
+                application = apply.Apply(
+                    artist.Id,
+                    opportunityId,
+                    deal.DealType,
+                    opportunity.VenueTenantId,
+                    artistTenantId);
+                break;
+            case Apply.Prepaid when string.IsNullOrWhiteSpace(paymentMethodId):
+                return new ApplyApplicationError.UnsupportedDeal(deal.DealType);
+            case Apply.Prepaid(var apply):
+                application = apply.Apply(
+                    artist.Id,
+                    opportunityId,
+                    deal.DealType,
+                    paymentMethodId,
+                    opportunity.VenueTenantId,
+                    artistTenantId);
+                break;
+            default:
+                throw new UnreachableException();
+        }
 
         if (currentUser.Id is not { } userId)
             return new ApplyApplicationError.MissingUser();
@@ -322,33 +330,15 @@ internal sealed class ApplicationService : IApplicationService
             clientContext.UserAgent,
             eSignature.SignatoryName,
             eSignature.DrawnSignatureImage);
-        Result<AcceptedApplication, AcceptApplicationError> accepted = deal switch
+        Result<AcceptedApplication, AcceptApplicationError> accepted = this.acceptFactory.Create(deal.DealType) switch
         {
-            FlatFeeDealDto flatFee => new FlatFeeAcceptedApplication(
-                operationId, application.Id, application.OpportunityId, application.ArtistId, opportunity.VenueId,
-                application.VenueTenantId, application.ArtistTenantId, deal.PaymentMethod, opportunity.StartDate,
-                opportunity.EndDate, opportunity.Genres.ToList(), artist.Name, venue.Name, termsRenderer.Render(deal),
-                legal.PlatformTermsVersion, application.ArtistESignature.ToDto(), venueSignature.ToDto(), flatFee.Fee),
-            DoorSplitDealDto doorSplit when !string.IsNullOrWhiteSpace(paymentMethodId) => new DoorSplitAcceptedApplication(
-                operationId, application.Id, application.OpportunityId, application.ArtistId, opportunity.VenueId,
-                application.VenueTenantId, application.ArtistTenantId, deal.PaymentMethod, opportunity.StartDate,
-                opportunity.EndDate, opportunity.Genres.ToList(), artist.Name, venue.Name, termsRenderer.Render(deal),
-                legal.PlatformTermsVersion, application.ArtistESignature.ToDto(), venueSignature.ToDto(),
-                doorSplit.ArtistDoorPercent, paymentMethodId, application.Verification?.ToVerifyPayment()),
-            VersusDealDto versus when !string.IsNullOrWhiteSpace(paymentMethodId) => new VersusAcceptedApplication(
-                operationId, application.Id, application.OpportunityId, application.ArtistId, opportunity.VenueId,
-                application.VenueTenantId, application.ArtistTenantId, deal.PaymentMethod, opportunity.StartDate,
-                opportunity.EndDate, opportunity.Genres.ToList(), artist.Name, venue.Name, termsRenderer.Render(deal),
-                legal.PlatformTermsVersion, application.ArtistESignature.ToDto(), venueSignature.ToDto(),
-                versus.Guarantee, versus.ArtistDoorPercent, paymentMethodId, application.Verification?.ToVerifyPayment()),
-            VenueHireDealDto venueHire when application is PrepaidApplication prepaid => new VenueHireAcceptedApplication(
-                operationId, application.Id, application.OpportunityId, application.ArtistId, opportunity.VenueId,
-                application.VenueTenantId, application.ArtistTenantId, deal.PaymentMethod, opportunity.StartDate,
-                opportunity.EndDate, opportunity.Genres.ToList(), artist.Name, venue.Name, termsRenderer.Render(deal),
-                legal.PlatformTermsVersion, application.ArtistESignature.ToDto(), venueSignature.ToDto(),
-                venueHire.HireFee, prepaid.PaymentMethodId),
-            DoorSplitDealDto or VersusDealDto or VenueHireDealDto => new AcceptApplicationError.PaymentMethodRequired(),
-            _ => throw new ArgumentOutOfRangeException(nameof(deal), deal, null)
+            Accept.Standard(var accept) => accept.Accept(
+                application, opportunity, artist, venue, deal, venueSignature, operationId),
+            Accept.Paid when string.IsNullOrWhiteSpace(paymentMethodId) =>
+                new AcceptApplicationError.PaymentMethodRequired(),
+            Accept.Paid(var accept) => accept.Accept(
+                application, opportunity, artist, venue, deal, venueSignature, operationId, paymentMethodId),
+            _ => throw new UnreachableException()
         };
         if (accepted.TryGetError(out var acceptanceError))
             return acceptanceError;

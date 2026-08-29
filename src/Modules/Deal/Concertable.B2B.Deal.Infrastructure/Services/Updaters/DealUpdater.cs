@@ -1,6 +1,5 @@
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Application.Interfaces;
-using Concertable.B2B.Deal.Application.Strategies;
 using Concertable.B2B.Deal.Domain.Entities;
 using Reunion.Errors;
 using Reunion;
@@ -25,6 +24,6 @@ internal sealed class DealUpdater : IDealUpdater
             ]);
         }
 
-        return strategies.Create(source).Apply(existing, source);
+        return strategies.Create(source.DealType).Apply(existing, source);
     }
 }

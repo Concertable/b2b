@@ -3,7 +3,7 @@ using Concertable.B2B.Booking.Application.DTOs;
 
 namespace Concertable.B2B.Booking.Application.Interfaces;
 
-internal interface IConfirmStep
+internal interface IConfirmStep : IDealStrategy
 {
     Task<BookingDto> ExecuteAsync(
         AcceptedApplication application,

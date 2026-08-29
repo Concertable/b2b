@@ -9,7 +9,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// DoorSplit/Versus. Both the payout step and the invoice issuer resolve through this so the charged and
 /// invoiced amounts can never diverge.
 /// </summary>
-internal interface ISettlementAmountResolver
+internal interface ISettlementAmountResolver : IDealStrategy
 {
     Task<Money> ResolveGrossAsync(int concertId, DealDto deal, CancellationToken ct = default);
 }

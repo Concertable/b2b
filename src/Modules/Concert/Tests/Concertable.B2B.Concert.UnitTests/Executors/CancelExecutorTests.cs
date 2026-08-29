@@ -13,7 +13,7 @@ namespace Concertable.B2B.Concert.UnitTests;
 public sealed class CancelExecutorTests
 {
     private readonly Mock<IConcertRepository> concertRepository = new();
-    private readonly Mock<IDealTypeStrategyFactory<ICancelStep>> cancelStepFactory = new();
+    private readonly Mock<IDealStrategyFactory<ICancelStep>> cancelStepFactory = new();
     private readonly CancelExecutor executor;
 
     public CancelExecutorTests()

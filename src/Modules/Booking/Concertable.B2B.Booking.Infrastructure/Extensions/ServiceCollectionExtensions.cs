@@ -1,4 +1,5 @@
 using Concertable.B2B.Infrastructure.Extensions;
+using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.Interfaces;
@@ -7,7 +8,6 @@ using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Booking.Infrastructure.Data.Seeders;
 using Concertable.B2B.Booking.Infrastructure.Repositories;
 using Concertable.B2B.Booking.Infrastructure.Services;
-using Concertable.B2B.Booking.Infrastructure.Services.Strategies;
 using Concertable.B2B.Booking.Domain.Events;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess.Application;
@@ -102,19 +102,15 @@ public static class ServiceCollectionExtensions
                 strategies.For(DealType.VenueHire)
                     .AddScoped<IConfirmStep, VenueHireConfirmStep>()
                     .AddScoped<ICancelStep, EscrowCancelStep>();
-
-                strategies.RequireAll<IConfirmStep>();
-                strategies.RequireAll<ICancelStep>();
             });
 
         internal IServiceCollection AddBookingDealStrategies(
-            Action<BookingDealStrategyBuilder> configure)
+            Action<DealStrategyBuilder> configure)
         {
-            var builder = new BookingDealStrategyBuilder(services);
+            var builder = new DealStrategyBuilder(services);
             configure(builder);
             builder.Build();
 
-            services.AddDealTypeStrategies();
             services.TryAddScoped<IConfirmationExecutor, ConfirmationExecutor>();
             services.TryAddScoped<ICancellationExecutor, CancellationExecutor>();
             return services;
