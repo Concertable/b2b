@@ -7,6 +7,7 @@ using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Pdf;
 using Concertable.B2B.Concert.Infrastructure.Services;
+using Concertable.B2B.RequestContext;
 using Concertable.B2B.Tenant.Contracts;
 using Reunion;
 using Concertable.Kernel.Identity;

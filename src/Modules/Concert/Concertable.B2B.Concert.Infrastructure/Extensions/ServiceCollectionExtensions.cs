@@ -87,7 +87,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<IInvoicePdfRenderer, InvoicePdfRenderer>();
             services.AddScoped<ISelfBillingAgreementService, SelfBillingAgreementService>();
-            services.AddScoped<IClientContext, ClientContextAccessor>();
+            services.AddClientContext();
             services.AddConcertDealStrategies();
 
             // Business-rule validators (interfaces in Concert.Application, impls in Concert.Infrastructure.Validators)

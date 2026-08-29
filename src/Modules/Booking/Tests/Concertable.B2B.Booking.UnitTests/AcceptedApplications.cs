@@ -49,7 +49,7 @@ internal static class AcceptedApplications
         "pm_123",
         verification);
 
-    private static Signature Signature(string name) => new(
+    private static SignatureDto Signature(string name) => new(
         Guid.NewGuid(),
         new DateTime(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc),
         IPAddress.Loopback,

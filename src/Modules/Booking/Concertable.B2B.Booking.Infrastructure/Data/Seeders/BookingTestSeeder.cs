@@ -24,10 +24,20 @@ internal sealed class BookingTestSeeder : ITestSeeder
         await context.Bookings.SeedIfEmptyAsync(async () =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
+            await context.Database.ExecuteSqlRawAsync(
+                $"SET IDENTITY_INSERT [{Schema.Name}].[{Schema.Tables.Bookings}] ON", ct);
             context.Bookings.AddRange(seed.Bookings);
             await context.SaveChangesAsync(ct);
+            await context.Database.ExecuteSqlRawAsync(
+                $"SET IDENTITY_INSERT [{Schema.Name}].[{Schema.Tables.Bookings}] OFF", ct);
+
+            await context.Database.ExecuteSqlRawAsync(
+                $"SET IDENTITY_INSERT [{Schema.Name}].[{Schema.Tables.Contracts}] ON", ct);
             context.Contracts.AddRange(seed.Contracts);
             await context.SaveChangesAsync(ct);
+            await context.Database.ExecuteSqlRawAsync(
+                $"SET IDENTITY_INSERT [{Schema.Name}].[{Schema.Tables.Contracts}] OFF", ct);
+
             await transaction.CommitAsync(ct);
         });
 }

@@ -30,7 +30,19 @@ internal sealed class ApplicationTestSeeder : ITestSeeder
         await context.Applications.SeedIfEmptyAsync(async () =>
         {
             context.Applications.AddRange(seed.Applications);
-            await context.SaveChangesAsync(ct);
+            await context.Database.OpenConnectionAsync(ct);
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    $"SET IDENTITY_INSERT [{Schema.Name}].[{Schema.Tables.Applications}] ON", ct);
+                await context.SaveChangesAsync(ct);
+                await context.Database.ExecuteSqlRawAsync(
+                    $"SET IDENTITY_INSERT [{Schema.Name}].[{Schema.Tables.Applications}] OFF", ct);
+            }
+            finally
+            {
+                await context.Database.CloseConnectionAsync();
+            }
         });
 
         await context.ConcertAvailabilities.SeedIfEmptyAsync(async () =>

@@ -98,4 +98,22 @@ public sealed class ConcertServiceCreateTests
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once);
     }
+
+    [Fact]
+    public async Task CreateAsync_ExistingConcertForBooking_DoesNotAddOrSave()
+    {
+        this.repository
+            .Setup(value => value.GetByBookingIdAsync(this.booking.BookingId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ConcertEntity.CreateDraft(this.booking, "Existing", "About", [Genre.Rock]));
+
+        await this.service.CreateAsync(this.booking);
+
+        Assert.Null(this.addedConcert);
+        this.repository.Verify(
+            value => value.AddAsync(It.IsAny<ConcertEntity>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        this.repository.Verify(
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
 }

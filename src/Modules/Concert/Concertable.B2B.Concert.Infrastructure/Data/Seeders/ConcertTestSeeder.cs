@@ -28,7 +28,19 @@ internal sealed class ConcertTestSeeder : ITestSeeder
         await context.Concerts.SeedIfEmptyAsync(async () =>
         {
             context.Concerts.AddRange(seed.Concerts);
-            await context.SaveChangesAsync(ct);
+            await context.Database.OpenConnectionAsync(ct);
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    $"SET IDENTITY_INSERT [{Schema.Name}].[{Schema.Tables.Concerts}] ON", ct);
+                await context.SaveChangesAsync(ct);
+                await context.Database.ExecuteSqlRawAsync(
+                    $"SET IDENTITY_INSERT [{Schema.Name}].[{Schema.Tables.Concerts}] OFF", ct);
+            }
+            finally
+            {
+                await context.Database.CloseConnectionAsync();
+            }
         });
     }
 }

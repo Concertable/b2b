@@ -63,11 +63,13 @@ public sealed class ConcertEntityLifecycleTests
     public void CompleteSettlement_WhenTransitionRejected_LeavesReferenceUnset()
     {
         var concert = ConcertEntity.CreateDraft(CreateBooking(), "Concert", "About", []);
+        Assert.True(concert.BeginCancellation().TryGetValue(out _));
+        Assert.False(concert.Cancel().TryGetError(out _));
 
         var result = concert.CompleteSettlement("pi_123");
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal(new TransitionError<State, Trigger>(State.Draft, Trigger.CompleteSettlement), error);
+        Assert.Equal(new TransitionError<State, Trigger>(State.Cancelled, Trigger.CompleteSettlement), error);
         Assert.Null(concert.FinancialOperationReferenceId);
     }
 

@@ -1,7 +1,9 @@
 using System.Net;
+using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Application.Domain.ValueObjects;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel;
@@ -97,8 +99,8 @@ public sealed class ApplicationEntityLifecycleTests
             "Venue",
             "Terms",
             "1",
-            signature,
-            signature,
+            signature.ToDto(),
+            signature.ToDto(),
             100m);
     }
 }

@@ -1,3 +1,4 @@
+using Concertable.B2B.Application.Api.Responses;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Booking.Contracts;
 

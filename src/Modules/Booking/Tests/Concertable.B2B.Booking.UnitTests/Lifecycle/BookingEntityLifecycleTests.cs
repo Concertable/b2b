@@ -1,5 +1,7 @@
+using Concertable.B2B.Booking.Application.Mappers;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Booking.UnitTests;
@@ -9,7 +11,8 @@ public sealed class BookingEntityLifecycleTests
     [Fact]
     public void Cancel_WhenConfirmationFailed_LeavesStateFinancialFailureAndEventsUnchanged()
     {
-        var booking = StandardBooking.Create(AcceptedApplications.FlatFee());
+        var acceptance = (StandardBookingAcceptance)AcceptedApplications.FlatFee().ToBookingAcceptance();
+        var booking = StandardBooking.Create(acceptance);
         Assert.False(booking.RecordFinancialFailure("pi_123", "declined", "Declined").TryGetError(out _));
         var events = booking.DomainEvents.ToArray();
 
