@@ -6,7 +6,6 @@ global using Concertable.B2B.Application.Application.Responses;
 global using Concertable.B2B.Application.Contracts;
 global using Concertable.B2B.Application.Domain.Entities;
 global using Concertable.B2B.Application.Domain.ValueObjects;
-global using Concertable.B2B.RequestContext;
 global using Concertable.B2B.Conversations.Contracts.Enums;
 global using Concertable.B2B.DataAccess.Application;
 global using Concertable.B2B.DataAccess.Infrastructure;

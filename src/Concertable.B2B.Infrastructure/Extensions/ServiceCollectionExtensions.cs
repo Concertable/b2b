@@ -1,6 +1,6 @@
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Infrastructure.Context;
-using Concertable.B2B.RequestContext;
+using Concertable.Kernel.Identity;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Infrastructure.Uris;
 using Microsoft.Extensions.Configuration;
@@ -19,10 +19,18 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddDealTypeStrategies(this IServiceCollection services)
+    public static IServiceCollection AddDealStrategyFactory(this IServiceCollection services)
     {
         services.TryAddScoped<IKeyedServiceProvider>(provider => (IKeyedServiceProvider)provider);
-        services.TryAddScoped(typeof(IDealTypeStrategyFactory<>), typeof(DealTypeStrategyFactory<>));
+        services.TryAddScoped(typeof(IDealStrategyFactory<>), typeof(DealStrategyFactory<>));
+
+        return services;
+    }
+
+    public static IServiceCollection AddDealUnionFactory(this IServiceCollection services)
+    {
+        services.TryAddScoped<IKeyedServiceProvider>(provider => (IKeyedServiceProvider)provider);
+        services.TryAddScoped(typeof(IDealUnionFactory<>), typeof(DealUnionFactory<>));
 
         return services;
     }

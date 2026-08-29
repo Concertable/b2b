@@ -1,5 +1,5 @@
 using System.Net;
-using Concertable.B2B.RequestContext;
+using Concertable.Kernel.Identity;
 using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Infrastructure.Context;

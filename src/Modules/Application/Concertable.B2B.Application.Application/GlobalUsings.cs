@@ -1,10 +1,10 @@
 global using Concertable.B2B.Application.Contracts;
-global using Concertable.B2B.RequestContext;
 global using Concertable.B2B.Deal.Contracts;
 global using Concertable.B2B.Deal.Contracts.Enums;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
 global using Concertable.Kernel;
+global using Concertable.Kernel.Identity;
 global using Concertable.Kernel.ValueObjects;
 global using Concertable.Payment.Client;
 global using Reunion;
