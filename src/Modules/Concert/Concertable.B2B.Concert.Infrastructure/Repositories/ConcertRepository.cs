@@ -153,8 +153,8 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
     }
 
     public async Task<IEnumerable<int>> GetEndedConfirmedIdsAsync() =>
-        await endedAndBooked.And(doorRevenueOutstanding.Not())
-            .Apply(context.Concerts)
+        await context.Concerts
+            .Where(endedAndBooked.And(doorRevenueOutstanding.Not()).ToExpression())
             .Select(c => c.Id)
             .ToListAsync();
 

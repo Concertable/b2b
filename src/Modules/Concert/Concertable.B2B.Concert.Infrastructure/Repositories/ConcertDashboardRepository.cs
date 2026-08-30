@@ -38,27 +38,31 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         Guid venueTenantId,
         CancellationToken ct = default)
     {
-        var applications = opportunityUpcoming.ApplyVia(
-            context.Applications
+        var applications = context.Applications
                 .Where(a => a.State == LifecycleState.Applied
-                    && a.VenueTenantId == venueTenantId),
-            a => a.Opportunity);
+                    && a.VenueTenantId == venueTenantId)
+                .Where(opportunityUpcoming.Via(a => a.Opportunity));
 
-        var openOpportunities = opportunityUpcoming.Apply(
-            context.Opportunities
+        var openOpportunities = context.Opportunities
                 .Where(o => o.TenantId == venueTenantId)
-                .WhereOpen());
+                .WhereOpen()
+                .Where(opportunityUpcoming.ToExpression());
 
-        var upcomingConcerts = concertUpcoming.Apply(
-            context.Concerts.Where(c => c.VenueTenantId == venueTenantId));
+        var upcomingConcerts = context.Concerts
+            .Where(c => c.VenueTenantId == venueTenantId)
+            .Where(concertUpcoming.ToExpression());
 
         var awaitingDoorRevenue = endedAndBooked
             .And(doorRevenueOutstanding)
-            .Apply(context.Concerts.Where(c => c.VenueTenantId == venueTenantId));
+            .ToExpression();
+
+        var awaitingDoorRevenueConcerts = context.Concerts
+            .Where(c => c.VenueTenantId == venueTenantId)
+            .Where(awaitingDoorRevenue);
 
         return context.VenueReadModels
             .Where(v => v.TenantId == venueTenantId)
-            .ToVenueCounts(applications, openOpportunities, upcomingConcerts, awaitingDoorRevenue)
+            .ToVenueCounts(applications, openOpportunities, upcomingConcerts, awaitingDoorRevenueConcerts)
             .FirstOrDefaultAsync(ct);
     }
 
@@ -67,21 +71,20 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         IReadOnlyCollection<DealType> checkoutCapableDealTypes,
         CancellationToken ct = default)
     {
-        var applications = opportunityUpcoming.ApplyVia(
-            context.Applications
+        var applications = context.Applications
                 .Where(a => a.State == LifecycleState.Applied
-                    && a.ArtistTenantId == artistTenantId),
-            a => a.Opportunity);
+                    && a.ArtistTenantId == artistTenantId)
+                .Where(opportunityUpcoming.Via(a => a.Opportunity));
 
-        var acceptedAwaitingCheckout = opportunityUpcoming.ApplyVia(
-            context.Applications
+        var acceptedAwaitingCheckout = context.Applications
                 .Where(a => a.State == LifecycleState.Accepted
                     && a.ArtistTenantId == artistTenantId
-                    && checkoutCapableDealTypes.Contains(a.DealType)),
-            a => a.Opportunity);
+                    && checkoutCapableDealTypes.Contains(a.DealType))
+                .Where(opportunityUpcoming.Via(a => a.Opportunity));
 
-        var upcomingConcerts = concertUpcoming.Apply(
-            context.Concerts.Where(c => c.ArtistTenantId == artistTenantId));
+        var upcomingConcerts = context.Concerts
+            .Where(c => c.ArtistTenantId == artistTenantId)
+            .Where(concertUpcoming.ToExpression());
 
         return context.ArtistReadModels
             .Where(a => a.TenantId == artistTenantId)
