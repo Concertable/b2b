@@ -2,6 +2,10 @@ using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
+using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Contracts;
+using Concertable.B2B.Opportunity.Contracts;
 using Xunit;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
@@ -109,6 +113,49 @@ public sealed class ModuleBoundaryTests
         Assert.True(
             violations.Length == 0,
             $"Module facades must delegate to application use cases:{Environment.NewLine}{string.Join(Environment.NewLine, violations)}");
+    }
+
+    // Lifecycle direction — Opportunity -> Application -> Booking -> Concert is one-way. A later stage may
+    // read an earlier stage's published facts, but never command an earlier stage. See
+    // plans/launch/DEAL_LIFECYCLE_OWNERSHIP_PLAN.md.
+
+    private static readonly (string Module, System.Type Contract)[] LifecycleStages =
+        [
+            ("Opportunity", typeof(IOpportunityModule)),
+            ("Application", typeof(IApplicationModule)),
+            ("Booking", typeof(IBookingModule)),
+            ("Concert", typeof(IConcertModule))
+        ];
+
+    [Fact]
+    public void LifecycleModuleFacades_ExposeQueryMembersOnly()
+    {
+        foreach (var (_, contract) in LifecycleStages)
+            MethodMembers().That().AreDeclaredIn(contract)
+                .Should().HaveNameStartingWith("Get")
+                .Because($"{contract.Name} is a lifecycle-stage facade: it may publish facts for a later " +
+                          "stage to read, never accept a command (MM_BOUNDARY_HARDENING_PROMPT.md Part A3).")
+                .Check(Architecture);
+    }
+
+    [Fact]
+    public void LaterLifecycleStages_DoNotCommandAnEarlierStage()
+    {
+        for (var earlier = 0; earlier < LifecycleStages.Length; earlier++)
+        for (var later = earlier + 1; later < LifecycleStages.Length; later++)
+        {
+            var (_, earlierContract) = LifecycleStages[earlier];
+            var laterModule = LifecycleStages[later].Module;
+
+            MethodMembers().That()
+                .AreDeclaredIn(earlierContract).And()
+                .DoNotHaveNameStartingWith("Get")
+                .Should().NotBeCalledBy($@"^Concertable\.B2B\.{laterModule}\.", useRegularExpressions: true)
+                .Because($"{laterModule} is downstream of {earlierContract.Name} in the deal lifecycle; a " +
+                          "downstream stage may read an upstream stage's contract but never command it.")
+                .WithoutRequiringPositiveResults()
+                .Check(Architecture);
+        }
     }
 
     private static void Forbid(string layer, params string[] forbiddenLayers)

@@ -235,17 +235,19 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (!accepted.TryGetValue(out var acceptedApplication))
             throw new InvalidOperationException("Acceptance succeeded without an accepted application fact.");
 
-        if ((await this.opportunityModule.FillAsync(
-                application.OpportunityId,
-                application.VenueTenantId,
-                ct)).IsFailure)
-            return new AcceptApplicationError.OpportunityUnavailable(application.OpportunityId);
-
         application.BeginAcceptance(operationId);
         if (application.Accept(acceptedApplication).TryGetError(out var transitionError))
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
-        await applicationRepository.SaveChangesAsync(ct);
+        try
+        {
+            await applicationRepository.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException exception) when (exception.IsDuplicateKey())
+        {
+            return new AcceptApplicationError.AlreadyAccepted();
+        }
+
         var rejectedApplicationIds = await applicationRepository.RejectAllExceptAsync(
             application.OpportunityId, application.Id, ct);
         foreach (var rejectedApplicationId in rejectedApplicationIds)

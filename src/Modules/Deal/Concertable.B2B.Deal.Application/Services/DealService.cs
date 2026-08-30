@@ -68,13 +68,4 @@ internal sealed class DealService : IDealService
         await dealRepository.SaveChangesAsync(ct);
         return new Success();
     }
-
-    public async Task DeleteAsync(int dealId, CancellationToken ct = default)
-    {
-        var existing = await dealRepository.GetByIdAsync(dealId, ct);
-        if (existing is null) return;
-
-        dealRepository.Remove(existing);
-        await dealRepository.SaveChangesAsync(ct);
-    }
 }

@@ -80,7 +80,17 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
             return;
 
         VerifyPayment = VerifyPaymentEntity.Create(verification);
-        events.Raise(new PaymentVerificationRecordedDomainEvent(verification));
+        events.Raise(verification switch
+        {
+            SuccessfulPaymentVerification succeeded =>
+                (IDomainEvent)new VerifyPaymentSucceeded(succeeded.ApplicationId, succeeded.ProviderTransactionId),
+            FailedPaymentVerification failed =>
+                new VerifyPaymentFailed(
+                    failed.ApplicationId,
+                    failed.ProviderTransactionId,
+                    new VerifyPaymentError(failed.Failure.Code, failed.Failure.Message)),
+            _ => throw new ArgumentOutOfRangeException(nameof(verification), verification, null)
+        });
     }
 
     internal void RecordArtistESignature(Signature eSignature, string termsFingerprint)

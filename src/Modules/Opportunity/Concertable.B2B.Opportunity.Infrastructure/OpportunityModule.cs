@@ -1,5 +1,3 @@
-using Concertable.B2B.Opportunity.Contracts.Errors;
-
 namespace Concertable.B2B.Opportunity.Infrastructure;
 
 internal sealed class OpportunityModule : IOpportunityModule
@@ -25,12 +23,6 @@ internal sealed class OpportunityModule : IOpportunityModule
         int opportunityId,
         CancellationToken ct = default) =>
         service.GetOpenAsync(opportunityId, ct);
-
-    public Task<UnitResult<FillOpportunityError>> FillAsync(
-        int opportunityId,
-        Guid venueTenantId,
-        CancellationToken ct = default) =>
-        service.FillAsync(opportunityId, venueTenantId, ct);
 
     public Task<IReadOnlySet<int>> GetUpcomingIdsAsync(
         IReadOnlyCollection<int> opportunityIds,

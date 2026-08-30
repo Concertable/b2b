@@ -69,8 +69,8 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, VerifyPaymentFailedProcessor>();
             services.AddScoped<IDomainEventHandler<ApplicationCounterpartyNotifiedDomainEvent>,
                 ApplicationCounterpartyNotifiedDomainEventHandler>();
-            services.AddScoped<IDomainEventHandler<PaymentVerificationRecordedDomainEvent>,
-                PaymentVerificationRecordedDomainEventHandler>();
+            services.AddScoped<IDomainEventHandler<ApplicationAcceptedDomainEvent>,
+                ApplicationAcceptedDomainEventHandler>();
             services.AddScoped<ApplicationCancellationIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<BookingCancelledEvent>>(provider =>
                 provider.GetRequiredService<ApplicationCancellationIntegrationEventHandler>());

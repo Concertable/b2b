@@ -9,5 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Messaging.Contracts" />
   </ItemGroup>
 </Project>

@@ -39,7 +39,7 @@ public sealed partial class LifecycleStateOwnershipTests
     [Fact]
     public void LifecycleModules_DoNotBypassAggregateStateTransitionsWithBulkUpdates()
     {
-        var violations = new[] { "Application", "Booking", "Concert" }
+        var violations = new[] { "Application", "Booking", "Concert", "Opportunity" }
             .Select(module => new DirectoryInfo(Path.Combine(
                 FindB2BRoot().FullName,
                 "src",

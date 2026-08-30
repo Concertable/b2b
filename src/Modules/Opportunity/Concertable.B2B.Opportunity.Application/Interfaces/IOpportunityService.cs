@@ -1,6 +1,5 @@
 using Concertable.B2B.Opportunity.Application.Errors;
 using Concertable.B2B.Opportunity.Application.Requests;
-using Concertable.B2B.Opportunity.Contracts.Errors;
 using Concertable.Contracts;
 using Reunion;
 
@@ -16,10 +15,6 @@ internal interface IOpportunityService
         CancellationToken ct = default);
     Task<Option<OpportunityDto>> GetOpenAsync(
         int opportunityId,
-        CancellationToken ct = default);
-    Task<UnitResult<FillOpportunityError>> FillAsync(
-        int opportunityId,
-        Guid venueTenantId,
         CancellationToken ct = default);
     Task<IReadOnlySet<int>> GetUpcomingIdsAsync(
         IReadOnlyCollection<int> opportunityIds,

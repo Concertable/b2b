@@ -46,7 +46,11 @@ public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opp
         this.genres = genres.ToHashSet();
     }
 
-    public void MarkFilled() => State = OpportunityState.Filled;
+    public void MarkFilled()
+    {
+        if (State == OpportunityState.Open)
+            State = OpportunityState.Filled;
+    }
     public void Withdraw() => State = OpportunityState.Withdrawn;
     public void Reopen()
     {

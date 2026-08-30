@@ -1,6 +1,5 @@
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
-using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.ValueObjects;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Kernel;
@@ -18,7 +17,7 @@ public sealed class VerifyPaymentTests
         Assert.Throws<ArgumentException>(() => new VerifyPaymentError("card_declined", " "));
 
     [Fact]
-    public void RecordPaymentVerification_Success_StoresAndRaisesCaseSpecificFact()
+    public void RecordPaymentVerification_Success_StoresAndRaisesVerifyPaymentSucceeded()
     {
         var application = CreateApplication();
         var payment = new SuccessfulPaymentVerification(application.Id, "seti_123");
@@ -26,8 +25,28 @@ public sealed class VerifyPaymentTests
         application.RecordPaymentVerification(payment);
 
         Assert.Equal(payment, application.Verification);
-        var raised = Assert.IsType<PaymentVerificationRecordedDomainEvent>(Assert.Single(application.DomainEvents));
-        Assert.Equal(payment, raised.Verification);
+        var raised = Assert.IsType<VerifyPaymentSucceeded>(Assert.Single(application.DomainEvents));
+        Assert.Equal(payment.ApplicationId, raised.ApplicationId);
+        Assert.Equal(payment.ProviderTransactionId, raised.ProviderTransactionId);
+    }
+
+    [Fact]
+    public void RecordPaymentVerification_Failure_StoresAndRaisesVerifyPaymentFailed()
+    {
+        var application = CreateApplication();
+        var payment = new FailedPaymentVerification(
+            application.Id,
+            "seti_123",
+            new PaymentVerificationFailure("card_declined", "Declined"));
+
+        application.RecordPaymentVerification(payment);
+
+        Assert.Equal(payment, application.Verification);
+        var raised = Assert.IsType<VerifyPaymentFailed>(Assert.Single(application.DomainEvents));
+        Assert.Equal(payment.ApplicationId, raised.ApplicationId);
+        Assert.Equal(payment.ProviderTransactionId, raised.ProviderTransactionId);
+        Assert.Equal(payment.Failure.Code, raised.Error.Code);
+        Assert.Equal(payment.Failure.Message, raised.Error.Message);
     }
 
     [Fact]

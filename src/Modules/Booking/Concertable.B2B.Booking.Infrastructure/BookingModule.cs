@@ -53,35 +53,4 @@ internal sealed class BookingModule : IBookingModule
         Guid artistTenantId,
         CancellationToken ct = default) =>
         bookingService.GetArtistAwaitingCheckoutCountAsync(artistTenantId, ct);
-
-    public async Task RecordPaymentVerificationAsync(
-        BookingPaymentVerification verification,
-        CancellationToken ct = default)
-    {
-        var bookingId = await bookingService.GetIdByApplicationIdAsync(verification.ApplicationId, ct);
-        if (bookingId is null)
-            return;
-
-        switch (verification)
-        {
-            case SuccessfulBookingPaymentVerification succeeded:
-                await bookingService.RecordSucceededAsync(
-                    bookingId.Value,
-                    new VerifyPaymentSucceededEvidence(succeeded.ApplicationId, succeeded.ProviderTransactionId),
-                    ct);
-                return;
-            case FailedBookingPaymentVerification failed:
-                await bookingService.RecordFailedAsync(
-                    bookingId.Value,
-                    new VerifyPaymentFailedEvidence(
-                        failed.ApplicationId,
-                        failed.ProviderTransactionId,
-                        new FinancialOperationError(failed.Code, failed.Message)),
-                    ct);
-                return;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(verification), verification, null);
-        }
-    }
-
 }

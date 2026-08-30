@@ -19,9 +19,6 @@ public interface IBookingModule
     Task<int> GetArtistAwaitingCheckoutCountAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
-    Task RecordPaymentVerificationAsync(
-        BookingPaymentVerification verification,
-        CancellationToken ct = default);
 }
 
 public sealed record BookingSummary(
@@ -33,16 +30,6 @@ public sealed record BookingSummary(
     string? FailureMessage);
 
 public sealed record ContractPdf(byte[] Content, string FileName, string ContentType);
-
-public abstract record BookingPaymentVerification(int ApplicationId, string ProviderTransactionId);
-public sealed record SuccessfulBookingPaymentVerification(int ApplicationId, string ProviderTransactionId)
-    : BookingPaymentVerification(ApplicationId, ProviderTransactionId);
-public sealed record FailedBookingPaymentVerification(
-    int ApplicationId,
-    string ProviderTransactionId,
-    string Code,
-    string Message)
-    : BookingPaymentVerification(ApplicationId, ProviderTransactionId);
 
 public enum BookingStatus
 {

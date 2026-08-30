@@ -373,6 +373,43 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Accept_WhenTwoApplicationsRaceForOneOpportunity_AcceptsExactlyOneAndRejectsTheOther()
+    {
+        var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
+        var loserApplicationId = fixture.SeedState.FlatFeeApp.Id;
+        var secondArtist = fixture.CreateClient(fixture.SeedState.ArtistManagers[1]);
+        var apply = await secondArtist.PostAsync(
+            $"/api/application/{opportunityId}",
+            new { eSignature = new { signatoryName = "Second Artist" } });
+        await apply.ShouldBe(HttpStatusCode.Created);
+        var winnerApplication = await apply.Content.ReadAsync<JsonElement>();
+        var winnerApplicationId = winnerApplication.GetProperty("id").GetInt32();
+
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        fixture.ArmApplicationConflict(async () =>
+        {
+            var winner = await competitor.PostAsync(
+                $"/api/application/{winnerApplicationId}/accept",
+                new { eSignature = new { signatoryName = "Test Signatory" } });
+            await winner.ShouldBe(HttpStatusCode.NoContent);
+        });
+
+        var accept = await venue.PostAsync(
+            $"/api/application/{loserApplicationId}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        Assert.Equal(HttpStatusCode.Conflict, accept.StatusCode);
+        Assert.Equal(
+            ApplicationState.Accepted,
+            (await fixture.Applications.SingleAsync(value => value.Id == winnerApplicationId)).State);
+        Assert.Equal(
+            ApplicationState.Rejected,
+            (await fixture.Applications.SingleAsync(value => value.Id == loserApplicationId)).State);
+    }
+
+    [Fact]
     public async Task Accept_ShouldReturn403_WhenNotVenueManager()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);

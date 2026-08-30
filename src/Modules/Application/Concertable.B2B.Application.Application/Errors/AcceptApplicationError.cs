@@ -14,8 +14,8 @@ internal abstract partial record AcceptApplicationError : IError
             $"Cannot accept an application from {error.Current}."),
         TermsChanged => ErrorDefinition.Conflict<TermsChanged>(
             "The deal terms have changed since the artist applied. The artist must re-apply before acceptance."),
-        OpportunityUnavailable(var opportunityId) => ErrorDefinition.Conflict<OpportunityUnavailable>(
-            $"Opportunity {opportunityId} is no longer available."),
+        AlreadyAccepted => ErrorDefinition.Conflict<AlreadyAccepted>(
+            "Another application for this opportunity has already been accepted."),
         PaymentMethodRequired => ErrorDefinition.Invalid<PaymentMethodRequired>(
             "This deal requires a payment method at acceptance."),
         UnsupportedDeal(var dealType) => ErrorDefinition.Invalid<UnsupportedDeal>(
@@ -30,8 +30,8 @@ internal abstract partial record AcceptApplicationError : IError
     [ErrorCode("application.accept.terms_changed")]
     public partial record TermsChanged;
 
-    [ErrorCode("application.accept.opportunity_unavailable")]
-    public partial record OpportunityUnavailable(int OpportunityId);
+    [ErrorCode("application.accept.duplicate")]
+    public partial record AlreadyAccepted;
 
     [ErrorCode("application.accept.payment_method_required")]
     public partial record PaymentMethodRequired;

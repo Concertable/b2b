@@ -1,6 +1,7 @@
 using System.Net;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -27,6 +28,9 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
             .IsUnique()
             .HasFilter("[AcceptanceOperationId] IS NOT NULL");
         builder.HasIndex(application => new { application.OpportunityId, application.ArtistId }).IsUnique();
+        builder.HasIndex(application => application.OpportunityId)
+            .IsUnique()
+            .HasFilter($"[State] = {(int)ApplicationState.Accepted}");
         builder.ComplexProperty(application => application.ArtistESignature, ConfigureSignature);
         builder.HasDiscriminator<string>("Discriminator")
             .HasValue<StandardApplication>(nameof(StandardApplication))

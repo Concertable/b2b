@@ -1,4 +1,3 @@
-using Concertable.B2B.Opportunity.Contracts.Errors;
 using Reunion;
 using Concertable.Contracts.Enums;
 
@@ -11,10 +10,6 @@ public interface IOpportunityModule
         IReadOnlyCollection<int> opportunityIds,
         CancellationToken ct = default);
     Task<Option<OpportunityDto>> GetOpenAsync(int opportunityId, CancellationToken ct = default);
-    Task<UnitResult<FillOpportunityError>> FillAsync(
-        int opportunityId,
-        Guid venueTenantId,
-        CancellationToken ct = default);
     Task<IReadOnlySet<int>> GetUpcomingIdsAsync(
         IReadOnlyCollection<int> opportunityIds,
         CancellationToken ct = default);

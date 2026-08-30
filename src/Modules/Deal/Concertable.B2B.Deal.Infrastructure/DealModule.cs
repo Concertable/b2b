@@ -28,7 +28,4 @@ internal sealed class DealModule : IDealModule
 
     public Task<UnitResult<UpdateDealError>> UpdateAsync(int dealId, DealDto deal, CancellationToken ct = default)
         => dealService.UpdateAsync(dealId, deal, ct);
-
-    public Task DeleteAsync(int dealId, CancellationToken ct = default)
-        => dealService.DeleteAsync(dealId, ct);
 }

@@ -1,6 +1,5 @@
 using Concertable.B2B.Opportunity.Application.Errors;
 using Concertable.B2B.Opportunity.Application.Mappers;
-using Concertable.B2B.Opportunity.Contracts.Errors;
 using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Tenant.Contracts;
@@ -88,17 +87,6 @@ internal sealed class OpportunityService : IOpportunityService
         (await readRepository.GetOpenByIdAsync(opportunityId, ct))
             .ToOption()
             .Map(opportunity => opportunity.ToDto());
-
-    public async Task<UnitResult<FillOpportunityError>> FillAsync(
-        int opportunityId,
-        Guid venueTenantId,
-        CancellationToken ct = default)
-    {
-        if (!await repository.TryFillAsync(opportunityId, venueTenantId, ct))
-            return new FillOpportunityError.Unavailable(opportunityId);
-
-        return new Success();
-    }
 
     public Task<IReadOnlySet<int>> GetUpcomingIdsAsync(
         IReadOnlyCollection<int> opportunityIds,
