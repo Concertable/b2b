@@ -11,6 +11,7 @@
     "b2b/shared"
   ],
   "scripts": {
+    "build:packages": "npm -w @concertable/b2b run build && npm -w @concertable/web-b2b run build",
     "build:venue": "npm -w @concertable/web-venue run build",
     "build:artist": "npm -w @concertable/web-artist run build",
     "build:business": "npm -w @concertable/web-business run build",
