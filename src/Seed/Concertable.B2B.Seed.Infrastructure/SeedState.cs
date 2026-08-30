@@ -535,7 +535,7 @@ public sealed class SeedState
         var opportunityById = opps.ToDictionary(opportunity => opportunity.Id);
         var dealById = deals.ToDictionary(deal => deal.Id);
         ActiveVenueHireOpportunity = opps
-            .Where(opportunity => opportunity.Period.End > now)
+            .Where(opportunity => opportunity.Period.Start >= now)
             .Where(opportunity => dealById[opportunity.DealId] is VenueHireDealEntity)
             .Where(opportunity => Applications.All(application =>
                 application.OpportunityId != opportunity.Id))

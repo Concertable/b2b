@@ -50,28 +50,26 @@ internal sealed class VenueDashboardService : IVenueDashboardService
     {
         var tenantId = tenantContext.GetTenantId();
         var period = DashboardReportingPeriod.From(timeProvider.GetUtcNow().UtcDateTime);
-        var pendingApplicationsTask = applicationModule.GetVenuePendingCountAsync(tenantId, ct);
-        var openOpportunitiesTask = opportunityModule.GetOpenCountAsync(tenantId, ct);
-        var concertCountsTask = concertModule.GetVenueDashboardCountsAsync(tenantId, ct);
-        var revenueTask = period.HasElapsedTime
+        var pendingApplications = await applicationModule.GetVenuePendingCountAsync(tenantId, ct);
+        var openOpportunities = await opportunityModule.GetOpenCountAsync(tenantId, ct);
+        var concertCounts = await concertModule.GetVenueDashboardCountsAsync(tenantId, ct);
+        if (!concertCounts.TryGetValue(out var counts))
+            return null;
+
+        var revenue = period.HasElapsedTime
             ? paymentReportingClient.GetTicketRevenueAsync(
                 tenantId,
                 new DateRange(period.MonthStart, period.Now),
                 ct)
             : Task.FromResult(Money.Gbp(0m));
 
-        await Task.WhenAll(pendingApplicationsTask, openOpportunitiesTask, concertCountsTask, revenueTask);
-        var concertCounts = await concertCountsTask;
-        if (!concertCounts.TryGetValue(out var counts))
-            return null;
-
         return new VenueDashboardKpis(
-            await pendingApplicationsTask,
+            pendingApplications,
             null,
-            await openOpportunitiesTask,
+            openOpportunities,
             counts.UpcomingConcerts,
             counts.AwaitingDoorRevenue,
-            (await revenueTask).ToMinorUnits(),
+            (await revenue).ToMinorUnits(),
             null);
     }
 
