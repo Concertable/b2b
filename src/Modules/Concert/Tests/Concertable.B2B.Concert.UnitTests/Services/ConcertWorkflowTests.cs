@@ -9,6 +9,7 @@ using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.Kernel;
 using Concertable.Kernel.ValueObjects;
 using Moq;
+using Reunion;
 
 namespace Concertable.B2B.Concert.UnitTests.Services;
 
