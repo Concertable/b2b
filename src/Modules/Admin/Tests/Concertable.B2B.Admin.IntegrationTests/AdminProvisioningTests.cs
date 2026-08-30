@@ -98,12 +98,11 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
     public async Task Login_BootstrapEmail_GrantsAdminProfile_WhenNoAdminExistsYet()
     {
         await fixture.ClearAdminsAsync();
-        var newUserId = Guid.NewGuid();
-        await RegisterAsync(new CredentialRegisteredEvent(newUserId, SeedUsers.AdminEmail, ClientIds.Admin));
+        var bootstrapUser = fixture.SeedState.Admin;
 
-        await fixture.LogInAsync(newUserId, SeedUsers.AdminEmail);
+        await fixture.LogInAsync(bootstrapUser.Id, SeedUsers.AdminEmail);
 
-        Assert.True(await fixture.IsAdminAsync(newUserId));
+        Assert.True(await fixture.IsAdminAsync(bootstrapUser.Id));
     }
 
     [Fact]
@@ -121,11 +120,10 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
         await fixture.LogInAsync(existingAdminUserId, existingAdminEmail);
         Assert.True(await fixture.IsAdminAsync(existingAdminUserId));
 
-        var newUserId = Guid.NewGuid();
-        await RegisterAsync(new CredentialRegisteredEvent(newUserId, SeedUsers.AdminEmail, ClientIds.Admin));
-        await fixture.LogInAsync(newUserId, SeedUsers.AdminEmail);
+        var bootstrapUser = fixture.SeedState.Admin;
+        await fixture.LogInAsync(bootstrapUser.Id, SeedUsers.AdminEmail);
 
-        Assert.False(await fixture.IsAdminAsync(newUserId));
+        Assert.False(await fixture.IsAdminAsync(bootstrapUser.Id));
     }
 
     [Fact]
