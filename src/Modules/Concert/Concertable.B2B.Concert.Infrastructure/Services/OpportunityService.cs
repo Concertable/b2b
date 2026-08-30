@@ -144,7 +144,7 @@ internal sealed class OpportunityService : IOpportunityService
     }
 
     public Task<Result<OpportunityDto, OpportunityError>> GetByIdAsync(int id) =>
-        repository.GetByIdAsync(id)
+        repository.GetWithVenueByIdAsync(id)
             .ToOption()
             .OrFailure(() => (OpportunityError)new OpportunityError.NotFound(id))
             .MapAsync(mapper.ToDtoAsync);
