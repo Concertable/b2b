@@ -145,14 +145,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         application.NotifyCounterparty(ApplicationNotification.Applied);
 
         await applicationRepository.AddAsync(application);
-        try
-        {
-            await applicationRepository.SaveChangesAsync();
-        }
-        catch (DbUpdateException exception) when (exception.IsDuplicateKey())
-        {
+        if (!await applicationRepository.TrySaveChangesAsync(ct))
             return new ApplyApplicationError.AlreadyApplied();
-        }
 
         await notifier.AppliedAsync(application.Id);
         return await mapper.ToDtoAsync(application);
