@@ -145,8 +145,14 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         application.NotifyCounterparty(ApplicationNotification.Applied);
 
         await applicationRepository.AddAsync(application);
-        if (!await applicationRepository.TrySaveChangesAsync(ct))
-            return new ApplyApplicationError.AlreadyApplied();
+        if (!await applicationRepository.TrySaveChangesAsync())
+        {
+            if (await applicationRepository.ExistsForOpportunityAndArtistTenantAsync(
+                    opportunityId, artist.TenantId))
+                return new ApplyApplicationError.AlreadyApplied();
+
+            throw new InvalidOperationException("Application save failed without creating an application.");
+        }
 
         await notifier.AppliedAsync(application.Id);
         return await mapper.ToDtoAsync(application);
@@ -232,7 +238,13 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
         if (!await applicationRepository.TrySaveChangesAsync(ct))
-            return new AcceptApplicationError.AlreadyAccepted();
+        {
+            var applications = await applicationRepository.GetByOpportunityIdAsync(application.OpportunityId, ct);
+            if (applications.Any(candidate => candidate.State == ApplicationState.Accepted))
+                return new AcceptApplicationError.AlreadyAccepted();
+
+            throw new InvalidOperationException("Application acceptance save failed without an accepted application.");
+        }
 
         var rejectedApplicationIds = await applicationRepository.RejectAllExceptAsync(
             application.OpportunityId, application.Id, ct);
