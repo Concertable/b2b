@@ -10,7 +10,6 @@ import { useVenueNotifications } from "../../features/notifications";
 import { requireVenue } from "../../features/venue";
 import { AppLayout } from "@concertable/web/components/AppLayout";
 import type { ProfileMenuItem } from "@concertable/web/components/ProfileMenu";
-import { Mailbox } from "@concertable/web/features/messaging";
 
 const links = [
   { label: "Dashboard", to: "/" },
@@ -33,7 +32,6 @@ function VenueLayout() {
       links={links}
       profileItems={profileItems}
       headerSlot={<TenantSwitcher tenantType="venue" />}
-      messagingSlot={<Mailbox />}
     />
   );
 }

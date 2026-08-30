@@ -27,7 +27,13 @@ function AdminProfileSlot() {
 function AdminLayout() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar links={links} profileSlot={<AdminProfileSlot />} />
+      <Navbar
+        links={links}
+        showSearch={false}
+        showMailbox={false}
+        profileSlot={<AdminProfileSlot />}
+        onHeightChange={() => {}}
+      />
       <main className="flex flex-1 flex-col p-6">
         <Outlet />
       </main>
