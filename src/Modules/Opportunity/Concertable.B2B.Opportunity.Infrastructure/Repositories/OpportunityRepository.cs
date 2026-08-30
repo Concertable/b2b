@@ -41,6 +41,7 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
             .Where(opportunity => opportunity.TenantId == venueTenantId)
             .WhereActive(timeProvider.GetUtcNow().UtcDateTime)
             .OrderBy(opportunity => opportunity.Period.Start)
+            .Take(5)
             .ToListAsync(ct);
 
 }
