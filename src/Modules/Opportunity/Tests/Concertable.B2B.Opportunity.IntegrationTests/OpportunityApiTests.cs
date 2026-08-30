@@ -189,7 +189,14 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var result = await response.Content.ReadAsync<Pagination<OpportunityResponse>>();
         Assert.NotNull(result);
-        Assert.Contains(result.Data, o => o.Id == fixture.SeedState.ActiveVenueHireOpportunity.Id);
+        var expected = fixture.SeedState.Opportunities
+            .Where(item => item.VenueId == fixture.SeedState.Venue.Id)
+            .Where(item => item.State == OpportunityState.Open)
+            .Where(item => item.Period.Start >= fixture.SeedNow)
+            .OrderBy(item => item.Period.Start)
+            .Take(5)
+            .First();
+        Assert.Contains(result.Data, o => o.Id == expected.Id);
     }
 
     #endregion

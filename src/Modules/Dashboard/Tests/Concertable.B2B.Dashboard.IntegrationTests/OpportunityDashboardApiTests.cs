@@ -30,9 +30,17 @@ public sealed class OpportunityDashboardApiTests : IAsyncLifetime
         var metrics = await response.Content
             .ReadAsync<IReadOnlyList<OpportunityApplicationMetricsBoundaryResponse>>();
         Assert.NotNull(metrics);
-        var opportunity = fixture.SeedState.ActiveVenueHireOpportunity;
+        var opportunity = fixture.SeedState.Opportunities
+            .Where(item => item.VenueId == fixture.SeedState.Venue.Id)
+            .Where(item => item.State == OpportunityState.Open)
+            .Where(item => item.Period.Start >= fixture.SeedNow)
+            .OrderBy(item => item.Period.Start)
+            .Take(5)
+            .First();
         var metric = Assert.Single(metrics, item => item.Opportunity.Id == opportunity.Id);
-        Assert.Equal(1, metric.ApplicationCount);
+        Assert.Equal(
+            fixture.SeedState.Applications.Count(item => item.OpportunityId == opportunity.Id),
+            metric.ApplicationCount);
         Assert.Equal(
             Math.Max(0, (opportunity.Period.Start.Date.AddDays(-7) - fixture.SeedNow.Date).Days),
             metric.DaysUntilDeadline);
