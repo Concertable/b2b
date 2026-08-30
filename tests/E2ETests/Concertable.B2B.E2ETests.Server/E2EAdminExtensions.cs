@@ -33,7 +33,9 @@ public static class E2EAdminExtensions
                 adminKey,
                 configuration.GetConnectionString("B2BDb")
                     ?? throw new InvalidOperationException("Connection string 'B2BDb' is required by the B2B E2E host.")));
+            services.AddHttpContextAccessor();
             services.AddScoped<B2BDatabaseResetter>();
+            services.AddScoped<B2BHostInitializer>();
             return services;
         }
     }
@@ -47,7 +49,7 @@ public static class E2EAdminExtensions
                 .AddEndpointFilter(AuthorizeAsync);
 
             group.MapPost("/reset", ResetAsync);
-            group.MapGet("/seed-state", GetSeedState);
+            group.MapGet("/seed-state", GetSeedStateAsync);
             group.MapGet("/applications/{applicationId:int}/booking-id", GetBookingIdAsync);
             group.MapGet("/applications/{applicationId:int}/state", GetApplicationStateAsync);
             group.MapGet("/venues/{venueId:int}/opportunities/newest-id", GetNewestOpportunityIdAsync);
@@ -71,7 +73,7 @@ public static class E2EAdminExtensions
 
     private static async Task<IResult> ResetAsync(
         B2BDatabaseResetter resetter,
-        IDbInitializer initializer,
+        B2BHostInitializer initializer,
         CancellationToken cancellationToken)
     {
         await resetter.ResetAsync(cancellationToken);
@@ -79,38 +81,55 @@ public static class E2EAdminExtensions
         return Results.NoContent();
     }
 
-    private static IResult GetSeedState(SeedState seed) => Results.Ok(new
+    private static async Task<IResult> GetSeedStateAsync(
+        SeedState seed,
+        IDbConnection connection)
     {
-        ArtistManager1 = User(seed.ArtistManager1),
-        VenueManager1 = User(seed.VenueManager1),
-        VenueManager2 = User(seed.VenueManager2),
-        VenueManager3 = User(seed.VenueManager3),
-        Tenants = seed.Tenants.Select(tenant => new { tenant.Id, tenant.CreatedByUserId }),
-        Venue = new { seed.Venue.Id },
-        FreshVenueHireOpportunity = new { seed.FreshVenueHireOpportunity.Id, seed.FreshVenueHireOpportunity.VenueId },
-        FlatFeeApp = new { seed.FlatFeeApp.Id },
-        DoorSplitApp = new { seed.DoorSplitApp.Id },
-        VersusApp = new { seed.VersusApp.Id },
-        VenueHireApp = new { seed.VenueHireApp.Id },
-        PastFlatFeeApp = new { seed.PastFlatFeeApp.Id },
-        PastVenueHireApp = new { seed.PastVenueHireApp.Id },
-        PastDoorSplitBooking = Booking(seed.PastDoorSplitBooking),
-        PastVersusBooking = Booking(seed.PastVersusBooking),
-    });
+        return Results.Ok(new
+        {
+            ArtistManager1 = User(seed.ArtistManager1),
+            VenueManager1 = User(seed.VenueManager1),
+            VenueManager2 = User(seed.VenueManager2),
+            VenueManager3 = User(seed.VenueManager3),
+            Tenants = seed.Tenants.Select(tenant => new { tenant.Id, tenant.CreatedByUserId }),
+            Venue = new { seed.Venue.Id },
+            FreshVenueHireOpportunity = new { seed.FreshVenueHireOpportunity.Id, seed.FreshVenueHireOpportunity.VenueId },
+            FlatFeeApp = new { Id = await GetApplicationIdAsync(connection, seed.FlatFeeApp) },
+            DoorSplitApp = new { Id = await GetApplicationIdAsync(connection, seed.DoorSplitApp) },
+            VersusApp = new { Id = await GetApplicationIdAsync(connection, seed.VersusApp) },
+            VenueHireApp = new { Id = await GetApplicationIdAsync(connection, seed.VenueHireApp) },
+            PastFlatFeeApp = new { Id = await GetApplicationIdAsync(connection, seed.PastFlatFeeApp) },
+            PastVenueHireApp = new { Id = await GetApplicationIdAsync(connection, seed.PastVenueHireApp) },
+            PastDoorSplitBooking = Booking(seed, seed.PastDoorSplitBooking),
+            PastVersusBooking = Booking(seed, seed.PastVersusBooking),
+        });
+    }
 
     private static object User(Concertable.B2B.User.Domain.Entities.UserEntity user) =>
         new { user.Id, user.Email };
 
-    private static object Booking(Concertable.B2B.Concert.Domain.Entities.BookingEntity booking) =>
-        new
+    private static Task<int> GetApplicationIdAsync(
+        IDbConnection connection,
+        Concertable.B2B.Concert.Domain.Entities.ApplicationEntity application) =>
+        connection.QuerySingleAsync<int>(
+            "SELECT Id FROM concert.Applications WHERE ArtistId = @ArtistId AND OpportunityId = @OpportunityId",
+            new { application.ArtistId, application.OpportunityId });
+
+    private static object Booking(
+        SeedState seed,
+        Concertable.B2B.Concert.Domain.Entities.BookingEntity booking)
+    {
+        var concert = seed.Concerts.Single(concert => concert.BookingId == booking.Id);
+        return new
         {
             booking.Id,
             Concert = new
             {
-                booking.Concert!.Id,
-                booking.Concert.TicketsSold,
+                concert.Id,
+                concert.TicketsSold,
             },
         };
+    }
 
     private static async Task<IResult> GetBookingIdAsync(
         int applicationId,
@@ -147,6 +166,35 @@ public static class E2EAdminExtensions
     private sealed record DeclareDoorRevenueRequest
     {
         public decimal DoorRevenue { get; init; }
+    }
+}
+
+internal sealed class B2BHostInitializer
+{
+    private readonly IDbInitializer initializer;
+    private readonly IHttpContextAccessor httpContextAccessor;
+
+    public B2BHostInitializer(
+        IDbInitializer initializer,
+        IHttpContextAccessor httpContextAccessor)
+    {
+        this.initializer = initializer;
+        this.httpContextAccessor = httpContextAccessor;
+    }
+
+    public async Task InitializeAsync()
+    {
+        var requestContext = httpContextAccessor.HttpContext;
+        httpContextAccessor.HttpContext = null;
+
+        try
+        {
+            await initializer.InitializeAsync();
+        }
+        finally
+        {
+            httpContextAccessor.HttpContext = requestContext;
+        }
     }
 }
 
