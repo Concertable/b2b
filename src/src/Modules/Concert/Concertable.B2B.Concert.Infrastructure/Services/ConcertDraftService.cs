@@ -25,7 +25,7 @@ internal sealed class ConcertDraftService : IConcertDraftService
     {
         logger.CreatingConcertDraft(bookingId);
 
-        var bookingConcert = await bookingRepository.GetByIdAsync(bookingId);
+        var bookingConcert = await bookingRepository.GetWithApplicationAndConcertByIdAsync(bookingId);
         if (bookingConcert is null)
             return new CreateConcertDraftError.BookingNotFound(bookingId);
 

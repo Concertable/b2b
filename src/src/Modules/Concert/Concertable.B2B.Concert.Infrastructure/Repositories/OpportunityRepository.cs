@@ -24,11 +24,6 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
             .ActiveForVenue(venueId, timeProvider.GetUtcNow())
             .ToListAsync();
 
-    public override Task<OpportunityEntity?> GetByIdAsync(int id, CancellationToken ct = default) =>
-        context.Opportunities
-            .Include(o => o.Venue)
-            .FirstOrDefaultAsync(o => o.Id == id, ct);
-
     public async Task<IReadOnlyList<OpportunityApplicationProjection>> GetOpenWithApplicationCountsByVenueTenantIdAsync(
         Guid venueTenantId) =>
         await context.Opportunities
