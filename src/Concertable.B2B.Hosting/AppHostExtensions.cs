@@ -8,6 +8,36 @@ namespace Concertable.B2B.Hosting;
 
 public static class AppHostExtensions
 {
+    public static IResourceBuilder<ContainerResource> AddB2BWeb(
+        this IDistributedApplicationBuilder builder,
+        string image,
+        string digest,
+        IResourceBuilder<SqlServerDatabaseResource> sql,
+        IResourceBuilder<ProjectResource> auth,
+        IResourceBuilder<AzureStorageResource> storage,
+        IResourceBuilder<AzureBlobStorageResource> blobs,
+        IResourceBuilder<AzureServiceBusResource> asb,
+        IResourceBuilder<ProjectResource> paymentWeb)
+    {
+        var b2bSecret = builder.Configuration["ServiceAuth:B2BClientSecret"];
+        return builder.AddContainerImage(B2BConstants.WebResource, image, digest)
+                      .WithReference(sql)
+                      .WaitFor(sql)
+                      .WithReference(auth)
+                      .WaitFor(auth)
+                      .WithReference(blobs)
+                      .WaitFor(storage)
+                      .WithReference(asb)
+                      .WaitFor(asb)
+                      .WithReference(paymentWeb)
+                      .WaitFor(paymentWeb)
+                      .WithEnvironment("Auth__Authority", auth.GetEndpoint("https"))
+                      .WithLocalSpaCorsOrigins(LocalSpaSurfaces.B2B)
+                      .WithEnvironment(AzureServiceBusOptions.ServiceNameEnvVar, B2BConstants.ServiceName)
+                      .WithEnvironment("ServiceAuth__ClientId", "concertable-b2b")
+                      .WithOptionalEnvironment("ServiceAuth__ClientSecret", b2bSecret);
+    }
+
     public static IResourceBuilder<ProjectResource> AddB2BWeb<TProject>(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<SqlServerDatabaseResource> sql,
@@ -71,9 +101,46 @@ public static class AppHostExtensions
                       .WaitFor(asb);
     }
 
-    extension(IResourceBuilder<ProjectResource> resource)
+    public static IResourceBuilder<ContainerResource> AddB2BWorkers(
+        this IDistributedApplicationBuilder builder,
+        string image,
+        string digest,
+        IResourceBuilder<SqlServerDatabaseResource> sql,
+        IResourceBuilder<ProjectResource>? paymentWeb = null,
+        IResourceBuilder<ProjectResource>? auth = null)
     {
-        public IResourceBuilder<ProjectResource> WithLocalSpaCorsOrigins(
+        var workers = builder.AddContainerImage(B2BConstants.WorkersResource, image, digest)
+                             .WithReference(sql)
+                             .WaitFor(sql);
+
+        if (paymentWeb is not null)
+            workers = workers.WithReference(paymentWeb).WaitFor(paymentWeb);
+
+        if (auth is not null)
+            workers = workers.WithReference(auth)
+                             .WaitFor(auth)
+                             .WithEnvironment("Auth__Authority", auth.GetEndpoint("https"))
+                             .WithEnvironment("ServiceAuth__ClientId", "concertable-b2b")
+                             .WithOptionalEnvironment("ServiceAuth__ClientSecret", builder.Configuration["ServiceAuth:B2BClientSecret"]);
+
+        return workers;
+    }
+
+    public static IResourceBuilder<ContainerResource> AddB2BSeedingSimulator(
+        this IDistributedApplicationBuilder builder,
+        string image,
+        string digest,
+        IResourceBuilder<AzureServiceBusResource> asb)
+    {
+        return builder.AddContainerImage(B2BConstants.SeedingSimulatorResource, image, digest)
+                      .WithReference(asb)
+                      .WaitFor(asb);
+    }
+
+    extension<T>(IResourceBuilder<T> resource)
+        where T : IResourceWithEnvironment
+    {
+        public IResourceBuilder<T> WithLocalSpaCorsOrigins(
             IReadOnlyList<LocalSpaSurface> surfaces)
         {
             for (var index = 0; index < surfaces.Count; index++)
