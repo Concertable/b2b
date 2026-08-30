@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Concertable.B2B.Seed.Simulator</RootNamespace>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+    <ContainerRepository>concertable/b2b-seeding-simulator</ContainerRepository>
   </PropertyGroup>
 
   <ItemGroup>
