@@ -14,6 +14,7 @@ internal static class OpportunityMappers
             opportunity.DealId,
             opportunity.Period.Start,
             opportunity.Period.End,
-            opportunity.Genres.ToHashSet());
+            opportunity.Genres.ToHashSet(),
+            opportunity.State == OpportunityState.Open);
     }
 }

@@ -46,6 +46,9 @@ internal sealed class ApplicationValidator : IApplicationValidator
         if (opportunity.VenueTenantId != tenantContext.TenantId)
             errors.Add("You do not own this concert opportunity");
 
+        if (!opportunity.IsOpen)
+            errors.Add("This concert opportunity is no longer open");
+
         if (opportunity.StartDate < timeProvider.GetUtcNow())
             errors.Add("This concert opportunity has already passed");
 

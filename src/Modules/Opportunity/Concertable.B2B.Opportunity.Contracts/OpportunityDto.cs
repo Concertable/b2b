@@ -9,4 +9,5 @@ public sealed record OpportunityDto(
     int DealId,
     DateTime StartDate,
     DateTime EndDate,
-    IReadOnlySet<Genre> Genres);
+    IReadOnlySet<Genre> Genres,
+    bool IsOpen);

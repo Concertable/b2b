@@ -245,6 +245,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         }
         catch (DbUpdateException exception) when (exception.IsDuplicateKey())
         {
+            exception.DiscardFailedChanges();
             return new AcceptApplicationError.AlreadyAccepted();
         }
 
