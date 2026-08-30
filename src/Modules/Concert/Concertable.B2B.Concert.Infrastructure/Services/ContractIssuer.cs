@@ -48,8 +48,7 @@ internal sealed class ContractIssuer : IContractIssuer
         var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(application.Id)
             .OrNotFound(DisplayNames.Application);
         var period = await opportunityRepository.GetPeriodByIdAsync(application.OpportunityId)
-            ?? throw new InvalidOperationException(
-                $"Application {application.Id} references missing opportunity {application.OpportunityId}.");
+            .OrNotFound(DisplayNames.Opportunity);
 
         var contract = ContractEntity.Create(
             booking,
