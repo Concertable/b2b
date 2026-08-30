@@ -102,7 +102,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         await confirmFactory
             .Create(application.DealType)
             .ConfirmAsync(application, booking, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await bookingRepository.SaveChangesAsync(ct);
         return booking.ToDto();
     }
 
@@ -148,7 +148,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
         if (booking.RecordFinancialConfirmation(operation.ProviderReferenceId).TryGetError(out var transitionError))
             throw new InvalidOperationException($"Booking cannot confirm from {transitionError.Current}.");
-        await unitOfWork.SaveChangesAsync(ct);
+        await bookingRepository.SaveChangesAsync(ct);
     }
 
     private async Task RecordFailedCoreAsync(
@@ -168,7 +168,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         {
             if (booking.Cancel().TryGetError(out var transitionError))
                 throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
-            await unitOfWork.SaveChangesAsync(ct);
+            await bookingRepository.SaveChangesAsync(ct);
             return;
         }
         if (IsDuplicateFailure(booking, operation))
@@ -190,7 +190,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
             default:
                 throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
         }
-        await unitOfWork.SaveChangesAsync(ct);
+        await bookingRepository.SaveChangesAsync(ct);
     }
 
     private static void Validate(
@@ -252,13 +252,13 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct)
     {
         await bookingRepository.AddAsync(booking, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await bookingRepository.SaveChangesAsync(ct);
 
         var contract = ContractEntity.Create(
             booking.Id,
             acceptance,
             timeProvider.GetUtcNow().UtcDateTime);
         await contractRepository.AddAsync(contract, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await contractRepository.SaveChangesAsync(ct);
     }
 }

@@ -96,7 +96,7 @@ internal sealed class ConcertService : IConcertService
             venue.About,
             matchingGenres);
         await concertRepository.AddAsync(concert, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await concertRepository.SaveChangesAsync(ct);
 
         await bus.PublishAsync(new ConcertCreatedEvent(
             concert.Id,
