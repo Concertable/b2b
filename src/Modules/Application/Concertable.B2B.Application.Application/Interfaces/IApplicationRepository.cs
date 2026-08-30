@@ -7,12 +7,6 @@ namespace Concertable.B2B.Application.Application.Interfaces;
 
 internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<ApplicationEntity>
 {
-    /// <summary>
-    /// Saves pending changes. An EF update failure returns <see langword="false"/> and clears the complete
-    /// tracked unit of work; every other failure propagates.
-    /// </summary>
-    Task<bool> TrySaveChangesAsync(CancellationToken ct = default);
-
     Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
         int opportunityId,
         CancellationToken ct = default);

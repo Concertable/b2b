@@ -8,6 +8,7 @@ using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.Kernel;
 using Concertable.Kernel.ValueObjects;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using Reunion;
 
@@ -19,6 +20,7 @@ public sealed class ConcertWorkflowTests
     private readonly Mock<ISettlementService> settlementService = new();
     private readonly Mock<IDealStrategyFactory<ICancel>> cancelFactory = new();
     private readonly Mock<IDealStrategyFactory<IComplete>> completeFactory = new();
+    private readonly Mock<IUnitOfWork> unitOfWork = new();
     private readonly ConcertWorkflow workflow;
 
     public ConcertWorkflowTests()
@@ -29,6 +31,7 @@ public sealed class ConcertWorkflowTests
             this.settlementService.Object,
             this.cancelFactory.Object,
             this.completeFactory.Object,
+            this.unitOfWork.Object,
             behavior,
             behavior);
     }
@@ -89,15 +92,19 @@ public sealed class ConcertWorkflowTests
         this.concertRepository
             .Setup(repository => repository.GetByIdAsync(42, default))
             .ReturnsAsync(concert);
-        this.concertRepository
-            .Setup(repository => repository.TrySaveChangesAsync(default))
+        this.unitOfWork
+            .Setup(unitOfWork => unitOfWork.TrySaveChangesAsync(
+                It.IsAny<Func<DbUpdateException, bool>>(),
+                default))
             .ReturnsAsync(true);
 
         var result = await this.workflow.CancelAsync(42);
 
         Assert.False(result.TryGetError(out _));
         strategy.Verify(value => value.CancelAsync(concert, default));
-        this.concertRepository.Verify(repository => repository.TrySaveChangesAsync(default));
+        this.unitOfWork.Verify(unitOfWork => unitOfWork.TrySaveChangesAsync(
+            It.IsAny<Func<DbUpdateException, bool>>(),
+            default));
     }
 
     [Fact]
@@ -111,8 +118,10 @@ public sealed class ConcertWorkflowTests
             .SetupSequence(repository => repository.GetByIdAsync(42, default))
             .ReturnsAsync(CreateBooking())
             .ReturnsAsync(CreateBooking());
-        this.concertRepository
-            .Setup(repository => repository.TrySaveChangesAsync(default))
+        this.unitOfWork
+            .Setup(unitOfWork => unitOfWork.TrySaveChangesAsync(
+                It.IsAny<Func<DbUpdateException, bool>>(),
+                default))
             .ReturnsAsync(false);
 
         var result = await this.workflow.CancelAsync(42);

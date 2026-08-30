@@ -3,7 +3,6 @@ using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Application.Models;
 using Concertable.B2B.Application.Infrastructure.Data;
-using Concertable.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Repositories;
@@ -143,6 +142,4 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .ToListAsync(ct))
         .ToHashSet();
 
-    public Task<bool> TrySaveChangesAsync(CancellationToken ct = default) =>
-        context.TrySaveChangesAsync(ct);
 }

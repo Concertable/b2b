@@ -6,12 +6,6 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IConcertRepository : IRepository<ConcertEntity>
 {
-    /// <summary>
-    /// Saves pending changes. An EF update failure returns <see langword="false"/> and clears the complete
-    /// tracked unit of work; every other failure propagates.
-    /// </summary>
-    Task<bool> TrySaveChangesAsync(CancellationToken ct = default);
-
     Task<ConcertEntity?> GetByBookingIdAsync(int bookingId, CancellationToken ct = default);
     Task<ConcertEntity?> GetByIdWithArtistAndVenueAsync(int id);
     Task<ConcertEntity?> GetByIdWithVenueAsync(int id);

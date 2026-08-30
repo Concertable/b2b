@@ -5,12 +5,6 @@ namespace Concertable.B2B.Booking.Application.Interfaces;
 
 internal interface IBookingRepository : IVenueArtistTenantScopedRepository<BookingEntity>
 {
-    /// <summary>
-    /// Saves pending changes. An EF update failure returns <see langword="false"/> and clears the complete
-    /// tracked unit of work; every other failure propagates.
-    /// </summary>
-    Task<bool> TrySaveChangesAsync(CancellationToken ct = default);
-
     Task<BookingEntity?> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);

@@ -5,8 +5,10 @@ using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Identity;
 using Concertable.Messaging.Contracts;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
@@ -23,6 +25,7 @@ internal sealed class ConcertService : IConcertService
     private readonly IBookingConfirmationEmailSender emailSender;
     private readonly IBus bus;
     private readonly IBookingModule bookingModule;
+    private readonly IUnitOfWork unitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly ITenantContext tenantContext;
     private readonly ILogger<ConcertService> logger;
@@ -38,6 +41,7 @@ internal sealed class ConcertService : IConcertService
         IBookingConfirmationEmailSender emailSender,
         IBus bus,
         IBookingModule bookingModule,
+        IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         ITenantContext tenantContext,
         ILogger<ConcertService> logger)
@@ -52,6 +56,7 @@ internal sealed class ConcertService : IConcertService
         this.emailSender = emailSender;
         this.bus = bus;
         this.bookingModule = bookingModule;
+        this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
         this.tenantContext = tenantContext;
         this.logger = logger;
@@ -91,7 +96,7 @@ internal sealed class ConcertService : IConcertService
             venue.About,
             matchingGenres);
         await concertRepository.AddAsync(concert, ct);
-        await concertRepository.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
 
         await bus.PublishAsync(new ConcertCreatedEvent(
             concert.Id,
@@ -198,7 +203,8 @@ internal sealed class ConcertService : IConcertService
 
         concertEntity.Update(request.Name, request.About, request.Price, request.TotalTickets);
 
-        if (!await concertRepository.TrySaveChangesAsync())
+        if (!await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException))
             return new UpdateConcertError.Superseded(id);
 
         return new ConcertUpdateResponse
@@ -226,7 +232,8 @@ internal sealed class ConcertService : IConcertService
             .TryGetError(out var transitionError))
             return new PostConcertError.InvalidTransition(transitionError);
 
-        if (await concertRepository.TrySaveChangesAsync())
+        if (await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException))
             return new Success();
 
         concertEntity = await concertRepository.GetByIdAsync(id);
@@ -254,7 +261,8 @@ internal sealed class ConcertService : IConcertService
         if (concert.DeclareDoorRevenue(doorRevenue).TryGetError(out var revenueError))
             return revenueError.ToDeclareDoorRevenueError();
 
-        return await concertRepository.TrySaveChangesAsync()
+        return await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException)
             ? new Success()
             : new DeclareDoorRevenueError.Superseded(id);
     }

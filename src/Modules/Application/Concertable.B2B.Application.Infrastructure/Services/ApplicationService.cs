@@ -5,6 +5,7 @@ using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
+using Concertable.DataAccess.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
@@ -21,7 +22,8 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IApplicationCheckoutService checkout;
     private readonly IApplicationMapper mapper;
     private readonly TimeProvider timeProvider;
-    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
 
     public ApplicationService(
         IApplicationRepository applicationRepository,
@@ -35,7 +37,8 @@ internal sealed class ApplicationService : IApplicationService
         IApplicationCheckoutService checkout,
         IApplicationMapper mapper,
         TimeProvider timeProvider,
-        IUnitOfWorkBehavior unitOfWork)
+        IUnitOfWork unitOfWork,
+        IUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.applicationRepository = applicationRepository;
         this.validator = validator;
@@ -49,6 +52,7 @@ internal sealed class ApplicationService : IApplicationService
         this.mapper = mapper;
         this.timeProvider = timeProvider;
         this.unitOfWork = unitOfWork;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
     public Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id) =>
@@ -178,7 +182,7 @@ internal sealed class ApplicationService : IApplicationService
     public async Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        await unitOfWork.ExecuteAsync(() => WithdrawCoreAsync(applicationId, ct), ct);
+        await unitOfWorkBehavior.ExecuteAsync(() => WithdrawCoreAsync(applicationId, ct), ct);
 
     private async Task<UnitResult<WithdrawApplicationError>> WithdrawCoreAsync(
         int applicationId,
@@ -190,7 +194,7 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Withdraw().TryGetError(out var transitionError))
             return new WithdrawApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Withdrawn);
-        if (!await applicationRepository.TrySaveChangesAsync(ct))
+        if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
         {
             application = await applicationRepository.GetByIdAsync(applicationId, ct);
             return application?.State == ApplicationState.Withdrawn
@@ -205,7 +209,7 @@ internal sealed class ApplicationService : IApplicationService
     public async Task<UnitResult<RejectApplicationError>> RejectAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        await unitOfWork.ExecuteAsync(() => RejectCoreAsync(applicationId, ct), ct);
+        await unitOfWorkBehavior.ExecuteAsync(() => RejectCoreAsync(applicationId, ct), ct);
 
     private async Task<UnitResult<RejectApplicationError>> RejectCoreAsync(
         int applicationId,
@@ -217,7 +221,7 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Reject().TryGetError(out var transitionError))
             return new RejectApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Rejected);
-        if (!await applicationRepository.TrySaveChangesAsync(ct))
+        if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
         {
             application = await applicationRepository.GetByIdAsync(applicationId, ct);
             return application?.State == ApplicationState.Rejected
@@ -232,7 +236,7 @@ internal sealed class ApplicationService : IApplicationService
     public async Task<UnitResult<CancelApplicationError>> CancelAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        await unitOfWork.ExecuteAsync(() => CancelCoreAsync(applicationId, ct), ct);
+        await unitOfWorkBehavior.ExecuteAsync(() => CancelCoreAsync(applicationId, ct), ct);
 
     private async Task<UnitResult<CancelApplicationError>> CancelCoreAsync(
         int applicationId,
@@ -244,7 +248,7 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Cancel().TryGetError(out var transitionError))
             return new CancelApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.ApplicationCancelled);
-        if (!await applicationRepository.TrySaveChangesAsync(ct))
+        if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
         {
             application = await applicationRepository.GetByIdAsync(applicationId, ct);
             return application?.State == ApplicationState.Cancelled

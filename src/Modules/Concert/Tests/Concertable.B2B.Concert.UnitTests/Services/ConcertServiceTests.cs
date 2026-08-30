@@ -3,10 +3,12 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Kernel.Identity;
 using Concertable.Messaging.Contracts;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
@@ -34,6 +36,7 @@ public sealed class ConcertServiceTests
 
     private static ConcertService CreateService(
         Mock<IConcertRepository> repository,
+        Mock<IUnitOfWork> unitOfWork,
         DateTimeOffset now,
         IConcertValidator? validator = null) =>
         new(
@@ -47,6 +50,7 @@ public sealed class ConcertServiceTests
             Mock.Of<IBookingConfirmationEmailSender>(),
             Mock.Of<IBus>(),
             Mock.Of<IBookingModule>(),
+            unitOfWork.Object,
             new FakeTimeProvider(now),
             Mock.Of<ITenantContext>(),
             Mock.Of<ILogger<ConcertService>>());
@@ -57,11 +61,14 @@ public sealed class ConcertServiceTests
         var now = new DateTimeOffset(2026, 8, 10, 23, 0, 0, TimeSpan.Zero);
         var concert = ConcertEntity.CreateDraft(CreateBooking(now), "Concert", "About", []);
         var repository = new Mock<IConcertRepository>();
+        var unitOfWork = new Mock<IUnitOfWork>();
         repository.Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(concert);
-        repository.Setup(value => value.TrySaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        unitOfWork.Setup(value => value.TrySaveChangesAsync(
+            It.IsAny<Func<DbUpdateException, bool>>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(false);
         var validator = new Mock<IConcertValidator>();
         validator.Setup(value => value.CanUpdate(concert, It.IsAny<int>())).Returns(ValidationResult.Valid());
-        var service = CreateService(repository, now, validator.Object);
+        var service = CreateService(repository, unitOfWork, now, validator.Object);
 
         var result = await service.UpdateAsync(
             42,
@@ -80,14 +87,17 @@ public sealed class ConcertServiceTests
         var concert = ConcertEntity.CreateDraft(booking, "Concert", "About", []);
         var persisted = ConcertEntity.CreateDraft(booking, "Concert", "About", []);
         var repository = new Mock<IConcertRepository>();
+        var unitOfWork = new Mock<IUnitOfWork>();
         repository
             .SetupSequence(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>()))
             .ReturnsAsync(concert)
             .ReturnsAsync(persisted);
-        repository.Setup(value => value.TrySaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        unitOfWork.Setup(value => value.TrySaveChangesAsync(
+            It.IsAny<Func<DbUpdateException, bool>>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(false);
         var validator = new Mock<IConcertValidator>();
         validator.Setup(value => value.CanPost(concert)).Returns(ValidationResult.Valid());
-        var service = CreateService(repository, now, validator.Object);
+        var service = CreateService(repository, unitOfWork, now, validator.Object);
 
         var result = await service.PostAsync(
             42,
@@ -104,8 +114,11 @@ public sealed class ConcertServiceTests
         var now = new DateTimeOffset(2026, 8, 10, 23, 0, 0, TimeSpan.Zero);
         var concert = ConcertEntity.CreateDraft(CreateBooking(now), "Concert", "About", []);
         var repository = new Mock<IConcertRepository>();
+        var unitOfWork = new Mock<IUnitOfWork>();
         repository.Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(concert);
-        repository.Setup(value => value.TrySaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        unitOfWork.Setup(value => value.TrySaveChangesAsync(
+            It.IsAny<Func<DbUpdateException, bool>>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(false);
         var tenantContext = new Mock<ITenantContext>();
         tenantContext.SetupGet(context => context.IsHost).Returns(true);
         var service = new ConcertService(
@@ -119,6 +132,7 @@ public sealed class ConcertServiceTests
             Mock.Of<IBookingConfirmationEmailSender>(),
             Mock.Of<IBus>(),
             Mock.Of<IBookingModule>(),
+            unitOfWork.Object,
             new FakeTimeProvider(now),
             tenantContext.Object,
             Mock.Of<ILogger<ConcertService>>());
@@ -155,6 +169,7 @@ public sealed class ConcertServiceTests
             "About",
             []);
         var repository = new Mock<IConcertRepository>();
+        var unitOfWork = new Mock<IUnitOfWork>();
         repository
             .Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>()))
             .ReturnsAsync(concert);
@@ -171,6 +186,7 @@ public sealed class ConcertServiceTests
             Mock.Of<IBookingConfirmationEmailSender>(),
             Mock.Of<IBus>(),
             Mock.Of<IBookingModule>(),
+            unitOfWork.Object,
             new FakeTimeProvider(now),
             tenantContext.Object,
             Mock.Of<ILogger<ConcertService>>());

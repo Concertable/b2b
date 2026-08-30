@@ -9,8 +9,10 @@ using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.ValueObjects;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Services;
 
@@ -18,7 +20,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 {
     private readonly IBookingRepository bookingRepository;
     private readonly IContractRepository contractRepository;
-    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
     private readonly IBus bus;
     private readonly IDealStrategyFactory<IConfirm> confirmFactory;
@@ -28,7 +31,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     public BookingWorkflow(
         IBookingRepository bookingRepository,
         IContractRepository contractRepository,
-        IUnitOfWorkBehavior unitOfWork,
+        IUnitOfWork unitOfWork,
+        IUnitOfWorkBehavior unitOfWorkBehavior,
         IOutboxUnitOfWorkBehavior outboxBehavior,
         IBus bus,
         IDealStrategyFactory<IConfirm> confirmFactory,
@@ -38,6 +42,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.bookingRepository = bookingRepository;
         this.contractRepository = contractRepository;
         this.unitOfWork = unitOfWork;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
         this.outboxBehavior = outboxBehavior;
         this.bus = bus;
         this.confirmFactory = confirmFactory;
@@ -53,7 +58,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     public Task<UnitResult<CancelBookingError>> CancelAsync(
         int bookingId,
         CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(
+        unitOfWorkBehavior.ExecuteAsync(
             () => outboxBehavior.ExecuteAsync(async () =>
             {
                 var booking = await bookingRepository.GetByIdAsync(bookingId, ct);
@@ -65,7 +70,9 @@ internal sealed class BookingWorkflow : IBookingWorkflow
                     return new CancelBookingError.InvalidTransition(transitionError);
 
                 await cancelFactory.Create(booking.DealType).CancelAsync(booking, ct);
-                if (await bookingRepository.TrySaveChangesAsync(ct))
+                if (await unitOfWork.TrySaveChangesAsync(
+                        static exception => exception is DbUpdateConcurrencyException,
+                        ct))
                     return UnitResult.Success<CancelBookingError>();
 
                 booking = await bookingRepository.GetByIdAsync(bookingId, ct);
@@ -79,23 +86,23 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         int bookingId,
         FinancialOperationSucceeded operation,
         CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(() => RecordSucceededCoreAsync(bookingId, operation, ct), ct);
+        unitOfWorkBehavior.ExecuteAsync(() => RecordSucceededCoreAsync(bookingId, operation, ct), ct);
 
     public Task RecordFailedAsync(
         int bookingId,
         FinancialOperationFailed operation,
         CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(() => RecordFailedCoreAsync(bookingId, operation, ct), ct);
+        unitOfWorkBehavior.ExecuteAsync(() => RecordFailedCoreAsync(bookingId, operation, ct), ct);
 
     private async Task<BookingDto> ConfirmCoreAsync(
         AcceptedApplication application,
         CancellationToken ct)
     {
-        var booking = await unitOfWork.ExecuteAsync(() => CreateAsync(application, ct), ct);
+        var booking = await unitOfWorkBehavior.ExecuteAsync(() => CreateAsync(application, ct), ct);
         await confirmFactory
             .Create(application.DealType)
             .ConfirmAsync(application, booking, ct);
-        await bookingRepository.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
         return booking.ToDto();
     }
 
@@ -141,7 +148,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
         if (booking.RecordFinancialConfirmation(operation.ProviderReferenceId).TryGetError(out var transitionError))
             throw new InvalidOperationException($"Booking cannot confirm from {transitionError.Current}.");
-        await bookingRepository.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
     }
 
     private async Task RecordFailedCoreAsync(
@@ -161,7 +168,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         {
             if (booking.Cancel().TryGetError(out var transitionError))
                 throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
-            await bookingRepository.SaveChangesAsync(ct);
+            await unitOfWork.SaveChangesAsync(ct);
             return;
         }
         if (IsDuplicateFailure(booking, operation))
@@ -183,7 +190,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
             default:
                 throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
         }
-        await bookingRepository.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
     }
 
     private static void Validate(
@@ -245,13 +252,13 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct)
     {
         await bookingRepository.AddAsync(booking, ct);
-        await bookingRepository.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
 
         var contract = ContractEntity.Create(
             booking.Id,
             acceptance,
             timeProvider.GetUtcNow().UtcDateTime);
         await contractRepository.AddAsync(contract, ct);
-        await contractRepository.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
     }
 }

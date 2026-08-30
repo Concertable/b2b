@@ -153,6 +153,4 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .Select(c => c.TicketsSold * c.Price + c.DoorRevenue)
             .FirstOrDefaultAsync();
 
-    public Task<bool> TrySaveChangesAsync(CancellationToken ct = default) =>
-        context.TrySaveChangesAsync(ct);
 }

@@ -53,7 +53,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IApplicationReadDbContext>(provider =>
                 provider.GetRequiredService<ApplicationReadDbContext>());
 
-            services.AddScoped<IUnitOfWork<ApplicationDbContext>, UnitOfWork<ApplicationDbContext>>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IApplicationRepository, ApplicationRepository>();
             services.AddScoped<IApplicationEligibility, ApplicationEligibility>();

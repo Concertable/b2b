@@ -46,7 +46,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IBookingReadDbContext>(provider =>
                 provider.GetRequiredService<BookingReadDbContext>());
 
-            services.AddScoped<IUnitOfWork<BookingDbContext>, UnitOfWork<BookingDbContext>>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
             services.AddScoped<IBookingRepository, BookingRepository>();

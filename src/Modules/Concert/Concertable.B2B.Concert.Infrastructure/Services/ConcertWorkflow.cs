@@ -2,6 +2,8 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.DataAccess.Infrastructure.Extensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -11,7 +13,8 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     private readonly ISettlementService settlementService;
     private readonly IDealStrategyFactory<ICancel> cancelFactory;
     private readonly IDealStrategyFactory<IComplete> completeFactory;
-    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public ConcertWorkflow(
@@ -19,7 +22,8 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         ISettlementService settlementService,
         IDealStrategyFactory<ICancel> cancelFactory,
         IDealStrategyFactory<IComplete> completeFactory,
-        IUnitOfWorkBehavior unitOfWork,
+        IUnitOfWork unitOfWork,
+        IUnitOfWorkBehavior unitOfWorkBehavior,
         IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.concertRepository = concertRepository;
@@ -27,13 +31,14 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         this.cancelFactory = cancelFactory;
         this.completeFactory = completeFactory;
         this.unitOfWork = unitOfWork;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
         this.outboxBehavior = outboxBehavior;
     }
 
     public Task<UnitResult<CancelConcertError>> CancelAsync(
         int concertId,
         CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(
+        unitOfWorkBehavior.ExecuteAsync(
             () => outboxBehavior.ExecuteAsync(async () =>
             {
                 var concert = await concertRepository.GetByIdAsync(concertId, ct);
@@ -45,7 +50,9 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
                     return new CancelConcertError.InvalidTransition(transitionError);
 
                 await cancelFactory.Create(concert.DealType).CancelAsync(concert, ct);
-                if (await concertRepository.TrySaveChangesAsync(ct))
+                if (await unitOfWork.TrySaveChangesAsync(
+                        static exception => exception is DbUpdateConcurrencyException,
+                        ct))
                     return UnitResult.Success<CancelConcertError>();
 
                 concert = await concertRepository.GetByIdAsync(concertId, ct);

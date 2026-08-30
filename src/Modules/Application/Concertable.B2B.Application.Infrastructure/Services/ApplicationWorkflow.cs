@@ -10,6 +10,7 @@ using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
@@ -32,7 +33,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly IDealUnionFactory<Accept> acceptFactory;
     private readonly IApplicationMapper mapper;
     private readonly TimeProvider timeProvider;
-    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
 
     public ApplicationWorkflow(
         IApplicationRepository applicationRepository,
@@ -51,7 +53,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IDealUnionFactory<Accept> acceptFactory,
         IApplicationMapper mapper,
         TimeProvider timeProvider,
-        IUnitOfWorkBehavior unitOfWork)
+        IUnitOfWork unitOfWork,
+        IUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.applicationRepository = applicationRepository;
         this.validator = validator;
@@ -70,6 +73,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.mapper = mapper;
         this.timeProvider = timeProvider;
         this.unitOfWork = unitOfWork;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
     public async Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
@@ -145,7 +149,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         application.NotifyCounterparty(ApplicationNotification.Applied);
 
         await applicationRepository.AddAsync(application);
-        if (!await applicationRepository.TrySaveChangesAsync())
+        if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
         {
             if (await applicationRepository.ExistsForOpportunityAndArtistTenantAsync(
                     opportunityId, artist.TenantId))
@@ -163,7 +167,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(
+        unitOfWorkBehavior.ExecuteAsync(
             () => AcceptCoreAsync(applicationId, paymentMethodId, eSignature, ct),
             ct);
 
@@ -237,7 +241,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (application.Accept(acceptedApplication).TryGetError(out var transitionError))
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
-        if (!await applicationRepository.TrySaveChangesAsync(ct))
+        if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
         {
             var applications = await applicationRepository.GetByOpportunityIdAsync(application.OpportunityId, ct);
             if (applications.Any(candidate => candidate.State == ApplicationState.Accepted))

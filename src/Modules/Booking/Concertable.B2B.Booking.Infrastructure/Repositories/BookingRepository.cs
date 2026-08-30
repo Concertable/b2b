@@ -65,6 +65,4 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
                  booking.State == BookingState.ConfirmationFailed),
             ct);
 
-    public Task<bool> TrySaveChangesAsync(CancellationToken ct = default) =>
-        context.TrySaveChangesAsync(ct);
 }
