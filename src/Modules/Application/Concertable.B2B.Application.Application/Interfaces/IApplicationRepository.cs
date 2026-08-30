@@ -8,8 +8,8 @@ namespace Concertable.B2B.Application.Application.Interfaces;
 internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<ApplicationEntity>
 {
     /// <summary>
-    /// Saves pending changes. A lost race on the aggregate's <c>State</c> concurrency token returns
-    /// <see langword="false"/>; every other failure propagates.
+    /// Saves pending changes. An EF update failure returns <see langword="false"/> and clears the complete
+    /// tracked unit of work; every other failure propagates.
     /// </summary>
     Task<bool> TrySaveChangesAsync(CancellationToken ct = default);
 

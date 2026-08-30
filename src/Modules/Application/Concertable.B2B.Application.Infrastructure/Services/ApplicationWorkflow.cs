@@ -10,9 +10,7 @@ using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
-using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
@@ -239,15 +237,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (application.Accept(acceptedApplication).TryGetError(out var transitionError))
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
-        try
-        {
-            await applicationRepository.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException exception) when (exception.IsDuplicateKey())
-        {
-            exception.DiscardFailedChanges();
+        if (!await applicationRepository.TrySaveChangesAsync(ct))
             return new AcceptApplicationError.AlreadyAccepted();
-        }
 
         var rejectedApplicationIds = await applicationRepository.RejectAllExceptAsync(
             application.OpportunityId, application.Id, ct);

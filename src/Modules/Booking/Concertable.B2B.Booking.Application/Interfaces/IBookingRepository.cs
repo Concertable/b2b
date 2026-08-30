@@ -6,8 +6,8 @@ namespace Concertable.B2B.Booking.Application.Interfaces;
 internal interface IBookingRepository : IVenueArtistTenantScopedRepository<BookingEntity>
 {
     /// <summary>
-    /// Saves pending changes. A lost race on the aggregate's <c>State</c> concurrency token returns
-    /// <see langword="false"/>; every other failure propagates.
+    /// Saves pending changes. An EF update failure returns <see langword="false"/> and clears the complete
+    /// tracked unit of work; every other failure propagates.
     /// </summary>
     Task<bool> TrySaveChangesAsync(CancellationToken ct = default);
 
