@@ -59,7 +59,7 @@ internal sealed class ApplicationService : IApplicationService
         applicationRepository.GetByIdAsync(id)
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
-            .MapAsync(mapper.ToDtoAsync);
+            .MapAsync(application => mapper.ToDtoAsync(application));
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id)
     {
