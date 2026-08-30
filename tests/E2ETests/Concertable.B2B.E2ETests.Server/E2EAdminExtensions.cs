@@ -3,12 +3,14 @@ using System.Security.Cryptography;
 using System.Text;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.DataAccess.Application;
+using Concertable.Kernel;
 using Dapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Respawn;
 using Respawn.Graph;
 
@@ -16,15 +18,19 @@ namespace Concertable.B2B.E2ETests.Server;
 
 public static class E2EAdminExtensions
 {
-    private const string AdminKeyHeader = "X-Concertable-E2E-Key";
-
     extension(IServiceCollection services)
     {
-        public IServiceCollection AddB2BE2EAdmin(IConfiguration configuration)
+        public IServiceCollection AddB2BE2EAdmin(
+            IConfiguration configuration,
+            IHostEnvironment environment)
         {
+            E2EAdminSecurity.RequireE2EEnvironment(environment);
+            var adminKey = configuration["E2E:AdminKey"];
+            if (string.IsNullOrWhiteSpace(adminKey))
+                throw new InvalidOperationException("E2E:AdminKey is required by the B2B E2E host.");
+
             services.AddSingleton(new E2EAdminOptions(
-                configuration["E2E:AdminKey"]
-                    ?? throw new InvalidOperationException("E2E:AdminKey is required by the B2B E2E host."),
+                adminKey,
                 configuration.GetConnectionString("B2BDb")
                     ?? throw new InvalidOperationException("Connection string 'B2BDb' is required by the B2B E2E host.")));
             services.AddScoped<B2BDatabaseResetter>();
@@ -36,6 +42,7 @@ public static class E2EAdminExtensions
     {
         public WebApplication MapB2BE2EAdmin()
         {
+            E2EAdminSecurity.RequireE2EEnvironment(app.Environment);
             var group = app.MapGroup("/_e2e")
                 .AddEndpointFilter(AuthorizeAsync);
 
@@ -54,11 +61,7 @@ public static class E2EAdminExtensions
         EndpointFilterDelegate next)
     {
         var options = context.HttpContext.RequestServices.GetRequiredService<E2EAdminOptions>();
-        var supplied = context.HttpContext.Request.Headers[AdminKeyHeader].ToString();
-        var expectedBytes = Encoding.UTF8.GetBytes(options.AdminKey);
-        var suppliedBytes = Encoding.UTF8.GetBytes(supplied);
-        if (expectedBytes.Length != suppliedBytes.Length
-            || !CryptographicOperations.FixedTimeEquals(expectedBytes, suppliedBytes))
+        if (!E2EAdminSecurity.IsAuthorized(options.AdminKey, context.HttpContext.Request.Headers))
         {
             return Results.NotFound();
         }
@@ -144,6 +147,35 @@ public static class E2EAdminExtensions
     private sealed record DeclareDoorRevenueRequest
     {
         public decimal DoorRevenue { get; init; }
+    }
+}
+
+internal static class E2EAdminSecurity
+{
+    private const string AdminKeyHeader = "X-Concertable-E2E-Key";
+
+    public static void RequireE2EEnvironment(IHostEnvironment environment)
+    {
+        if (!environment.IsE2E())
+            throw new InvalidOperationException("B2B E2E admin endpoints can only be enabled in the E2E environment.");
+    }
+
+    public static bool IsAuthorized(string expected, IHeaderDictionary headers)
+    {
+        if (string.IsNullOrWhiteSpace(expected)
+            || !headers.TryGetValue(AdminKeyHeader, out var suppliedValues))
+        {
+            return false;
+        }
+
+        var supplied = suppliedValues.ToString();
+        if (string.IsNullOrWhiteSpace(supplied))
+            return false;
+
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        var suppliedBytes = Encoding.UTF8.GetBytes(supplied);
+        return expectedBytes.Length == suppliedBytes.Length
+            && CryptographicOperations.FixedTimeEquals(expectedBytes, suppliedBytes);
     }
 }
 
