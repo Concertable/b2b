@@ -2,6 +2,7 @@ using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
+using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel.Identity;
@@ -80,6 +81,7 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<IBookingConfirmationEmailSender>(),
             Mock.Of<IBus>(),
             Mock.Of<IBookingModule>(),
+            Mock.Of<IUnitOfWork>(),
             TimeProvider.System,
             Mock.Of<ITenantContext>(),
             Mock.Of<ILogger<ConcertService>>());
