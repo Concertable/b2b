@@ -1,4 +1,5 @@
 using System.Net;
+using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.Contracts.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Xunit.Abstractions;
