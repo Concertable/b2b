@@ -5,8 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>7d5b7a95-c30c-4f13-a900-07dfb51fd86a</UserSecretsId>
-    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-	<DockerfileFile>..\..\Dockerfile</DockerfileFile>
+    <ContainerRepository>concertable/b2b-web</ContainerRepository>
   </PropertyGroup>
 
   <ItemGroup>
