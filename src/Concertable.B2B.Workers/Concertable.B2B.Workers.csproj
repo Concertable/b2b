@@ -8,20 +8,7 @@
     <Nullable>enable</Nullable>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
     <ContainerRepository>concertable/b2b-workers</ContainerRepository>
-    <!-- The Functions host, not the plain runtime base the SDK would pick: this stays a native Functions
-         app so its TimerTrigger keeps working, and the same digest runs locally, in system E2E and on
-         Azure Functions on Container Apps. Consumption cannot run a custom container at all. -->
-    <ContainerBaseImage>mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated10.0</ContainerBaseImage>
-    <!-- The Functions host looks for the app at this fixed path and is the image's own entrypoint, so the
-         payload goes there and the SDK must not overwrite the entrypoint with `dotnet Workers.dll`. -->
-    <ContainerWorkingDirectory>/home/site/wwwroot</ContainerWorkingDirectory>
-    <ContainerAppCommandInstruction>None</ContainerAppCommandInstruction>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ContainerEnvironmentVariable Include="AzureWebJobsScriptRoot" Value="/home/site/wwwroot" />
-    <ContainerEnvironmentVariable Include="AzureFunctionsJobHost__Logging__Console__IsEnabled" Value="true" />
-  </ItemGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
