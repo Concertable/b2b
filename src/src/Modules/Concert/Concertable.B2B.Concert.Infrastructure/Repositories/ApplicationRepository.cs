@@ -142,7 +142,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         return row is null ? null : (row.State, row.PaymentVerification);
     }
 
-    public override async Task<ApplicationEntity?> GetByIdAsync(int id, CancellationToken ct = default)
+    public async Task<ApplicationEntity?> GetWithArtistAndOpportunityByIdAsync(int id, CancellationToken ct = default)
     {
         return await context.Applications
             .Where(ca => ca.Id == id)

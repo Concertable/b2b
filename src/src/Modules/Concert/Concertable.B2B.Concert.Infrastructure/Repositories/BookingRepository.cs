@@ -13,7 +13,7 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
         this.context = context;
     }
 
-    public override async Task<BookingEntity?> GetByIdAsync(int id, CancellationToken ct = default)
+    public async Task<BookingEntity?> GetWithApplicationAndConcertByIdAsync(int id, CancellationToken ct = default)
     {
         return await context.Bookings
             .Where(b => b.Id == id)
@@ -44,7 +44,7 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             .Include(booking => booking.Application)
             .SingleOrDefaultAsync(booking => booking.Concert!.Id == concertId, ct);
 
-    public async Task<BookingEntity?> GetForSettlementByConcertIdAsync(int concertId)
+    public async Task<BookingEntity?> GetWithApplicationByConcertIdAsync(int concertId)
     {
         return await context.Bookings
             .Where(b => b.Concert!.Id == concertId)
