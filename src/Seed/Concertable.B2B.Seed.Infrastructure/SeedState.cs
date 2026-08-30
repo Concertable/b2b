@@ -537,6 +537,7 @@ public sealed class SeedState
         ActiveVenueHireOpportunity = opps
             .Where(opportunity => opportunity.Period.Start >= now)
             .Where(opportunity => opportunity.VenueId == Venue.Id)
+            .Where(opportunity => opportunity.State == OpportunityState.Open)
             .Where(opportunity => dealById[opportunity.DealId] is VenueHireDealEntity)
             .Where(opportunity => Applications.All(application =>
                 application.OpportunityId != opportunity.Id))
