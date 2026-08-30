@@ -16,6 +16,12 @@ public sealed class AdminApiFixture : ApiFixture
     public Task<bool> IsAdminAsync(Guid sub) =>
         dbContext.AdminProfiles.AnyAsync(profile => profile.Sub == sub);
 
+    public async Task LogInAsync(Guid userId, string email)
+    {
+        var response = await CreateClient(userId, email).GetAsync("/api/auth/me");
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task ClearAdminsAsync()
     {
         dbContext.AdminProfiles.RemoveRange(dbContext.AdminProfiles);
