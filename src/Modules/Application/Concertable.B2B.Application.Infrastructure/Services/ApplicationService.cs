@@ -139,14 +139,16 @@ internal sealed class ApplicationService : IApplicationService
 
     public Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
-        ESignatureRequest eSignature) =>
-        workflow.ApplyAsync(opportunityId, null, eSignature);
+        ESignatureRequest eSignature,
+        CancellationToken ct = default) =>
+        workflow.ApplyAsync(opportunityId, null, eSignature, ct);
 
     public Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         string? paymentMethodId,
-        ESignatureRequest eSignature) =>
-        workflow.ApplyAsync(opportunityId, paymentMethodId, eSignature);
+        ESignatureRequest eSignature,
+        CancellationToken ct = default) =>
+        workflow.ApplyAsync(opportunityId, paymentMethodId, eSignature, ct);
 
     public async Task<bool> CanApplyAsync(int opportunityId) =>
         (await CheckCanApplyAsync(opportunityId)).IsSuccess;

@@ -26,23 +26,27 @@ internal sealed class ApplicationMapper : IApplicationMapper
         this.dealModule = dealModule;
     }
 
-    public async Task<ApplicationDto> ToDtoAsync(ApplicationEntity application) =>
-        (await ToDtosAsync([application])).Single();
+    public async Task<ApplicationDto> ToDtoAsync(
+        ApplicationEntity application,
+        CancellationToken ct = default) =>
+        (await ToDtosAsync([application], ct)).Single();
 
-    public async Task<IReadOnlyList<ApplicationDto>> ToDtosAsync(IEnumerable<ApplicationEntity> applications)
+    public async Task<IReadOnlyList<ApplicationDto>> ToDtosAsync(
+        IEnumerable<ApplicationEntity> applications,
+        CancellationToken ct = default)
     {
         var applicationList = applications.ToList();
         var artistsById = (await this.artistModule.GetSummariesAsync(
-                applicationList.Select(application => application.ArtistId).Distinct().ToArray()))
+                applicationList.Select(application => application.ArtistId).Distinct().ToArray(), ct))
             .ToDictionary(artist => artist.Id);
         var opportunitiesById = (await this.opportunityModule.GetAsync(
-                applicationList.Select(application => application.OpportunityId).Distinct().ToArray()))
+                applicationList.Select(application => application.OpportunityId).Distinct().ToArray(), ct))
             .ToDictionary(opportunity => opportunity.Id);
         var dealsById = (await this.dealModule.GetByIdsAsync(
-                opportunitiesById.Values.Select(opportunity => opportunity.DealId).Distinct()))
+                opportunitiesById.Values.Select(opportunity => opportunity.DealId).Distinct(), ct))
             .ToDictionary(deal => deal.Id);
         var venuesById = (await this.venueModule.GetProfilesAsync(
-                opportunitiesById.Values.Select(opportunity => opportunity.VenueId).Distinct().ToArray()))
+                opportunitiesById.Values.Select(opportunity => opportunity.VenueId).Distinct().ToArray(), ct))
             .ToDictionary(venue => venue.Id);
 
         return applicationList.Select(application =>

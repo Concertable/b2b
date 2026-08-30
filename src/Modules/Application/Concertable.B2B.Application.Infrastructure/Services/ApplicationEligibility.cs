@@ -25,6 +25,6 @@ internal sealed class ApplicationEligibility : IApplicationEligibility
             .OrFailure<OpportunityDto, ApplicationEligibilityError>(
                 new ApplicationEligibilityError.OpportunityNotFound())
             .EnsureAsync(
-                opportunity => validator.CanAcceptAsync(opportunity, application),
+                opportunity => validator.CanAcceptAsync(opportunity, application, ct),
                 errors => (ApplicationEligibilityError)new ApplicationEligibilityError.Invalid(errors));
 }

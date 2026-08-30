@@ -9,7 +9,8 @@ internal interface IApplicationWorkflow
     Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         string? paymentMethodId,
-        ESignatureRequest eSignature);
+        ESignatureRequest eSignature,
+        CancellationToken ct = default);
 
     Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,

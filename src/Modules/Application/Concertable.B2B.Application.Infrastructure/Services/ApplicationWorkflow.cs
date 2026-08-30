@@ -7,6 +7,7 @@ using Concertable.B2B.Application.Application.Strategies;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
+using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
@@ -79,30 +80,32 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     public async Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         string? paymentMethodId,
-        ESignatureRequest eSignature)
+        ESignatureRequest eSignature,
+        CancellationToken ct = default)
     {
-        var artistOption = await this.artistModule.GetCurrentProfileAsync();
+        var artistOption = await this.artistModule.GetCurrentProfileAsync(ct);
         if (!artistOption.TryGetValue(out var artist))
             return new ApplyApplicationError.MissingArtist();
 
         if (tenantContext.TenantId is not { } artistTenantId)
             return new ApplyApplicationError.MissingTenant();
 
-        var opportunityOption = await this.opportunityModule.GetOpenAsync(opportunityId);
+        var opportunityOption = await this.opportunityModule.GetOpenAsync(opportunityId, ct);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
-        if (await applicationRepository.ExistsForOpportunityAndArtistTenantAsync(opportunityId, artist.TenantId))
+        if (await applicationRepository.ExistsForOpportunityAndArtistTenantAsync(
+                opportunityId, artist.TenantId, ct))
             return new ApplyApplicationError.AlreadyApplied();
 
-        var validation = await validator.CanApplyAsync(opportunity, artist.Id);
+        var validation = await validator.CanApplyAsync(opportunity, artist.Id, ct);
         if (validation.TryGetErrors(out var errors))
             return new ApplyApplicationError.Invalid(new ValidationErrors(errors.ToDictionary()));
 
         if (opportunity.Genres.Count > 0 && !artist.Genres.Overlaps(opportunity.Genres))
             return new ApplyApplicationError.GenreMismatch();
 
-        var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId);
+        var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId, ct);
         if (!dealOption.TryGetValue(out var deal))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
@@ -148,18 +151,18 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 new DateRange(opportunity.StartDate, opportunity.EndDate)));
         application.NotifyCounterparty(ApplicationNotification.Applied);
 
-        await applicationRepository.AddAsync(application);
+        await applicationRepository.AddAsync(application, ct);
         if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
         {
             if (await applicationRepository.ExistsForOpportunityAndArtistTenantAsync(
-                    opportunityId, artist.TenantId))
+                    opportunityId, artist.TenantId, ct))
                 return new ApplyApplicationError.AlreadyApplied();
 
             throw new InvalidOperationException("Application save failed without creating an application.");
         }
 
         await notifier.AppliedAsync(application.Id);
-        return await mapper.ToDtoAsync(application);
+        return await mapper.ToDtoAsync(application, ct);
     }
 
     public Task<UnitResult<AcceptApplicationError>> AcceptAsync(

@@ -37,11 +37,12 @@ internal sealed class ApplicationController : ControllerBase
     [HttpPost("{opportunityId}")]
     public async Task<ActionResult<ApplicationResponse<ArtistApplicationActions>>> Apply(
         int opportunityId,
-        [FromBody] ApplyRequest request)
+        [FromBody] ApplyRequest request,
+        CancellationToken ct)
     {
         var result = request.PaymentMethodId is not null
-            ? await applicationService.ApplyAsync(opportunityId, request.PaymentMethodId, request.ESignature)
-            : await applicationService.ApplyAsync(opportunityId, request.ESignature);
+            ? await applicationService.ApplyAsync(opportunityId, request.PaymentMethodId, request.ESignature, ct)
+            : await applicationService.ApplyAsync(opportunityId, request.ESignature, ct);
         var response = await result.MapAsync(mapper.ToArtistResponseAsync);
         return response.ToCreatedOrProblem(application => $"/api/application/{application.Id}");
     }
