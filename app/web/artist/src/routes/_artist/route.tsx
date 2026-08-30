@@ -10,6 +10,7 @@ import { useArtistNotifications } from "../../features/notifications";
 import { requireArtist } from "../../features/artist";
 import { AppLayout } from "@concertable/web/components/AppLayout";
 import type { ProfileMenuItem } from "@concertable/web/components/ProfileMenu";
+import { Mailbox } from "@concertable/web/features/messaging";
 
 const links = [
   { label: "Dashboard", to: "/" },
@@ -32,6 +33,7 @@ function ArtistLayout() {
       links={links}
       profileItems={profileItems}
       headerSlot={<TenantSwitcher tenantType="artist" />}
+      messagingSlot={<Mailbox />}
     />
   );
 }
