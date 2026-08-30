@@ -50,6 +50,7 @@ using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
 using Concertable.Shared.Notification.Infrastructure.Extensions;
+using Concertable.Shared.Notification.Infrastructure.Hubs;
 using Concertable.Shared.Pdf.Infrastructure.Extensions;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
@@ -220,6 +221,54 @@ public static class B2BWebHostExtensions
             builder.AddRateLimitPolicy(RateLimitPolicies.Checkout, new RateLimitWindow { PermitLimit = 10, WindowSeconds = 60 }, perUser: true);
             builder.AddRateLimitPolicy(RateLimitPolicies.ProfileImage, new RateLimitWindow { PermitLimit = 20, WindowSeconds = 60 }, perUser: true);
             return builder;
+        }
+    }
+
+    extension(WebApplication app)
+    {
+        public async Task UseB2BWebHost()
+        {
+            app.UseForwardedHeaders();
+            app.UseExceptionHandler();
+            app.UseCors();
+            app.UseAuthentication();
+            app.UseMiddleware<TenantResolutionMiddleware>();
+            app.UseAuthorization();
+            app.UseDefaultRateLimiting();
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
+
+            app.MapDefaultEndpoints();
+            app.MapControllers();
+            app.MapHub<NotificationHub>("/hub/notifications");
+
+            app.MapFallback(async context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api"))
+                {
+                    context.Response.StatusCode = StatusCodes.Status404NotFound;
+                    return;
+                }
+
+                var indexPath = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html");
+                if (File.Exists(indexPath))
+                    await context.Response.SendFileAsync(indexPath);
+                else
+                    context.Response.StatusCode = StatusCodes.Status404NotFound;
+            });
+
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+
+            if (!app.Environment.IsProduction())
+            {
+                await using var scope = app.Services.CreateAsyncScope();
+                var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+                await initializer.InitializeAsync();
+            }
         }
     }
 }

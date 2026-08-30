@@ -1,6 +1,7 @@
 ﻿<Solution>
   <Project Path="src/Concertable.B2B.AppHost/Concertable.B2B.AppHost.csproj" />
   <Project Path="src/Concertable.B2B.Hosting/Concertable.B2B.Hosting.csproj" />
+  <Project Path="src/Concertable.B2B.TestKit/Concertable.B2B.TestKit.csproj" />
   <Project Path="../Concertable.Search/src/Concertable.Search.Hosting/Concertable.Search.Hosting.csproj" />
   <Project Path="../Concertable.Payment/src/Concertable.Payment.Hosting/Concertable.Payment.Hosting.csproj" />
   <Project Path="src/Concertable.B2B.Web/Concertable.B2B.Web.csproj" />
@@ -120,6 +121,8 @@
   </Folder>
   <Folder Name="/Tests/E2ETests/">
     <Project Path="tests/E2ETests/Concertable.B2B.E2ETests/Concertable.B2B.E2ETests.csproj" />
+    <Project Path="tests/E2ETests/Concertable.B2B.E2ETests.Server/Concertable.B2B.E2ETests.Server.csproj" />
     <Project Path="tests/E2ETests/Concertable.B2B.E2ETests.Ui/Concertable.B2B.E2ETests.Ui.csproj" />
+    <Project Path="tests/E2ETests/Concertable.B2B.E2ETests.Web/Concertable.B2B.E2ETests.Web.csproj" />
   </Folder>
 </Solution>
