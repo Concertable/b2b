@@ -17,6 +17,7 @@ public sealed class ContractIssuerTests
 {
     private readonly Mock<IDealAccessor> dealAccessor = new();
     private readonly Mock<IApplicationRepository> applicationRepository = new();
+    private readonly Mock<IOpportunityRepository> opportunityRepository = new();
     private readonly Mock<IContractRepository> contractRepository = new();
     private readonly Mock<IDealTermsRenderer> termsRenderer = new();
     private readonly Mock<ICurrentUser> currentUser = new();
@@ -27,6 +28,9 @@ public sealed class ContractIssuerTests
         Guid.NewGuid(), new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
         IPAddress.Parse("203.0.113.7"), "artist-agent", "Artie Artist", null);
 
+    private static readonly DateRange OpportunityPeriod = new(
+        new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc), new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc));
+
     public ContractIssuerTests()
     {
         dealAccessor.SetupGet(c => c.Deal).Returns(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
@@ -35,6 +39,9 @@ public sealed class ContractIssuerTests
             .ReturnsAsync(((ArtistReadModel, VenueReadModel)?)(
                 new ArtistReadModel { Id = 1, Name = "Artie Artist" },
                 new VenueReadModel { Id = 2, Name = "Vera Venue" }));
+        opportunityRepository
+            .Setup(r => r.GetPeriodByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync(OpportunityPeriod);
         termsRenderer.Setup(r => r.Render(It.IsAny<DealDto>())).Returns("terms");
         currentUser.SetupGet(u => u.Id).Returns(Guid.NewGuid());
         clientContext.SetupGet(c => c.IpAddress).Returns(IPAddress.Loopback);
@@ -43,6 +50,7 @@ public sealed class ContractIssuerTests
         issuer = new ContractIssuer(
             dealAccessor.Object,
             applicationRepository.Object,
+            opportunityRepository.Object,
             contractRepository.Object,
             termsRenderer.Object,
             currentUser.Object,

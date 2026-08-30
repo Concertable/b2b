@@ -28,7 +28,7 @@ internal sealed class BookingService : IBookingService
 
     public async Task<BookingSettlement> GetSettlementByConcertIdAsync(int concertId)
     {
-        var booking = await repository.GetForSettlementByConcertIdAsync(concertId)
+        var booking = await repository.GetWithApplicationByConcertIdAsync(concertId)
             .OrNotFound();
         if (booking is not DeferredBooking deferred)
             throw new BadRequestException("Concert finish requires a DeferredBooking");

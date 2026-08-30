@@ -9,6 +9,7 @@ internal sealed class ContractIssuer : IContractIssuer
 {
     private readonly IDealAccessor dealAccessor;
     private readonly IApplicationRepository applicationRepository;
+    private readonly IOpportunityRepository opportunityRepository;
     private readonly IContractRepository contractRepository;
     private readonly IDealTermsRenderer termsRenderer;
     private readonly ICurrentUser currentUser;
@@ -19,6 +20,7 @@ internal sealed class ContractIssuer : IContractIssuer
     public ContractIssuer(
         IDealAccessor dealAccessor,
         IApplicationRepository applicationRepository,
+        IOpportunityRepository opportunityRepository,
         IContractRepository contractRepository,
         IDealTermsRenderer termsRenderer,
         ICurrentUser currentUser,
@@ -28,6 +30,7 @@ internal sealed class ContractIssuer : IContractIssuer
     {
         this.dealAccessor = dealAccessor;
         this.applicationRepository = applicationRepository;
+        this.opportunityRepository = opportunityRepository;
         this.contractRepository = contractRepository;
         this.termsRenderer = termsRenderer;
         this.currentUser = currentUser;
@@ -44,6 +47,8 @@ internal sealed class ContractIssuer : IContractIssuer
         var deal = dealAccessor.Deal;
         var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(application.Id)
             .OrNotFound(DisplayNames.Application);
+        var period = await opportunityRepository.GetPeriodByIdAsync(application.OpportunityId)
+            .OrNotFound(DisplayNames.Opportunity);
 
         var contract = ContractEntity.Create(
             booking,
@@ -51,7 +56,7 @@ internal sealed class ContractIssuer : IContractIssuer
             venue.Name,
             artist.Id,
             artist.Name,
-            application.Opportunity.Period,
+            period,
             deal,
             termsRenderer.Render(deal),
             legal.PlatformTermsVersion,

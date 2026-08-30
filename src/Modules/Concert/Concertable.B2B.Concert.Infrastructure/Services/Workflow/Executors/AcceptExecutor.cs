@@ -13,6 +13,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
     private readonly ILifecycleTransitioner transitioner;
     private readonly IConcertWorkflowFactory workflows;
     private readonly IDealResolver dealResolver;
+    private readonly IOpportunityRepository opportunityRepository;
     private readonly IBookingRepository bookingRepository;
     private readonly IContractIssuer contractIssuer;
     private readonly ITermsFingerprintCalculator termsFingerprint;
@@ -25,6 +26,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         ILifecycleTransitioner transitioner,
         IConcertWorkflowFactory workflows,
         IDealResolver dealResolver,
+        IOpportunityRepository opportunityRepository,
         IBookingRepository bookingRepository,
         IContractIssuer contractIssuer,
         ITermsFingerprintCalculator termsFingerprint,
@@ -36,6 +38,7 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         this.transitioner = transitioner;
         this.workflows = workflows;
         this.dealResolver = dealResolver;
+        this.opportunityRepository = opportunityRepository;
         this.bookingRepository = bookingRepository;
         this.contractIssuer = contractIssuer;
         this.termsFingerprint = termsFingerprint;
@@ -67,7 +70,10 @@ internal sealed class AcceptExecutor : IAcceptExecutor
             async app =>
         {
             var deal = await dealResolver.ResolveByApplicationIdAsync(app.Id);
-            var terms = VerifyTermsUnchanged(app, deal);
+            var period = await opportunityRepository.GetPeriodByIdAsync(app.OpportunityId)
+                ?? throw new InvalidOperationException(
+                    $"Application {app.Id} references missing opportunity {app.OpportunityId}.");
+            var terms = VerifyTermsUnchanged(app, deal, period);
             if (terms.TryGetError(out var termsError))
                 return termsError;
 
@@ -102,8 +108,8 @@ internal sealed class AcceptExecutor : IAcceptExecutor
         return result;
     }
 
-    private UnitResult<AcceptApplicationError> VerifyTermsUnchanged(ApplicationEntity app, DealDto deal) =>
-        app.TermsFingerprint == termsFingerprint.Calculate(deal, app.Opportunity.Period)
+    private UnitResult<AcceptApplicationError> VerifyTermsUnchanged(ApplicationEntity app, DealDto deal, DateRange period) =>
+        app.TermsFingerprint == termsFingerprint.Calculate(deal, period)
             ? new Success()
             : new AcceptApplicationError.TermsChanged();
 }
