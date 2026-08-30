@@ -15,8 +15,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
 {
     private readonly ConcertDbContext context;
-    private readonly IPredicateSpecification<OpportunityEntity> opportunityUpcomingSpec;
-    private readonly IPredicateSpecification<ConcertEntity> concertUpcomingSpec;
+    private readonly IUpcomingSpecification<OpportunityEntity> opportunityUpcomingSpec;
+    private readonly IUpcomingSpecification<ConcertEntity> concertUpcomingSpec;
     private readonly IEndedAndBookedSpecification endedAndBookedSpec;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstandingSpec;
 
@@ -41,7 +41,7 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         var applications = context.Applications
                 .Where(a => a.State == LifecycleState.Applied
                     && a.VenueTenantId == venueTenantId)
-                .Where(opportunityUpcomingSpec.Via(a => a.Opportunity));
+                .Where(opportunityUpcomingSpec.ToExpression(a => a.Opportunity));
 
         var openOpportunities = context.Opportunities
                 .Where(o => o.TenantId == venueTenantId)
@@ -74,13 +74,13 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         var applications = context.Applications
                 .Where(a => a.State == LifecycleState.Applied
                     && a.ArtistTenantId == artistTenantId)
-                .Where(opportunityUpcomingSpec.Via(a => a.Opportunity));
+                .Where(opportunityUpcomingSpec.ToExpression(a => a.Opportunity));
 
         var acceptedAwaitingCheckout = context.Applications
                 .Where(a => a.State == LifecycleState.Accepted
                     && a.ArtistTenantId == artistTenantId
                     && checkoutCapableDealTypes.Contains(a.DealType))
-                .Where(opportunityUpcomingSpec.Via(a => a.Opportunity));
+                .Where(opportunityUpcomingSpec.ToExpression(a => a.Opportunity));
 
         var upcomingConcerts = context.Concerts
             .Where(c => c.ArtistTenantId == artistTenantId)
