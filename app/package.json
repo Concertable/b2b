@@ -1,0 +1,22 @@
+{
+  "name": "concertable-b2b-app",
+  "private": true,
+  "workspaces": [
+    "web/b2b/venue",
+    "web/b2b/artist",
+    "web/b2b/business",
+    "web/b2b/shared",
+    "web/admin",
+    "mobile/b2b",
+    "b2b/shared"
+  ],
+  "scripts": {
+    "build:venue": "npm -w @concertable/web-venue run build",
+    "build:artist": "npm -w @concertable/web-artist run build",
+    "build:business": "npm -w @concertable/web-business run build",
+    "build:admin": "npm -w @concertable/web-admin run build",
+    "typecheck:mobile": "npm -w @concertable/mobile-b2b exec -- tsc --noEmit -p tsconfig.json",
+    "build:mobile": "npm -w @concertable/mobile-b2b exec -- expo export --platform android",
+    "postinstall": "node scripts/patch-nativewind.js"
+  }
+}
