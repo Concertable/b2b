@@ -196,7 +196,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
 
     [Fact]
-    public async Task DeclareDoorRevenue_ShouldReturnBadRequest_AfterCancellation()
+    public async Task DeclareDoorRevenue_ShouldReturnConflict_AfterCancellation()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
@@ -208,7 +208,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
             $"/api/concert/{concert.Id}/door-revenue",
             new { doorRevenue = 200m });
 
-        await response.ShouldBe(HttpStatusCode.BadRequest);
+        await response.ShouldBe(HttpStatusCode.Conflict);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Cancelled, persisted.State);
         Assert.Null(persisted.DoorRevenue);
