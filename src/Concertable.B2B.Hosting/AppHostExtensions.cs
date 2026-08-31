@@ -8,16 +8,16 @@ namespace Concertable.B2B.Hosting;
 
 public static class AppHostExtensions
 {
-    public static IResourceBuilder<ContainerResource> AddB2BWeb(
+    public static IResourceBuilder<ServiceContainerResource> AddB2BWeb(
         this IDistributedApplicationBuilder builder,
         string image,
         string digest,
         IResourceBuilder<SqlServerDatabaseResource> sql,
-        IResourceBuilder<ProjectResource> auth,
+        IResourceBuilder<IResourceWithServiceDiscovery> auth,
         IResourceBuilder<AzureStorageResource> storage,
         IResourceBuilder<AzureBlobStorageResource> blobs,
         IResourceBuilder<AzureServiceBusResource> asb,
-        IResourceBuilder<ProjectResource> paymentWeb)
+        IResourceBuilder<IResourceWithServiceDiscovery> paymentWeb)
     {
         var b2bSecret = builder.Configuration["ServiceAuth:B2BClientSecret"];
         return builder.AddContainerImage(B2BConstants.WebResource, image, digest)
@@ -41,11 +41,11 @@ public static class AppHostExtensions
     public static IResourceBuilder<ProjectResource> AddB2BWeb<TProject>(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<SqlServerDatabaseResource> sql,
-        IResourceBuilder<ProjectResource> auth,
+        IResourceBuilder<IResourceWithServiceDiscovery> auth,
         IResourceBuilder<AzureStorageResource> storage,
         IResourceBuilder<AzureBlobStorageResource> blobs,
         IResourceBuilder<AzureServiceBusResource> asb,
-        IResourceBuilder<ProjectResource> paymentWeb)
+        IResourceBuilder<IResourceWithServiceDiscovery> paymentWeb)
         where TProject : IProjectMetadata, new()
     {
         var b2bSecret = builder.Configuration["ServiceAuth:B2BClientSecret"];
@@ -70,8 +70,8 @@ public static class AppHostExtensions
     public static IResourceBuilder<AzureFunctionsProjectResource> AddB2BWorkers<TProject>(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<SqlServerDatabaseResource> sql,
-        IResourceBuilder<ProjectResource>? paymentWeb = null,
-        IResourceBuilder<ProjectResource>? auth = null)
+        IResourceBuilder<IResourceWithServiceDiscovery>? paymentWeb = null,
+        IResourceBuilder<IResourceWithServiceDiscovery>? auth = null)
         where TProject : IProjectMetadata, new()
     {
         var workers = builder.AddAzureFunctionsProject<TProject>(B2BConstants.WorkersResource)
@@ -101,13 +101,13 @@ public static class AppHostExtensions
                       .WaitFor(asb);
     }
 
-    public static IResourceBuilder<ContainerResource> AddB2BWorkers(
+    public static IResourceBuilder<ServiceContainerResource> AddB2BWorkers(
         this IDistributedApplicationBuilder builder,
         string image,
         string digest,
         IResourceBuilder<SqlServerDatabaseResource> sql,
-        IResourceBuilder<ProjectResource>? paymentWeb = null,
-        IResourceBuilder<ProjectResource>? auth = null)
+        IResourceBuilder<IResourceWithServiceDiscovery>? paymentWeb = null,
+        IResourceBuilder<IResourceWithServiceDiscovery>? auth = null)
     {
         var workers = builder.AddContainerImage(B2BConstants.WorkersResource, image, digest)
                              .WithReference(sql)
@@ -126,7 +126,7 @@ public static class AppHostExtensions
         return workers;
     }
 
-    public static IResourceBuilder<ContainerResource> AddB2BSeedingSimulator(
+    public static IResourceBuilder<ServiceContainerResource> AddB2BSeedingSimulator(
         this IDistributedApplicationBuilder builder,
         string image,
         string digest,
