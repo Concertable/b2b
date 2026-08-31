@@ -8,7 +8,7 @@ namespace Concertable.B2B.Hosting;
 
 public static class AppHostExtensions
 {
-    public static IResourceBuilder<ContainerResource> AddB2BWeb(
+    public static IResourceBuilder<ServiceContainerResource> AddB2BWeb(
         this IDistributedApplicationBuilder builder,
         string image,
         string digest,
@@ -101,7 +101,7 @@ public static class AppHostExtensions
                       .WaitFor(asb);
     }
 
-    public static IResourceBuilder<ContainerResource> AddB2BWorkers(
+    public static IResourceBuilder<ServiceContainerResource> AddB2BWorkers(
         this IDistributedApplicationBuilder builder,
         string image,
         string digest,
@@ -126,7 +126,7 @@ public static class AppHostExtensions
         return workers;
     }
 
-    public static IResourceBuilder<ContainerResource> AddB2BSeedingSimulator(
+    public static IResourceBuilder<ServiceContainerResource> AddB2BSeedingSimulator(
         this IDistributedApplicationBuilder builder,
         string image,
         string digest,
