@@ -20,7 +20,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IOpportunityModule opportunityModule;
     private readonly ITenantContext tenantContext;
     private readonly IApplicationCheckoutService checkout;
-    private readonly IApplicationMapper mapper;
+    private readonly IApplicationDtoMapper mapper;
     private readonly TimeProvider timeProvider;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
@@ -35,7 +35,7 @@ internal sealed class ApplicationService : IApplicationService
         IOpportunityModule opportunityModule,
         ITenantContext tenantContext,
         IApplicationCheckoutService checkout,
-        IApplicationMapper mapper,
+        IApplicationDtoMapper mapper,
         TimeProvider timeProvider,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior)

@@ -7,14 +7,14 @@ using Concertable.B2B.Venue.Contracts;
 
 namespace Concertable.B2B.Application.Application.Mappers;
 
-internal sealed class ApplicationMapper : IApplicationMapper
+internal sealed class ApplicationDtoMapper : IApplicationDtoMapper
 {
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
     private readonly IVenueModule venueModule;
     private readonly IDealModule dealModule;
 
-    public ApplicationMapper(
+    public ApplicationDtoMapper(
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
         IVenueModule venueModule,

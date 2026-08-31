@@ -33,7 +33,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly IClientContext clientContext;
     private readonly IDealUnionFactory<Apply> applyFactory;
     private readonly IDealUnionFactory<Accept> acceptFactory;
-    private readonly IApplicationMapper mapper;
+    private readonly IApplicationDtoMapper mapper;
     private readonly TimeProvider timeProvider;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
@@ -52,7 +52,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IClientContext clientContext,
         IDealUnionFactory<Apply> applyFactory,
         IDealUnionFactory<Accept> acceptFactory,
-        IApplicationMapper mapper,
+        IApplicationDtoMapper mapper,
         TimeProvider timeProvider,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior)

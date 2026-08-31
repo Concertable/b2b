@@ -3,7 +3,7 @@ using Concertable.B2B.Application.Domain.Entities;
 
 namespace Concertable.B2B.Application.Application.Interfaces;
 
-internal interface IApplicationMapper
+internal interface IApplicationDtoMapper
 {
     Task<ApplicationDto> ToDtoAsync(ApplicationEntity application, CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationDto>> ToDtosAsync(
