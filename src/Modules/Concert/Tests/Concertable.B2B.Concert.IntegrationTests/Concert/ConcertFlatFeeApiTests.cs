@@ -108,7 +108,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<FinishConcertError.ConcertNotEnded>(error);
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(ConcertState.Draft, concert.State);
+        Assert.Equal(ConcertState.Posted, concert.State);
     }
 
     [Fact]

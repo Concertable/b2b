@@ -28,7 +28,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
         await FinishWithoutGrantingAsync(fixture.SeedState.ConcertFor(booking).Id);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(ConcertState.Posted, persisted.State);
         Assert.Null(await InvoiceForBookingAsync(booking.Id));
     }
 
@@ -40,7 +40,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
         await FinishWithoutGrantingAsync(fixture.SeedState.ConcertFor(booking).Id);
 
         var persisted = await ConcertAsync(fixture.SeedState.PastVenueHireApp.Id);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(ConcertState.Posted, persisted.State);
         Assert.Null(await InvoiceForBookingAsync(booking.Id));
     }
 

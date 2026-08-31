@@ -95,7 +95,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         Assert.DoesNotContain(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(ConcertState.Posted, persisted.State);
     }
 
     [Fact]

@@ -43,7 +43,7 @@ public sealed class TenantVerificationGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concertId);
 
         var concert = await ConcertAsync(concertId);
-        Assert.Equal(ConcertState.Draft, concert.State);
+        Assert.Equal(ConcertState.Posted, concert.State);
     }
 
     [Fact]

@@ -74,7 +74,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
-        Assert.Equal(ConcertState.Draft, persisted.State);
+        Assert.Equal(ConcertState.Posted, persisted.State);
     }
 
     [Fact]
