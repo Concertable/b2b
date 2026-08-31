@@ -3,7 +3,7 @@ using Concertable.B2B.Application.Application.DTOs;
 
 namespace Concertable.B2B.Application.Api.Mappers;
 
-internal interface IApplicationResponseMapper
+internal interface IApplicationMapper
 {
     Task<ApplicationResponse<VenueApplicationActions>> ToVenueResponseAsync(ApplicationDto dto);
     Task<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>> ToVenueResponsesAsync(IReadOnlyList<ApplicationDto> dtos);

@@ -4,11 +4,11 @@ using Concertable.B2B.Booking.Contracts;
 
 namespace Concertable.B2B.Application.Api.Mappers;
 
-internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
+internal sealed class ApplicationMapper : IApplicationMapper
 {
     private readonly IBookingModule bookingModule;
 
-    public ApplicationResponseMapper(IBookingModule bookingModule)
+    public ApplicationMapper(IBookingModule bookingModule)
     {
         this.bookingModule = bookingModule;
     }

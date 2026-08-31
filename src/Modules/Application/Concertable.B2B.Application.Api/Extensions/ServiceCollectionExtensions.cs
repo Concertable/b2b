@@ -17,7 +17,7 @@ public static class ServiceCollectionExtensions
         {
             services.AddApplicationModule(configuration);
             services.AddApplicationDevSeeder();
-            services.AddScoped<IApplicationResponseMapper, ApplicationResponseMapper>();
+            services.AddScoped<IApplicationMapper, ApplicationMapper>();
             services.AddValidatorsFromAssemblyContaining<ApplyRequestValidator>(includeInternalTypes: true);
             services.AddControllers().AddInternalControllers(typeof(ApplicationController).Assembly);
             return services;

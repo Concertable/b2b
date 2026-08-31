@@ -11,12 +11,12 @@ namespace Concertable.B2B.Application.Api.Controllers;
 internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
-    private readonly IApplicationResponseMapper mapper;
+    private readonly IApplicationMapper mapper;
     private readonly IMembershipContext membership;
 
     public ApplicationController(
         IApplicationService applicationService,
-        IApplicationResponseMapper mapper,
+        IApplicationMapper mapper,
         IMembershipContext membership)
     {
         this.applicationService = applicationService;
