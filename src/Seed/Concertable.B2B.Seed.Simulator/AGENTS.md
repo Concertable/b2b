@@ -6,7 +6,7 @@ A Worker host that publishes B2B's full seed event set (every `VenueChangedEvent
 
 Today the only consumer is `Concertable.Customer.AppHost`. Any future standalone host that depends on B2B's projection data (a standalone Search.AppHost, for example) would register the same simulator.
 
-The simulator is **not** registered in the umbrella `Concertable.AppHost`. Real B2B runs in the umbrella and publishes these events for real; the simulator would double-publish.
+The simulator is **not** registered in the umbrella `Concertable.System.AppHost`. Real B2B runs in the umbrella and publishes these events for real; the simulator would double-publish.
 
 ## Why it exists
 
@@ -81,7 +81,7 @@ The failure modes I've personally hit during the design of this system:
 
 - **Don't make `Concertable.Customer.Seed` know B2B-owned IDs.** Constants like `UpcomingConcertId = 13` previously lived in Customer.Seeding. Customer doesn't own those identifiers, B2B does — and they should not live as labels in the fixture either. Anything that needs "the upcoming concert" filters by `Name` on the injected `SeedCatalog.Concerts` list. The fixture stays 100% data.
 
-- **Don't add the simulator to `Concertable.AppHost`.** Real B2B is already running in the umbrella; the simulator there would double-publish (consumers are idempotent so it wouldn't corrupt data, but it's wasted work and confusing in logs).
+- **Don't add the simulator to `Concertable.System.AppHost`.** Real B2B is already running in the umbrella; the simulator there would double-publish (consumers are idempotent so it wouldn't corrupt data, but it's wasted work and confusing in logs).
 
 - **Don't run real B2B inside `Concertable.Customer.AppHost` to "solve" the empty-projection problem.** That re-monoliths the system. Customer's standalone AppHost exists precisely so Customer can be developed without B2B's runtime. If you find yourself adding `builder.AddProject<Projects.Concertable_B2B_Web>(...)` to Customer.AppHost, stop and re-read the `microservice-boundaries` skill.
 
