@@ -95,7 +95,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Declare_ShouldReturnStableProblem_WhenRevenueIsNegative()
+    public async Task Declare_ShouldReturnValidationProblem_WhenRevenueIsNegative()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
@@ -105,10 +105,8 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
             new { doorRevenue = -0.01m });
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
-        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
         Assert.NotNull(problem);
-        Assert.Equal("Door revenue must be zero or greater.", problem.Detail);
-        Assert.True(problem.Extensions.TryGetValue("code", out var code));
-        Assert.Equal("declare.door_revenue_negative", code?.ToString());
+        Assert.Equal(["Door revenue must be zero or greater."], problem.Errors["DoorRevenue"]);
     }
 }

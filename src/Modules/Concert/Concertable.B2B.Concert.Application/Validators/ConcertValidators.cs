@@ -18,6 +18,8 @@ internal sealed class DoorRevenueRequestValidator : AbstractValidator<DoorRevenu
 {
     public DoorRevenueRequestValidator()
     {
-        RuleFor(x => x.DoorRevenue).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.DoorRevenue)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Door revenue must be zero or greater.");
     }
 }
