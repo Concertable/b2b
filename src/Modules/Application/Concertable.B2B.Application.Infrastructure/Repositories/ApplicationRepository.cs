@@ -73,6 +73,31 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         return row is null ? null : (row.VenueTenantId, row.ArtistTenantId);
     }
 
+    public Task<ApplicationState?> GetStateByIdAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        context.Applications
+            .Where(application => application.Id == applicationId)
+            .Select(application => (ApplicationState?)application.State)
+            .FirstOrDefaultAsync(ct);
+
+    public Task<int?> GetOpportunityIdByIdAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        context.Applications
+            .Where(application => application.Id == applicationId)
+            .Select(application => (int?)application.OpportunityId)
+            .FirstOrDefaultAsync(ct);
+
+    public Task<bool> AnyAcceptedByOpportunityIdAsync(
+        int opportunityId,
+        CancellationToken ct = default) =>
+        context.Applications.AnyAsync(
+            application =>
+                application.OpportunityId == opportunityId &&
+                application.State == ApplicationState.Accepted,
+            ct);
+
     public async Task<IReadOnlyList<int>> RejectAllExceptAsync(
         int opportunityId,
         int applicationId,

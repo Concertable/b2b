@@ -79,6 +79,14 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         CancellationToken ct = default) =>
         context.Concerts.SingleOrDefaultAsync(concert => concert.BookingId == bookingId, ct);
 
+    public Task<ConcertState?> GetStateByIdAsync(
+        int concertId,
+        CancellationToken ct = default) =>
+        context.Concerts
+            .Where(concert => concert.Id == concertId)
+            .Select(concert => (ConcertState?)concert.State)
+            .FirstOrDefaultAsync(ct);
+
     public async Task<ConcertEntity?> GetByIdWithArtistAndVenueAsync(int id)
     {
         return await context.Concerts

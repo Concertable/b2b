@@ -9,6 +9,7 @@ using Concertable.B2B.Application.Domain;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
@@ -161,9 +162,23 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(
+        unitOfWorkBehavior.TryExecuteAsync(
             () => AcceptCoreAsync(applicationId, paymentMethodId, eSignature, ct),
+            static exception => exception.IsApplicationAcceptanceConflict(),
+            _ => ClassifyAcceptConflictAsync(applicationId, ct),
             ct);
+
+    private async Task<UnitResult<AcceptApplicationError>> ClassifyAcceptConflictAsync(
+        int applicationId,
+        CancellationToken ct)
+    {
+        var opportunityId = await applicationRepository.GetOpportunityIdByIdAsync(applicationId, ct);
+        if (opportunityId is { } opportunity &&
+            await applicationRepository.AnyAcceptedByOpportunityIdAsync(opportunity, ct))
+            return new AcceptApplicationError.AlreadyAccepted();
+
+        return new AcceptApplicationError.Superseded(applicationId);
+    }
 
     private async Task<UnitResult<AcceptApplicationError>> AcceptCoreAsync(
         int applicationId,
@@ -226,15 +241,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (application.Accept(acceptedApplication).TryGetError(out var transitionError))
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
-        if (!await unitOfWork.TrySaveChangesAsync(
-                static exception => exception is DbUpdateConcurrencyException || exception.IsDuplicateKey(),
-                ct))
-        {
-            var applications = await applicationRepository.GetByOpportunityIdAsync(application.OpportunityId, ct);
-            return applications.Any(candidate => candidate.State == ApplicationState.Accepted)
-                ? new AcceptApplicationError.AlreadyAccepted()
-                : new AcceptApplicationError.Superseded(applicationId);
-        }
+        await unitOfWork.SaveChangesAsync(ct);
 
         var rejectedApplicationIds = await applicationRepository.RejectAllExceptAsync(
             application.OpportunityId, application.Id, ct);

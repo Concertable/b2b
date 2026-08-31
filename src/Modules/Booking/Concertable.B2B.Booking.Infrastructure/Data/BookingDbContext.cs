@@ -6,7 +6,7 @@ internal sealed class BookingDbContext(
     DbContextOptions<BookingDbContext> options,
     BookingConfigurationProvider provider,
     ITenantContext tenantContext)
-    : VenueArtistTenantScopedDbContext(options, provider, tenantContext, Schema.Name)
+    : TenantScopedDbContext(options, provider, tenantContext, Schema.Name)
 {
     public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
     public DbSet<ContractEntity> Contracts => Set<ContractEntity>();

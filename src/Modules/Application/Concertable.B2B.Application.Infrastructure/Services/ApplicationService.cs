@@ -3,6 +3,7 @@ using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -181,10 +182,24 @@ internal sealed class ApplicationService : IApplicationService
         CancellationToken ct = default) =>
         workflow.AcceptAsync(applicationId, paymentMethodId, eSignature, ct);
 
-    public async Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(
+    public Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        await unitOfWorkBehavior.ExecuteAsync(() => WithdrawCoreAsync(applicationId, ct), ct);
+        unitOfWorkBehavior.TryExecuteAsync(
+            () => WithdrawCoreAsync(applicationId, ct),
+            static exception => exception.IsApplicationConcurrencyConflict(),
+            _ => ClassifyWithdrawConflictAsync(applicationId, ct),
+            ct);
+
+    private async Task<UnitResult<WithdrawApplicationError>> ClassifyWithdrawConflictAsync(
+        int applicationId,
+        CancellationToken ct)
+    {
+        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Withdrawn)
+            return new Success();
+
+        return new WithdrawApplicationError.Superseded(applicationId);
+    }
 
     private async Task<UnitResult<WithdrawApplicationError>> WithdrawCoreAsync(
         int applicationId,
@@ -196,24 +211,29 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Withdraw().TryGetError(out var transitionError))
             return new WithdrawApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Withdrawn);
-        if (!await unitOfWork.TrySaveChangesAsync(
-                static exception => exception is DbUpdateConcurrencyException,
-                ct))
-        {
-            application = await applicationRepository.GetByIdAsync(applicationId, ct);
-            return application?.State == ApplicationState.Withdrawn
-                ? new Success()
-                : new WithdrawApplicationError.Superseded(applicationId);
-        }
-
+        await unitOfWork.SaveChangesAsync(ct);
         await notifier.WithdrawnAsync(applicationId);
         return new Success();
     }
 
-    public async Task<UnitResult<RejectApplicationError>> RejectAsync(
+    public Task<UnitResult<RejectApplicationError>> RejectAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        await unitOfWorkBehavior.ExecuteAsync(() => RejectCoreAsync(applicationId, ct), ct);
+        unitOfWorkBehavior.TryExecuteAsync(
+            () => RejectCoreAsync(applicationId, ct),
+            static exception => exception.IsApplicationConcurrencyConflict(),
+            _ => ClassifyRejectConflictAsync(applicationId, ct),
+            ct);
+
+    private async Task<UnitResult<RejectApplicationError>> ClassifyRejectConflictAsync(
+        int applicationId,
+        CancellationToken ct)
+    {
+        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Rejected)
+            return new Success();
+
+        return new RejectApplicationError.Superseded(applicationId);
+    }
 
     private async Task<UnitResult<RejectApplicationError>> RejectCoreAsync(
         int applicationId,
@@ -225,24 +245,29 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Reject().TryGetError(out var transitionError))
             return new RejectApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Rejected);
-        if (!await unitOfWork.TrySaveChangesAsync(
-                static exception => exception is DbUpdateConcurrencyException,
-                ct))
-        {
-            application = await applicationRepository.GetByIdAsync(applicationId, ct);
-            return application?.State == ApplicationState.Rejected
-                ? new Success()
-                : new RejectApplicationError.Superseded(applicationId);
-        }
-
+        await unitOfWork.SaveChangesAsync(ct);
         await notifier.RejectedAsync(applicationId);
         return new Success();
     }
 
-    public async Task<UnitResult<CancelApplicationError>> CancelAsync(
+    public Task<UnitResult<CancelApplicationError>> CancelAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        await unitOfWorkBehavior.ExecuteAsync(() => CancelCoreAsync(applicationId, ct), ct);
+        unitOfWorkBehavior.TryExecuteAsync(
+            () => CancelCoreAsync(applicationId, ct),
+            static exception => exception.IsApplicationConcurrencyConflict(),
+            _ => ClassifyCancelConflictAsync(applicationId, ct),
+            ct);
+
+    private async Task<UnitResult<CancelApplicationError>> ClassifyCancelConflictAsync(
+        int applicationId,
+        CancellationToken ct)
+    {
+        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Cancelled)
+            return new Success();
+
+        return new CancelApplicationError.Superseded(applicationId);
+    }
 
     private async Task<UnitResult<CancelApplicationError>> CancelCoreAsync(
         int applicationId,
@@ -254,16 +279,7 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Cancel().TryGetError(out var transitionError))
             return new CancelApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.ApplicationCancelled);
-        if (!await unitOfWork.TrySaveChangesAsync(
-                static exception => exception is DbUpdateConcurrencyException,
-                ct))
-        {
-            application = await applicationRepository.GetByIdAsync(applicationId, ct);
-            return application?.State == ApplicationState.Cancelled
-                ? new Success()
-                : new CancelApplicationError.Superseded(applicationId);
-        }
-
+        await unitOfWork.SaveChangesAsync(ct);
         await notifier.CancelledAsync(applicationId);
         return new Success();
     }

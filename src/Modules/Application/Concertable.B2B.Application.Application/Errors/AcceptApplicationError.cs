@@ -19,9 +19,7 @@ internal abstract partial record AcceptApplicationError : IError
         Superseded(var applicationId) => ErrorDefinition.Conflict<Superseded>(
             $"Application {applicationId} changed while this acceptance was in flight."),
         PaymentMethodRequired => ErrorDefinition.Invalid<PaymentMethodRequired>(
-            "This deal requires a payment method at acceptance."),
-        UnsupportedDeal(var dealType) => ErrorDefinition.Invalid<UnsupportedDeal>(
-            $"Deal {dealType} does not support acceptance.")
+            "This deal requires a payment method at acceptance.")
     };
 
     public partial record Ineligible(ApplicationEligibilityError Error);
@@ -40,7 +38,4 @@ internal abstract partial record AcceptApplicationError : IError
 
     [ErrorCode("application.accept.payment_method_required")]
     public partial record PaymentMethodRequired;
-
-    [ErrorCode("application.accept.unsupported_deal")]
-    public partial record UnsupportedDeal(DealType DealType);
 }

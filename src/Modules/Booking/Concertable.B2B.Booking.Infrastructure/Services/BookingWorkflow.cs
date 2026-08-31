@@ -9,6 +9,7 @@ using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.ValueObjects;
+using Concertable.B2B.Booking.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
@@ -58,29 +59,39 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     public Task<UnitResult<CancelBookingError>> CancelAsync(
         int bookingId,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(
-            () => outboxBehavior.ExecuteAsync(async () =>
-            {
-                var booking = await bookingRepository.GetByIdAsync(bookingId, ct);
-                if (booking is null)
-                    return (UnitResult<CancelBookingError>)new CancelBookingError.BookingNotFound(bookingId);
-                if (booking.State is BookingState.Cancelled or BookingState.CancellationPending)
-                    return UnitResult.Success<CancelBookingError>();
-                if (booking.ValidateBeginCancellation().TryGetError(out var transitionError))
-                    return new CancelBookingError.InvalidTransition(transitionError);
-
-                await cancelFactory.Create(booking.DealType).CancelAsync(booking, ct);
-                if (await unitOfWork.TrySaveChangesAsync(
-                        static exception => exception is DbUpdateConcurrencyException,
-                        ct))
-                    return UnitResult.Success<CancelBookingError>();
-
-                booking = await bookingRepository.GetByIdAsync(bookingId, ct);
-                return booking?.State is BookingState.Cancelled or BookingState.CancellationPending
-                    ? UnitResult.Success<CancelBookingError>()
-                    : new CancelBookingError.Superseded(bookingId);
-            }, ct),
+        unitOfWorkBehavior.TryExecuteAsync(
+            () => outboxBehavior.ExecuteAsync(() => CancelCoreAsync(bookingId, ct), ct),
+            static exception => exception.IsBookingConcurrencyConflict(),
+            _ => ClassifyCancelConflictAsync(bookingId, ct),
             ct);
+
+    private async Task<UnitResult<CancelBookingError>> ClassifyCancelConflictAsync(
+        int bookingId,
+        CancellationToken ct)
+    {
+        if (await bookingRepository.GetStateByIdAsync(bookingId, ct)
+            is BookingState.Cancelled or BookingState.CancellationPending)
+            return new Success();
+
+        return new CancelBookingError.Superseded(bookingId);
+    }
+
+    private async Task<UnitResult<CancelBookingError>> CancelCoreAsync(
+        int bookingId,
+        CancellationToken ct)
+    {
+        var booking = await bookingRepository.GetByIdAsync(bookingId, ct);
+        if (booking is null)
+            return new CancelBookingError.BookingNotFound(bookingId);
+        if (booking.State is BookingState.Cancelled or BookingState.CancellationPending)
+            return new Success();
+        if (booking.ValidateBeginCancellation().TryGetError(out var transitionError))
+            return new CancelBookingError.InvalidTransition(transitionError);
+
+        await cancelFactory.Create(booking.DealType).CancelAsync(booking, ct);
+        await unitOfWork.SaveChangesAsync(ct);
+        return new Success();
+    }
 
     public Task RecordSucceededAsync(
         int bookingId,

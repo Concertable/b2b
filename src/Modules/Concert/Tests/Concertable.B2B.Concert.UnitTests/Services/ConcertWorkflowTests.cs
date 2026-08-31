@@ -21,19 +21,20 @@ public sealed class ConcertWorkflowTests
     private readonly Mock<IDealStrategyFactory<ICancel>> cancelFactory = new();
     private readonly Mock<IDealStrategyFactory<IComplete>> completeFactory = new();
     private readonly Mock<IUnitOfWork> unitOfWork = new();
+    private readonly ImmediateBehavior behavior;
     private readonly ConcertWorkflow workflow;
 
     public ConcertWorkflowTests()
     {
-        var behavior = new ImmediateBehavior();
+        this.behavior = new ImmediateBehavior();
         this.workflow = new ConcertWorkflow(
             this.concertRepository.Object,
             this.settlementService.Object,
             this.cancelFactory.Object,
             this.completeFactory.Object,
             this.unitOfWork.Object,
-            behavior,
-            behavior);
+            this.behavior,
+            this.behavior);
     }
 
     [Fact]
@@ -92,43 +93,59 @@ public sealed class ConcertWorkflowTests
         this.concertRepository
             .Setup(repository => repository.GetByIdAsync(42, default))
             .ReturnsAsync(concert);
-        this.unitOfWork
-            .Setup(unitOfWork => unitOfWork.TrySaveChangesAsync(
-                It.IsAny<Func<DbUpdateException, bool>>(),
-                default))
-            .ReturnsAsync(true);
-
         var result = await this.workflow.CancelAsync(42);
 
         Assert.False(result.TryGetError(out _));
         strategy.Verify(value => value.CancelAsync(concert, default));
-        this.unitOfWork.Verify(unitOfWork => unitOfWork.TrySaveChangesAsync(
-            It.IsAny<Func<DbUpdateException, bool>>(),
-            default));
+        this.unitOfWork.Verify(unitOfWork => unitOfWork.SaveChangesAsync(default));
     }
 
     [Fact]
     public async Task CancelAsync_SaveRaceLost_ReturnsSuperseded()
     {
+        this.behavior.ClassifiesSaveFailureAsConflict = true;
         var strategy = new Mock<ICancel>();
         this.cancelFactory
             .Setup(factory => factory.Create(DealType.FlatFee))
             .Returns(strategy.Object);
         this.concertRepository
-            .SetupSequence(repository => repository.GetByIdAsync(42, default))
-            .ReturnsAsync(CreateBooking())
+            .Setup(repository => repository.GetByIdAsync(42, default))
             .ReturnsAsync(CreateBooking());
         this.unitOfWork
-            .Setup(unitOfWork => unitOfWork.TrySaveChangesAsync(
-                It.IsAny<Func<DbUpdateException, bool>>(),
-                default))
-            .ReturnsAsync(false);
+            .Setup(unitOfWork => unitOfWork.SaveChangesAsync(default))
+            .ThrowsAsync(new DbUpdateConcurrencyException());
+        this.concertRepository
+            .Setup(repository => repository.GetStateByIdAsync(42, default))
+            .ReturnsAsync(ConcertState.Posted);
 
         var result = await this.workflow.CancelAsync(42);
 
         Assert.True(result.TryGetError(out var error));
         var superseded = Assert.IsType<CancelConcertError.Superseded>(error);
         Assert.Equal(42, superseded.ConcertId);
+    }
+
+    [Fact]
+    public async Task CancelAsync_SaveRaceLostToAnotherCancellation_ReturnsSuccess()
+    {
+        this.behavior.ClassifiesSaveFailureAsConflict = true;
+        var strategy = new Mock<ICancel>();
+        this.cancelFactory
+            .Setup(factory => factory.Create(DealType.FlatFee))
+            .Returns(strategy.Object);
+        this.concertRepository
+            .Setup(repository => repository.GetByIdAsync(42, default))
+            .ReturnsAsync(CreateBooking());
+        this.unitOfWork
+            .Setup(unitOfWork => unitOfWork.SaveChangesAsync(default))
+            .ThrowsAsync(new DbUpdateConcurrencyException());
+        this.concertRepository
+            .Setup(repository => repository.GetStateByIdAsync(42, default))
+            .ReturnsAsync(ConcertState.CancellationPending);
+
+        var result = await this.workflow.CancelAsync(42);
+
+        Assert.False(result.TryGetError(out _));
     }
 
     [Fact]
@@ -211,8 +228,32 @@ public sealed class ConcertWorkflowTests
 
     private sealed class ImmediateBehavior : IUnitOfWorkBehavior, IOutboxUnitOfWorkBehavior
     {
+        /// <summary>
+        /// Stands in for the real behaviour's predicate. Fabricating a <see cref="DbUpdateException"/> with
+        /// populated <c>Entries</c> needs a live EF context, so the predicate itself is covered by the
+        /// integration race tests; this flag supplies its verdict.
+        /// </summary>
+        public bool ClassifiesSaveFailureAsConflict { get; set; }
+
         public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default) => action();
 
         public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken = default) => action();
+
+        public async Task<T> TryExecuteAsync<T>(
+            Func<Task<T>> action,
+            Func<DbUpdateException, bool> isExpected,
+            Func<DbUpdateException, Task<T>> onExpectedFailure,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await action();
+            }
+            catch (DbUpdateException exception)
+                when (ClassifiesSaveFailureAsConflict || isExpected(exception))
+            {
+                return await onExpectedFailure(exception);
+            }
+        }
     }
 }

@@ -245,7 +245,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.invalid_state");
+        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.superseded");
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
             ApplicationState.Rejected,
@@ -268,7 +268,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
 
         var reject = await venue.PostAsync($"/api/application/{applicationId}/reject");
 
-        await AssertProblemCodeAsync(reject, HttpStatusCode.Conflict, "application.reject.invalid_state");
+        await AssertProblemCodeAsync(reject, HttpStatusCode.Conflict, "application.reject.superseded");
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
             ApplicationState.Accepted,
@@ -291,7 +291,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.invalid_state");
+        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.superseded");
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
             ApplicationState.Cancelled,
@@ -314,7 +314,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
 
         var cancel = await venue.PostAsync($"/api/application/{applicationId}/cancel");
 
-        await AssertProblemCodeAsync(cancel, HttpStatusCode.Conflict, "application.cancel.invalid_state");
+        await AssertProblemCodeAsync(cancel, HttpStatusCode.Conflict, "application.cancel.superseded");
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
             ApplicationState.Accepted,
@@ -337,7 +337,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.invalid_state");
+        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.superseded");
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
             ApplicationState.Withdrawn,

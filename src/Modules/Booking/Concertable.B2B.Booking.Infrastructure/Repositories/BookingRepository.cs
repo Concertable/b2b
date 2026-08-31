@@ -52,6 +52,14 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
             .Select(booking => (int?)booking.ApplicationId)
             .FirstOrDefaultAsync(ct);
 
+    public Task<BookingState?> GetStateByIdAsync(
+        int bookingId,
+        CancellationToken ct = default) =>
+        context.Bookings
+            .Where(booking => booking.Id == bookingId)
+            .Select(booking => (BookingState?)booking.State)
+            .FirstOrDefaultAsync(ct);
+
     public Task<int> GetAwaitingCheckoutCountByArtistTenantIdAsync(
         Guid artistTenantId,
         DateTime now,
