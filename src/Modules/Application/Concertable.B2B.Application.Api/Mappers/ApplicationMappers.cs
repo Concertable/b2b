@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Application.Api.Mappers;
 
-internal static class ApplicationResponseMappers
+internal static class ApplicationMappers
 {
     extension(ApplicationDto dto)
     {

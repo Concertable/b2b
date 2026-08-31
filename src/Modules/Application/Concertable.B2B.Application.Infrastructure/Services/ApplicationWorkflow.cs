@@ -5,6 +5,7 @@ using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Application.Requests;
 using Concertable.B2B.Application.Application.Strategies;
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Domain;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
@@ -29,7 +30,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly ITenantContext tenantContext;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
-    private readonly ITermsFingerprintCalculator termsFingerprint;
     private readonly IDealUnionFactory<Apply> applyFactory;
     private readonly IDealUnionFactory<Accept> acceptFactory;
     private readonly IApplicationMapper mapper;
@@ -49,7 +49,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ITenantContext tenantContext,
         ICurrentUser currentUser,
         IClientContext clientContext,
-        ITermsFingerprintCalculator termsFingerprint,
         IDealUnionFactory<Apply> applyFactory,
         IDealUnionFactory<Accept> acceptFactory,
         IApplicationMapper mapper,
@@ -68,7 +67,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.tenantContext = tenantContext;
         this.currentUser = currentUser;
         this.clientContext = clientContext;
-        this.termsFingerprint = termsFingerprint;
         this.applyFactory = applyFactory;
         this.acceptFactory = acceptFactory;
         this.mapper = mapper;
@@ -139,16 +137,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             return new ApplyApplicationError.MissingUser();
 
         application.RecordArtistESignature(
-            new Signature(
-                userId,
-                timeProvider.GetUtcNow().UtcDateTime,
-                clientContext.IpAddress,
-                clientContext.UserAgent,
-                eSignature.SignatoryName,
-                eSignature.DrawnSignatureImage),
-            termsFingerprint.Calculate(
-                deal,
-                new DateRange(opportunity.StartDate, opportunity.EndDate)));
+            eSignature.ToSignature(userId, timeProvider.GetUtcNow().UtcDateTime, clientContext.IpAddress, clientContext.UserAgent),
+            CalculateTermsFingerprint(deal, opportunity));
         application.NotifyCounterparty(ApplicationNotification.Applied);
 
         await applicationRepository.AddAsync(application, ct);
@@ -207,10 +197,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
 
-        var fingerprint = termsFingerprint.Calculate(
-            deal,
-            new DateRange(opportunity.StartDate, opportunity.EndDate));
-        if (application.TermsFingerprint != fingerprint)
+        if (application.TermsFingerprint != CalculateTermsFingerprint(deal, opportunity))
             return new AcceptApplicationError.TermsChanged();
 
         if (currentUser.Id is not { } userId)
@@ -218,22 +205,16 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 new ApplicationEligibilityError.ApplicationNotFound());
 
         var operationId = application.AcceptanceOperationId ?? Guid.NewGuid();
-        var venueSignature = new Signature(
-            userId,
-            timeProvider.GetUtcNow().UtcDateTime,
-            clientContext.IpAddress,
-            clientContext.UserAgent,
-            eSignature.SignatoryName,
-            eSignature.DrawnSignatureImage);
-        Result<AcceptedApplication, AcceptApplicationError> accepted = this.acceptFactory.Create(deal.DealType) switch
+        var venueSignature = eSignature.ToSignature(
+            userId, timeProvider.GetUtcNow().UtcDateTime, clientContext.IpAddress, clientContext.UserAgent);
+        var accepted = this.acceptFactory.Create(deal.DealType) switch
         {
             Accept.Standard(var accept) => accept.Accept(
                 application, opportunity, artist, venue, deal, venueSignature, operationId),
             Accept.Paid when string.IsNullOrWhiteSpace(paymentMethodId) =>
                 new AcceptApplicationError.PaymentMethodRequired(),
             Accept.Paid(var accept) => accept.Accept(
-                application, opportunity, artist, venue, deal, venueSignature, operationId, paymentMethodId),
-            _ => throw new UnreachableException()
+                application, opportunity, artist, venue, deal, venueSignature, operationId, paymentMethodId)
         };
         if (accepted.TryGetError(out var acceptanceError))
             return acceptanceError;
@@ -260,4 +241,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         await notifier.AcceptedAsync(applicationId);
         return new Success();
     }
+
+    private static string CalculateTermsFingerprint(DealDto deal, OpportunityDto opportunity) =>
+        ApplicationTermsFingerprint.Calculate(deal, new DateRange(opportunity.StartDate, opportunity.EndDate));
 }

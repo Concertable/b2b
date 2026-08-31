@@ -84,7 +84,6 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IApplicationCheckoutService, ApplicationCheckoutService>();
             services.AddApplicationDealStrategies();
             services.AddApplicationDealUnions();
-            services.AddScoped<ITermsFingerprintCalculator, TermsFingerprintCalculator>();
             services.AddScoped<IApplicationModule, ApplicationModule>();
 
             services.AddSingleton<ApplicationConfigurationProvider>();

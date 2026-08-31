@@ -4,11 +4,11 @@ using Concertable.B2B.Booking.Contracts;
 
 namespace Concertable.B2B.Application.Api.Mappers;
 
-internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
+internal sealed class ApplicationMapper : IApplicationMapper
 {
     private readonly IBookingModule bookingModule;
 
-    public ApplicationResponseMapper(IBookingModule bookingModule)
+    public ApplicationMapper(IBookingModule bookingModule)
     {
         this.bookingModule = bookingModule;
     }
@@ -21,13 +21,12 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
     }
 
     public async Task<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>> ToVenueResponsesAsync(
-        IEnumerable<ApplicationDto> dtos)
+        IReadOnlyList<ApplicationDto> dtos)
     {
-        var dtoList = dtos.ToList();
         var bookingsByApplicationId = (await this.bookingModule.GetByApplicationIdsAsync(
-                dtoList.Select(dto => dto.Id).ToArray()))
+                dtos.Select(dto => dto.Id).ToArray()))
             .ToDictionary(booking => booking.ApplicationId);
-        return dtoList
+        return dtos
             .Select(dto => dto.ToVenueResponse(bookingsByApplicationId.GetValueOrDefault(dto.Id)))
             .ToList();
     }
@@ -40,13 +39,12 @@ internal sealed class ApplicationResponseMapper : IApplicationResponseMapper
     }
 
     public async Task<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>> ToArtistResponsesAsync(
-        IEnumerable<ApplicationDto> dtos)
+        IReadOnlyList<ApplicationDto> dtos)
     {
-        var dtoList = dtos.ToList();
         var bookingsByApplicationId = (await this.bookingModule.GetByApplicationIdsAsync(
-                dtoList.Select(dto => dto.Id).ToArray()))
+                dtos.Select(dto => dto.Id).ToArray()))
             .ToDictionary(booking => booking.ApplicationId);
-        return dtoList
+        return dtos
             .Select(dto => dto.ToArtistResponse(bookingsByApplicationId.GetValueOrDefault(dto.Id)))
             .ToList();
     }

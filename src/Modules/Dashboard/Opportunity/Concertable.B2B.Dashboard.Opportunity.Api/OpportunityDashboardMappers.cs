@@ -2,9 +2,9 @@ using Concertable.B2B.Dashboard.Opportunity.Application;
 
 namespace Concertable.B2B.Dashboard.Opportunity.Api;
 
-internal static class OpportunityDashboardResponseMappers
+internal static class OpportunityDashboardMappers
 {
-    extension(IEnumerable<OpportunityApplicationMetrics> metrics)
+    extension(IReadOnlyList<OpportunityApplicationMetrics> metrics)
     {
         public IReadOnlyList<OpportunityApplicationMetricsResponse> ToResponses() =>
             metrics.Select(item => new OpportunityApplicationMetricsResponse(
@@ -14,7 +14,7 @@ internal static class OpportunityDashboardResponseMappers
                 .ToList();
     }
 
-    extension(IEnumerable<OpportunityMatch> matches)
+    extension(IReadOnlyList<OpportunityMatch> matches)
     {
         public IReadOnlyList<OpportunityMatchResponse> ToResponses() =>
             matches.Select(match => new OpportunityMatchResponse(
