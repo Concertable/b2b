@@ -38,10 +38,13 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         Guid venueTenantId,
         CancellationToken ct = default)
     {
+        var applicationOpportunityUpcomingSpec =
+            opportunityUpcomingSpec.Via((ApplicationEntity a) => a.Opportunity);
+
         var applications = context.Applications
                 .Where(a => a.State == LifecycleState.Applied
                     && a.VenueTenantId == venueTenantId)
-                .Where(opportunityUpcomingSpec.ToExpression<ApplicationEntity>(a => a.Opportunity));
+                .Where(applicationOpportunityUpcomingSpec.ToExpression());
 
         var openOpportunities = context.Opportunities
                 .Where(o => o.TenantId == venueTenantId)
@@ -52,13 +55,11 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
             .Where(c => c.VenueTenantId == venueTenantId)
             .Where(concertUpcomingSpec.ToExpression());
 
-        var awaitingDoorRevenuePredicate = endedAndBookedSpec
-            .And(doorRevenueOutstandingSpec)
-            .ToExpression();
+        var awaitingDoorRevenueSpec = endedAndBookedSpec.And(doorRevenueOutstandingSpec);
 
         var awaitingDoorRevenueConcerts = context.Concerts
             .Where(c => c.VenueTenantId == venueTenantId)
-            .Where(awaitingDoorRevenuePredicate);
+            .Where(awaitingDoorRevenueSpec.ToExpression());
 
         return context.VenueReadModels
             .Where(v => v.TenantId == venueTenantId)
@@ -71,16 +72,19 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         IReadOnlyCollection<DealType> checkoutCapableDealTypes,
         CancellationToken ct = default)
     {
+        var applicationOpportunityUpcomingSpec =
+            opportunityUpcomingSpec.Via((ApplicationEntity a) => a.Opportunity);
+
         var applications = context.Applications
                 .Where(a => a.State == LifecycleState.Applied
                     && a.ArtistTenantId == artistTenantId)
-                .Where(opportunityUpcomingSpec.ToExpression<ApplicationEntity>(a => a.Opportunity));
+                .Where(applicationOpportunityUpcomingSpec.ToExpression());
 
         var acceptedAwaitingCheckout = context.Applications
                 .Where(a => a.State == LifecycleState.Accepted
                     && a.ArtistTenantId == artistTenantId
                     && checkoutCapableDealTypes.Contains(a.DealType))
-                .Where(opportunityUpcomingSpec.ToExpression<ApplicationEntity>(a => a.Opportunity));
+                .Where(applicationOpportunityUpcomingSpec.ToExpression());
 
         var upcomingConcerts = context.Concerts
             .Where(c => c.ArtistTenantId == artistTenantId)
