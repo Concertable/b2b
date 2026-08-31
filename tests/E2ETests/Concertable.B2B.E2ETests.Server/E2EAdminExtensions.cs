@@ -93,7 +93,7 @@ public static class E2EAdminExtensions
             VenueManager3 = User(seed.VenueManager3),
             Tenants = seed.Tenants.Select(tenant => new { tenant.Id, tenant.CreatedByUserId }),
             Venue = new { seed.Venue.Id },
-            FreshVenueHireOpportunity = new { seed.FreshVenueHireOpportunity.Id, seed.FreshVenueHireOpportunity.VenueId },
+            FreshVenueHireOpportunity = new { seed.ActiveVenueHireOpportunity.Id, seed.ActiveVenueHireOpportunity.VenueId },
             FlatFeeApp = new { Id = await GetApplicationIdAsync(connection, seed.FlatFeeApp) },
             DoorSplitApp = new { Id = await GetApplicationIdAsync(connection, seed.DoorSplitApp) },
             VersusApp = new { Id = await GetApplicationIdAsync(connection, seed.VersusApp) },
@@ -110,14 +110,14 @@ public static class E2EAdminExtensions
 
     private static Task<int> GetApplicationIdAsync(
         IDbConnection connection,
-        Concertable.B2B.Concert.Domain.Entities.ApplicationEntity application) =>
+        Concertable.B2B.Application.Domain.Entities.ApplicationEntity application) =>
         connection.QuerySingleAsync<int>(
-            "SELECT Id FROM concert.Applications WHERE ArtistId = @ArtistId AND OpportunityId = @OpportunityId",
+            "SELECT Id FROM application.Applications WHERE ArtistId = @ArtistId AND OpportunityId = @OpportunityId",
             new { application.ArtistId, application.OpportunityId });
 
     private static object Booking(
         SeedState seed,
-        Concertable.B2B.Concert.Domain.Entities.BookingEntity booking)
+        Concertable.B2B.Booking.Domain.Entities.BookingEntity booking)
     {
         var concert = seed.Concerts.Single(concert => concert.BookingId == booking.Id);
         return new
@@ -135,21 +135,21 @@ public static class E2EAdminExtensions
         int applicationId,
         IDbConnection connection) =>
         Results.Ok(await connection.QuerySingleAsync<int>(
-            "SELECT Id FROM concert.Bookings WHERE ApplicationId = @applicationId",
+            "SELECT Id FROM booking.Bookings WHERE ApplicationId = @applicationId",
             new { applicationId }));
 
     private static async Task<IResult> GetApplicationStateAsync(
         int applicationId,
         IDbConnection connection) =>
         Results.Ok(await connection.QuerySingleAsync<int>(
-            "SELECT State FROM concert.Applications WHERE Id = @applicationId",
+            "SELECT State FROM application.Applications WHERE Id = @applicationId",
             new { applicationId }));
 
     private static async Task<IResult> GetNewestOpportunityIdAsync(
         int venueId,
         IDbConnection connection) =>
         Results.Ok(await connection.QuerySingleAsync<int>(
-            "SELECT MAX(Id) FROM concert.Opportunities WHERE VenueId = @venueId",
+            "SELECT MAX(Id) FROM opportunity.Opportunities WHERE VenueId = @venueId",
             new { venueId }));
 
     private static async Task<IResult> DeclareDoorRevenueAsync(
