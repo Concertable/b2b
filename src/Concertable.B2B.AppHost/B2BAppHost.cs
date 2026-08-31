@@ -24,8 +24,10 @@ public static class B2BAppHost
         var (storage, blobs) = builder.AddAzureStorage();
         var asb = builder.AddServiceBus();
         asb.Topology().AddB2BTopology().AddSearchTopology().AddPaymentTopology().AddAuthTopology().RunAsEmulator();
-        var auth = builder.AddAuth(AuthImage, AuthDigest, authDb, asb);
-        var paymentWeb = builder.AddPaymentWeb(PaymentWebImage, PaymentWebDigest, auth, paymentDb, asb);
+        var auth = builder.AddAuth(AuthImage, AuthDigest, authDb, asb)
+                          .WithHttpEndpoint(targetPort: 8080, name: "https");
+        var paymentWeb = builder.AddPaymentWeb(PaymentWebImage, PaymentWebDigest, auth, paymentDb, asb)
+                                .WithHttpEndpoint(targetPort: 8080, name: "https");
         var api = builder.AddB2BWeb<Projects.Concertable_B2B_Web>(b2bDb, auth, storage, blobs, asb, paymentWeb);
         auth.WithEnvironment("Services__B2BApiUrl", api.GetEndpoint("https"));
         auth.WithEnvironment("ServiceAuth__AuthClientId", "concertable-auth");

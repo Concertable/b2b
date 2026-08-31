@@ -6,6 +6,7 @@ using Concertable.B2B.Hosting;
 using Concertable.B2B.Seed.Simulator;
 using Concertable.B2B.Web;
 using Concertable.B2B.Workers;
+using Concertable.Payment.Hosting;
 using Concertable.Testing.Architecture;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Azure.Functions.Worker;
@@ -87,7 +88,10 @@ public sealed class B2BHostGraphTests
     [Fact]
     public void AppHost_ProductionGraphAndStrictValidation_AreValid()
     {
-        using var app = B2BAppHost.CreateBuilder([]).Build();
+        var validBuilder = B2BAppHost.CreateBuilder([]);
+        AssertImageEndpoint(validBuilder, AuthConstants.Resource);
+        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource);
+        using var app = validBuilder.Build();
         var builder = B2BAppHost.CreateBuilder([]);
         builder.Services.AddInvalidLifetimeGraph();
         Assert.ThrowsAny<Exception>(() => builder.Build());
@@ -158,5 +162,18 @@ public sealed class B2BHostGraphTests
             Assert.Equal(surface.Origin, authEnvironment[$"Auth__SpaClients__{authClient}__PostLogoutRedirectUri"]);
             Assert.Equal(surface.Origin, authEnvironment[$"Auth__SpaClients__{authClient}__AllowedCorsOrigins__0"]);
         }
+    }
+
+    private static void AssertImageEndpoint(
+        IDistributedApplicationBuilder builder,
+        string resourceName)
+    {
+        var resource = Assert.IsType<ServiceContainerResource>(
+            builder.Resources.Single(resource => resource.Name == resourceName));
+        var endpoint = Assert.Single(resource.Annotations.OfType<EndpointAnnotation>());
+
+        Assert.Equal("https", endpoint.Name);
+        Assert.Equal("http", endpoint.UriScheme);
+        Assert.Equal(8080, endpoint.TargetPort);
     }
 }
