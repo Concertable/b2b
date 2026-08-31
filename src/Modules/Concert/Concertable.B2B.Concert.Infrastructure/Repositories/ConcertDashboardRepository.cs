@@ -41,7 +41,7 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         var applications = context.Applications
                 .Where(a => a.State == LifecycleState.Applied
                     && a.VenueTenantId == venueTenantId)
-                .Where(opportunityUpcomingSpec.ToExpression(a => a.Opportunity));
+                .Where(opportunityUpcomingSpec.ToExpression<ApplicationEntity>(a => a.Opportunity));
 
         var openOpportunities = context.Opportunities
                 .Where(o => o.TenantId == venueTenantId)
@@ -74,13 +74,13 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         var applications = context.Applications
                 .Where(a => a.State == LifecycleState.Applied
                     && a.ArtistTenantId == artistTenantId)
-                .Where(opportunityUpcomingSpec.ToExpression(a => a.Opportunity));
+                .Where(opportunityUpcomingSpec.ToExpression<ApplicationEntity>(a => a.Opportunity));
 
         var acceptedAwaitingCheckout = context.Applications
                 .Where(a => a.State == LifecycleState.Accepted
                     && a.ArtistTenantId == artistTenantId
                     && checkoutCapableDealTypes.Contains(a.DealType))
-                .Where(opportunityUpcomingSpec.ToExpression(a => a.Opportunity));
+                .Where(opportunityUpcomingSpec.ToExpression<ApplicationEntity>(a => a.Opportunity));
 
         var upcomingConcerts = context.Concerts
             .Where(c => c.ArtistTenantId == artistTenantId)
