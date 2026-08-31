@@ -14,6 +14,7 @@ using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
@@ -225,13 +226,14 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (application.Accept(acceptedApplication).TryGetError(out var transitionError))
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
-        if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
+        if (!await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException || exception.IsDuplicateKey(),
+                ct))
         {
             var applications = await applicationRepository.GetByOpportunityIdAsync(application.OpportunityId, ct);
-            if (applications.Any(candidate => candidate.State == ApplicationState.Accepted))
-                return new AcceptApplicationError.AlreadyAccepted();
-
-            throw new InvalidOperationException("Application acceptance save failed without an accepted application.");
+            return applications.Any(candidate => candidate.State == ApplicationState.Accepted)
+                ? new AcceptApplicationError.AlreadyAccepted()
+                : new AcceptApplicationError.Superseded(applicationId);
         }
 
         var rejectedApplicationIds = await applicationRepository.RejectAllExceptAsync(

@@ -16,6 +16,8 @@ internal abstract partial record AcceptApplicationError : IError
             "The deal terms have changed since the artist applied. The artist must re-apply before acceptance."),
         AlreadyAccepted => ErrorDefinition.Conflict<AlreadyAccepted>(
             "Another application for this opportunity has already been accepted."),
+        Superseded(var applicationId) => ErrorDefinition.Conflict<Superseded>(
+            $"Application {applicationId} changed while this acceptance was in flight."),
         PaymentMethodRequired => ErrorDefinition.Invalid<PaymentMethodRequired>(
             "This deal requires a payment method at acceptance."),
         UnsupportedDeal(var dealType) => ErrorDefinition.Invalid<UnsupportedDeal>(
@@ -32,6 +34,9 @@ internal abstract partial record AcceptApplicationError : IError
 
     [ErrorCode("application.accept.duplicate")]
     public partial record AlreadyAccepted;
+
+    [ErrorCode("application.accept.superseded")]
+    public partial record Superseded(int ApplicationId);
 
     [ErrorCode("application.accept.payment_method_required")]
     public partial record PaymentMethodRequired;

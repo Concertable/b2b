@@ -5,7 +5,7 @@ using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
-using Concertable.DataAccess.Infrastructure.Extensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
@@ -196,7 +196,9 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Withdraw().TryGetError(out var transitionError))
             return new WithdrawApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Withdrawn);
-        if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
+        if (!await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException,
+                ct))
         {
             application = await applicationRepository.GetByIdAsync(applicationId, ct);
             return application?.State == ApplicationState.Withdrawn
@@ -223,7 +225,9 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Reject().TryGetError(out var transitionError))
             return new RejectApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Rejected);
-        if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
+        if (!await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException,
+                ct))
         {
             application = await applicationRepository.GetByIdAsync(applicationId, ct);
             return application?.State == ApplicationState.Rejected
@@ -250,7 +254,9 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Cancel().TryGetError(out var transitionError))
             return new CancelApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.ApplicationCancelled);
-        if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
+        if (!await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException,
+                ct))
         {
             application = await applicationRepository.GetByIdAsync(applicationId, ct);
             return application?.State == ApplicationState.Cancelled
