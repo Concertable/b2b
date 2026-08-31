@@ -6,6 +6,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.DataAccess.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -41,10 +42,21 @@ internal sealed class SettlementService : ISettlementService
         int concertId,
         CancellationToken ct = default)
     {
-        return await unitOfWorkBoundary.ExecuteAsync(
+        return await unitOfWorkBoundary.TryExecuteAsync(
             context => ReserveAsync(context, concertId, ct),
+            static exception => exception.IsConcertConcurrencyConflict(),
+            _ => ClassifyReservationConflictAsync(concertId, ct),
             ct);
     }
+
+    // Re-runs the reservation against committed truth: whatever won the race decides the outcome, so a
+    // concert cancelled underneath us reports its rejected transition rather than a lost update.
+    private Task<Result<SettlementPreparation, FinishConcertError>> ClassifyReservationConflictAsync(
+        int concertId,
+        CancellationToken ct) =>
+        unitOfWorkBoundary.ExecuteAsync(
+            context => ReserveAsync(context, concertId, ct),
+            ct);
 
     private async Task<Result<SettlementPreparation, FinishConcertError>> ReserveAsync(
         ConcertDbContext context,
