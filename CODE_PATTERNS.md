@@ -11,10 +11,15 @@ The bases live in `B2B.DataAccess.Infrastructure`; each concrete context lives i
 
 | Stance | Base | Concrete examples |
 |---|---|---|
-| Tenant-filtered, venue↔artist pair | `VenueArtistTenantScopedDbContext` | `ConcertDbContext` |
-| Tenant-filtered, single owner | `TenantScopedDbContext` | `VenueDbContext` (filters `Venue`/`VenueImage`), `ArtistDbContext` |
+| Tenant-filtered (both venue↔artist pair and single owner) | `TenantScopedDbContext` | `ConcertDbContext`, `BookingDbContext` (pair); `VenueDbContext` (filters `Venue`/`VenueImage`), `ArtistDbContext` (single owner) |
 | Tenant-independent read, `SaveChanges` throws | `ReadDbContext` (shared DataAccess) | `ConcertReadDbContext` |
 | Unscoped but writable | `PrivilegedDbContext` | `ConversationsPrivilegedDbContext` (moderation) |
+
+One base covers both tenant-filtered stances: the pair/single-owner distinction is carried entirely by which
+helper the context's `ApplyTenantFilters` calls, so a separate `VenueArtistTenantScopedDbContext` base bought
+nothing and no longer exists. The **repository** pair is a real distinction and does survive —
+`VenueArtistTenantScopedRepository` adds `GetTenantPairAsync` / `GetVenueTenantIdAsync` /
+`GetArtistTenantIdAsync`, which need both columns.
 
 Filters are declared per entity through the abstract `ApplyTenantFilters` hook —
 `modelBuilder.ApplyVenueArtist<TEntity>(this)` or `modelBuilder.ApplySingleOwner<TEntity>(this)` — never
