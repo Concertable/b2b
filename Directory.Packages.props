@@ -103,10 +103,7 @@
     <PackageVersion Include="Concertable.Seed.Identity" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Infrastructure" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.AppHost.Shared" Version="$(ConcertablePlatformVersion)" />
-    <PackageVersion Include="Concertable.Auth.Hosting" Version="$(ConcertablePlatformVersion)" />
-    <PackageVersion Include="Concertable.B2B.Hosting" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Frontend.Hosting" Version="$(ConcertablePlatformVersion)" />
-    <PackageVersion Include="Concertable.Payment.Hosting" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Search.Hosting" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Auth.Contracts" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Payment.Client" Version="$(ConcertablePlatformVersion)" />
