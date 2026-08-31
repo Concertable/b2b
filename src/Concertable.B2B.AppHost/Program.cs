@@ -1,1 +1,1 @@
-B2BAppHost.CreateBuilder(args).Build().Run();
+AppHost.CreateBuilder(args).Build().Run();

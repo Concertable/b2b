@@ -108,12 +108,12 @@ public sealed class B2BHostGraphTests
     [Fact]
     public void AppHost_ProductionGraphAndStrictValidation_AreValid()
     {
-        var validBuilder = B2BAppHost.CreateBuilder([]);
+        var validBuilder = AppHost.CreateBuilder([]);
         AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https");
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https");
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http");
         using var app = validBuilder.Build();
-        var builder = B2BAppHost.CreateBuilder([]);
+        var builder = AppHost.CreateBuilder([]);
         builder.Services.AddInvalidLifetimeGraph();
         Assert.ThrowsAny<Exception>(() => builder.Build());
     }
@@ -121,7 +121,7 @@ public sealed class B2BHostGraphTests
     [Fact]
     public void AppHost_PublishGraphWithStripeCli_IsValid()
     {
-        var builder = B2BAppHost.CreateBuilder(
+        var builder = AppHost.CreateBuilder(
             ["--publisher", "manifest", "--Stripe:SecretKey=sk_test_composition"]);
 
         Assert.True(builder.ExecutionContext.IsPublishMode);
@@ -155,7 +155,7 @@ public sealed class B2BHostGraphTests
     [Fact]
     public async Task AppHost_WebSpaOrigins_AreConsistent()
     {
-        var builder = B2BAppHost.CreateBuilder([]);
+        var builder = AppHost.CreateBuilder([]);
         var nodeApps = builder.Resources.OfType<NodeAppResource>().ToArray();
         var auth = Assert.IsAssignableFrom<IResourceWithEnvironment>(
             builder.Resources.Single(resource => resource.Name == AuthConstants.Resource));
