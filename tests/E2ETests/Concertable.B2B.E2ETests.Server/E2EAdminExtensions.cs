@@ -93,7 +93,7 @@ public static class E2EAdminExtensions
             VenueManager3 = User(seed.VenueManager3),
             Tenants = seed.Tenants.Select(tenant => new { tenant.Id, tenant.CreatedByUserId }),
             Venue = new { seed.Venue.Id },
-            FreshVenueHireOpportunity = new { seed.ActiveVenueHireOpportunity.Id, seed.ActiveVenueHireOpportunity.VenueId },
+            ActiveVenueHireOpportunity = new { seed.ActiveVenueHireOpportunity.Id, seed.ActiveVenueHireOpportunity.VenueId },
             FlatFeeApp = new { Id = await GetApplicationIdAsync(connection, seed.FlatFeeApp) },
             DoorSplitApp = new { Id = await GetApplicationIdAsync(connection, seed.DoorSplitApp) },
             VersusApp = new { Id = await GetApplicationIdAsync(connection, seed.VersusApp) },

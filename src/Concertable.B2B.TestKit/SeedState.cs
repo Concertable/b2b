@@ -10,7 +10,7 @@ public sealed record SeedState
     public required TestUser VenueManager3 { get; init; }
     public required IReadOnlyList<TestTenant> Tenants { get; init; }
     public required TestEntity Venue { get; init; }
-    public required TestOpportunity FreshVenueHireOpportunity { get; init; }
+    public required TestOpportunity ActiveVenueHireOpportunity { get; init; }
     public required TestEntity FlatFeeApp { get; init; }
     public required TestEntity DoorSplitApp { get; init; }
     public required TestEntity VersusApp { get; init; }
