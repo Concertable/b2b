@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { actionLinkApi } from "@concertable/web/lib/actionLinkApi";
+import { actionLinkApi } from "@concertable/web-b2b/features/concerts";
 import type { ApplicationActionName } from "../applicationActions";
 import type { Application } from "../types";
 

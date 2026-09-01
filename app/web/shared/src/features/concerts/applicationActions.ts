@@ -1,16 +1,4 @@
-import type { ActionLink } from "@concertable/shared/types/common";
-
-export type ApplicationActionName =
-  | "accept"
-  | "checkout"
-  | "decline"
-  | "cancel"
-  | "withdraw"
-  | "contract";
-
-export type ApplicationActionsOf<TName extends ApplicationActionName> = {
-  [K in TName]?: ActionLink;
-};
+import type { ApplicationActionName } from "./types";
 
 const LABELS: Record<ApplicationActionName, string> = {
   accept: "Accept",

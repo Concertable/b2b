@@ -1,22 +1,13 @@
-import {
-  applicationActionLabels,
-  type ApplicationActionsOf,
-} from "@concertable/web-b2b/features/concerts";
+import type { ActionLink } from "@concertable/shared/types/common";
 
-export const APPLICATION_ACTION_NAMES = ["withdraw", "contract"] as const;
+export type ApplicationActionName = "withdraw" | "contract";
 
-export type ApplicationActionName = (typeof APPLICATION_ACTION_NAMES)[number];
-
-export type ApplicationActions = ApplicationActionsOf<ApplicationActionName>;
-
-export const APPLICATION_ACTION_LABELS = applicationActionLabels(
-  APPLICATION_ACTION_NAMES,
-);
-
-export const APPLICATION_ACTION_VARIANTS: Record<
-  ApplicationActionName,
-  "default" | "outline"
-> = {
-  withdraw: "outline",
-  contract: "default",
+export type ApplicationActions = {
+  [K in ApplicationActionName]?: ActionLink;
 };
+
+export const APPLICATION_ACTION_LABELS: Record<ApplicationActionName, string> =
+  {
+    withdraw: "Withdraw",
+    contract: "Contract",
+  };
