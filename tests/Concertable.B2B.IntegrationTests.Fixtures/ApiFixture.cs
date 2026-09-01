@@ -179,7 +179,7 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task SendEscrowFailedWebhookAsync(int bookingId)
     {
-        if (PaymentTransport.Commands.Any(command => command is CaptureEscrowCommand or DepositEscrowCommand))
+        if (await PaymentTransport.WaitForAcceptanceCommandAsync())
         {
             await PaymentTransport.RejectLatestAcceptanceAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
             return;

@@ -148,6 +148,25 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
     public async Task<TCommand> SingleCommandAsync<TCommand>() =>
         (await WaitForCommandsAsync<TCommand>(1)).Single();
 
+    /// <summary>
+    /// Whether an acceptance command arrives at all. The branch that consumes one must not be chosen by a
+    /// synchronous read: the command reaches this transport through outbox dispatch, which completes after
+    /// the accept request has returned.
+    /// </summary>
+    public async Task<bool> WaitForAcceptanceCommandAsync()
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow <= deadline)
+        {
+            if (commands.Any(value => value is CaptureEscrowCommand or DepositEscrowCommand))
+                return true;
+
+            await Task.Delay(100);
+        }
+
+        return false;
+    }
+
     public async Task<IReadOnlyCollection<TCommand>> WaitForCommandsAsync<TCommand>(int count)
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
