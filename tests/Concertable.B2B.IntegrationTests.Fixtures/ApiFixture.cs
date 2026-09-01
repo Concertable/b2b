@@ -222,6 +222,11 @@ public class ApiFixture : IAsyncLifetime
     public Task RejectLatestFinancialOperationAsync() =>
         PaymentTransport.RejectLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
+    public Task RejectLatestFinancialOperationAsync<TCommand>()
+        where TCommand : IIntegrationCommand =>
+        PaymentTransport.RejectLatestAsync<TCommand>(
+            factory.Services.GetRequiredService<IServiceScopeFactory>());
+
     public Task DispatchIntegrationEventAsync<TEvent>(TEvent @event, MessageEnvelope envelope)
         where TEvent : IIntegrationEvent =>
         factory.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<TEvent>>>>()

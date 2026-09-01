@@ -13,6 +13,14 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
     private IServiceScopeFactory? scopeFactory;
 
     public IReadOnlyCollection<object> Commands => commands.ToArray();
+
+    /// <summary>
+    /// Only the commands that move money. This transport carries every outbound command the service sends,
+    /// emails included, and those arrive by outbox dispatch — so asserting that nothing was charged against
+    /// <see cref="Commands"/> races an unrelated dispatch.
+    /// </summary>
+    public IReadOnlyCollection<object> FinancialCommands =>
+        commands.Where(value => OperationId(value) is not null).ToArray();
     public bool HasPendingCommand => commands.Any(value =>
         OperationId(value) is { } operationId && !completed.ContainsKey(operationId));
 
@@ -65,6 +73,15 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
 
     public async Task RejectLatestAsync(IServiceScopeFactory scopeFactory) =>
         await RejectLatestAsync(scopeFactory, _ => true);
+
+    /// <summary>
+    /// Rejects the latest pending <typeparamref name="TCommand"/>. Name the command whenever more than one
+    /// operation can be pending: commands arrive by outbox dispatch, so "the latest" reached synchronously
+    /// can still be an earlier operation the flow never completed.
+    /// </summary>
+    public Task RejectLatestAsync<TCommand>(IServiceScopeFactory scopeFactory)
+        where TCommand : IIntegrationCommand =>
+        RejectLatestAsync(scopeFactory, command => command is TCommand);
 
     private async Task CompleteLatestAsync(
         IServiceScopeFactory scopeFactory,

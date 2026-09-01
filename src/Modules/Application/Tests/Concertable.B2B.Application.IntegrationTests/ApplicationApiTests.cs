@@ -399,8 +399,9 @@ public sealed class ApplicationApiTests : IAsyncLifetime
             $"/api/application/{loserApplicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
-        Assert.Equal(HttpStatusCode.Conflict, accept.StatusCode);
+        // No rowversion conflict is forced here: the rival acceptance closes the opportunity, so the loser
+        // reads the loss on its eligibility gate before it ever writes.
+        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.duplicate");
         Assert.Equal(
             ApplicationState.Accepted,
             (await fixture.Applications.SingleAsync(value => value.Id == winnerApplicationId)).State);

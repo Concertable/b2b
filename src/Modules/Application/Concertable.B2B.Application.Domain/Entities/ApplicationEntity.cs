@@ -63,7 +63,9 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
         return AcceptanceOperationId.Value;
     }
 
-    internal void RecordPaymentVerification(PaymentVerification verification)
+    /// <summary>Whether the outcome was recorded; a redelivery or a later attempt on an already verified
+    /// payment records nothing.</summary>
+    internal bool RecordPaymentVerification(PaymentVerification verification)
     {
         ArgumentNullException.ThrowIfNull(verification);
         if (verification.ApplicationId != Id)
@@ -72,12 +74,12 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
 
         var existing = VerifyPayment?.ToValue();
         if (existing == verification)
-            return;
+            return false;
         if (existing?.ProviderTransactionId == verification.ProviderTransactionId)
             throw new DomainException(
                 $"Verify payment {verification.ProviderTransactionId} cannot change its recorded outcome.");
         if (existing is SuccessfulPaymentVerification)
-            return;
+            return false;
 
         VerifyPayment = VerifyPaymentEntity.Create(verification);
         events.Raise(verification switch
@@ -91,6 +93,7 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
                     new VerifyPaymentError(failed.Failure.Code, failed.Failure.Message)),
             _ => throw new ArgumentOutOfRangeException(nameof(verification), verification, null)
         });
+        return true;
     }
 
     internal void RecordArtistESignature(Signature eSignature, string termsFingerprint)

@@ -14,6 +14,11 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
     public ApplicationRepository(ApplicationDbContext context) : base(context) =>
         this.context = context;
 
+    // Rewriting the state column with the value it already holds is what bumps the row's version; marking the
+    // whole entity modified would rewrite the tenant pair, which the tenant guard rejects.
+    public void MarkChanged(ApplicationEntity application) =>
+        context.Entry(application).Property(entity => entity.State).IsModified = true;
+
     public async Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
         int opportunityId,
         CancellationToken ct = default) =>

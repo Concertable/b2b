@@ -53,4 +53,10 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
     Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Brings a write to one of the application's own child tables inside the application's concurrency
+    /// token, so a decision taken against the row it hung off cannot commit over it.
+    /// </summary>
+    void MarkChanged(ApplicationEntity application);
 }

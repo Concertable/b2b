@@ -40,7 +40,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
             e.To == fixture.SeedState.ArtistManager1.Email &&
             e.Subject == "Concert Application Cancelled" &&
             e.Body.Contains("application was cancelled by the venue"));
-        Assert.Empty(fixture.PaymentTransport.Commands);
+        Assert.Empty(fixture.PaymentTransport.FinancialCommands);
     }
 
     [Fact]

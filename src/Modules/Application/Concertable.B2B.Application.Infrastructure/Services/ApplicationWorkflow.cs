@@ -14,6 +14,7 @@ using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
+using Concertable.Kernel.DependencyInjection;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,6 +31,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly IVenueModule venueModule;
     private readonly IDealModule dealModule;
     private readonly ITenantContext tenantContext;
+    private readonly ITenantResolver tenantResolver;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
     private readonly IDealUnionFactory<Apply> applyFactory;
@@ -38,6 +40,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly TimeProvider timeProvider;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly IScoped<ApplicationWorkflow> acceptance;
 
     public ApplicationWorkflow(
         IApplicationRepository applicationRepository,
@@ -49,6 +52,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IVenueModule venueModule,
         IDealModule dealModule,
         ITenantContext tenantContext,
+        ITenantResolver tenantResolver,
         ICurrentUser currentUser,
         IClientContext clientContext,
         IDealUnionFactory<Apply> applyFactory,
@@ -56,7 +60,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IApplicationDtoMapper mapper,
         TimeProvider timeProvider,
         IUnitOfWork unitOfWork,
-        IUnitOfWorkBehavior unitOfWorkBehavior)
+        IUnitOfWorkBehavior unitOfWorkBehavior,
+        IScoped<ApplicationWorkflow> acceptance)
     {
         this.applicationRepository = applicationRepository;
         this.validator = validator;
@@ -67,6 +72,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.venueModule = venueModule;
         this.dealModule = dealModule;
         this.tenantContext = tenantContext;
+        this.tenantResolver = tenantResolver;
         this.currentUser = currentUser;
         this.clientContext = clientContext;
         this.applyFactory = applyFactory;
@@ -75,6 +81,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.timeProvider = timeProvider;
         this.unitOfWork = unitOfWork;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
+        this.acceptance = acceptance;
     }
 
     public async Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
@@ -165,19 +172,41 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         unitOfWorkBehavior.TryExecuteAsync(
             () => AcceptCoreAsync(applicationId, paymentMethodId, eSignature, ct),
             exception => exception.IsApplicationAcceptanceConflict(applicationId),
-            _ => ClassifyAcceptConflictAsync(applicationId, ct),
+            _ => ClassifyAcceptConflictAsync(applicationId, paymentMethodId, eSignature, ct),
             ct);
+
+    internal async Task<UnitResult<AcceptApplicationError>> AcceptOnceAsync(
+        int applicationId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature,
+        CancellationToken ct = default)
+    {
+        // A fresh scope has its own tenant context, and the middleware only resolved the one it created, so
+        // without this every tenant-filtered read here answers as though the caller belonged to no tenant.
+        await tenantResolver.ResolveAsync(ct);
+        return await unitOfWorkBehavior.ExecuteAsync(
+            () => AcceptCoreAsync(applicationId, paymentMethodId, eSignature, ct),
+            ct);
+    }
 
     private async Task<UnitResult<AcceptApplicationError>> ClassifyAcceptConflictAsync(
         int applicationId,
+        string? paymentMethodId,
+        ESignatureRequest eSignature,
         CancellationToken ct)
     {
         var opportunityId = await applicationRepository.GetOpportunityIdByIdAsync(applicationId, ct);
         if (opportunityId is { } opportunity &&
             await applicationRepository.AnyAcceptedByOpportunityIdAsync(opportunity, ct))
             return new AcceptApplicationError.AlreadyAccepted();
+        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) is not ApplicationState.Applied)
+            return new AcceptApplicationError.Superseded(applicationId);
 
-        return new AcceptApplicationError.Superseded(applicationId);
+        // Nothing about the application forbids the acceptance, so the loss was to a change the acceptance
+        // reads -- a payment verification landing mid-flight -- and rerunning in a FRESH scope decides on the
+        // recorded outcome. The rerun does not rerun again, so a second loss is reported.
+        return await acceptance.RunAsync(fresh =>
+            fresh.AcceptOnceAsync(applicationId, paymentMethodId, eSignature, ct));
     }
 
     private async Task<UnitResult<AcceptApplicationError>> AcceptCoreAsync(
@@ -200,7 +229,11 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         var eligibilityResult = await eligibility.CanAcceptAsync(application, ct)
             .MapError(error => (AcceptApplicationError)new AcceptApplicationError.Ineligible(error));
         if (eligibilityResult.TryGetError(out var eligibilityError))
-            return eligibilityError;
+            return await applicationRepository.AnyAcceptedByOpportunityIdAsync(application.OpportunityId, ct)
+                // A rival acceptance closes the opportunity, and reporting that as an eligibility problem
+                // answers a lifecycle conflict with a 404 about someone else's resource.
+                ? new AcceptApplicationError.AlreadyAccepted()
+                : eligibilityError;
         if (!eligibilityResult.TryGetValue(out var opportunity))
             throw new InvalidOperationException("Eligibility check succeeded without an opportunity value.");
 

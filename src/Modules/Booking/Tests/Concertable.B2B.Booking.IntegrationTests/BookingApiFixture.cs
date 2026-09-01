@@ -28,12 +28,14 @@ public sealed class BookingApiFixture : ApiFixture
     internal void ArmBookingConflict(Func<Task> competingChange) =>
         Conflicts.ArmOnce<BookingEntity>(competingChange);
 
-    // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause,
-    // and SQL Server rejects OUTPUT against a table that has an enabled trigger.
+    // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause, and SQL
+    // Server rejects OUTPUT against a table that has an enabled trigger. It must name a column every booking
+    // update writes -- SQL Server skips constraints whose columns the UPDATE leaves alone -- and NOCHECK
+    // keeps the rows already seeded valid.
     internal Task FailBookingUpdatesAsync() =>
         dbContext.Database.ExecuteSqlRawAsync("""
             ALTER TABLE [booking].[Bookings] WITH NOCHECK
-            ADD CONSTRAINT [CK_Bookings_FailUpdate_ForTest] CHECK ([Id] < 0)
+            ADD CONSTRAINT [CK_Bookings_FailUpdate_ForTest] CHECK ([State] IS NULL)
             """);
 
     internal Task RestoreBookingUpdatesAsync() =>
@@ -52,12 +54,17 @@ public sealed class BookingApiFixture : ApiFixture
                 """)
             .SingleAsync();
 
+    /// <summary>
+    /// Runs the event's pre-commit handlers the way <c>DomainEventDispatcher</c> does: handlers register
+    /// against <see cref="IDomainEventHandler{TEvent}"/> and the phase is chosen by the marker, so resolving
+    /// the marker interface directly would resolve nothing.
+    /// </summary>
     internal Task DispatchPreCommitDomainEventAsync<TEvent>(TEvent @event)
         where TEvent : IDomainEvent =>
-        Services.GetRequiredService<IScoped<IEnumerable<IPreCommitDomainEventHandler<TEvent>>>>()
+        Services.GetRequiredService<IScoped<IEnumerable<IDomainEventHandler<TEvent>>>>()
             .RunAsync(async handlers =>
             {
-                foreach (var handler in handlers)
+                foreach (var handler in handlers.OfType<IPreCommitDomainEventHandler<TEvent>>())
                     await handler.HandleAsync(@event);
             });
 

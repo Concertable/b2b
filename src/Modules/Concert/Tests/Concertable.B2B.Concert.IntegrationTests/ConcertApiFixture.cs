@@ -27,6 +27,27 @@ public sealed class ConcertApiFixture : ApiFixture
     internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
 
     internal IQueryable<ConcertEntity> Concerts => readDbContext.Concerts;
+
+    /// <summary>
+    /// The concert is created by an event dispatched after the request that confirmed the booking has
+    /// returned, so reading it straight after the webhook races the dispatcher.
+    /// </summary>
+    internal async Task<HttpResponseMessage> GetConcertByApplicationAsync(HttpClient client, int applicationId)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        HttpResponseMessage response;
+        do
+        {
+            response = await client.GetAsync($"/api/concert/application/{applicationId}");
+            if (response.StatusCode != HttpStatusCode.NotFound)
+                return response;
+
+            await Task.Delay(100);
+        }
+        while (DateTimeOffset.UtcNow <= deadline);
+
+        return response;
+    }
     internal IQueryable<InvoiceEntity> Invoices => dbContext.Invoices.AsNoTracking();
     internal IQueryable<SelfBillingAgreementEntity> SelfBillingAgreements =>
         readDbContext.SelfBillingAgreements;

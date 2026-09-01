@@ -111,11 +111,15 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
 
         await fixture.StripeClient.SendWebhookAsync();
-        await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
+        var refund = (await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2)).Last();
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
 
-        await fixture.RejectLatestFinancialOperationAsync();
+        // Both refunds carry the booking's one cancellation operation id, so the rejection this covers is a
+        // late duplicate of an operation the provider already settled -- not a second pending command.
+        await fixture.DispatchIntegrationEventAsync(
+            new RefundEscrowRejectedEvent(refund.OperationId, bookingId, "refund_failed", "Refund failed"),
+            MessageEnvelope.Create<RefundEscrowRejectedEvent>(fixture.SeedNow));
 
         Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
     }
@@ -128,7 +132,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var cancelResponse = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        await fixture.RejectLatestFinancialOperationAsync();
+        await fixture.RejectLatestFinancialOperationAsync<RefundEscrowCommand>();
 
         var entity = await fixture.Bookings.SingleAsync(value => value.Id == bookingId);
         Assert.Equal(BookingState.CancellationFailed, entity.State);
@@ -247,8 +251,13 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
                 .Count(command => command.BookingId == bookingId));
     }
 
+    /// <summary>
+    /// A pre-commit handler runs inside the verification's own transaction and does not own it, so a lost race
+    /// rolls the verification back and surfaces: convergence is the redelivery, which reads the cancellation
+    /// that won and confirms nothing.
+    /// </summary>
     [Fact]
-    public async Task Cancel_WhenVerifyPaymentConfirmationLosesTheRace_ConvergesOnCancellation()
+    public async Task Cancel_WhenVerifyPaymentConfirmationLosesTheRace_ConvergesOnRedelivery()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var applicationId = fixture.SeedState.DoorSplitApp.Id;
@@ -259,9 +268,11 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
             var winner = await competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
             await winner.ShouldBe(HttpStatusCode.NoContent);
         });
+        var verified = new VerifyPaymentSucceeded(applicationId, "seti_cancel_wins");
 
-        await fixture.DispatchPreCommitDomainEventAsync(
-            new VerifyPaymentSucceeded(applicationId, "seti_cancel_wins"));
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(
+            () => fixture.DispatchPreCommitDomainEventAsync(verified));
+        await fixture.DispatchPreCommitDomainEventAsync(verified);
 
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
@@ -280,9 +291,8 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
 
         await duplicate.ShouldBe(HttpStatusCode.NoContent);
         Assert.Equal(BookingState.CancellationPending, await StateOfAsync(bookingId));
-        Assert.Single(
-            fixture.PaymentTransport.Commands,
-            command => command is RefundEscrowCommand refund && refund.BookingId == bookingId);
+        var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(1);
+        Assert.Single(refunds, refund => refund.BookingId == bookingId);
     }
 
     [Fact]
@@ -294,7 +304,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         await first.ShouldBe(HttpStatusCode.NoContent);
         var failedOperationId =
             (await fixture.PaymentTransport.SingleCommandAsync<RefundEscrowCommand>()).OperationId;
-        await fixture.RejectLatestFinancialOperationAsync();
+        await fixture.RejectLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(BookingState.CancellationFailed, await StateOfAsync(bookingId));
 
         var retry = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
