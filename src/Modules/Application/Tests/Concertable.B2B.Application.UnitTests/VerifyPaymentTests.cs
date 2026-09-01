@@ -22,8 +22,9 @@ public sealed class VerifyPaymentTests
         var application = CreateApplication();
         var payment = new SuccessfulPaymentVerification(application.Id, "seti_123");
 
-        application.RecordPaymentVerification(payment);
+        var recorded = application.RecordPaymentVerification(payment);
 
+        Assert.True(recorded);
         Assert.Equal(payment, application.Verification);
         var raised = Assert.IsType<VerifyPaymentSucceeded>(Assert.Single(application.DomainEvents));
         Assert.Equal(payment.ApplicationId, raised.ApplicationId);
@@ -57,8 +58,10 @@ public sealed class VerifyPaymentTests
         application.RecordPaymentVerification(payment);
         application.ClearDomainEvents();
 
-        application.RecordPaymentVerification(new SuccessfulPaymentVerification(application.Id, "seti_123"));
+        var recorded = application.RecordPaymentVerification(
+            new SuccessfulPaymentVerification(application.Id, "seti_123"));
 
+        Assert.False(recorded);
         Assert.Empty(application.DomainEvents);
     }
 
@@ -69,7 +72,7 @@ public sealed class VerifyPaymentTests
         application.RecordPaymentVerification(new SuccessfulPaymentVerification(application.Id, "seti_123"));
         application.ClearDomainEvents();
 
-        var action = () => application.RecordPaymentVerification(new FailedPaymentVerification(
+        Action action = () => application.RecordPaymentVerification(new FailedPaymentVerification(
             application.Id,
             "seti_123",
             new PaymentVerificationFailure("card_declined", "Declined")));
