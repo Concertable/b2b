@@ -7,16 +7,16 @@ namespace Concertable.B2B.Application.Infrastructure.Validators;
 
 internal sealed class ApplicationValidator : IApplicationValidator
 {
-    private readonly IApplicationAvailabilityProjection availability;
+    private readonly IApplicationAvailabilityProjection availabilityProjection;
     private readonly ITenantContext tenantContext;
     private readonly TimeProvider timeProvider;
 
     public ApplicationValidator(
-        IApplicationAvailabilityProjection availability,
+        IApplicationAvailabilityProjection availabilityProjection,
         ITenantContext tenantContext,
         TimeProvider timeProvider)
     {
-        this.availability = availability;
+        this.availabilityProjection = availabilityProjection;
         this.tenantContext = tenantContext;
         this.timeProvider = timeProvider;
     }
@@ -31,10 +31,10 @@ internal sealed class ApplicationValidator : IApplicationValidator
         if (opportunity.StartDate < timeProvider.GetUtcNow())
             errors.Add("This concert opportunity has already passed");
 
-        if (await availability.OpportunityHasConcertAsync(opportunity.Id, ct))
+        if (await availabilityProjection.OpportunityHasConcertAsync(opportunity.Id, ct))
             errors.Add("This concert opportunity has already been booked for a concert");
 
-        if (await availability.ArtistHasConcertOnDateAsync(artistId, opportunity.StartDate, ct))
+        if (await availabilityProjection.ArtistHasConcertOnDateAsync(artistId, opportunity.StartDate, ct))
             errors.Add("You already have a concert on this day");
 
         return ToValidationResult(errors);
@@ -56,13 +56,13 @@ internal sealed class ApplicationValidator : IApplicationValidator
         if (opportunity.StartDate < timeProvider.GetUtcNow())
             errors.Add("This concert opportunity has already passed");
 
-        if (await availability.OpportunityHasConcertAsync(opportunity.Id, ct))
+        if (await availabilityProjection.OpportunityHasConcertAsync(opportunity.Id, ct))
             errors.Add("This concert opportunity already has a concert booked");
 
-        if (await availability.ArtistHasConcertOnDateAsync(application.ArtistId, opportunity.StartDate, ct))
+        if (await availabilityProjection.ArtistHasConcertOnDateAsync(application.ArtistId, opportunity.StartDate, ct))
             errors.Add("This artist already has a concert on this day");
 
-        if (await availability.VenueHasConcertOnDateAsync(opportunity.VenueId, opportunity.StartDate, ct))
+        if (await availabilityProjection.VenueHasConcertOnDateAsync(opportunity.VenueId, opportunity.StartDate, ct))
             errors.Add("You already have a concert on this day");
 
         return ToValidationResult(errors);

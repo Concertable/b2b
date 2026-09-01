@@ -12,18 +12,18 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRepository
 {
     private readonly ConcertDbContext context;
-    private readonly IEndedSpecification ended;
+    private readonly IEndedSpecification endedSpecification;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
     private readonly TimeProvider timeProvider;
 
     public ConcertRepository(
         ConcertDbContext context,
-        IEndedSpecification ended,
+        IEndedSpecification endedSpecification,
         IDoorRevenueOutstandingSpecification doorRevenueOutstanding,
         TimeProvider timeProvider) : base(context)
     {
         this.context = context;
-        this.ended = ended;
+        this.endedSpecification = endedSpecification;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
         this.timeProvider = timeProvider;
     }
@@ -146,7 +146,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
 
     public async Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(
         CancellationToken ct = default) =>
-        await ended.And(doorRevenueOutstanding.Not())
+        await endedSpecification.And(doorRevenueOutstanding.Not())
             .Apply(context.Concerts.Where(concert =>
                 concert.State == ConcertState.Draft ||
                 concert.State == ConcertState.Posted ||

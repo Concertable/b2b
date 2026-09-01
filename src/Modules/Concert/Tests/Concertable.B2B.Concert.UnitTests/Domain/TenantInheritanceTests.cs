@@ -12,7 +12,7 @@ public sealed class TenantInheritanceTests
     [Fact]
     public void Create_ConfirmedBooking_PropagatesTenantPairToConcertAndInvoice()
     {
-        var booking = CreateBooking(this.venueTenantId, this.artistTenantId);
+        var booking = CreateBooking(venueTenantId, artistTenantId);
         var concert = ConcertEntity.CreateDraft(booking, "Concert", "About", []);
         var party = new InvoiceParty(Guid.NewGuid(), "Party", null, "Line 1", null, "City", "AB1 2CD", "GB");
         var invoice = InvoiceEntity.Create(
@@ -25,8 +25,8 @@ public sealed class TenantInheritanceTests
             booking.EndDate,
             DateTime.UtcNow);
 
-        AssertScope(concert, this.venueTenantId, this.artistTenantId);
-        AssertScope(invoice, this.venueTenantId, this.artistTenantId);
+        AssertScope(concert, venueTenantId, artistTenantId);
+        AssertScope(invoice, venueTenantId, artistTenantId);
         Assert.Equal(booking.BookingId, concert.BookingId);
         Assert.Equal(booking.BookingId, invoice.BookingId);
         Assert.Equal(DealType.FlatFee, invoice.DealType);

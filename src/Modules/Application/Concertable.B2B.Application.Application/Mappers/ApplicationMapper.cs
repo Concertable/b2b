@@ -7,14 +7,14 @@ using Concertable.B2B.Venue.Contracts;
 
 namespace Concertable.B2B.Application.Application.Mappers;
 
-internal sealed class ApplicationDtoMapper : IApplicationDtoMapper
+internal sealed class ApplicationMapper : IApplicationMapper
 {
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
     private readonly IVenueModule venueModule;
     private readonly IDealModule dealModule;
 
-    public ApplicationDtoMapper(
+    public ApplicationMapper(
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
         IVenueModule venueModule,
@@ -36,16 +36,16 @@ internal sealed class ApplicationDtoMapper : IApplicationDtoMapper
         CancellationToken ct = default)
     {
         var applicationList = applications.ToList();
-        var artistsById = (await this.artistModule.GetSummariesAsync(
+        var artistsById = (await artistModule.GetSummariesAsync(
                 applicationList.Select(application => application.ArtistId).Distinct().ToArray(), ct))
             .ToDictionary(artist => artist.Id);
-        var opportunitiesById = (await this.opportunityModule.GetAsync(
+        var opportunitiesById = (await opportunityModule.GetAsync(
                 applicationList.Select(application => application.OpportunityId).Distinct().ToArray(), ct))
             .ToDictionary(opportunity => opportunity.Id);
-        var dealsById = (await this.dealModule.GetByIdsAsync(
+        var dealsById = (await dealModule.GetByIdsAsync(
                 opportunitiesById.Values.Select(opportunity => opportunity.DealId).Distinct(), ct))
             .ToDictionary(deal => deal.Id);
-        var venuesById = (await this.venueModule.GetProfilesAsync(
+        var venuesById = (await venueModule.GetProfilesAsync(
                 opportunitiesById.Values.Select(opportunity => opportunity.VenueId).Distinct().ToArray(), ct))
             .ToDictionary(venue => venue.Id);
 

@@ -12,14 +12,14 @@ internal sealed class ApplicationCancellationIntegrationEventHandler :
     IIntegrationEventHandler<ConcertCancelledEvent>
 {
     private readonly ApplicationDbContext context;
-    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
 
     public ApplicationCancellationIntegrationEventHandler(
         ApplicationDbContext context,
-        IUnitOfWorkBehavior unitOfWork)
+        IUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.context = context;
-        this.unitOfWork = unitOfWork;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
     public Task HandleAsync(
@@ -47,7 +47,7 @@ internal sealed class ApplicationCancellationIntegrationEventHandler :
         ApplicationNotification notification,
         MessageEnvelope envelope,
         CancellationToken ct) =>
-        unitOfWork.ExecuteAsync(async () =>
+        unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var handler = nameof(ApplicationCancellationIntegrationEventHandler);
             if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))

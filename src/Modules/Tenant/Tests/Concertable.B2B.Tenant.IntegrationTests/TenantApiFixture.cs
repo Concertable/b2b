@@ -14,7 +14,7 @@ namespace Concertable.B2B.Tenant.IntegrationTests;
 public sealed class TenantApiFixture : ApiFixture
 {
     private TenantDbContext dbContext = null!;
-    private TenantProvisioningHandler provisioning = null!;
+    private TenantProvisioningHandler provisioningHandler = null!;
 
     public IQueryable<TenantEntity> Tenants => dbContext.Tenants.AsNoTracking();
     public IQueryable<TenantMembershipEntity> Memberships => dbContext.Memberships.AsNoTracking();
@@ -23,7 +23,7 @@ public sealed class TenantApiFixture : ApiFixture
         dbContext.Verifications.Include(verification => verification.Documents).AsNoTracking();
 
     public Task ProvisionAsync(CredentialRegisteredEvent @event, MessageEnvelope? envelope = null) =>
-        provisioning.HandleAsync(
+        provisioningHandler.HandleAsync(
             @event,
             envelope ?? MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow));
 
@@ -96,7 +96,7 @@ public sealed class TenantApiFixture : ApiFixture
     protected override void OnReset(IServiceScope scope)
     {
         dbContext = scope.ServiceProvider.GetRequiredService<TenantDbContext>();
-        provisioning = scope.ServiceProvider
+        provisioningHandler = scope.ServiceProvider
             .GetServices<IIntegrationEventHandler<CredentialRegisteredEvent>>()
             .OfType<TenantProvisioningHandler>()
             .Single();

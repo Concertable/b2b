@@ -15,10 +15,10 @@ public sealed class ApplicationValidatorTests
 
     public ApplicationValidatorTests()
     {
-        this.venueTenantId = Guid.NewGuid();
-        this.validator = new ApplicationValidator(
+        venueTenantId = Guid.NewGuid();
+        validator = new ApplicationValidator(
             new AvailableApplicationProjection(),
-            new TestTenantContext(this.venueTenantId),
+            new TestTenantContext(venueTenantId),
             TimeProvider.System);
     }
 
@@ -28,7 +28,7 @@ public sealed class ApplicationValidatorTests
         var opportunity = new OpportunityDto(
             1,
             2,
-            this.venueTenantId,
+            venueTenantId,
             3,
             DateTime.MaxValue,
             DateTime.MaxValue,
@@ -38,10 +38,10 @@ public sealed class ApplicationValidatorTests
             4,
             opportunity.Id,
             DealType.FlatFee,
-            this.venueTenantId,
+            venueTenantId,
             Guid.NewGuid());
 
-        var result = await this.validator.CanAcceptAsync(opportunity, application);
+        var result = await validator.CanAcceptAsync(opportunity, application);
 
         Assert.True(result.TryGetErrors(out var errors));
         Assert.Contains(
@@ -73,7 +73,7 @@ public sealed class ApplicationValidatorTests
     {
         public TestTenantContext(Guid tenantId)
         {
-            this.TenantId = tenantId;
+            TenantId = tenantId;
         }
 
         public Guid? TenantId { get; }

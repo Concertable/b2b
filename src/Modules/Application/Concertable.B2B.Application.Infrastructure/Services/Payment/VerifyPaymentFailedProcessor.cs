@@ -14,19 +14,19 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
     private const string DefaultFailureCode = "payment_failed";
     private const string DefaultFailureMessage = "Payment verification failed.";
 
-    private readonly IPaymentVerificationRecorder recorder;
-    private readonly IApplicationNotifier notifier;
+    private readonly IPaymentVerificationRecorder paymentVerificationRecorder;
+    private readonly IApplicationNotifier applicationNotifier;
     private readonly ApplicationDbContext context;
     private readonly ILogger<VerifyPaymentFailedProcessor> logger;
 
     public VerifyPaymentFailedProcessor(
-        IPaymentVerificationRecorder recorder,
-        IApplicationNotifier notifier,
+        IPaymentVerificationRecorder paymentVerificationRecorder,
+        IApplicationNotifier applicationNotifier,
         ApplicationDbContext context,
         ILogger<VerifyPaymentFailedProcessor> logger)
     {
-        this.recorder = recorder;
-        this.notifier = notifier;
+        this.paymentVerificationRecorder = paymentVerificationRecorder;
+        this.applicationNotifier = applicationNotifier;
         this.context = context;
         this.logger = logger;
     }
@@ -53,7 +53,7 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
 
         try
         {
-            await recorder.RecordAsync(
+            await paymentVerificationRecorder.RecordAsync(
                 new VerifyPaymentFailed(
                     applicationId,
                     @event.TransactionId,
@@ -67,6 +67,6 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
         }
 
         if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.VenueManagerId) is { } venueManagerId)
-            await notifier.VerifyPaymentFailedAsync(applicationId, venueManagerId, message);
+            await applicationNotifier.VerifyPaymentFailedAsync(applicationId, venueManagerId, message);
     }
 }

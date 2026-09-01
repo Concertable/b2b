@@ -8,22 +8,22 @@ namespace Concertable.B2B.Booking.Api.Controllers;
 [Route("api/application")]
 internal sealed class ContractController : ControllerBase
 {
-    private readonly IContractService contracts;
+    private readonly IContractService contractService;
 
-    public ContractController(IContractService contracts) => this.contracts = contracts;
+    public ContractController(IContractService contractService) => this.contractService = contractService;
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("{id}/contract")]
     public async Task<ActionResult<ContractDto>> Get(int id, CancellationToken ct)
     {
-        return (await contracts.GetByApplicationIdAsync(id, ct)).ToOkOrProblem();
+        return (await contractService.GetByApplicationIdAsync(id, ct)).ToOkOrProblem();
     }
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("{id}/contract/pdf")]
     public async Task<ActionResult<FileDownload>> GetPdf(int id, CancellationToken ct)
     {
-        return (await contracts.GetPdfByApplicationIdAsync(id, ct))
+        return (await contractService.GetPdfByApplicationIdAsync(id, ct))
             .ToActionResult(pdf => new ActionResult<FileDownload>(
                 File(pdf.Content, pdf.ContentType, pdf.FileName)));
     }

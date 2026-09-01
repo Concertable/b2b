@@ -18,13 +18,13 @@ public sealed class CompletionRunnerTests
 
     public CompletionRunnerTests()
     {
-        this.sut = new CompletionRunner(
-            this.repository.Object,
-            this.scopedWorkflow.Object,
+        sut = new CompletionRunner(
+            repository.Object,
+            scopedWorkflow.Object,
             Mock.Of<ILogger<CompletionRunner>>());
         this.workflow.Setup(workflow => workflow.CompleteAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<SettlementOutcome, FinishConcertError>(SettlementOutcome.Settled));
-        this.scopedWorkflow
+        scopedWorkflow
             .Setup(scope => scope.RunAsync(It.IsAny<Func<IConcertWorkflow, Task<Result<SettlementOutcome, FinishConcertError>>>>()))
             .Returns<Func<IConcertWorkflow, Task<Result<SettlementOutcome, FinishConcertError>>>>(
                 action => action(this.workflow.Object));
@@ -37,7 +37,7 @@ public sealed class CompletionRunnerTests
             .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([1, 2, 3]);
 
-        await this.sut.RunAsync();
+        await sut.RunAsync();
 
         this.workflow.Verify(workflow => workflow.CompleteAsync(1, It.IsAny<CancellationToken>()), Times.Once);
         this.workflow.Verify(workflow => workflow.CompleteAsync(2, It.IsAny<CancellationToken>()), Times.Once);
@@ -55,7 +55,7 @@ public sealed class CompletionRunnerTests
             .ReturnsAsync(Result.Failure<SettlementOutcome, FinishConcertError>(
                 new FinishConcertError.ConcertNotEnded()));
 
-        await this.sut.RunAsync();
+        await sut.RunAsync();
 
         this.workflow.Verify(workflow => workflow.CompleteAsync(1, It.IsAny<CancellationToken>()), Times.Once);
         this.workflow.Verify(workflow => workflow.CompleteAsync(2, It.IsAny<CancellationToken>()), Times.Once);
@@ -72,7 +72,7 @@ public sealed class CompletionRunnerTests
             .Setup(workflow => workflow.CompleteAsync(2, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => this.sut.RunAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.RunAsync());
 
         this.workflow.Verify(workflow => workflow.CompleteAsync(1, It.IsAny<CancellationToken>()), Times.Once);
         this.workflow.Verify(workflow => workflow.CompleteAsync(2, It.IsAny<CancellationToken>()), Times.Once);
@@ -86,7 +86,7 @@ public sealed class CompletionRunnerTests
             .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        await this.sut.RunAsync();
+        await sut.RunAsync();
 
         this.workflow.Verify(
             workflow => workflow.CompleteAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),

@@ -11,16 +11,16 @@ namespace Concertable.B2B.Application.Infrastructure.Services.Payment;
 
 internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
-    private readonly IPaymentVerificationRecorder recorder;
+    private readonly IPaymentVerificationRecorder paymentVerificationRecorder;
     private readonly ApplicationDbContext context;
     private readonly ILogger<VerifyPaymentProcessor> logger;
 
     public VerifyPaymentProcessor(
-        IPaymentVerificationRecorder recorder,
+        IPaymentVerificationRecorder paymentVerificationRecorder,
         ApplicationDbContext context,
         ILogger<VerifyPaymentProcessor> logger)
     {
-        this.recorder = recorder;
+        this.paymentVerificationRecorder = paymentVerificationRecorder;
         this.context = context;
         this.logger = logger;
     }
@@ -41,7 +41,7 @@ internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentS
 
         try
         {
-            await recorder.RecordAsync(
+            await paymentVerificationRecorder.RecordAsync(
                 new VerifyPaymentSucceeded(applicationId, @event.TransactionId),
                 ct);
         }

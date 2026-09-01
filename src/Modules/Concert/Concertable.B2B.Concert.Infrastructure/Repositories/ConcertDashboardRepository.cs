@@ -13,18 +13,18 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
 {
     private readonly ConcertDbContext context;
     private readonly IUpcomingSpecification<ConcertEntity> concertUpcoming;
-    private readonly IEndedSpecification ended;
+    private readonly IEndedSpecification endedSpecification;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
 
     public ConcertDashboardRepository(
         ConcertDbContext context,
         IUpcomingSpecification<ConcertEntity> concertUpcoming,
-        IEndedSpecification ended,
+        IEndedSpecification endedSpecification,
         IDoorRevenueOutstandingSpecification doorRevenueOutstanding)
     {
         this.context = context;
         this.concertUpcoming = concertUpcoming;
-        this.ended = ended;
+        this.endedSpecification = endedSpecification;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
     }
 
@@ -35,7 +35,7 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         var upcomingConcerts = concertUpcoming.Apply(
             context.Concerts.Where(c => c.VenueTenantId == venueTenantId));
 
-        var awaitingDoorRevenue = ended
+        var awaitingDoorRevenue = endedSpecification
             .And(doorRevenueOutstanding)
             .Apply(context.Concerts.Where(c =>
                 c.VenueTenantId == venueTenantId &&

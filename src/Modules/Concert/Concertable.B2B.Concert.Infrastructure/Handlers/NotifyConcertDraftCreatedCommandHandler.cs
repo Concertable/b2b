@@ -6,11 +6,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Handlers;
 internal sealed class NotifyConcertDraftCreatedCommandHandler :
     IIntegrationCommandHandler<NotifyConcertDraftCreatedCommand>
 {
-    private readonly IConcertNotifier notifier;
+    private readonly IConcertNotifier concertNotifier;
 
-    public NotifyConcertDraftCreatedCommandHandler(IConcertNotifier notifier)
+    public NotifyConcertDraftCreatedCommandHandler(IConcertNotifier concertNotifier)
     {
-        this.notifier = notifier;
+        this.concertNotifier = concertNotifier;
     }
 
     public async Task HandleAsync(
@@ -18,7 +18,7 @@ internal sealed class NotifyConcertDraftCreatedCommandHandler :
         MessageEnvelope envelope,
         CancellationToken ct = default)
     {
-        await notifier.ConcertDraftCreatedAsync(command.ArtistUserId.ToString(), command.ConcertId);
-        await notifier.ConcertDraftCreatedAsync(command.VenueUserId.ToString(), command.ConcertId);
+        await concertNotifier.ConcertDraftCreatedAsync(command.ArtistUserId.ToString(), command.ConcertId);
+        await concertNotifier.ConcertDraftCreatedAsync(command.VenueUserId.ToString(), command.ConcertId);
     }
 }

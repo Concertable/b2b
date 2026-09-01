@@ -10,7 +10,7 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
 {
     private readonly ConcurrentQueue<object> commands = new();
     private readonly ConcurrentDictionary<Guid, byte> completed = new();
-    private IServiceScopeFactory? scopeFactory;
+    private IServiceScopeFactory? serviceScopeFactory;
 
     public IReadOnlyCollection<object> Commands => commands.ToArray();
 
@@ -28,9 +28,9 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         TEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default)
-        where TEvent : IIntegrationEvent => scopeFactory is null
+        where TEvent : IIntegrationEvent => serviceScopeFactory is null
             ? Task.CompletedTask
-            : DispatchAsync(@event, envelope, scopeFactory, ct);
+            : DispatchAsync(@event, envelope, serviceScopeFactory, ct);
 
     public async Task SendAsync<TCommand>(
         TCommand command,
@@ -39,10 +39,10 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         where TCommand : IIntegrationCommand
     {
         commands.Enqueue(command);
-        if (scopeFactory is null)
+        if (serviceScopeFactory is null)
             return;
 
-        await using var scope = scopeFactory.CreateAsyncScope();
+        await using var scope = serviceScopeFactory.CreateAsyncScope();
         var handlers = scope.ServiceProvider.GetServices<IIntegrationCommandHandler<TCommand>>().ToArray();
         if (handlers.Length == 0)
             return;
@@ -55,36 +55,36 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
 
     public void Connect(IServiceScopeFactory serviceScopeFactory)
     {
-        scopeFactory = serviceScopeFactory;
+        this.serviceScopeFactory = serviceScopeFactory;
     }
 
-    public Task CompleteLatestAsync(IServiceScopeFactory scopeFactory) =>
-        CompleteLatestAsync(scopeFactory, _ => true);
+    public Task CompleteLatestAsync(IServiceScopeFactory serviceScopeFactory) =>
+        CompleteLatestAsync(serviceScopeFactory, _ => true);
 
-    public Task CompleteLatestAsync<TCommand>(IServiceScopeFactory scopeFactory)
+    public Task CompleteLatestAsync<TCommand>(IServiceScopeFactory serviceScopeFactory)
         where TCommand : IIntegrationCommand =>
-        CompleteLatestAsync(scopeFactory, command => command is TCommand);
+        CompleteLatestAsync(serviceScopeFactory, command => command is TCommand);
 
-    public Task CompleteLatestAcceptanceAsync(IServiceScopeFactory scopeFactory) =>
-        CompleteLatestAsync(scopeFactory, command => command is CaptureEscrowCommand or DepositEscrowCommand);
+    public Task CompleteLatestAcceptanceAsync(IServiceScopeFactory serviceScopeFactory) =>
+        CompleteLatestAsync(serviceScopeFactory, command => command is CaptureEscrowCommand or DepositEscrowCommand);
 
-    public Task RejectLatestAcceptanceAsync(IServiceScopeFactory scopeFactory) =>
-        RejectLatestAsync(scopeFactory, command => command is CaptureEscrowCommand or DepositEscrowCommand);
+    public Task RejectLatestAcceptanceAsync(IServiceScopeFactory serviceScopeFactory) =>
+        RejectLatestAsync(serviceScopeFactory, command => command is CaptureEscrowCommand or DepositEscrowCommand);
 
-    public async Task RejectLatestAsync(IServiceScopeFactory scopeFactory) =>
-        await RejectLatestAsync(scopeFactory, _ => true);
+    public async Task RejectLatestAsync(IServiceScopeFactory serviceScopeFactory) =>
+        await RejectLatestAsync(serviceScopeFactory, _ => true);
 
     /// <summary>
     /// Rejects the latest pending <typeparamref name="TCommand"/>. Name the command whenever more than one
     /// operation can be pending: commands arrive by outbox dispatch, so "the latest" reached synchronously
     /// can still be an earlier operation the flow never completed.
     /// </summary>
-    public Task RejectLatestAsync<TCommand>(IServiceScopeFactory scopeFactory)
+    public Task RejectLatestAsync<TCommand>(IServiceScopeFactory serviceScopeFactory)
         where TCommand : IIntegrationCommand =>
-        RejectLatestAsync(scopeFactory, command => command is TCommand);
+        RejectLatestAsync(serviceScopeFactory, command => command is TCommand);
 
     private async Task CompleteLatestAsync(
-        IServiceScopeFactory scopeFactory,
+        IServiceScopeFactory serviceScopeFactory,
         Func<object, bool> predicate)
     {
         var command = await WaitForPendingAsync(predicate);
@@ -93,19 +93,19 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
             case CaptureEscrowCommand capture:
                 await DispatchAsync(
                     new CaptureEscrowSucceededEvent(capture.OperationId, capture.BookingId, "pi_test"),
-                    scopeFactory);
+                    serviceScopeFactory);
                 completed.TryAdd(capture.OperationId, 0);
                 break;
             case DepositEscrowCommand deposit:
                 await DispatchAsync(
                     new DepositEscrowSucceededEvent(deposit.OperationId, deposit.BookingId, "pi_test"),
-                    scopeFactory);
+                    serviceScopeFactory);
                 completed.TryAdd(deposit.OperationId, 0);
                 break;
             case RefundEscrowCommand refund:
                 await DispatchAsync(
                     new RefundEscrowSucceededEvent(refund.OperationId, refund.BookingId, "re_test"),
-                    scopeFactory);
+                    serviceScopeFactory);
                 completed.TryAdd(refund.OperationId, 0);
                 break;
             default:
@@ -114,7 +114,7 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
     }
 
     private async Task RejectLatestAsync(
-        IServiceScopeFactory scopeFactory,
+        IServiceScopeFactory serviceScopeFactory,
         Func<object, bool> predicate)
     {
         var command = await WaitForPendingAsync(predicate);
@@ -127,7 +127,7 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
                         capture.BookingId,
                         "card_declined",
                         "Card was declined"),
-                    scopeFactory);
+                    serviceScopeFactory);
                 completed.TryAdd(capture.OperationId, 0);
                 break;
             case DepositEscrowCommand deposit:
@@ -137,7 +137,7 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
                         deposit.BookingId,
                         "card_declined",
                         "Card was declined"),
-                    scopeFactory);
+                    serviceScopeFactory);
                 completed.TryAdd(deposit.OperationId, 0);
                 break;
             case RefundEscrowCommand refund:
@@ -147,7 +147,7 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
                         refund.BookingId,
                         "refund_failed",
                         "Refund failed"),
-                    scopeFactory);
+                    serviceScopeFactory);
                 completed.TryAdd(refund.OperationId, 0);
                 break;
             default:
@@ -230,21 +230,21 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         _ => null
     };
 
-    private static async Task DispatchAsync<TEvent>(TEvent @event, IServiceScopeFactory scopeFactory)
+    private static async Task DispatchAsync<TEvent>(TEvent @event, IServiceScopeFactory serviceScopeFactory)
         where TEvent : IIntegrationEvent
     {
         var envelope = MessageEnvelope.Create<TEvent>(DateTimeOffset.UtcNow);
-        await DispatchAsync(@event, envelope, scopeFactory, CancellationToken.None);
+        await DispatchAsync(@event, envelope, serviceScopeFactory, CancellationToken.None);
     }
 
     private static async Task DispatchAsync<TEvent>(
         TEvent @event,
         MessageEnvelope envelope,
-        IServiceScopeFactory scopeFactory,
+        IServiceScopeFactory serviceScopeFactory,
         CancellationToken ct)
         where TEvent : IIntegrationEvent
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
+        await using var scope = serviceScopeFactory.CreateAsyncScope();
         foreach (var handler in scope.ServiceProvider.GetServices<IIntegrationEventHandler<TEvent>>())
             await handler.HandleAsync(@event, envelope, ct);
     }

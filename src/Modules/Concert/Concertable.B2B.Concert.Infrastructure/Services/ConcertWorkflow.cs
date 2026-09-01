@@ -16,7 +16,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     private readonly IDealStrategyFactory<IComplete> completeFactory;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
-    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
+    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
 
     public ConcertWorkflow(
         IConcertRepository concertRepository,
@@ -25,7 +25,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         IDealStrategyFactory<IComplete> completeFactory,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior,
-        IOutboxUnitOfWorkBehavior outboxBehavior)
+        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior)
     {
         this.concertRepository = concertRepository;
         this.settlementService = settlementService;
@@ -33,14 +33,14 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         this.completeFactory = completeFactory;
         this.unitOfWork = unitOfWork;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
-        this.outboxBehavior = outboxBehavior;
+        this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
     }
 
     public Task<UnitResult<CancelConcertError>> CancelAsync(
         int concertId,
         CancellationToken ct = default) =>
         unitOfWorkBehavior.TryExecuteAsync(
-            () => outboxBehavior.ExecuteAsync(() => CancelCoreAsync(concertId, ct), ct),
+            () => outboxUnitOfWorkBehavior.ExecuteAsync(() => CancelCoreAsync(concertId, ct), ct),
             exception => exception.IsConcertConcurrencyConflict(concertId),
             _ => ClassifyCancelConflictAsync(concertId, ct),
             ct);

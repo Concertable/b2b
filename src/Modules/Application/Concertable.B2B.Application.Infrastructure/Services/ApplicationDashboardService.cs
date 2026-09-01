@@ -51,7 +51,7 @@ internal sealed class ApplicationDashboardService : IApplicationDashboardService
     private Task<IReadOnlySet<int>> GetUpcomingOpportunityIdsAsync(
         IEnumerable<ApplicationDashboardProjection> applications,
         CancellationToken ct) =>
-        this.opportunityModule.GetUpcomingIdsAsync(
+        opportunityModule.GetUpcomingIdsAsync(
             applications.Select(application => application.OpportunityId).Distinct().ToArray(),
             ct);
 }

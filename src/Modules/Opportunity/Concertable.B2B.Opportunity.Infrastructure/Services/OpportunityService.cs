@@ -18,7 +18,7 @@ internal sealed class OpportunityService : IOpportunityService
     private readonly IOpportunitySyncer syncer;
     private readonly ITenantContext tenantContext;
     private readonly ITenantModule tenantModule;
-    private readonly IUnitOfWorkBehavior uowBehavior;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
 
     public OpportunityService(
         IOpportunityRepository repository,
@@ -28,7 +28,7 @@ internal sealed class OpportunityService : IOpportunityService
         IOpportunitySyncer syncer,
         ITenantContext tenantContext,
         ITenantModule tenantModule,
-        IUnitOfWorkBehavior uowBehavior)
+        IUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.repository = repository;
         this.readRepository = readRepository;
@@ -37,7 +37,7 @@ internal sealed class OpportunityService : IOpportunityService
         this.syncer = syncer;
         this.tenantContext = tenantContext;
         this.tenantModule = tenantModule;
-        this.uowBehavior = uowBehavior;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
     public async Task<Result<OpportunityDto, OpportunityMutationError>> CreateAsync(OpportunityRequest request)
@@ -49,7 +49,7 @@ internal sealed class OpportunityService : IOpportunityService
         if (!await tenantModule.IsVerifiedAsync(tenantContext.GetTenantId()))
             return new OpportunityMutationError.VenueNotVerified();
 
-        var creation = await uowBehavior.ExecuteAsync(async () =>
+        var creation = await unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var deal = await CreateDealAsync(request.Deal);
             return await deal.BindAsync(async dealId =>
@@ -127,7 +127,7 @@ internal sealed class OpportunityService : IOpportunityService
         if (validation.IsFailure)
             return validation;
 
-        await uowBehavior.ExecuteAsync(async () =>
+        await unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             foreach (var request in requestList)
             {
@@ -174,7 +174,7 @@ internal sealed class OpportunityService : IOpportunityService
 
         var current = await repository.GetActiveByVenueIdAsync(venueId);
 
-        await uowBehavior.ExecuteAsync(() => syncer.SyncAsync(venueId, current, desiredList));
+        await unitOfWorkBehavior.ExecuteAsync(() => syncer.SyncAsync(venueId, current, desiredList));
 
         var updated = await readRepository.GetActiveByVenueIdAsync(venueId);
         return updated.Select(opportunity => opportunity.ToDto()).ToList();

@@ -21,20 +21,20 @@ public sealed class ConcertWorkflowTests
     private readonly Mock<IDealStrategyFactory<ICancel>> cancelFactory = new();
     private readonly Mock<IDealStrategyFactory<IComplete>> completeFactory = new();
     private readonly Mock<IUnitOfWork> unitOfWork = new();
-    private readonly ImmediateBehavior behavior;
+    private readonly ImmediateBehavior immediateBehavior;
     private readonly ConcertWorkflow workflow;
 
     public ConcertWorkflowTests()
     {
-        this.behavior = new ImmediateBehavior();
-        this.workflow = new ConcertWorkflow(
-            this.concertRepository.Object,
-            this.settlementService.Object,
-            this.cancelFactory.Object,
-            this.completeFactory.Object,
-            this.unitOfWork.Object,
-            this.behavior,
-            this.behavior);
+        immediateBehavior = new ImmediateBehavior();
+        workflow = new ConcertWorkflow(
+            concertRepository.Object,
+            settlementService.Object,
+            cancelFactory.Object,
+            completeFactory.Object,
+            unitOfWork.Object,
+            immediateBehavior,
+            immediateBehavior);
     }
 
     [Fact]
@@ -43,22 +43,22 @@ public sealed class ConcertWorkflowTests
         using var cancellationSource = new CancellationTokenSource();
         await cancellationSource.CancelAsync();
         var cancellationToken = cancellationSource.Token;
-        this.concertRepository
+        concertRepository
             .Setup(repository => repository.GetByIdAsync(It.IsAny<int>(), cancellationToken))
             .Returns(Task.FromCanceled<ConcertEntity?>(cancellationToken));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => this.workflow.CancelAsync(42, cancellationToken));
+            () => workflow.CancelAsync(42, cancellationToken));
     }
 
     [Fact]
     public async Task CancelAsync_ConcertNotFound_ReturnsTypedError()
     {
-        this.concertRepository
+        concertRepository
             .Setup(repository => repository.GetByIdAsync(42, default))
             .ReturnsAsync((ConcertEntity?)null);
 
-        var result = await this.workflow.CancelAsync(42);
+        var result = await workflow.CancelAsync(42);
 
         Assert.True(result.TryGetError(out var error));
         var notFound = Assert.IsType<CancelConcertError.ConcertNotFound>(error);
@@ -70,16 +70,16 @@ public sealed class ConcertWorkflowTests
     {
         var concert = CreateBooking();
         Assert.True(concert.BeginSettlement().TryGetValue(out _));
-        this.concertRepository
+        concertRepository
             .Setup(repository => repository.GetByIdAsync(42, default))
             .ReturnsAsync(concert);
 
-        var result = await this.workflow.CancelAsync(42);
+        var result = await workflow.CancelAsync(42);
 
         Assert.True(result.TryGetError(out var error));
         var invalidTransition = Assert.IsType<CancelConcertError.InvalidTransition>(error);
         Assert.Equal(new TransitionError<ConcertState, ConcertTrigger>(ConcertState.AwaitingSettlement, ConcertTrigger.BeginCancellation), invalidTransition.Error);
-        this.cancelFactory.Verify(factory => factory.Create(It.IsAny<DealType>()), Times.Never);
+        cancelFactory.Verify(factory => factory.Create(It.IsAny<DealType>()), Times.Never);
     }
 
     [Fact]
@@ -87,13 +87,13 @@ public sealed class ConcertWorkflowTests
     {
         var concert = CreateBooking();
         var strategy = new Mock<ICancel>();
-        this.cancelFactory
+        cancelFactory
             .Setup(factory => factory.Create(DealType.FlatFee))
             .Returns(strategy.Object);
-        this.concertRepository
+        concertRepository
             .Setup(repository => repository.GetByIdAsync(42, default))
             .ReturnsAsync(concert);
-        var result = await this.workflow.CancelAsync(42);
+        var result = await workflow.CancelAsync(42);
 
         Assert.False(result.TryGetError(out _));
         strategy.Verify(value => value.CancelAsync(concert, default));
@@ -103,22 +103,22 @@ public sealed class ConcertWorkflowTests
     [Fact]
     public async Task CancelAsync_SaveRaceLost_ReturnsSuperseded()
     {
-        this.behavior.ClassifiesSaveFailureAsConflict = true;
+        immediateBehavior.ClassifiesSaveFailureAsConflict = true;
         var strategy = new Mock<ICancel>();
-        this.cancelFactory
+        cancelFactory
             .Setup(factory => factory.Create(DealType.FlatFee))
             .Returns(strategy.Object);
-        this.concertRepository
+        concertRepository
             .Setup(repository => repository.GetByIdAsync(42, default))
             .ReturnsAsync(CreateBooking());
         this.unitOfWork
             .Setup(unitOfWork => unitOfWork.SaveChangesAsync(default))
             .ThrowsAsync(new DbUpdateConcurrencyException());
-        this.concertRepository
+        concertRepository
             .Setup(repository => repository.GetStateByIdAsync(42, default))
             .ReturnsAsync(ConcertState.Posted);
 
-        var result = await this.workflow.CancelAsync(42);
+        var result = await workflow.CancelAsync(42);
 
         Assert.True(result.TryGetError(out var error));
         var superseded = Assert.IsType<CancelConcertError.Superseded>(error);
@@ -128,22 +128,22 @@ public sealed class ConcertWorkflowTests
     [Fact]
     public async Task CancelAsync_SaveRaceLostToAnotherCancellation_ReturnsSuccess()
     {
-        this.behavior.ClassifiesSaveFailureAsConflict = true;
+        immediateBehavior.ClassifiesSaveFailureAsConflict = true;
         var strategy = new Mock<ICancel>();
-        this.cancelFactory
+        cancelFactory
             .Setup(factory => factory.Create(DealType.FlatFee))
             .Returns(strategy.Object);
-        this.concertRepository
+        concertRepository
             .Setup(repository => repository.GetByIdAsync(42, default))
             .ReturnsAsync(CreateBooking());
         this.unitOfWork
             .Setup(unitOfWork => unitOfWork.SaveChangesAsync(default))
             .ThrowsAsync(new DbUpdateConcurrencyException());
-        this.concertRepository
+        concertRepository
             .Setup(repository => repository.GetStateByIdAsync(42, default))
             .ReturnsAsync(ConcertState.CancellationPending);
 
-        var result = await this.workflow.CancelAsync(42);
+        var result = await workflow.CancelAsync(42);
 
         Assert.False(result.TryGetError(out _));
     }
@@ -154,13 +154,13 @@ public sealed class ConcertWorkflowTests
         using var cancellationSource = new CancellationTokenSource();
         await cancellationSource.CancelAsync();
         var cancellationToken = cancellationSource.Token;
-        this.settlementService
+        settlementService
             .Setup(service => service.ReserveAsync(It.IsAny<int>(), cancellationToken))
             .Returns(Task.FromCanceled<Result<SettlementPreparation, FinishConcertError>>(
                 cancellationToken));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => this.workflow.CompleteAsync(42, cancellationToken));
+            () => workflow.CompleteAsync(42, cancellationToken));
     }
 
     [Fact]
@@ -180,17 +180,17 @@ public sealed class ConcertWorkflowTests
         Result<SettlementConfirmation, FinishConcertError> executed =
             new SettlementConfirmation.ManagerPaid("pi_test");
         Result<SettlementOutcome, FinishConcertError> completed = SettlementOutcome.Settled;
-        this.settlementService
+        settlementService
             .Setup(service => service.ReserveAsync(42, default))
             .ReturnsAsync(prepared);
         var strategy = new Mock<IComplete>();
-        this.completeFactory
+        completeFactory
             .Setup(factory => factory.Create(It.IsAny<DealType>()))
             .Returns(strategy.Object);
         strategy
             .Setup(value => value.CompleteAsync(ready, default))
             .ReturnsAsync(executed);
-        this.settlementService
+        settlementService
             .Setup(service => service.CompleteAsync(
                 42,
                 operationId,
@@ -198,11 +198,11 @@ public sealed class ConcertWorkflowTests
                 default))
             .ReturnsAsync(completed);
 
-        var result = await this.workflow.CompleteAsync(42);
+        var result = await workflow.CompleteAsync(42);
 
         Assert.True(result.TryGetValue(out var outcome));
         Assert.Equal(SettlementOutcome.Settled, outcome);
-        this.completeFactory.Verify(factory => factory.Create(DealType.DoorSplit));
+        completeFactory.Verify(factory => factory.Create(DealType.DoorSplit));
         strategy.Verify(value => value.CompleteAsync(ready, default));
     }
 

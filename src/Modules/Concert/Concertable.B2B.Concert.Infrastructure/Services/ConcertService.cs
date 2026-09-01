@@ -20,9 +20,9 @@ internal sealed class ConcertService : IConcertService
     private readonly IInvoiceRepository invoiceRepository;
     private readonly IConcertValidator concertValidator;
     private readonly IConcertWorkflow workflow;
-    private readonly IArtistReadModelRepository artistRepository;
-    private readonly IVenueReadModelRepository venueRepository;
-    private readonly IBookingConfirmationEmailSender emailSender;
+    private readonly IArtistReadModelRepository artistReadModelRepository;
+    private readonly IVenueReadModelRepository venueReadModelRepository;
+    private readonly IBookingConfirmationEmailSender bookingConfirmationEmailSender;
     private readonly IBus bus;
     private readonly IBookingModule bookingModule;
     private readonly IUnitOfWork unitOfWork;
@@ -36,9 +36,9 @@ internal sealed class ConcertService : IConcertService
         IInvoiceRepository invoiceRepository,
         IConcertValidator concertValidator,
         IConcertWorkflow workflow,
-        IArtistReadModelRepository artistRepository,
-        IVenueReadModelRepository venueRepository,
-        IBookingConfirmationEmailSender emailSender,
+        IArtistReadModelRepository artistReadModelRepository,
+        IVenueReadModelRepository venueReadModelRepository,
+        IBookingConfirmationEmailSender bookingConfirmationEmailSender,
         IBus bus,
         IBookingModule bookingModule,
         IUnitOfWork unitOfWork,
@@ -51,9 +51,9 @@ internal sealed class ConcertService : IConcertService
         this.invoiceRepository = invoiceRepository;
         this.concertValidator = concertValidator;
         this.workflow = workflow;
-        this.artistRepository = artistRepository;
-        this.venueRepository = venueRepository;
-        this.emailSender = emailSender;
+        this.artistReadModelRepository = artistReadModelRepository;
+        this.venueReadModelRepository = venueReadModelRepository;
+        this.bookingConfirmationEmailSender = bookingConfirmationEmailSender;
         this.bus = bus;
         this.bookingModule = bookingModule;
         this.unitOfWork = unitOfWork;
@@ -69,10 +69,10 @@ internal sealed class ConcertService : IConcertService
         if (await concertRepository.GetByBookingIdAsync(booking.BookingId, ct) is not null)
             return;
 
-        var artist = await artistRepository.GetByTenantIdAsync(booking.ArtistTenantId, ct)
+        var artist = await artistReadModelRepository.GetByTenantIdAsync(booking.ArtistTenantId, ct)
             ?? throw new InvalidOperationException(
                 $"Artist projection {booking.ArtistTenantId} was not found for booking {booking.BookingId}.");
-        var venue = await venueRepository.GetByTenantIdAsync(booking.VenueTenantId, ct)
+        var venue = await venueReadModelRepository.GetByTenantIdAsync(booking.VenueTenantId, ct)
             ?? throw new InvalidOperationException(
                 $"Venue projection {booking.VenueTenantId} was not found for booking {booking.BookingId}.");
         if (artist.Id != booking.ArtistId || venue.Id != booking.VenueId)
@@ -113,7 +113,7 @@ internal sealed class ConcertService : IConcertService
             concert.Id,
             artist.UserId,
             venue.UserId), ct);
-        await emailSender.SendAsync(booking, venue.Name, artist.Name, ct);
+        await bookingConfirmationEmailSender.SendAsync(booking, venue.Name, artist.Name, ct);
     }
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUpcomingByVenueIdAsync(int id) =>

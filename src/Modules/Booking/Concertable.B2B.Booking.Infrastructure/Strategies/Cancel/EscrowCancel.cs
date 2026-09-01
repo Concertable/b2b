@@ -30,7 +30,7 @@ internal sealed class EscrowCancel : ICancel
         var cancellation = booking.BeginCancellation();
         if (!cancellation.TryGetValue(out var operationId))
             throw new InvalidOperationException($"Booking cannot begin cancellation from {booking.State}.");
-        await this.bus.SendAsync(new RefundEscrowCommand(
+        await bus.SendAsync(new RefundEscrowCommand(
             operationId,
             booking.Id,
             RefundReasonCodes.RequestedByCustomer), ct);

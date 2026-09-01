@@ -12,8 +12,8 @@ internal abstract class VerifyPaymentEntity
 
     protected VerifyPaymentEntity(PaymentVerification verification)
     {
-        this.ApplicationId = verification.ApplicationId;
-        this.ProviderTransactionId = verification.ProviderTransactionId;
+        ApplicationId = verification.ApplicationId;
+        ProviderTransactionId = verification.ProviderTransactionId;
     }
 
     internal abstract PaymentVerification ToValue();
@@ -45,8 +45,8 @@ internal sealed class FailedVerifyPaymentEntity : VerifyPaymentEntity
 
     internal FailedVerifyPaymentEntity(FailedPaymentVerification verification) : base(verification)
     {
-        this.Code = verification.Failure.Code;
-        this.Message = verification.Failure.Message;
+        Code = verification.Failure.Code;
+        Message = verification.Failure.Message;
     }
 
     internal override PaymentVerification ToValue() =>

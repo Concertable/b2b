@@ -9,20 +9,20 @@ namespace Concertable.B2B.Booking.Infrastructure.Events;
 
 internal sealed class VerifyPaymentSucceededHandler : IPreCommitDomainEventHandler<VerifyPaymentSucceeded>
 {
-    private readonly IBookingService bookings;
+    private readonly IBookingService bookingService;
 
-    public VerifyPaymentSucceededHandler(IBookingService bookings)
+    public VerifyPaymentSucceededHandler(IBookingService bookingService)
     {
-        this.bookings = bookings;
+        this.bookingService = bookingService;
     }
 
     public async Task HandleAsync(VerifyPaymentSucceeded payment, CancellationToken ct = default)
     {
-        var bookingId = await bookings.GetIdByApplicationIdAsync(payment.ApplicationId, ct);
+        var bookingId = await bookingService.GetIdByApplicationIdAsync(payment.ApplicationId, ct);
         if (bookingId is null)
             return;
 
-        await bookings.RecordSucceededAsync(
+        await bookingService.RecordSucceededAsync(
             bookingId.Value,
             new VerifyPaymentSucceededEvidence(
                 payment.ApplicationId,

@@ -6,14 +6,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Strategies;
 
 internal sealed class PayoutComplete : IComplete
 {
-    private readonly IManagerPaymentOperationsClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentOperationsClient;
     private readonly ILogger<PayoutComplete> logger;
 
     public PayoutComplete(
-        IManagerPaymentOperationsClient managerPaymentClient,
+        IManagerPaymentOperationsClient managerPaymentOperationsClient,
         ILogger<PayoutComplete> logger)
     {
-        this.managerPaymentClient = managerPaymentClient;
+        this.managerPaymentOperationsClient = managerPaymentOperationsClient;
         this.logger = logger;
     }
 
@@ -21,15 +21,15 @@ internal sealed class PayoutComplete : IComplete
         SettlementPreparation.Ready settlement,
         CancellationToken ct = default)
     {
-        this.logger.ArtistShareCalculated(settlement.ConcertId, settlement.Gross.Amount);
-        this.logger.SettlingConcert(
+        logger.ArtistShareCalculated(settlement.ConcertId, settlement.Gross.Amount);
+        logger.SettlingConcert(
             settlement.ConcertId,
             settlement.BookingId,
             settlement.Gross.Amount,
             settlement.PayerTenantId,
             settlement.PayeeTenantId);
 
-        var result = await this.managerPaymentClient.PayAsync(
+        var result = await managerPaymentOperationsClient.PayAsync(
             settlement.OperationId,
             settlement.PayerTenantId,
             settlement.PayeeTenantId,

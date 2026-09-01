@@ -15,5 +15,5 @@ internal sealed class DealStrategyFactory<TStrategy> : IDealStrategyFactory<TStr
     }
 
     public TStrategy Create(DealType dealType) =>
-        this.serviceProvider.GetRequiredKeyedService<TStrategy>(dealType);
+        serviceProvider.GetRequiredKeyedService<TStrategy>(dealType);
 }

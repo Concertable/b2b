@@ -9,14 +9,14 @@ namespace Concertable.B2B.Application.Infrastructure.Strategies;
 
 internal sealed class VersusAccept : IAcceptPaid
 {
-    private readonly IDealTermsRenderer termsRenderer;
+    private readonly IDealTermsRenderer dealTermsRenderer;
     private readonly LegalSettings legal;
 
     public VersusAccept(
-        IDealTermsRenderer termsRenderer,
+        IDealTermsRenderer dealTermsRenderer,
         IOptions<LegalSettings> legal)
     {
-        this.termsRenderer = termsRenderer;
+        this.dealTermsRenderer = dealTermsRenderer;
         this.legal = legal.Value;
     }
 
@@ -48,8 +48,8 @@ internal sealed class VersusAccept : IAcceptPaid
             opportunity.Genres.ToList(),
             artist.Name,
             venue.Name,
-            this.termsRenderer.Render(deal),
-            this.legal.PlatformTermsVersion,
+            dealTermsRenderer.Render(deal),
+            legal.PlatformTermsVersion,
             application.ArtistESignature.ToDto(),
             venueSignature.ToDto(),
             versus.Guarantee,

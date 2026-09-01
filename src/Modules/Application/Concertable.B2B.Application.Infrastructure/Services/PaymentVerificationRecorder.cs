@@ -6,18 +6,18 @@ namespace Concertable.B2B.Application.Infrastructure.Services.Payment;
 internal sealed class PaymentVerificationRecorder : IPaymentVerificationRecorder
 {
     private readonly IApplicationRepository applicationRepository;
-    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
 
     public PaymentVerificationRecorder(
         IApplicationRepository applicationRepository,
-        IUnitOfWorkBehavior unitOfWork)
+        IUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.applicationRepository = applicationRepository;
-        this.unitOfWork = unitOfWork;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
     public Task RecordAsync(VerifyPayment payment, CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(async () =>
+        unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var application = await applicationRepository
                 .GetByIdAsync(payment.ApplicationId, ct)

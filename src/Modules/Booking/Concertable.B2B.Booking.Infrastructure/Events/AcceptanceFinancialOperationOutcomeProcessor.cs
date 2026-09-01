@@ -17,22 +17,22 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
     IIntegrationEventHandler<DepositEscrowRejectedEvent>
 {
     private readonly BookingDbContext context;
-    private readonly IBookingService bookings;
-    private readonly IUnitOfWorkBehavior unitOfWork;
-    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
+    private readonly IBookingService bookingService;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
     private readonly IScoped<AcceptanceFinancialOperationOutcomeProcessor> convergence;
 
     public AcceptanceFinancialOperationOutcomeProcessor(
         BookingDbContext context,
-        IBookingService bookings,
-        IUnitOfWorkBehavior unitOfWork,
-        IOutboxUnitOfWorkBehavior outboxBehavior,
+        IBookingService bookingService,
+        IUnitOfWorkBehavior unitOfWorkBehavior,
+        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
         IScoped<AcceptanceFinancialOperationOutcomeProcessor> convergence)
     {
         this.context = context;
-        this.bookings = bookings;
-        this.unitOfWork = unitOfWork;
-        this.outboxBehavior = outboxBehavior;
+        this.bookingService = bookingService;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
+        this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
         this.convergence = convergence;
     }
 
@@ -104,7 +104,7 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
         MessageEnvelope envelope,
         FinancialOperationEvidence evidence,
         CancellationToken ct) =>
-        unitOfWork.TryExecuteAsync(
+        unitOfWorkBehavior.TryExecuteAsync(
             async () =>
             {
                 await ProcessCoreAsync(bookingId, envelope, evidence, ct);
@@ -124,14 +124,14 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
         MessageEnvelope envelope,
         FinancialOperationEvidence evidence,
         CancellationToken ct) =>
-        unitOfWork.ExecuteAsync(() => ProcessCoreAsync(bookingId, envelope, evidence, ct), ct);
+        unitOfWorkBehavior.ExecuteAsync(() => ProcessCoreAsync(bookingId, envelope, evidence, ct), ct);
 
     private Task ProcessCoreAsync(
         int bookingId,
         MessageEnvelope envelope,
         FinancialOperationEvidence evidence,
         CancellationToken ct) =>
-        outboxBehavior.ExecuteAsync(async () =>
+        outboxUnitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var handler = nameof(AcceptanceFinancialOperationOutcomeProcessor);
             if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))
@@ -148,9 +148,9 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
         evidence switch
         {
             FinancialOperationSucceeded succeeded =>
-                bookings.RecordSucceededAsync(bookingId, succeeded, ct),
+                bookingService.RecordSucceededAsync(bookingId, succeeded, ct),
             FinancialOperationFailed failed =>
-                bookings.RecordFailedAsync(bookingId, failed, ct),
+                bookingService.RecordFailedAsync(bookingId, failed, ct),
             _ => throw new ArgumentOutOfRangeException(nameof(evidence), evidence, null)
         };
 }

@@ -11,7 +11,7 @@ public sealed class ConcertValidatorTests
 
     public ConcertValidatorTests()
     {
-        this.validator = new ConcertValidator();
+        validator = new ConcertValidator();
     }
 
     [Fact]
@@ -20,7 +20,7 @@ public sealed class ConcertValidatorTests
         var concert = CreateConcert();
         concert.IncrementTicketsSold(4);
 
-        var result = this.validator.CanUpdate(concert, 4);
+        var result = validator.CanUpdate(concert, 4);
 
         Assert.True(result.IsValid);
     }
@@ -31,7 +31,7 @@ public sealed class ConcertValidatorTests
         var concert = CreateConcert();
         concert.IncrementTicketsSold(4);
 
-        var result = this.validator.CanUpdate(concert, 3);
+        var result = validator.CanUpdate(concert, 3);
 
         Assert.True(result.TryGetErrors(out var errors));
         Assert.Equal(
@@ -45,7 +45,7 @@ public sealed class ConcertValidatorTests
         var concert = CreateConcert();
         concert.Post("Concert", "About", 10m, 100, DateTime.UtcNow);
 
-        var result = this.validator.CanPost(concert);
+        var result = validator.CanPost(concert);
 
         Assert.True(result.TryGetErrors(out var errors));
         Assert.Equal(["Concert has already been posted"], errors.Errors["datePosted"]);
@@ -56,7 +56,7 @@ public sealed class ConcertValidatorTests
     {
         var concert = CreateConcert();
 
-        var result = this.validator.CanPost(concert);
+        var result = validator.CanPost(concert);
 
         Assert.True(result.IsValid);
     }

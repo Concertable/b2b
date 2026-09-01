@@ -17,7 +17,7 @@ public sealed class ArtistDashboardApiTests : IAsyncLifetime
     public ArtistDashboardApiTests(DashboardApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
-        this.activityHandlers = fixture.Services
+        activityHandlers = fixture.Services
             .GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<TenantActivityRecordedEvent>>>>();
         fixture.AttachOutput(output);
     }

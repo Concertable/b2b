@@ -36,7 +36,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly IClientContext clientContext;
     private readonly IDealUnionFactory<Apply> applyFactory;
     private readonly IDealUnionFactory<Accept> acceptFactory;
-    private readonly IApplicationDtoMapper mapper;
+    private readonly IApplicationMapper mapper;
     private readonly TimeProvider timeProvider;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
@@ -57,7 +57,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IClientContext clientContext,
         IDealUnionFactory<Apply> applyFactory,
         IDealUnionFactory<Accept> acceptFactory,
-        IApplicationDtoMapper mapper,
+        IApplicationMapper mapper,
         TimeProvider timeProvider,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior,
@@ -90,14 +90,14 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ESignatureRequest eSignature,
         CancellationToken ct = default)
     {
-        var artistOption = await this.artistModule.GetCurrentProfileAsync(ct);
+        var artistOption = await artistModule.GetCurrentProfileAsync(ct);
         if (!artistOption.TryGetValue(out var artist))
             return new ApplyApplicationError.MissingArtist();
 
         if (tenantContext.TenantId is not { } artistTenantId)
             return new ApplyApplicationError.MissingTenant();
 
-        var opportunityOption = await this.opportunityModule.GetOpenAsync(opportunityId, ct);
+        var opportunityOption = await opportunityModule.GetOpenAsync(opportunityId, ct);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
@@ -112,12 +112,12 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (opportunity.Genres.Count > 0 && !artist.Genres.Overlaps(opportunity.Genres))
             return new ApplyApplicationError.GenreMismatch();
 
-        var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId, ct);
+        var dealOption = await dealModule.GetByIdAsync(opportunity.DealId, ct);
         if (!dealOption.TryGetValue(out var deal))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
         ApplicationEntity application;
-        switch (this.applyFactory.Create(deal.DealType))
+        switch (applyFactory.Create(deal.DealType))
         {
             case Apply.Standard(var apply):
                 application = apply.Apply(
@@ -237,15 +237,15 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (!eligibilityResult.TryGetValue(out var opportunity))
             throw new InvalidOperationException("Eligibility check succeeded without an opportunity value.");
 
-        var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId, ct);
+        var dealOption = await dealModule.GetByIdAsync(opportunity.DealId, ct);
         if (!dealOption.TryGetValue(out var deal))
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
-        var artistOption = await this.artistModule.GetProfileAsync(application.ArtistId, ct);
+        var artistOption = await artistModule.GetProfileAsync(application.ArtistId, ct);
         if (!artistOption.TryGetValue(out var artist))
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
-        var venueOption = await this.venueModule.GetProfileAsync(opportunity.VenueId, ct);
+        var venueOption = await venueModule.GetProfileAsync(opportunity.VenueId, ct);
         if (!venueOption.TryGetValue(out var venue))
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
@@ -260,7 +260,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         var operationId = application.AcceptanceOperationId ?? Guid.NewGuid();
         var venueSignature = eSignature.ToSignature(
             userId, timeProvider.GetUtcNow().UtcDateTime, clientContext.IpAddress, clientContext.UserAgent);
-        var accepted = this.acceptFactory.Create(deal.DealType) switch
+        var accepted = acceptFactory.Create(deal.DealType) switch
         {
             Accept.Standard(var accept) => accept.Accept(
                 application, opportunity, artist, venue, deal, venueSignature, operationId),

@@ -7,7 +7,7 @@ internal abstract record FinancialOperationEvidence
 {
     protected FinancialOperationEvidence(FinancialOperation operation)
     {
-        this.Operation = operation;
+        Operation = operation;
     }
 
     public FinancialOperation Operation { get; }
@@ -21,7 +21,7 @@ internal abstract record FinancialOperationSucceeded : FinancialOperationEvidenc
         : base(operation)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(providerReferenceId);
-        this.ProviderReferenceId = providerReferenceId;
+        ProviderReferenceId = providerReferenceId;
     }
 
     public string ProviderReferenceId { get; }
@@ -34,7 +34,7 @@ internal sealed record VerifyPaymentSucceededEvidence : FinancialOperationSuccee
     {
         if (applicationId <= 0)
             throw new ArgumentOutOfRangeException(nameof(applicationId));
-        this.ApplicationId = applicationId;
+        ApplicationId = applicationId;
     }
 
     public int ApplicationId { get; }
@@ -56,8 +56,8 @@ internal sealed record AcceptanceFinancialOperationSucceeded : FinancialOperatio
         if (operation == FinancialOperation.VerifyPayment)
             throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
 
-        this.OperationId = operationId;
-        this.BookingId = bookingId;
+        OperationId = operationId;
+        BookingId = bookingId;
     }
 
     public Guid OperationId { get; }
@@ -72,7 +72,7 @@ internal abstract record FinancialOperationFailed : FinancialOperationEvidence
         : base(operation)
     {
         ArgumentNullException.ThrowIfNull(error);
-        this.Error = error;
+        Error = error;
     }
 
     public FinancialOperationError Error { get; }
@@ -90,8 +90,8 @@ internal sealed record VerifyPaymentFailedEvidence : FinancialOperationFailed
             throw new ArgumentOutOfRangeException(nameof(applicationId));
         ArgumentException.ThrowIfNullOrWhiteSpace(providerReferenceId);
 
-        this.ApplicationId = applicationId;
-        this.ProviderReferenceId = providerReferenceId;
+        ApplicationId = applicationId;
+        ProviderReferenceId = providerReferenceId;
     }
 
     public int ApplicationId { get; }
@@ -114,8 +114,8 @@ internal sealed record AcceptanceFinancialOperationRejected : FinancialOperation
         if (operation == FinancialOperation.VerifyPayment)
             throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
 
-        this.OperationId = operationId;
-        this.BookingId = bookingId;
+        OperationId = operationId;
+        BookingId = bookingId;
     }
 
     public Guid OperationId { get; }
@@ -129,8 +129,8 @@ internal sealed record FinancialOperationError
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
 
-        this.Code = code;
-        this.Message = message;
+        Code = code;
+        Message = message;
     }
 
     public string Code { get; }

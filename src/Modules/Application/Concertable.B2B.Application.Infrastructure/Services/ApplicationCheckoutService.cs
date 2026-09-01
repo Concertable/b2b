@@ -10,46 +10,46 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 {
-    private readonly IApplicationRepository applications;
+    private readonly IApplicationRepository repository;
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
     private readonly IVenueModule venueModule;
     private readonly IDealModule dealModule;
-    private readonly IManagerPaymentOperationsClient managerPaymentClient;
+    private readonly IManagerPaymentOperationsClient managerPaymentOperationsClient;
     private readonly ITenantContext tenantContext;
 
     public ApplicationCheckoutService(
-        IApplicationRepository applications,
+        IApplicationRepository repository,
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
         IVenueModule venueModule,
         IDealModule dealModule,
-        IManagerPaymentOperationsClient managerPaymentClient,
+        IManagerPaymentOperationsClient managerPaymentOperationsClient,
         ITenantContext tenantContext)
     {
-        this.applications = applications;
+        this.repository = repository;
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
         this.venueModule = venueModule;
         this.dealModule = dealModule;
-        this.managerPaymentClient = managerPaymentClient;
+        this.managerPaymentOperationsClient = managerPaymentOperationsClient;
         this.tenantContext = tenantContext;
     }
 
     public async Task<Result<Checkout, ApplicationCheckoutError>> CreateApplyCheckoutAsync(
         int opportunityId)
     {
-        var opportunityOption = await this.opportunityModule.GetOpenAsync(opportunityId);
+        var opportunityOption = await opportunityModule.GetOpenAsync(opportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationCheckoutError.OpportunityNotFound();
 
-        var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId);
+        var dealOption = await dealModule.GetByIdAsync(opportunity.DealId);
         if (!dealOption.TryGetValue(out var deal))
             return new ApplicationCheckoutError.DealNotFound();
         if (deal is not VenueHireDealDto venueHire)
             return new ApplicationCheckoutError.ApplyCheckoutUnsupported(deal.DealType);
 
-        var venueOption = await this.venueModule.GetProfileAsync(opportunity.VenueId);
+        var venueOption = await venueModule.GetProfileAsync(opportunity.VenueId);
         if (!venueOption.TryGetValue(out var venue))
             return new ApplicationCheckoutError.VenueNotFound();
         if (tenantContext.TenantId is not { } artistTenantId)
@@ -59,7 +59,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
             [PaymentMetadataKeys.Type] = TransactionTypes.ApplicationApply,
             [PaymentMetadataKeys.OpportunityId] = opportunityId.ToString()
         };
-        var session = await managerPaymentClient.CreateSetupSessionAsync(artistTenantId, metadata);
+        var session = await managerPaymentOperationsClient.CreateSetupSessionAsync(artistTenantId, metadata);
         return new Checkout(
             new FlatPayment(venueHire.HireFee),
             new PayeeSummary(venue.Name, venue.Email),
@@ -69,23 +69,23 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 
     public async Task<Result<Checkout, ApplicationCheckoutError>> CreateAcceptCheckoutAsync(int applicationId)
     {
-        var application = await applications.GetByIdAsync(applicationId);
+        var application = await repository.GetByIdAsync(applicationId);
         if (application is null)
             return new ApplicationCheckoutError.ApplicationNotFound();
 
-        var opportunityOption = await this.opportunityModule.GetAsync(application.OpportunityId);
+        var opportunityOption = await opportunityModule.GetAsync(application.OpportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationCheckoutError.OpportunityNotFound();
 
-        var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId);
+        var dealOption = await dealModule.GetByIdAsync(opportunity.DealId);
         if (!dealOption.TryGetValue(out var deal))
             return new ApplicationCheckoutError.DealNotFound();
 
-        var artistOption = await this.artistModule.GetProfileAsync(application.ArtistId);
+        var artistOption = await artistModule.GetProfileAsync(application.ArtistId);
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationCheckoutError.ArtistNotFound();
 
-        var venueOption = await this.venueModule.GetProfileAsync(opportunity.VenueId);
+        var venueOption = await venueModule.GetProfileAsync(opportunity.VenueId);
         if (!venueOption.TryGetValue(out var venue))
             return new ApplicationCheckoutError.VenueNotFound();
         var metadata = new Dictionary<string, string>
@@ -96,7 +96,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         if (deal is FlatFeeDealDto flatFee)
         {
             metadata[PaymentMetadataKeys.Type] = TransactionTypes.ApplicationAccept;
-            var session = await managerPaymentClient.CreateHoldSessionAsync(
+            var session = await managerPaymentOperationsClient.CreateHoldSessionAsync(
                 application.VenueTenantId,
                 Money.Gbp(flatFee.Fee),
                 metadata);
@@ -112,7 +112,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 
         metadata[PaymentMetadataKeys.Type] = TransactionTypes.Verify;
         metadata[PaymentMetadataKeys.VenueManagerId] = venue.UserId.ToString();
-        var verification = await managerPaymentClient.CreateVerifySessionAsync(application.VenueTenantId, metadata);
+        var verification = await managerPaymentOperationsClient.CreateVerifySessionAsync(application.VenueTenantId, metadata);
         return new Checkout(
             ToPaymentAmount(deal),
             new PayeeSummary(artist.Name, artist.Email),

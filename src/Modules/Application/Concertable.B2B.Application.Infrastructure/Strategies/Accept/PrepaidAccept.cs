@@ -9,14 +9,14 @@ namespace Concertable.B2B.Application.Infrastructure.Strategies;
 
 internal sealed class PrepaidAccept : IAccept
 {
-    private readonly IDealTermsRenderer termsRenderer;
+    private readonly IDealTermsRenderer dealTermsRenderer;
     private readonly LegalSettings legal;
 
     public PrepaidAccept(
-        IDealTermsRenderer termsRenderer,
+        IDealTermsRenderer dealTermsRenderer,
         IOptions<LegalSettings> legal)
     {
-        this.termsRenderer = termsRenderer;
+        this.dealTermsRenderer = dealTermsRenderer;
         this.legal = legal.Value;
     }
 
@@ -49,8 +49,8 @@ internal sealed class PrepaidAccept : IAccept
             opportunity.Genres.ToList(),
             artist.Name,
             venue.Name,
-            this.termsRenderer.Render(deal),
-            this.legal.PlatformTermsVersion,
+            dealTermsRenderer.Render(deal),
+            legal.PlatformTermsVersion,
             application.ArtistESignature.ToDto(),
             venueSignature.ToDto(),
             venueHire.HireFee,

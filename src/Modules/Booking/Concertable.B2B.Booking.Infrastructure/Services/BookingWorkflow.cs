@@ -23,7 +23,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly IContractRepository contractRepository;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
-    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
+    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
     private readonly IBus bus;
     private readonly IDealStrategyFactory<IConfirm> confirmFactory;
     private readonly IDealStrategyFactory<ICancel> cancelFactory;
@@ -34,7 +34,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         IContractRepository contractRepository,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior,
-        IOutboxUnitOfWorkBehavior outboxBehavior,
+        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
         IBus bus,
         IDealStrategyFactory<IConfirm> confirmFactory,
         IDealStrategyFactory<ICancel> cancelFactory,
@@ -44,7 +44,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.contractRepository = contractRepository;
         this.unitOfWork = unitOfWork;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
-        this.outboxBehavior = outboxBehavior;
+        this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
         this.bus = bus;
         this.confirmFactory = confirmFactory;
         this.cancelFactory = cancelFactory;
@@ -54,13 +54,13 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     public Task<BookingDto> ConfirmAsync(
         AcceptedApplication application,
         CancellationToken ct = default) =>
-        outboxBehavior.ExecuteAsync(() => ConfirmCoreAsync(application, ct), ct);
+        outboxUnitOfWorkBehavior.ExecuteAsync(() => ConfirmCoreAsync(application, ct), ct);
 
     public Task<UnitResult<CancelBookingError>> CancelAsync(
         int bookingId,
         CancellationToken ct = default) =>
         unitOfWorkBehavior.TryExecuteAsync(
-            () => outboxBehavior.ExecuteAsync(() => CancelCoreAsync(bookingId, ct), ct),
+            () => outboxUnitOfWorkBehavior.ExecuteAsync(() => CancelCoreAsync(bookingId, ct), ct),
             exception => exception.IsBookingConcurrencyConflict(bookingId),
             _ => ClassifyCancelConflictAsync(bookingId, ct),
             ct);

@@ -5,16 +5,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Events;
 
 internal sealed class BookingConfirmedIntegrationEventHandler : IIntegrationEventHandler<BookingConfirmedEvent>
 {
-    private readonly IConcertService concerts;
+    private readonly IConcertService concertService;
 
-    public BookingConfirmedIntegrationEventHandler(IConcertService concerts)
+    public BookingConfirmedIntegrationEventHandler(IConcertService concertService)
     {
-        this.concerts = concerts;
+        this.concertService = concertService;
     }
 
     public Task HandleAsync(
         BookingConfirmedEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        concerts.CreateAsync(@event.Booking, ct);
+        concertService.CreateAsync(@event.Booking, ct);
 }

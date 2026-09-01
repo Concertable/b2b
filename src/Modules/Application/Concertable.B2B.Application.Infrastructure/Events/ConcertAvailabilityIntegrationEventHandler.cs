@@ -11,21 +11,21 @@ internal sealed class ConcertAvailabilityIntegrationEventHandler :
     IIntegrationEventHandler<ConcertCancelledEvent>
 {
     private readonly ApplicationDbContext dbContext;
-    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
 
     public ConcertAvailabilityIntegrationEventHandler(
         ApplicationDbContext dbContext,
-        IUnitOfWorkBehavior unitOfWork)
+        IUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.dbContext = dbContext;
-        this.unitOfWork = unitOfWork;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
     public Task HandleAsync(
         ConcertCreatedEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(async () =>
+        unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var handler = nameof(ConcertAvailabilityIntegrationEventHandler);
             if (await dbContext.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))
@@ -49,7 +49,7 @@ internal sealed class ConcertAvailabilityIntegrationEventHandler :
         ConcertCancelledEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(async () =>
+        unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var handler = $"{nameof(ConcertAvailabilityIntegrationEventHandler)}.Cancellation";
             if (await dbContext.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))

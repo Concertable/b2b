@@ -8,21 +8,21 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Events;
 internal sealed class ApplicationAcceptedIntegrationEventHandler : IIntegrationEventHandler<ApplicationAcceptedEvent>
 {
     private readonly OpportunityDbContext context;
-    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
 
     public ApplicationAcceptedIntegrationEventHandler(
         OpportunityDbContext context,
-        IUnitOfWorkBehavior unitOfWork)
+        IUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.context = context;
-        this.unitOfWork = unitOfWork;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
     public Task HandleAsync(
         ApplicationAcceptedEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(async () =>
+        unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var handler = nameof(ApplicationAcceptedIntegrationEventHandler);
             if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))

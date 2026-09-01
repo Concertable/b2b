@@ -14,7 +14,7 @@ public sealed class DealUnionBuilder<TUnion>
     public DealUnionBuilder(IServiceCollection services)
     {
         this.services = services;
-        this.builder = new KeyedUnionBuilder<DealType, TUnion>(services);
+        builder = new KeyedUnionBuilder<DealType, TUnion>(services);
     }
 
     public DealUnionCaseBuilder<TUnion, TCase> Case<TCase>(Func<TCase, TUnion> create)

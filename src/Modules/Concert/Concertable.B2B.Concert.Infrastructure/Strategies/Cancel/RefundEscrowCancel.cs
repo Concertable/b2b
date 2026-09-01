@@ -18,7 +18,7 @@ internal sealed class RefundEscrowCancel : ICancel
         var cancellation = concert.BeginCancellation();
         if (!cancellation.TryGetValue(out var operationId))
             throw new InvalidOperationException($"Concert cannot begin cancellation from {concert.State}.");
-        return this.bus.SendAsync(new RefundEscrowCommand(
+        return bus.SendAsync(new RefundEscrowCommand(
             operationId,
             concert.BookingId,
             RefundReasonCodes.RequestedByCustomer), ct);

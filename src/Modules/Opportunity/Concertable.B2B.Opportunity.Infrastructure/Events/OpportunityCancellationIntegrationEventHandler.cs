@@ -11,14 +11,14 @@ internal sealed class OpportunityCancellationIntegrationEventHandler :
     IIntegrationEventHandler<ConcertCancelledEvent>
 {
     private readonly OpportunityDbContext context;
-    private readonly IUnitOfWorkBehavior unitOfWork;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
 
     public OpportunityCancellationIntegrationEventHandler(
         OpportunityDbContext context,
-        IUnitOfWorkBehavior unitOfWork)
+        IUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.context = context;
-        this.unitOfWork = unitOfWork;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
     public Task HandleAsync(
@@ -37,7 +37,7 @@ internal sealed class OpportunityCancellationIntegrationEventHandler :
         int opportunityId,
         MessageEnvelope envelope,
         CancellationToken ct) =>
-        unitOfWork.ExecuteAsync(async () =>
+        unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var handler = nameof(OpportunityCancellationIntegrationEventHandler);
             if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))

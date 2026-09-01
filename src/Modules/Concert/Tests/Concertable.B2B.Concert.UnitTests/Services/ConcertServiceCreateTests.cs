@@ -23,7 +23,7 @@ public sealed class ConcertServiceCreateTests
     {
         var venueTenantId = Guid.NewGuid();
         var artistTenantId = Guid.NewGuid();
-        this.booking = new ConfirmedBooking(
+        booking = new ConfirmedBooking(
             Guid.NewGuid(),
             7,
             8,
@@ -40,7 +40,7 @@ public sealed class ConcertServiceCreateTests
             new FlatFeeBookingTerms(500m));
         var artist = new ArtistReadModel
         {
-            Id = this.booking.ArtistId,
+            Id = booking.ArtistId,
             TenantId = artistTenantId,
             UserId = Guid.NewGuid(),
             Name = "Artist",
@@ -48,21 +48,21 @@ public sealed class ConcertServiceCreateTests
         };
         var venue = new VenueReadModel
         {
-            Id = this.booking.VenueId,
+            Id = booking.VenueId,
             TenantId = venueTenantId,
             UserId = Guid.NewGuid(),
             Name = "Venue",
             About = "About"
         };
-        this.repository = new Mock<IConcertRepository>();
+        repository = new Mock<IConcertRepository>();
         var artists = new Mock<IArtistReadModelRepository>();
         var venues = new Mock<IVenueReadModelRepository>();
-        this.repository
-            .Setup(value => value.GetByBookingIdAsync(this.booking.BookingId, It.IsAny<CancellationToken>()))
+        repository
+            .Setup(value => value.GetByBookingIdAsync(booking.BookingId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((ConcertEntity?)null);
-        this.repository
+        repository
             .Setup(value => value.AddAsync(It.IsAny<ConcertEntity>(), It.IsAny<CancellationToken>()))
-            .Callback<ConcertEntity, CancellationToken>((concert, _) => this.addedConcert = concert)
+            .Callback<ConcertEntity, CancellationToken>((concert, _) => addedConcert = concert)
             .ReturnsAsync((ConcertEntity concert, CancellationToken _) => concert);
         artists
             .Setup(value => value.GetByTenantIdAsync(artistTenantId, It.IsAny<CancellationToken>()))
@@ -70,8 +70,8 @@ public sealed class ConcertServiceCreateTests
         venues
             .Setup(value => value.GetByTenantIdAsync(venueTenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(venue);
-        this.service = new ConcertService(
-            this.repository.Object,
+        service = new ConcertService(
+            repository.Object,
             Mock.Of<IConcertReadRepository>(),
             Mock.Of<IInvoiceRepository>(),
             Mock.Of<IConcertValidator>(),
@@ -90,14 +90,14 @@ public sealed class ConcertServiceCreateTests
     [Fact]
     public async Task CreateAsync_ConfirmedBooking_AddsConcertAndPersists()
     {
-        await this.service.CreateAsync(this.booking);
+        await service.CreateAsync(booking);
 
-        Assert.NotNull(this.addedConcert);
-        Assert.Equal(this.booking.ApplicationId, this.addedConcert.ApplicationId);
-        Assert.Equal(this.booking.BookingId, this.addedConcert.BookingId);
-        Assert.Equal(this.booking.VenueId, this.addedConcert.VenueId);
-        Assert.False(this.addedConcert.RequiresDoorRevenue);
-        this.repository.Verify(
+        Assert.NotNull(addedConcert);
+        Assert.Equal(booking.ApplicationId, addedConcert.ApplicationId);
+        Assert.Equal(booking.BookingId, addedConcert.BookingId);
+        Assert.Equal(booking.VenueId, addedConcert.VenueId);
+        Assert.False(addedConcert.RequiresDoorRevenue);
+        repository.Verify(
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -105,17 +105,17 @@ public sealed class ConcertServiceCreateTests
     [Fact]
     public async Task CreateAsync_ExistingConcertForBooking_DoesNotAddOrSave()
     {
-        this.repository
-            .Setup(value => value.GetByBookingIdAsync(this.booking.BookingId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ConcertEntity.CreateDraft(this.booking, "Existing", "About", [Genre.Rock]));
+        repository
+            .Setup(value => value.GetByBookingIdAsync(booking.BookingId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ConcertEntity.CreateDraft(booking, "Existing", "About", [Genre.Rock]));
 
-        await this.service.CreateAsync(this.booking);
+        await service.CreateAsync(booking);
 
-        Assert.Null(this.addedConcert);
-        this.repository.Verify(
+        Assert.Null(addedConcert);
+        repository.Verify(
             value => value.AddAsync(It.IsAny<ConcertEntity>(), It.IsAny<CancellationToken>()),
             Times.Never);
-        this.repository.Verify(
+        repository.Verify(
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
     }

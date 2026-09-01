@@ -28,21 +28,21 @@ public sealed class VenueServiceTests
 
     public VenueServiceTests()
     {
-        this.repository = new Mock<IVenueRepository>();
-        this.readRepository = new Mock<IVenueReadRepository>();
-        this.imageService = new Mock<IImageService>();
-        this.currentUser = new Mock<ICurrentUser>();
-        this.tenantContext = new Mock<ITenantContext>();
-        this.geocodingClient = new Mock<IGeocodingClient>();
-        this.geometryProvider = new Mock<IGeometryProvider>();
-        this.service = new VenueService(
-            this.repository.Object,
-            this.readRepository.Object,
-            this.imageService.Object,
-            this.currentUser.Object,
-            this.tenantContext.Object,
-            this.geocodingClient.Object,
-            this.geometryProvider.Object);
+        repository = new Mock<IVenueRepository>();
+        readRepository = new Mock<IVenueReadRepository>();
+        imageService = new Mock<IImageService>();
+        currentUser = new Mock<ICurrentUser>();
+        tenantContext = new Mock<ITenantContext>();
+        geocodingClient = new Mock<IGeocodingClient>();
+        geometryProvider = new Mock<IGeometryProvider>();
+        service = new VenueService(
+            repository.Object,
+            readRepository.Object,
+            imageService.Object,
+            currentUser.Object,
+            tenantContext.Object,
+            geocodingClient.Object,
+            geometryProvider.Object);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class VenueServiceTests
             .Setup(value => value.GetDetailsByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((VenueDetails?)null);
 
-        var result = await this.service.GetDetailsAsync();
+        var result = await service.GetDetailsAsync();
 
         Assert.True(result.IsNone);
     }
@@ -64,7 +64,7 @@ public sealed class VenueServiceTests
     {
         tenantContext.SetupGet(context => context.TenantId).Returns((Guid?)null);
 
-        var result = await this.service.GetCurrentIdAsync();
+        var result = await service.GetCurrentIdAsync();
 
         Assert.True(result.IsNone);
     }

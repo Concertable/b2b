@@ -12,18 +12,18 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
 {
     private readonly ConcertDbContext context;
     private readonly ISettlementService settlementService;
-    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
+    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
     private readonly ILogger<SettlementPaymentFailedProcessor> logger;
 
     public SettlementPaymentFailedProcessor(
         ConcertDbContext context,
         ISettlementService settlementService,
-        IOutboxUnitOfWorkBehavior outboxBehavior,
+        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
         ILogger<SettlementPaymentFailedProcessor> logger)
     {
         this.context = context;
         this.settlementService = settlementService;
-        this.outboxBehavior = outboxBehavior;
+        this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
         this.logger = logger;
     }
 
@@ -51,7 +51,7 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
 
         try
         {
-            await outboxBehavior.ExecuteAsync(async () =>
+            await outboxUnitOfWorkBehavior.ExecuteAsync(async () =>
             {
                 if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(SettlementPaymentFailedProcessor), ct))
                     return;

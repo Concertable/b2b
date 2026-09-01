@@ -15,7 +15,7 @@ internal sealed class ApplicationMapper : IApplicationMapper
 
     public async Task<ApplicationResponse<VenueApplicationActions>> ToVenueResponseAsync(ApplicationDto dto)
     {
-        var bookingOption = await this.bookingModule.GetByApplicationIdAsync(dto.Id);
+        var bookingOption = await bookingModule.GetByApplicationIdAsync(dto.Id);
         bookingOption.TryGetValue(out var booking);
         return dto.ToVenueResponse(booking);
     }
@@ -23,7 +23,7 @@ internal sealed class ApplicationMapper : IApplicationMapper
     public async Task<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>> ToVenueResponsesAsync(
         IReadOnlyList<ApplicationDto> dtos)
     {
-        var bookingsByApplicationId = (await this.bookingModule.GetByApplicationIdsAsync(
+        var bookingsByApplicationId = (await bookingModule.GetByApplicationIdsAsync(
                 dtos.Select(dto => dto.Id).ToArray()))
             .ToDictionary(booking => booking.ApplicationId);
         return dtos
@@ -33,7 +33,7 @@ internal sealed class ApplicationMapper : IApplicationMapper
 
     public async Task<ApplicationResponse<ArtistApplicationActions>> ToArtistResponseAsync(ApplicationDto dto)
     {
-        var bookingOption = await this.bookingModule.GetByApplicationIdAsync(dto.Id);
+        var bookingOption = await bookingModule.GetByApplicationIdAsync(dto.Id);
         bookingOption.TryGetValue(out var booking);
         return dto.ToArtistResponse(booking);
     }
@@ -41,7 +41,7 @@ internal sealed class ApplicationMapper : IApplicationMapper
     public async Task<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>> ToArtistResponsesAsync(
         IReadOnlyList<ApplicationDto> dtos)
     {
-        var bookingsByApplicationId = (await this.bookingModule.GetByApplicationIdsAsync(
+        var bookingsByApplicationId = (await bookingModule.GetByApplicationIdsAsync(
                 dtos.Select(dto => dto.Id).ToArray()))
             .ToDictionary(booking => booking.ApplicationId);
         return dtos

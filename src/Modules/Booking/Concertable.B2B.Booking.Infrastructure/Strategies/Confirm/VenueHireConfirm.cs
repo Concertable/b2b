@@ -28,13 +28,13 @@ internal sealed class VenueHireConfirm : IConfirm
         CancellationToken ct = default)
     {
         var accepted = (VenueHireAcceptedApplication)application;
-        this.logger.AcceptingVenueHireApplication(
+        logger.AcceptingVenueHireApplication(
             accepted.ApplicationId,
             booking.Id,
             accepted.HireFee,
             accepted.ArtistTenantId,
             accepted.VenueTenantId);
-        await this.bus.SendAsync(new DepositEscrowCommand(
+        await bus.SendAsync(new DepositEscrowCommand(
             accepted.OperationId,
             booking.Id,
             accepted.ArtistTenantId,

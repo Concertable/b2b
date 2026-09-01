@@ -12,12 +12,12 @@ namespace Concertable.B2B.User.IntegrationTests;
 public sealed class UserApiFixture : ApiFixture
 {
     private UserDbContext dbContext = null!;
-    private CredentialRegisteredHandler provisioning = null!;
+    private CredentialRegisteredHandler credentialRegisteredHandler = null!;
 
     public IQueryable<UserEntity> Users => dbContext.Users.AsNoTracking();
 
     public Task ProvisionAsync(CredentialRegisteredEvent @event, MessageEnvelope? envelope = null) =>
-        provisioning.HandleAsync(
+        credentialRegisteredHandler.HandleAsync(
             @event,
             envelope ?? MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow));
 
@@ -27,7 +27,7 @@ public sealed class UserApiFixture : ApiFixture
     protected override void OnReset(IServiceScope scope)
     {
         dbContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
-        provisioning = scope.ServiceProvider
+        credentialRegisteredHandler = scope.ServiceProvider
             .GetServices<IIntegrationEventHandler<CredentialRegisteredEvent>>()
             .OfType<CredentialRegisteredHandler>()
             .Single();

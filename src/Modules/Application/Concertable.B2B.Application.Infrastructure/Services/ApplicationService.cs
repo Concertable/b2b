@@ -20,8 +20,8 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
     private readonly ITenantContext tenantContext;
-    private readonly IApplicationCheckoutService checkout;
-    private readonly IApplicationDtoMapper mapper;
+    private readonly IApplicationCheckoutService checkoutService;
+    private readonly IApplicationMapper mapper;
     private readonly TimeProvider timeProvider;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
@@ -35,8 +35,8 @@ internal sealed class ApplicationService : IApplicationService
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
         ITenantContext tenantContext,
-        IApplicationCheckoutService checkout,
-        IApplicationDtoMapper mapper,
+        IApplicationCheckoutService checkoutService,
+        IApplicationMapper mapper,
         TimeProvider timeProvider,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior)
@@ -49,7 +49,7 @@ internal sealed class ApplicationService : IApplicationService
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
         this.tenantContext = tenantContext;
-        this.checkout = checkout;
+        this.checkoutService = checkoutService;
         this.mapper = mapper;
         this.timeProvider = timeProvider;
         this.unitOfWork = unitOfWork;
@@ -64,7 +64,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id)
     {
-        var opportunityOption = await this.opportunityModule.GetAsync(id);
+        var opportunityOption = await opportunityModule.GetAsync(id);
         if (!opportunityOption.TryGetValue(out var opportunity) ||
             opportunity.VenueTenantId != tenantContext.TenantId)
             return new ApplicationError.OpportunityForbidden(id);
@@ -75,7 +75,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForArtistAsync()
     {
-        var artistOption = await this.artistModule.GetCurrentProfileAsync();
+        var artistOption = await artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationError.MissingArtist();
 
@@ -90,7 +90,7 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetRecentDeniedForArtistAsync()
     {
-        var artistOption = await this.artistModule.GetCurrentProfileAsync();
+        var artistOption = await artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationError.MissingArtist();
 
@@ -163,7 +163,7 @@ internal sealed class ApplicationService : IApplicationService
         if (eligibility.TryGetError(out var error))
             return new ApplicationCheckoutError.Ineligible(error);
 
-        return await checkout.CreateApplyCheckoutAsync(opportunityId);
+        return await checkoutService.CreateApplyCheckoutAsync(opportunityId);
     }
 
     public async Task<Result<Checkout, ApplicationCheckoutError>> AcceptCheckoutAsync(int applicationId)
@@ -172,7 +172,7 @@ internal sealed class ApplicationService : IApplicationService
         if (eligibility.TryGetError(out var error))
             return new ApplicationCheckoutError.Ineligible(error);
 
-        return await checkout.CreateAcceptCheckoutAsync(applicationId);
+        return await checkoutService.CreateAcceptCheckoutAsync(applicationId);
     }
 
     public Task<UnitResult<AcceptApplicationError>> AcceptAsync(
@@ -286,11 +286,11 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
-        var artistOption = await this.artistModule.GetCurrentProfileAsync();
+        var artistOption = await artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationEligibilityError.MissingArtist();
 
-        var opportunityOption = await this.opportunityModule.GetOpenAsync(opportunityId);
+        var opportunityOption = await opportunityModule.GetOpenAsync(opportunityId);
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplicationEligibilityError.OpportunityNotFound();
 

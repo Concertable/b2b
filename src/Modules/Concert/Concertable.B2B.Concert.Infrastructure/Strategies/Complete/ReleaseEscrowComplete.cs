@@ -5,18 +5,18 @@ namespace Concertable.B2B.Concert.Infrastructure.Strategies;
 
 internal sealed class ReleaseEscrowComplete : IComplete
 {
-    private readonly IEscrowOperationsClient escrowClient;
+    private readonly IEscrowOperationsClient escrowOperationsClient;
 
-    public ReleaseEscrowComplete(IEscrowOperationsClient escrowClient)
+    public ReleaseEscrowComplete(IEscrowOperationsClient escrowOperationsClient)
     {
-        this.escrowClient = escrowClient;
+        this.escrowOperationsClient = escrowOperationsClient;
     }
 
     public async Task<Result<SettlementConfirmation, FinishConcertError>> CompleteAsync(
         SettlementPreparation.Ready settlement,
         CancellationToken ct = default)
     {
-        var result = await this.escrowClient.ReleaseByBookingIdAsync(
+        var result = await escrowOperationsClient.ReleaseByBookingIdAsync(
             settlement.OperationId,
             settlement.BookingId,
             ct);

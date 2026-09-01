@@ -63,7 +63,7 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<ApplicationWorkflow>());
             services.AddScoped<IApplicationService, ApplicationService>();
             services.AddScoped<IApplicationDashboardService, ApplicationDashboardService>();
-            services.AddScoped<IApplicationDtoMapper, ApplicationDtoMapper>();
+            services.AddScoped<IApplicationMapper, ApplicationMapper>();
             services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
             services.AddScoped<IApplicationValidator, ApplicationValidator>();
             services.AddScoped<IApplicationAvailabilityProjection, ApplicationAvailabilityProjection>();

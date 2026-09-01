@@ -10,8 +10,8 @@ public abstract record VerifyPayment : IDomainEvent
             throw new ArgumentOutOfRangeException(nameof(applicationId));
         ArgumentException.ThrowIfNullOrWhiteSpace(providerTransactionId);
 
-        this.ApplicationId = applicationId;
-        this.ProviderTransactionId = providerTransactionId;
+        ApplicationId = applicationId;
+        ProviderTransactionId = providerTransactionId;
     }
 
     public int ApplicationId { get; }
@@ -33,7 +33,7 @@ public sealed record VerifyPaymentFailed : VerifyPayment
         : base(applicationId, providerTransactionId)
     {
         ArgumentNullException.ThrowIfNull(error);
-        this.Error = error;
+        Error = error;
     }
 
     public VerifyPaymentError Error { get; }
@@ -46,8 +46,8 @@ public sealed record VerifyPaymentError
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
 
-        this.Code = code;
-        this.Message = message;
+        Code = code;
+        Message = message;
     }
 
     public string Code { get; }

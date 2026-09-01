@@ -9,9 +9,9 @@ namespace Concertable.B2B.Booking.Api.Controllers;
 [Route("api/booking")]
 internal sealed class BookingController : ControllerBase
 {
-    private readonly IBookingService bookings;
+    private readonly IBookingService bookingService;
 
-    public BookingController(IBookingService bookings) => this.bookings = bookings;
+    public BookingController(IBookingService bookingService) => this.bookingService = bookingService;
 
     [HasPermission(SharedPermissions.OperationsView)]
     [HttpGet("application/{applicationId}")]
@@ -19,7 +19,7 @@ internal sealed class BookingController : ControllerBase
         int applicationId,
         CancellationToken ct)
     {
-        var booking = await bookings.GetSummaryByApplicationIdAsync(applicationId, ct);
+        var booking = await bookingService.GetSummaryByApplicationIdAsync(applicationId, ct);
         return booking is null
             ? NotFound()
             : Ok(booking.ToSummary());
@@ -28,5 +28,5 @@ internal sealed class BookingController : ControllerBase
     [HasPermission(VenuePermissions.ApplicationsDecide)]
     [HttpPost("{bookingId}/cancel")]
     public async Task<IActionResult> Cancel(int bookingId, CancellationToken ct) =>
-        (await bookings.CancelAsync(bookingId, ct)).ToNoContentOrProblem();
+        (await bookingService.CancelAsync(bookingId, ct)).ToNoContentOrProblem();
 }

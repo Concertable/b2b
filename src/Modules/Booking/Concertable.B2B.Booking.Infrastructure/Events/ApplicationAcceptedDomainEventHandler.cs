@@ -7,15 +7,15 @@ namespace Concertable.B2B.Booking.Infrastructure.Events;
 internal sealed class ApplicationAcceptedDomainEventHandler
     : IPreCommitDomainEventHandler<ApplicationAcceptedDomainEvent>
 {
-    private readonly IBookingWorkflow workflow;
+    private readonly IBookingWorkflow bookingWorkflow;
 
-    public ApplicationAcceptedDomainEventHandler(IBookingWorkflow workflow)
+    public ApplicationAcceptedDomainEventHandler(IBookingWorkflow bookingWorkflow)
     {
-        this.workflow = workflow;
+        this.bookingWorkflow = bookingWorkflow;
     }
 
     public Task HandleAsync(
         ApplicationAcceptedDomainEvent @event,
         CancellationToken ct = default) =>
-        this.workflow.ConfirmAsync(@event.Application, ct);
+        bookingWorkflow.ConfirmAsync(@event.Application, ct);
 }

@@ -15,7 +15,7 @@ public sealed class DealStrategyBuilder
     public DealStrategyBuilder(IServiceCollection services)
     {
         this.services = services;
-        this.builder = new KeyedStrategyBuilder<DealType>(services);
+        builder = new KeyedStrategyBuilder<DealType>(services);
     }
 
     public DealStrategyKeyBuilder For(DealType dealType) => new(this, builder.For(dealType));

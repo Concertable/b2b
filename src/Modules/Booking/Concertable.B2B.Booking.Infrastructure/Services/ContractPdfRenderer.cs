@@ -10,16 +10,16 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 internal sealed class ContractPdfRenderer : IContractPdfRenderer
 {
     private readonly IPdfRenderer pdfRenderer;
-    private readonly IBlobStorageService blobStorage;
+    private readonly IBlobStorageService blobStorageService;
     private readonly ILogger<ContractPdfRenderer> logger;
 
     public ContractPdfRenderer(
         IPdfRenderer pdfRenderer,
-        IBlobStorageService blobStorage,
+        IBlobStorageService blobStorageService,
         ILogger<ContractPdfRenderer> logger)
     {
         this.pdfRenderer = pdfRenderer;
-        this.blobStorage = blobStorage;
+        this.blobStorageService = blobStorageService;
         this.logger = logger;
     }
 
@@ -29,9 +29,9 @@ internal sealed class ContractPdfRenderer : IContractPdfRenderer
     {
         var blobName = contract.PdfBlobName
             ?? throw new InvalidOperationException("Contract has no assigned PDF blob name");
-        if (await blobStorage.ExistsAsync(blobName))
+        if (await blobStorageService.ExistsAsync(blobName))
         {
-            await using var stream = await blobStorage.DownloadAsync(blobName);
+            await using var stream = await blobStorageService.DownloadAsync(blobName);
             using var buffer = new MemoryStream();
             await stream.CopyToAsync(buffer, ct);
             return buffer.ToArray();
@@ -39,7 +39,7 @@ internal sealed class ContractPdfRenderer : IContractPdfRenderer
 
         var bytes = pdfRenderer.Render(new ContractDocument(contract, logger));
         using var upload = new MemoryStream(bytes, writable: false);
-        await blobStorage.UploadAsync(upload, blobName);
+        await blobStorageService.UploadAsync(upload, blobName);
         return bytes;
     }
 }
