@@ -32,7 +32,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         // Act
         await fixture.FinishConcertAsync(concert.Id);
 
-        // Assert — booking awaits the off-session settlement payment; completion happens on the webhook
+        // Assert — the off-session payment confirms inline, so the concert settles in this same call
         var payment = Assert.Single(fixture.ManagerPaymentClient.Payments);
         var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
@@ -43,7 +43,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         Assert.Equal(concert.BookingId, payment.BookingId);
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 
     [Fact]
