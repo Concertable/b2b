@@ -202,7 +202,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var bookingId = await AcceptFlatFeeAsync(client);
-        var capture = fixture.PaymentTransport.SingleCommand<CaptureEscrowCommand>();
+        var capture = await fixture.PaymentTransport.SingleCommandAsync<CaptureEscrowCommand>();
         fixture.ArmBookingConflict(() => fixture.DispatchIntegrationEventAsync(
             new CaptureEscrowSucceededEvent(capture.OperationId, bookingId, "pi_confirm_wins"),
             MessageEnvelope.Create<CaptureEscrowSucceededEvent>(fixture.SeedNow)));
@@ -226,7 +226,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var bookingId = await AcceptFlatFeeAsync(client);
-        var capture = fixture.PaymentTransport.SingleCommand<CaptureEscrowCommand>();
+        var capture = await fixture.PaymentTransport.SingleCommandAsync<CaptureEscrowCommand>();
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
         fixture.ArmBookingConflict(async () =>
         {
@@ -292,8 +292,8 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var bookingId = await AcceptFlatFeeAsync(client);
         var first = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
         await first.ShouldBe(HttpStatusCode.NoContent);
-        var failedOperationId = fixture.PaymentTransport
-            .SingleCommand<RefundEscrowCommand>().OperationId;
+        var failedOperationId =
+            (await fixture.PaymentTransport.SingleCommandAsync<RefundEscrowCommand>()).OperationId;
         await fixture.RejectLatestFinancialOperationAsync();
         Assert.Equal(BookingState.CancellationFailed, await StateOfAsync(bookingId));
 

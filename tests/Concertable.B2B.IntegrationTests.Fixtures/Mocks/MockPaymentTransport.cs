@@ -140,6 +140,14 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
 
     public TCommand SingleCommand<TCommand>() => commands.OfType<TCommand>().Single();
 
+    /// <summary>
+    /// The waiting counterpart to <see cref="SingleCommand{TCommand}"/>. A command reaches this transport
+    /// through outbox dispatch, which completes after the request that staged it has returned, so reading
+    /// synchronously races the dispatcher.
+    /// </summary>
+    public async Task<TCommand> SingleCommandAsync<TCommand>() =>
+        (await WaitForCommandsAsync<TCommand>(1)).Single();
+
     public async Task<IReadOnlyCollection<TCommand>> WaitForCommandsAsync<TCommand>(int count)
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
