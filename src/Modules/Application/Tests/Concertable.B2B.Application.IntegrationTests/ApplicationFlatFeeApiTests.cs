@@ -90,7 +90,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldReturn400_WhenAlreadyAccepted()
+    public async Task Accept_ShouldReturn409_WhenAlreadyAccepted()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
@@ -112,7 +112,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        await response.ShouldBe(HttpStatusCode.BadRequest);
+        await response.ShouldBe(HttpStatusCode.Conflict);
         fixture.PaymentTransport.SingleCommand<CaptureEscrowCommand>();
     }
 

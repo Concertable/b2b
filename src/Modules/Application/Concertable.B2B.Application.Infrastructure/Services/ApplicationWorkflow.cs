@@ -191,14 +191,18 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
 
+        // The application's own state gates first. Once it has left Applied the opportunity is
+        // legitimately no longer open, and reporting that as an eligibility problem answers a lifecycle
+        // conflict with a 400 about someone else's resource.
+        if (application.ValidateAccept().TryGetError(out var acceptError))
+            return new AcceptApplicationError.InvalidTransition(acceptError);
+
         var eligibilityResult = await eligibility.CanAcceptAsync(application, ct)
             .MapError(error => (AcceptApplicationError)new AcceptApplicationError.Ineligible(error));
         if (eligibilityResult.TryGetError(out var eligibilityError))
             return eligibilityError;
         if (!eligibilityResult.TryGetValue(out var opportunity))
             throw new InvalidOperationException("Eligibility check succeeded without an opportunity value.");
-        if (application.ValidateAccept().TryGetError(out var acceptError))
-            return new AcceptApplicationError.InvalidTransition(acceptError);
 
         var dealOption = await this.dealModule.GetByIdAsync(opportunity.DealId, ct);
         if (!dealOption.TryGetValue(out var deal))
