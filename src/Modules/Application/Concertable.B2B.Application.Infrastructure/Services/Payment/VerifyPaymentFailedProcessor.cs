@@ -15,15 +15,18 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
     private const string DefaultFailureMessage = "Payment verification failed.";
 
     private readonly IPaymentVerificationRecorder recorder;
+    private readonly IApplicationNotifier notifier;
     private readonly ApplicationDbContext context;
     private readonly ILogger<VerifyPaymentFailedProcessor> logger;
 
     public VerifyPaymentFailedProcessor(
         IPaymentVerificationRecorder recorder,
+        IApplicationNotifier notifier,
         ApplicationDbContext context,
         ILogger<VerifyPaymentFailedProcessor> logger)
     {
         this.recorder = recorder;
+        this.notifier = notifier;
         this.context = context;
         this.logger = logger;
     }
@@ -60,6 +63,10 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
             logger.DuplicateInboxMessage(envelope.MessageId);
+            return;
         }
+
+        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.VenueManagerId) is { } venueManagerId)
+            await notifier.VerifyPaymentFailedAsync(applicationId, venueManagerId, message);
     }
 }

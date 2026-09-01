@@ -1,6 +1,7 @@
 using Concertable.B2B.Conversations.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
+using Concertable.Kernel.Notifications;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
@@ -9,16 +10,25 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly IApplicationRepository repository;
     private readonly ICurrentUser currentUser;
     private readonly IConversationsModule conversationsModule;
+    private readonly INotificationClient notificationClient;
 
     public ApplicationNotifier(
         IApplicationRepository repository,
         ICurrentUser currentUser,
-        IConversationsModule conversationsModule)
+        IConversationsModule conversationsModule,
+        INotificationClient notificationClient)
     {
         this.repository = repository;
         this.currentUser = currentUser;
         this.conversationsModule = conversationsModule;
+        this.notificationClient = notificationClient;
     }
+
+    public Task VerifyPaymentFailedAsync(int applicationId, string venueManagerId, string failureMessage) =>
+        notificationClient.SendAsync(
+            venueManagerId,
+            "VerifyPaymentFailed",
+            new { applicationId, failureMessage });
 
     public Task AppliedAsync(int applicationId) =>
         NotifyVenueAsync(
