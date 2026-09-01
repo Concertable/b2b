@@ -144,6 +144,24 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ## LOW
 
+### Action-link hrefs are hand-interpolated instead of generated from routes
+
+Every `ActionLink` in the Api layer builds its href with string interpolation — `ApplicationMappers`,
+`ConcertMappers`, `SelfBillingAgreementMappers`, `MessageMappers` and `OpportunityMapper` between them
+interpolate roughly a dozen `$"/api/..."` literals. Nothing ties a literal to the controller route it
+names, so a route rename leaves the emitted link pointing at a 404 and no build or test fails. The
+frontend compensates by stripping the `/api` prefix back off with a regex before re-issuing the call
+(`app/web/shared/src/lib/actionLinkApi.ts`), which only works while every literal happens to agree.
+
+`Href` (Concertable.Kernel) now validates the string at construction, but validating a string someone
+already hand-built is a checkpoint after the fact, not the fix — `LinkGenerator` means nobody builds it.
+
+**Resolves when:** the Api-layer mappers take `LinkGenerator` (or `IUrlHelper`) and produce every
+`ActionLink` from a named route rather than an interpolated literal, and the frontend's `apiPath` regex
+is deleted because the emitted href is already client-relative.
+
+---
+
 ### Admin verification queue enriches contact per row, not per page
 
 `VerificationService.GetPendingAsync` (Tenant.Infrastructure) awaits `IVenueModule`/`IArtistModule`
