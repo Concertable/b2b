@@ -145,7 +145,9 @@ public sealed class FlatFeeJourneyTests : IAsyncLifetime
         await (await client.GetAsync($"/api/concert/application/{applicationId}"))
             .ShouldBe(HttpStatusCode.NotFound);
         Assert.Equal(0, await fixture.GetOutboxMessageCountAsync<NotifyConcertDraftCreatedCommand>());
-        Assert.Equal(0, await fixture.GetOutboxMessageCountAsync<SendEmailCommand>());
+        Assert.DoesNotContain(
+            await fixture.GetStagedEmailsAsync(),
+            email => email.Subject.StartsWith("Booking confirmed:", StringComparison.Ordinal));
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 

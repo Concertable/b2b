@@ -96,8 +96,7 @@ public sealed class DoorSplitJourneyTests : IAsyncLifetime
         await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
         var notification = Assert.Single(
-            fixture.NotificationService.Other,
-            value => value.EventName == "VerifyPaymentFailed");
+            await fixture.WaitForNotificationsAsync("VerifyPaymentFailed"));
         Assert.Equal(fixture.SeedState.VenueManager1.Id.ToString(), notification.UserId);
     }
 
@@ -138,9 +137,7 @@ public sealed class DoorSplitJourneyTests : IAsyncLifetime
         var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
         await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
-        Assert.Single(
-            fixture.NotificationService.Other,
-            value => value.EventName == "VerifyPaymentFailed");
+        Assert.Single(await fixture.WaitForNotificationsAsync("VerifyPaymentFailed"));
     }
 
     private static Task<HttpResponseMessage> AcceptAsync(HttpClient client, int applicationId) =>

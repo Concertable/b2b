@@ -43,9 +43,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         Assert.Equal("The venue pays the artist a flat fee of £500.00.", contract.TermsText);
         AssertCommonSnapshot(contract);
 
-        await UpdateDealAsync(
-            opportunityId,
-            new FlatFeeDealDto { PaymentMethod = PaymentMethod.Cash, Fee = 999m });
+        await AssertDealClosedToEditsAsync(opportunityId);
 
         var frozen = await GetContractAsync(applicationId);
         Assert.Equal(PaymentMethod.Transfer, frozen.PaymentMethod);
@@ -74,9 +72,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         Assert.Equal("The artist receives 70% of door revenue.", contract.TermsText);
         AssertCommonSnapshot(contract);
 
-        await UpdateDealAsync(
-            opportunityId,
-            new DoorSplitDealDto { PaymentMethod = PaymentMethod.Cash, ArtistDoorPercent = 15m });
+        await AssertDealClosedToEditsAsync(opportunityId);
 
         var frozen = await GetContractAsync(applicationId);
         Assert.Equal("The artist receives 70% of door revenue.", frozen.TermsText);
@@ -111,14 +107,7 @@ public sealed class ContractApiTests : IAsyncLifetime
             contract.TermsText);
         AssertCommonSnapshot(contract);
 
-        await UpdateDealAsync(
-            opportunityId,
-            new VersusDealDto
-            {
-                PaymentMethod = PaymentMethod.Cash,
-                Guarantee = 999m,
-                ArtistDoorPercent = 10m
-            });
+        await AssertDealClosedToEditsAsync(opportunityId);
 
         var frozen = await GetContractAsync(applicationId);
         Assert.Equal(
@@ -144,9 +133,7 @@ public sealed class ContractApiTests : IAsyncLifetime
         Assert.Equal("The artist pays the venue a hire fee of £250.00.", contract.TermsText);
         AssertCommonSnapshot(contract);
 
-        await UpdateDealAsync(
-            opportunityId,
-            new VenueHireDealDto { PaymentMethod = PaymentMethod.Cash, HireFee = 999m });
+        await AssertDealClosedToEditsAsync(opportunityId);
 
         var frozen = await GetContractAsync(applicationId);
         Assert.Equal("The artist pays the venue a hire fee of £250.00.", frozen.TermsText);
@@ -326,32 +313,20 @@ public sealed class ContractApiTests : IAsyncLifetime
         Assert.Equal("Test Signatory", contract.VenueSignature.SignatoryName);
     }
 
-    private async Task UpdateDealAsync(int opportunityId, DealDto desired)
+    /// <summary>
+    /// Acceptance books the opportunity, and a venue's editable set is its open opportunities, so the deal a
+    /// signed contract was minted from can no longer be edited at all -- the other drift path, editing while
+    /// the application is still pending, is closed by the terms fingerprint the acceptance checks.
+    /// </summary>
+    private async Task AssertDealClosedToEditsAsync(int opportunityId)
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var currentResponse = await venueClient.GetAsync(
+        var response = await venueClient.GetAsync(
             $"/api/venue/{fixture.SeedState.Venue.Id}/opportunities");
-        await currentResponse.ShouldBe(HttpStatusCode.OK);
-        var current = await currentResponse.Content.ReadAsync<IReadOnlyList<OpportunityBoundaryResponse>>();
-        Assert.NotNull(current);
-        var requests = current
-            .Select(opportunity => new OpportunityBoundaryRequest(
-                opportunity.Id,
-                opportunity.StartDate,
-                opportunity.EndDate,
-                opportunity.Genres,
-                opportunity.Id == opportunityId ? desired : opportunity.Deal))
-            .ToArray();
-
-        var updateResponse = await venueClient.PutAsync(
-            $"/api/venue/{fixture.SeedState.Venue.Id}/opportunities",
-            requests);
-
-        await updateResponse.ShouldBe(HttpStatusCode.OK);
-        var updated = await updateResponse.Content.ReadAsync<IReadOnlyList<OpportunityBoundaryResponse>>();
-        Assert.NotNull(updated);
-        var target = Assert.Single(updated, opportunity => opportunity.Id == opportunityId);
-        Assert.Equal(desired, target.Deal with { Id = desired.Id });
+        await response.ShouldBe(HttpStatusCode.OK);
+        var editable = await response.Content.ReadAsync<IReadOnlyList<OpportunityBoundaryResponse>>();
+        Assert.NotNull(editable);
+        Assert.DoesNotContain(editable, opportunity => opportunity.Id == opportunityId);
     }
 
     private OpportunityBoundaryRequest BuildOpportunityRequest(DealDto deal) =>

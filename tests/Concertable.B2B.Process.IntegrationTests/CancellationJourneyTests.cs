@@ -83,8 +83,8 @@ public sealed class CancellationJourneyTests : IAsyncLifetime
 
         var firstResponse = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
-        var firstRefund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
-        await fixture.RejectLatestFinancialOperationAsync();
+        var firstRefund = await fixture.PaymentTransport.SingleCommandAsync<RefundEscrowCommand>();
+        await fixture.RejectLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(BookingStatus.CancellationFailed, (await GetBookingAsync(client, applicationId)).Status);
 
         var retryResponse = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
@@ -137,8 +137,8 @@ public sealed class CancellationJourneyTests : IAsyncLifetime
 
         var firstResponse = await client.PostAsync(concert.Actions.Cancel.Href, (object?)null);
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
-        var firstRefund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
-        await fixture.RejectLatestFinancialOperationAsync();
+        var firstRefund = await fixture.PaymentTransport.SingleCommandAsync<RefundEscrowCommand>();
+        await fixture.RejectLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.NotNull((await GetConcertAsync(client, applicationId)).Actions.Cancel);
 
         var retryResponse = await client.PostAsync(concert.Actions.Cancel.Href, (object?)null);

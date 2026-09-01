@@ -94,8 +94,7 @@ public sealed class VersusJourneyTests : IAsyncLifetime
         await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
         var notification = Assert.Single(
-            fixture.NotificationService.Other,
-            value => value.EventName == "VerifyPaymentFailed");
+            await fixture.WaitForNotificationsAsync("VerifyPaymentFailed"));
         Assert.Equal(fixture.SeedState.VenueManager1.Id.ToString(), notification.UserId);
     }
 

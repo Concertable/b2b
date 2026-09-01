@@ -254,6 +254,29 @@ public class ApiFixture : IAsyncLifetime
         throw new InvalidOperationException($"Expected {count} concert draft notifications within 5 seconds.");
     }
 
+    /// <summary>
+    /// The counterpart to <see cref="WaitForDraftNotificationsAsync"/> for a named event. A notification is
+    /// staged in the outbox and delivered after the request that raised it has returned, so reading
+    /// <c>NotificationService.Other</c> synchronously races the dispatcher.
+    /// </summary>
+    public async Task<IReadOnlyCollection<(string UserId, string EventName, object Payload)>>
+        WaitForNotificationsAsync(string eventName)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow <= deadline)
+        {
+            var matches = NotificationService.Other
+                .Where(value => value.EventName == eventName)
+                .ToArray();
+            if (matches.Length > 0)
+                return matches;
+
+            await Task.Delay(100);
+        }
+
+        throw new InvalidOperationException($"Expected a {eventName} notification within 5 seconds.");
+    }
+
     public async Task<IReadOnlyList<SendEmailCommand>> GetStagedEmailsAsync()
     {
         using var readScope = factory.Services.CreateScope();
