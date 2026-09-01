@@ -109,7 +109,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
     #region Cancel under concurrency
 
     [Fact]
-    public async Task Cancel_WhenSettlementReservationWinsTheRace_ReturnsConflictAndLeavesSettlementInProgress()
+    public async Task Cancel_WhenSettlementReservationWinsTheRace_ReturnsConflictAndLeavesTheConcertSettled()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
@@ -126,7 +126,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await cancellation.ShouldBe(HttpStatusCode.Conflict);
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(ConcertState.AwaitingSettlement, persisted.State);
+        Assert.Equal(ConcertState.Complete, persisted.State);
         Assert.NotNull(persisted.SettlementOperationId);
         Assert.Null(persisted.CancellationOperationId);
         Assert.Single(

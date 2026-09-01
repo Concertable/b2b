@@ -7,8 +7,9 @@ internal static class DbUpdateExceptionExtensions
 {
     extension(DbUpdateException exception)
     {
-        public bool IsBookingConcurrencyConflict() =>
+        public bool IsBookingConcurrencyConflict(int bookingId) =>
             exception is DbUpdateConcurrencyException &&
-            exception.Entries.Any(entry => entry.Entity is BookingEntity);
+            exception.Entries.Any(entry =>
+                entry.Entity is BookingEntity booking && booking.Id == bookingId);
     }
 }

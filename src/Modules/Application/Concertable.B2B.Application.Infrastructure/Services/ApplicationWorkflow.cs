@@ -164,7 +164,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         CancellationToken ct = default) =>
         unitOfWorkBehavior.TryExecuteAsync(
             () => AcceptCoreAsync(applicationId, paymentMethodId, eSignature, ct),
-            static exception => exception.IsApplicationAcceptanceConflict(),
+            exception => exception.IsApplicationAcceptanceConflict(applicationId),
             _ => ClassifyAcceptConflictAsync(applicationId, ct),
             ct);
 

@@ -187,7 +187,7 @@ internal sealed class ApplicationService : IApplicationService
         CancellationToken ct = default) =>
         unitOfWorkBehavior.TryExecuteAsync(
             () => WithdrawCoreAsync(applicationId, ct),
-            static exception => exception.IsApplicationConcurrencyConflict(),
+            exception => exception.IsApplicationConcurrencyConflict(applicationId),
             _ => ClassifyWithdrawConflictAsync(applicationId, ct),
             ct);
 
@@ -221,7 +221,7 @@ internal sealed class ApplicationService : IApplicationService
         CancellationToken ct = default) =>
         unitOfWorkBehavior.TryExecuteAsync(
             () => RejectCoreAsync(applicationId, ct),
-            static exception => exception.IsApplicationConcurrencyConflict(),
+            exception => exception.IsApplicationConcurrencyConflict(applicationId),
             _ => ClassifyRejectConflictAsync(applicationId, ct),
             ct);
 
@@ -255,7 +255,7 @@ internal sealed class ApplicationService : IApplicationService
         CancellationToken ct = default) =>
         unitOfWorkBehavior.TryExecuteAsync(
             () => CancelCoreAsync(applicationId, ct),
-            static exception => exception.IsApplicationConcurrencyConflict(),
+            exception => exception.IsApplicationConcurrencyConflict(applicationId),
             _ => ClassifyCancelConflictAsync(applicationId, ct),
             ct);
 

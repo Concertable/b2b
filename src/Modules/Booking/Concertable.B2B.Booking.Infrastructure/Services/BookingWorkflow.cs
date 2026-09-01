@@ -61,7 +61,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct = default) =>
         unitOfWorkBehavior.TryExecuteAsync(
             () => outboxBehavior.ExecuteAsync(() => CancelCoreAsync(bookingId, ct), ct),
-            static exception => exception.IsBookingConcurrencyConflict(),
+            exception => exception.IsBookingConcurrencyConflict(bookingId),
             _ => ClassifyCancelConflictAsync(bookingId, ct),
             ct);
 

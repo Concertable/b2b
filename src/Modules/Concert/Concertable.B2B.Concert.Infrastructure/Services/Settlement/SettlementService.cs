@@ -44,18 +44,39 @@ internal sealed class SettlementService : ISettlementService
     {
         return await unitOfWorkBoundary.TryExecuteAsync(
             context => ReserveAsync(context, concertId, ct),
-            static exception => exception.IsConcertConcurrencyConflict(),
+            exception => exception.IsConcertConcurrencyConflict(concertId),
             _ => ClassifyReservationConflictAsync(concertId, ct),
             ct);
     }
 
     // Re-runs the reservation against committed truth: whatever won the race decides the outcome, so a
-    // concert cancelled underneath us reports its rejected transition rather than a lost update.
+    // concert cancelled underneath us reports its rejected transition rather than a lost update. The retry
+    // is bounded — a second loss reports the state it lost to rather than escaping as an unclassified fault.
     private Task<Result<SettlementPreparation, FinishConcertError>> ClassifyReservationConflictAsync(
         int concertId,
         CancellationToken ct) =>
-        unitOfWorkBoundary.ExecuteAsync(
+        unitOfWorkBoundary.TryExecuteAsync(
             context => ReserveAsync(context, concertId, ct),
+            exception => exception.IsConcertConcurrencyConflict(concertId),
+            _ => ReportContendedAsync(concertId, ct),
+            ct);
+
+    private Task<Result<SettlementPreparation, FinishConcertError>> ReportContendedAsync(
+        int concertId,
+        CancellationToken ct) =>
+        unitOfWorkBoundary.ExecuteAsync(
+            async context =>
+            {
+                var state = await context.Concerts
+                    .Where(concert => concert.Id == concertId)
+                    .Select(concert => (ConcertState?)concert.State)
+                    .FirstOrDefaultAsync(ct);
+
+                return state is { } current
+                    ? (Result<SettlementPreparation, FinishConcertError>)new FinishConcertError.InvalidTransition(
+                        new TransitionError<ConcertState, ConcertTrigger>(current, ConcertTrigger.BeginSettlement))
+                    : new FinishConcertError.ConcertNotFound(concertId);
+            },
             ct);
 
     private async Task<Result<SettlementPreparation, FinishConcertError>> ReserveAsync(

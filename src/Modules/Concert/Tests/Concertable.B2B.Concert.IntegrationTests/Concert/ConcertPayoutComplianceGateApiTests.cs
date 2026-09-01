@@ -57,7 +57,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concert.Id);
 
         Assert.Contains(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
-        var persisted = await ConcertAsync(concert.Id);
+        var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
     }
 

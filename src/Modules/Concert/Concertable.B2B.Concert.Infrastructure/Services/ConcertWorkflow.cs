@@ -41,7 +41,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         CancellationToken ct = default) =>
         unitOfWorkBehavior.TryExecuteAsync(
             () => outboxBehavior.ExecuteAsync(() => CancelCoreAsync(concertId, ct), ct),
-            static exception => exception.IsConcertConcurrencyConflict(),
+            exception => exception.IsConcertConcurrencyConflict(concertId),
             _ => ClassifyCancelConflictAsync(concertId, ct),
             ct);
 
