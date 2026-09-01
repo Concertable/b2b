@@ -79,7 +79,7 @@ internal sealed class MessageService : IMessageService
         DateTimeOffset at)
     {
         var recipientTenantId = senderTenantId == venueTenantId ? artistTenantId : venueTenantId;
-        var recipientPersona = recipientTenantId == venueTenantId ? "venue" : "artist";
+        var recipientSurface = recipientTenantId == venueTenantId ? "venue" : "artist";
         return new TenantActivityRecordedEvent(new ActivityRecord(
             $"message:{Guid.CreateVersion7(at)}",
             recipientTenantId,
@@ -87,7 +87,7 @@ internal sealed class MessageService : IMessageService
             at,
             content,
             null,
-            $"/_{recipientPersona}/?inbox=open"));
+            $"/_{recipientSurface}/?inbox=open"));
     }
 
     private static ActivityType ToActivityType(MessageAction? action) =>

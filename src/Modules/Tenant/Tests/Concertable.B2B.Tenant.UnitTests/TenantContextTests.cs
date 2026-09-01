@@ -219,7 +219,7 @@ public sealed class TenantContextTests
     }
 
     [Fact]
-    public async Task HasPermission_WrongPersona_Denies_RightPersona_Grants()
+    public async Task HasPermission_WrongTenantType_Denies_RightTenantType_Grants()
     {
         var membership = await ResolvedMembership(TenantRole.Owner, TenantType.Artist);
 
