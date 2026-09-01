@@ -1,7 +1,7 @@
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Domain.Entities;
 
-namespace Concertable.B2B.Application.Application.Interfaces;
+namespace Concertable.B2B.Application.Application.Mappers;
 
 internal interface IApplicationMapper
 {

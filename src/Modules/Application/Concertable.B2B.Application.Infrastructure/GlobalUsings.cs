@@ -1,6 +1,7 @@
 global using Concertable.B2B.Application.Application.DTOs;
 global using Concertable.B2B.Application.Application.Errors;
 global using Concertable.B2B.Application.Application.Interfaces;
+global using Concertable.B2B.Application.Application.Mappers;
 global using Concertable.B2B.Application.Application.Requests;
 global using Concertable.B2B.Application.Application.Responses;
 global using Concertable.B2B.Application.Contracts;
