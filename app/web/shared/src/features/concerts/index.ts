@@ -2,6 +2,11 @@ export { OpportunitySection } from "./components/opportunities/OpportunitySectio
 export { AcceptDealSummary } from "./components/applications/AcceptDealSummary";
 export { ESignaturePanel } from "./components/applications/ESignaturePanel";
 export type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
+export { applicationActionLabels } from "./applicationActions";
+export type {
+  ApplicationActionName,
+  ApplicationActionsOf,
+} from "./applicationActions";
 export { Opportunity } from "./types";
 export type {
   OpportunityDraft,
@@ -31,4 +36,3 @@ export {
   useCancelApplicationMutation,
 } from "./hooks/useApplicationQuery";
 export { useDownloadContractMutation } from "./hooks/useDownloadContractMutation";
-export { default as actionLinkApi } from "./api/actionLinkApi";

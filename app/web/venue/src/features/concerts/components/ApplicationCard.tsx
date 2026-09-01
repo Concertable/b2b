@@ -57,7 +57,7 @@ export function ApplicationCard({
               Accept
             </Button>
           )}
-          {onDeny && actions.reject && (
+          {onDeny && actions.decline && (
             <Button
               size="sm"
               variant="destructive"

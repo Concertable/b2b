@@ -7,13 +7,14 @@ import {
 } from "./hooks";
 import {
   APPLICATION_ACTION_LABELS,
+  APPLICATION_ACTION_VARIANTS,
   type ApplicationActionName,
 } from "./applicationActions";
 import type { Application } from "./types";
 import type { DashboardApplicationStatus } from "@concertable/shared/features/dashboard/types";
 import { dealSummary } from "@concertable/web-b2b/features/deals";
 import { ConfirmActionDialog } from "@concertable/web-b2b/features/concerts";
-import { Button } from "@concertable/web/components/ui/button";
+import { ActionLinkButtons } from "@concertable/web/components/ActionLinkButtons";
 import { DataTable } from "@concertable/web/components/ui/data-table";
 import {
   DashboardCard,
@@ -34,11 +35,6 @@ const statusStyles: Record<
   confirmed: { label: "Confirmed", chip: "bg-emerald-50 text-emerald-700" },
   rejected: { label: "Rejected", chip: "bg-muted text-muted-foreground" },
   withdrawn: { label: "Withdrawn", chip: "bg-muted text-muted-foreground" },
-};
-
-const actionVariants: Record<ApplicationActionName, "default" | "outline"> = {
-  withdraw: "outline",
-  contract: "default",
 };
 
 function createColumns(
@@ -77,31 +73,14 @@ function createColumns(
     {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
-      cell: ({ row }) => {
-        const actionNames = (
-          Object.entries(row.original.actions) as [
-            ApplicationActionName,
-            unknown,
-          ][]
-        )
-          .filter(([, action]) => action !== undefined)
-          .map(([name]) => name);
-        if (actionNames.length === 0) return null;
-        return (
-          <div className="flex items-center justify-end gap-1">
-            {actionNames.map((name) => (
-              <Button
-                key={name}
-                size="xs"
-                variant={actionVariants[name]}
-                onClick={() => onAction(name, row.original)}
-              >
-                {APPLICATION_ACTION_LABELS[name]}
-              </Button>
-            ))}
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <ActionLinkButtons
+          actions={row.original.actions}
+          labels={APPLICATION_ACTION_LABELS}
+          variants={APPLICATION_ACTION_VARIANTS}
+          onAction={(name) => onAction(name, row.original)}
+        />
+      ),
     },
   ];
 }

@@ -1,4 +1,8 @@
 import type { ActionLink, Genre } from "@concertable/shared/types/common";
+import type {
+  ApplicationActionName,
+  ApplicationActionsOf,
+} from "./applicationActions";
 import type { ArtistSummary } from "@concertable/shared/features/artists/types";
 import type { Concert } from "@concertable/shared/features/concerts/types";
 import type { Deal } from "@b2b/features/deals";
@@ -47,14 +51,7 @@ export const Opportunity = {
   },
 };
 
-export interface ApplicationActions {
-  accept: ActionLink;
-  checkout?: ActionLink;
-  withdraw?: ActionLink;
-  reject?: ActionLink;
-  cancel?: ActionLink;
-  contract?: ActionLink;
-}
+export type ApplicationActions = ApplicationActionsOf<ApplicationActionName>;
 
 export interface ConcertActions {
   cancel?: ActionLink;
