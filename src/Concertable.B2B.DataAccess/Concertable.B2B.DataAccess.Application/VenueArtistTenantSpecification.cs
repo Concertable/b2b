@@ -10,7 +10,7 @@ namespace Concertable.B2B.DataAccess.Application;
 public sealed class VenueArtistTenantSpecification<TEntity> : SpecificationBuilder<TEntity>
     where TEntity : class, IVenueArtistTenantScoped
 {
-    public static ISpecification<TEntity, TenantPair> CreatePair() =>
+    public static ISpecification<TEntity, TenantPair?> CreatePair() =>
         new VenueArtistTenantSpecification<TEntity>()
             .Select(entity => new TenantPair(entity.VenueTenantId, entity.ArtistTenantId));
 
