@@ -47,7 +47,7 @@ public sealed class MessageServiceTests
     }
 
     [Fact]
-    public async Task GetRecentPreviews_ResolvesCounterpartyIdentityAndPersonaHref()
+    public async Task GetRecentPreviews_ResolvesCounterpartyIdentityAndSurfaceHref()
     {
         var activeTenantId = Guid.NewGuid();
         var venueTenantId = Guid.NewGuid();
