@@ -127,6 +127,23 @@ public sealed class OpportunityApiTests : IAsyncLifetime
             problem.Errors["ArtistDoorPercent"]);
     }
 
+    [Fact]
+    public async Task Create_DuplicateGenres_PersistDistinct_AndReMaterialiseFromJsonColumn()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var request = BuildRequest(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Cash, Fee = 500 }, fixture.SeedNow)
+            with { Genres = [Genre.Rock, Genre.Rock, Genre.Pop, Genre.Pop, Genre.Pop] };
+
+        var response = await client.PostAsync("/api/opportunity", request);
+
+        await response.ShouldBe(HttpStatusCode.Created);
+        var created = await response.Content.ReadAsync<OpportunityResponse>();
+        Assert.Equal([Genre.Rock, Genre.Pop], created.Genres);
+
+        var persisted = await fixture.Opportunities.SingleAsync(o => o.Id == created.Id);
+        Assert.Equal([Genre.Rock, Genre.Pop], persisted.Genres.ToArray());
+    }
+
     #endregion
 
     #region Update

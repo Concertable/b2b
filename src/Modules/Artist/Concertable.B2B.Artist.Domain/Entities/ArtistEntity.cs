@@ -26,7 +26,7 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
     public string Avatar { get; private set; } = null!;
     public string Email { get; private set; } = null!;
 
-    public List<Genre> Genres { get; private set; } = [];
+    public EfSet<Genre> Genres { get; private set; } = [];
 
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
     public void ClearDomainEvents() => events.Clear();
@@ -40,7 +40,7 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
         Point location,
         Address address,
         string email,
-        IEnumerable<Genre> genres)
+        IReadOnlyCollection<Genre> genres)
     {
         var validation = ValidateProfile(name, about);
         return validation.Bind(() =>
@@ -59,13 +59,12 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
                 Email = email
             };
 
-            artist.SyncGenresInternal(genres);
-            artist.events.Raise(new ArtistChangedDomainEvent(artist));
+            artist.SyncGenres(genres);
             return Result.Success<ArtistEntity, ValidationErrors>(artist);
         });
     }
 
-    public UnitResult<ValidationErrors> Update(string name, string about, string bannerUrl, IEnumerable<Genre> genres)
+    public UnitResult<ValidationErrors> Update(string name, string about, string bannerUrl, IReadOnlyCollection<Genre> genres)
     {
         var validation = ValidateProfile(name, about);
         if (validation.IsFailure)
@@ -77,14 +76,13 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
         About = about;
         BannerUrl = bannerUrl;
 
-        SyncGenresInternal(genres);
-        events.Raise(new ArtistChangedDomainEvent(this));
+        SyncGenres(genres);
         return new Success();
     }
 
-    public void SyncGenres(IEnumerable<Genre> genres)
+    public void SyncGenres(IReadOnlyCollection<Genre> genres)
     {
-        SyncGenresInternal(genres);
+        Genres = genres.ToEfSet();
         events.Raise(new ArtistChangedDomainEvent(this));
     }
 
@@ -112,8 +110,6 @@ public sealed class ArtistEntity : IIdEntity, IHasName, IEventRaiser, ITenantSco
         events.Raise(new ArtistChangedDomainEvent(this));
     }
 
-    private void SyncGenresInternal(IEnumerable<Genre> genres) =>
-        Genres = genres.ToList();
 
     public static UnitResult<ValidationErrors> ValidateProfile(string name, string about)
     {

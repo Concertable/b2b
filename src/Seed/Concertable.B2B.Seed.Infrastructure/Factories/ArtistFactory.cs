@@ -18,7 +18,7 @@ public static class ArtistFactory
         Point location,
         Address address,
         string email,
-        IEnumerable<Genre> genres)
+        IReadOnlyCollection<Genre> genres)
         => ArtistEntity
             .Create(userId, name, about, bannerUrl, avatar, location, address, email, genres)
             .Match(
