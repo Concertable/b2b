@@ -15,30 +15,34 @@ namespace Concertable.B2B.Hosting;
 
 public static class B2BTopology
 {
-    public static AsbTopology AddB2BTopology(this AsbTopology topology) =>
-        topology
-            .Publish<ArtistChangedEvent>()
-            .Publish<ArtistRatingUpdatedEvent>()
-            .Publish<VenueChangedEvent>()
-            .Publish<VenueRatingUpdatedEvent>()
-            .Publish<ConcertChangedEvent>()
-            .Publish<ConcertPostedEvent>()
-            .Publish<ConcertRatingUpdatedEvent>()
-            .Publish<BookingCancelledEvent>()
-            .Publish<ConcertCancelledEvent>()
-            .Publish<ConcertCreatedEvent>()
-            .Publish<B2BPayoutOwnerRegisteredEvent>()
-            .Publish<TenantActivityRecordedEvent>()
-            .Subscribe<CustomerReviewSubmittedEvent>(B2BConstants.ServiceName)
-            .Subscribe<CredentialRegisteredEvent>(B2BConstants.ServiceName)
-            .Subscribe<PaymentSucceededEvent>(B2BConstants.ServiceName)
-            .Subscribe<PaymentFailedEvent>(B2BConstants.ServiceName)
-            .Subscribe<CaptureEscrowSucceededEvent>(B2BConstants.ServiceName)
-            .Subscribe<CaptureEscrowRejectedEvent>(B2BConstants.ServiceName)
-            .Subscribe<DepositEscrowSucceededEvent>(B2BConstants.ServiceName)
-            .Subscribe<DepositEscrowRejectedEvent>(B2BConstants.ServiceName)
-            .Subscribe<RefundEscrowSucceededEvent>(B2BConstants.ServiceName)
-            .Subscribe<RefundEscrowRejectedEvent>(B2BConstants.ServiceName)
-            .Queue<SendEmailCommand>(B2BConstants.ServiceName)
-            .Queue<NotifyConcertDraftCreatedCommand>(B2BConstants.ServiceName);
+    public static AsbTopology AddB2BTopology(this AsbTopology topology)
+    {
+        topology.WithService(B2BConstants.ServiceName)
+                .Publish<ArtistChangedEvent>()
+                .Publish<ArtistRatingUpdatedEvent>()
+                .Publish<VenueChangedEvent>()
+                .Publish<VenueRatingUpdatedEvent>()
+                .Publish<ConcertChangedEvent>()
+                .Publish<ConcertPostedEvent>()
+                .Publish<ConcertRatingUpdatedEvent>()
+                .Publish<BookingCancelledEvent>()
+                .Publish<ConcertCancelledEvent>()
+                .Publish<ConcertCreatedEvent>()
+                .Publish<B2BPayoutOwnerRegisteredEvent>()
+                .Publish<TenantActivityRecordedEvent>()
+                .Subscribe<CustomerReviewSubmittedEvent>()
+                .Subscribe<CredentialRegisteredEvent>()
+                .Subscribe<PaymentSucceededEvent>()
+                .Subscribe<PaymentFailedEvent>()
+                .Subscribe<CaptureEscrowSucceededEvent>()
+                .Subscribe<CaptureEscrowRejectedEvent>()
+                .Subscribe<DepositEscrowSucceededEvent>()
+                .Subscribe<DepositEscrowRejectedEvent>()
+                .Subscribe<RefundEscrowSucceededEvent>()
+                .Subscribe<RefundEscrowRejectedEvent>()
+                .Queue<SendEmailCommand>()
+                .Queue<NotifyConcertDraftCreatedCommand>();
+
+        return topology;
+    }
 }
