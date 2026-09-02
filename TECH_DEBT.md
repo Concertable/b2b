@@ -24,12 +24,12 @@ There is no sold-count / gross-revenue projection. B2B dashboards and settlement
 
 ---
 
-### E2E boots the whole real fleet from source references (won't survive the repo split)
+### E2E boots the whole real system from source references (won't survive the repo split)
 
 `Concertable.B2B.E2ETests/AppFixture.cs` launches `Concertable.B2B.AppHost` via
 `DistributedApplicationTestingBuilder.CreateAsync<Projects.Concertable_B2B_AppHost>()`, which composes
 **real** Payment + Auth + Search through `Projects.Concertable_*` *source* references. That's fine in
-the monorepo, but it's full-fleet E2E run from inside one service's repo — it conflates two test tiers
+the monorepo, but it's full-system E2E run from inside one service's repo — it conflates two test tiers
 and breaks at the repo split (the `Projects.Concertable_Payment_*` types vanish once Payment is a
 separate repo). E2E must never stub Payment (stubbing defeats E2E), so the fix is not "fake it here" —
 it's to split the tiers by *where they run*:
@@ -39,8 +39,8 @@ it's to split the tiers by *where they run*:
   behind their contracts — Payment via the existing `MockManagerPaymentClient` / `MockEscrowClient` /
   `MockCustomerPaymentClient` against `Payment.Contracts` — plus **consumer-driven contract tests** so
   the fakes can't silently drift. No Payment source or runtime needed.
-- **Full-fleet system E2E (rare / pre-release, centralised — not per-service-repo):** stands up the
-  real fleet from **published container images** (`AddProject<Projects.Concertable_Payment_Web>()` →
+- **Full-system E2E (rare / pre-release, centralised — not per-service-repo):** stands up the
+  real system from **published container images** (`AddProject<Projects.Concertable_Payment_Web>()` →
   `AddContainer("payment", "<registry>/payment:<version>")`). Same real Payment, pulled not compiled.
   This suite moves out of B2B's repo into a system/deployment pipeline.
 
