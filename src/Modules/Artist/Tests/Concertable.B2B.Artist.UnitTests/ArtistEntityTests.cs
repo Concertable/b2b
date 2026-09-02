@@ -49,6 +49,16 @@ public sealed class ArtistEntityTests
     }
 
     [Fact]
+    public void SyncGenres_DuplicateGenre_IsStoredOnce()
+    {
+        var artist = Create();
+
+        artist.SyncGenres([Genre.Jazz, Genre.Jazz, Genre.Rock]);
+
+        Assert.Equal([Genre.Jazz, Genre.Rock], artist.Genres);
+    }
+
+    [Fact]
     public void Create_InvalidCollaboratorOutput_StillThrowsInvariantException()
     {
         Assert.Throws<DomainException>(() => ArtistEntity.Create(
