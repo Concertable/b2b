@@ -3,14 +3,14 @@ using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Payment.Contracts;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Journey.IntegrationTests;
+namespace Concertable.B2B.Lifecycle.IntegrationTests;
 
 [Collection("Integration")]
-public sealed class TenantScopingJourneyTests : IAsyncLifetime
+public sealed class TenantScopingLifecycleTests : IAsyncLifetime
 {
-    private readonly JourneyApiFixture fixture;
+    private readonly LifecycleApiFixture fixture;
 
-    public TenantScopingJourneyTests(JourneyApiFixture fixture, ITestOutputHelper output)
+    public TenantScopingLifecycleTests(LifecycleApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);

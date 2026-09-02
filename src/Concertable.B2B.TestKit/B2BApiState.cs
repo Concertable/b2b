@@ -13,10 +13,16 @@ public enum B2BApplicationStatus
     Cancelled,
 }
 
-public static class B2BLifecycleStates
+public enum B2BConcertLifecycleState
 {
-    public const int Complete = 10;
-    public const int Cancelled = 11;
+    Draft,
+    Posted,
+    CancellationPending,
+    CancellationFailed,
+    AwaitingSettlement,
+    SettlementFailed,
+    Complete,
+    Cancelled
 }
 
 public static class B2BTestFunctions

@@ -34,6 +34,7 @@
     <ProjectReference Include="..\..\src\Modules\Admin\Concertable.B2B.Admin.Contracts\Concertable.B2B.Admin.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.IntegrationTests.Fixtures\Concertable.B2B.IntegrationTests.Fixtures.csproj" />
     <PackageReference Include="Concertable.Testing.Architecture" />
+    <ProjectReference Include="..\..\src\Concertable.B2B.TestKit\Concertable.B2B.TestKit.csproj" />
   </ItemGroup>
 
 </Project>

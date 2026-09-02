@@ -23,7 +23,7 @@ public sealed class IntegrationTestBoundaryTests
             .Where(project => project.FullName.Contains(
                     $"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}Modules{Path.DirectorySeparatorChar}",
                     StringComparison.Ordinal) ||
-                project.Name == "Concertable.B2B.Journey.IntegrationTests.csproj")
+                project.Name == "Concertable.B2B.Lifecycle.IntegrationTests.csproj")
             .SelectMany(FindCrossModuleProjectReferences)
             .Order()
             .ToArray();

@@ -52,6 +52,7 @@ public static class E2EAdminExtensions
             group.MapGet("/seed-state", GetSeedStateAsync);
             group.MapGet("/applications/{applicationId:int}/booking-id", GetBookingIdAsync);
             group.MapGet("/applications/{applicationId:int}/state", GetApplicationStateAsync);
+            group.MapGet("/applications/{applicationId:int}/concert-state", GetConcertStateAsync);
             group.MapGet("/venues/{venueId:int}/opportunities/newest-id", GetNewestOpportunityIdAsync);
             group.MapPost("/concerts/{concertId:int}/door-revenue", DeclareDoorRevenueAsync);
             return app;
@@ -143,6 +144,18 @@ public static class E2EAdminExtensions
         IDbConnection connection) =>
         Results.Ok(await connection.QuerySingleAsync<int>(
             "SELECT State FROM application.Applications WHERE Id = @applicationId",
+            new { applicationId }));
+
+    private static async Task<IResult> GetConcertStateAsync(
+        int applicationId,
+        IDbConnection connection) =>
+        Results.Ok(await connection.QuerySingleAsync<int>(
+            """
+            SELECT concerts.State
+            FROM concert.Concerts AS concerts
+            INNER JOIN booking.Bookings AS bookings ON bookings.Id = concerts.BookingId
+            WHERE bookings.ApplicationId = @applicationId
+            """,
             new { applicationId }));
 
     private static async Task<IResult> GetNewestOpportunityIdAsync(

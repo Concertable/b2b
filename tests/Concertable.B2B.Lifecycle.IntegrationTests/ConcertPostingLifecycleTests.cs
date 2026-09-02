@@ -4,14 +4,14 @@ using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.Messaging.Contracts;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Journey.IntegrationTests;
+namespace Concertable.B2B.Lifecycle.IntegrationTests;
 
 [Collection("Integration")]
-public sealed class ConcertPostingJourneyTests : IAsyncLifetime
+public sealed class ConcertPostingLifecycleTests : IAsyncLifetime
 {
-    private readonly JourneyApiFixture fixture;
+    private readonly LifecycleApiFixture fixture;
 
-    public ConcertPostingJourneyTests(JourneyApiFixture fixture, ITestOutputHelper output)
+    public ConcertPostingLifecycleTests(LifecycleApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);

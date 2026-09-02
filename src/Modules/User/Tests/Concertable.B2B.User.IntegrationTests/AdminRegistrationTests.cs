@@ -5,14 +5,14 @@ using Concertable.Auth.Contracts.Events;
 using Concertable.Messaging.Contracts;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Journey.IntegrationTests;
+namespace Concertable.B2B.User.IntegrationTests;
 
 [Collection("Integration")]
-public sealed class RegistrationJourneyTests : IAsyncLifetime
+public sealed class AdminRegistrationTests : IAsyncLifetime
 {
-    private readonly JourneyApiFixture fixture;
+    private readonly UserApiFixture fixture;
 
-    public RegistrationJourneyTests(JourneyApiFixture fixture, ITestOutputHelper output)
+    public AdminRegistrationTests(UserApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);

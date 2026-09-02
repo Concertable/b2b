@@ -1,14 +1,14 @@
 using System.Net;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Journey.IntegrationTests;
+namespace Concertable.B2B.Lifecycle.IntegrationTests;
 
 [Collection("Integration")]
-public sealed class BookingConfirmationEmailJourneyTests : IAsyncLifetime
+public sealed class BookingConfirmationEmailLifecycleTests : IAsyncLifetime
 {
-    private readonly JourneyApiFixture fixture;
+    private readonly LifecycleApiFixture fixture;
 
-    public BookingConfirmationEmailJourneyTests(JourneyApiFixture fixture, ITestOutputHelper output)
+    public BookingConfirmationEmailLifecycleTests(LifecycleApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
