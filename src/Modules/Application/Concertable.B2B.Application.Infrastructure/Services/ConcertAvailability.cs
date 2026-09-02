@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
-internal sealed class ApplicationAvailabilityProjection : IApplicationAvailabilityProjection
+internal sealed class ConcertAvailability : IConcertAvailability
 {
     private readonly IApplicationReadDbContext dbContext;
 
-    public ApplicationAvailabilityProjection(IApplicationReadDbContext dbContext)
+    public ConcertAvailability(IApplicationReadDbContext dbContext)
     {
         this.dbContext = dbContext;
     }
