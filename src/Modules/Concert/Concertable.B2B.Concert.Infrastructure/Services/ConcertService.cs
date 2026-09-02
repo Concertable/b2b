@@ -79,11 +79,11 @@ internal sealed class ConcertService : IConcertService
             throw new InvalidOperationException(
                 $"Booking {booking.BookingId} does not match its artist or venue projection.");
 
-        var artistGenres = artist.Genres.Select(genre => genre.Genre);
+        var artistGenres = artist.Genres.Select(genre => genre.Genre).ToList();
         var matchingGenres = booking.Genres.Count > 0
-            ? artistGenres.Intersect(booking.Genres)
+            ? artistGenres.Intersect(booking.Genres).ToList()
             : artistGenres;
-        if (!matchingGenres.Any())
+        if (matchingGenres.Count == 0)
         {
             logger.ConcertDraftCreationFailed(booking.BookingId, artist.Id, booking.OpportunityId);
             throw new InvalidOperationException(
