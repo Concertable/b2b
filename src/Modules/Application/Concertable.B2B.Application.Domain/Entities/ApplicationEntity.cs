@@ -119,6 +119,18 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
     internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Withdraw() => Apply(ApplicationTrigger.Withdraw);
     internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Cancel() => Apply(ApplicationTrigger.Cancel);
 
+    private readonly EventRaiser events = new();
+    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
+    public void ClearDomainEvents() => events.Clear();
+
+    public void NotifyCounterparty(ApplicationNotification kind)
+    {
+        var recipient = kind is ApplicationNotification.Applied or ApplicationNotification.Withdrawn
+            ? VenueTenantId
+            : ArtistTenantId;
+        events.Raise(new ApplicationCounterpartyNotifiedDomainEvent(recipient, kind));
+    }
+
     private UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Validate(ApplicationTrigger trigger)
     {
         var transition = stateMachine.Transition(State, trigger);
@@ -137,18 +149,6 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
         if (transition.TryGetValue(out var next))
             State = next;
         return transition;
-    }
-
-    private readonly EventRaiser events = new();
-    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
-    public void ClearDomainEvents() => events.Clear();
-
-    public void NotifyCounterparty(ApplicationNotification kind)
-    {
-        var recipient = kind is ApplicationNotification.Applied or ApplicationNotification.Withdrawn
-            ? VenueTenantId
-            : ArtistTenantId;
-        events.Raise(new ApplicationCounterpartyNotifiedDomainEvent(recipient, kind));
     }
 }
 

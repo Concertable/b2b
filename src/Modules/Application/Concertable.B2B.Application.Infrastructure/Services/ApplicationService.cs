@@ -191,6 +191,24 @@ internal sealed class ApplicationService : IApplicationService
             _ => ClassifyWithdrawConflictAsync(applicationId, ct),
             ct);
 
+    public Task<UnitResult<RejectApplicationError>> RejectAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        unitOfWorkBehavior.TryExecuteAsync(
+            () => RejectCoreAsync(applicationId, ct),
+            exception => exception.IsApplicationConcurrencyConflict(applicationId),
+            _ => ClassifyRejectConflictAsync(applicationId, ct),
+            ct);
+
+    public Task<UnitResult<CancelApplicationError>> CancelAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        unitOfWorkBehavior.TryExecuteAsync(
+            () => CancelCoreAsync(applicationId, ct),
+            exception => exception.IsApplicationConcurrencyConflict(applicationId),
+            _ => ClassifyCancelConflictAsync(applicationId, ct),
+            ct);
+
     private async Task<UnitResult<WithdrawApplicationError>> ClassifyWithdrawConflictAsync(
         int applicationId,
         CancellationToken ct)
@@ -216,15 +234,6 @@ internal sealed class ApplicationService : IApplicationService
         return new Success();
     }
 
-    public Task<UnitResult<RejectApplicationError>> RejectAsync(
-        int applicationId,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => RejectCoreAsync(applicationId, ct),
-            exception => exception.IsApplicationConcurrencyConflict(applicationId),
-            _ => ClassifyRejectConflictAsync(applicationId, ct),
-            ct);
-
     private async Task<UnitResult<RejectApplicationError>> ClassifyRejectConflictAsync(
         int applicationId,
         CancellationToken ct)
@@ -249,15 +258,6 @@ internal sealed class ApplicationService : IApplicationService
         await notifier.RejectedAsync(applicationId);
         return new Success();
     }
-
-    public Task<UnitResult<CancelApplicationError>> CancelAsync(
-        int applicationId,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => CancelCoreAsync(applicationId, ct),
-            exception => exception.IsApplicationConcurrencyConflict(applicationId),
-            _ => ClassifyCancelConflictAsync(applicationId, ct),
-            ct);
 
     private async Task<UnitResult<CancelApplicationError>> ClassifyCancelConflictAsync(
         int applicationId,

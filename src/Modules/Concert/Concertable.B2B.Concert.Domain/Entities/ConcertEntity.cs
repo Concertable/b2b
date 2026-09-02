@@ -241,6 +241,34 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
     internal UnitResult<TransitionError<ConcertState, ConcertTrigger>> ValidateCompleteSettlement() =>
         Validate(ConcertTrigger.CompleteSettlement);
 
+    public Money SettlementGross => Money.Gbp(SettlementGrossAmount
+        ?? throw new InvalidOperationException($"Concert {Id} has no settlement gross."));
+
+    public decimal CalculateSettlementGross() => DealType switch
+    {
+        DealType.FlatFee => Fee!.Value,
+        DealType.DoorSplit => TotalRevenue() * ArtistDoorPercent!.Value / 100m,
+        DealType.Versus => Guarantee!.Value + TotalRevenue() * ArtistDoorPercent!.Value / 100m,
+        DealType.VenueHire => HireFee!.Value,
+        _ => throw new ArgumentOutOfRangeException(nameof(DealType), DealType, null)
+    };
+
+    public Guid SettlementPayerTenantId =>
+        DealType == DealType.VenueHire ? ArtistTenantId : VenueTenantId;
+
+    public Guid SettlementPayeeTenantId =>
+        DealType == DealType.VenueHire ? VenueTenantId : ArtistTenantId;
+
+    internal void EnsureSettlementReference(string providerReferenceId)
+    {
+        if (string.IsNullOrWhiteSpace(providerReferenceId))
+            throw new ArgumentException("A settlement reference is required.", nameof(providerReferenceId));
+        FinancialOperationReferenceId ??= providerReferenceId;
+        if (FinancialOperationReferenceId != providerReferenceId)
+            throw new InvalidOperationException(
+                $"Concert {Id} expects settlement {FinancialOperationReferenceId}, not {providerReferenceId}.");
+    }
+
     private UnitResult<TransitionError<ConcertState, ConcertTrigger>> Apply(ConcertTrigger trigger)
     {
         var transition = Transition(trigger);
@@ -261,35 +289,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         return transition;
     }
 
-    public Money SettlementGross => Money.Gbp(SettlementGrossAmount
-        ?? throw new InvalidOperationException($"Concert {Id} has no settlement gross."));
-
-    public decimal CalculateSettlementGross() => DealType switch
-    {
-        DealType.FlatFee => Fee!.Value,
-        DealType.DoorSplit => TotalRevenue() * ArtistDoorPercent!.Value / 100m,
-        DealType.Versus => Guarantee!.Value + TotalRevenue() * ArtistDoorPercent!.Value / 100m,
-        DealType.VenueHire => HireFee!.Value,
-        _ => throw new ArgumentOutOfRangeException(nameof(DealType), DealType, null)
-    };
-
-    public Guid SettlementPayerTenantId =>
-        DealType == DealType.VenueHire ? ArtistTenantId : VenueTenantId;
-
-    public Guid SettlementPayeeTenantId =>
-        DealType == DealType.VenueHire ? VenueTenantId : ArtistTenantId;
-
     private decimal TotalRevenue() =>
         TicketsSold * Price + DoorRevenue
         ?? throw new InvalidOperationException($"Concert {Id} has no declared door revenue.");
-
-    internal void EnsureSettlementReference(string providerReferenceId)
-    {
-        if (string.IsNullOrWhiteSpace(providerReferenceId))
-            throw new ArgumentException("A settlement reference is required.", nameof(providerReferenceId));
-        FinancialOperationReferenceId ??= providerReferenceId;
-        if (FinancialOperationReferenceId != providerReferenceId)
-            throw new InvalidOperationException(
-                $"Concert {Id} expects settlement {FinancialOperationReferenceId}, not {providerReferenceId}.");
-    }
 }

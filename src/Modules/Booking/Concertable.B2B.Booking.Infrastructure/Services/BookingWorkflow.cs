@@ -65,6 +65,18 @@ internal sealed class BookingWorkflow : IBookingWorkflow
             _ => ClassifyCancelConflictAsync(bookingId, ct),
             ct);
 
+    public Task RecordSucceededAsync(
+        int bookingId,
+        FinancialOperationSucceeded operation,
+        CancellationToken ct = default) =>
+        unitOfWorkBehavior.ExecuteAsync(() => RecordSucceededCoreAsync(bookingId, operation, ct), ct);
+
+    public Task RecordFailedAsync(
+        int bookingId,
+        FinancialOperationFailed operation,
+        CancellationToken ct = default) =>
+        unitOfWorkBehavior.ExecuteAsync(() => RecordFailedCoreAsync(bookingId, operation, ct), ct);
+
     private async Task<UnitResult<CancelBookingError>> ClassifyCancelConflictAsync(
         int bookingId,
         CancellationToken ct)
@@ -92,18 +104,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         await unitOfWork.SaveChangesAsync(ct);
         return new Success();
     }
-
-    public Task RecordSucceededAsync(
-        int bookingId,
-        FinancialOperationSucceeded operation,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(() => RecordSucceededCoreAsync(bookingId, operation, ct), ct);
-
-    public Task RecordFailedAsync(
-        int bookingId,
-        FinancialOperationFailed operation,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(() => RecordFailedCoreAsync(bookingId, operation, ct), ct);
 
     private async Task<BookingDto> ConfirmCoreAsync(
         AcceptedApplication application,

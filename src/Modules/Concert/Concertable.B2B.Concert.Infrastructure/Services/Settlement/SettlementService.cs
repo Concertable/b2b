@@ -49,6 +49,38 @@ internal sealed class SettlementService : ISettlementService
             ct);
     }
 
+    public async Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
+        int concertId,
+        Guid operationId,
+        SettlementConfirmation confirmation,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(confirmation);
+        return await unitOfWorkBoundary.ExecuteAsync(
+            context => CompleteAsync(context, concertId, operationId, confirmation, ct),
+            ct);
+    }
+
+    public async Task RecordFailureAsync(
+        int concertId,
+        Guid operationId,
+        string providerReferenceId,
+        string code,
+        string message,
+        CancellationToken ct = default)
+    {
+        await unitOfWorkBoundary.ExecuteAsync(
+            context => RecordFailureAsync(
+                context,
+                concertId,
+                operationId,
+                providerReferenceId,
+                code,
+                message,
+                ct),
+            ct);
+    }
+
     // Re-runs the reservation against committed truth: whatever won the race decides the outcome, so a
     // concert cancelled underneath us reports its rejected transition rather than a lost update. The retry
     // is bounded — a second loss reports the state it lost to rather than escaping as an unclassified fault.
@@ -139,18 +171,6 @@ internal sealed class SettlementService : ISettlementService
         return CreatePreparation(concert, operationId);
     }
 
-    public async Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
-        int concertId,
-        Guid operationId,
-        SettlementConfirmation confirmation,
-        CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(confirmation);
-        return await unitOfWorkBoundary.ExecuteAsync(
-            context => CompleteAsync(context, concertId, operationId, confirmation, ct),
-            ct);
-    }
-
     private async Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
         ConcertDbContext context,
         int concertId,
@@ -186,26 +206,6 @@ internal sealed class SettlementService : ISettlementService
 
         await invoiceIssuer.IssueAsync(context, concert, ct);
         return SettlementOutcome.Settled;
-    }
-
-    public async Task RecordFailureAsync(
-        int concertId,
-        Guid operationId,
-        string providerReferenceId,
-        string code,
-        string message,
-        CancellationToken ct = default)
-    {
-        await unitOfWorkBoundary.ExecuteAsync(
-            context => RecordFailureAsync(
-                context,
-                concertId,
-                operationId,
-                providerReferenceId,
-                code,
-                message,
-                ct),
-            ct);
     }
 
     private async Task RecordFailureAsync(

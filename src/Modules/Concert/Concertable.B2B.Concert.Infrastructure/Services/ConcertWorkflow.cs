@@ -45,34 +45,6 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
             _ => ClassifyCancelConflictAsync(concertId, ct),
             ct);
 
-    private async Task<UnitResult<CancelConcertError>> ClassifyCancelConflictAsync(
-        int concertId,
-        CancellationToken ct)
-    {
-        if (await concertRepository.GetStateByIdAsync(concertId, ct)
-            is ConcertState.Cancelled or ConcertState.CancellationPending)
-            return new Success();
-
-        return new CancelConcertError.Superseded(concertId);
-    }
-
-    private async Task<UnitResult<CancelConcertError>> CancelCoreAsync(
-        int concertId,
-        CancellationToken ct)
-    {
-        var concert = await concertRepository.GetByIdAsync(concertId, ct);
-        if (concert is null)
-            return new CancelConcertError.ConcertNotFound(concertId);
-        if (concert.State is ConcertState.Cancelled or ConcertState.CancellationPending)
-            return new Success();
-        if (concert.ValidateBeginCancellation().TryGetError(out var transitionError))
-            return new CancelConcertError.InvalidTransition(transitionError);
-
-        await cancelFactory.Create(concert.DealType).CancelAsync(concert, ct);
-        await unitOfWork.SaveChangesAsync(ct);
-        return new Success();
-    }
-
     public async Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
         int concertId,
         CancellationToken ct = default)
@@ -103,5 +75,33 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
             ready.OperationId,
             confirmation,
             ct);
+    }
+
+    private async Task<UnitResult<CancelConcertError>> ClassifyCancelConflictAsync(
+        int concertId,
+        CancellationToken ct)
+    {
+        if (await concertRepository.GetStateByIdAsync(concertId, ct)
+            is ConcertState.Cancelled or ConcertState.CancellationPending)
+            return new Success();
+
+        return new CancelConcertError.Superseded(concertId);
+    }
+
+    private async Task<UnitResult<CancelConcertError>> CancelCoreAsync(
+        int concertId,
+        CancellationToken ct)
+    {
+        var concert = await concertRepository.GetByIdAsync(concertId, ct);
+        if (concert is null)
+            return new CancelConcertError.ConcertNotFound(concertId);
+        if (concert.State is ConcertState.Cancelled or ConcertState.CancellationPending)
+            return new Success();
+        if (concert.ValidateBeginCancellation().TryGetError(out var transitionError))
+            return new CancelConcertError.InvalidTransition(transitionError);
+
+        await cancelFactory.Create(concert.DealType).CancelAsync(concert, ct);
+        await unitOfWork.SaveChangesAsync(ct);
+        return new Success();
     }
 }
