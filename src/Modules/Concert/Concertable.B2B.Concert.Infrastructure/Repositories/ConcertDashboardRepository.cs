@@ -32,14 +32,15 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         Guid venueTenantId,
         CancellationToken ct = default)
     {
-        var upcomingConcerts = concertUpcoming.Apply(
-            context.Concerts.Where(c => c.VenueTenantId == venueTenantId));
+        var upcomingConcerts = context.Concerts
+            .Where(c => c.VenueTenantId == venueTenantId)
+            .Where(concertUpcoming.ToExpression());
 
-        var awaitingDoorRevenue = endedSpecification
-            .And(doorRevenueOutstanding)
-            .Apply(context.Concerts.Where(c =>
+        var awaitingDoorRevenue = context.Concerts
+            .Where(c =>
                 c.VenueTenantId == venueTenantId &&
-                (c.State == ConcertState.Draft || c.State == ConcertState.Posted)));
+                (c.State == ConcertState.Draft || c.State == ConcertState.Posted))
+            .Where(endedSpecification.And(doorRevenueOutstanding).ToExpression());
 
         return context.VenueReadModels
             .Where(v => v.TenantId == venueTenantId)
@@ -51,8 +52,9 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
         Guid artistTenantId,
         CancellationToken ct = default)
     {
-        var upcomingConcerts = concertUpcoming.Apply(
-            context.Concerts.Where(c => c.ArtistTenantId == artistTenantId));
+        var upcomingConcerts = context.Concerts
+            .Where(c => c.ArtistTenantId == artistTenantId)
+            .Where(concertUpcoming.ToExpression());
 
         return context.ArtistReadModels
             .Where(a => a.TenantId == artistTenantId)

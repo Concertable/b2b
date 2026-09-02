@@ -146,12 +146,13 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
 
     public async Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(
         CancellationToken ct = default) =>
-        await endedSpecification.And(doorRevenueOutstanding.Not())
-            .Apply(context.Concerts.Where(concert =>
+        await context.Concerts
+            .Where(concert =>
                 concert.State == ConcertState.Draft ||
                 concert.State == ConcertState.Posted ||
                 concert.State == ConcertState.SettlementFailed ||
-                concert.State == ConcertState.AwaitingSettlement))
+                concert.State == ConcertState.AwaitingSettlement)
+            .Where(endedSpecification.And(doorRevenueOutstanding.Not()).ToExpression())
             .Select(c => c.Id)
             .ToListAsync(ct);
 
