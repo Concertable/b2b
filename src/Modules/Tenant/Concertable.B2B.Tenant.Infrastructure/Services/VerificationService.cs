@@ -4,6 +4,7 @@ using Concertable.B2B.Tenant.Domain.Enums;
 using Concertable.Kernel.Identity;
 using Concertable.Shared.Blob.Application;
 using Microsoft.Extensions.Logging;
+using Concertable.B2B.Tenant.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
@@ -46,7 +47,10 @@ internal sealed class VerificationService : IVerificationService
         if (tenantContext.TenantId is not { } tenantId)
             return null;
 
-        return (await repository.GetByTenantIdAsync(tenantId, ct))?.ToDto();
+        return (await repository.GetByTenantIdAsync(
+            tenantId,
+            TenantVerificationSpecification.CreateWithDocuments(),
+            ct))?.ToDto();
     }
 
     public Task<bool> IsVerifiedAsync(Guid tenantId, CancellationToken ct = default) =>
@@ -57,7 +61,10 @@ internal sealed class VerificationService : IVerificationService
         CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var existing = await repository.GetByTenantIdAsync(tenantId, ct);
+        var existing = await repository.GetByTenantIdAsync(
+            tenantId,
+            TenantVerificationSpecification.CreateWithDocuments(),
+            ct);
         if (existing is not null && existing.Status != TenantVerificationStatus.Rejected)
             return new SubmitVerificationError.NotEligible(existing.Status);
 

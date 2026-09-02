@@ -8,6 +8,7 @@ using Concertable.Kernel.Identity;
 using Concertable.Shared.Blob.Application;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Tenant.UnitTests;
 
@@ -57,7 +58,7 @@ public sealed class VerificationServiceTests
 
         Assert.True(result.IsNone);
         repository.Verify(
-            r => r.GetByTenantIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r => r.GetByTenantIdAsync(It.IsAny<Guid>(), It.IsAny<ISpecification<TenantVerificationEntity>>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -67,7 +68,7 @@ public sealed class VerificationServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(c => c.TenantId).Returns(tenantId);
         repository
-            .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<ISpecification<TenantVerificationEntity>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((TenantVerificationEntity?)null);
 
         var result = await service.GetStatusAsync();
@@ -85,7 +86,7 @@ public sealed class VerificationServiceTests
             DateTime.UtcNow);
         tenantContext.SetupGet(c => c.TenantId).Returns(tenantId);
         repository
-            .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<ISpecification<TenantVerificationEntity>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(verification);
 
         var result = await service.GetStatusAsync();
@@ -106,7 +107,7 @@ public sealed class VerificationServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(c => c.TenantId).Returns(tenantId);
         repository
-            .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<ISpecification<TenantVerificationEntity>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((TenantVerificationEntity?)null);
         repository
             .Setup(r => r.InsertAsync(It.IsAny<TenantVerificationEntity>(), It.IsAny<CancellationToken>()))
@@ -138,7 +139,7 @@ public sealed class VerificationServiceTests
             verification.Approve(Guid.NewGuid(), DateTime.UtcNow);
         tenantContext.SetupGet(c => c.TenantId).Returns(tenantId);
         repository
-            .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<ISpecification<TenantVerificationEntity>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(verification);
 
         var result = await service.SubmitAsync(BuildUploads());
@@ -162,7 +163,7 @@ public sealed class VerificationServiceTests
         verification.Reject(Guid.NewGuid(), "Illegible scan.", DateTime.UtcNow);
         tenantContext.SetupGet(c => c.TenantId).Returns(tenantId);
         repository
-            .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByTenantIdAsync(tenantId, It.IsAny<ISpecification<TenantVerificationEntity>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(verification);
 
         var result = await service.SubmitAsync(BuildUploads());

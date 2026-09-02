@@ -103,7 +103,6 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
             services.AddScoped<IInvoiceRepository, InvoiceRepository>();
             services.AddScoped<ISelfBillingAgreementRepository, SelfBillingAgreementRepository>();
-            services.AddScoped(typeof(ISequenceRepository<>), typeof(SequenceRepository<>));
 
             // Query specifications
             services.AddScoped<IEndedSpecification, EndedSpecification>();
