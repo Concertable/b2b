@@ -14,7 +14,7 @@
   <ItemGroup>
     <PackageReference Include="Concertable.AppHost.Shared" />
     <PackageReference Include="Concertable.Auth.Hosting" />
-    <PackageReference Include="Concertable.B2B.Hosting" />
+    <ProjectReference Include="..\Concertable.B2B.Hosting\Concertable.B2B.Hosting.csproj" IsAspireProjectResource="false" />
     <PackageReference Include="Concertable.Frontend.Hosting" />
     <PackageReference Include="Concertable.Payment.Hosting" />
     <PackageReference Include="Concertable.Search.Hosting" />
