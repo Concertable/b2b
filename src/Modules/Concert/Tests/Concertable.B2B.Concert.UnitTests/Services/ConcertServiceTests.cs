@@ -9,6 +9,7 @@ using Concertable.Kernel.Identity;
 using Concertable.Kernel.ValueObjects;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
+using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Concert.UnitTests.Services;
 
@@ -36,7 +37,7 @@ public sealed class ConcertServiceTests
             []);
         var repository = new Mock<IConcertRepository>();
         repository
-            .Setup(value => value.GetByIdWithBookingAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdAsync(42, It.IsAny<ISpecification<ConcertEntity>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(concert);
         var tenantContext = new Mock<ITenantContext>();
         tenantContext.SetupGet(context => context.IsHost).Returns(true);

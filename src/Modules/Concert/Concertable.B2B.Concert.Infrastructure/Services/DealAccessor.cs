@@ -1,5 +1,7 @@
 using Concertable.B2B.Deal.Contracts;
 using Concertable.Kernel.Exceptions;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
+using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -29,13 +31,19 @@ internal sealed class DealAccessor : IDealAccessor, IDealResolver
             "No deal resolved this scope — the operation's orchestrator must resolve the deal before a step reads it.");
 
     public Task<DealDto> ResolveByOpportunityIdAsync(int opportunityId) =>
-        ResolveAsync(() => opportunityRepository.GetDealIdByIdAsync(opportunityId));
+        ResolveAsync(() => opportunityRepository.GetByIdAsync(
+            opportunityId,
+            new OpportunitySpecification().Select(opportunity => opportunity.DealId)));
 
     public Task<DealDto> ResolveByApplicationIdAsync(int applicationId) =>
-        ResolveAsync(() => applicationRepository.GetDealIdByIdAsync(applicationId));
+        ResolveAsync(() => applicationRepository.GetByIdAsync(
+            applicationId,
+            new ApplicationSpecification().Select(application => application.Opportunity.DealId)));
 
     public Task<DealDto> ResolveByConcertIdAsync(int concertId) =>
-        ResolveAsync(() => concertRepository.GetDealIdByIdAsync(concertId));
+        ResolveAsync(() => concertRepository.GetByIdAsync(
+            concertId,
+            new ConcertSpecification().Select(concert => concert.Booking.Application.Opportunity.DealId)));
 
     private async Task<DealDto> ResolveAsync(Func<Task<int?>> resolveDealId)
     {

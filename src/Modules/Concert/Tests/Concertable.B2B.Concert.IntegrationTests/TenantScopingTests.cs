@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Concert.IntegrationTests;
 
@@ -167,9 +168,9 @@ public sealed class TenantScopingTests : IAsyncLifetime
         var booking = await fixture.ConcertReads.Set<BookingEntity>().FirstAsync();
 
         var scoped = fixture.Services.GetRequiredService<IScoped<IBookingRepository>>();
-        var applicationId = await scoped.RunAsync(repository => repository.GetApplicationIdByIdAsync(booking.Id));
+        var applicationId = await scoped.RunAsync(repository => repository.GetByIdAsync(booking.Id, BookingSpecification.CreateApplicationId()));
         var missingApplicationId = await scoped.RunAsync(
-            repository => repository.GetApplicationIdByIdAsync(booking.Id + 100_000));
+            repository => repository.GetByIdAsync(booking.Id + 100_000, BookingSpecification.CreateApplicationId()));
 
         Assert.Equal(booking.ApplicationId, applicationId);
         Assert.Null(missingApplicationId);
