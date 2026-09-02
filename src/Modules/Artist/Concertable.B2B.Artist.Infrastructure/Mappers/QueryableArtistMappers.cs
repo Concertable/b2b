@@ -36,11 +36,10 @@ internal static class QueryableArtistMappers
                 Genres = a.Genres
             };
 
-        public IQueryable<ArtistProfile> ToProfile() =>
-            query.Select(artist => new ArtistProfile(
+        public IQueryable<ArtistDto> ToProfile() =>
+            query.Select(artist => new ArtistDto(
                 artist.Id,
                 artist.TenantId,
-                artist.UserId,
                 artist.Name,
                 artist.About,
                 artist.BannerUrl,

@@ -31,12 +31,12 @@ internal sealed class ArtistModule : IArtistModule
         CancellationToken ct = default) =>
         artistService.GetGenresAsync(artistId, ct);
 
-    public Task<Option<ArtistProfile>> GetProfileAsync(
+    public Task<Option<ArtistDto>> GetProfileAsync(
         int artistId,
         CancellationToken ct = default) =>
         artistService.GetProfileAsync(artistId, ct);
 
-    public Task<Option<ArtistProfile>> GetCurrentProfileAsync(CancellationToken ct = default) =>
+    public Task<Option<ArtistDto>> GetCurrentProfileAsync(CancellationToken ct = default) =>
         artistService.GetCurrentProfileAsync(ct);
 
     public Task<ReviewSummary> GetReviewSummaryAsync(

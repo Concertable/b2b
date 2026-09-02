@@ -23,8 +23,8 @@ internal sealed class DoorSplitAccept : IAcceptPaid
     public Result<AcceptedApplication, AcceptApplicationError> Accept(
         ApplicationEntity application,
         OpportunityDto opportunity,
-        ArtistProfile artist,
-        VenueProfile venue,
+        ArtistDto artist,
+        VenueDto venue,
         DealDto deal,
         Signature venueSignature,
         Guid operationId,

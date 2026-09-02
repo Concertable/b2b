@@ -19,17 +19,17 @@ internal sealed class VenueModule : IVenueModule
     public Task<Option<int>> GetCurrentIdAsync(CancellationToken ct = default) =>
         venueService.GetCurrentIdAsync(ct);
 
-    public Task<Option<VenueProfile>> GetProfileAsync(
+    public Task<Option<VenueDto>> GetProfileAsync(
         int venueId,
         CancellationToken ct = default) =>
         venueService.GetProfileAsync(venueId, ct);
 
-    public Task<IReadOnlyList<VenueProfile>> GetProfilesAsync(
+    public Task<IReadOnlyList<VenueDto>> GetProfilesAsync(
         IReadOnlyCollection<int> venueIds,
         CancellationToken ct = default) =>
         venueService.GetProfilesAsync(venueIds, ct);
 
-    public Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default) =>
+    public Task<Option<VenueDto>> GetCurrentProfileAsync(CancellationToken ct = default) =>
         venueService.GetCurrentProfileAsync(ct);
 
     public Task<ReviewSummary> GetReviewSummaryAsync(

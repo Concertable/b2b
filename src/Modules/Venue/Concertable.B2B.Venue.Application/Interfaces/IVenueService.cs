@@ -20,10 +20,10 @@ internal interface IVenueService
     Task<bool> OwnsVenueAsync(int venueId, CancellationToken ct = default);
     Task<Option<VenueSummary>> GetSummaryAsync(int id, CancellationToken ct = default);
     Task<Option<int>> GetCurrentIdAsync(CancellationToken ct = default);
-    Task<Option<VenueProfile>> GetProfileAsync(int id, CancellationToken ct = default);
-    Task<IReadOnlyList<VenueProfile>> GetProfilesAsync(
+    Task<Option<VenueDto>> GetProfileAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<VenueDto>> GetProfilesAsync(
         IReadOnlyCollection<int> ids,
         CancellationToken ct = default);
-    Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
+    Task<Option<VenueDto>> GetCurrentProfileAsync(CancellationToken ct = default);
     Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

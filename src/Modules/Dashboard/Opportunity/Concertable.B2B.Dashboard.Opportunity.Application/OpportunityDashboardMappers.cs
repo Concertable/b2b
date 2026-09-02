@@ -10,7 +10,7 @@ internal static class OpportunityDashboardMappers
     {
         public OpportunitySummary ToSummary(
             IReadOnlyDictionary<int, DealDto> dealsById,
-            IReadOnlyDictionary<int, VenueProfile> venuesById) =>
+            IReadOnlyDictionary<int, VenueDto> venuesById) =>
             new(
                 opportunity.Id,
                 opportunity.VenueId,
@@ -22,7 +22,7 @@ internal static class OpportunityDashboardMappers
 
         public OpportunityMatch ToMatch(
             IReadOnlyDictionary<int, DealDto> dealsById,
-            IReadOnlyDictionary<int, VenueProfile> venuesById,
+            IReadOnlyDictionary<int, VenueDto> venuesById,
             int fitScore)
         {
             var venue = venuesById[opportunity.VenueId];

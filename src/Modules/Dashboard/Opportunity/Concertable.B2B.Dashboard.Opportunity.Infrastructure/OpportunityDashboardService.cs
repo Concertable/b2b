@@ -85,7 +85,7 @@ internal sealed class OpportunityDashboardService : IOpportunityDashboardService
 
     private async Task<(
         IReadOnlyDictionary<int, DealDto> DealsById,
-        IReadOnlyDictionary<int, VenueProfile> VenuesById)> GetLookupsAsync(
+        IReadOnlyDictionary<int, VenueDto> VenuesById)> GetLookupsAsync(
         IReadOnlyCollection<OpportunityDto> items,
         CancellationToken ct)
     {

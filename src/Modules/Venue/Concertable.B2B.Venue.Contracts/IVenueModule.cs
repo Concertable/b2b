@@ -7,11 +7,11 @@ public interface IVenueModule
 {
     Task<Option<VenueSummary>> GetSummaryAsync(int venueId, CancellationToken ct = default);
     Task<Option<int>> GetCurrentIdAsync(CancellationToken ct = default);
-    Task<Option<VenueProfile>> GetProfileAsync(int venueId, CancellationToken ct = default);
-    Task<IReadOnlyList<VenueProfile>> GetProfilesAsync(
+    Task<Option<VenueDto>> GetProfileAsync(int venueId, CancellationToken ct = default);
+    Task<IReadOnlyList<VenueDto>> GetProfilesAsync(
         IReadOnlyCollection<int> venueIds,
         CancellationToken ct = default);
-    Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
+    Task<Option<VenueDto>> GetCurrentProfileAsync(CancellationToken ct = default);
     Task<ReviewSummary> GetReviewSummaryAsync(int venueId, CancellationToken ct = default);
     Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }
