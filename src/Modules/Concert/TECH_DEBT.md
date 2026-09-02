@@ -15,3 +15,11 @@ Resolves when: the cross-service saga is implemented and verified with cancellat
 Owner decision: verify `PrimitiveCollection` + `HashSet<Genre>` querying (`.Contains`, filtering) works correctly on the pinned EF Core version, then change both properties and re-scaffold the Concert migration.
 
 Resolves when: `Genres` is a set-shaped type on both entities and a test proves a duplicate genre cannot be added.
+
+## `ContractIssuer.IssueAsync` throws for a missing application instead of returning a Result
+
+`IssueAsync` returns plain `Task`, so both of its lookups end in `OrNotFound` and a missing application or opportunity leaves the method as a `NotFoundException`. Neither is an exceptional condition: contract issuing runs inside the acceptance flow, where the caller already decides between lifecycle outcomes, and `result-carriers` puts an outcome the caller must decide about in a `Result<T, TError>` rather than an exception. The exception also crosses the Infrastructure boundary untyped, so a caller cannot distinguish a missing application from a missing opportunity without catching and inspecting a message.
+
+Owner decision: change `IssueAsync` to return `UnitResult<TError>` over a Concert error union covering both lookups, and adapt the acceptance path that calls it. The two `OrNotFound` calls become `OrFailure`, and the error surfaces through the existing lifecycle error terminal rather than an exception filter.
+
+Resolves when: `IssueAsync` returns a Result, neither lookup throws, and a test proves a missing application yields the typed error rather than a `NotFoundException`.
