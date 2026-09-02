@@ -106,16 +106,12 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
-    public async Task AppHost_ProductionGraphAndStrictValidation_AreValid()
+    public void AppHost_ProductionGraphAndStrictValidation_AreValid()
     {
         var validBuilder = AppHost.CreateBuilder([]);
-        AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https");
+        AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "https");
         AssertContainerRuntimeArgs(validBuilder, AuthConstants.Resource, "--user", "root");
-        await AssertImageEnvironmentAsync(
-            validBuilder,
-            AuthConstants.Resource,
-            "ASPNETCORE_URLS",
-            "http://+:8080");
+        AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https");
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http");
         using var app = validBuilder.Build();
@@ -218,26 +214,24 @@ public sealed class B2BHostGraphTests
         Assert.Equal(expected, args);
     }
 
-    private static async Task AssertImageEnvironmentAsync(
+#pragma warning disable ASPIRECERTIFICATES001 // experimental API; asserts the temporary Auth image bridge
+    private static void AssertUsesDeveloperCertificate(
         IDistributedApplicationBuilder builder,
-        string resourceName,
-        string variableName,
-        string expected)
+        string resourceName)
     {
-        var resource = Assert.IsAssignableFrom<IResourceWithEnvironment>(
+        var resource = Assert.IsType<ServiceContainerResource>(
             builder.Resources.Single(resource => resource.Name == resourceName));
-        var executionContext = new DistributedApplicationExecutionContext(DistributedApplicationOperation.Publish);
-        var configuration = await ExecutionConfigurationBuilder.Create(resource)
-            .WithEnvironmentVariablesConfig()
-            .BuildAsync(executionContext, NullLogger.Instance, CancellationToken.None);
+        var certificate = Assert.Single(resource.Annotations.OfType<HttpsCertificateAnnotation>());
 
-        Assert.Equal(expected, configuration.EnvironmentVariables.ToDictionary()[variableName]);
+        Assert.True(certificate.UseDeveloperCertificate);
     }
+#pragma warning restore ASPIRECERTIFICATES001
 
     private static void AssertImageEndpoint(
         IDistributedApplicationBuilder builder,
         string resourceName,
-        string endpointName)
+        string endpointName,
+        string scheme = "http")
     {
         var resource = Assert.IsType<ServiceContainerResource>(
             builder.Resources.Single(resource => resource.Name == resourceName));
@@ -246,7 +240,7 @@ public sealed class B2BHostGraphTests
             endpoint => endpoint.Name == endpointName);
 
         Assert.Equal(endpointName, endpoint.Name);
-        Assert.Equal("http", endpoint.UriScheme);
+        Assert.Equal(scheme, endpoint.UriScheme);
         Assert.Equal(8080, endpoint.TargetPort);
     }
 }
