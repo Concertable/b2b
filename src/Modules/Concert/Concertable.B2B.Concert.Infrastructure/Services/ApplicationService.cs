@@ -287,9 +287,9 @@ internal sealed class ApplicationService : IApplicationService
     }
 
     public async Task<Option<(ArtistReadModel, VenueReadModel)>> GetArtistAndVenueByIdAsync(int id) =>
-        (await repository.GetByIdAsync(id, ApplicationSpecification.CreateWithArtistAndVenue()))
+        (await repository.GetByIdAsync(id, ApplicationSpecification.CreateArtistAndVenue()))
             .ToOption()
-            .Map(application => (application.Artist, application.Opportunity.Venue));
+            .Map(parties => (parties.Artist, parties.Venue));
 
     public Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id) =>
         repository.GetByIdAsync(id, ApplicationSpecification.CreateWithArtistGenresAndVenue())

@@ -46,11 +46,9 @@ internal sealed class ContractIssuer : IContractIssuer
         ESignatureRequest venueESignature)
     {
         var deal = dealAccessor.Deal;
-        var applicationGraph = await applicationRepository
-            .GetByIdAsync(application.Id, ApplicationSpecification.CreateWithArtistAndVenue())
+        var (artist, venue) = await applicationRepository
+            .GetByIdAsync(application.Id, ApplicationSpecification.CreateArtistAndVenue())
             .OrNotFound(DisplayNames.Application);
-        var artist = applicationGraph.Artist;
-        var venue = applicationGraph.Opportunity.Venue;
         var period = await opportunityRepository.GetPeriodByIdAsync(application.OpportunityId)
             .OrNotFound(DisplayNames.Opportunity);
 

@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Projections;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Kernel.Specifications;
 
@@ -10,8 +11,7 @@ internal sealed class ApplicationSpecification : SpecificationBuilder<Applicatio
             .Include(application => application.Artist.Genres)
             .Include(application => application.Opportunity.Venue);
 
-    public static ISpecification<ApplicationEntity> CreateWithArtistAndVenue() =>
+    public static ISpecification<ApplicationEntity, ArtistAndVenue?> CreateArtistAndVenue() =>
         new ApplicationSpecification()
-            .Include(application => application.Artist)
-            .Include(application => application.Opportunity.Venue);
+            .Select(application => new ArtistAndVenue(application.Artist, application.Opportunity.Venue));
 }
