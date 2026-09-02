@@ -7,3 +7,12 @@ Accepting, withdrawing, or cancelling an application carries the HTTP request ca
 Owner decision: authorize a separate cross-service B2B + Payment saga/package cut-over, or explicitly accept the unresolved financial/state inconsistency risk. The durable design must persist the lifecycle intent and intermediate state before the remote financial operation, stage a transactional outbox command, make Payment operations idempotent by booking, and reconcile pending work in a worker. It must cover cancellation after Payment succeeds.
 
 Resolves when: the cross-service saga is implemented and verified with cancellation-after-payment and process-recovery tests, and application financial state can no longer diverge from Payment after request cancellation or service failure.
+
+## `ContractIssuer.IssueAsync` throws for a missing application instead of returning a Result
+
+`IssueAsync` returns plain `Task`, so both of its lookups end in `OrNotFound` and a missing application or opportunity leaves the method as a `NotFoundException`. Neither is an exceptional condition: contract issuing runs inside the acceptance flow, where the caller already decides between lifecycle outcomes, and `result-carriers` puts an outcome the caller must decide about in a `Result<T, TError>` rather than an exception. The exception also crosses the Infrastructure boundary untyped, so a caller cannot distinguish a missing application from a missing opportunity without catching and inspecting a message.
+
+Owner decision: change `IssueAsync` to return `UnitResult<TError>` over a Concert error union covering both lookups, and adapt the acceptance path that calls it. The two `OrNotFound` calls become `OrFailure`, and the error surfaces through the existing lifecycle error terminal rather than an exception filter.
+
+Resolves when: `IssueAsync` returns a Result, neither lookup throws, and a test proves a missing application yields the typed error rather than a `NotFoundException`.
+
