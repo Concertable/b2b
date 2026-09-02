@@ -7,7 +7,7 @@ namespace Concertable.B2B.Dashboard.Venue.Infrastructure;
 
 internal static class VenueDashboardMappers
 {
-    extension(VenueDto venue)
+    extension(VenueProfile venue)
     {
         public ProfileHealth ToProfileHealth(PaymentPayoutAccountStatus payoutStatus)
         {

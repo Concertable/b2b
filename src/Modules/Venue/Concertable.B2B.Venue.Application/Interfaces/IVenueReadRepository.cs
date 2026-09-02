@@ -6,10 +6,10 @@ internal interface IVenueReadRepository
 {
     Task<VenueSummary?> GetSummaryAsync(int id, CancellationToken ct = default);
     Task<VenueDetails?> GetDetailsByIdAsync(int id, CancellationToken ct = default);
-    Task<VenueDto?> GetProfileAsync(int id, CancellationToken ct = default);
-    Task<IReadOnlyList<VenueDto>> GetProfilesAsync(
+    Task<VenueProfile?> GetProfileAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<VenueProfile>> GetProfilesAsync(
         IReadOnlyCollection<int> ids,
         CancellationToken ct = default);
-    Task<VenueDto?> GetProfileByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+    Task<VenueProfile?> GetProfileByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
     Task<TenantContact?> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

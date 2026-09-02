@@ -7,7 +7,7 @@ namespace Concertable.B2B.Dashboard.Artist.Infrastructure;
 
 internal static class ArtistDashboardMappers
 {
-    extension(ArtistDto artist)
+    extension(ArtistProfile artist)
     {
         public ProfileHealth ToProfileHealth(PaymentPayoutAccountStatus payoutStatus)
         {

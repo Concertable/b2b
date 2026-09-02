@@ -149,20 +149,20 @@ internal sealed class VenueService : IVenueService
         return venue is null ? Option.None<int>() : Option.Some(venue.Id);
     }
 
-    public async Task<Option<VenueDto>> GetProfileAsync(
+    public async Task<Option<VenueProfile>> GetProfileAsync(
         int id,
         CancellationToken ct = default) =>
         (await readRepository.GetProfileAsync(id, ct)).ToOption();
 
-    public Task<IReadOnlyList<VenueDto>> GetProfilesAsync(
+    public Task<IReadOnlyList<VenueProfile>> GetProfilesAsync(
         IReadOnlyCollection<int> ids,
         CancellationToken ct = default) =>
         readRepository.GetProfilesAsync(ids, ct);
 
-    public async Task<Option<VenueDto>> GetCurrentProfileAsync(CancellationToken ct = default) =>
+    public async Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default) =>
         tenantContext.TenantId is { } tenantId
             ? (await readRepository.GetProfileByTenantIdAsync(tenantId, ct)).ToOption()
-            : Option.None<VenueDto>();
+            : Option.None<VenueProfile>();
 
     public async Task<Option<TenantContact>> GetContactByTenantIdAsync(
         Guid tenantId,

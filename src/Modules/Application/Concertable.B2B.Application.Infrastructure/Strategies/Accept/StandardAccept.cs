@@ -23,8 +23,8 @@ internal sealed class StandardAccept : IAccept
     public Result<AcceptedApplication, AcceptApplicationError> Accept(
         ApplicationEntity application,
         OpportunityDto opportunity,
-        ArtistDto artist,
-        VenueDto venue,
+        ArtistProfile artist,
+        VenueProfile venue,
         DealDto deal,
         Signature venueSignature,
         Guid operationId)

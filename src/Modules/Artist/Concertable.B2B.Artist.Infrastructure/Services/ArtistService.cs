@@ -146,15 +146,15 @@ internal sealed class ArtistService : IArtistService
         CancellationToken ct = default) =>
         readRepository.GetSummariesAsync(ids, ct);
 
-    public async Task<Option<ArtistDto>> GetProfileAsync(
+    public async Task<Option<ArtistProfile>> GetProfileAsync(
         int id,
         CancellationToken ct = default) =>
         (await readRepository.GetProfileAsync(id, ct)).ToOption();
 
-    public async Task<Option<ArtistDto>> GetCurrentProfileAsync(CancellationToken ct = default) =>
+    public async Task<Option<ArtistProfile>> GetCurrentProfileAsync(CancellationToken ct = default) =>
         tenantContext.TenantId is { } tenantId
             ? (await readRepository.GetProfileByTenantIdAsync(tenantId, ct)).ToOption()
-            : Option.None<ArtistDto>();
+            : Option.None<ArtistProfile>();
 
     public Task<IReadOnlySet<Genre>> GetGenresAsync(
         int id,

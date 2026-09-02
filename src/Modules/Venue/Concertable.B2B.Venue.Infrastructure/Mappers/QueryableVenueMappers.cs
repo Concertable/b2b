@@ -36,8 +36,8 @@ internal static class QueryableVenueMappers
                 Rating = rating == null ? 0.0 : rating.AverageRating
             };
 
-        public IQueryable<VenueDto> ToProfiles() =>
-            query.Select(venue => new VenueDto(
+        public IQueryable<VenueProfile> ToProfiles() =>
+            query.Select(venue => new VenueProfile(
                 venue.Id,
                 venue.TenantId,
                 venue.UserId,

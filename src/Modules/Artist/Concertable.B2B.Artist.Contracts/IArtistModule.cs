@@ -11,8 +11,8 @@ public interface IArtistModule
         IReadOnlyCollection<int> artistIds,
         CancellationToken ct = default);
     Task<IReadOnlySet<Genre>> GetGenresAsync(int artistId, CancellationToken ct = default);
-    Task<Option<ArtistDto>> GetProfileAsync(int artistId, CancellationToken ct = default);
-    Task<Option<ArtistDto>> GetCurrentProfileAsync(CancellationToken ct = default);
+    Task<Option<ArtistProfile>> GetProfileAsync(int artistId, CancellationToken ct = default);
+    Task<Option<ArtistProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
     Task<ReviewSummary> GetReviewSummaryAsync(int artistId, CancellationToken ct = default);
     Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }
