@@ -129,7 +129,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<UnitResult<PostConcertError>> PostAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await repository.GetByIdAsync(id, ConcertSpecification.CreateWithBookingApplication());
+        var concertEntity = await repository.GetByIdAsync(id, ConcertSpecification.CreateWithBooking());
         if (concertEntity is null)
             return new PostConcertError.ConcertNotFound(id);
 
@@ -148,7 +148,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueAsync(int id, decimal doorRevenue)
     {
-        var concert = await repository.GetByIdAsync(id, ConcertSpecification.CreateWithBookingApplication());
+        var concert = await repository.GetByIdAsync(id, ConcertSpecification.CreateWithBooking());
         if (concert is null)
             return new DeclareDoorRevenueError.ConcertNotFound(id);
 

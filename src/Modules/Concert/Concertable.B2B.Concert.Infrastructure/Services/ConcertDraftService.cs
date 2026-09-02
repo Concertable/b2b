@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
+using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -26,7 +27,12 @@ internal sealed class ConcertDraftService : IConcertDraftService
     {
         logger.CreatingConcertDraft(bookingId);
 
-        var bookingConcert = await bookingRepository.GetByIdAsync(bookingId, BookingSpecification.CreateWithApplicationGraphAndConcert());
+        var spec = new BookingSpecification()
+            .Include(booking => booking.Application.Artist.Genres)
+            .Include(booking => booking.Application.Opportunity.Venue)
+            .Include(booking => booking.Concert);
+
+        var bookingConcert = await bookingRepository.GetByIdAsync(bookingId, spec);
         if (bookingConcert is null)
             return new CreateConcertDraftError.BookingNotFound(bookingId);
 

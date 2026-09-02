@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Kernel.Exceptions;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
+using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -29,7 +30,11 @@ internal sealed class BookingService : IBookingService
 
     public async Task<BookingSettlement> GetSettlementByConcertIdAsync(int concertId)
     {
-        var booking = await repository.GetByConcertIdAsync(concertId, BookingSpecification.CreateWithApplicationArtistAndVenue())
+        var spec = new BookingSpecification()
+            .Include(booking => booking.Application.Artist)
+            .Include(booking => booking.Application.Opportunity.Venue);
+
+        var booking = await repository.GetByConcertIdAsync(concertId, spec)
             .OrNotFound();
         if (booking is not DeferredBooking deferred)
             throw new BadRequestException("Concert finish requires a DeferredBooking");

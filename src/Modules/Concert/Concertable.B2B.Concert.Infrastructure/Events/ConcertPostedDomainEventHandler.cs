@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Domain.Events;
 using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
+using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Events;
 
@@ -19,7 +20,9 @@ internal sealed class ConcertPostedDomainEventHandler : IPreCommitDomainEventHan
 
     public async Task HandleAsync(ConcertPostedDomainEvent e, CancellationToken ct = default)
     {
-        var concert = await concertRepository.GetByIdAsync(e.ConcertId, ConcertSpecification.CreateWithVenue())
+        var spec = new ConcertSpecification().Include(concert => concert.Venue);
+
+        var concert = await concertRepository.GetByIdAsync(e.ConcertId, spec)
             ?? throw new InvalidOperationException(
                 $"Concert {e.ConcertId} not found when publishing ConcertPostedEvent");
 

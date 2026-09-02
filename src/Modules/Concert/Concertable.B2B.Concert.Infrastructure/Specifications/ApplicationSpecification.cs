@@ -14,7 +14,4 @@ internal sealed class ApplicationSpecification : SpecificationBuilder<Applicatio
         new ApplicationSpecification()
             .Include(application => application.Artist)
             .Include(application => application.Opportunity.Venue);
-
-    public static ISpecification<ApplicationEntity, int?> CreateDealId() =>
-        new ApplicationSpecification().Select(application => application.Opportunity.DealId);
 }

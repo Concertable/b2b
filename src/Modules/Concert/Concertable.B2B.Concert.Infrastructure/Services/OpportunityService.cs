@@ -8,6 +8,7 @@ using Concertable.Contracts;
 using Reunion;
 using Concertable.Kernel.Identity;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
+using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -145,7 +146,7 @@ internal sealed class OpportunityService : IOpportunityService
     }
 
     public Task<Result<OpportunityDto, OpportunityError>> GetByIdAsync(int id) =>
-        repository.GetByIdAsync(id, OpportunitySpecification.CreateWithVenue())
+        repository.GetByIdAsync(id, new OpportunitySpecification().Include(opportunity => opportunity.Venue))
             .ToOption()
             .OrFailure(() => (OpportunityError)new OpportunityError.NotFound(id))
             .MapAsync(mapper.ToDtoAsync);

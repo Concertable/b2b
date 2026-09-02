@@ -50,7 +50,7 @@ internal sealed class FinishExecutor : IFinishExecutor
         int concertId,
         CancellationToken ct = default)
     {
-        var concert = await concertRepository.GetByIdAsync(concertId, ConcertSpecification.CreateWithBookingApplication(), ct);
+        var concert = await concertRepository.GetByIdAsync(concertId, ConcertSpecification.CreateWithBooking(), ct);
         if (concert is null)
             return new FinishConcertError.ConcertNotFound(concertId);
 
