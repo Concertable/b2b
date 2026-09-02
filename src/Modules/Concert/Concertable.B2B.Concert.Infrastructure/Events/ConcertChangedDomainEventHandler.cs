@@ -27,7 +27,7 @@ internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHa
             .Include(concert => concert.Venue)
             .Include(concert => concert.Booking.Application);
 
-        var concert = await concertRepository.GetByIdAsync(e.ConcertId, spec)
+        var concert = await concertRepository.GetByIdAsync(e.ConcertId, spec, ct)
             ?? throw new InvalidOperationException(
                 $"Concert {e.ConcertId} not found when publishing ConcertChangedEvent");
 

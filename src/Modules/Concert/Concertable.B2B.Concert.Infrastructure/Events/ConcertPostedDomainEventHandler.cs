@@ -22,7 +22,7 @@ internal sealed class ConcertPostedDomainEventHandler : IPreCommitDomainEventHan
     {
         var spec = new ConcertSpecification().Include(concert => concert.Venue);
 
-        var concert = await concertRepository.GetByIdAsync(e.ConcertId, spec)
+        var concert = await concertRepository.GetByIdAsync(e.ConcertId, spec, ct)
             ?? throw new InvalidOperationException(
                 $"Concert {e.ConcertId} not found when publishing ConcertPostedEvent");
 
