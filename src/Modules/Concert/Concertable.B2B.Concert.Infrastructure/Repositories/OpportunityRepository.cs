@@ -40,7 +40,7 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
                 VenueName = o.Venue.Name,
                 StartDate = o.Period.Start,
                 EndDate = o.Period.End,
-                Genres = o.Genres,
+                Genres = o.Genres.ToList(),
                 DealId = o.DealId,
                 ApplicationCount = o.Applications.Count
             })

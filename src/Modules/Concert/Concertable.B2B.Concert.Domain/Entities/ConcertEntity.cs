@@ -37,7 +37,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
     public BookingEntity Booking { get; private set; } = null!;
     public ArtistReadModel Artist { get; set; } = null!;
     public VenueReadModel Venue { get; set; } = null!;
-    public List<Genre> Genres { get; private set; } = [];
+    public EfSet<Genre> Genres { get; private set; } = [];
     public ICollection<ConcertImageEntity> Images { get; private set; } = [];
 
     private readonly EventRaiser events = new();
@@ -53,7 +53,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
         DateRange period,
         string name,
         string about,
-        IEnumerable<Genre> genres)
+        IReadOnlyCollection<Genre> genres)
     {
         ArgumentNullException.ThrowIfNull(booking);
         if (booking.VenueTenantId == Guid.Empty || booking.ArtistTenantId == Guid.Empty)
@@ -70,7 +70,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IEventRa
             Period = period,
             Name = name,
             About = about,
-            Genres = genres.ToList()
+            Genres = genres.ToEfSet()
         };
     }
 

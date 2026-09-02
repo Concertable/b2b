@@ -1,5 +1,6 @@
 using System.Net;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Domain.Entities;
 using Xunit;
 using static Concertable.B2B.Concert.IntegrationTests.Opportunity.OpportunityRequestBuilders;
 using Concertable.B2B.Deal.Contracts;
@@ -7,6 +8,7 @@ using Concertable.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Opportunity;
@@ -146,6 +148,26 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         Assert.Equal(
             ["Artist door percent must be between 0 and 100."],
             problem.Errors["ArtistDoorPercent"]);
+    }
+
+    [Fact]
+    public async Task Create_DuplicateGenres_PersistDistinct_AndReMaterialiseFromJsonColumn()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var request = BuildRequest(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Cash, Fee = 500 }, fixture.SeedNow)
+            with { Genres = [Genre.Rock, Genre.Rock, Genre.Pop, Genre.Pop, Genre.Pop] };
+
+        var response = await client.PostAsync("/api/opportunity", request);
+
+        await response.ShouldBe(HttpStatusCode.Created);
+        var created = await response.Content.ReadAsync<OpportunityResponse>();
+        Assert.Equal([Genre.Rock, Genre.Pop], created.Genres);
+
+        // Unfiltered read stance materialises the EfSet<Genre> property straight from the JSON column —
+        // the path that threw InvalidCastException on every HashSet<Genre> attempt (efcore#33115).
+        var persisted = await fixture.ConcertReads.Query<OpportunityEntity>()
+            .SingleAsync(o => o.Id == created.Id);
+        Assert.Equal([Genre.Rock, Genre.Pop], persisted.Genres.ToArray());
     }
 
     #endregion

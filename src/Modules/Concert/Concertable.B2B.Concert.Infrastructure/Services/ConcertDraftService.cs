@@ -40,14 +40,14 @@ internal sealed class ConcertDraftService : IConcertDraftService
         var opportunity = bookingConcert.Application.Opportunity;
         var venue = opportunity.Venue;
 
-        var artistGenres = artist.Genres.Select(g => g.Genre);
+        var artistGenres = artist.Genres.Select(g => g.Genre).ToList();
         var opportunityGenres = opportunity.Genres;
 
-        var matchingGenres = opportunityGenres.Any()
-            ? artistGenres.Intersect(opportunityGenres)
+        var matchingGenres = opportunityGenres.Count > 0
+            ? artistGenres.Intersect(opportunityGenres).ToList()
             : artistGenres;
 
-        if (!matchingGenres.Any())
+        if (matchingGenres.Count == 0)
         {
             logger.ConcertDraftCreationFailed(bookingId, artist.Id, opportunity.Id);
             return new CreateConcertDraftError.GenreMismatch();
