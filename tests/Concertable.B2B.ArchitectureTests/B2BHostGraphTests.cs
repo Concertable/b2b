@@ -110,6 +110,7 @@ public sealed class B2BHostGraphTests
     {
         var validBuilder = AppHost.CreateBuilder([]);
         AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https");
+        AssertContainerRuntimeArgs(validBuilder, AuthConstants.Resource, "--user", "root");
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https");
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http");
         using var app = validBuilder.Build();
@@ -194,6 +195,22 @@ public sealed class B2BHostGraphTests
             Assert.Equal(surface.Origin, authEnvironment[$"Auth__SpaClients__{authClient}__PostLogoutRedirectUri"]);
             Assert.Equal(surface.Origin, authEnvironment[$"Auth__SpaClients__{authClient}__AllowedCorsOrigins__0"]);
         }
+    }
+
+    private static void AssertContainerRuntimeArgs(
+        IDistributedApplicationBuilder builder,
+        string resourceName,
+        params object[] expected)
+    {
+        var resource = Assert.IsType<ServiceContainerResource>(
+            builder.Resources.Single(resource => resource.Name == resourceName));
+        var args = new List<object>();
+        foreach (var annotation in resource.Annotations.OfType<ContainerRuntimeArgsCallbackAnnotation>())
+            annotation.Callback(new ContainerRuntimeArgsCallbackContext(args, CancellationToken.None))
+                .GetAwaiter()
+                .GetResult();
+
+        Assert.Equal(expected, args);
     }
 
     private static void AssertImageEndpoint(
