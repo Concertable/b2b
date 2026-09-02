@@ -1,4 +1,4 @@
-﻿# Concertable.B2B — Technical Debt
+# Concertable.B2B — Technical Debt
 
 When an item is fixed, update both this file and [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
@@ -146,12 +146,14 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 
 ### Action-link hrefs are hand-interpolated instead of generated from routes
 
-Every `ActionLink` in the Api layer builds its href with string interpolation — `ApplicationMappers`,
-`ConcertMappers`, `SelfBillingAgreementMappers`, `MessageMappers` and `OpportunityMapper` between them
-interpolate roughly a dozen `$"/api/..."` literals. Nothing ties a literal to the controller route it
-names, so a route rename leaves the emitted link pointing at a 404 and no build or test fails. The
-frontend compensates by stripping the `/api` prefix back off with a regex before re-issuing the call
-(`app/web/shared/src/lib/actionLinkApi.ts`), which only works while every literal happens to agree.
+Every `ActionLink` in the Api layer builds its href with string interpolation — `ApplicationMapper`,
+`ConcertMappers`, `SelfBillingAgreementMappers` and `OpportunityMapper` (all in
+`Concert.Api/Mappers/`) plus `Conversations.Api/Mappers/MessageMappers` between them interpolate
+roughly a dozen `$"/api/..."` literals. Nothing ties a literal to the controller route it names, so a
+route rename leaves the emitted link pointing at a 404 and no build or test fails. The frontend
+compensates by stripping the `/api` prefix back off with a regex before re-issuing the call —
+`apiPath` in `app/web/b2b/shared/src/features/concerts/api/actionLinkApi.ts` — which only works while
+every literal happens to agree.
 
 `Href` (Concertable.Kernel) now validates the string at construction, but validating a string someone
 already hand-built is a checkpoint after the fact, not the fix — `LinkGenerator` means nobody builds it.
