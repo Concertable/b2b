@@ -23,7 +23,7 @@ public sealed class TenantEntityTests
     }
 
     [Fact]
-    public void Create_PersistsThePersona()
+    public void Create_PersistsTheTenantType()
     {
         var artistTenant = TenantEntity.Create(
             "manager@acme.com",
