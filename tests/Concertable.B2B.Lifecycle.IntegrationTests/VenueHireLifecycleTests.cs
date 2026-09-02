@@ -1,3 +1,4 @@
+using Concertable.B2B.Booking.Contracts;
 using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Payment.Contracts;
@@ -35,7 +36,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         var concert = await GetConcertAsync(client, applicationId);
         Assert.Null(concert.DatePosted);
         var financial = await GetFinancialOperationAsync(client, applicationId);
-        Assert.Equal(BookingBoundaryState.Confirmed, financial.Status);
+        Assert.Equal(BookingStatus.Confirmed, financial.Status);
         Assert.Equal(2, (await fixture.WaitForDraftNotificationsAsync(2)).Count);
         var notifiedUserIds = fixture.NotificationService.DraftCreated
             .Select(notification => notification.UserId)
@@ -90,7 +91,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         var application = await GetApplicationAsync(client, applicationId);
         Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
         var financial = await GetFinancialOperationAsync(client, applicationId);
-        Assert.Equal(BookingBoundaryState.ConfirmationFailed, financial.Status);
+        Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
         var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
         await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
@@ -107,7 +108,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         await fixture.RejectLatestFinancialOperationAsync();
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
-        Assert.Equal(BookingBoundaryState.ConfirmationFailed, financial.Status);
+        Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
         var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
         await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
@@ -140,14 +141,14 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         return concert;
     }
 
-    private static async Task<FinancialOperationBoundaryResponse> GetFinancialOperationAsync(
+    private static async Task<BookingSummary> GetFinancialOperationAsync(
         HttpClient client,
         int applicationId)
     {
         var response = await client.GetAsync(
             $"/api/booking/application/{applicationId}");
         await response.ShouldBe(HttpStatusCode.OK);
-        var financial = await response.Content.ReadAsync<FinancialOperationBoundaryResponse>();
+        var financial = await response.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(financial);
         return financial;
     }
@@ -159,7 +160,6 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
     private sealed record ApplicationActionsBoundaryResponse(ActionBoundaryResponse? Cancel);
     private sealed record ActionBoundaryResponse(string Href);
     private sealed record ConcertBoundaryResponse(int Id, DateTime? DatePosted);
-    private sealed record FinancialOperationBoundaryResponse(int BookingId, BookingBoundaryState Status);
 
     private enum ApplicationBoundaryStatus
     {
@@ -170,13 +170,4 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         Cancelled
     }
 
-    private enum BookingBoundaryState
-    {
-        AwaitingConfirmation,
-        Confirmed,
-        ConfirmationFailed,
-        CancellationPending,
-        Cancelled,
-        CancellationFailed
-    }
 }

@@ -1,3 +1,4 @@
+using Concertable.B2B.Booking.Contracts;
 using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Concert.Contracts.Commands;
@@ -61,7 +62,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         Assert.Equal(artistTenantId, command.PayeeId);
         Assert.Equal((long)(fixture.SeedState.FlatFeeAppDeal.Fee * 100), command.AmountMinor);
         var financial = await GetFinancialOperationAsync(client, applicationId);
-        Assert.Equal(BookingBoundaryState.Confirmed, financial.Status);
+        Assert.Equal(BookingStatus.Confirmed, financial.Status);
     }
 
     [Fact]
@@ -80,7 +81,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
 
         Assert.Equal(2, (await fixture.WaitForDraftNotificationsAsync(2)).Count);
         var financial = await GetFinancialOperationAsync(client, applicationId);
-        Assert.Equal(BookingBoundaryState.Confirmed, financial.Status);
+        Assert.Equal(BookingStatus.Confirmed, financial.Status);
     }
 
     [Fact]
@@ -100,7 +101,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         var application = await GetApplicationAsync(client, applicationId);
         Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
         var financial = await GetFinancialOperationAsync(client, applicationId);
-        Assert.Equal(BookingBoundaryState.ConfirmationFailed, financial.Status);
+        Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
         var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
         await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
@@ -119,7 +120,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         await fixture.RejectLatestFinancialOperationAsync();
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
-        Assert.Equal(BookingBoundaryState.ConfirmationFailed, financial.Status);
+        Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
         var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
         await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
@@ -141,7 +142,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.StripeClient.SendWebhookAsync());
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
-        Assert.Equal(BookingBoundaryState.AwaitingConfirmation, financial.Status);
+        Assert.Equal(BookingStatus.AwaitingConfirmation, financial.Status);
         await (await client.GetAsync($"/api/concert/application/{applicationId}"))
             .ShouldBe(HttpStatusCode.NotFound);
         Assert.Equal(0, await fixture.GetOutboxMessageCountAsync<NotifyConcertDraftCreatedCommand>());
@@ -162,21 +163,20 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         return application;
     }
 
-    private static async Task<FinancialOperationBoundaryResponse> GetFinancialOperationAsync(
+    private static async Task<BookingSummary> GetFinancialOperationAsync(
         HttpClient client,
         int applicationId)
     {
         var response = await client.GetAsync(
             $"/api/booking/application/{applicationId}");
         await response.ShouldBe(HttpStatusCode.OK);
-        var financial = await response.Content.ReadAsync<FinancialOperationBoundaryResponse>();
+        var financial = await response.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(financial);
         return financial;
     }
 
     private sealed record ApplicationBoundaryResponse(ApplicationBoundaryStatus Status);
     private sealed record ConcertBoundaryResponse(DateTime? DatePosted);
-    private sealed record FinancialOperationBoundaryResponse(BookingBoundaryState Status);
 
     private enum ApplicationBoundaryStatus
     {
@@ -187,13 +187,4 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         Cancelled
     }
 
-    private enum BookingBoundaryState
-    {
-        AwaitingConfirmation,
-        Confirmed,
-        ConfirmationFailed,
-        CancellationPending,
-        Cancelled,
-        CancellationFailed
-    }
 }
