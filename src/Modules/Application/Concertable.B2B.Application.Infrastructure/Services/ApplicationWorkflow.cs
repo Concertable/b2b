@@ -17,6 +17,7 @@ using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.DependencyInjection;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
+using Concertable.B2B.Application.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
@@ -101,7 +102,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (!opportunityOption.TryGetValue(out var opportunity))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
-        if (await applicationRepository.ExistsForOpportunityAndArtistTenantAsync(
+        if (await applicationRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(
                 opportunityId, artist.TenantId, ct))
             return new ApplyApplicationError.AlreadyApplied();
 
@@ -153,7 +154,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         await applicationRepository.AddAsync(application, ct);
         if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
         {
-            if (await applicationRepository.ExistsForOpportunityAndArtistTenantAsync(
+            if (await applicationRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(
                     opportunityId, artist.TenantId, ct))
                 return new ApplyApplicationError.AlreadyApplied();
 
@@ -195,7 +196,10 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ESignatureRequest eSignature,
         CancellationToken ct)
     {
-        var opportunityId = await applicationRepository.GetOpportunityIdByIdAsync(applicationId, ct);
+        var opportunityId = await applicationRepository.GetByIdAsync(
+            applicationId,
+            ApplicationSpecification.CreateOpportunityId(),
+            ct);
         if (opportunityId is { } opportunity &&
             await applicationRepository.AnyAcceptedByOpportunityIdAsync(opportunity, ct))
             return new AcceptApplicationError.AlreadyAccepted();

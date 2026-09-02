@@ -26,7 +26,7 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .Where(application => application.OpportunityId == opportunityId)
             .ToListAsync(ct);
 
-    public Task<bool> ExistsForOpportunityAndArtistTenantAsync(
+    public Task<bool> ExistsByOpportunityIdAndArtistTenantIdAsync(
         int opportunityId,
         Guid artistTenantId,
         CancellationToken ct = default) =>
@@ -66,32 +66,12 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
                 application.State != ApplicationState.Withdrawn)
             .ToListAsync(ct);
 
-    public async Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(
-        int applicationId,
-        CancellationToken ct = default)
-    {
-        var row = await context.Applications
-            .Where(a => a.Id == applicationId)
-            .Select(a => new { a.VenueTenantId, a.ArtistTenantId })
-            .FirstOrDefaultAsync(ct);
-
-        return row is null ? null : (row.VenueTenantId, row.ArtistTenantId);
-    }
-
     public Task<ApplicationState?> GetStateByIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
         context.Applications
             .Where(application => application.Id == applicationId)
             .Select(application => (ApplicationState?)application.State)
-            .FirstOrDefaultAsync(ct);
-
-    public Task<int?> GetOpportunityIdByIdAsync(
-        int applicationId,
-        CancellationToken ct = default) =>
-        context.Applications
-            .Where(application => application.Id == applicationId)
-            .Select(application => (int?)application.OpportunityId)
             .FirstOrDefaultAsync(ct);
 
     public Task<bool> AnyAcceptedByOpportunityIdAsync(

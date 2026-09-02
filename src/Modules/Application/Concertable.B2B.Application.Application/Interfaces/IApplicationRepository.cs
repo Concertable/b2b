@@ -10,7 +10,7 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
     Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
         int opportunityId,
         CancellationToken ct = default);
-    Task<bool> ExistsForOpportunityAndArtistTenantAsync(
+    Task<bool> ExistsByOpportunityIdAndArtistTenantIdAsync(
         int opportunityId,
         Guid artistTenantId,
         CancellationToken ct = default);
@@ -25,13 +25,7 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
     Task<IReadOnlyList<ApplicationEntity>> GetCurrentByArtistTenantIdAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
-    Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(
-        int applicationId,
-        CancellationToken ct = default);
     Task<ApplicationState?> GetStateByIdAsync(
-        int applicationId,
-        CancellationToken ct = default);
-    Task<int?> GetOpportunityIdByIdAsync(
         int applicationId,
         CancellationToken ct = default);
     Task<bool> AnyAcceptedByOpportunityIdAsync(

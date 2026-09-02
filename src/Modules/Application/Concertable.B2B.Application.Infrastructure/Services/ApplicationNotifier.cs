@@ -66,7 +66,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         MessageAction action)
     {
         var (venueTenantId, artistTenantId) = await repository
-            .GetTenantPairByIdAsync(applicationId)
+            .GetTenantPairAsync(applicationId)
             .OrNotFound(DisplayNames.Application);
 
         await conversationsModule.SendAsync(
@@ -84,7 +84,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         MessageAction action)
     {
         var (venueTenantId, artistTenantId) = await repository
-            .GetTenantPairByIdAsync(applicationId)
+            .GetTenantPairAsync(applicationId)
             .OrNotFound(DisplayNames.Application);
 
         await conversationsModule.SendAndNotifyAsync(

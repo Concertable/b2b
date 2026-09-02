@@ -30,8 +30,8 @@ public sealed class B2BTestClient
     public async Task<int> GetApplicationStateAsync(int applicationId, CancellationToken cancellationToken = default) =>
         await client.GetFromJsonAsync<int>($"/_e2e/applications/{applicationId}/state", cancellationToken);
 
-    public async Task<B2BConcertLifecycleState> GetConcertStateByApplicationAsync(int applicationId, CancellationToken cancellationToken = default) =>
-        (B2BConcertLifecycleState)await client.GetFromJsonAsync<int>($"/_e2e/applications/{applicationId}/concert-state", cancellationToken);
+    public async Task<int> GetConcertStateByApplicationAsync(int applicationId, CancellationToken cancellationToken = default) =>
+        await client.GetFromJsonAsync<int>($"/_e2e/applications/{applicationId}/concert-state", cancellationToken);
 
     public async Task<int> GetNewestOpportunityIdAsync(int venueId, CancellationToken cancellationToken = default) =>
         await client.GetFromJsonAsync<int>($"/_e2e/venues/{venueId}/opportunities/newest-id", cancellationToken);

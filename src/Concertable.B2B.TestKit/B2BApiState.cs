@@ -13,18 +13,6 @@ public enum B2BApplicationStatus
     Cancelled,
 }
 
-public enum B2BConcertLifecycleState
-{
-    Draft,
-    Posted,
-    CancellationPending,
-    CancellationFailed,
-    AwaitingSettlement,
-    SettlementFailed,
-    Complete,
-    Cancelled
-}
-
 public static class B2BTestFunctions
 {
     public const string ConcertFinished = "ConcertFinishedFunction";
