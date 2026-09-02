@@ -1,8 +1,6 @@
-using Concertable.Kernel;
-
 namespace Concertable.B2B.Application.Contracts;
 
-public abstract record VerifyPayment : IDomainEvent
+public abstract record VerifyPayment
 {
     protected VerifyPayment(int applicationId, string providerTransactionId)
     {

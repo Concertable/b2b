@@ -60,10 +60,10 @@ public static class ServiceCollectionExtensions
             services.AddBookingDealStrategies();
             services.AddScoped<IDomainEventHandler<ApplicationAcceptedDomainEvent>,
                 ApplicationAcceptedDomainEventHandler>();
-            services.AddScoped<IDomainEventHandler<VerifyPaymentSucceeded>,
-                VerifyPaymentSucceededHandler>();
-            services.AddScoped<IDomainEventHandler<VerifyPaymentFailed>,
-                VerifyPaymentFailedHandler>();
+            services.AddScoped<IDomainEventHandler<VerifyPaymentSucceededDomainEvent>,
+                VerifyPaymentSucceededDomainEventHandler>();
+            services.AddScoped<IDomainEventHandler<VerifyPaymentFailedDomainEvent>,
+                VerifyPaymentFailedDomainEventHandler>();
             services.AddScoped<IDomainEventHandler<BookingCancelledDomainEvent>,
                 BookingCancelledDomainEventHandler>();
             services.AddScoped<IDomainEventHandler<BookingConfirmedDomainEvent>,

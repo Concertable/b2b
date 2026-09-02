@@ -85,12 +85,14 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
         events.Raise(verification switch
         {
             SuccessfulPaymentVerification succeeded =>
-                (IDomainEvent)new VerifyPaymentSucceeded(succeeded.ApplicationId, succeeded.ProviderTransactionId),
+                (IDomainEvent)new VerifyPaymentSucceededDomainEvent(
+                    new VerifyPaymentSucceeded(succeeded.ApplicationId, succeeded.ProviderTransactionId)),
             FailedPaymentVerification failed =>
-                new VerifyPaymentFailed(
-                    failed.ApplicationId,
-                    failed.ProviderTransactionId,
-                    new VerifyPaymentError(failed.Failure.Code, failed.Failure.Message)),
+                new VerifyPaymentFailedDomainEvent(
+                    new VerifyPaymentFailed(
+                        failed.ApplicationId,
+                        failed.ProviderTransactionId,
+                        new VerifyPaymentError(failed.Failure.Code, failed.Failure.Message))),
             _ => throw new ArgumentOutOfRangeException(nameof(verification), verification, null)
         });
         return true;

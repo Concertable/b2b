@@ -17,7 +17,7 @@ public sealed class ApplicationValidatorTests
     {
         venueTenantId = Guid.NewGuid();
         validator = new ApplicationValidator(
-            new AlwaysAvailableConcertAvailability(),
+            new AlwaysAvailableChecker(),
             new TestTenantContext(venueTenantId),
             TimeProvider.System);
     }
@@ -49,7 +49,7 @@ public sealed class ApplicationValidatorTests
             errors.ToDictionary()["application"]);
     }
 
-    private sealed class AlwaysAvailableConcertAvailability : IConcertAvailability
+    private sealed class AlwaysAvailableChecker : IConcertAvailabilityChecker
     {
         public Task<bool> OpportunityHasConcertAsync(
             int opportunityId,

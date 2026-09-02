@@ -268,7 +268,8 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
             var winner = await competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
             await winner.ShouldBe(HttpStatusCode.NoContent);
         });
-        var verified = new VerifyPaymentSucceeded(applicationId, "seti_cancel_wins");
+        var verified = new VerifyPaymentSucceededDomainEvent(
+            new VerifyPaymentSucceeded(applicationId, "seti_cancel_wins"));
 
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(
             () => fixture.DispatchPreCommitDomainEventAsync(verified));

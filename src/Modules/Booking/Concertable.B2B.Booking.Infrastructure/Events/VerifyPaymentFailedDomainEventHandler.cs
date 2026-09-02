@@ -7,17 +7,18 @@ using Concertable.Kernel;
 
 namespace Concertable.B2B.Booking.Infrastructure.Events;
 
-internal sealed class VerifyPaymentFailedHandler : IPreCommitDomainEventHandler<VerifyPaymentFailed>
+internal sealed class VerifyPaymentFailedDomainEventHandler : IPreCommitDomainEventHandler<VerifyPaymentFailedDomainEvent>
 {
     private readonly IBookingService bookingService;
 
-    public VerifyPaymentFailedHandler(IBookingService bookingService)
+    public VerifyPaymentFailedDomainEventHandler(IBookingService bookingService)
     {
         this.bookingService = bookingService;
     }
 
-    public async Task HandleAsync(VerifyPaymentFailed payment, CancellationToken ct = default)
+    public async Task HandleAsync(VerifyPaymentFailedDomainEvent @event, CancellationToken ct = default)
     {
+        var payment = @event.Payment;
         var bookingId = await bookingService.GetIdByApplicationIdAsync(payment.ApplicationId, ct);
         if (bookingId is null)
             return;

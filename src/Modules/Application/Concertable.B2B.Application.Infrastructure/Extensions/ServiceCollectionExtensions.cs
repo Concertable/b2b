@@ -66,7 +66,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IApplicationMapper, ApplicationMapper>();
             services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
             services.AddScoped<IApplicationValidator, ApplicationValidator>();
-            services.AddScoped<IConcertAvailability, ConcertAvailability>();
+            services.AddScoped<IConcertAvailabilityChecker, ConcertAvailabilityChecker>();
             services.AddScoped<IPaymentVerificationRecorder, PaymentVerificationRecorder>();
             services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, VerifyPaymentProcessor>();
             services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, VerifyPaymentFailedProcessor>();

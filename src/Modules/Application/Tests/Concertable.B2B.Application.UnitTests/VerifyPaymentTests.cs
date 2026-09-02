@@ -26,7 +26,7 @@ public sealed class VerifyPaymentTests
 
         Assert.True(recorded);
         Assert.Equal(payment, application.Verification);
-        var raised = Assert.IsType<VerifyPaymentSucceeded>(Assert.Single(application.DomainEvents));
+        var raised = Assert.IsType<VerifyPaymentSucceededDomainEvent>(Assert.Single(application.DomainEvents)).Payment;
         Assert.Equal(payment.ApplicationId, raised.ApplicationId);
         Assert.Equal(payment.ProviderTransactionId, raised.ProviderTransactionId);
     }
@@ -43,7 +43,7 @@ public sealed class VerifyPaymentTests
         application.RecordPaymentVerification(payment);
 
         Assert.Equal(payment, application.Verification);
-        var raised = Assert.IsType<VerifyPaymentFailed>(Assert.Single(application.DomainEvents));
+        var raised = Assert.IsType<VerifyPaymentFailedDomainEvent>(Assert.Single(application.DomainEvents)).Payment;
         Assert.Equal(payment.ApplicationId, raised.ApplicationId);
         Assert.Equal(payment.ProviderTransactionId, raised.ProviderTransactionId);
         Assert.Equal(payment.Failure.Code, raised.Error.Code);
