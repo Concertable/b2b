@@ -13,7 +13,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
 using Reunion.Validation;
-using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Concert.UnitTests.Services;
 
@@ -172,7 +171,7 @@ public sealed class ConcertServiceTests
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository
-            .Setup(value => value.GetByIdAsync(42, It.IsAny<ISpecification<ConcertEntity>>(), It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>()))
             .ReturnsAsync(concert);
         var tenantContext = new Mock<ITenantContext>();
         tenantContext.SetupGet(context => context.IsHost).Returns(true);
