@@ -101,7 +101,7 @@ public sealed class TenantVerificationEntity : IGuidEntity, IEventRaiser
     private void Fire(TenantVerificationTrigger trigger)
     {
         if (!StateMachine.Transition(Status, trigger).TryGetValue(out var next))
-            throw new DomainException($"Cannot apply '{trigger}' to a verification in status '{Status}'.");
+            throw new DomainException($"Cannot fire '{trigger}' on a verification in status '{Status}'.");
 
         Status = next;
     }
