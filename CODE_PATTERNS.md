@@ -53,3 +53,31 @@ every family handles it. `DealStrategyArchitectureTests` guards the shape.
 steps — `Apply`, `Accept`, `Book`, `Finish`, `Cancel` — as public get-only properties. They are the
 canonical dependency-holder shape (`dependency-injection` skill): concrete constructor parameters, so DI
 resolves the registered step, assigned to interface-typed properties.
+
+## The `DealType` unions
+
+Where the variation is data rather than injected behaviour, `DealType` selects a type, not a strategy.
+
+| Union | Arms | Role |
+|---|---|---|
+| `DealEntity` | `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity` | the editable offer; TPH, each leaf overriding `DealType` |
+| `AcceptedApplication` | one arm per `DealType` | the Accept-time carrier across the Application→Booking seam, produced by `IAccept`/`IAcceptPaid` and matched once in `BookingAcceptanceMappers` |
+| `ConfirmedBookingTerms` | `FlatFeeBookingTerms`, `DoorSplitBookingTerms`, `VersusBookingTerms`, `VenueHireBookingTerms` | the Booking→Concert payload carried on `ConfirmedBooking` |
+
+`BookingEntity` and `BookingAcceptance` are the exception, not the pattern: two arms (`Standard`, `Deferred`)
+over four deal types, so each leaf re-asks `DealType` and the economics land beside a second copy on
+`ConcertEntity` — `src/Modules/Booking/TECH_DEBT.md` holds the shape that resolves it.
+
+## Capability, not `DealType`
+
+The concerns partition the four types differently, so no one hierarchy serves them all:
+
+| Concern | Types |
+|---|---|
+| Door revenue drives settlement | DoorSplit, Versus |
+| `FinancialOperation` raised at confirmation | FlatFee (capture), VenueHire (deposit), DoorSplit + Versus (verify) |
+| Accept takes a payment-method id | DoorSplit, Versus |
+| Supply direction reverses ([`LEGAL_REQUIREMENTS.md`](./src/Modules/Deal/LEGAL_REQUIREMENTS.md)) | VenueHire |
+
+`IAccept` / `IAcceptPaid` is the shape to copy: the interface splits on the capability the row names, never on
+the deal type holding it.
