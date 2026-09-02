@@ -5,14 +5,14 @@ using Concertable.Payment.Contracts;
 using Concertable.Shared.Email.Application;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Process.IntegrationTests;
+namespace Concertable.B2B.Journey.IntegrationTests;
 
 [Collection("Integration")]
 public sealed class FlatFeeJourneyTests : IAsyncLifetime
 {
-    private readonly ProcessApiFixture fixture;
+    private readonly JourneyApiFixture fixture;
 
-    public FlatFeeJourneyTests(ProcessApiFixture fixture, ITestOutputHelper output)
+    public FlatFeeJourneyTests(JourneyApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);

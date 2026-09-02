@@ -5,14 +5,14 @@ using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Contracts.Enums;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Process.IntegrationTests;
+namespace Concertable.B2B.Journey.IntegrationTests;
 
 [Collection("Integration")]
 public sealed class ContractApiTests : IAsyncLifetime
 {
-    private readonly ProcessApiFixture fixture;
+    private readonly JourneyApiFixture fixture;
 
-    public ContractApiTests(ProcessApiFixture fixture, ITestOutputHelper output)
+    public ContractApiTests(JourneyApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);

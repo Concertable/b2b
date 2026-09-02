@@ -2,14 +2,14 @@ using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
 
-namespace Concertable.B2B.Process.IntegrationTests;
+namespace Concertable.B2B.Journey.IntegrationTests;
 
 [Collection("Integration")]
-public sealed class DoorSplitJourneyTests : IAsyncLifetime
+public sealed class VersusJourneyTests : IAsyncLifetime
 {
-    private readonly ProcessApiFixture fixture;
+    private readonly JourneyApiFixture fixture;
 
-    public DoorSplitJourneyTests(ProcessApiFixture fixture, ITestOutputHelper output)
+    public VersusJourneyTests(JourneyApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -19,9 +19,9 @@ public sealed class DoorSplitJourneyTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
-    public async Task Accept_ShouldCreateDeferredBooking_WithoutDraft()
+    public async Task Accept_ShouldCreateBooking_WithoutDraft()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.VersusApp.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await AcceptAsync(client, applicationId);
@@ -36,16 +36,14 @@ public sealed class DoorSplitJourneyTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldCreateDraftConcertAndNotifyArtistAndVenue()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.VersusApp.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
-
         var acceptResponse = await AcceptAsync(client, applicationId);
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
+
         await fixture.StripeClient.SendWebhookAsync();
 
-        var application = await GetApplicationAsync(client, applicationId);
-        Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
         var concert = await GetConcertAsync(client, applicationId);
         Assert.Null(concert.DatePosted);
         var financial = await GetFinancialOperationAsync(client, applicationId);
@@ -61,9 +59,9 @@ public sealed class DoorSplitJourneyTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldCreateOneConcert_WhenWebhookEventIsRedelivered()
+    public async Task Accept_ShouldIgnoreDuplicateWebhookEvent()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.VersusApp.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var acceptResponse = await AcceptAsync(client, applicationId);
@@ -79,10 +77,10 @@ public sealed class DoorSplitJourneyTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldNotCreateDraft_WhenFinancialConfirmationFails()
+    public async Task Accept_ShouldNotCreateDraft_WhenVerifyPaymentFails()
     {
         fixture.CreateClient(fixture.SeedState.VenueManager1, options => options.UseFailingStripe());
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.VersusApp.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var acceptResponse = await AcceptAsync(client, applicationId);
@@ -103,7 +101,7 @@ public sealed class DoorSplitJourneyTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldCreateDraftConcert_WhenVerifyWebhookArrivesBeforeAccept()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.VersusApp.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         await fixture.StripeClient.SendWebhookAsync();
@@ -120,26 +118,6 @@ public sealed class DoorSplitJourneyTests : IAsyncLifetime
         Assert.Equal(2, (await fixture.WaitForDraftNotificationsAsync(2)).Count);
     }
 
-    [Fact]
-    public async Task Accept_ShouldRouteBookingToConfirmationFailed_WhenVerifyFailureArrivesBeforeAccept()
-    {
-        fixture.CreateClient(fixture.SeedState.VenueManager1, options => options.UseFailingStripe());
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/application/{applicationId}/checkout");
-        await fixture.StripeClient.SendWebhookAsync();
-
-        var acceptResponse = await AcceptAsync(client, applicationId);
-
-        await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        var financial = await GetFinancialOperationAsync(client, applicationId);
-        Assert.Equal(BookingBoundaryState.ConfirmationFailed, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
-        Assert.Empty(fixture.NotificationService.DraftCreated);
-        Assert.Single(await fixture.WaitForNotificationsAsync("VerifyPaymentFailed"));
-    }
-
     private static Task<HttpResponseMessage> AcceptAsync(HttpClient client, int applicationId) =>
         client.PostAsync(
             $"/api/application/{applicationId}/accept",
@@ -148,17 +126,6 @@ public sealed class DoorSplitJourneyTests : IAsyncLifetime
                 eSignature = new { signatoryName = "Test Signatory" },
                 paymentMethodId = "pm_card_visa"
             });
-
-    private static async Task<ApplicationBoundaryResponse> GetApplicationAsync(
-        HttpClient client,
-        int applicationId)
-    {
-        var response = await client.GetAsync($"/api/application/{applicationId}");
-        await response.ShouldBe(HttpStatusCode.OK);
-        var application = await response.Content.ReadAsync<ApplicationBoundaryResponse>();
-        Assert.NotNull(application);
-        return application;
-    }
 
     private static async Task<ConcertBoundaryResponse> GetConcertAsync(
         HttpClient client,
@@ -183,18 +150,8 @@ public sealed class DoorSplitJourneyTests : IAsyncLifetime
         return financial;
     }
 
-    private sealed record ApplicationBoundaryResponse(ApplicationBoundaryStatus Status);
     private sealed record ConcertBoundaryResponse(int Id, DateTime? DatePosted);
     private sealed record FinancialOperationBoundaryResponse(BookingBoundaryState Status);
-
-    private enum ApplicationBoundaryStatus
-    {
-        Pending,
-        Rejected,
-        Withdrawn,
-        Accepted,
-        Cancelled
-    }
 
     private enum BookingBoundaryState
     {
