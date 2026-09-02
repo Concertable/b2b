@@ -1,4 +1,3 @@
-using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.Strategies;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.Kernel.Enums;
@@ -27,28 +26,28 @@ internal sealed class FlatFeeConfirm : IConfirm
     }
 
     public async Task ConfirmAsync(
-        AcceptedApplication application,
+        ContractEntity contract,
         BookingEntity booking,
         CancellationToken ct = default)
     {
-        var accepted = (FlatFeeAcceptedApplication)application;
+        var flatFee = (FlatFeeContract)contract;
         var paymentIntentId = await managerPaymentOperationsClient.FindHeldIntentAsync(
-            accepted.VenueTenantId,
-            accepted.ApplicationId);
+            flatFee.VenueTenantId,
+            booking.ApplicationId);
         logger.AcceptingFlatFeeApplication(
-            accepted.ApplicationId,
+            booking.ApplicationId,
             booking.Id,
             paymentIntentId,
-            accepted.Fee,
+            flatFee.Fee,
             "GBP",
-            accepted.VenueTenantId,
-            accepted.ArtistTenantId);
+            flatFee.VenueTenantId,
+            flatFee.ArtistTenantId);
         await bus.SendAsync(new CaptureEscrowCommand(
-            accepted.OperationId,
+            booking.OperationId,
             booking.Id,
-            accepted.VenueTenantId,
-            accepted.ArtistTenantId,
-            Money.Gbp(accepted.Fee).ToMinorUnits(),
+            flatFee.VenueTenantId,
+            flatFee.ArtistTenantId,
+            Money.Gbp(flatFee.Fee).ToMinorUnits(),
             Currency.Gbp,
             paymentIntentId), ct);
     }

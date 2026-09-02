@@ -5,6 +5,7 @@ using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel;
@@ -13,7 +14,7 @@ using Reunion;
 namespace Concertable.B2B.Booking.Domain.Entities;
 
 [DisplayName(DisplayNames.Booking)]
-public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
+public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
 {
     private static readonly BookingStateMachine stateMachine = new();
 
@@ -42,9 +43,11 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
     public void ClearDomainEvents() => events.Clear();
 
-    protected BookingEntity() { }
+    private BookingEntity() { }
 
-    private protected BookingEntity(BookingAcceptance acceptance)
+    internal static BookingEntity Create(BookingAcceptance acceptance) => new(acceptance);
+
+    private BookingEntity(BookingAcceptance acceptance)
     {
         ArgumentNullException.ThrowIfNull(acceptance);
         if (acceptance.VenueTenantId == Guid.Empty || acceptance.ArtistTenantId == Guid.Empty)
@@ -57,13 +60,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
         VenueId = acceptance.VenueId;
         DealType = acceptance.DealType;
         RequiresDoorRevenue = acceptance.RequiresDoorRevenue;
-        ExpectedFinancialOperation = acceptance switch
-        {
-            DeferredBookingAcceptance => FinancialOperation.VerifyPayment,
-            StandardBookingAcceptance { DealType: DealType.FlatFee } => FinancialOperation.CaptureEscrow,
-            StandardBookingAcceptance { DealType: DealType.VenueHire } => FinancialOperation.DepositEscrow,
-            _ => throw new ArgumentOutOfRangeException(nameof(acceptance), acceptance, null)
-        };
+        ExpectedFinancialOperation = acceptance.ExpectedFinancialOperation;
         StartDate = acceptance.StartDate;
         EndDate = acceptance.EndDate;
         Genres = acceptance.Genres.ToList();
@@ -71,7 +68,9 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
         ArtistTenantId = acceptance.ArtistTenantId;
     }
 
-    internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialConfirmation(string providerReferenceId)
+    internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialConfirmation(
+        string providerReferenceId,
+        DealTerms terms)
     {
         var transition = Fire(BookingTrigger.Confirm);
         if (transition.TryGetError(out var error))
@@ -93,7 +92,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
             StartDate,
             EndDate,
             Genres,
-            GetConfirmedTerms())));
+            terms)));
         return new Success();
     }
 
@@ -174,52 +173,4 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
             State = next;
         return transition;
     }
-
-    protected abstract ConfirmedBookingTerms GetConfirmedTerms();
-}
-
-public sealed class StandardBooking : BookingEntity
-{
-    public decimal Amount { get; private set; }
-
-    private StandardBooking() { }
-
-    private StandardBooking(StandardBookingAcceptance acceptance) : base(acceptance)
-    {
-        Amount = acceptance.Amount;
-    }
-
-    internal static StandardBooking Create(StandardBookingAcceptance acceptance) => new(acceptance);
-
-    protected override ConfirmedBookingTerms GetConfirmedTerms() => DealType switch
-    {
-        DealType.FlatFee => new FlatFeeBookingTerms(Amount),
-        DealType.VenueHire => new VenueHireBookingTerms(Amount),
-        _ => throw new InvalidOperationException($"Standard booking {Id} has unsupported deal type {DealType}.")
-    };
-}
-
-public sealed class DeferredBooking : BookingEntity
-{
-    public string PaymentMethodId { get; private set; } = null!;
-    public decimal ArtistDoorPercent { get; private set; }
-    public decimal Guarantee { get; private set; }
-
-    private DeferredBooking() { }
-
-    private DeferredBooking(DeferredBookingAcceptance acceptance) : base(acceptance)
-    {
-        PaymentMethodId = acceptance.PaymentMethodId;
-        ArtistDoorPercent = acceptance.ArtistDoorPercent;
-        Guarantee = acceptance.Guarantee;
-    }
-
-    internal static DeferredBooking Create(DeferredBookingAcceptance acceptance) => new(acceptance);
-
-    protected override ConfirmedBookingTerms GetConfirmedTerms() => DealType switch
-    {
-        DealType.DoorSplit => new DoorSplitBookingTerms(ArtistDoorPercent, PaymentMethodId),
-        DealType.Versus => new VersusBookingTerms(Guarantee, ArtistDoorPercent, PaymentMethodId),
-        _ => throw new InvalidOperationException($"Deferred booking {Id} has unsupported deal type {DealType}.")
-    };
 }

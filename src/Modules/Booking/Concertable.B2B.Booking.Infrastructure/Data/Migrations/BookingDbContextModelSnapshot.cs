@@ -47,11 +47,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.Property<int>("DealType")
                         .HasColumnType("int");
 
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(21)
-                        .HasColumnType("nvarchar(21)");
-
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
 
@@ -115,10 +110,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Bookings", "booking");
-
-                    b.HasDiscriminator<string>("Discriminator").HasValue("BookingEntity");
-
-                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractEntity", b =>
@@ -245,6 +236,10 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Contracts", "booking");
+
+                    b.HasDiscriminator<int>("DealType");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
@@ -316,31 +311,72 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.DeferredBooking", b =>
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.DoorSplitContract", b =>
                 {
-                    b.HasBaseType("Concertable.B2B.Booking.Domain.Entities.BookingEntity");
+                    b.HasBaseType("Concertable.B2B.Booking.Domain.Entities.ContractEntity");
 
                     b.Property<decimal>("ArtistDoorPercent")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("ArtistDoorPercent");
+
+                    b.Property<string>("PaymentMethodId")
+                        .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("PaymentMethodId");
+
+                    b.HasDiscriminator().HasValue(1);
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.FlatFeeContract", b =>
+                {
+                    b.HasBaseType("Concertable.B2B.Booking.Domain.Entities.ContractEntity");
+
+                    b.Property<decimal>("Fee")
                         .HasColumnType("decimal(18,2)");
+
+                    b.HasDiscriminator().HasValue(0);
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.VenueHireContract", b =>
+                {
+                    b.HasBaseType("Concertable.B2B.Booking.Domain.Entities.ContractEntity");
+
+                    b.Property<decimal>("HireFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("PaymentMethodId")
+                        .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("PaymentMethodId");
+
+                    b.HasDiscriminator().HasValue(3);
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.VersusContract", b =>
+                {
+                    b.HasBaseType("Concertable.B2B.Booking.Domain.Entities.ContractEntity");
+
+                    b.Property<decimal>("ArtistDoorPercent")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("ArtistDoorPercent");
 
                     b.Property<decimal>("Guarantee")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("PaymentMethodId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("PaymentMethodId");
 
-                    b.HasDiscriminator().HasValue("DeferredBooking");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.StandardBooking", b =>
-                {
-                    b.HasBaseType("Concertable.B2B.Booking.Domain.Entities.BookingEntity");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasDiscriminator().HasValue("StandardBooking");
+                    b.HasDiscriminator().HasValue(2);
                 });
 
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractEntity", b =>

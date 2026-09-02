@@ -11,8 +11,8 @@ public sealed class BookingEntityLifecycleTests
     [Fact]
     public void Cancel_WhenConfirmationFailed_LeavesStateFinancialFailureAndEventsUnchanged()
     {
-        var acceptance = (StandardBookingAcceptance)AcceptedApplications.FlatFee().ToBookingAcceptance();
-        var booking = StandardBooking.Create(acceptance);
+        var acceptance = AcceptedApplications.FlatFee().ToBookingAcceptance();
+        var booking = BookingEntity.Create(acceptance);
         Assert.False(booking.RecordFinancialFailure("pi_123", "declined", "Declined").TryGetError(out _));
         var events = booking.DomainEvents.ToArray();
 

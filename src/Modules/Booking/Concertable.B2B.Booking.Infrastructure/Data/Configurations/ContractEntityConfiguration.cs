@@ -1,6 +1,7 @@
 using System.Net;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Domain.Entities;
+using Concertable.B2B.Deal.Contracts.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -27,6 +28,11 @@ internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<Con
         });
         builder.ComplexProperty(contract => contract.ArtistSignature, ConfigureSignature);
         builder.ComplexProperty(contract => contract.VenueSignature, ConfigureSignature);
+        builder.HasDiscriminator(contract => contract.DealType)
+            .HasValue<FlatFeeContract>(DealType.FlatFee)
+            .HasValue<VenueHireContract>(DealType.VenueHire)
+            .HasValue<DoorSplitContract>(DealType.DoorSplit)
+            .HasValue<VersusContract>(DealType.Versus);
     }
 
     private static void ConfigureSignature(ComplexPropertyBuilder<Signature> builder)

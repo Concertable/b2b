@@ -10,6 +10,7 @@ using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.Booking.Infrastructure.Extensions;
+using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
@@ -109,27 +110,29 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         AcceptedApplication application,
         CancellationToken ct)
     {
-        var booking = await unitOfWorkBehavior.ExecuteAsync(() => CreateAsync(application, ct), ct);
+        var (booking, contract) = await unitOfWorkBehavior.ExecuteAsync(() => CreateAsync(application, ct), ct);
         await confirmFactory
             .Create(application.DealType)
-            .ConfirmAsync(application, booking, ct);
+            .ConfirmAsync(contract, booking, ct);
+        if (application is IAcceptVerified { Verification: { } verification })
+            VerifyPaymentAdvancer.Advance(booking, verification, contract.Terms);
         await bookingRepository.SaveChangesAsync(ct);
         return booking.ToDto();
     }
 
-    private async Task<BookingEntity> CreateAsync(
+    private async Task<(BookingEntity Booking, ContractEntity Contract)> CreateAsync(
         AcceptedApplication application,
         CancellationToken ct)
     {
         var acceptance = application.ToBookingAcceptance();
-        BookingEntity booking = acceptance switch
-        {
-            StandardBookingAcceptance standard => StandardBooking.Create(standard),
-            DeferredBookingAcceptance deferred => DeferredBooking.Create(deferred),
-            _ => throw new ArgumentOutOfRangeException(nameof(acceptance), acceptance, null)
-        };
-        await PersistAsync(booking, acceptance, ct);
-        return booking;
+        var booking = BookingEntity.Create(acceptance);
+        await bookingRepository.AddAsync(booking, ct);
+        await bookingRepository.SaveChangesAsync(ct);
+
+        var contract = acceptance.CreateContract(booking.Id, timeProvider.GetUtcNow().UtcDateTime);
+        await contractRepository.AddAsync(contract, ct);
+        await contractRepository.SaveChangesAsync(ct);
+        return (booking, contract);
     }
 
     private async Task RecordSucceededCoreAsync(
@@ -157,7 +160,10 @@ internal sealed class BookingWorkflow : IBookingWorkflow
             return;
         }
 
-        if (booking.RecordFinancialConfirmation(operation.ProviderReferenceId).TryGetError(out var transitionError))
+        var contract = await contractRepository.GetByBookingIdAsync(bookingId, ct)
+            ?? throw new InvalidOperationException($"Booking {bookingId} has no contract.");
+        if (booking.RecordFinancialConfirmation(operation.ProviderReferenceId, contract.Terms)
+            .TryGetError(out var transitionError))
             throw new InvalidOperationException($"Booking cannot confirm from {transitionError.Current}.");
         await bookingRepository.SaveChangesAsync(ct);
     }
@@ -255,21 +261,5 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         if (booking.FinancialOperationReferenceId != operation.ProviderReferenceId)
             throw new InvalidOperationException(
                 $"Booking {booking.Id} was confirmed by provider reference {booking.FinancialOperationReferenceId}, not {operation.ProviderReferenceId}.");
-    }
-
-    private async Task PersistAsync(
-        BookingEntity booking,
-        BookingAcceptance acceptance,
-        CancellationToken ct)
-    {
-        await bookingRepository.AddAsync(booking, ct);
-        await bookingRepository.SaveChangesAsync(ct);
-
-        var contract = ContractEntity.Create(
-            booking.Id,
-            acceptance,
-            timeProvider.GetUtcNow().UtcDateTime);
-        await contractRepository.AddAsync(contract, ct);
-        await contractRepository.SaveChangesAsync(ct);
     }
 }

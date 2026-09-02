@@ -45,12 +45,12 @@ public sealed class DealPayeeResolverTests
 
     private static ConcertEntity CreateConcert(DealType dealType)
     {
-        ConfirmedBookingTerms terms = dealType switch
+        DealTerms terms = dealType switch
         {
-            DealType.FlatFee => new FlatFeeBookingTerms(100m),
-            DealType.DoorSplit => new DoorSplitBookingTerms(50m, "pm_123"),
-            DealType.Versus => new VersusBookingTerms(100m, 50m, "pm_123"),
-            DealType.VenueHire => new VenueHireBookingTerms(100m),
+            DealType.FlatFee => new FlatFeeTerms(100m),
+            DealType.DoorSplit => new DoorSplitTerms(50m, "pm_123"),
+            DealType.Versus => new VersusTerms(100m, 50m, "pm_123"),
+            DealType.VenueHire => new VenueHireTerms(100m),
             _ => throw new ArgumentOutOfRangeException(nameof(dealType), dealType, null)
         };
         var booking = new ConfirmedBooking(

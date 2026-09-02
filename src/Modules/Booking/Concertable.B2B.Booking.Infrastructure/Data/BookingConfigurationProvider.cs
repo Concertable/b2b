@@ -10,5 +10,8 @@ internal sealed class BookingConfigurationProvider : IEntityTypeConfigurationPro
     {
         modelBuilder.ApplyConfiguration(new BookingEntityConfiguration());
         modelBuilder.ApplyConfiguration(new ContractEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new VenueHireContractConfiguration());
+        modelBuilder.ApplyConfiguration(new DoorSplitContractConfiguration());
+        modelBuilder.ApplyConfiguration(new VersusContractConfiguration());
     }
 }

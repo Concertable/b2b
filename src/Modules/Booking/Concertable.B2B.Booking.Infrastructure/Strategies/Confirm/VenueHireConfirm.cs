@@ -1,4 +1,3 @@
-using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.Strategies;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.Kernel.Enums;
@@ -23,25 +22,25 @@ internal sealed class VenueHireConfirm : IConfirm
     }
 
     public async Task ConfirmAsync(
-        AcceptedApplication application,
+        ContractEntity contract,
         BookingEntity booking,
         CancellationToken ct = default)
     {
-        var accepted = (VenueHireAcceptedApplication)application;
+        var venueHire = (VenueHireContract)contract;
         logger.AcceptingVenueHireApplication(
-            accepted.ApplicationId,
+            booking.ApplicationId,
             booking.Id,
-            accepted.HireFee,
-            accepted.ArtistTenantId,
-            accepted.VenueTenantId);
+            venueHire.HireFee,
+            venueHire.ArtistTenantId,
+            venueHire.VenueTenantId);
         await bus.SendAsync(new DepositEscrowCommand(
-            accepted.OperationId,
+            booking.OperationId,
             booking.Id,
-            accepted.ArtistTenantId,
-            accepted.VenueTenantId,
-            Money.Gbp(accepted.HireFee).ToMinorUnits(),
+            venueHire.ArtistTenantId,
+            venueHire.VenueTenantId,
+            Money.Gbp(venueHire.HireFee).ToMinorUnits(),
             Currency.Gbp,
-            accepted.PaymentMethodId,
+            venueHire.PaymentMethodId,
             PaymentSession.OffSession), ct);
     }
 }

@@ -60,7 +60,7 @@ public sealed class TenantInheritanceTests
             new DateTime(2026, 8, 8, 19, 0, 0, DateTimeKind.Utc),
             new DateTime(2026, 8, 8, 22, 0, 0, DateTimeKind.Utc),
             [],
-            new FlatFeeBookingTerms(100m));
+            new FlatFeeTerms(100m));
 
     private static void AssertScope(
         Concertable.B2B.DataAccess.Application.IVenueArtistTenantScoped entity,

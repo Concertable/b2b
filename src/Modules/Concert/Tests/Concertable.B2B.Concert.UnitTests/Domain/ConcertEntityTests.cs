@@ -23,7 +23,7 @@ public sealed class ConcertEntityTests
             new DateTime(2035, 1, 1, 19, 0, 0, DateTimeKind.Utc),
             new DateTime(2035, 1, 1, 22, 0, 0, DateTimeKind.Utc),
             [Genre.Rock],
-            new FlatFeeBookingTerms(500m));
+            new FlatFeeTerms(500m));
 
         var concert = ConcertEntity.CreateDraft(
             booking,

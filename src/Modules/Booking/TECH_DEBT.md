@@ -35,7 +35,8 @@ persisted `0` for every DoorSplit row, `DoorSplitAcceptedApplication` passes tha
 
 **Resolves when:** `ContractEntity` is the TPH root discriminated by its existing `DealType` column with one
 arm per deal type carrying that type's figures; `BookingEntity` is a single class holding lifecycle only, so
-`StandardBooking`, `DeferredBooking` and the whole `BookingAcceptance` hierarchy are deleted and each
-`AcceptedApplication` arm maps straight to its contract arm; `ConcertEntity` takes the same treatment in place
-of its four nullables; and a test or shared per-arm terms accessor makes an unlisted field fail rather than
-drift past the fingerprint.
+`StandardBooking` and `DeferredBooking` are deleted; `BookingAcceptance` stays as the Domain-side carrier
+`Booking.Domain` needs to avoid referencing `Application.Contracts`, but re-armed one-per-deal-type so each
+`AcceptedApplication` arm maps straight across; `ConcertEntity` takes the same treatment in place of its four
+nullables; and the fingerprint's per-arm payload is dispatched rather than switched — as its own keyed family,
+not a second member beside `IDealTerms.Render`, so a wording edit cannot sit next to a hash input.

@@ -37,7 +37,7 @@ public sealed class ConcertServiceCreateTests
             new DateTime(2026, 9, 1, 20, 0, 0, DateTimeKind.Utc),
             new DateTime(2026, 9, 1, 23, 0, 0, DateTimeKind.Utc),
             [Genre.Rock],
-            new FlatFeeBookingTerms(500m));
+            new FlatFeeTerms(500m));
         var artist = new ArtistReadModel
         {
             Id = booking.ArtistId,

@@ -77,7 +77,7 @@ public sealed class ConcertValidatorTests
             new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc),
             new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc),
             [Genre.Rock],
-            new FlatFeeBookingTerms(100m));
+            new FlatFeeTerms(100m));
 
         return ConcertEntity.CreateDraft(
             booking,

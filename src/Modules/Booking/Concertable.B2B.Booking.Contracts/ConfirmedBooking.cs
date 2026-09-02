@@ -1,3 +1,4 @@
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Contracts.Enums;
 
@@ -17,4 +18,4 @@ public sealed record ConfirmedBooking(
     DateTime StartDate,
     DateTime EndDate,
     IReadOnlyList<Genre> Genres,
-    ConfirmedBookingTerms Terms);
+    DealTerms Terms);

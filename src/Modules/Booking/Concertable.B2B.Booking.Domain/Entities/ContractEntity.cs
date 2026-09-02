@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Kernel;
 using Concertable.Kernel.ValueObjects;
@@ -9,7 +10,7 @@ using Concertable.Kernel.ValueObjects;
 namespace Concertable.B2B.Booking.Domain.Entities;
 
 [DisplayName(DisplayNames.Contract)]
-public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
+public abstract class ContractEntity : IIdEntity, IVenueArtistTenantScoped
 {
     public int Id { get; private set; }
     public Guid VenueTenantId { get; private set; }
@@ -29,34 +30,111 @@ public sealed class ContractEntity : IIdEntity, IVenueArtistTenantScoped
     public string? PdfBlobName { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
-    private ContractEntity() { }
+    protected ContractEntity() { }
 
-    internal static ContractEntity Create(
-        int bookingId,
-        BookingAcceptance acceptance,
-        DateTime createdAtUtc)
+    private protected ContractEntity(int bookingId, BookingAcceptance acceptance, DateTime createdAtUtc)
     {
+        ArgumentNullException.ThrowIfNull(acceptance);
         if (bookingId <= 0)
             throw new ArgumentOutOfRangeException(nameof(bookingId));
 
-        return new ContractEntity
-        {
-            BookingId = bookingId,
-            VenueTenantId = acceptance.VenueTenantId,
-            ArtistTenantId = acceptance.ArtistTenantId,
-            VenueId = acceptance.VenueId,
-            VenueName = acceptance.VenueName,
-            ArtistId = acceptance.ArtistId,
-            ArtistName = acceptance.ArtistName,
-            Period = new DateRange(acceptance.StartDate, acceptance.EndDate),
-            DealType = acceptance.DealType,
-            PaymentMethod = acceptance.PaymentMethod,
-            TermsText = acceptance.TermsText,
-            PlatformTermsVersion = acceptance.PlatformTermsVersion,
-            ArtistSignature = acceptance.ArtistSignature,
-            VenueSignature = acceptance.VenueSignature,
-            CreatedAtUtc = createdAtUtc,
-            PdfBlobName = $"contracts/{bookingId}-{Guid.NewGuid():N}.pdf"
-        };
+        BookingId = bookingId;
+        VenueTenantId = acceptance.VenueTenantId;
+        ArtistTenantId = acceptance.ArtistTenantId;
+        VenueId = acceptance.VenueId;
+        VenueName = acceptance.VenueName;
+        ArtistId = acceptance.ArtistId;
+        ArtistName = acceptance.ArtistName;
+        Period = new DateRange(acceptance.StartDate, acceptance.EndDate);
+        DealType = acceptance.DealType;
+        PaymentMethod = acceptance.PaymentMethod;
+        TermsText = acceptance.TermsText;
+        PlatformTermsVersion = acceptance.PlatformTermsVersion;
+        ArtistSignature = acceptance.ArtistSignature;
+        VenueSignature = acceptance.VenueSignature;
+        CreatedAtUtc = createdAtUtc;
+        PdfBlobName = $"contracts/{bookingId}-{Guid.NewGuid():N}.pdf";
     }
+
+    public abstract DealTerms Terms { get; }
+}
+
+public sealed class FlatFeeContract : ContractEntity
+{
+    public decimal Fee { get; private set; }
+
+    private FlatFeeContract() { }
+
+    private FlatFeeContract(int bookingId, FlatFeeAcceptance acceptance, DateTime createdAtUtc)
+        : base(bookingId, acceptance, createdAtUtc)
+    {
+        Fee = acceptance.Fee;
+    }
+
+    internal static FlatFeeContract Create(int bookingId, FlatFeeAcceptance acceptance, DateTime createdAtUtc) =>
+        new(bookingId, acceptance, createdAtUtc);
+
+    public override DealTerms Terms => new FlatFeeTerms(Fee);
+}
+
+public sealed class VenueHireContract : ContractEntity
+{
+    public decimal HireFee { get; private set; }
+    public string PaymentMethodId { get; private set; } = null!;
+
+    private VenueHireContract() { }
+
+    private VenueHireContract(int bookingId, VenueHireAcceptance acceptance, DateTime createdAtUtc)
+        : base(bookingId, acceptance, createdAtUtc)
+    {
+        HireFee = acceptance.HireFee;
+        PaymentMethodId = acceptance.PaymentMethodId;
+    }
+
+    internal static VenueHireContract Create(int bookingId, VenueHireAcceptance acceptance, DateTime createdAtUtc) =>
+        new(bookingId, acceptance, createdAtUtc);
+
+    public override DealTerms Terms => new VenueHireTerms(HireFee);
+}
+
+public sealed class DoorSplitContract : ContractEntity
+{
+    public decimal ArtistDoorPercent { get; private set; }
+    public string PaymentMethodId { get; private set; } = null!;
+
+    private DoorSplitContract() { }
+
+    private DoorSplitContract(int bookingId, DoorSplitAcceptance acceptance, DateTime createdAtUtc)
+        : base(bookingId, acceptance, createdAtUtc)
+    {
+        ArtistDoorPercent = acceptance.ArtistDoorPercent;
+        PaymentMethodId = acceptance.PaymentMethodId;
+    }
+
+    internal static DoorSplitContract Create(int bookingId, DoorSplitAcceptance acceptance, DateTime createdAtUtc) =>
+        new(bookingId, acceptance, createdAtUtc);
+
+    public override DealTerms Terms => new DoorSplitTerms(ArtistDoorPercent, PaymentMethodId);
+}
+
+public sealed class VersusContract : ContractEntity
+{
+    public decimal Guarantee { get; private set; }
+    public decimal ArtistDoorPercent { get; private set; }
+    public string PaymentMethodId { get; private set; } = null!;
+
+    private VersusContract() { }
+
+    private VersusContract(int bookingId, VersusAcceptance acceptance, DateTime createdAtUtc)
+        : base(bookingId, acceptance, createdAtUtc)
+    {
+        Guarantee = acceptance.Guarantee;
+        ArtistDoorPercent = acceptance.ArtistDoorPercent;
+        PaymentMethodId = acceptance.PaymentMethodId;
+    }
+
+    internal static VersusContract Create(int bookingId, VersusAcceptance acceptance, DateTime createdAtUtc) =>
+        new(bookingId, acceptance, createdAtUtc);
+
+    public override DealTerms Terms => new VersusTerms(Guarantee, ArtistDoorPercent, PaymentMethodId);
 }

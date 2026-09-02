@@ -97,10 +97,10 @@ public static class ServiceCollectionExtensions
                     .AddScoped<IConfirm, FlatFeeConfirm>()
                     .AddScoped<ICancel, EscrowCancel>();
                 builder.For(DealType.DoorSplit)
-                    .AddScoped<IConfirm, DoorSplitConfirm>()
+                    .AddScoped<IConfirm, DeferredConfirm>()
                     .AddScoped<ICancel, ImmediateCancel>();
                 builder.For(DealType.Versus)
-                    .AddScoped<IConfirm, VersusConfirm>()
+                    .AddScoped<IConfirm, DeferredConfirm>()
                     .AddScoped<ICancel, ImmediateCancel>();
                 builder.For(DealType.VenueHire)
                     .AddScoped<IConfirm, VenueHireConfirm>()

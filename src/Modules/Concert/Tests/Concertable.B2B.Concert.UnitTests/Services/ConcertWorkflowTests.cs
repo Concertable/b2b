@@ -221,7 +221,7 @@ public sealed class ConcertWorkflowTests
             new DateTime(2030, 1, 1, 19, 0, 0, DateTimeKind.Utc),
             new DateTime(2030, 1, 1, 22, 0, 0, DateTimeKind.Utc),
             [],
-            new FlatFeeBookingTerms(100m)),
+            new FlatFeeTerms(100m)),
         "Concert",
         "About",
         []);

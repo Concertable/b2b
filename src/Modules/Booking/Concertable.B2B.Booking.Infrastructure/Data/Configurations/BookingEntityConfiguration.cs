@@ -22,8 +22,5 @@ internal sealed class BookingEntityConfiguration : IEntityTypeConfiguration<Book
         builder.HasIndex(booking => booking.CancellationOperationId)
             .IsUnique()
             .HasFilter("[CancellationOperationId] IS NOT NULL");
-        builder.HasDiscriminator<string>("Discriminator")
-            .HasValue<StandardBooking>(nameof(StandardBooking))
-            .HasValue<DeferredBooking>(nameof(DeferredBooking));
     }
 }

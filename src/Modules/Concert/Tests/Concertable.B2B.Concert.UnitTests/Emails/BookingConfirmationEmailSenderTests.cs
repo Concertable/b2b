@@ -92,7 +92,7 @@ public sealed class BookingConfirmationEmailSenderTests
             startDate,
             startDate.AddHours(3),
             [],
-            new FlatFeeBookingTerms(100m));
+            new FlatFeeTerms(100m));
 
         await sender.SendAsync(booking, "The Venue", "The Artist");
 

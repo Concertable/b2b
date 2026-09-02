@@ -12,7 +12,6 @@ public abstract record AcceptedApplication(
     Guid VenueTenantId,
     Guid ArtistTenantId,
     DealType DealType,
-    bool RequiresDoorRevenue,
     PaymentMethod PaymentMethod,
     DateTime StartDate,
     DateTime EndDate,
@@ -45,7 +44,7 @@ public sealed record FlatFeeAcceptedApplication(
     decimal Fee)
     : AcceptedApplication(
         OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
-        VenueTenantId, ArtistTenantId, DealType.FlatFee, false, PaymentMethod,
+        VenueTenantId, ArtistTenantId, DealType.FlatFee, PaymentMethod,
         StartDate, EndDate, Genres, ArtistName, VenueName, TermsText, PlatformTermsVersion,
         ArtistSignature, VenueSignature);
 
@@ -72,9 +71,9 @@ public sealed record DoorSplitAcceptedApplication(
     VerifyPayment? Verification)
     : AcceptedApplication(
         OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
-        VenueTenantId, ArtistTenantId, DealType.DoorSplit, true, PaymentMethod,
+        VenueTenantId, ArtistTenantId, DealType.DoorSplit, PaymentMethod,
         StartDate, EndDate, Genres, ArtistName, VenueName, TermsText, PlatformTermsVersion,
-        ArtistSignature, VenueSignature);
+        ArtistSignature, VenueSignature), IAcceptVerified;
 
 public sealed record VersusAcceptedApplication(
     Guid OperationId,
@@ -100,9 +99,9 @@ public sealed record VersusAcceptedApplication(
     VerifyPayment? Verification)
     : AcceptedApplication(
         OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
-        VenueTenantId, ArtistTenantId, DealType.Versus, true, PaymentMethod,
+        VenueTenantId, ArtistTenantId, DealType.Versus, PaymentMethod,
         StartDate, EndDate, Genres, ArtistName, VenueName, TermsText, PlatformTermsVersion,
-        ArtistSignature, VenueSignature);
+        ArtistSignature, VenueSignature), IAcceptVerified;
 
 public sealed record VenueHireAcceptedApplication(
     Guid OperationId,
@@ -126,6 +125,6 @@ public sealed record VenueHireAcceptedApplication(
     string PaymentMethodId)
     : AcceptedApplication(
         OperationId, ApplicationId, OpportunityId, ArtistId, VenueId,
-        VenueTenantId, ArtistTenantId, DealType.VenueHire, false, PaymentMethod,
+        VenueTenantId, ArtistTenantId, DealType.VenueHire, PaymentMethod,
         StartDate, EndDate, Genres, ArtistName, VenueName, TermsText, PlatformTermsVersion,
         ArtistSignature, VenueSignature);

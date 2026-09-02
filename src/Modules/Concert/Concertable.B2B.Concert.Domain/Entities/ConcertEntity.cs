@@ -97,23 +97,20 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
         switch (booking.Terms)
         {
-            case FlatFeeBookingTerms flatFee:
+            case FlatFeeTerms flatFee:
                 concert.Fee = flatFee.Fee;
                 break;
-            case DoorSplitBookingTerms doorSplit:
-                concert.ArtistDoorPercent = doorSplit.ArtistDoorPercent;
-                concert.SettlementPaymentMethodId = doorSplit.PaymentMethodId;
-                break;
-            case VersusBookingTerms versus:
-                concert.Guarantee = versus.Guarantee;
-                concert.ArtistDoorPercent = versus.ArtistDoorPercent;
-                concert.SettlementPaymentMethodId = versus.PaymentMethodId;
-                break;
-            case VenueHireBookingTerms venueHire:
+            case VenueHireTerms venueHire:
                 concert.HireFee = venueHire.HireFee;
                 break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(booking), booking.Terms, null);
+            case VersusTerms versus:
+                concert.Guarantee = versus.Guarantee;
+                break;
+        }
+        if (booking.Terms is ISettledFromDoorRevenue doorRevenue)
+        {
+            concert.ArtistDoorPercent = doorRevenue.ArtistDoorPercent;
+            concert.SettlementPaymentMethodId = doorRevenue.PaymentMethodId;
         }
 
         return concert;

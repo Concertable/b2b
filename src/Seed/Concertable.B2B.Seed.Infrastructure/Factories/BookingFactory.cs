@@ -15,21 +15,16 @@ public static class BookingFactory
         bool confirmed)
     {
         var acceptance = application.ToBookingAcceptance();
-        BookingEntity booking = acceptance switch
-        {
-            StandardBookingAcceptance standard => StandardBooking.Create(standard),
-            DeferredBookingAcceptance deferred => DeferredBooking.Create(deferred),
-            _ => throw new ArgumentOutOfRangeException(nameof(acceptance), acceptance, null)
-        };
+        var booking = BookingEntity.Create(acceptance);
         booking.WithId(id);
 
-        var contract = ContractEntity.Create(id, acceptance, createdAtUtc)
+        var contract = acceptance.CreateContract(id, createdAtUtc)
             .WithId(id)
             .With(nameof(ContractEntity.PdfBlobName), $"contracts/{id}-seed.pdf");
 
         if (confirmed)
         {
-            booking.RecordFinancialConfirmation($"seed-financial-{id}");
+            booking.RecordFinancialConfirmation($"seed-financial-{id}", contract.Terms);
             booking.ClearDomainEvents();
         }
 

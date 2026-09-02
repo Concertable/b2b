@@ -12,9 +12,9 @@ public sealed class BookingEntityTests
     public void Create_AcceptedApplication_CopiesProvenanceAndExpectedOperation()
     {
         var accepted = AcceptedApplications.DoorSplit();
-        var acceptance = (DeferredBookingAcceptance)accepted.ToBookingAcceptance();
+        var acceptance = accepted.ToBookingAcceptance();
 
-        var booking = DeferredBooking.Create(acceptance);
+        var booking = BookingEntity.Create(acceptance);
 
         Assert.Equal(accepted.OperationId, booking.OperationId);
         Assert.Equal(accepted.ApplicationId, booking.ApplicationId);
@@ -23,5 +23,5 @@ public sealed class BookingEntityTests
 
     [Fact]
     public void Create_MissingAcceptedApplication_ThrowsArgumentNullException() =>
-        Assert.Throws<ArgumentNullException>(() => DeferredBooking.Create(null!));
+        Assert.Throws<ArgumentNullException>(() => BookingEntity.Create(null!));
 }

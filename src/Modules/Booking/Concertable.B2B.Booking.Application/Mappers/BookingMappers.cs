@@ -2,7 +2,6 @@ using Concertable.B2B.Booking.Application.DTOs;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Lifecycle;
-using Concertable.B2B.Booking.Domain.Financial;
 
 namespace Concertable.B2B.Booking.Application.Mappers;
 
@@ -10,15 +9,7 @@ internal static class BookingMappers
 {
     extension(BookingEntity booking)
     {
-        public BookingDto ToDto() => booking switch
-        {
-            StandardBooking standard => new StandardBookingDto(standard.Id, standard.State),
-            DeferredBooking deferred => new DeferredBookingDto(
-                deferred.Id,
-                deferred.State,
-                deferred.PaymentMethodId),
-            _ => throw new InvalidOperationException($"Unknown booking type: {booking.GetType().Name}")
-        };
+        public BookingDto ToDto() => new(booking.Id, booking.State);
     }
 
     extension(BookingSummaryDto booking)
