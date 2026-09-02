@@ -46,7 +46,7 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
                 Town = o.Venue.Address.Town,
                 StartDate = o.Period.Start,
                 EndDate = o.Period.End,
-                Genres = o.Genres,
+                Genres = o.Genres.ToList(),
                 DealId = o.DealId
             })
             .ToListAsync();
