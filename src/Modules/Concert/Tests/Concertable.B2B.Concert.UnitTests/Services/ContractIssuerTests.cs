@@ -10,6 +10,7 @@ using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
+using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Concert.UnitTests.Services;
 
@@ -35,10 +36,8 @@ public sealed class ContractIssuerTests
     {
         dealAccessor.SetupGet(c => c.Deal).Returns(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         applicationRepository
-            .Setup(r => r.GetArtistAndVenueByIdAsync(It.IsAny<int>()))
-            .ReturnsAsync(((ArtistReadModel, VenueReadModel)?)(
-                new ArtistReadModel { Id = 1, Name = "Artie Artist" },
-                new VenueReadModel { Id = 2, Name = "Vera Venue" }));
+            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<ISpecification<ApplicationEntity>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ApplicationWithArtistAndVenue());
         opportunityRepository
             .Setup(r => r.GetPeriodByIdAsync(It.IsAny<int>()))
             .ReturnsAsync(OpportunityPeriod);
@@ -91,5 +90,17 @@ public sealed class ContractIssuerTests
         Assert.Equal("Vera Venue", built.VenueESignature.SignatoryName);
         Assert.Equal(application.VenueTenantId, built.VenueTenantId);
         Assert.Equal(application.ArtistTenantId, built.ArtistTenantId);
+    }
+
+    private static StandardApplication ApplicationWithArtistAndVenue()
+    {
+        var opportunity = OpportunityEntity.Create(2, OpportunityPeriod, 1);
+        opportunity.Venue = new VenueReadModel { Id = 2, Name = "Vera Venue" };
+
+        var application = StandardApplication.Create(1, 2, DealType.FlatFee, Guid.NewGuid(), Guid.NewGuid());
+        application.Artist = new ArtistReadModel { Id = 1, Name = "Artie Artist" };
+        application.Opportunity = opportunity;
+
+        return application;
     }
 }

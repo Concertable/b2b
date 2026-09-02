@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -128,7 +129,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<UnitResult<PostConcertError>> PostAsync(int id, UpdateConcertRequest request)
     {
-        var concertEntity = await repository.GetByIdWithBookingAsync(id);
+        var concertEntity = await repository.GetByIdAsync(id, ConcertSpecification.CreateWithBookingApplication());
         if (concertEntity is null)
             return new PostConcertError.ConcertNotFound(id);
 
@@ -147,7 +148,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueAsync(int id, decimal doorRevenue)
     {
-        var concert = await repository.GetByIdWithBookingAsync(id);
+        var concert = await repository.GetByIdAsync(id, ConcertSpecification.CreateWithBookingApplication());
         if (concert is null)
             return new DeclareDoorRevenueError.ConcertNotFound(id);
 

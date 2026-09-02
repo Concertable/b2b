@@ -6,6 +6,7 @@ using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Concert.UnitTests.Workflow.Executors;
 
@@ -36,7 +37,7 @@ public sealed class FinishExecutorTests
         await cancellationSource.CancelAsync();
         var cancellationToken = cancellationSource.Token;
         this.concertRepository
-            .Setup(r => r.GetByIdWithBookingAsync(It.IsAny<int>(), cancellationToken))
+            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<ISpecification<ConcertEntity>>(), cancellationToken))
             .Returns(Task.FromCanceled<ConcertEntity?>(cancellationToken));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(

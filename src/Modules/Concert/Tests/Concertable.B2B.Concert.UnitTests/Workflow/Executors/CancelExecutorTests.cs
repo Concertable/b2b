@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 using Moq;
+using Concertable.Kernel.Specifications;
 
 namespace Concertable.B2B.Concert.UnitTests.Workflow.Executors;
 
@@ -30,7 +31,7 @@ public sealed class CancelExecutorTests
         await cancellationSource.CancelAsync();
         var cancellationToken = cancellationSource.Token;
         this.concertRepository
-            .Setup(r => r.GetByIdWithBookingAsync(It.IsAny<int>(), cancellationToken))
+            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<ISpecification<ConcertEntity>>(), cancellationToken))
             .Returns(Task.FromCanceled<ConcertEntity?>(cancellationToken));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(

@@ -8,7 +8,6 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<ApplicationEntity>
 {
-    Task<ApplicationEntity?> GetWithArtistAndOpportunityByIdAsync(int id, CancellationToken ct = default);
     Task<FinancialOperation?> GetFinancialOperationAsync(
         int applicationId,
         CancellationToken ct = default);
@@ -32,10 +31,8 @@ internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<A
     Task<IReadOnlyList<ApplicationEntity>> GetCurrentForArtistTenantIdAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
-    Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id);
     Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(int applicationId);
     Task RejectAllExceptAsync(int opportunityId, int applicationId);
-    Task<int?> GetDealIdByIdAsync(int applicationId);
     Task<PayeeSummary?> GetArtistPayeeAsync(int applicationId);
     Task<Guid?> GetVenueManagerIdAsync(int applicationId);
 }

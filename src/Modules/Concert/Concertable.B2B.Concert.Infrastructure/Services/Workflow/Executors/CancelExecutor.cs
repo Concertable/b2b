@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
@@ -36,7 +37,7 @@ internal sealed class CancelExecutor : ICancelExecutor
 
     private async Task<UnitResult<CancelConcertError>> CancelCoreAsync(int concertId, CancellationToken ct)
     {
-        var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct);
+        var concert = await concertRepository.GetByIdAsync(concertId, ConcertSpecification.CreateWithBookingApplication(), ct);
         if (concert is null)
             return new CancelConcertError.ConcertNotFound(concertId);
 

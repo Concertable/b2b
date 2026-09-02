@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Workflow;
 using Concertable.B2B.Concert.Application.Workflow.Executors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel.Exceptions;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
@@ -31,6 +32,6 @@ internal sealed class SettlementExecutor : ISettlementExecutor
     }
 
     private async Task<int> LoadApplicationIdAsync(int bookingId, CancellationToken ct)
-        => await bookingRepository.GetApplicationIdByIdAsync(bookingId, ct)
+        => await bookingRepository.GetByIdAsync(bookingId, BookingSpecification.CreateApplicationId(), ct)
             .OrNotFound(DisplayNames.Booking);
 }

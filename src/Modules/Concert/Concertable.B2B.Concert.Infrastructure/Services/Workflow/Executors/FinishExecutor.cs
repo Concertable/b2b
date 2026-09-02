@@ -5,6 +5,7 @@ using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.Extensions.Logging;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Workflow.Executors;
 
@@ -49,7 +50,7 @@ internal sealed class FinishExecutor : IFinishExecutor
         int concertId,
         CancellationToken ct = default)
     {
-        var concert = await concertRepository.GetByIdWithBookingAsync(concertId, ct);
+        var concert = await concertRepository.GetByIdAsync(concertId, ConcertSpecification.CreateWithBookingApplication(), ct);
         if (concert is null)
             return new FinishConcertError.ConcertNotFound(concertId);
 

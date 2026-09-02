@@ -46,21 +46,10 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
             })
             .ToListAsync();
 
-    public Task<OpportunityEntity?> GetWithVenueByIdAsync(int id, CancellationToken ct = default) =>
-        context.Opportunities
-            .Include(o => o.Venue)
-            .FirstOrDefaultAsync(o => o.Id == id, ct);
-
     public async Task<Guid?> GetOwnerByIdAsync(int opportunityId) =>
         await context.Opportunities
             .Where(o => o.Id == opportunityId)
             .Select(o => (Guid?)o.Venue.UserId)
-            .FirstOrDefaultAsync();
-
-    public Task<int?> GetDealIdByIdAsync(int opportunityId) =>
-        context.Opportunities
-            .Where(o => o.Id == opportunityId)
-            .Select(o => (int?)o.DealId)
             .FirstOrDefaultAsync();
 
     public Task<DateRange?> GetPeriodByIdAsync(int opportunityId) =>
