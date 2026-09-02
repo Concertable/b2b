@@ -140,7 +140,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
     public UnitResult<TransitionError<ConcertState, ConcertTrigger>> Post(string name, string about, decimal price, int totalTickets, DateTime now)
     {
-        var transition = Apply(ConcertTrigger.Post);
+        var transition = Fire(ConcertTrigger.Post);
         if (transition.TryGetError(out var error))
             return error;
         Name = name;
@@ -155,7 +155,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
     public Result<Guid, TransitionError<ConcertState, ConcertTrigger>> BeginCancellation()
     {
-        var transition = Apply(ConcertTrigger.BeginCancellation);
+        var transition = Fire(ConcertTrigger.BeginCancellation);
         if (transition.TryGetError(out var error))
             return error;
         CancellationOperationId = Guid.NewGuid();
@@ -167,7 +167,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
     public UnitResult<TransitionError<ConcertState, ConcertTrigger>> RecordCancellationFailure(string code, string message)
     {
-        var transition = Apply(ConcertTrigger.RecordCancellationFailure);
+        var transition = Fire(ConcertTrigger.RecordCancellationFailure);
         if (transition.TryGetError(out var error))
             return error;
         FinancialFailureCode = code;
@@ -177,7 +177,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
     public UnitResult<TransitionError<ConcertState, ConcertTrigger>> Cancel()
     {
-        var transition = Apply(ConcertTrigger.Cancel);
+        var transition = Fire(ConcertTrigger.Cancel);
         if (transition.TryGetError(out var error))
             return error;
         FinancialFailureCode = null;
@@ -188,7 +188,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
     public Result<Guid, TransitionError<ConcertState, ConcertTrigger>> BeginSettlement()
     {
-        var transition = Apply(ConcertTrigger.BeginSettlement);
+        var transition = Fire(ConcertTrigger.BeginSettlement);
         if (transition.TryGetError(out var error))
             return error;
         SettlementOperationId ??= Guid.NewGuid();
@@ -217,7 +217,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
     public UnitResult<TransitionError<ConcertState, ConcertTrigger>> RecordSettlementFailure(string providerReferenceId, string code, string message)
     {
-        var transition = Apply(ConcertTrigger.RecordSettlementFailure);
+        var transition = Fire(ConcertTrigger.RecordSettlementFailure);
         if (transition.TryGetError(out var error))
             return error;
         EnsureSettlementReference(providerReferenceId);
@@ -228,7 +228,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
 
     public UnitResult<TransitionError<ConcertState, ConcertTrigger>> CompleteSettlement(string? providerReferenceId = null)
     {
-        var transition = Apply(ConcertTrigger.CompleteSettlement);
+        var transition = Fire(ConcertTrigger.CompleteSettlement);
         if (transition.TryGetError(out var error))
             return error;
         if (providerReferenceId is not null)
@@ -269,7 +269,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
                 $"Concert {Id} expects settlement {FinancialOperationReferenceId}, not {providerReferenceId}.");
     }
 
-    private UnitResult<TransitionError<ConcertState, ConcertTrigger>> Apply(ConcertTrigger trigger)
+    private UnitResult<TransitionError<ConcertState, ConcertTrigger>> Fire(ConcertTrigger trigger)
     {
         var transition = Transition(trigger);
         return transition.TryGetError(out var error) ? error : new Success();

@@ -65,7 +65,7 @@ public sealed class TenantVerificationEntity : IGuidEntity, IEventRaiser
         if (evidence is null || evidence.Count == 0)
             throw new DomainException("At least one evidence document is required to resubmit for verification.");
 
-        Apply(TenantVerificationTrigger.Resubmit);
+        Fire(TenantVerificationTrigger.Resubmit);
         documents.AddRange(evidence);
         RejectionReason = null;
         ReviewedByAdminSub = null;
@@ -77,7 +77,7 @@ public sealed class TenantVerificationEntity : IGuidEntity, IEventRaiser
     /// <summary>Only legal from <see cref="TenantVerificationStatus.Pending"/>.</summary>
     public void Approve(Guid adminSub, DateTime approvedAt)
     {
-        Apply(TenantVerificationTrigger.Approve);
+        Fire(TenantVerificationTrigger.Approve);
         ReviewedByAdminSub = adminSub;
         ReviewedAt = approvedAt;
         RejectionReason = null;
@@ -91,14 +91,14 @@ public sealed class TenantVerificationEntity : IGuidEntity, IEventRaiser
         if (reason.Length > 1000)
             throw new DomainException("RejectionReason must be 1000 characters or fewer.");
 
-        Apply(TenantVerificationTrigger.Reject);
+        Fire(TenantVerificationTrigger.Reject);
         ReviewedByAdminSub = adminSub;
         ReviewedAt = rejectedAt;
         RejectionReason = reason;
         Announce();
     }
 
-    private void Apply(TenantVerificationTrigger trigger)
+    private void Fire(TenantVerificationTrigger trigger)
     {
         if (!StateMachine.Transition(Status, trigger).TryGetValue(out var next))
             throw new DomainException($"Cannot apply '{trigger}' to a verification in status '{Status}'.");

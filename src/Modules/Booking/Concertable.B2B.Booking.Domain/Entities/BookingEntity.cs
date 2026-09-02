@@ -73,7 +73,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
 
     internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialConfirmation(string providerReferenceId)
     {
-        var transition = Apply(BookingTrigger.Confirm);
+        var transition = Fire(BookingTrigger.Confirm);
         if (transition.TryGetError(out var error))
             return error;
         FinancialOperationReferenceId = providerReferenceId;
@@ -102,7 +102,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
         string code,
         string message)
     {
-        var transition = Apply(BookingTrigger.RecordConfirmationFailure);
+        var transition = Fire(BookingTrigger.RecordConfirmationFailure);
         if (transition.TryGetError(out var error))
             return error;
         FinancialOperationReferenceId = providerReferenceId;
@@ -113,7 +113,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
 
     internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialRejection(string code, string message)
     {
-        var transition = Apply(BookingTrigger.RecordConfirmationFailure);
+        var transition = Fire(BookingTrigger.RecordConfirmationFailure);
         if (transition.TryGetError(out var error))
             return error;
         FinancialOperationReferenceId = null;
@@ -124,7 +124,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
 
     internal Result<Guid, TransitionError<BookingState, BookingTrigger>> BeginCancellation()
     {
-        var transition = Apply(BookingTrigger.BeginCancellation);
+        var transition = Fire(BookingTrigger.BeginCancellation);
         if (transition.TryGetError(out var error))
             return error;
         CancellationOperationId = Guid.NewGuid();
@@ -136,7 +136,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
 
     internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordCancellationFailure(string code, string message)
     {
-        var transition = Apply(BookingTrigger.RecordCancellationFailure);
+        var transition = Fire(BookingTrigger.RecordCancellationFailure);
         if (transition.TryGetError(out var error))
             return error;
         FinancialFailureCode = code;
@@ -146,7 +146,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
 
     internal UnitResult<TransitionError<BookingState, BookingTrigger>> Cancel()
     {
-        var transition = Apply(BookingTrigger.Cancel);
+        var transition = Fire(BookingTrigger.Cancel);
         if (transition.TryGetError(out var error))
             return error;
         FinancialFailureCode = null;
@@ -155,7 +155,7 @@ public abstract class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConc
         return new Success();
     }
 
-    private UnitResult<TransitionError<BookingState, BookingTrigger>> Apply(BookingTrigger trigger)
+    private UnitResult<TransitionError<BookingState, BookingTrigger>> Fire(BookingTrigger trigger)
     {
         var transition = Transition(trigger);
         return transition.TryGetError(out var error) ? error : new Success();

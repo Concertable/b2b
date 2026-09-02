@@ -117,9 +117,9 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
     }
 
     internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> ValidateAccept() => Validate(ApplicationTrigger.Accept);
-    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Reject() => Apply(ApplicationTrigger.Reject);
-    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Withdraw() => Apply(ApplicationTrigger.Withdraw);
-    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Cancel() => Apply(ApplicationTrigger.Cancel);
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Reject() => Fire(ApplicationTrigger.Reject);
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Withdraw() => Fire(ApplicationTrigger.Withdraw);
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Cancel() => Fire(ApplicationTrigger.Cancel);
 
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
@@ -139,7 +139,7 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
         return transition.TryGetError(out var error) ? error : new Success();
     }
 
-    private UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Apply(ApplicationTrigger trigger)
+    private UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Fire(ApplicationTrigger trigger)
     {
         var transition = Transition(trigger);
         return transition.TryGetError(out var error) ? error : new Success();
