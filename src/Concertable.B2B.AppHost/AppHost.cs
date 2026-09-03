@@ -26,7 +26,7 @@ public static class AppHost
         asb.Topology().AddB2BTopology().AddSearchTopology().AddPaymentTopology().AddAuthTopology().RunAsEmulator();
         var auth = builder.AddAuth(AuthImage, AuthDigest, authDb, asb)
                           .WithContainerRuntimeArgs("--user", "root")
-                          .WithHttpsEndpoint(targetPort: 8080, name: "https");
+                          .WithHttpsEndpoint(targetPort: AuthConstants.ContainerPort, name: "https");
         var paymentWeb = builder.AddPaymentWeb(PaymentWebImage, PaymentWebDigest, auth, paymentDb, asb)
                                 .WithHttpEndpoint(targetPort: 8080, name: "https")
                                 .WithHttpEndpoint(targetPort: 8080, name: "http");
