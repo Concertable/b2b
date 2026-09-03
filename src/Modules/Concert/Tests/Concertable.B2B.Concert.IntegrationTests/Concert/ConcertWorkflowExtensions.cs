@@ -9,6 +9,7 @@ using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Reunion;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
@@ -42,7 +43,7 @@ internal static class ConcertWorkflowExtensions
     private static async Task EnsureSupplierSelfBillingAgreementAsync(this ConcertApiFixture fixture, int concertId)
     {
         using var scope = fixture.Services.CreateScope();
-        var concert = await scope.ServiceProvider.GetRequiredService<IConcertRepository>().GetByIdWithBookingAsync(concertId);
+        var concert = await scope.ServiceProvider.GetRequiredService<IConcertRepository>().GetByIdAsync(concertId, ConcertSpecification.CreateWithBooking());
         if (concert is null)
             return;
 

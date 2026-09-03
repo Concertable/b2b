@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Options;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -45,7 +46,8 @@ internal sealed class ContractIssuer : IContractIssuer
         ESignatureRequest venueESignature)
     {
         var deal = dealAccessor.Deal;
-        var (artist, venue) = await applicationRepository.GetArtistAndVenueByIdAsync(application.Id)
+        var (artist, venue) = await applicationRepository
+            .GetByIdAsync(application.Id, ApplicationSpecification.CreateArtistAndVenue())
             .OrNotFound(DisplayNames.Application);
         var period = await opportunityRepository.GetPeriodByIdAsync(application.OpportunityId)
             .OrNotFound(DisplayNames.Opportunity);

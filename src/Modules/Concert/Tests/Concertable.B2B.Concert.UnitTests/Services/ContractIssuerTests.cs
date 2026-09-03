@@ -10,6 +10,8 @@ using Concertable.Kernel.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
+using Concertable.Kernel.Specifications;
+using Concertable.B2B.Concert.Application.Projections;
 
 namespace Concertable.B2B.Concert.UnitTests.Services;
 
@@ -35,8 +37,11 @@ public sealed class ContractIssuerTests
     {
         dealAccessor.SetupGet(c => c.Deal).Returns(new FlatFeeDealDto { PaymentMethod = PaymentMethod.Transfer, Fee = 500m });
         applicationRepository
-            .Setup(r => r.GetArtistAndVenueByIdAsync(It.IsAny<int>()))
-            .ReturnsAsync(((ArtistReadModel, VenueReadModel)?)(
+            .Setup(r => r.GetByIdAsync(
+                It.IsAny<int>(),
+                It.IsAny<ISpecification<ApplicationEntity, ArtistAndVenue?>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ArtistAndVenue(
                 new ArtistReadModel { Id = 1, Name = "Artie Artist" },
                 new VenueReadModel { Id = 2, Name = "Vera Venue" }));
         opportunityRepository
@@ -92,4 +97,5 @@ public sealed class ContractIssuerTests
         Assert.Equal(application.VenueTenantId, built.VenueTenantId);
         Assert.Equal(application.ArtistTenantId, built.ArtistTenantId);
     }
+
 }

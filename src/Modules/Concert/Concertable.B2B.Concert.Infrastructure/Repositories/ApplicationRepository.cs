@@ -107,19 +107,6 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
             .ToListAsync(ct);
     }
 
-    public async Task<(ArtistReadModel, VenueReadModel)?> GetArtistAndVenueByIdAsync(int id)
-    {
-        var query = await context.Applications
-            .Where(ca => ca.Id == id)
-            .Include(ca => ca.Artist)
-            .Include(ca => ca.Opportunity)
-                .ThenInclude(o => o.Venue)
-            .FirstOrDefaultAsync();
-
-        if (query is null) return null;
-        return (query.Artist, query.Opportunity.Venue);
-    }
-
     public async Task<(Guid VenueTenantId, Guid ArtistTenantId)?> GetTenantPairByIdAsync(int applicationId)
     {
         var row = await context.Applications
@@ -142,30 +129,11 @@ internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<
         return row is null ? null : (row.State, row.PaymentVerification);
     }
 
-    public async Task<ApplicationEntity?> GetWithArtistAndOpportunityByIdAsync(int id, CancellationToken ct = default)
-    {
-        return await context.Applications
-            .Where(ca => ca.Id == id)
-            .Include(ca => ca.Artist)
-                .ThenInclude(a => a.Genres)
-            .Include(ca => ca.Opportunity)
-                .ThenInclude(o => o.Venue)
-            .FirstOrDefaultAsync(ct);
-    }
-
     public async Task RejectAllExceptAsync(int opportunityId, int applicationId)
     {
         await context.Applications
             .Where(a => a.OpportunityId == opportunityId && a.Id != applicationId && a.State == LifecycleState.Applied)
             .ExecuteUpdateAsync(s => s.SetProperty(a => a.State, LifecycleState.Rejected));
-    }
-
-    public Task<int?> GetDealIdByIdAsync(int applicationId)
-    {
-        return context.Applications
-            .Where(a => a.Id == applicationId)
-            .Select(a => (int?)a.Opportunity.DealId)
-            .FirstOrDefaultAsync();
     }
 
     public Task<PayeeSummary?> GetArtistPayeeAsync(int applicationId)

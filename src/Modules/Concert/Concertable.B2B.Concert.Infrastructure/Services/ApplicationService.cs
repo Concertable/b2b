@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -140,7 +141,7 @@ internal sealed class ApplicationService : IApplicationService
     {
         await notifier.AppliedAsync(application.Id);
 
-        var saved = await repository.GetWithArtistAndOpportunityByIdAsync(application.Id)
+        var saved = await repository.GetByIdAsync(application.Id, ApplicationSpecification.CreateWithArtistGenresAndVenue())
             ?? throw new InvalidOperationException($"Application {application.Id} not found after creation.");
         return await mapper.ToDtoAsync(saved);
     }
@@ -286,10 +287,12 @@ internal sealed class ApplicationService : IApplicationService
     }
 
     public async Task<Option<(ArtistReadModel, VenueReadModel)>> GetArtistAndVenueByIdAsync(int id) =>
-        (await repository.GetArtistAndVenueByIdAsync(id)).ToOption();
+        (await repository.GetByIdAsync(id, ApplicationSpecification.CreateArtistAndVenue()))
+            .ToOption()
+            .Map(parties => (parties.Artist, parties.Venue));
 
     public Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id) =>
-        repository.GetWithArtistAndOpportunityByIdAsync(id)
+        repository.GetByIdAsync(id, ApplicationSpecification.CreateWithArtistGenresAndVenue())
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
             .MapAsync(mapper.ToDtoAsync);

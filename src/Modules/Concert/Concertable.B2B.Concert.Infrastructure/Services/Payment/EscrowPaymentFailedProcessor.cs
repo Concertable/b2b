@@ -4,6 +4,7 @@ using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Concertable.B2B.Concert.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
@@ -43,7 +44,7 @@ internal sealed class EscrowPaymentFailedProcessor : IIntegrationEventHandler<Pa
 
         try
         {
-            var applicationId = await bookingRepository.GetApplicationIdByIdAsync(bookingId, ct);
+            var applicationId = await bookingRepository.GetByIdAsync(bookingId, BookingSpecification.CreateApplicationId(), ct);
             if (applicationId is null)
             {
                 logger.BookingNotFoundForEscrowPayment(bookingId);
