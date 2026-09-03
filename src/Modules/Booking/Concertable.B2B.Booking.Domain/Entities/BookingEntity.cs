@@ -38,6 +38,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     public string? FinancialFailureCode { get; private set; }
     public string? FinancialFailureMessage { get; private set; }
     public string? FinancialOperationReferenceId { get; private set; }
+    public ContractEntity Contract { get; private set; } = null!;
 
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
@@ -46,6 +47,9 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     private BookingEntity() { }
 
     internal static BookingEntity Create(BookingAcceptance acceptance) => new(acceptance);
+
+    internal void MintContract(BookingAcceptance acceptance, DateTime createdAtUtc) =>
+        Contract = acceptance.CreateContract(Id, createdAtUtc);
 
     private BookingEntity(BookingAcceptance acceptance)
     {
@@ -69,8 +73,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     }
 
     internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialConfirmation(
-        string providerReferenceId,
-        DealTerms terms)
+        string providerReferenceId)
     {
         var transition = Fire(BookingTrigger.Confirm);
         if (transition.TryGetError(out var error))
@@ -92,7 +95,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
             StartDate,
             EndDate,
             Genres,
-            terms)));
+            Contract.Terms)));
         return new Success();
     }
 

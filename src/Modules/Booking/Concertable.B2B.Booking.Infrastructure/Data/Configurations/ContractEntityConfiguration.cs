@@ -17,7 +17,7 @@ internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<Con
     {
         builder.ToTable(Schema.Tables.Contracts, Schema.Name);
         builder.HasOne<BookingEntity>()
-            .WithOne()
+            .WithOne(booking => booking.Contract)
             .HasForeignKey<ContractEntity>(contract => contract.BookingId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);

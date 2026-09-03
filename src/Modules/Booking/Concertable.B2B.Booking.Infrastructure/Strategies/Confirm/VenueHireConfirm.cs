@@ -22,11 +22,10 @@ internal sealed class VenueHireConfirm : IConfirm
     }
 
     public async Task ConfirmAsync(
-        ContractEntity contract,
         BookingEntity booking,
         CancellationToken ct = default)
     {
-        var venueHire = (VenueHireContract)contract;
+        var venueHire = (VenueHireContract)booking.Contract;
         logger.AcceptingVenueHireApplication(
             booking.ApplicationId,
             booking.Id,

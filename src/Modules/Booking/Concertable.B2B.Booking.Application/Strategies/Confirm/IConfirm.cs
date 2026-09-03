@@ -5,7 +5,6 @@ namespace Concertable.B2B.Booking.Application.Strategies;
 internal interface IConfirm : IDealStrategy
 {
     Task ConfirmAsync(
-        ContractEntity contract,
         BookingEntity booking,
         CancellationToken ct = default);
 }

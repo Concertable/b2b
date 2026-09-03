@@ -18,13 +18,14 @@ public static class BookingFactory
         var booking = BookingEntity.Create(acceptance);
         booking.WithId(id);
 
-        var contract = acceptance.CreateContract(id, createdAtUtc)
+        booking.MintContract(acceptance, createdAtUtc);
+        var contract = booking.Contract
             .WithId(id)
             .With(nameof(ContractEntity.PdfBlobName), $"contracts/{id}-seed.pdf");
 
         if (confirmed)
         {
-            booking.RecordFinancialConfirmation($"seed-financial-{id}", contract.Terms);
+            booking.RecordFinancialConfirmation($"seed-financial-{id}");
             booking.ClearDomainEvents();
         }
 

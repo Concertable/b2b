@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(BookingDbContext))]
-    [Migration("20260902234042_InitialCreate")]
+    [Migration("20260903000817_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -385,9 +385,15 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractEntity", b =>
                 {
                     b.HasOne("Concertable.B2B.Booking.Domain.Entities.BookingEntity", null)
-                        .WithOne()
+                        .WithOne("Contract")
                         .HasForeignKey("Concertable.B2B.Booking.Domain.Entities.ContractEntity", "BookingId")
                         .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.BookingEntity", b =>
+                {
+                    b.Navigation("Contract")
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

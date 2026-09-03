@@ -26,11 +26,10 @@ internal sealed class FlatFeeConfirm : IConfirm
     }
 
     public async Task ConfirmAsync(
-        ContractEntity contract,
         BookingEntity booking,
         CancellationToken ct = default)
     {
-        var flatFee = (FlatFeeContract)contract;
+        var flatFee = (FlatFeeContract)booking.Contract;
         var paymentIntentId = await managerPaymentOperationsClient.FindHeldIntentAsync(
             flatFee.VenueTenantId,
             booking.ApplicationId);

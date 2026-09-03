@@ -382,9 +382,15 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractEntity", b =>
                 {
                     b.HasOne("Concertable.B2B.Booking.Domain.Entities.BookingEntity", null)
-                        .WithOne()
+                        .WithOne("Contract")
                         .HasForeignKey("Concertable.B2B.Booking.Domain.Entities.ContractEntity", "BookingId")
                         .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.BookingEntity", b =>
+                {
+                    b.Navigation("Contract")
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

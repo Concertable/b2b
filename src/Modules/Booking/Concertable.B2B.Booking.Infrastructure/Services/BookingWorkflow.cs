@@ -10,6 +10,7 @@ using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.Booking.Infrastructure.Extensions;
+using Concertable.B2B.Booking.Infrastructure.Specifications;
 using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -21,7 +22,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 internal sealed class BookingWorkflow : IBookingWorkflow
 {
     private readonly IBookingRepository bookingRepository;
-    private readonly IContractRepository contractRepository;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
@@ -32,7 +32,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
     public BookingWorkflow(
         IBookingRepository bookingRepository,
-        IContractRepository contractRepository,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior,
         IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
@@ -42,7 +41,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         TimeProvider timeProvider)
     {
         this.bookingRepository = bookingRepository;
-        this.contractRepository = contractRepository;
         this.unitOfWork = unitOfWork;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
@@ -110,17 +108,17 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         AcceptedApplication application,
         CancellationToken ct)
     {
-        var (booking, contract) = await unitOfWorkBehavior.ExecuteAsync(() => CreateAsync(application, ct), ct);
+        var booking = await unitOfWorkBehavior.ExecuteAsync(() => CreateAsync(application, ct), ct);
         await confirmFactory
             .Create(application.DealType)
-            .ConfirmAsync(contract, booking, ct);
+            .ConfirmAsync(booking, ct);
         if (application is IAcceptVerified { Verification: { } verification })
-            VerifyPaymentAdvancer.Advance(booking, verification, contract.Terms);
+            VerifyPaymentAdvancer.Advance(booking, verification);
         await bookingRepository.SaveChangesAsync(ct);
         return booking.ToDto();
     }
 
-    private async Task<(BookingEntity Booking, ContractEntity Contract)> CreateAsync(
+    private async Task<BookingEntity> CreateAsync(
         AcceptedApplication application,
         CancellationToken ct)
     {
@@ -129,10 +127,9 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         await bookingRepository.AddAsync(booking, ct);
         await bookingRepository.SaveChangesAsync(ct);
 
-        var contract = acceptance.CreateContract(booking.Id, timeProvider.GetUtcNow().UtcDateTime);
-        await contractRepository.AddAsync(contract, ct);
-        await contractRepository.SaveChangesAsync(ct);
-        return (booking, contract);
+        booking.MintContract(acceptance, timeProvider.GetUtcNow().UtcDateTime);
+        await bookingRepository.SaveChangesAsync(ct);
+        return booking;
     }
 
     private async Task RecordSucceededCoreAsync(
@@ -140,7 +137,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationSucceeded operation,
         CancellationToken ct)
     {
-        var booking = await bookingRepository.GetByIdAsync(bookingId, ct)
+        var booking = await bookingRepository.GetByIdAsync(bookingId, BookingSpecification.CreateWithContract(), ct)
             ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
         Validate(bookingId, booking, operation);
 
@@ -160,9 +157,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
             return;
         }
 
-        var contract = await contractRepository.GetByBookingIdAsync(bookingId, ct)
-            ?? throw new InvalidOperationException($"Booking {bookingId} has no contract.");
-        if (booking.RecordFinancialConfirmation(operation.ProviderReferenceId, contract.Terms)
+        if (booking.RecordFinancialConfirmation(operation.ProviderReferenceId)
             .TryGetError(out var transitionError))
             throw new InvalidOperationException($"Booking cannot confirm from {transitionError.Current}.");
         await bookingRepository.SaveChangesAsync(ct);
