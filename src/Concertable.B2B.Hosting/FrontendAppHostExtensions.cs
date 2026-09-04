@@ -39,16 +39,17 @@ public static class FrontendAppHostExtensions
                 new(api, "EXPO_PUBLIC_API_URL"),
                 new(auth, "EXPO_PUBLIC_AUTH_AUTHORITY"),
                 new(paymentWeb, "EXPO_PUBLIC_PAYMENT_API_URL"));
-        public void AddMobileB2B(
+        public IResourceBuilder<DevTunnelResource>? AddMobileB2B(
             IResourceBuilder<IResourceWithServiceDiscovery> api,
             IResourceBuilder<IResourceWithServiceDiscovery> auth,
             IResourceBuilder<IResourceWithServiceDiscovery> paymentWeb)
         {
             if (!builder.Configuration.GetValue<bool>("RunMobile"))
-                return;
+                return null;
 
             var tunnel = builder.AddMobileTunnel("b2b-dev", auth, api, paymentWeb);
             builder.AddB2BMobileSurface(api, auth, paymentWeb, tunnel);
+            return tunnel;
         }
     }
 }
