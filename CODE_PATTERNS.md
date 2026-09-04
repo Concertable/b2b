@@ -48,12 +48,12 @@ The Deal-specific builder composes `KeyedStrategyBuilder<DealType>` and makes co
 innate for every registered strategy family. Adding a `DealType` member therefore fails composition until
 every family handles it. `DealStrategyArchitectureTests` guards the shape.
 
-## The workflow steps a `DealType` selects
+## The workflow operations a `DealType` selects
 
-`IConcertWorkflow` implementations in `Modules/Concert/…/Services/Workflow/Workflows/` surface the five
-steps — `Apply`, `Accept`, `Book`, `Finish`, `Cancel` — as public get-only properties. They are the
-canonical dependency-holder shape (`dependency-injection` skill): concrete constructor parameters, so DI
-resolves the registered step, assigned to interface-typed properties.
+Application, Booking and Concert each own one module-local workflow whose methods are the named lifecycle
+operations for that stage. A workflow spans no module boundary and holds no aggregate state. Deal-varying
+work sits behind operation-named interfaces resolved through `IDealStrategyFactory<TStrategy>`:
+`IApply` (Application), `IConfirm`/`ICancel`/`IContractFactory` (Booking), `ICancel`/`IComplete` (Concert).
 
 ## The `DealType` unions
 
@@ -62,12 +62,13 @@ Where the variation is data rather than injected behaviour, `DealType` selects a
 | Union | Arms | Role |
 |---|---|---|
 | `DealEntity` | `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity` | the editable offer; TPH, each leaf overriding `DealType` |
-| `AcceptedApplication` | one arm per `DealType` | the Accept-time carrier across the Application→Booking seam, produced by `IAccept`/`IAcceptPaid` and matched once in `BookingAcceptanceMappers` |
-| `ConfirmedBookingTerms` | `FlatFeeBookingTerms`, `DoorSplitBookingTerms`, `VersusBookingTerms`, `VenueHireBookingTerms` | the Booking→Concert payload carried on `ConfirmedBooking` |
+| `ConfirmedBookingTerms` | `FlatFee`, `VenueHire`, `DoorSplit`, `Versus` | the frozen economics carried on `ConfirmedBookingSnapshot` across the Booking→Concert seam |
 
-`BookingEntity` and `BookingAcceptance` are the exception, not the pattern: two arms (`Standard`, `Deferred`)
-over four deal types, so each leaf re-asks `DealType` and the economics land beside a second copy on
-`ConcertEntity` — `src/Modules/Booking/TECH_DEBT.md` holds the shape that resolves it.
+`AcceptedApplication` is deliberately *not* a union: once Payment owned the payment-method commitment the
+Accept arms became identical, so it is one record carrying the immutable `ApplicationAcceptanceSnapshot`.
+
+`BookingEntity` is the exception, not the pattern: two arms (`Standard`, `Deferred`) over four deal types,
+so each leaf re-asks `DealType` — `src/Modules/Booking/TECH_DEBT.md` holds the shape that resolves it.
 
 ## Capability, not `DealType`
 
@@ -77,8 +78,20 @@ The concerns partition the four types differently, so no one hierarchy serves th
 |---|---|
 | Door revenue drives settlement | DoorSplit, Versus |
 | `FinancialOperation` raised at confirmation | FlatFee (capture), VenueHire (deposit), DoorSplit + Versus (verify) |
-| Accept takes a payment-method id | DoorSplit, Versus |
+| Payment commitment minted at checkout | FlatFee (authorization hold), VenueHire (method setup), DoorSplit + Versus (method verification) |
 | Supply direction reverses ([`LEGAL_REQUIREMENTS.md`](./src/Modules/Deal/LEGAL_REQUIREMENTS.md)) | VenueHire |
 
-`IAccept` / `IAcceptPaid` is the shape to copy: the interface splits on the capability the row names, never on
-the deal type holding it.
+Split an interface on the capability a row names, never on the deal type holding it.
+
+Which mechanism a varying input earns:
+
+| The input is | Mechanism |
+|---|---|
+| stored in the deal's terms | keyed strategy family (`IDealStrategyFactory<TStrategy>`) |
+| chosen by the user during one shared action | capability-keyed union over a tagged request union (`IDealUnionFactory<TUnion>`) |
+| negotiated as its own act | its own endpoint |
+
+`KeyedUnionBuilder`, `DealUnionBuilder` and `IDealUnionFactory<TUnion>` are the retained typed-escalation
+tier. They currently have no lifecycle consumer — `Apply` and `Accept` both collapsed to keyed families once
+the payment-method input left B2B — and are kept for the next capability whose shared action genuinely
+fractures on legitimate client input.
