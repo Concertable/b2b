@@ -52,7 +52,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ApplyCheckoutThenApply_ShouldStorePaymentMethodOnPrepaidApplication()
+    public async Task ApplyCheckoutThenApply_ShouldStorePaymentMethodOnApplicationEntity()
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var opportunityResponse = await venueClient.PostAsync(
@@ -76,7 +76,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
 
         await applyResponse.ShouldBe(HttpStatusCode.Created);
         var prepaid = await fixture.Applications
-            .OfType<PrepaidApplication>()
+            .OfType<ApplicationEntity>()
             .FirstOrDefaultAsync(value => value.OpportunityId == opportunity.Id);
         Assert.NotNull(prepaid);
         Assert.Equal("pm_card_visa", prepaid.PaymentMethodId);
@@ -103,7 +103,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Apply_ShouldCreatePrepaidApplication_WithoutCheckout()
+    public async Task Apply_ShouldCreateApplicationEntity_WithoutCheckout()
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var opportunityResponse = await venueClient.PostAsync(
@@ -124,7 +124,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
 
         await applyResponse.ShouldBe(HttpStatusCode.Created);
         var prepaid = await fixture.Applications
-            .OfType<PrepaidApplication>()
+            .OfType<ApplicationEntity>()
             .FirstOrDefaultAsync(value => value.OpportunityId == opportunity.Id);
         Assert.NotNull(prepaid);
         Assert.Equal("pm_card_visa", prepaid.PaymentMethodId);

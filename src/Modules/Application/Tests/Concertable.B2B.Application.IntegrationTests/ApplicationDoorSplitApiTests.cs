@@ -53,7 +53,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Apply_ShouldCreateStandardApplication_WithoutPaymentMethod()
+    public async Task Apply_ShouldCreateApplicationEntity_WithoutPaymentMethod()
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var opportunityResponse = await venueClient.PostAsync(
@@ -75,7 +75,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         await applyResponse.ShouldBe(HttpStatusCode.Created);
         var standard = await fixture.Applications
-            .OfType<StandardApplication>()
+            .OfType<ApplicationEntity>()
             .FirstOrDefaultAsync(value => value.OpportunityId == opportunity.Id);
         Assert.NotNull(standard);
     }

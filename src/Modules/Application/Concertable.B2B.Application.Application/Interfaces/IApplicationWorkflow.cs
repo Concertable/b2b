@@ -8,7 +8,6 @@ internal interface IApplicationWorkflow
 {
     Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
-        string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default);
 

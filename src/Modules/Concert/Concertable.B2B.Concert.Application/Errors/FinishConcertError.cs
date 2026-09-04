@@ -19,6 +19,9 @@ internal abstract partial record FinishConcertError : IError
         InvalidTransition(var error) => ErrorDefinition.Conflict<InvalidTransition>(
             $"A concert in {error.Current} cannot be finished."),
         ManagerPaymentFailure(var error) => error.Definition,
+        PaymentCommitmentFailure(var error) => error.Definition,
+        PaymentAuthenticationRequired => ErrorDefinition.PaymentRequired<PaymentAuthenticationRequired>(
+            "The committed payment method needs the payer to authenticate before settlement can complete."),
         EscrowReleaseFailure(var error) => error.Definition
     };
 
@@ -35,5 +38,14 @@ internal abstract partial record FinishConcertError : IError
     public partial record InvalidTransition(TransitionError<ConcertState, ConcertTrigger> Error);
 
     public partial record ManagerPaymentFailure(ManagerPaymentOperationError Error);
+
+    /// <summary>The commitment itself is unusable, so recovery needs a fresh payment-method setup.</summary>
+    public partial record PaymentCommitmentFailure(PaymentOperationError Error);
+
+    /// <summary>The commitment stands but needs the payer back on-session against the same operation
+    /// reference; recovery re-enters the existing operation rather than setting up a new method.</summary>
+    [ErrorCode("concert.finish.payment_authentication_required")]
+    public partial record PaymentAuthenticationRequired;
+
     public partial record EscrowReleaseFailure(EscrowReleaseOperationError Error);
 }

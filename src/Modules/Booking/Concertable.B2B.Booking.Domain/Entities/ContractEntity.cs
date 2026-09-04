@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
+using AcceptedCommitment = Concertable.B2B.Application.Contracts.PaymentCommitment;
+using PaymentCommitment = Concertable.B2B.Booking.Contracts.PaymentCommitment;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.ValueObjects;
@@ -25,6 +27,8 @@ public abstract class ContractEntity : IIdEntity, IVenueArtistTenantScoped
     public PaymentMethod PaymentMethod { get; private set; }
     public string TermsText { get; private set; } = null!;
     public string PlatformTermsVersion { get; private set; } = null!;
+    public string MandateTermsVersion { get; private set; } = null!;
+    internal PaymentCommitment Commitment { get; private set; } = null!;
     internal Signature ArtistSignature { get; private set; } = null!;
     internal Signature VenueSignature { get; private set; } = null!;
     public string? PdfBlobName { get; private set; }
@@ -54,11 +58,16 @@ public abstract class ContractEntity : IIdEntity, IVenueArtistTenantScoped
         PaymentMethod = contract.PaymentMethod;
         TermsText = contract.TermsText;
         PlatformTermsVersion = contract.PlatformTermsVersion;
+        MandateTermsVersion = contract.MandateTermsVersion;
+        Commitment = Commit(contract.Commitment);
         ArtistSignature = Sign(contract.ArtistSignature);
         VenueSignature = Sign(contract.VenueSignature);
         CreatedAtUtc = createdAtUtc;
         PdfBlobName = $"contracts/{bookingId}-{Guid.NewGuid():N}.pdf";
     }
+
+    private static PaymentCommitment Commit(AcceptedCommitment commitment) =>
+        new(commitment.OperationType, commitment.ConsumerCorrelation);
 
     private static Signature Sign(ContractSignature signature) =>
         new(

@@ -1,19 +1,17 @@
+using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Strategies;
 
 namespace Concertable.B2B.Application.Infrastructure.Strategies;
 
-internal sealed class StandardApply : IApplyStandard
+internal sealed class StandardApply : IApply
 {
-    public ApplicationEntity Apply(
+    public Task<Result<ApplicationEntity, ApplyApplicationError>> ApplyAsync(
         int artistId,
         int opportunityId,
         DealType dealType,
         Guid venueTenantId,
-        Guid artistTenantId) =>
-        StandardApplication.Create(
-            artistId,
-            opportunityId,
-            dealType,
-            venueTenantId,
-            artistTenantId);
+        Guid artistTenantId,
+        CancellationToken ct = default) =>
+        Task.FromResult<Result<ApplicationEntity, ApplyApplicationError>>(
+            ApplicationEntity.Create(artistId, opportunityId, dealType, venueTenantId, artistTenantId));
 }

@@ -24,6 +24,7 @@ public static class ConcertFactory
                     spec.Period.Start,
                     spec.Period.End,
                     booking.Genres,
+                    contract.Commitment,
                     contract.ConfirmedTerms),
                 new ConcertDraft(spec.Name, spec.About, spec.Genres))
             .With(nameof(ConcertEntity.Id), spec.ConcertId)

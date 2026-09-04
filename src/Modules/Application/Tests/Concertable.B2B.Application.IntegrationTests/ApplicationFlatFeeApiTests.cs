@@ -54,7 +54,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Apply_ShouldCreateStandardApplication_WithoutPaymentMethod()
+    public async Task Apply_ShouldCreateApplicationEntity_WithoutPaymentMethod()
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var opportunityResponse = await venueClient.PostAsync(
@@ -75,7 +75,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         Assert.NotNull(application);
         Assert.Equal($"/api/application/{application.Id}", applyResponse.Headers.Location?.OriginalString);
         var standard = await fixture.Applications
-            .OfType<StandardApplication>()
+            .OfType<ApplicationEntity>()
             .FirstOrDefaultAsync(value => value.OpportunityId == opportunity.Id);
         Assert.NotNull(standard);
         var emails = (await fixture.GetStagedEmailsAsync())

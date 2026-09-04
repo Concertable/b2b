@@ -26,6 +26,12 @@ internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<Con
             period.Property(value => value.Start).HasColumnName("Period_Start");
             period.Property(value => value.End).HasColumnName("Period_End");
         });
+        builder.Property(contract => contract.MandateTermsVersion).HasMaxLength(32);
+        builder.ComplexProperty(contract => contract.Commitment, commitment =>
+        {
+            commitment.Property(value => value.OperationType).HasMaxLength(64);
+            commitment.Property(value => value.ConsumerCorrelation).HasMaxLength(256);
+        });
         builder.ComplexProperty(contract => contract.ArtistSignature, ConfigureSignature);
         builder.ComplexProperty(contract => contract.VenueSignature, ConfigureSignature);
         builder.HasDiscriminator(contract => contract.DealType)

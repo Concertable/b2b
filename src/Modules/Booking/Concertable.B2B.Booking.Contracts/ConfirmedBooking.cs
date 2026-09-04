@@ -14,6 +14,7 @@ public sealed record ConfirmedBookingSnapshot(
     DateTime StartDate,
     DateTime EndDate,
     IReadOnlyList<Genre> Genres,
+    PaymentCommitment Commitment,
     ConfirmedBookingTerms Terms);
 
 [Union(EnableImplicitConversions = false)]

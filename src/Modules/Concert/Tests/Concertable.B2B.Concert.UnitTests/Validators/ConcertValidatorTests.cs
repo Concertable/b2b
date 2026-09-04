@@ -63,7 +63,7 @@ public sealed class ConcertValidatorTests
 
     private static ConcertEntity CreateConcert()
     {
-        var booking = new ConfirmedBooking(
+        var booking = new ConfirmedBookingSnapshot(
             Guid.NewGuid(),
             1,
             2,

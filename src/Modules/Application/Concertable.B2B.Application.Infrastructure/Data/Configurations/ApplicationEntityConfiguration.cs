@@ -32,9 +32,6 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
             .IsUnique()
             .HasFilter($"[State] = {(int)ApplicationState.Accepted}");
         builder.ComplexProperty(application => application.ArtistESignature, ConfigureSignature);
-        builder.HasDiscriminator<string>("Discriminator")
-            .HasValue<StandardApplication>(nameof(StandardApplication))
-            .HasValue<PrepaidApplication>(nameof(PrepaidApplication));
     }
 
     private static void ConfigureSignature(ComplexPropertyBuilder<ContractSignature> builder)

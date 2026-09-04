@@ -11,7 +11,7 @@ using Reunion;
 namespace Concertable.B2B.Application.Domain.Entities;
 
 [DisplayName(DisplayNames.Application)]
-public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
+public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
 {
     private static readonly ApplicationStateMachine stateMachine = new();
 
@@ -30,9 +30,9 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
     internal ContractSignature ArtistESignature { get; private set; } = null!;
     public string TermsFingerprint { get; private set; } = null!;
 
-    protected ApplicationEntity() { }
+    private ApplicationEntity() { }
 
-    protected ApplicationEntity(
+    private ApplicationEntity(
         int artistId,
         int opportunityId,
         DealType dealType,
@@ -154,53 +154,12 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
             State = next;
         return transition;
     }
-}
 
-public sealed class StandardApplication : ApplicationEntity
-{
-    private StandardApplication() { }
-
-    private StandardApplication(
-        int artistId,
-        int opportunityId,
-        DealType dealType,
-        Guid venueTenantId,
-        Guid artistTenantId)
-        : base(artistId, opportunityId, dealType, venueTenantId, artistTenantId) { }
-
-    public static StandardApplication Create(
+    public static ApplicationEntity Create(
         int artistId,
         int opportunityId,
         DealType dealType,
         Guid venueTenantId,
         Guid artistTenantId) =>
         new(artistId, opportunityId, dealType, venueTenantId, artistTenantId);
-}
-
-public sealed class PrepaidApplication : ApplicationEntity
-{
-    public string PaymentMethodId { get; private set; } = null!;
-
-    private PrepaidApplication() { }
-
-    private PrepaidApplication(
-        int artistId,
-        int opportunityId,
-        DealType dealType,
-        string paymentMethodId,
-        Guid venueTenantId,
-        Guid artistTenantId)
-        : base(artistId, opportunityId, dealType, venueTenantId, artistTenantId)
-    {
-        PaymentMethodId = paymentMethodId;
-    }
-
-    public static PrepaidApplication Create(
-        int artistId,
-        int opportunityId,
-        DealType dealType,
-        string paymentMethodId,
-        Guid venueTenantId,
-        Guid artistTenantId) =>
-        new(artistId, opportunityId, dealType, paymentMethodId, venueTenantId, artistTenantId);
 }

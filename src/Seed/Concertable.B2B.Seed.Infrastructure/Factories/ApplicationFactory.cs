@@ -7,6 +7,7 @@ using Concertable.B2B.Application.Domain.ValueObjects;
 using Concertable.B2B.Artist.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.B2B.Venue.Domain.Entities;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
@@ -16,6 +17,7 @@ namespace Concertable.B2B.Seed.Infrastructure.Factories;
 public static class ApplicationFactory
 {
     private const string SeedPlatformTermsVersion = "2026-07";
+    private const string SeedMandateTermsVersion = "2026-09";
 
     public static AcceptedApplication ToAcceptedApplication(
         ApplicationEntity application,
@@ -51,6 +53,8 @@ public static class ApplicationFactory
                 deal.PaymentMethod,
                 terms.Render(),
                 SeedPlatformTermsVersion,
+                SeedMandateTermsVersion,
+                Commitment(terms, application.Id, opportunity.Id, artist.TenantId),
                 application.ArtistESignature,
                 venueSignature,
                 terms)));
@@ -71,38 +75,41 @@ public static class ApplicationFactory
             ApplicationTermsFingerprint.Calculate(ToDto(deal), opportunity.Period));
     }
 
-    public static StandardApplication Create(int artistId, int opportunityId)
-        => New<StandardApplication>()
+    public static ApplicationEntity Create(int artistId, int opportunityId)
+        => New<ApplicationEntity>()
             .With(nameof(ApplicationEntity.ArtistId), artistId)
             .With(nameof(ApplicationEntity.OpportunityId), opportunityId);
 
-    public static StandardApplication Create(int artistId, int opportunityId, DealType dealType)
+    public static ApplicationEntity Create(int artistId, int opportunityId, DealType dealType)
         => Create(artistId, opportunityId)
             .With(nameof(ApplicationEntity.DealType), dealType);
 
-    public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
-        => New<PrepaidApplication>()
-            .With(nameof(ApplicationEntity.ArtistId), artistId)
-            .With(nameof(ApplicationEntity.OpportunityId), opportunityId)
-            .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
+    public static ApplicationEntity Accepted(int artistId, int opportunityId)
+        => InState(artistId, opportunityId, ApplicationState.Accepted);
 
-    public static PrepaidApplication CreatePrepaid(int artistId, int opportunityId, DealType dealType, string paymentMethodId = "pm_card_visa")
-        => CreatePrepaid(artistId, opportunityId, paymentMethodId)
-            .With(nameof(ApplicationEntity.DealType), dealType);
-
-    public static StandardApplication Accepted(int artistId, int opportunityId)
-        => InState<StandardApplication>(artistId, opportunityId, ApplicationState.Accepted);
-
-    public static PrepaidApplication AcceptedPrepaid(int artistId, int opportunityId, string paymentMethodId = "pm_card_visa")
-        => InState<PrepaidApplication>(artistId, opportunityId, ApplicationState.Accepted)
-            .With(nameof(PrepaidApplication.PaymentMethodId), paymentMethodId);
-
-    private static TApplication InState<TApplication>(int artistId, int opportunityId, ApplicationState state)
-        where TApplication : ApplicationEntity =>
-        New<TApplication>()
+    private static ApplicationEntity InState(int artistId, int opportunityId, ApplicationState state) =>
+        New<ApplicationEntity>()
             .With(nameof(ApplicationEntity.ArtistId), artistId)
             .With(nameof(ApplicationEntity.OpportunityId), opportunityId)
             .With(nameof(ApplicationEntity.State), state);
+
+    private static PaymentCommitment Commitment(
+        DealTerms terms,
+        int applicationId,
+        int opportunityId,
+        Guid artistTenantId) => terms switch
+    {
+        FlatFeeTerms => new PaymentCommitment(
+            PaymentCommitmentTokens.EscrowHold,
+            PaymentCommitmentCorrelation.ForApplication(applicationId)),
+        VenueHireTerms => new PaymentCommitment(
+            PaymentCommitmentTokens.MethodSetup,
+            PaymentCommitmentCorrelation.ForOpportunityArtist(opportunityId, artistTenantId)),
+        ISettledFromDoorRevenue => new PaymentCommitment(
+            PaymentCommitmentTokens.MethodVerification,
+            PaymentCommitmentCorrelation.ForApplication(applicationId)),
+        _ => throw new ArgumentOutOfRangeException(nameof(terms), terms, null)
+    };
 
     private static DealDto ToDto(DealEntity deal) => deal switch
     {

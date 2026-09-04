@@ -37,7 +37,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly ITenantResolver tenantResolver;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
-    private readonly IDealUnionFactory<Apply> applyFactory;
+    private readonly IDealStrategyFactory<IApply> applyFactory;
+    private readonly IDealStrategyFactory<IMintCommitment> commitmentFactory;
     private readonly IApplicationMapper mapper;
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
@@ -58,7 +59,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ITenantResolver tenantResolver,
         ICurrentUser currentUser,
         IClientContext clientContext,
-        IDealUnionFactory<Apply> applyFactory,
+        IDealStrategyFactory<IApply> applyFactory,
+        IDealStrategyFactory<IMintCommitment> commitmentFactory,
         IApplicationMapper mapper,
         IOptions<LegalSettings> legal,
         TimeProvider timeProvider,
@@ -79,6 +81,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.currentUser = currentUser;
         this.clientContext = clientContext;
         this.applyFactory = applyFactory;
+        this.commitmentFactory = commitmentFactory;
         this.mapper = mapper;
         this.legal = legal.Value;
         this.timeProvider = timeProvider;
@@ -89,7 +92,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
 
     public async Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
-        string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default)
     {
@@ -119,31 +121,17 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (!dealOption.TryGetValue(out var deal))
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
-        ApplicationEntity application;
-        switch (applyFactory.Create(deal.DealType))
-        {
-            case Apply.Standard(var apply):
-                application = apply.Apply(
-                    artist.Id,
-                    opportunityId,
-                    deal.DealType,
-                    opportunity.VenueTenantId,
-                    artistTenantId);
-                break;
-            case Apply.Prepaid when string.IsNullOrWhiteSpace(paymentMethodId):
-                return new ApplyApplicationError.UnsupportedDeal(deal.DealType);
-            case Apply.Prepaid(var apply):
-                application = apply.Apply(
-                    artist.Id,
-                    opportunityId,
-                    deal.DealType,
-                    paymentMethodId,
-                    opportunity.VenueTenantId,
-                    artistTenantId);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        var applied = await applyFactory.Create(deal.DealType).ApplyAsync(
+            artist.Id,
+            opportunityId,
+            deal.DealType,
+            opportunity.VenueTenantId,
+            artistTenantId,
+            ct);
+        if (applied.TryGetError(out var applyError))
+            return applyError;
+        if (!applied.TryGetValue(out var application))
+            throw new InvalidOperationException("Apply succeeded without an application.");
 
         if (currentUser.Id is not { } userId)
             return new ApplyApplicationError.MissingUser();
@@ -283,6 +271,11 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 deal.PaymentMethod,
                 deal.Terms.Render(),
                 legal.PlatformTermsVersion,
+                legal.MandateTermsVersion,
+                commitmentFactory.Create(deal.DealType).Mint(
+                    application.Id,
+                    application.OpportunityId,
+                    application.ArtistTenantId),
                 application.ArtistESignature,
                 venueSignature,
                 deal.Terms));

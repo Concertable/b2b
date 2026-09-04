@@ -244,7 +244,7 @@ internal sealed class SettlementService : ISettlementService
             concert.Id,
             concert.DealType,
             concert.BookingId,
-            concert.ApplicationId,
+            concert.SettlementPaymentReference,
             concert.SettlementPayerTenantId,
             concert.SettlementPayeeTenantId,
             concert.SettlementGross);

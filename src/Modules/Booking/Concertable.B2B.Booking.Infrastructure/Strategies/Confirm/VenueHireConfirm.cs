@@ -9,14 +9,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Booking.Infrastructure.Strategies;
 
-internal sealed class FlatFeeConfirm : IConfirm
+internal sealed class VenueHireConfirm : IConfirm
 {
     private readonly IBus bus;
-    private readonly ILogger<FlatFeeConfirm> logger;
+    private readonly ILogger<VenueHireConfirm> logger;
 
-    public FlatFeeConfirm(
+    public VenueHireConfirm(
         IBus bus,
-        ILogger<FlatFeeConfirm> logger)
+        ILogger<VenueHireConfirm> logger)
     {
         this.bus = bus;
         this.logger = logger;
@@ -26,23 +26,21 @@ internal sealed class FlatFeeConfirm : IConfirm
         BookingEntity booking,
         CancellationToken ct = default)
     {
-        var flatFee = (FlatFeeContract)booking.Contract;
-        var authorization = flatFee.Commitment.ToReference();
-        logger.AcceptingFlatFeeApplication(
+        var venueHire = (VenueHireContract)booking.Contract;
+        logger.AcceptingVenueHireApplication(
             booking.ApplicationId,
             booking.Id,
-            authorization.ConsumerCorrelation,
-            flatFee.Fee,
-            "GBP",
-            flatFee.VenueTenantId,
-            flatFee.ArtistTenantId);
-        await bus.SendAsync(new CaptureEscrowByReferenceCommand(
+            venueHire.HireFee,
+            venueHire.ArtistTenantId,
+            venueHire.VenueTenantId);
+        await bus.SendAsync(new DepositEscrowByReferenceCommand(
             booking.OperationId,
             booking.Id,
-            flatFee.VenueTenantId,
-            flatFee.ArtistTenantId,
-            Money.Gbp(flatFee.Fee).ToMinorUnits(),
+            venueHire.ArtistTenantId,
+            venueHire.VenueTenantId,
+            Money.Gbp(venueHire.HireFee).ToMinorUnits(),
             Currency.Gbp,
-            authorization), ct);
+            venueHire.Commitment.ToReference(),
+            PaymentSession.OffSession), ct);
     }
 }

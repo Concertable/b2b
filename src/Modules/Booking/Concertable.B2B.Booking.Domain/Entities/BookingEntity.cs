@@ -92,6 +92,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
             StartDate,
             EndDate,
             Genres,
+            Contract.Commitment,
             Contract.ConfirmedTerms)));
         return new Success();
     }

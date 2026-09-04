@@ -14,7 +14,7 @@ namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class ConcertServiceCreateTests
 {
-    private readonly ConfirmedBooking booking;
+    private readonly ConfirmedBookingSnapshot booking;
     private readonly Mock<IConcertRepository> repository;
     private readonly ConcertService service;
     private ConcertEntity? addedConcert;
@@ -23,7 +23,7 @@ public sealed class ConcertServiceCreateTests
     {
         var venueTenantId = Guid.NewGuid();
         var artistTenantId = Guid.NewGuid();
-        booking = new ConfirmedBooking(
+        booking = new ConfirmedBookingSnapshot(
             Guid.NewGuid(),
             7,
             8,

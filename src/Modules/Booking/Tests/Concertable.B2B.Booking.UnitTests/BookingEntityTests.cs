@@ -14,25 +14,24 @@ public sealed class BookingEntityTests
     public void Create_AcceptedApplication_CopiesProvenance()
     {
         var accepted = AcceptedApplications.DoorSplit();
-        var acceptance = accepted.Contract.ToBookingAcceptance();
+        var snapshot = accepted.Snapshot;
 
-        var booking = BookingEntity.Create(acceptance);
+        var booking = BookingEntity.Create(snapshot);
 
-        Assert.Equal(accepted.Contract.OperationId, booking.OperationId);
-        Assert.Equal(accepted.Contract.ApplicationId, booking.ApplicationId);
+        Assert.Equal(snapshot.OperationId, booking.OperationId);
+        Assert.Equal(snapshot.Application.Id, booking.ApplicationId);
     }
 
     [Fact]
     public void MintContract_Contract_TakesItsExpectedFinancialOperation()
     {
-        var acceptance = AcceptedApplications.DoorSplit().Contract.ToBookingAcceptance();
-        var booking = BookingEntity.Create(acceptance);
+        var snapshot = AcceptedApplications.DoorSplit().Snapshot;
+        var booking = BookingEntity.Create(snapshot);
 
         booking.MintContract(DoorSplitContract.Create(
             1,
-            acceptance,
-            (DoorSplitTerms)acceptance.Terms,
-            "pm_123",
+            snapshot,
+            (DoorSplitTerms)snapshot.Contract.Terms,
             new DateTime(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc)));
 
         Assert.Equal(FinancialOperation.VerifyPayment, booking.ExpectedFinancialOperation);

@@ -1,8 +1,11 @@
 using Concertable.B2B.Concert.Application.Models;
+using Concertable.Payment.Contracts.Errors;
 using Concertable.B2B.Concert.Application.Strategies;
+using Concertable.B2B.Concert.Infrastructure.Payments;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Strategies;
+
 
 internal sealed class PayoutComplete : IComplete
 {
@@ -29,16 +32,29 @@ internal sealed class PayoutComplete : IComplete
             settlement.PayerTenantId,
             settlement.PayeeTenantId);
 
-        var result = await paymentsClient.PayVerifiedAsync(
+        var result = await paymentsClient.PayAsync(
             settlement.OperationId,
             settlement.PayerTenantId,
             settlement.PayeeTenantId,
             settlement.Gross,
-            settlement.ApplicationId,
+            settlement.Commitment.ToReference(),
+            PaymentSession.OffSession,
             settlement.BookingId,
             ct);
         if (result.TryGetError(out var error))
-            return new FinishConcertError.ManagerPaymentFailure(error);
+            // The three arms recover differently: a bad commitment needs a new setup, an authentication
+            // challenge needs the payer back on-session against this same reference, and a plain decline
+            // is the charge failure it always was. Collapsing them would undo that distinction.
+            return error switch
+            {
+                PaymentMethodChargeError.PaymentMethodFailure(var methodError) =>
+                    new FinishConcertError.PaymentCommitmentFailure(methodError),
+                PaymentMethodChargeError.AuthenticationRequired =>
+                    new FinishConcertError.PaymentAuthenticationRequired(),
+                PaymentMethodChargeError.ChargeFailure(var chargeError) =>
+                    new FinishConcertError.ManagerPaymentFailure(chargeError),
+                _ => throw new ArgumentOutOfRangeException(nameof(error), error, null)
+            };
         if (!result.TryGetValue(out var outcome) || string.IsNullOrWhiteSpace(outcome.TransactionId))
             throw new InvalidOperationException(
                 $"Settlement for concert {settlement.ConcertId} returned no transaction ID.");

@@ -83,7 +83,7 @@ public sealed class VerifyPaymentTests
 
     private static ApplicationEntity CreateApplication()
     {
-        var application = StandardApplication.Create(
+        var application = ApplicationEntity.Create(
             11,
             12,
             DealType.DoorSplit,

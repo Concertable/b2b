@@ -15,7 +15,7 @@ public sealed class ApplicationEntityLifecycleTests
     [Fact]
     public void Cancel_WhenApplied_TransitionsToCancelled()
     {
-        var application = StandardApplication.Create(
+        var application = ApplicationEntity.Create(
             1,
             2,
             DealType.FlatFee,
@@ -31,7 +31,7 @@ public sealed class ApplicationEntityLifecycleTests
     [Fact]
     public void Cancel_WhenAlreadyCancelled_LeavesStateAndEventsUnchanged()
     {
-        var application = StandardApplication.Create(
+        var application = ApplicationEntity.Create(
             1,
             2,
             DealType.FlatFee,
@@ -51,7 +51,7 @@ public sealed class ApplicationEntityLifecycleTests
     [Fact]
     public void Accept_WhenAlreadyAccepted_LeavesStateAcceptanceAndEventsUnchanged()
     {
-        var application = StandardApplication.Create(
+        var application = ApplicationEntity.Create(
             1,
             2,
             DealType.FlatFee,
@@ -98,6 +98,8 @@ public sealed class ApplicationEntityLifecycleTests
                 PaymentMethod.Transfer,
                 "Terms",
                 "1",
+                "2026-09",
+                new PaymentCommitment("escrow-hold", $"app:{application.Id}"),
                 signature,
                 signature,
                 new FlatFeeTerms(100m))));

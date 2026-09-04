@@ -30,6 +30,8 @@ public sealed record ContractSnapshot(
     PaymentMethod PaymentMethod,
     string TermsText,
     string PlatformTermsVersion,
+    string MandateTermsVersion,
+    PaymentCommitment Commitment,
     ContractSignature ArtistSignature,
     ContractSignature VenueSignature,
     DealTerms Terms);

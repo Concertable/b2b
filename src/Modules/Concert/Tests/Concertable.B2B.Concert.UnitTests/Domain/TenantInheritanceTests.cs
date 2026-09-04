@@ -45,7 +45,7 @@ public sealed class TenantInheritanceTests
             () => ConcertEntity.CreateDraft(booking, "Concert", "About", []));
     }
 
-    private static ConfirmedBooking CreateBooking(Guid venueTenantId, Guid artistTenantId) =>
+    private static ConfirmedBookingSnapshot CreateBooking(Guid venueTenantId, Guid artistTenantId) =>
         new(
             Guid.NewGuid(),
             1,

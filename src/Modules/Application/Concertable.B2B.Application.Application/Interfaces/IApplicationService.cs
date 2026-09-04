@@ -17,11 +17,6 @@ internal interface IApplicationService
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default);
-    Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
-        int opportunityId,
-        string paymentMethodId,
-        ESignatureRequest eSignature,
-        CancellationToken ct = default);
     Task<bool> CanApplyAsync(int opportunityId);
     Task<bool> CanAcceptAsync(int applicationId);
     Task<Result<Checkout, ApplicationCheckoutError>> ApplyCheckoutAsync(int opportunityId);

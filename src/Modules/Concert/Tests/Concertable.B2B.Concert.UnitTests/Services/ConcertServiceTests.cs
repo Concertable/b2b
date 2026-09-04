@@ -18,7 +18,7 @@ namespace Concertable.B2B.Concert.UnitTests.Services;
 
 public sealed class ConcertServiceTests
 {
-    private static ConfirmedBooking CreateBooking(DateTimeOffset now) => new(
+    private static ConfirmedBookingSnapshot CreateBooking(DateTimeOffset now) => new(
         Guid.NewGuid(),
         1,
         2,
@@ -148,7 +148,7 @@ public sealed class ConcertServiceTests
     public async Task DeclareDoorRevenueAsync_NegativeRevenue_MapsDomainFailureWithoutSaving()
     {
         var now = new DateTimeOffset(2026, 8, 10, 23, 0, 0, TimeSpan.Zero);
-        var booking = new ConfirmedBooking(
+        var booking = new ConfirmedBookingSnapshot(
             Guid.NewGuid(),
             1,
             2,

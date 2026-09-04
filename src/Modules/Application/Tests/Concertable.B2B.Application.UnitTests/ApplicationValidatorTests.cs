@@ -34,7 +34,7 @@ public sealed class ApplicationValidatorTests
             DateTime.MaxValue,
             new HashSet<Genre>(),
             false);
-        var application = StandardApplication.Create(
+        var application = ApplicationEntity.Create(
             4,
             opportunity.Id,
             DealType.FlatFee,

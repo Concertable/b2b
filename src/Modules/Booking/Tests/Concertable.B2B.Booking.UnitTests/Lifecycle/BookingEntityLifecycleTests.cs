@@ -12,8 +12,8 @@ public sealed class BookingEntityLifecycleTests
     [Fact]
     public void Cancel_WhenConfirmationFailed_LeavesStateFinancialFailureAndEventsUnchanged()
     {
-        var acceptance = AcceptedApplications.FlatFee().Contract.ToBookingAcceptance();
-        var booking = BookingEntity.Create(acceptance);
+        var snapshot = AcceptedApplications.FlatFee().Snapshot;
+        var booking = BookingEntity.Create(snapshot);
         Assert.False(booking.RecordFinancialFailure("pi_123", "declined", "Declined").TryGetError(out _));
         var events = booking.DomainEvents.ToArray();
 
@@ -23,8 +23,8 @@ public sealed class BookingEntityLifecycleTests
         Assert.Equal(new TransitionError<BookingState, BookingTrigger>(BookingState.ConfirmationFailed, BookingTrigger.Cancel), error);
         Assert.Equal(BookingState.ConfirmationFailed, booking.State);
         Assert.Equal("pi_123", booking.FinancialOperationReferenceId);
-        Assert.Equal("declined", booking.FinancialFailureCode);
-        Assert.Equal("Declined", booking.FinancialFailureMessage);
+        Assert.Equal("declined", booking.FinancialFailure!.Code);
+        Assert.Equal("Declined", booking.FinancialFailure!.Message);
         Assert.Equal(events, booking.DomainEvents);
     }
 }

@@ -53,7 +53,7 @@ public sealed class DealPayeeResolverTests
             DealType.VenueHire => new VenueHireTerms(100m),
             _ => throw new ArgumentOutOfRangeException(nameof(dealType), dealType, null)
         };
-        var booking = new ConfirmedBooking(
+        var booking = new ConfirmedBookingSnapshot(
             Guid.NewGuid(),
             1,
             2,

@@ -78,7 +78,7 @@ public sealed class BookingConfirmationEmailSenderTests
         var sender = new BookingConfirmationEmailSender(tenant.Object, user.Object, renderer.Object, bus.Object);
 
         var startDate = new DateTime(2035, 1, 1, 19, 0, 0, DateTimeKind.Utc);
-        var booking = new ConfirmedBooking(
+        var booking = new ConfirmedBookingSnapshot(
             Guid.NewGuid(),
             1,
             2,

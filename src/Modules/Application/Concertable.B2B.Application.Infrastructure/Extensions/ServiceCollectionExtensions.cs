@@ -84,7 +84,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IIntegrationEventHandler<ConcertCancelledEvent>>(provider =>
                 provider.GetRequiredService<ConcertAvailabilityIntegrationEventHandler>());
             services.AddScoped<IApplicationCheckoutService, ApplicationCheckoutService>();
-            services.AddApplicationDealUnions();
+            services.AddApplicationDealStrategies();
             services.AddScoped<IApplicationModule, ApplicationModule>();
 
             services.AddSingleton<ApplicationConfigurationProvider>();
@@ -94,26 +94,27 @@ public static class ServiceCollectionExtensions
             return services;
         }
 
-        internal IServiceCollection AddApplicationDealUnions()
-        {
-            services.AddApplicationDealUnion<Apply>(union =>
+        internal IServiceCollection AddApplicationDealStrategies() =>
+            services.AddApplicationDealStrategies(builder =>
             {
-                union.Case<IApplyStandard>(apply => new Apply.Standard(apply))
-                    .Use<StandardApply>(
-                        DealType.FlatFee,
-                        DealType.DoorSplit,
-                        DealType.Versus);
-                union.Case<IApplyPrepaid>(apply => new Apply.Prepaid(apply))
-                    .Use<PrepaidApply>(DealType.VenueHire);
+                builder.For(DealType.FlatFee)
+                    .AddScoped<IApply, StandardApply>()
+                    .AddScoped<IMintCommitment, MintEscrowHold>();
+                builder.For(DealType.DoorSplit)
+                    .AddScoped<IApply, StandardApply>()
+                    .AddScoped<IMintCommitment, MintMethodVerification>();
+                builder.For(DealType.Versus)
+                    .AddScoped<IApply, StandardApply>()
+                    .AddScoped<IMintCommitment, MintMethodVerification>();
+                builder.For(DealType.VenueHire)
+                    .AddScoped<IApply, VenueHireApply>()
+                    .AddScoped<IMintCommitment, MintMethodSetup>();
             });
 
-            return services;
-        }
-
-        internal IServiceCollection AddApplicationDealUnion<TUnion>(
-            Action<DealUnionBuilder<TUnion>> configure)
+        internal IServiceCollection AddApplicationDealStrategies(
+            Action<DealStrategyBuilder> configure)
         {
-            var builder = new DealUnionBuilder<TUnion>(services);
+            var builder = new DealStrategyBuilder(services);
             configure(builder);
             builder.Build();
 

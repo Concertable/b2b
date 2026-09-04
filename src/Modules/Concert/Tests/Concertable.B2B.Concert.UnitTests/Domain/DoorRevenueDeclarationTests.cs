@@ -34,7 +34,7 @@ public sealed class DoorRevenueDeclarationTests
 
     private static ConcertEntity CreateConcert()
     {
-        var booking = new ConfirmedBooking(
+        var booking = new ConfirmedBookingSnapshot(
             Guid.NewGuid(),
             1,
             2,

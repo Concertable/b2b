@@ -31,7 +31,10 @@ internal abstract partial record ApplyApplicationError : IError
                 "No active organization was found for the current user."),
         MissingUser =>
             ErrorDefinition.Forbidden<MissingUser>(
-                "No user was found for the current request.")
+                "No user was found for the current request."),
+        PaymentCommitmentMissing =>
+            ErrorDefinition.PaymentRequired<PaymentCommitmentMissing>(
+                "A confirmed payment method is required before applying to hire this venue.")
     };
 
     [ErrorCode("application.apply.missing_artist")]
@@ -57,4 +60,7 @@ internal abstract partial record ApplyApplicationError : IError
 
     [ErrorCode("application.apply.missing_user")]
     public partial record MissingUser;
+
+    [ErrorCode("application.apply.payment_commitment_missing")]
+    public partial record PaymentCommitmentMissing;
 }

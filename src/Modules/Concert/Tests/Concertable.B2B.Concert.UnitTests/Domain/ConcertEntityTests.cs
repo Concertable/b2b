@@ -9,7 +9,7 @@ public sealed class ConcertEntityTests
     [Fact]
     public void CreateDraft_DuplicateGenre_IsStoredOnceInInsertionOrder()
     {
-        var booking = new ConfirmedBooking(
+        var booking = new ConfirmedBookingSnapshot(
             Guid.NewGuid(),
             1,
             2,

@@ -207,7 +207,7 @@ public sealed class ConcertWorkflowTests
     }
 
     private static ConcertEntity CreateBooking() => ConcertEntity.CreateDraft(
-        new ConfirmedBooking(
+        new ConfirmedBookingSnapshot(
             Guid.NewGuid(),
             1,
             2,

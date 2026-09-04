@@ -382,20 +382,20 @@ public sealed class SeedState
         PostedDoorSplitApp = Link(2, ApplicationFactory.Accepted(1, 53));
         PostedVersusApp = Link(3, ApplicationFactory.Accepted(2, 54));
         PostedFlatFeeApp = Link(4, ApplicationFactory.Accepted(2, 31));
-        PostedVenueHireApp = Link(5, ApplicationFactory.AcceptedPrepaid(1, 21));
+        PostedVenueHireApp = Link(5, ApplicationFactory.Accepted(1, 21));
         AwaitingPaymentApp = Link(6, ApplicationFactory.Accepted(1, 33));
         FinishedDoorSplitApp = Link(7, ApplicationFactory.Accepted(1, 50));
         FinishedVersusApp = Link(8, ApplicationFactory.Accepted(1, 51));
         PastVersusApp = Link(9, ApplicationFactory.Accepted(1, Opportunities[63].Id));
         PastFlatFeeApp = Link(10, ApplicationFactory.Accepted(1, Opportunities[64].Id));
-        PastVenueHireApp = Link(11, ApplicationFactory.AcceptedPrepaid(1, Opportunities[65].Id));
+        PastVenueHireApp = Link(11, ApplicationFactory.Accepted(1, Opportunities[65].Id));
         PastDoorSplitApp = Link(12, ApplicationFactory.Accepted(1, Opportunities[66].Id));
         UpcomingFlatFeeApp = Link(13, ApplicationFactory.Accepted(2, 58));
-        UpcomingVenueHireApp = Link(14, ApplicationFactory.AcceptedPrepaid(1, 59));
+        UpcomingVenueHireApp = Link(14, ApplicationFactory.Accepted(1, 59));
 
         DoorSplitApp = ApplicationFactory.Create(1, Opportunities[55].Id, Deals[55].DealType);
         VersusApp = ApplicationFactory.Create(1, Opportunities[56].Id, Deals[56].DealType);
-        VenueHireApp = ApplicationFactory.CreatePrepaid(1, Opportunities[51].Id, Deals[51].DealType);
+        VenueHireApp = ApplicationFactory.Create(1, Opportunities[51].Id, Deals[51].DealType);
         FlatFeeApp = ApplicationFactory.Create(1, Opportunities[54].Id, Deals[54].DealType);
         InProgressApplication = ApplicationFactory.Create(1, Opportunities[12].Id, Deals[12].DealType);
 
@@ -443,10 +443,10 @@ public sealed class SeedState
             DoorSplitApp,
             ApplicationFactory.Create(7, 15),
             Link(41, ApplicationFactory.Accepted(8, 15)),
-            ApplicationFactory.CreatePrepaid(9, 16),
-            ApplicationFactory.CreatePrepaid(10, 16),
-            Link(42, ApplicationFactory.AcceptedPrepaid(11, 16)),
-            ApplicationFactory.CreatePrepaid(12, 16),
+            ApplicationFactory.Create(9, 16),
+            ApplicationFactory.Create(10, 16),
+            Link(42, ApplicationFactory.Accepted(11, 16)),
+            ApplicationFactory.Create(12, 16),
             VersusApp,
             ApplicationFactory.Create(14, 17),
             PostedVersusApp,
@@ -462,12 +462,12 @@ public sealed class SeedState
             ApplicationFactory.Create(1, 45),
             ApplicationFactory.Create(2, 46),
             ApplicationFactory.Create(3, 47),
-            ApplicationFactory.CreatePrepaid(4, 48),
+            ApplicationFactory.Create(4, 48),
             ApplicationFactory.Create(5, 49),
             ApplicationFactory.Create(2, 50),
             ApplicationFactory.Create(2, 51),
             VenueHireApp,
-            ApplicationFactory.CreatePrepaid(2, 52),
+            ApplicationFactory.Create(2, 52),
             FlatFeeApp,
             PostedFlatFeeApp,
             ApplicationFactory.Create(3, 31),
@@ -497,9 +497,9 @@ public sealed class SeedState
             Link(46, ApplicationFactory.Accepted(5, 47)),
             ApplicationFactory.Create(6, 47),
             ApplicationFactory.Create(7, 47),
-            Link(47, ApplicationFactory.AcceptedPrepaid(6, 48)),
-            ApplicationFactory.CreatePrepaid(7, 48),
-            ApplicationFactory.CreatePrepaid(8, 48),
+            Link(47, ApplicationFactory.Accepted(6, 48)),
+            ApplicationFactory.Create(7, 48),
+            ApplicationFactory.Create(8, 48),
             InProgressApplication,
         ];
 
@@ -610,8 +610,7 @@ public sealed class SeedState
     public ConcertEntity ConcertFor(BookingEntity booking) =>
         Concerts.Single(concert => concert.BookingId == booking.Id);
 
-    private TApplication Link<TApplication>(int bookingId, TApplication application)
-        where TApplication : ApplicationEntity
+    private ApplicationEntity Link(int bookingId, ApplicationEntity application)
     {
         bookingApplications.Add(bookingId, application);
         return application;

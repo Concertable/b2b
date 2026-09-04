@@ -6,6 +6,7 @@ using Concertable.B2B.Concert.Domain.Errors;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ValueObjects;
+using PaymentCommitment = Concertable.B2B.Concert.Domain.ValueObjects.PaymentCommitment;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts;
 using Concertable.Kernel;
@@ -36,6 +37,7 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     public ConcertState State { get; private set; } = ConcertState.Draft;
     public Guid? CancellationOperationId { get; private set; }
     public Guid? SettlementOperationId { get; private set; }
+    internal PaymentCommitment SettlementPaymentReference { get; private set; } = null!;
     public decimal? SettlementGrossAmount { get; private set; }
     public string? FinancialOperationReferenceId { get; private set; }
     internal FinancialFailure? FinancialFailure { get; private set; }
@@ -103,6 +105,9 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         Name = draft.Name;
         About = draft.About;
         Genres = draft.Genres.ToEfSet();
+        SettlementPaymentReference = new PaymentCommitment(
+            booking.Commitment.OperationType,
+            booking.Commitment.ConsumerCorrelation);
     }
 
     public void IncrementTicketsSold(int quantity) => TicketsSold += quantity;

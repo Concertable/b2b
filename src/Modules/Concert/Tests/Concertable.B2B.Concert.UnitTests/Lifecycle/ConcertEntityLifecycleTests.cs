@@ -89,7 +89,7 @@ public sealed class ConcertEntityLifecycleTests
         Assert.Equal(50m, concert.SettlementGross.Amount);
     }
 
-    private static ConfirmedBooking CreateDoorSplitBooking() => new(
+    private static ConfirmedBookingSnapshot CreateDoorSplitBooking() => new(
         Guid.NewGuid(),
         1,
         2,
@@ -104,7 +104,7 @@ public sealed class ConcertEntityLifecycleTests
         new DateTime(2030, 1, 1, 22, 0, 0, DateTimeKind.Utc),
         [],
         new DoorSplitTerms(50m));
-    private static ConfirmedBooking CreateBooking() => new(
+    private static ConfirmedBookingSnapshot CreateBooking() => new(
         Guid.NewGuid(),
         1,
         2,
