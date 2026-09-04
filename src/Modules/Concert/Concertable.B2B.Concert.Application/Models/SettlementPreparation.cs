@@ -9,10 +9,10 @@ internal abstract record SettlementPreparation
         int ConcertId,
         DealType DealType,
         int BookingId,
+        int ApplicationId,
         Guid PayerTenantId,
         Guid PayeeTenantId,
-        Money Gross,
-        string? PaymentMethodId) : SettlementPreparation;
+        Money Gross) : SettlementPreparation;
 
     internal sealed record Terminal(SettlementOutcome Outcome) : SettlementPreparation;
 }

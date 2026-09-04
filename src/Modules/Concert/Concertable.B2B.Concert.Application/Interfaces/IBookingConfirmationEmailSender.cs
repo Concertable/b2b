@@ -5,7 +5,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 internal interface IBookingConfirmationEmailSender
 {
     Task SendAsync(
-        ConfirmedBooking booking,
+        ConfirmedBookingSnapshot booking,
         string venueName,
         string artistName,
         CancellationToken ct = default);

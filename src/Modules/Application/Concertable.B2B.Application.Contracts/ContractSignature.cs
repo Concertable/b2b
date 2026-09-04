@@ -1,8 +1,8 @@
 using System.Net;
 
-namespace Concertable.B2B.Application.Domain.ValueObjects;
+namespace Concertable.B2B.Application.Contracts;
 
-internal sealed record Signature(
+public sealed record ContractSignature(
     Guid UserId,
     DateTime AtUtc,
     IPAddress Ip,

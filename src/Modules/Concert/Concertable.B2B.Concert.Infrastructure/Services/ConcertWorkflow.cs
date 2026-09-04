@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 
@@ -61,18 +62,28 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
             throw new InvalidOperationException(
                 $"Concert {concertId} returned an unknown settlement preparation.");
 
-        var executed = await completeFactory
-            .Create(ready.DealType)
-            .CompleteAsync(ready, ct);
-        if (executed.TryGetError(out error))
+        return await ExecuteAsync(
+            () => completeFactory.Create(ready.DealType).CompleteAsync(ready, ct),
+            ready,
+            ct);
+    }
+
+    private async Task<Result<SettlementOutcome, FinishConcertError>> ExecuteAsync<TConfirmation>(
+        Func<Task<Result<TConfirmation, FinishConcertError>>> execute,
+        SettlementPreparation.Ready settlement,
+        CancellationToken ct)
+        where TConfirmation : SettlementConfirmation
+    {
+        var executed = await execute();
+        if (executed.TryGetError(out var error))
             return error;
         if (!executed.TryGetValue(out var confirmation))
             throw new InvalidOperationException(
-                $"Concert {concertId} settlement execution returned no confirmation.");
+                $"Concert {settlement.ConcertId} settlement execution returned no confirmation.");
 
         return await settlementService.CompleteAsync(
-            concertId,
-            ready.OperationId,
+            settlement.ConcertId,
+            settlement.OperationId,
             confirmation,
             ct);
     }

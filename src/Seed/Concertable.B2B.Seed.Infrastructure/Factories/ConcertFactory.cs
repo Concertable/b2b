@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Seed.Contracts.Specs;
@@ -12,8 +13,7 @@ public static class ConcertFactory
     {
         var concert = ConcertEntity
             .CreateDraft(
-                new ConfirmedBooking(
-                    booking.OperationId,
+                new ConfirmedBookingSnapshot(
                     booking.Id,
                     booking.ApplicationId,
                     booking.OpportunityId,
@@ -21,15 +21,11 @@ public static class ConcertFactory
                     spec.VenueId,
                     booking.VenueTenantId,
                     booking.ArtistTenantId,
-                    booking.DealType,
-                    booking.RequiresDoorRevenue,
                     spec.Period.Start,
                     spec.Period.End,
                     booking.Genres,
-                    contract.Terms),
-                spec.Name,
-                spec.About,
-                spec.Genres)
+                    contract.ConfirmedTerms),
+                new ConcertDraft(spec.Name, spec.About, spec.Genres))
             .With(nameof(ConcertEntity.Id), spec.ConcertId)
             .With(nameof(ConcertEntity.Price), spec.Price)
             .With(nameof(ConcertEntity.TotalTickets), spec.TotalTickets)

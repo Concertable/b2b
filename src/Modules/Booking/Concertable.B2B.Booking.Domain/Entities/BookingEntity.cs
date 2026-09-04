@@ -1,9 +1,9 @@
 using System.ComponentModel;
+using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Domain.Events;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
-using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
@@ -13,7 +13,7 @@ using Reunion;
 
 namespace Concertable.B2B.Booking.Domain.Entities;
 
-[DisplayName(DisplayNames.Booking)]
+[DisplayName(Booking.Contracts.DisplayNames.Booking)]
 public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
 {
     private static readonly BookingStateMachine stateMachine = new();
@@ -28,15 +28,13 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     public int ArtistId { get; private set; }
     public int VenueId { get; private set; }
     public DealType DealType { get; private set; }
-    public bool RequiresDoorRevenue { get; private set; }
     internal FinancialOperation ExpectedFinancialOperation { get; private set; }
     public DateTime StartDate { get; private set; }
     public DateTime EndDate { get; private set; }
     public List<Genre> Genres { get; private set; } = [];
     internal BookingState State { get; private set; } = BookingState.AwaitingConfirmation;
     public Guid? CancellationOperationId { get; private set; }
-    public string? FinancialFailureCode { get; private set; }
-    public string? FinancialFailureMessage { get; private set; }
+    internal FinancialFailure? FinancialFailure { get; private set; }
     public string? FinancialOperationReferenceId { get; private set; }
     public ContractEntity Contract { get; private set; } = null!;
 
@@ -46,30 +44,33 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
 
     private BookingEntity() { }
 
-    internal static BookingEntity Create(BookingAcceptance acceptance) => new(acceptance);
+    internal static BookingEntity Create(ApplicationAcceptanceSnapshot snapshot) => new(snapshot);
 
-    internal void MintContract(BookingAcceptance acceptance, DateTime createdAtUtc) =>
-        Contract = acceptance.CreateContract(Id, createdAtUtc);
-
-    private BookingEntity(BookingAcceptance acceptance)
+    internal void MintContract(ContractEntity contract)
     {
-        ArgumentNullException.ThrowIfNull(acceptance);
-        if (acceptance.VenueTenantId == Guid.Empty || acceptance.ArtistTenantId == Guid.Empty)
+        Contract = contract;
+        ExpectedFinancialOperation = contract.ExpectedFinancialOperation;
+    }
+
+    private BookingEntity(ApplicationAcceptanceSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        var application = snapshot.Application;
+        var opportunity = application.Opportunity;
+        if (opportunity.Venue.TenantId == Guid.Empty || application.Artist.TenantId == Guid.Empty)
             throw new InvalidOperationException("A booking cannot inherit unresolved application tenants.");
 
-        OperationId = acceptance.OperationId;
-        ApplicationId = acceptance.ApplicationId;
-        OpportunityId = acceptance.OpportunityId;
-        ArtistId = acceptance.ArtistId;
-        VenueId = acceptance.VenueId;
-        DealType = acceptance.DealType;
-        RequiresDoorRevenue = acceptance.RequiresDoorRevenue;
-        ExpectedFinancialOperation = acceptance.ExpectedFinancialOperation;
-        StartDate = acceptance.StartDate;
-        EndDate = acceptance.EndDate;
-        Genres = acceptance.Genres.ToList();
-        VenueTenantId = acceptance.VenueTenantId;
-        ArtistTenantId = acceptance.ArtistTenantId;
+        OperationId = snapshot.OperationId;
+        ApplicationId = application.Id;
+        OpportunityId = opportunity.Id;
+        ArtistId = application.Artist.Id;
+        VenueId = opportunity.Venue.Id;
+        DealType = snapshot.Contract.Terms.DealType;
+        StartDate = opportunity.StartDate;
+        EndDate = opportunity.EndDate;
+        Genres = opportunity.Genres.ToList();
+        VenueTenantId = opportunity.Venue.TenantId;
+        ArtistTenantId = application.Artist.TenantId;
     }
 
     internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialConfirmation(
@@ -79,10 +80,8 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
         if (transition.TryGetError(out var error))
             return error;
         FinancialOperationReferenceId = providerReferenceId;
-        FinancialFailureCode = null;
-        FinancialFailureMessage = null;
-        events.Raise(new BookingConfirmedDomainEvent(new ConfirmedBooking(
-            OperationId,
+        FinancialFailure = null;
+        events.Raise(new BookingConfirmedDomainEvent(new ConfirmedBookingSnapshot(
             Id,
             ApplicationId,
             OpportunityId,
@@ -90,12 +89,10 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
             VenueId,
             VenueTenantId,
             ArtistTenantId,
-            DealType,
-            RequiresDoorRevenue,
             StartDate,
             EndDate,
             Genres,
-            Contract.Terms)));
+            Contract.ConfirmedTerms)));
         return new Success();
     }
 
@@ -108,8 +105,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
         if (transition.TryGetError(out var error))
             return error;
         FinancialOperationReferenceId = providerReferenceId;
-        FinancialFailureCode = code;
-        FinancialFailureMessage = message;
+        FinancialFailure = new FinancialFailure(code, message);
         return new Success();
     }
 
@@ -119,8 +115,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
         if (transition.TryGetError(out var error))
             return error;
         FinancialOperationReferenceId = null;
-        FinancialFailureCode = code;
-        FinancialFailureMessage = message;
+        FinancialFailure = new FinancialFailure(code, message);
         return new Success();
     }
 
@@ -141,8 +136,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
         var transition = Fire(BookingTrigger.RecordCancellationFailure);
         if (transition.TryGetError(out var error))
             return error;
-        FinancialFailureCode = code;
-        FinancialFailureMessage = message;
+        FinancialFailure = new FinancialFailure(code, message);
         return new Success();
     }
 
@@ -151,8 +145,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
         var transition = Fire(BookingTrigger.Cancel);
         if (transition.TryGetError(out var error))
             return error;
-        FinancialFailureCode = null;
-        FinancialFailureMessage = null;
+        FinancialFailure = null;
         events.Raise(new BookingCancelledDomainEvent(Id, ApplicationId, OpportunityId));
         return new Success();
     }

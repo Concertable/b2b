@@ -1,6 +1,6 @@
 using System.Net;
-using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Domain.ValueObjects;
@@ -71,11 +71,11 @@ public sealed class ApplicationEntityLifecycleTests
         Assert.Equal(events, application.DomainEvents);
     }
 
-    private static FlatFeeAcceptedApplication CreateAcceptedApplication(
+    private static AcceptedApplication CreateAcceptedApplication(
         ApplicationEntity application,
         Guid operationId)
     {
-        var signature = new Signature(
+        var signature = new ContractSignature(
             Guid.NewGuid(),
             new DateTime(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc),
             IPAddress.Loopback,
@@ -83,24 +83,23 @@ public sealed class ApplicationEntityLifecycleTests
             "Signatory",
             null);
 
-        return new FlatFeeAcceptedApplication(
+        return new AcceptedApplication(new ApplicationAcceptanceSnapshot(
             operationId,
-            application.Id,
-            application.OpportunityId,
-            application.ArtistId,
-            3,
-            application.VenueTenantId,
-            application.ArtistTenantId,
-            PaymentMethod.Transfer,
-            new DateTime(2030, 1, 1, 19, 0, 0, DateTimeKind.Utc),
-            new DateTime(2030, 1, 1, 22, 0, 0, DateTimeKind.Utc),
-            [Genre.Rock],
-            "Artist",
-            "Venue",
-            "Terms",
-            "1",
-            signature.ToDto(),
-            signature.ToDto(),
-            100m);
+            new ApplicationSnapshot(
+                application.Id,
+                new ArtistSnapshot(application.ArtistId, application.ArtistTenantId, "Artist"),
+                new OpportunitySnapshot(
+                    application.OpportunityId,
+                    new VenueSnapshot(3, application.VenueTenantId, "Venue"),
+                    new DateTime(2030, 1, 1, 19, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2030, 1, 1, 22, 0, 0, DateTimeKind.Utc),
+                    [Genre.Rock])),
+            new ContractSnapshot(
+                PaymentMethod.Transfer,
+                "Terms",
+                "1",
+                signature,
+                signature,
+                new FlatFeeTerms(100m))));
     }
 }

@@ -11,6 +11,7 @@ using Concertable.B2B.Booking.Infrastructure.Repositories;
 using Concertable.B2B.Booking.Infrastructure.Services;
 using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.B2B.Booking.Domain.Events;
+using Concertable.B2B.Booking.Domain.Factories;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure;
@@ -95,15 +96,19 @@ public static class ServiceCollectionExtensions
             {
                 builder.For(DealType.FlatFee)
                     .AddScoped<IConfirm, FlatFeeConfirm>()
+                    .AddScoped<IContractFactory, FlatFeeContractFactory>()
                     .AddScoped<ICancel, EscrowCancel>();
                 builder.For(DealType.DoorSplit)
-                    .AddScoped<IConfirm, DeferredConfirm>()
+                    .AddScoped<IConfirm, VerifiedConfirm>()
+                    .AddScoped<IContractFactory, DoorSplitContractFactory>()
                     .AddScoped<ICancel, ImmediateCancel>();
                 builder.For(DealType.Versus)
-                    .AddScoped<IConfirm, DeferredConfirm>()
+                    .AddScoped<IConfirm, VerifiedConfirm>()
+                    .AddScoped<IContractFactory, VersusContractFactory>()
                     .AddScoped<ICancel, ImmediateCancel>();
                 builder.For(DealType.VenueHire)
                     .AddScoped<IConfirm, VenueHireConfirm>()
+                    .AddScoped<IContractFactory, VenueHireContractFactory>()
                     .AddScoped<ICancel, EscrowCancel>();
             });
 

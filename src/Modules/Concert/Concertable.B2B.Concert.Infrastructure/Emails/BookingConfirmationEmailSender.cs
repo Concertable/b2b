@@ -29,7 +29,7 @@ internal sealed class BookingConfirmationEmailSender : IBookingConfirmationEmail
     }
 
     public async Task SendAsync(
-        ConfirmedBooking booking,
+        ConfirmedBookingSnapshot booking,
         string venueName,
         string artistName,
         CancellationToken ct = default)

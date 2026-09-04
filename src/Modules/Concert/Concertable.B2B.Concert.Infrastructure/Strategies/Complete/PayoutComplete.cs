@@ -6,14 +6,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Strategies;
 
 internal sealed class PayoutComplete : IComplete
 {
-    private readonly IManagerPaymentOperationsClient managerPaymentOperationsClient;
+    private readonly IManagerPaymentOperationsClient paymentsClient;
     private readonly ILogger<PayoutComplete> logger;
 
     public PayoutComplete(
-        IManagerPaymentOperationsClient managerPaymentOperationsClient,
+        IManagerPaymentOperationsClient paymentsClient,
         ILogger<PayoutComplete> logger)
     {
-        this.managerPaymentOperationsClient = managerPaymentOperationsClient;
+        this.paymentsClient = paymentsClient;
         this.logger = logger;
     }
 
@@ -29,15 +29,12 @@ internal sealed class PayoutComplete : IComplete
             settlement.PayerTenantId,
             settlement.PayeeTenantId);
 
-        var result = await managerPaymentOperationsClient.PayAsync(
+        var result = await paymentsClient.PayVerifiedAsync(
             settlement.OperationId,
             settlement.PayerTenantId,
             settlement.PayeeTenantId,
             settlement.Gross,
-            settlement.PaymentMethodId
-                ?? throw new InvalidOperationException(
-                    $"Concert {settlement.ConcertId} has no settlement payment method."),
-            PaymentSession.OffSession,
+            settlement.ApplicationId,
             settlement.BookingId,
             ct);
         if (result.TryGetError(out var error))

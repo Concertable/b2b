@@ -27,7 +27,7 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
     public DealType DealType { get; private set; }
     public Guid? AcceptanceOperationId { get; private set; }
 
-    internal Signature ArtistESignature { get; private set; } = null!;
+    internal ContractSignature ArtistESignature { get; private set; } = null!;
     public string TermsFingerprint { get; private set; } = null!;
 
     protected ApplicationEntity() { }
@@ -98,15 +98,17 @@ public abstract class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, I
         return true;
     }
 
-    internal void RecordArtistESignature(Signature eSignature, string termsFingerprint)
+    internal void RecordArtistESignature(ContractSignature eSignature, string termsFingerprint)
     {
         ArtistESignature = eSignature;
         TermsFingerprint = termsFingerprint;
     }
 
-    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Accept(AcceptedApplication application)
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Accept(
+        AcceptedApplication application)
     {
-        if (application.ApplicationId != Id || application.OperationId != AcceptanceOperationId)
+        var snapshot = application.Snapshot;
+        if (snapshot.Application.Id != Id || snapshot.OperationId != AcceptanceOperationId)
             throw new InvalidOperationException("Accepted application facts do not match the application transition.");
 
         var transition = Transition(ApplicationTrigger.Accept);

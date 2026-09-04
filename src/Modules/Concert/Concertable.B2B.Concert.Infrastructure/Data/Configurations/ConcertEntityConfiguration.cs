@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -14,8 +15,20 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
         builder.Property(e => e.State).IsRequired().IsConcurrencyToken();
         builder.Property(e => e.SettlementGrossAmount).HasPrecision(18, 2);
         builder.Property(e => e.FinancialOperationReferenceId).HasMaxLength(255);
-        builder.Property(e => e.FinancialFailureCode).HasMaxLength(100);
-        builder.Property(e => e.FinancialFailureMessage).HasMaxLength(1000);
+        builder.ComplexProperty(e => e.FinancialFailure, failure =>
+        {
+            failure.Property(value => value.Code)
+                .HasColumnName("FinancialFailureCode")
+                .HasMaxLength(100);
+            failure.Property(value => value.Message)
+                .HasColumnName("FinancialFailureMessage")
+                .HasMaxLength(1000);
+        });
+        builder.HasDiscriminator(e => e.DealType)
+            .HasValue<FlatFeeConcert>(DealType.FlatFee)
+            .HasValue<VenueHireConcert>(DealType.VenueHire)
+            .HasValue<DoorSplitConcert>(DealType.DoorSplit)
+            .HasValue<VersusConcert>(DealType.Versus);
         builder.ComplexProperty(e => e.Period, p =>
         {
             p.Property(x => x.Start).HasColumnName("StartDate");

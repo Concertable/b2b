@@ -1,11 +1,9 @@
-using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Contracts.Enums;
+using Dunet;
 
 namespace Concertable.B2B.Booking.Contracts;
 
-public sealed record ConfirmedBooking(
-    Guid OperationId,
+public sealed record ConfirmedBookingSnapshot(
     int BookingId,
     int ApplicationId,
     int OpportunityId,
@@ -13,9 +11,21 @@ public sealed record ConfirmedBooking(
     int VenueId,
     Guid VenueTenantId,
     Guid ArtistTenantId,
-    DealType DealType,
-    bool RequiresDoorRevenue,
     DateTime StartDate,
     DateTime EndDate,
     IReadOnlyList<Genre> Genres,
-    DealTerms Terms);
+    ConfirmedBookingTerms Terms);
+
+[Union(EnableImplicitConversions = false)]
+public abstract partial record ConfirmedBookingTerms
+{
+    public partial record FlatFee(decimal Fee);
+
+    public partial record VenueHire(decimal HireFee);
+
+    public partial record DoorSplit(decimal ArtistDoorPercent);
+
+    public partial record Versus(
+        decimal Guarantee,
+        decimal ArtistDoorPercent);
+}

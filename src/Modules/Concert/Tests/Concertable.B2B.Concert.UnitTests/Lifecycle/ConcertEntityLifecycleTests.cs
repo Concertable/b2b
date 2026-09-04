@@ -103,7 +103,7 @@ public sealed class ConcertEntityLifecycleTests
         new DateTime(2030, 1, 1, 19, 0, 0, DateTimeKind.Utc),
         new DateTime(2030, 1, 1, 22, 0, 0, DateTimeKind.Utc),
         [],
-        new DoorSplitTerms(50m, "pm_123"));
+        new DoorSplitTerms(50m));
     private static ConfirmedBooking CreateBooking() => new(
         Guid.NewGuid(),
         1,

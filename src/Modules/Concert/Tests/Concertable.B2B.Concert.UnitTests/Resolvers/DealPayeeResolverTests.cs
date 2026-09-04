@@ -48,8 +48,8 @@ public sealed class DealPayeeResolverTests
         DealTerms terms = dealType switch
         {
             DealType.FlatFee => new FlatFeeTerms(100m),
-            DealType.DoorSplit => new DoorSplitTerms(50m, "pm_123"),
-            DealType.Versus => new VersusTerms(100m, 50m, "pm_123"),
+            DealType.DoorSplit => new DoorSplitTerms(50m),
+            DealType.Versus => new VersusTerms(100m, 50m),
             DealType.VenueHire => new VenueHireTerms(100m),
             _ => throw new ArgumentOutOfRangeException(nameof(dealType), dealType, null)
         };

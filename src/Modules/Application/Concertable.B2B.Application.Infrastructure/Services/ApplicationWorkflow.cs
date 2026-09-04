@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Application.Errors;
+using Concertable.B2B.Application.Application.Interfaces;
 using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Application.Requests;
 using Concertable.B2B.Application.Application.Strategies;
@@ -17,6 +18,7 @@ using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.DependencyInjection;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Concertable.B2B.Application.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
@@ -36,8 +38,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
     private readonly IDealUnionFactory<Apply> applyFactory;
-    private readonly IDealUnionFactory<Accept> acceptFactory;
     private readonly IApplicationMapper mapper;
+    private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
@@ -57,8 +59,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ICurrentUser currentUser,
         IClientContext clientContext,
         IDealUnionFactory<Apply> applyFactory,
-        IDealUnionFactory<Accept> acceptFactory,
         IApplicationMapper mapper,
+        IOptions<LegalSettings> legal,
         TimeProvider timeProvider,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior,
@@ -77,8 +79,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.currentUser = currentUser;
         this.clientContext = clientContext;
         this.applyFactory = applyFactory;
-        this.acceptFactory = acceptFactory;
         this.mapper = mapper;
+        this.legal = legal.Value;
         this.timeProvider = timeProvider;
         this.unitOfWork = unitOfWork;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
@@ -167,18 +169,16 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
 
     public Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,
-        string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default) =>
         unitOfWorkBehavior.TryExecuteAsync(
-            () => AcceptCoreAsync(applicationId, paymentMethodId, eSignature, ct),
+            () => AcceptCoreAsync(applicationId, eSignature, ct),
             exception => exception.IsApplicationAcceptanceConflict(applicationId),
-            _ => ClassifyAcceptConflictAsync(applicationId, paymentMethodId, eSignature, ct),
+            _ => ClassifyAcceptConflictAsync(applicationId, eSignature, ct),
             ct);
 
     internal async Task<UnitResult<AcceptApplicationError>> AcceptOnceAsync(
         int applicationId,
-        string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default)
     {
@@ -186,13 +186,12 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         // without this every tenant-filtered read here answers as though the caller belonged to no tenant.
         await tenantResolver.ResolveAsync(ct);
         return await unitOfWorkBehavior.ExecuteAsync(
-            () => AcceptCoreAsync(applicationId, paymentMethodId, eSignature, ct),
+            () => AcceptCoreAsync(applicationId, eSignature, ct),
             ct);
     }
 
     private async Task<UnitResult<AcceptApplicationError>> ClassifyAcceptConflictAsync(
         int applicationId,
-        string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct)
     {
@@ -210,12 +209,11 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         // reads -- a payment verification landing mid-flight -- and rerunning in a FRESH scope decides on the
         // recorded outcome. The rerun does not rerun again, so a second loss is reported.
         return await acceptance.RunAsync(fresh =>
-            fresh.AcceptOnceAsync(applicationId, paymentMethodId, eSignature, ct));
+            fresh.AcceptOnceAsync(applicationId, eSignature, ct));
     }
 
     private async Task<UnitResult<AcceptApplicationError>> AcceptCoreAsync(
         int applicationId,
-        string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct)
     {
@@ -264,19 +262,31 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         var operationId = application.AcceptanceOperationId ?? Guid.NewGuid();
         var venueSignature = eSignature.ToSignature(
             userId, timeProvider.GetUtcNow().UtcDateTime, clientContext.IpAddress, clientContext.UserAgent);
-        var accepted = acceptFactory.Create(deal.DealType) switch
-        {
-            Accept.Standard(var accept) => accept.Accept(
-                application, opportunity, artist, venue, deal, venueSignature, operationId),
-            Accept.Paid when string.IsNullOrWhiteSpace(paymentMethodId) =>
-                new AcceptApplicationError.PaymentMethodRequired(),
-            Accept.Paid(var accept) => accept.Accept(
-                application, opportunity, artist, venue, deal, venueSignature, operationId, paymentMethodId)
-        };
-        if (accepted.TryGetError(out var acceptanceError))
-            return acceptanceError;
-        if (!accepted.TryGetValue(out var acceptedApplication))
-            throw new InvalidOperationException("Acceptance succeeded without an accepted application fact.");
+        var snapshot = new ApplicationAcceptanceSnapshot(
+            operationId,
+            new ApplicationSnapshot(
+                application.Id,
+                new ArtistSnapshot(
+                    application.ArtistId,
+                    application.ArtistTenantId,
+                    artist.Name),
+                new OpportunitySnapshot(
+                    application.OpportunityId,
+                    new VenueSnapshot(
+                        opportunity.VenueId,
+                        application.VenueTenantId,
+                        venue.Name),
+                    opportunity.StartDate,
+                    opportunity.EndDate,
+                    opportunity.Genres.ToList())),
+            new ContractSnapshot(
+                deal.PaymentMethod,
+                deal.Terms.Render(),
+                legal.PlatformTermsVersion,
+                application.ArtistESignature,
+                venueSignature,
+                deal.Terms));
+        var acceptedApplication = new AcceptedApplication(snapshot);
 
         application.BeginAcceptance(operationId);
         if (application.Accept(acceptedApplication).TryGetError(out var transitionError))

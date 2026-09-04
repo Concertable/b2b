@@ -32,7 +32,7 @@ public sealed class ConcertServiceTests
         now.UtcDateTime.AddHours(-3),
         now.UtcDateTime.AddHours(-1),
         [],
-        new DoorSplitTerms(50m, "pm_123"));
+        new DoorSplitTerms(50m));
 
     private static ConcertService CreateService(
         Mock<IConcertRepository> repository,
@@ -162,7 +162,7 @@ public sealed class ConcertServiceTests
             now.UtcDateTime.AddHours(-3),
             now.UtcDateTime.AddHours(-1),
             [],
-            new DoorSplitTerms(50m, "pm_123"));
+            new DoorSplitTerms(50m));
         var concert = ConcertEntity.CreateDraft(
             booking,
             "Concert",

@@ -8,7 +8,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IConcertService
 {
-    Task CreateAsync(ConfirmedBooking booking, CancellationToken ct = default);
+    Task CreateAsync(ConfirmedBookingSnapshot booking, CancellationToken ct = default);
     Task<Result<ConcertDetails, ConcertError>> GetDetailsByIdAsync(int id);
     Task<Result<ConcertDetails, ConcertError>> GetDetailsAsync(
         int id,

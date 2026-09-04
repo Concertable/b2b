@@ -14,7 +14,6 @@ internal interface IApplicationWorkflow
 
     Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,
-        string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default);
 }

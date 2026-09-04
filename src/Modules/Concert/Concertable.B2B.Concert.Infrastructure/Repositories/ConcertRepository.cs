@@ -140,7 +140,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .ToListAsync(ct);
 
     public Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId) =>
-        context.Concerts
+        context.Concerts.OfType<DoorRevenueConcert>()
             .Where(c => c.Id == concertId)
             .Select(c => c.TicketsSold * c.Price + c.DoorRevenue)
             .FirstOrDefaultAsync();

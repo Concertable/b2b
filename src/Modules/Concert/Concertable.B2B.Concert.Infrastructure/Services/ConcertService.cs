@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -63,7 +64,7 @@ internal sealed class ConcertService : IConcertService
         this.logger = logger;
     }
 
-    public async Task CreateAsync(ConfirmedBooking booking, CancellationToken ct = default)
+    public async Task CreateAsync(ConfirmedBookingSnapshot booking, CancellationToken ct = default)
     {
         logger.CreatingConcertDraft(booking.BookingId);
 
@@ -93,9 +94,10 @@ internal sealed class ConcertService : IConcertService
 
         var concert = ConcertEntity.CreateDraft(
             booking,
-            $"{artist.Name} performing at {venue.Name}",
-            venue.About,
-            matchingGenres);
+            new ConcertDraft(
+                $"{artist.Name} performing at {venue.Name}",
+                venue.About,
+                matchingGenres));
         await concertRepository.AddAsync(concert, ct);
         await concertRepository.SaveChangesAsync(ct);
 
@@ -252,14 +254,14 @@ internal sealed class ConcertService : IConcertService
         if (!tenantContext.IsHost && concert.VenueTenantId != tenantContext.TenantId)
             return new DeclareDoorRevenueError.VenueForbidden();
 
-        if (!concert.RequiresDoorRevenue)
+        if (concert is not DoorRevenueConcert doorRevenueConcert)
             return new DeclareDoorRevenueError.WrongDealType();
         if (timeProvider.GetUtcNow().UtcDateTime < concert.Period.End)
             return new DeclareDoorRevenueError.TooEarly();
         if (concert.State is not (ConcertState.Draft or ConcertState.Posted))
             return new DeclareDoorRevenueError.AlreadySettled();
 
-        if (concert.DeclareDoorRevenue(doorRevenue).TryGetError(out var revenueError))
+        if (doorRevenueConcert.DeclareDoorRevenue(doorRevenue).TryGetError(out var revenueError))
             return revenueError.ToDeclareDoorRevenueError();
 
         return await unitOfWork.TrySaveChangesAsync(

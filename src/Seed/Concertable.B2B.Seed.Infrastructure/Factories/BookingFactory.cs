@@ -1,7 +1,6 @@
 using Concertable.B2B.Application.Contracts;
-using Concertable.B2B.Booking.Application.Mappers;
 using Concertable.B2B.Booking.Domain.Entities;
-using Concertable.B2B.Booking.Domain.ValueObjects;
+using Concertable.B2B.Deal.Contracts;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.B2B.Seed.Infrastructure.Factories;
@@ -14,11 +13,11 @@ public static class BookingFactory
         DateTime createdAtUtc,
         bool confirmed)
     {
-        var acceptance = application.ToBookingAcceptance();
-        var booking = BookingEntity.Create(acceptance);
+        var snapshot = application.Snapshot;
+        var booking = BookingEntity.Create(snapshot);
         booking.WithId(id);
 
-        booking.MintContract(acceptance, createdAtUtc);
+        booking.MintContract(Mint(id, snapshot, createdAtUtc));
         var contract = booking.Contract
             .WithId(id)
             .With(nameof(ContractEntity.PdfBlobName), $"contracts/{id}-seed.pdf");
@@ -31,6 +30,19 @@ public static class BookingFactory
 
         return new BookingSeedAggregate(booking, contract);
     }
+
+    private static ContractEntity Mint(
+        int bookingId,
+        ApplicationAcceptanceSnapshot snapshot,
+        DateTime createdAtUtc) =>
+        snapshot.Contract.Terms switch
+        {
+            FlatFeeTerms flatFee => FlatFeeContract.Create(bookingId, snapshot, flatFee, createdAtUtc),
+            VenueHireTerms venueHire => VenueHireContract.Create(bookingId, snapshot, venueHire, createdAtUtc),
+            DoorSplitTerms doorSplit => DoorSplitContract.Create(bookingId, snapshot, doorSplit, createdAtUtc),
+            VersusTerms versus => VersusContract.Create(bookingId, snapshot, versus, createdAtUtc),
+            var terms => throw new ArgumentOutOfRangeException(nameof(snapshot), terms, null)
+        };
 }
 
 public sealed record BookingSeedAggregate(

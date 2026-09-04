@@ -14,8 +14,15 @@ internal sealed class BookingEntityConfiguration : IEntityTypeConfiguration<Book
         builder.Property(booking => booking.State).IsRequired().IsConcurrencyToken();
         builder.Property(booking => booking.ExpectedFinancialOperation).IsRequired();
         builder.Property(booking => booking.FinancialOperationReferenceId).HasMaxLength(255);
-        builder.Property(booking => booking.FinancialFailureCode).HasMaxLength(100);
-        builder.Property(booking => booking.FinancialFailureMessage).HasMaxLength(1000);
+        builder.ComplexProperty(booking => booking.FinancialFailure, failure =>
+        {
+            failure.Property(value => value.Code)
+                .HasColumnName("FinancialFailureCode")
+                .HasMaxLength(100);
+            failure.Property(value => value.Message)
+                .HasColumnName("FinancialFailureMessage")
+                .HasMaxLength(1000);
+        });
         builder.PrimitiveCollection(booking => booking.Genres);
         builder.HasIndex(booking => booking.ApplicationId).IsUnique();
         builder.HasIndex(booking => booking.OperationId).IsUnique();

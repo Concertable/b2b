@@ -11,16 +11,16 @@ namespace Concertable.B2B.Booking.Infrastructure.Strategies;
 
 internal sealed class FlatFeeConfirm : IConfirm
 {
-    private readonly IManagerPaymentOperationsClient managerPaymentOperationsClient;
+    private readonly IManagerPaymentOperationsClient paymentsClient;
     private readonly IBus bus;
     private readonly ILogger<FlatFeeConfirm> logger;
 
     public FlatFeeConfirm(
-        IManagerPaymentOperationsClient managerPaymentOperationsClient,
+        IManagerPaymentOperationsClient paymentsClient,
         IBus bus,
         ILogger<FlatFeeConfirm> logger)
     {
-        this.managerPaymentOperationsClient = managerPaymentOperationsClient;
+        this.paymentsClient = paymentsClient;
         this.bus = bus;
         this.logger = logger;
     }
@@ -30,9 +30,10 @@ internal sealed class FlatFeeConfirm : IConfirm
         CancellationToken ct = default)
     {
         var flatFee = (FlatFeeContract)booking.Contract;
-        var paymentIntentId = await managerPaymentOperationsClient.FindHeldIntentAsync(
+        var paymentIntentId = await paymentsClient.FindHeldIntentAsync(
             flatFee.VenueTenantId,
-            booking.ApplicationId);
+            booking.ApplicationId,
+            ct);
         logger.AcceptingFlatFeeApplication(
             booking.ApplicationId,
             booking.Id,

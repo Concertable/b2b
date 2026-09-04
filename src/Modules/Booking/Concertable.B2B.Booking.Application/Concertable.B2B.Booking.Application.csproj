@@ -15,5 +15,6 @@
     <PackageReference Include="Dunet" />
     <PackageReference Include="Reunion" />
     <PackageReference Include="Reunion.Errors" />
+    <PackageReference Include="Riok.Mapperly" />
   </ItemGroup>
 </Project>

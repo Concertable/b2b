@@ -1,7 +1,7 @@
 using System.Net.Mime;
+using ContractSignature = Concertable.B2B.Application.Contracts.ContractSignature;
 using Concertable.B2B.Booking.Application.DTOs;
 using Concertable.B2B.Booking.Domain.Entities;
-using Concertable.B2B.Booking.Domain.ValueObjects;
 
 namespace Concertable.B2B.Booking.Application.Mappers;
 
@@ -28,7 +28,7 @@ internal static class ContractMappers
             new(content, $"contract-{contract.Id}.pdf", MediaTypeNames.Application.Pdf);
     }
 
-    extension(Signature signature)
+    extension(ContractSignature signature)
     {
         private SignatureDto ToDto() =>
             new(signature.UserId, signature.AtUtc, signature.SignatoryName);

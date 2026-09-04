@@ -46,7 +46,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IOpportunityReadDbContext>(
                 sp => sp.GetRequiredService<OpportunityReadDbContext>());
 
-            services.AddScoped<IUnitOfWork<OpportunityDbContext>, UnitOfWork<OpportunityDbContext>>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IOpportunityRepository, OpportunityRepository>();
             services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();

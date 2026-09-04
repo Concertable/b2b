@@ -6,13 +6,14 @@ using Concertable.B2B.Booking.Application.Models;
 using Concertable.B2B.Booking.Application.Strategies;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Domain.Entities;
+using Concertable.B2B.Booking.Domain.Factories;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.Lifecycle;
-using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.Booking.Infrastructure.Extensions;
 using Concertable.B2B.Booking.Infrastructure.Specifications;
 using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.DataAccess.Infrastructure.Extensions;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly IBus bus;
     private readonly IDealStrategyFactory<IConfirm> confirmFactory;
     private readonly IDealStrategyFactory<ICancel> cancelFactory;
+    private readonly IDealStrategyFactory<IContractFactory> contractFactory;
     private readonly TimeProvider timeProvider;
 
     public BookingWorkflow(
@@ -38,6 +40,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         IBus bus,
         IDealStrategyFactory<IConfirm> confirmFactory,
         IDealStrategyFactory<ICancel> cancelFactory,
+        IDealStrategyFactory<IContractFactory> contractFactory,
         TimeProvider timeProvider)
     {
         this.bookingRepository = bookingRepository;
@@ -47,6 +50,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.bus = bus;
         this.confirmFactory = confirmFactory;
         this.cancelFactory = cancelFactory;
+        this.contractFactory = contractFactory;
         this.timeProvider = timeProvider;
     }
 
@@ -108,26 +112,43 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         AcceptedApplication application,
         CancellationToken ct)
     {
-        var booking = await unitOfWorkBehavior.ExecuteAsync(() => CreateAsync(application, ct), ct);
-        await confirmFactory
-            .Create(application.DealType)
-            .ConfirmAsync(booking, ct);
-        if (application is IAcceptVerified { Verification: { } verification })
-            VerifyPaymentAdvancer.Advance(booking, verification);
+        var snapshot = application.Snapshot;
+        var booking = await CreateAsync(
+            snapshot,
+            (bookingId, createdAtUtc) => CreateContract(
+                application,
+                bookingId,
+                createdAtUtc),
+            ct);
+        await confirmFactory.Create(booking.DealType).ConfirmAsync(booking, ct);
         await bookingRepository.SaveChangesAsync(ct);
         return booking.ToDto();
     }
 
-    private async Task<BookingEntity> CreateAsync(
+    private ContractEntity CreateContract(
         AcceptedApplication application,
+        int bookingId,
+        DateTime createdAtUtc) =>
+        contractFactory
+            .Create(application.Snapshot.Contract.Terms.DealType)
+            .Create(bookingId, application.Snapshot, createdAtUtc);
+
+    private Task<BookingEntity> CreateAsync(
+        ApplicationAcceptanceSnapshot snapshot,
+        Func<int, DateTime, ContractEntity> mintContract,
+        CancellationToken ct) =>
+        unitOfWorkBehavior.ExecuteAsync(() => CreateCoreAsync(snapshot, mintContract, ct), ct);
+
+    private async Task<BookingEntity> CreateCoreAsync(
+        ApplicationAcceptanceSnapshot snapshot,
+        Func<int, DateTime, ContractEntity> mintContract,
         CancellationToken ct)
     {
-        var acceptance = application.ToBookingAcceptance();
-        var booking = BookingEntity.Create(acceptance);
+        var booking = BookingEntity.Create(snapshot);
         await bookingRepository.AddAsync(booking, ct);
         await bookingRepository.SaveChangesAsync(ct);
 
-        booking.MintContract(acceptance, timeProvider.GetUtcNow().UtcDateTime);
+        booking.MintContract(mintContract(booking.Id, timeProvider.GetUtcNow().UtcDateTime));
         await bookingRepository.SaveChangesAsync(ct);
         return booking;
     }
@@ -244,8 +265,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
                 booking.FinancialOperationReferenceId == verified.ProviderReferenceId,
             AcceptanceFinancialOperationRejected rejected =>
                 booking.FinancialOperationReferenceId is null &&
-                booking.FinancialFailureCode == rejected.Error.Code &&
-                booking.FinancialFailureMessage == rejected.Error.Message,
+                booking.FinancialFailure?.Code == rejected.Error.Code &&
+                booking.FinancialFailure?.Message == rejected.Error.Message,
             _ => false
         };
 

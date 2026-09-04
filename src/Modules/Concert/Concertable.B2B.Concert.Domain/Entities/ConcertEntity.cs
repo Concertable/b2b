@@ -5,6 +5,7 @@ using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Domain.Errors;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts;
 using Concertable.Kernel;
@@ -18,7 +19,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// so the Concert module can satisfy queries in a single DB context without crossing module boundaries.
 /// </summary>
 [DisplayName(DisplayNames.Concert)]
-public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurrencyVersioned, IEventRaiser, IVenueArtistTenantScoped
+public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurrencyVersioned, IEventRaiser, IVenueArtistTenantScoped
 {
     private static readonly ConcertStateMachine stateMachine = new();
 
@@ -26,26 +27,18 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
     public byte[] Version { get; private set; } = null!;
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
-    public Guid OperationId { get; private set; }
     public int BookingId { get; private set; }
     public int ApplicationId { get; private set; }
     public int OpportunityId { get; private set; }
     public int ArtistId { get; private set; }
     public int VenueId { get; private set; }
     public DealType DealType { get; private set; }
-    public bool RequiresDoorRevenue { get; private set; }
     public ConcertState State { get; private set; } = ConcertState.Draft;
     public Guid? CancellationOperationId { get; private set; }
     public Guid? SettlementOperationId { get; private set; }
     public decimal? SettlementGrossAmount { get; private set; }
     public string? FinancialOperationReferenceId { get; private set; }
-    public string? FinancialFailureCode { get; private set; }
-    public string? FinancialFailureMessage { get; private set; }
-    public decimal? Fee { get; private set; }
-    public decimal? HireFee { get; private set; }
-    public decimal? ArtistDoorPercent { get; private set; }
-    public decimal? Guarantee { get; private set; }
-    public string? SettlementPaymentMethodId { get; private set; }
+    internal FinancialFailure? FinancialFailure { get; private set; }
     public string Name { get; private set; } = null!;
     public string About { get; private set; } = null!;
     public string? BannerUrl { get; private set; }
@@ -53,7 +46,6 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
     public decimal Price { get; private set; }
     public int TotalTickets { get; private set; }
     public int TicketsSold { get; private set; }
-    public decimal? DoorRevenue { get; private set; }
     public DateRange Period { get; private set; } = null!;
     public DateTime? DatePosted { get; private set; }
     public ArtistReadModel Artist { get; set; } = null!;
@@ -65,66 +57,55 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
     public void ClearDomainEvents() => events.Clear();
 
-    private ConcertEntity() { }
+    protected ConcertEntity() { }
 
     public static ConcertEntity CreateDraft(
-        ConfirmedBooking booking,
-        string name,
-        string about,
-        IReadOnlyCollection<Genre> genres)
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft) =>
+        booking.Terms switch
+        {
+            ConfirmedBookingTerms.FlatFee terms =>
+                FlatFeeConcert.Create(booking, draft, terms.Fee),
+            ConfirmedBookingTerms.VenueHire terms =>
+                VenueHireConcert.Create(booking, draft, terms.HireFee),
+            ConfirmedBookingTerms.DoorSplit terms =>
+                DoorSplitConcert.Create(
+                    booking,
+                    draft,
+                    terms.ArtistDoorPercent),
+            ConfirmedBookingTerms.Versus terms =>
+                VersusConcert.Create(
+                    booking,
+                    draft,
+                    terms.Guarantee,
+                    terms.ArtistDoorPercent)
+        };
+
+    private protected ConcertEntity(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        DealType dealType)
     {
         ArgumentNullException.ThrowIfNull(booking);
+        ArgumentNullException.ThrowIfNull(draft);
         if (booking.VenueTenantId == Guid.Empty || booking.ArtistTenantId == Guid.Empty)
             throw new InvalidOperationException("A concert cannot inherit unresolved booking tenants.");
 
-        var concert = new ConcertEntity
-        {
-            OperationId = booking.OperationId,
-            BookingId = booking.BookingId,
-            ApplicationId = booking.ApplicationId,
-            OpportunityId = booking.OpportunityId,
-            VenueTenantId = booking.VenueTenantId,
-            ArtistTenantId = booking.ArtistTenantId,
-            ArtistId = booking.ArtistId,
-            VenueId = booking.VenueId,
-            DealType = booking.DealType,
-            RequiresDoorRevenue = booking.RequiresDoorRevenue,
-            Period = new DateRange(booking.StartDate, booking.EndDate),
-            Name = name,
-            About = about,
-            Genres = genres.ToEfSet()
-        };
-
-        switch (booking.Terms)
-        {
-            case FlatFeeTerms flatFee:
-                concert.Fee = flatFee.Fee;
-                break;
-            case VenueHireTerms venueHire:
-                concert.HireFee = venueHire.HireFee;
-                break;
-            case VersusTerms versus:
-                concert.Guarantee = versus.Guarantee;
-                break;
-        }
-        if (booking.Terms is ISettledFromDoorRevenue doorRevenue)
-        {
-            concert.ArtistDoorPercent = doorRevenue.ArtistDoorPercent;
-            concert.SettlementPaymentMethodId = doorRevenue.PaymentMethodId;
-        }
-
-        return concert;
+        BookingId = booking.BookingId;
+        ApplicationId = booking.ApplicationId;
+        OpportunityId = booking.OpportunityId;
+        VenueTenantId = booking.VenueTenantId;
+        ArtistTenantId = booking.ArtistTenantId;
+        ArtistId = booking.ArtistId;
+        VenueId = booking.VenueId;
+        DealType = dealType;
+        Period = new DateRange(booking.StartDate, booking.EndDate);
+        Name = draft.Name;
+        About = draft.About;
+        Genres = draft.Genres.ToEfSet();
     }
 
     public void IncrementTicketsSold(int quantity) => TicketsSold += quantity;
-
-    public UnitResult<DoorRevenueDeclarationError> DeclareDoorRevenue(decimal doorRevenue)
-    {
-        if (doorRevenue < 0)
-            return new DoorRevenueDeclarationError.NegativeRevenue();
-        DoorRevenue = doorRevenue;
-        return new Success();
-    }
 
     public void Update(string name, string about, decimal price, int totalTickets)
     {
@@ -167,8 +148,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         var transition = Fire(ConcertTrigger.RecordCancellationFailure);
         if (transition.TryGetError(out var error))
             return error;
-        FinancialFailureCode = code;
-        FinancialFailureMessage = message;
+        FinancialFailure = new FinancialFailure(code, message);
         return new Success();
     }
 
@@ -177,8 +157,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         var transition = Fire(ConcertTrigger.Cancel);
         if (transition.TryGetError(out var error))
             return error;
-        FinancialFailureCode = null;
-        FinancialFailureMessage = null;
+        FinancialFailure = null;
         events.Raise(new ConcertCancelledDomainEvent(Id));
         return new Success();
     }
@@ -190,8 +169,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
             return error;
         SettlementOperationId ??= Guid.NewGuid();
         SettlementGrossAmount ??= CalculateSettlementGross();
-        FinancialFailureCode = null;
-        FinancialFailureMessage = null;
+        FinancialFailure = null;
         return SettlementOperationId.Value;
     }
 
@@ -218,8 +196,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         if (transition.TryGetError(out var error))
             return error;
         EnsureSettlementReference(providerReferenceId);
-        FinancialFailureCode = code;
-        FinancialFailureMessage = message;
+        FinancialFailure = new FinancialFailure(code, message);
         return new Success();
     }
 
@@ -230,8 +207,7 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
             return error;
         if (providerReferenceId is not null)
             EnsureSettlementReference(providerReferenceId);
-        FinancialFailureCode = null;
-        FinancialFailureMessage = null;
+        FinancialFailure = null;
         return new Success();
     }
 
@@ -241,20 +217,11 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
     public Money SettlementGross => Money.Gbp(SettlementGrossAmount
         ?? throw new InvalidOperationException($"Concert {Id} has no settlement gross."));
 
-    public decimal CalculateSettlementGross() => DealType switch
-    {
-        DealType.FlatFee => Fee!.Value,
-        DealType.DoorSplit => TotalRevenue() * ArtistDoorPercent!.Value / 100m,
-        DealType.Versus => Guarantee!.Value + TotalRevenue() * ArtistDoorPercent!.Value / 100m,
-        DealType.VenueHire => HireFee!.Value,
-        _ => throw new ArgumentOutOfRangeException(nameof(DealType), DealType, null)
-    };
+    public abstract decimal CalculateSettlementGross();
 
-    public Guid SettlementPayerTenantId =>
-        DealType == DealType.VenueHire ? ArtistTenantId : VenueTenantId;
+    public abstract Guid SettlementPayerTenantId { get; }
 
-    public Guid SettlementPayeeTenantId =>
-        DealType == DealType.VenueHire ? VenueTenantId : ArtistTenantId;
+    public abstract Guid SettlementPayeeTenantId { get; }
 
     internal void EnsureSettlementReference(string providerReferenceId)
     {
@@ -286,7 +253,151 @@ public sealed class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurr
         return transition;
     }
 
-    private decimal TotalRevenue() =>
+}
+
+public sealed class FlatFeeConcert : ConcertEntity
+{
+    public decimal Fee { get; private set; }
+
+    private FlatFeeConcert() { }
+
+    private FlatFeeConcert(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        decimal fee)
+        : base(booking, draft, DealType.FlatFee)
+    {
+        Fee = fee;
+    }
+
+    internal static FlatFeeConcert Create(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        decimal fee) =>
+        new(booking, draft, fee);
+
+    public override decimal CalculateSettlementGross() => Fee;
+
+    public override Guid SettlementPayerTenantId => VenueTenantId;
+
+    public override Guid SettlementPayeeTenantId => ArtistTenantId;
+
+}
+
+public sealed class VenueHireConcert : ConcertEntity
+{
+    public decimal HireFee { get; private set; }
+
+    private VenueHireConcert() { }
+
+    private VenueHireConcert(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        decimal hireFee)
+        : base(booking, draft, DealType.VenueHire)
+    {
+        HireFee = hireFee;
+    }
+
+    internal static VenueHireConcert Create(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        decimal hireFee) =>
+        new(booking, draft, hireFee);
+
+    public override decimal CalculateSettlementGross() => HireFee;
+
+    public override Guid SettlementPayerTenantId => ArtistTenantId;
+
+    public override Guid SettlementPayeeTenantId => VenueTenantId;
+
+}
+
+public abstract class DoorRevenueConcert : ConcertEntity
+{
+    public decimal ArtistDoorPercent { get; private set; }
+    public decimal? DoorRevenue { get; private set; }
+
+    protected DoorRevenueConcert() { }
+
+    private protected DoorRevenueConcert(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        DealType dealType,
+        decimal artistDoorPercent)
+        : base(booking, draft, dealType)
+    {
+        ArtistDoorPercent = artistDoorPercent;
+    }
+
+    public UnitResult<DoorRevenueDeclarationError> DeclareDoorRevenue(decimal doorRevenue)
+    {
+        if (doorRevenue < 0)
+            return new DoorRevenueDeclarationError.NegativeRevenue();
+        DoorRevenue = doorRevenue;
+        return new Success();
+    }
+
+    public override Guid SettlementPayerTenantId => VenueTenantId;
+
+    public override Guid SettlementPayeeTenantId => ArtistTenantId;
+
+    private protected decimal TotalRevenue() =>
         TicketsSold * Price + DoorRevenue
         ?? throw new InvalidOperationException($"Concert {Id} has no declared door revenue.");
+}
+
+public sealed class DoorSplitConcert : DoorRevenueConcert
+{
+    private DoorSplitConcert() { }
+
+    private DoorSplitConcert(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        decimal artistDoorPercent)
+        : base(
+            booking,
+            draft,
+            DealType.DoorSplit,
+            artistDoorPercent) { }
+
+    internal static DoorSplitConcert Create(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        decimal artistDoorPercent) =>
+        new(booking, draft, artistDoorPercent);
+
+    public override decimal CalculateSettlementGross() =>
+        TotalRevenue() * ArtistDoorPercent / 100m;
+}
+
+public sealed class VersusConcert : DoorRevenueConcert
+{
+    public decimal Guarantee { get; private set; }
+
+    private VersusConcert() { }
+
+    private VersusConcert(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        decimal guarantee,
+        decimal artistDoorPercent)
+        : base(
+            booking,
+            draft,
+            DealType.Versus,
+            artistDoorPercent)
+    {
+        Guarantee = guarantee;
+    }
+
+    internal static VersusConcert Create(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        decimal guarantee,
+        decimal artistDoorPercent) =>
+        new(booking, draft, guarantee, artistDoorPercent);
+
+    public override decimal CalculateSettlementGross() =>
+        Guarantee + TotalRevenue() * ArtistDoorPercent / 100m;
 }

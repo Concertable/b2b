@@ -43,8 +43,8 @@ internal sealed class BookingService : IBookingService
                 booking.ApplicationId,
                 booking.State,
                 booking.OperationId,
-                booking.FinancialFailureCode,
-                booking.FinancialFailureMessage);
+                booking.FinancialFailure?.Code,
+                booking.FinancialFailure?.Message);
     }
 
     public async Task<IReadOnlyList<BookingSummaryDto>> GetSummariesByApplicationIdsAsync(
@@ -56,8 +56,8 @@ internal sealed class BookingService : IBookingService
                 booking.ApplicationId,
                 booking.State,
                 booking.OperationId,
-                booking.FinancialFailureCode,
-                booking.FinancialFailureMessage))
+                booking.FinancialFailure?.Code,
+                booking.FinancialFailure?.Message))
             .ToList();
 
     public Task<int> GetArtistAwaitingCheckoutCountAsync(

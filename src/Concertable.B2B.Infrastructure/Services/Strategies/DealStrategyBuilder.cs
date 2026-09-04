@@ -26,6 +26,15 @@ public sealed class DealStrategyBuilder
         services.AddDealStrategyFactory();
     }
 
+    public DealStrategyBuilder RequireExactly<TStrategy>(params DealType[] dealTypes)
+        where TStrategy : class, IDealStrategy
+    {
+        if (requiredStrategies.Add(typeof(TStrategy)))
+            builder.RequireExactly<TStrategy>(dealTypes);
+
+        return this;
+    }
+
     internal void RequireAll<TStrategy>()
         where TStrategy : class, IDealStrategy
     {

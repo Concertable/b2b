@@ -21,19 +21,6 @@ public sealed class ApplicationDealUnionTests
         AssertRegistration<IApplyPrepaid, PrepaidApply>(services, DealType.VenueHire);
     }
 
-    [Fact]
-    public void AddApplicationDealUnions_RegistersAcceptCasesForEveryDealType()
-    {
-        var services = new ServiceCollection();
-
-        services.AddApplicationDealUnions();
-
-        AssertRegistration<IAccept, StandardAccept>(services, DealType.FlatFee);
-        AssertRegistration<IAcceptPaid, DoorSplitAccept>(services, DealType.DoorSplit);
-        AssertRegistration<IAcceptPaid, VersusAccept>(services, DealType.Versus);
-        AssertRegistration<IAccept, PrepaidAccept>(services, DealType.VenueHire);
-    }
-
     private static void AssertRegistration<TStrategy, TImplementation>(
         IServiceCollection services,
         DealType dealType)

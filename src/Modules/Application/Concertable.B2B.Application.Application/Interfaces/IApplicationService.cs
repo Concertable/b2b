@@ -28,7 +28,6 @@ internal interface IApplicationService
     Task<Result<Checkout, ApplicationCheckoutError>> AcceptCheckoutAsync(int applicationId);
     Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,
-        string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default);
     Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(

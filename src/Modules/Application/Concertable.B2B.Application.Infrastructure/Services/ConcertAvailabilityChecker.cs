@@ -5,15 +5,15 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ConcertAvailabilityChecker : IConcertAvailabilityChecker
 {
-    private readonly IApplicationReadDbContext dbContext;
+    private readonly IApplicationReadDbContext context;
 
-    public ConcertAvailabilityChecker(IApplicationReadDbContext dbContext)
+    public ConcertAvailabilityChecker(IApplicationReadDbContext context)
     {
-        this.dbContext = dbContext;
+        this.context = context;
     }
 
     public Task<bool> OpportunityHasConcertAsync(int opportunityId, CancellationToken ct = default) =>
-        dbContext.ConcertAvailabilities.AnyAsync(
+        context.ConcertAvailabilities.AnyAsync(
             availability => availability.OpportunityId == opportunityId,
             ct);
 
@@ -21,7 +21,7 @@ internal sealed class ConcertAvailabilityChecker : IConcertAvailabilityChecker
         int artistId,
         DateTime date,
         CancellationToken ct = default) =>
-        dbContext.ConcertAvailabilities.AnyAsync(
+        context.ConcertAvailabilities.AnyAsync(
             availability => availability.ArtistId == artistId && availability.StartDate.Date == date.Date,
             ct);
 
@@ -29,7 +29,7 @@ internal sealed class ConcertAvailabilityChecker : IConcertAvailabilityChecker
         int venueId,
         DateTime date,
         CancellationToken ct = default) =>
-        dbContext.ConcertAvailabilities.AnyAsync(
+        context.ConcertAvailabilities.AnyAsync(
             availability => availability.VenueId == venueId && availability.StartDate.Date == date.Date,
             ct);
 }

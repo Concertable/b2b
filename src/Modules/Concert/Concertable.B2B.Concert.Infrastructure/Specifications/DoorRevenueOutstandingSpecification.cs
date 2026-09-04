@@ -10,5 +10,5 @@ internal sealed class DoorRevenueOutstandingSpecification
     : PredicateSpecification<ConcertEntity>, IDoorRevenueOutstandingSpecification
 {
     protected override Expression<Func<ConcertEntity, bool>> Predicate =>
-        c => c.RequiresDoorRevenue && c.DoorRevenue == null;
+        c => c is DoorRevenueConcert && ((DoorRevenueConcert)c).DoorRevenue == null;
 }

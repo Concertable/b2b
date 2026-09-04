@@ -2,7 +2,6 @@ using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Application.Application.Interfaces;
 using Concertable.B2B.Application.Application.Mappers;
-using Concertable.B2B.Application.Application.Renderers;
 using Concertable.B2B.Application.Application.Strategies;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Events;
@@ -85,39 +84,12 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IIntegrationEventHandler<ConcertCancelledEvent>>(provider =>
                 provider.GetRequiredService<ConcertAvailabilityIntegrationEventHandler>());
             services.AddScoped<IApplicationCheckoutService, ApplicationCheckoutService>();
-            services.AddApplicationDealStrategies();
             services.AddApplicationDealUnions();
             services.AddScoped<IApplicationModule, ApplicationModule>();
 
             services.AddSingleton<ApplicationConfigurationProvider>();
             services.AddSingleton<IEntityTypeConfigurationProvider>(provider =>
                 provider.GetRequiredService<ApplicationConfigurationProvider>());
-
-            return services;
-        }
-
-        internal IServiceCollection AddApplicationDealStrategies()
-        {
-            services.AddScoped<IDealTermsRenderer, DealTermsRenderer>();
-            return services.AddApplicationDealStrategies(builder =>
-            {
-                builder.For(DealType.FlatFee)
-                    .AddSingleton<IDealTerms, FlatFeeDealTerms>();
-                builder.For(DealType.DoorSplit)
-                    .AddSingleton<IDealTerms, DoorSplitDealTerms>();
-                builder.For(DealType.Versus)
-                    .AddSingleton<IDealTerms, VersusDealTerms>();
-                builder.For(DealType.VenueHire)
-                    .AddSingleton<IDealTerms, VenueHireDealTerms>();
-            });
-        }
-
-        internal IServiceCollection AddApplicationDealStrategies(
-            Action<DealStrategyBuilder> configure)
-        {
-            var builder = new DealStrategyBuilder(services);
-            configure(builder);
-            builder.Build();
 
             return services;
         }
@@ -133,16 +105,6 @@ public static class ServiceCollectionExtensions
                         DealType.Versus);
                 union.Case<IApplyPrepaid>(apply => new Apply.Prepaid(apply))
                     .Use<PrepaidApply>(DealType.VenueHire);
-            });
-
-            services.AddApplicationDealUnion<Accept>(union =>
-            {
-                union.Case<IAccept>(accept => new Accept.Standard(accept))
-                    .UseScoped<StandardAccept>(DealType.FlatFee)
-                    .UseScoped<PrepaidAccept>(DealType.VenueHire);
-                union.Case<IAcceptPaid>(accept => new Accept.Paid(accept))
-                    .UseScoped<DoorSplitAccept>(DealType.DoorSplit)
-                    .UseScoped<VersusAccept>(DealType.Versus);
             });
 
             return services;

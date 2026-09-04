@@ -48,7 +48,7 @@ public sealed class DoorRevenueDeclarationTests
             new DateTime(2026, 8, 10, 19, 0, 0, DateTimeKind.Utc),
             new DateTime(2026, 8, 10, 22, 0, 0, DateTimeKind.Utc),
             [Genre.Rock],
-            new DoorSplitTerms(50m, "pm_123"));
+            new DoorSplitTerms(50m));
         return ConcertEntity.CreateDraft(
             booking,
             "Concert",

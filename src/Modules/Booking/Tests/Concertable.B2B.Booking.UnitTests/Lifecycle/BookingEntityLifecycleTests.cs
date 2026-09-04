@@ -1,3 +1,4 @@
+using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.Mappers;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Lifecycle;
@@ -11,7 +12,7 @@ public sealed class BookingEntityLifecycleTests
     [Fact]
     public void Cancel_WhenConfirmationFailed_LeavesStateFinancialFailureAndEventsUnchanged()
     {
-        var acceptance = AcceptedApplications.FlatFee().ToBookingAcceptance();
+        var acceptance = AcceptedApplications.FlatFee().Contract.ToBookingAcceptance();
         var booking = BookingEntity.Create(acceptance);
         Assert.False(booking.RecordFinancialFailure("pi_123", "declined", "Declined").TryGetError(out _));
         var events = booking.DomainEvents.ToArray();

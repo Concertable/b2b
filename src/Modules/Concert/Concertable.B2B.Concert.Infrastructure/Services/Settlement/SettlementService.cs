@@ -136,7 +136,7 @@ internal sealed class SettlementService : ISettlementService
         var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
         if (nowUtc < concert.Period.End)
             return new FinishConcertError.ConcertNotEnded();
-        if (concert.RequiresDoorRevenue && concert.DoorRevenue is null)
+        if (concert is DoorRevenueConcert { DoorRevenue: null })
             return new FinishConcertError.DoorRevenueRequired();
 
         var supplierTenantId = concert.SettlementPayeeTenantId;
@@ -183,8 +183,6 @@ internal sealed class SettlementService : ISettlementService
             return new FinishConcertError.ConcertNotFound(concertId);
 
         concert.EnsureSettlementOperation(operationId);
-        EnsureConfirmationMatches(concert, confirmation);
-
         if (concert.State is ConcertState.Complete)
         {
             if (confirmation is SettlementConfirmation.ManagerPaid paid)
@@ -238,20 +236,6 @@ internal sealed class SettlementService : ISettlementService
                 $"Concert {concertId} cannot record settlement failure from {transitionError.Current}.");
     }
 
-    private static void EnsureConfirmationMatches(
-        ConcertEntity concert,
-        SettlementConfirmation confirmation)
-    {
-        if ((concert.DealType is DealType.FlatFee or DealType.VenueHire &&
-             confirmation is SettlementConfirmation.EscrowReleased) ||
-            (concert.DealType is DealType.DoorSplit or DealType.Versus &&
-             confirmation is SettlementConfirmation.ManagerPaid))
-            return;
-
-        throw new InvalidOperationException(
-            $"Concert {concert.Id} cannot apply {confirmation.GetType().Name} to {concert.DealType} settlement.");
-    }
-
     private static SettlementPreparation.Ready CreatePreparation(
         ConcertEntity concert,
         Guid operationId) =>
@@ -260,8 +244,8 @@ internal sealed class SettlementService : ISettlementService
             concert.Id,
             concert.DealType,
             concert.BookingId,
+            concert.ApplicationId,
             concert.SettlementPayerTenantId,
             concert.SettlementPayeeTenantId,
-            concert.SettlementGross,
-            concert.SettlementPaymentMethodId);
+            concert.SettlementGross);
 }

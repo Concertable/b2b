@@ -35,9 +35,11 @@ internal static class QueryableConcertMappers
                 StartDate = c.Period.Start,
                 EndDate = c.Period.End,
                 State = c.State,
-                IsRevenueShare = c.RequiresDoorRevenue,
+                IsRevenueShare = c is DoorRevenueConcert,
                 TicketsSold = c.TicketsSold,
-                DoorRevenue = c.DoorRevenue,
+                DoorRevenue = c is DoorRevenueConcert
+                    ? ((DoorRevenueConcert)c).DoorRevenue
+                    : null,
                 Genres = c.Genres,
                 Venue = new ConcertVenue
                 {
