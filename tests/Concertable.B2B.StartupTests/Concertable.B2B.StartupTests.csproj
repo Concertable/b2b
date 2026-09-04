@@ -15,15 +15,10 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="Reunion" />
-    <PackageReference Include="TngTech.ArchUnitNET.xUnit" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
-  <!-- Reference the composition root so every module's compiled assembly (Contracts/Domain/
-       Application/Infrastructure/Api) lands in the output for ArchUnitNET to load and analyse; the same
-       host graphs are what the resource-graph startup tests in Concertable.B2B.StartupTests build. -->
   <ItemGroup>
     <ProjectReference Include="..\..\src\Concertable.B2B.Web\Concertable.B2B.Web.csproj" />
     <ProjectReference Include="..\..\src\Concertable.B2B.Workers\Concertable.B2B.Workers.csproj" />

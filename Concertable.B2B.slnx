@@ -115,6 +115,7 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/Concertable.B2B.ArchitectureTests/Concertable.B2B.ArchitectureTests.csproj" />
+    <Project Path="tests/Concertable.B2B.StartupTests/Concertable.B2B.StartupTests.csproj" />
     <Project Path="tests/Concertable.B2B.E2EAdmin.IntegrationTests/Concertable.B2B.E2EAdmin.IntegrationTests.csproj" />
     <Project Path="tests/Concertable.B2B.KeyedStrategies.UnitTests/Concertable.B2B.KeyedStrategies.UnitTests.csproj" />
     <Project Path="tests/Concertable.B2B.IntegrationTests.Fixtures/Concertable.B2B.IntegrationTests.Fixtures.csproj" />
