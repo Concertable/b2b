@@ -1,4 +1,5 @@
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.Kernel;
@@ -10,7 +11,7 @@ public sealed class ConcertEntityLifecycleTests
     [Fact]
     public void Post_WhenAwaitingSettlement_LeavesStateSettlementAndEventsUnchanged()
     {
-        var concert = ConcertEntity.CreateDraft(CreateBooking(), "Concert", "About", []);
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []));
         Assert.True(concert.BeginSettlement().TryGetValue(out var operationId));
         concert.RecordSettlementReference("pi_123");
         var events = concert.DomainEvents.ToArray();
@@ -33,7 +34,7 @@ public sealed class ConcertEntityLifecycleTests
     [Fact]
     public void BeginSettlement_WhenPreviousAttemptFailed_ReusesTheOperation()
     {
-        var concert = ConcertEntity.CreateDraft(CreateBooking(), "Concert", "About", []);
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []));
         Assert.True(concert.BeginSettlement().TryGetValue(out var firstOperationId));
         concert.RecordSettlementReference("pi_failed");
         Assert.False(concert.RecordSettlementFailure("pi_failed", "declined", "Declined").IsFailure);
@@ -50,7 +51,7 @@ public sealed class ConcertEntityLifecycleTests
     [Fact]
     public void RecordSettlementFailure_WhenTransitionRejected_LeavesReferenceUnset()
     {
-        var concert = ConcertEntity.CreateDraft(CreateBooking(), "Concert", "About", []);
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []));
 
         var result = concert.RecordSettlementFailure("pi_123", "declined", "Declined");
 
@@ -62,7 +63,7 @@ public sealed class ConcertEntityLifecycleTests
     [Fact]
     public void CompleteSettlement_WhenTransitionRejected_LeavesReferenceUnset()
     {
-        var concert = ConcertEntity.CreateDraft(CreateBooking(), "Concert", "About", []);
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []));
         Assert.True(concert.BeginCancellation().TryGetValue(out _));
         Assert.False(concert.Cancel().TryGetError(out _));
 
@@ -76,7 +77,8 @@ public sealed class ConcertEntityLifecycleTests
     [Fact]
     public void BeginSettlement_WhenRetryingAfterLaterTicketSales_ReusesReservedGross()
     {
-        var concert = ConcertEntity.CreateDraft(CreateDoorSplitBooking(), "Concert", "About", []);
+        var concert = (DoorRevenueConcert)ConcertEntity.CreateDraft(
+            CreateDoorSplitBooking(), new ConcertDraft("Concert", "About", []));
         concert.IncrementTicketsSold(10);
         Assert.False(concert.DeclareDoorRevenue(100m).IsFailure);
         Assert.True(concert.BeginSettlement().TryGetValue(out _));
@@ -89,34 +91,6 @@ public sealed class ConcertEntityLifecycleTests
         Assert.Equal(50m, concert.SettlementGross.Amount);
     }
 
-    private static ConfirmedBookingSnapshot CreateDoorSplitBooking() => new(
-        Guid.NewGuid(),
-        1,
-        2,
-        3,
-        4,
-        5,
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        DealType.DoorSplit,
-        true,
-        new DateTime(2030, 1, 1, 19, 0, 0, DateTimeKind.Utc),
-        new DateTime(2030, 1, 1, 22, 0, 0, DateTimeKind.Utc),
-        [],
-        new DoorSplitTerms(50m));
-    private static ConfirmedBookingSnapshot CreateBooking() => new(
-        Guid.NewGuid(),
-        1,
-        2,
-        3,
-        4,
-        5,
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        DealType.FlatFee,
-        false,
-        new DateTime(2030, 1, 1, 19, 0, 0, DateTimeKind.Utc),
-        new DateTime(2030, 1, 1, 22, 0, 0, DateTimeKind.Utc),
-        [],
-        new FlatFeeTerms(100m));
+    private static ConfirmedBookingSnapshot CreateDoorSplitBooking() => ConfirmedBookings.DoorSplit(50m);
+    private static ConfirmedBookingSnapshot CreateBooking() => ConfirmedBookings.FlatFee(100m);
 }

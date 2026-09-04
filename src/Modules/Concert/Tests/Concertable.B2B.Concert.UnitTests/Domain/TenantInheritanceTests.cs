@@ -13,7 +13,7 @@ public sealed class TenantInheritanceTests
     public void Create_ConfirmedBooking_PropagatesTenantPairToConcertAndInvoice()
     {
         var booking = CreateBooking(venueTenantId, artistTenantId);
-        var concert = ConcertEntity.CreateDraft(booking, "Concert", "About", []);
+        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
         var party = new InvoiceParty(Guid.NewGuid(), "Party", null, "Line 1", null, "City", "AB1 2CD", "GB");
         var invoice = InvoiceEntity.Create(
             concert,
@@ -42,25 +42,11 @@ public sealed class TenantInheritanceTests
         var booking = CreateBooking(venue, artist);
 
         Assert.Throws<InvalidOperationException>(
-            () => ConcertEntity.CreateDraft(booking, "Concert", "About", []));
+            () => ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", [])));
     }
 
     private static ConfirmedBookingSnapshot CreateBooking(Guid venueTenantId, Guid artistTenantId) =>
-        new(
-            Guid.NewGuid(),
-            1,
-            2,
-            3,
-            4,
-            5,
-            venueTenantId,
-            artistTenantId,
-            DealType.FlatFee,
-            false,
-            new DateTime(2026, 8, 8, 19, 0, 0, DateTimeKind.Utc),
-            new DateTime(2026, 8, 8, 22, 0, 0, DateTimeKind.Utc),
-            [],
-            new FlatFeeTerms(100m));
+        ConfirmedBookings.FlatFee(100m) with { VenueTenantId = venueTenantId, ArtistTenantId = artistTenantId };
 
     private static void AssertScope(
         Concertable.B2B.DataAccess.Application.IVenueArtistTenantScoped entity,

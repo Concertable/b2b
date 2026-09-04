@@ -78,21 +78,7 @@ public sealed class BookingConfirmationEmailSenderTests
         var sender = new BookingConfirmationEmailSender(tenant.Object, user.Object, renderer.Object, bus.Object);
 
         var startDate = new DateTime(2035, 1, 1, 19, 0, 0, DateTimeKind.Utc);
-        var booking = new ConfirmedBookingSnapshot(
-            Guid.NewGuid(),
-            1,
-            2,
-            3,
-            4,
-            5,
-            VenueTenant,
-            ArtistTenant,
-            DealType.FlatFee,
-            false,
-            startDate,
-            startDate.AddHours(3),
-            [],
-            new FlatFeeTerms(100m));
+        var booking = ConfirmedBookings.FlatFee(100m);
 
         await sender.SendAsync(booking, "The Venue", "The Artist");
 

@@ -1,4 +1,6 @@
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Domain.ValueObjects;
+using PaymentCommitment = Concertable.B2B.Concert.Domain.ValueObjects.PaymentCommitment;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Strategies;
@@ -172,10 +174,10 @@ public sealed class ConcertWorkflowTests
             42,
             DealType.DoorSplit,
             7,
+            new PaymentCommitment("method-verification", "app:7"),
             Guid.NewGuid(),
             Guid.NewGuid(),
-            Money.Gbp(125m),
-            "pm_test");
+            Money.Gbp(125m));
         Result<SettlementPreparation, FinishConcertError> prepared = ready;
         Result<SettlementConfirmation, FinishConcertError> executed =
             new SettlementConfirmation.ManagerPaid("pi_test");
@@ -207,24 +209,8 @@ public sealed class ConcertWorkflowTests
     }
 
     private static ConcertEntity CreateBooking() => ConcertEntity.CreateDraft(
-        new ConfirmedBookingSnapshot(
-            Guid.NewGuid(),
-            1,
-            2,
-            3,
-            4,
-            5,
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            DealType.FlatFee,
-            false,
-            new DateTime(2030, 1, 1, 19, 0, 0, DateTimeKind.Utc),
-            new DateTime(2030, 1, 1, 22, 0, 0, DateTimeKind.Utc),
-            [],
-            new FlatFeeTerms(100m)),
-        "Concert",
-        "About",
-        []);
+        ConfirmedBookings.FlatFee(100m),
+        new ConcertDraft("Concert", "About", []));
 
     private sealed class ImmediateBehavior : IUnitOfWorkBehavior, IOutboxUnitOfWorkBehavior
     {

@@ -1,4 +1,5 @@
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
@@ -23,21 +24,7 @@ public sealed class ConcertServiceCreateTests
     {
         var venueTenantId = Guid.NewGuid();
         var artistTenantId = Guid.NewGuid();
-        booking = new ConfirmedBookingSnapshot(
-            Guid.NewGuid(),
-            7,
-            8,
-            9,
-            11,
-            13,
-            venueTenantId,
-            artistTenantId,
-            DealType.FlatFee,
-            false,
-            new DateTime(2026, 9, 1, 20, 0, 0, DateTimeKind.Utc),
-            new DateTime(2026, 9, 1, 23, 0, 0, DateTimeKind.Utc),
-            [Genre.Rock],
-            new FlatFeeTerms(500m));
+        booking = ConfirmedBookings.FlatFee(500m);
         var artist = new ArtistReadModel
         {
             Id = booking.ArtistId,
@@ -96,7 +83,7 @@ public sealed class ConcertServiceCreateTests
         Assert.Equal(booking.ApplicationId, addedConcert.ApplicationId);
         Assert.Equal(booking.BookingId, addedConcert.BookingId);
         Assert.Equal(booking.VenueId, addedConcert.VenueId);
-        Assert.False(addedConcert.RequiresDoorRevenue);
+        Assert.IsNotType<DoorRevenueConcert>(addedConcert);
         repository.Verify(
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once);
@@ -107,7 +94,7 @@ public sealed class ConcertServiceCreateTests
     {
         repository
             .Setup(value => value.GetByBookingIdAsync(booking.BookingId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ConcertEntity.CreateDraft(booking, "Existing", "About", [Genre.Rock]));
+            .ReturnsAsync(ConcertEntity.CreateDraft(booking, new ConcertDraft("Existing", "About", [Genre.Rock])));
 
         await service.CreateAsync(booking);
 

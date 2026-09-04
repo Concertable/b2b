@@ -1,4 +1,5 @@
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Validators;
 using Concertable.Contracts.Enums;
@@ -63,26 +64,8 @@ public sealed class ConcertValidatorTests
 
     private static ConcertEntity CreateConcert()
     {
-        var booking = new ConfirmedBookingSnapshot(
-            Guid.NewGuid(),
-            1,
-            2,
-            3,
-            4,
-            5,
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            DealType.FlatFee,
-            false,
-            new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc),
-            new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc),
-            [Genre.Rock],
-            new FlatFeeTerms(100m));
+        var booking = ConfirmedBookings.FlatFee(100m);
 
-        return ConcertEntity.CreateDraft(
-            booking,
-            "Concert",
-            "About",
-            [Genre.Rock]);
+        return ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", [Genre.Rock]));
     }
 }

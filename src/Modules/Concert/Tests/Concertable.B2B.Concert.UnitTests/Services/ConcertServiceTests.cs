@@ -1,4 +1,5 @@
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Requests;
@@ -18,21 +19,7 @@ namespace Concertable.B2B.Concert.UnitTests.Services;
 
 public sealed class ConcertServiceTests
 {
-    private static ConfirmedBookingSnapshot CreateBooking(DateTimeOffset now) => new(
-        Guid.NewGuid(),
-        1,
-        2,
-        3,
-        4,
-        5,
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        DealType.DoorSplit,
-        true,
-        now.UtcDateTime.AddHours(-3),
-        now.UtcDateTime.AddHours(-1),
-        [],
-        new DoorSplitTerms(50m));
+    private static ConfirmedBookingSnapshot CreateBooking(DateTimeOffset now) => ConfirmedBookings.DoorSplit(50m);
 
     private static ConcertService CreateService(
         Mock<IConcertRepository> repository,
@@ -59,7 +46,7 @@ public sealed class ConcertServiceTests
     public async Task UpdateAsync_SaveRaceLost_ReturnsSuperseded()
     {
         var now = new DateTimeOffset(2026, 8, 10, 23, 0, 0, TimeSpan.Zero);
-        var concert = ConcertEntity.CreateDraft(CreateBooking(now), "Concert", "About", []);
+        var concert = ConcertEntity.CreateDraft(CreateBooking(now), new ConcertDraft("Concert", "About", []));
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository.Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(concert);
@@ -84,8 +71,8 @@ public sealed class ConcertServiceTests
     {
         var now = new DateTimeOffset(2026, 8, 10, 23, 0, 0, TimeSpan.Zero);
         var booking = CreateBooking(now);
-        var concert = ConcertEntity.CreateDraft(booking, "Concert", "About", []);
-        var persisted = ConcertEntity.CreateDraft(booking, "Concert", "About", []);
+        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
+        var persisted = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository
@@ -112,7 +99,7 @@ public sealed class ConcertServiceTests
     public async Task DeclareDoorRevenueAsync_SaveRaceLost_ReturnsSuperseded()
     {
         var now = new DateTimeOffset(2026, 8, 10, 23, 0, 0, TimeSpan.Zero);
-        var concert = ConcertEntity.CreateDraft(CreateBooking(now), "Concert", "About", []);
+        var concert = ConcertEntity.CreateDraft(CreateBooking(now), new ConcertDraft("Concert", "About", []));
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository.Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(concert);
@@ -148,26 +135,8 @@ public sealed class ConcertServiceTests
     public async Task DeclareDoorRevenueAsync_NegativeRevenue_MapsDomainFailureWithoutSaving()
     {
         var now = new DateTimeOffset(2026, 8, 10, 23, 0, 0, TimeSpan.Zero);
-        var booking = new ConfirmedBookingSnapshot(
-            Guid.NewGuid(),
-            1,
-            2,
-            3,
-            4,
-            5,
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            DealType.DoorSplit,
-            true,
-            now.UtcDateTime.AddHours(-3),
-            now.UtcDateTime.AddHours(-1),
-            [],
-            new DoorSplitTerms(50m));
-        var concert = ConcertEntity.CreateDraft(
-            booking,
-            "Concert",
-            "About",
-            []);
+        var booking = ConfirmedBookings.DoorSplit(50m);
+        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository

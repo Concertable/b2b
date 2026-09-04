@@ -1,4 +1,5 @@
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
@@ -45,30 +46,15 @@ public sealed class DealPayeeResolverTests
 
     private static ConcertEntity CreateConcert(DealType dealType)
     {
-        DealTerms terms = dealType switch
+        var booking = (dealType switch
         {
-            DealType.FlatFee => new FlatFeeTerms(100m),
-            DealType.DoorSplit => new DoorSplitTerms(50m),
-            DealType.Versus => new VersusTerms(100m, 50m),
-            DealType.VenueHire => new VenueHireTerms(100m),
+            DealType.FlatFee => ConfirmedBookings.FlatFee(100m),
+            DealType.DoorSplit => ConfirmedBookings.DoorSplit(50m),
+            DealType.Versus => ConfirmedBookings.Versus(100m, 50m),
+            DealType.VenueHire => ConfirmedBookings.VenueHire(100m),
             _ => throw new ArgumentOutOfRangeException(nameof(dealType), dealType, null)
-        };
-        var booking = new ConfirmedBookingSnapshot(
-            Guid.NewGuid(),
-            1,
-            2,
-            3,
-            4,
-            5,
-            VenueTenantId,
-            ArtistTenantId,
-            dealType,
-            dealType is DealType.DoorSplit or DealType.Versus,
-            new DateTime(2026, 8, 9, 19, 0, 0, DateTimeKind.Utc),
-            new DateTime(2026, 8, 9, 22, 0, 0, DateTimeKind.Utc),
-            [],
-            terms);
-        var concert = ConcertEntity.CreateDraft(booking, "Concert", "About", []);
+        }) with { VenueTenantId = VenueTenantId, ArtistTenantId = ArtistTenantId };
+        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
         concert.Venue = new VenueReadModel { UserId = VenueUserId };
         concert.Artist = new ArtistReadModel { UserId = ArtistUserId };
         return concert;

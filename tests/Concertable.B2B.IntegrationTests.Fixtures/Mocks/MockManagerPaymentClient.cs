@@ -10,10 +10,12 @@ namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
 {
     private readonly MockStripeApiClient stripeApiClient;
+    private readonly Dictionary<Guid, PaymentOutcome> settlements = [];
+    private readonly SemaphoreSlim settlementSemaphore = new(1, 1);
 
-    public List<(Guid PayerId, Guid PayeeId, decimal Amount, string PaymentMethodId, int BookingId)> Payments { get; } = [];
+    public List<(Guid PayerId, Guid PayeeId, decimal Amount, string PaymentMethodId, int BookingId, Guid OperationId)> Payments { get; } = [];
 
-    public List<(Guid PayerId, Guid PayeeId, decimal Amount, PaymentOperationReference PaymentMethod, int BookingId)> ReferencedPayments { get; } = [];
+    public List<(Guid PayerId, Guid PayeeId, decimal Amount, PaymentOperationReference PaymentMethod, int BookingId, Guid OperationId)> ReferencedPayments { get; } = [];
 
     public MockManagerPaymentClient(MockStripeApiClient stripeApiClient)
     {
@@ -24,6 +26,7 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
     {
         Payments.Clear();
         ReferencedPayments.Clear();
+        settlements.Clear();
     }
 
     public async Task<Result<PaymentOutcome, PaymentMethodChargeError>> PayAsync(
@@ -36,32 +39,31 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
         int bookingId,
         CancellationToken ct = default)
     {
-        var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
+        await settlementSemaphore.WaitAsync(ct);
+        try
         {
-            Amount = amount.ToMinorUnits(),
-            Metadata = new Dictionary<string, string>
-            {
-                [PaymentMetadataKeys.Type] = TransactionTypes.Settlement,
-                [PaymentMetadataKeys.BookingId] = bookingId.ToString()
-            }
-        });
-        ReferencedPayments.Add((payerId, payeeId, amount.Amount, paymentMethod, bookingId));
-        return Result<PaymentOutcome, PaymentMethodChargeError>.Success(new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id });
-    }
+            if (settlements.TryGetValue(operationId, out var existing))
+                return existing;
 
-    public async Task<Result<PaymentOutcome, ManagerPaymentError>> PayAsync(Guid payerId, Guid payeeId, Money amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
-    {
-        var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
-        {
-            Amount = amount.ToMinorUnits(),
-            Metadata = new Dictionary<string, string>
+            var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
             {
-                [PaymentMetadataKeys.Type] = TransactionTypes.Settlement,
-                [PaymentMetadataKeys.BookingId] = bookingId.ToString()
-            }
-        });
-        Payments.Add((payerId, payeeId, amount.Amount, paymentMethodId, bookingId));
-        return Result<PaymentOutcome, ManagerPaymentError>.Success(new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id });
+                Amount = amount.ToMinorUnits(),
+                Metadata = new Dictionary<string, string>
+                {
+                    [PaymentMetadataKeys.Type] = TransactionTypes.Settlement,
+                    [PaymentMetadataKeys.BookingId] = bookingId.ToString(),
+                    [PaymentMetadataKeys.OperationId] = operationId.ToString()
+                }
+            });
+            var outcome = new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id };
+            settlements.Add(operationId, outcome);
+            ReferencedPayments.Add((payerId, payeeId, amount.Amount, paymentMethod, bookingId, operationId));
+            return outcome;
+        }
+        finally
+        {
+            settlementSemaphore.Release();
+        }
     }
 
     public async Task<Result<PaymentOutcome, ManagerPaymentOperationError>> PayAsync(
@@ -74,14 +76,55 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
         int bookingId,
         CancellationToken ct = default)
     {
-        var result = await PayAsync(payerId, payeeId, amount, paymentMethodId, session, bookingId, ct);
-        if (result.TryGetValue(out var outcome))
-            return Result<PaymentOutcome, ManagerPaymentOperationError>.Success(outcome);
+        await settlementSemaphore.WaitAsync(ct);
+        try
+        {
+            if (settlements.TryGetValue(operationId, out var existing))
+                return existing;
 
-        result.TryGetError(out var error);
-        return Result<PaymentOutcome, ManagerPaymentOperationError>.Failure(
-            new ManagerPaymentOperationError.ManagerFailure(error!));
+            var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
+            {
+                Amount = amount.ToMinorUnits(),
+                Metadata = new Dictionary<string, string>
+                {
+                    [PaymentMetadataKeys.Type] = TransactionTypes.Settlement,
+                    [PaymentMetadataKeys.BookingId] = bookingId.ToString(),
+                    [PaymentMetadataKeys.OperationId] = operationId.ToString()
+                }
+            });
+            var outcome = new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id };
+            settlements.Add(operationId, outcome);
+            Payments.Add((payerId, payeeId, amount.Amount, paymentMethodId, bookingId, operationId));
+            return outcome;
+        }
+        finally
+        {
+            settlementSemaphore.Release();
+        }
     }
+
+    public async Task<Result<PaymentOutcome, ManagerPaymentError>> PayAsync(
+        Guid payerId,
+        Guid payeeId,
+        Money amount,
+        string paymentMethodId,
+        PaymentSession session,
+        int bookingId,
+        CancellationToken ct = default)
+    {
+        var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
+        {
+            Amount = amount.ToMinorUnits(),
+            Metadata = new Dictionary<string, string>
+            {
+                [PaymentMetadataKeys.Type] = TransactionTypes.Settlement,
+                [PaymentMetadataKeys.BookingId] = bookingId.ToString()
+            }
+        });
+        Payments.Add((payerId, payeeId, amount.Amount, paymentMethodId, bookingId, Guid.NewGuid()));
+        return new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id };
+    }
+
 
     public async Task<Result<PaymentOutcome, ManagerPaymentError>> PayBoundCommissionAsync(
         Guid payerId,
@@ -104,7 +147,7 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
                 [PaymentMetadataKeys.BookingId] = bookingId.ToString()
             }
         });
-        Payments.Add((payerId, payeeId, gross.Amount, paymentMethodId, bookingId));
+        Payments.Add((payerId, payeeId, gross.Amount, paymentMethodId, bookingId, commissionBindingId));
         return Result<PaymentOutcome, ManagerPaymentError>.Success(new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id });
     }
 
