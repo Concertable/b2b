@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Domain.Financial;
+using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
@@ -24,8 +25,8 @@ public abstract class ContractEntity : IIdEntity, IVenueArtistTenantScoped
     public PaymentMethod PaymentMethod { get; private set; }
     public string TermsText { get; private set; } = null!;
     public string PlatformTermsVersion { get; private set; } = null!;
-    internal ContractSignature ArtistSignature { get; private set; } = null!;
-    internal ContractSignature VenueSignature { get; private set; } = null!;
+    internal Signature ArtistSignature { get; private set; } = null!;
+    internal Signature VenueSignature { get; private set; } = null!;
     public string? PdfBlobName { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
@@ -53,11 +54,20 @@ public abstract class ContractEntity : IIdEntity, IVenueArtistTenantScoped
         PaymentMethod = contract.PaymentMethod;
         TermsText = contract.TermsText;
         PlatformTermsVersion = contract.PlatformTermsVersion;
-        ArtistSignature = contract.ArtistSignature;
-        VenueSignature = contract.VenueSignature;
+        ArtistSignature = Sign(contract.ArtistSignature);
+        VenueSignature = Sign(contract.VenueSignature);
         CreatedAtUtc = createdAtUtc;
         PdfBlobName = $"contracts/{bookingId}-{Guid.NewGuid():N}.pdf";
     }
+
+    private static Signature Sign(ContractSignature signature) =>
+        new(
+            signature.UserId,
+            signature.AtUtc,
+            signature.Ip,
+            signature.UserAgent,
+            signature.SignatoryName,
+            signature.DrawnSignatureImage);
 
     public abstract DealTerms Terms { get; }
 
