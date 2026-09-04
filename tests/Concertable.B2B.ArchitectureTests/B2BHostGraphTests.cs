@@ -6,12 +6,16 @@ using Concertable.B2B.Hosting;
 using Concertable.B2B.Seed.Simulator;
 using Concertable.B2B.Web;
 using Concertable.B2B.Workers;
+using Concertable.Payment.Hosting;
 using Concertable.Testing.Architecture;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Concertable.B2B.ArchitectureTests;
@@ -28,10 +32,27 @@ public sealed class B2BHostGraphTests
         {
             RootAssemblies = [typeof(B2BWebHostExtensions).Assembly]
         });
+        var jwtOptions = app.Services.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+            .Get(JwtBearerDefaults.AuthenticationScheme);
+        Assert.False(jwtOptions.RequireHttpsMetadata);
         var invalidBuilder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
         invalidBuilder.AddB2BWebHost();
         invalidBuilder.Services.AddInvalidLifetimeGraph();
         Assert.ThrowsAny<Exception>(() => invalidBuilder.Build());
+    }
+
+    [Fact]
+    public void Web_ProductionEnvironment_RequiresHttpsMetadata()
+    {
+        var arguments = CompositionTestArguments.Create();
+        arguments[0] = "--environment=Production";
+        var builder = WebApplication.CreateBuilder(arguments);
+        builder.AddB2BWebHost();
+        using var app = builder.Build();
+        var jwtOptions = app.Services.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+            .Get(JwtBearerDefaults.AuthenticationScheme);
+
+        Assert.True(jwtOptions.RequireHttpsMetadata);
     }
 
     [Fact]
@@ -87,10 +108,27 @@ public sealed class B2BHostGraphTests
     [Fact]
     public void AppHost_ProductionGraphAndStrictValidation_AreValid()
     {
-        using var app = B2BAppHost.CreateBuilder([]).Build();
-        var builder = B2BAppHost.CreateBuilder([]);
+        var validBuilder = AppHost.CreateBuilder([]);
+        AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "https");
+        AssertContainerRuntimeArgs(validBuilder, AuthConstants.Resource, "--user", "root");
+        AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
+        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https");
+        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http");
+        using var app = validBuilder.Build();
+        var builder = AppHost.CreateBuilder([]);
         builder.Services.AddInvalidLifetimeGraph();
         Assert.ThrowsAny<Exception>(() => builder.Build());
+    }
+
+    [Fact]
+    public void AppHost_PublishGraphWithStripeCli_IsValid()
+    {
+        var builder = AppHost.CreateBuilder(
+            ["--publisher", "manifest", "--Stripe:SecretKey=sk_test_composition"]);
+
+        Assert.True(builder.ExecutionContext.IsPublishMode);
+        Assert.Single(builder.Resources, resource => resource.Name == PaymentConstants.StripeCliResource);
+        using var app = builder.Build();
     }
 
     [Fact]
@@ -119,7 +157,7 @@ public sealed class B2BHostGraphTests
     [Fact]
     public async Task AppHost_WebSpaOrigins_AreConsistent()
     {
-        var builder = B2BAppHost.CreateBuilder([]);
+        var builder = AppHost.CreateBuilder([]);
         var nodeApps = builder.Resources.OfType<NodeAppResource>().ToArray();
         var auth = Assert.IsAssignableFrom<IResourceWithEnvironment>(
             builder.Resources.Single(resource => resource.Name == AuthConstants.Resource));
@@ -158,5 +196,51 @@ public sealed class B2BHostGraphTests
             Assert.Equal(surface.Origin, authEnvironment[$"Auth__SpaClients__{authClient}__PostLogoutRedirectUri"]);
             Assert.Equal(surface.Origin, authEnvironment[$"Auth__SpaClients__{authClient}__AllowedCorsOrigins__0"]);
         }
+    }
+
+    private static void AssertContainerRuntimeArgs(
+        IDistributedApplicationBuilder builder,
+        string resourceName,
+        params object[] expected)
+    {
+        var resource = Assert.IsType<ServiceContainerResource>(
+            builder.Resources.Single(resource => resource.Name == resourceName));
+        var args = new List<object>();
+        foreach (var annotation in resource.Annotations.OfType<ContainerRuntimeArgsCallbackAnnotation>())
+            annotation.Callback(new ContainerRuntimeArgsCallbackContext(args, CancellationToken.None))
+                .GetAwaiter()
+                .GetResult();
+
+        Assert.Equal(expected, args);
+    }
+
+#pragma warning disable ASPIRECERTIFICATES001 // experimental API; asserts the temporary Auth image bridge
+    private static void AssertUsesDeveloperCertificate(
+        IDistributedApplicationBuilder builder,
+        string resourceName)
+    {
+        var resource = Assert.IsType<ServiceContainerResource>(
+            builder.Resources.Single(resource => resource.Name == resourceName));
+        var certificate = Assert.Single(resource.Annotations.OfType<HttpsCertificateAnnotation>());
+
+        Assert.True(certificate.UseDeveloperCertificate);
+    }
+#pragma warning restore ASPIRECERTIFICATES001
+
+    private static void AssertImageEndpoint(
+        IDistributedApplicationBuilder builder,
+        string resourceName,
+        string endpointName,
+        string scheme = "http")
+    {
+        var resource = Assert.IsType<ServiceContainerResource>(
+            builder.Resources.Single(resource => resource.Name == resourceName));
+        var endpoint = Assert.Single(
+            resource.Annotations.OfType<EndpointAnnotation>(),
+            endpoint => endpoint.Name == endpointName);
+
+        Assert.Equal(endpointName, endpoint.Name);
+        Assert.Equal(scheme, endpoint.UriScheme);
+        Assert.Equal(8080, endpoint.TargetPort);
     }
 }
