@@ -150,26 +150,31 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
+    public void AppHost_MobileGraph_ContainsOnlyB2BSurfaces()
+    {
+        var builder = AppHost.CreateBuilder(["--RunMobile=true"]);
+        Assert.Equal(
+            new[] { "admin", "artist", "business", "mobile-b2b", "venue" },
+            builder.Resources.OfType<NodeAppResource>().Select(resource => resource.Name).Order());
+        Assert.Single(builder.Resources, resource => resource.Name == "b2b-dev");
+        Assert.DoesNotContain(builder.Resources, resource => resource.Name is "customer-web" or "search-web");
+        using var app = builder.Build();
+    }
+
+    [Fact]
     public void LocalSpaSurfaces_AreCanonicalAndCollisionFree()
     {
-        LocalSpaSurface[] expected =
+        SpaSurface[] expected =
         [
-            new("customer", 5174, LocalSpaClient.Customer),
-            new("venue", 5175, LocalSpaClient.Venue),
-            new("artist", 5176, LocalSpaClient.Artist),
+            new("venue", 5175, "Venue"),
+            new("artist", 5176, "Artist"),
             new("business", 5177, null),
-            new("admin", 5178, LocalSpaClient.Admin)
+            new("admin", 5178, "Admin")
         ];
 
-        Assert.Equal(expected, LocalSpaSurfaces.All);
-        Assert.Equal(expected.Length, LocalSpaSurfaces.All.Select(surface => surface.ResourceName).Distinct().Count());
-        Assert.Equal(expected.Length, LocalSpaSurfaces.All.Select(surface => surface.HttpsPort).Distinct().Count());
-        Assert.Equal(
-            expected.Where(surface => surface.AuthClient is not null),
-            LocalSpaSurfaces.Authenticated);
-        Assert.Equal(
-            expected.Where(surface => surface != LocalSpaSurfaces.Customer),
-            LocalSpaSurfaces.B2B);
+        Assert.Equal(expected, B2BLocalSpaSurfaces.All);
+        Assert.Equal(expected.Length, B2BLocalSpaSurfaces.All.Select(surface => surface.ResourceName).Distinct().Count());
+        Assert.Equal(expected.Length, B2BLocalSpaSurfaces.All.Select(surface => surface.HttpsPort).Distinct().Count());
     }
 
     [Fact]
@@ -192,12 +197,12 @@ public sealed class B2BHostGraphTests
         var b2bEnvironment = b2bConfiguration.EnvironmentVariables.ToDictionary();
 
         Assert.Equal(
-            LocalSpaSurfaces.B2B.Select(surface => surface.ResourceName).Order(),
+            B2BLocalSpaSurfaces.All.Select(surface => surface.ResourceName).Order(),
             nodeApps.Select(resource => resource.Name).Order());
 
-        for (var index = 0; index < LocalSpaSurfaces.B2B.Count; index++)
+        for (var index = 0; index < B2BLocalSpaSurfaces.All.Count; index++)
         {
-            var surface = LocalSpaSurfaces.B2B[index];
+            var surface = B2BLocalSpaSurfaces.All[index];
             var nodeApp = Assert.Single(nodeApps, resource => resource.Name == surface.ResourceName);
             var endpoint = Assert.Single(nodeApp.Annotations.OfType<EndpointAnnotation>());
 
