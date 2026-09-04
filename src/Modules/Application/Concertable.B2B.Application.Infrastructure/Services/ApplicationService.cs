@@ -177,10 +177,9 @@ internal sealed class ApplicationService : IApplicationService
 
     public Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,
-        string? paymentMethodId,
         ESignatureRequest eSignature,
         CancellationToken ct = default) =>
-        workflow.AcceptAsync(applicationId, paymentMethodId, eSignature, ct);
+        workflow.AcceptAsync(applicationId, eSignature, ct);
 
     public Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(
         int applicationId,

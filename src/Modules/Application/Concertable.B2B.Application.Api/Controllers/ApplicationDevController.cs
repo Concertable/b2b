@@ -15,7 +15,6 @@ internal sealed class ApplicationDevController : ControllerBase
     {
         return (await applications.AcceptAsync(
                 applicationId,
-                null,
                 new ESignatureRequest { SignatoryName = "Dev Venue Manager" }))
             .ToNoContentOrProblem();
     }

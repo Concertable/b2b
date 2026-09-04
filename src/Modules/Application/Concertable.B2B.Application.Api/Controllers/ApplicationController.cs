@@ -140,7 +140,6 @@ internal sealed class ApplicationController : ControllerBase
     {
         return (await applicationService.AcceptAsync(
             applicationId,
-            request.PaymentMethodId,
             request.ESignature,
             ct)).ToNoContentOrProblem();
     }

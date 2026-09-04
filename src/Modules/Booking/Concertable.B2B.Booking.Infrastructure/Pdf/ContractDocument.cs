@@ -89,7 +89,7 @@ internal sealed class ContractDocument : IDocument
         });
     }
 
-    private void Signature(ColumnDescriptor section, string party, Signature signature)
+    private void Signature(ColumnDescriptor section, string party, ContractSignature signature)
     {
         section.Item().PaddingTop(6).Column(block =>
         {

@@ -35,7 +35,7 @@ internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<Con
             .HasValue<VersusContract>(DealType.Versus);
     }
 
-    private static void ConfigureSignature(ComplexPropertyBuilder<Signature> builder)
+    private static void ConfigureSignature(ComplexPropertyBuilder<ContractSignature> builder)
     {
         builder.Property(signature => signature.Ip).HasConversion(IpConverter).HasMaxLength(45);
         builder.Property(signature => signature.UserAgent).HasMaxLength(512);

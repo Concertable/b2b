@@ -37,7 +37,7 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
             .HasValue<PrepaidApplication>(nameof(PrepaidApplication));
     }
 
-    private static void ConfigureSignature(ComplexPropertyBuilder<Signature> builder)
+    private static void ConfigureSignature(ComplexPropertyBuilder<ContractSignature> builder)
     {
         builder.Property(signature => signature.Ip).HasConversion(IpConverter).HasMaxLength(45);
         builder.Property(signature => signature.UserAgent).HasMaxLength(512);
