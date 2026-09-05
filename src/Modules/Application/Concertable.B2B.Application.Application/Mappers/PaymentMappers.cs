@@ -10,11 +10,10 @@ internal static class PaymentMappers
         public VerifyPayment ToVerifyPayment() => verification switch
         {
             SuccessfulPaymentVerification succeeded =>
-                new VerifyPaymentSucceeded(succeeded.ApplicationId, succeeded.ProviderTransactionId),
+                new VerifyPaymentSucceeded(succeeded.ApplicationId),
             FailedPaymentVerification failed =>
                 new VerifyPaymentFailed(
                     failed.ApplicationId,
-                    failed.ProviderTransactionId,
                     new VerifyPaymentError(failed.Failure.Code, failed.Failure.Message)),
             _ => throw new ArgumentOutOfRangeException(nameof(verification), verification, null)
         };
@@ -25,11 +24,10 @@ internal static class PaymentMappers
         public PaymentVerification ToPaymentVerification() => payment switch
         {
             VerifyPaymentSucceeded succeeded =>
-                new SuccessfulPaymentVerification(succeeded.ApplicationId, succeeded.ProviderTransactionId),
+                new SuccessfulPaymentVerification(succeeded.ApplicationId),
             VerifyPaymentFailed failed =>
                 new FailedPaymentVerification(
                     failed.ApplicationId,
-                    failed.ProviderTransactionId,
                     new PaymentVerificationFailure(failed.Error.Code, failed.Error.Message)),
             _ => throw new ArgumentOutOfRangeException(nameof(payment), payment, null)
         };

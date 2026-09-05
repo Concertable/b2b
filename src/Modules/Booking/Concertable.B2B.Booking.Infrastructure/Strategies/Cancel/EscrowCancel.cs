@@ -2,6 +2,7 @@ using Concertable.B2B.Booking.Application.Strategies;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 
@@ -32,7 +33,7 @@ internal sealed class EscrowCancel : ICancel
             throw new InvalidOperationException($"Booking cannot begin cancellation from {booking.State}.");
         await bus.SendAsync(new RefundEscrowCommand(
             operationId,
-            booking.Id,
-            RefundReasonCodes.RequestedByCustomer), ct);
+            PaymentOperationReferences.Escrow(booking.Id),
+            RefundReasonCodes.RequestedByPayer), ct);
     }
 }

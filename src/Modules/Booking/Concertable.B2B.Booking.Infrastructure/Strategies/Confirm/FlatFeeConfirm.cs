@@ -1,6 +1,6 @@
 using Concertable.B2B.Booking.Application.Strategies;
 using Concertable.B2B.Booking.Domain.Entities;
-using Concertable.B2B.Booking.Infrastructure.Payments;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.Kernel.Enums;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Messaging.Contracts;
@@ -27,22 +27,21 @@ internal sealed class FlatFeeConfirm : IConfirm
         CancellationToken ct = default)
     {
         var flatFee = (FlatFeeContract)booking.Contract;
-        var authorization = flatFee.Commitment.ToReference();
         logger.AcceptingFlatFeeApplication(
             booking.ApplicationId,
             booking.Id,
-            authorization.ConsumerCorrelation,
+            flatFee.Commitment.ClientReference,
             flatFee.Fee,
             "GBP",
             flatFee.VenueTenantId,
             flatFee.ArtistTenantId);
-        await bus.SendAsync(new CaptureEscrowByReferenceCommand(
+        await bus.SendAsync(new CaptureEscrowCommand(
             booking.OperationId,
-            booking.Id,
+            PaymentOperationReferences.Escrow(booking.Id),
             flatFee.VenueTenantId,
             flatFee.ArtistTenantId,
             Money.Gbp(flatFee.Fee).ToMinorUnits(),
             Currency.Gbp,
-            authorization), ct);
+            flatFee.Commitment), ct);
     }
 }

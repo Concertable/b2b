@@ -38,12 +38,10 @@ export function useAcceptApplicationMutation(opportunityId: number) {
     mutationFn: ({
       applicationId,
       eSignature,
-      body,
     }: {
       applicationId: number;
       eSignature: ESignatureRequest;
-      body?: { paymentMethodId: string };
-    }) => applicationApi.acceptApplication(applicationId, eSignature, body),
+    }) => applicationApi.acceptApplication(applicationId, eSignature),
     onSuccess: (_data, { applicationId }) => {
       queryClient.setQueryData<Application>(
         ["applications", applicationId],

@@ -1,9 +1,12 @@
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Conversations.Contracts;
+using Concertable.B2B.Opportunity.Contracts;
+using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Exceptions;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.Notifications;
+using DisplayNames = Concertable.B2B.Application.Contracts.DisplayNames;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
@@ -13,24 +16,41 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly ICurrentUser currentUser;
     private readonly IConversationsModule conversationsModule;
     private readonly INotificationClient notificationClient;
+    private readonly IOpportunityModule opportunityModule;
+    private readonly IVenueModule venueModule;
 
     public ApplicationNotifier(
         IApplicationRepository repository,
         ICurrentUser currentUser,
         IConversationsModule conversationsModule,
-        INotificationClient notificationClient)
+        INotificationClient notificationClient,
+        IOpportunityModule opportunityModule,
+        IVenueModule venueModule)
     {
         this.repository = repository;
         this.currentUser = currentUser;
         this.conversationsModule = conversationsModule;
         this.notificationClient = notificationClient;
+        this.opportunityModule = opportunityModule;
+        this.venueModule = venueModule;
     }
 
-    public Task VerifyPaymentFailedAsync(int applicationId, string venueManagerId, string failureMessage) =>
-        notificationClient.SendAsync(
-            venueManagerId,
+    public async Task VerifyPaymentFailedAsync(int applicationId, string failureMessage)
+    {
+        var application = await repository.GetByIdAsync(applicationId).OrNotFound(DisplayNames.Application);
+        var opportunity = await opportunityModule.GetAsync(application.OpportunityId);
+        if (!opportunity.TryGetValue(out var value))
+            return;
+
+        var venue = await venueModule.GetProfileAsync(value.VenueId);
+        if (!venue.TryGetValue(out var profile))
+            return;
+
+        await notificationClient.SendAsync(
+            profile.UserId.ToString(),
             "VerifyPaymentFailed",
             new { applicationId, failureMessage });
+    }
 
     public Task AppliedAsync(int applicationId) =>
         NotifyVenueAsync(

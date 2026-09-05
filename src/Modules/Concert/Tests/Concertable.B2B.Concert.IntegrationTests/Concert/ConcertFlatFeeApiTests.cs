@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Domain.Lifecycle;
@@ -34,7 +35,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         // Assert
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
         Assert.Equal(ConcertState.Complete, concert.State);
-        Assert.Empty(fixture.ManagerPaymentClient.Payments);
+        Assert.Empty(fixture.SettlementClient.Payments);
     }
 
     [Fact]
@@ -64,7 +65,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         Assert.Equal(SettlementOutcome.Settled, outcome);
         var release = Assert.Single(
             fixture.EscrowClient.Releases,
-            value => value.BookingId == concert.BookingId);
+            value => value.Reference == PaymentOperationReferences.Escrow(concert.BookingId));
         Assert.Equal(interrupted.SettlementOperationId, release.OperationId);
         var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Complete, settled.State);
@@ -89,7 +90,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var release = Assert.Single(
             fixture.EscrowClient.Releases,
-            value => value.BookingId == concert.BookingId);
+            value => value.Reference == PaymentOperationReferences.Escrow(concert.BookingId));
         var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(release.OperationId, settled.SettlementOperationId);
         Assert.Equal(ConcertState.Complete, settled.State);

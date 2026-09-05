@@ -1,3 +1,4 @@
+using Concertable.Payment.Contracts.Errors;
 using Dunet;
 
 namespace Concertable.B2B.Application.Application.Errors;
@@ -23,7 +24,8 @@ internal abstract partial record ApplicationCheckoutError : IError
         ApplyCheckoutUnsupported(var dealType) => ErrorDefinition.Invalid<ApplyCheckoutUnsupported>(
             $"Deal {dealType} does not support a pre-apply checkout."),
         AcceptCheckoutUnsupported(var dealType) => ErrorDefinition.Invalid<AcceptCheckoutUnsupported>(
-            $"Deal {dealType} does not support an accept checkout.")
+            $"Deal {dealType} does not support an accept checkout."),
+        PaymentSessionUnavailable(var error) => error.Definition
     };
 
     public partial record Ineligible(ApplicationEligibilityError Error);
@@ -51,4 +53,6 @@ internal abstract partial record ApplicationCheckoutError : IError
 
     [ErrorCode("application.checkout.accept_unsupported")]
     public partial record AcceptCheckoutUnsupported(DealType DealType);
+
+    public partial record PaymentSessionUnavailable(PaymentOperationError Error);
 }

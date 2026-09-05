@@ -36,8 +36,8 @@ internal sealed class ConcertDashboardService : IConcertDashboardService
         return Option.Some(new ArtistDashboardCounts(concertCounts.UpcomingConcerts));
     }
 
-    public Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
-        IReadOnlyCollection<int> bookingIds,
+    public Task<IReadOnlyList<SettlementContext>> GetSettlementContextsAsync(
+        IReadOnlyCollection<int> concertIds,
         CancellationToken ct = default) =>
-        repository.GetManagerSettlementContextsAsync(bookingIds, ct);
+        repository.GetSettlementContextsAsync(concertIds, ct);
 }

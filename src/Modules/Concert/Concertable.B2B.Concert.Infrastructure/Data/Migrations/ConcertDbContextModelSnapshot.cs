@@ -59,9 +59,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("ApplicationId")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("ArtistDoorPercent")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
 
@@ -86,40 +83,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("DealType")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("DoorRevenue")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("Fee")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("FinancialFailureCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("FinancialFailureMessage")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("FinancialOperationReferenceId")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
                     b.PrimitiveCollection<string>("Genres")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal?>("Guarantee")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("HireFee")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("OperationId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
@@ -127,18 +97,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<bool>("RequiresDoorRevenue")
-                        .HasColumnType("bit");
-
                     b.Property<decimal?>("SettlementGrossAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid?>("SettlementOperationId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("SettlementPaymentMethodId")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("State")
                         .IsConcurrencyToken()
@@ -162,6 +126,21 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "FinancialFailure", "Concertable.B2B.Concert.Domain.Entities.ConcertEntity.FinancialFailure#FinancialFailure", b1 =>
+                        {
+                            b1.Property<string>("Code")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)")
+                                .HasColumnName("FinancialFailureCode");
+
+                            b1.Property<string>("Message")
+                                .IsRequired()
+                                .HasMaxLength(1000)
+                                .HasColumnType("nvarchar(1000)")
+                                .HasColumnName("FinancialFailureMessage");
+                        });
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Period", "Concertable.B2B.Concert.Domain.Entities.ConcertEntity.Period#DateRange", b1 =>
                         {
                             b1.IsRequired();
@@ -173,6 +152,21 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                             b1.Property<DateTime>("Start")
                                 .HasColumnType("datetime2")
                                 .HasColumnName("StartDate");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "SettlementPaymentReference", "Concertable.B2B.Concert.Domain.Entities.ConcertEntity.SettlementPaymentReference#PaymentOperationReference", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("ClientReference")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("nvarchar(256)");
+
+                            b1.Property<string>("OperationType")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("nvarchar(64)");
                         });
 
                     b.HasKey("Id");
@@ -193,6 +187,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.HasIndex("VenueId");
 
                     b.ToTable("Concerts", "concert");
+
+                    b.HasDiscriminator<int>("DealType");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ConcertImageEntity", b =>
@@ -673,6 +671,59 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.DoorSplitConcert", b =>
+                {
+                    b.HasBaseType("Concertable.B2B.Concert.Domain.Entities.ConcertEntity");
+
+                    b.Property<decimal>("ArtistDoorPercent")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("DoorRevenue")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasDiscriminator().HasValue(1);
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.FlatFeeConcert", b =>
+                {
+                    b.HasBaseType("Concertable.B2B.Concert.Domain.Entities.ConcertEntity");
+
+                    b.Property<decimal>("Fee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasDiscriminator().HasValue(0);
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.VenueHireConcert", b =>
+                {
+                    b.HasBaseType("Concertable.B2B.Concert.Domain.Entities.ConcertEntity");
+
+                    b.Property<decimal>("HireFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasDiscriminator().HasValue(3);
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.VersusConcert", b =>
+                {
+                    b.HasBaseType("Concertable.B2B.Concert.Domain.Entities.ConcertEntity");
+
+                    b.Property<decimal>("ArtistDoorPercent")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("DoorRevenue")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Guarantee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasDiscriminator().HasValue(2);
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ConcertEntity", b =>

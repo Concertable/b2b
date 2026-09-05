@@ -15,22 +15,14 @@ internal abstract record FinancialOperationEvidence
 
 internal abstract record FinancialOperationSucceeded : FinancialOperationEvidence
 {
-    protected FinancialOperationSucceeded(
-        FinancialOperation operation,
-        string providerReferenceId)
-        : base(operation)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(providerReferenceId);
-        ProviderReferenceId = providerReferenceId;
-    }
-
-    public string ProviderReferenceId { get; }
+    protected FinancialOperationSucceeded(FinancialOperation operation)
+        : base(operation) { }
 }
 
 internal sealed record VerifyPaymentSucceededEvidence : FinancialOperationSucceeded
 {
-    public VerifyPaymentSucceededEvidence(int applicationId, string providerReferenceId)
-        : base(FinancialOperation.VerifyPayment, providerReferenceId)
+    public VerifyPaymentSucceededEvidence(int applicationId)
+        : base(FinancialOperation.VerifyPayment)
     {
         if (applicationId <= 0)
             throw new ArgumentOutOfRangeException(nameof(applicationId));
@@ -45,9 +37,8 @@ internal sealed record AcceptanceFinancialOperationSucceeded : FinancialOperatio
     public AcceptanceFinancialOperationSucceeded(
         Guid operationId,
         int bookingId,
-        FinancialOperation operation,
-        string providerReferenceId)
-        : base(operation, providerReferenceId)
+        FinancialOperation operation)
+        : base(operation)
     {
         if (operationId == Guid.Empty)
             throw new ArgumentException("An acceptance operation ID is required.", nameof(operationId));
@@ -82,20 +73,16 @@ internal sealed record VerifyPaymentFailedEvidence : FinancialOperationFailed
 {
     public VerifyPaymentFailedEvidence(
         int applicationId,
-        string providerReferenceId,
         FinancialOperationError error)
         : base(FinancialOperation.VerifyPayment, error)
     {
         if (applicationId <= 0)
             throw new ArgumentOutOfRangeException(nameof(applicationId));
-        ArgumentException.ThrowIfNullOrWhiteSpace(providerReferenceId);
 
         ApplicationId = applicationId;
-        ProviderReferenceId = providerReferenceId;
     }
 
     public int ApplicationId { get; }
-    public string ProviderReferenceId { get; }
 }
 
 internal sealed record AcceptanceFinancialOperationRejected : FinancialOperationFailed

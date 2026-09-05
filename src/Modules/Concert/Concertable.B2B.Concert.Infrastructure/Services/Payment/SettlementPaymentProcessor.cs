@@ -1,8 +1,8 @@
 using Concertable.B2B.Concert.Application.Interfaces;
-using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
 using Concertable.B2B.Tenant.Contracts;
@@ -36,21 +36,16 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
 
     public async Task HandleAsync(PaymentSucceededEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Settlement)
+        if (@event.Reference.OperationType != PaymentOperationReferences.SettlementType)
             return;
-
-        var bookingId = @event.Metadata.GetValueAs<int>(PaymentMetadataKeys.BookingId);
+        var concertId = PaymentOperationReferences.ReadConcertId(@event.Reference);
         var operationId = @event.Metadata.GetValueAs<Guid>(PaymentMetadataKeys.OperationId);
-        logger.SettlementWebhookReceived(@event.TransactionId, bookingId);
+        logger.SettlementWebhookReceived(@event.Reference.ClientReference, concertId);
         var concert = await context.Concerts
             .AsNoTracking()
-            .SingleOrDefaultAsync(value => value.BookingId == bookingId, ct)
-            ?? throw new InvalidOperationException($"Settlement booking {bookingId} has no concert.");
-        var completion = await settlementService.CompleteAsync(
-            concert.Id,
-            operationId,
-            new SettlementConfirmation.ManagerPaid(@event.TransactionId),
-            ct);
+            .SingleOrDefaultAsync(value => value.Id == concertId, ct)
+            ?? throw new InvalidOperationException($"Settlement concert {concertId} was not found.");
+        var completion = await settlementService.CompleteAsync(concert.Id, operationId, ct);
         if (completion.TryGetError(out var error))
             throw new InvalidOperationException(
                 $"Concert {concert.Id} could not converge settlement: {error.Definition.Message}");

@@ -30,7 +30,7 @@ internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<Con
         builder.ComplexProperty(contract => contract.Commitment, commitment =>
         {
             commitment.Property(value => value.OperationType).HasMaxLength(64);
-            commitment.Property(value => value.ConsumerCorrelation).HasMaxLength(256);
+            commitment.Property(value => value.ClientReference).HasMaxLength(256);
         });
         builder.ComplexProperty(contract => contract.ArtistSignature, ConfigureSignature);
         builder.ComplexProperty(contract => contract.VenueSignature, ConfigureSignature);

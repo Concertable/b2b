@@ -6,10 +6,10 @@ using Concertable.B2B.Concert.Domain.Errors;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ValueObjects;
-using PaymentCommitment = Concertable.B2B.Concert.Domain.ValueObjects.PaymentCommitment;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts;
 using Concertable.Kernel;
+using Concertable.Payment.Contracts;
 using Concertable.Kernel.Exceptions;
 
 namespace Concertable.B2B.Concert.Domain.Entities;
@@ -37,9 +37,8 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     public ConcertState State { get; private set; } = ConcertState.Draft;
     public Guid? CancellationOperationId { get; private set; }
     public Guid? SettlementOperationId { get; private set; }
-    internal PaymentCommitment SettlementPaymentReference { get; private set; } = null!;
+    internal PaymentOperationReference SettlementPaymentReference { get; private set; }
     public decimal? SettlementGrossAmount { get; private set; }
-    public string? FinancialOperationReferenceId { get; private set; }
     internal FinancialFailure? FinancialFailure { get; private set; }
     public string Name { get; private set; } = null!;
     public string About { get; private set; } = null!;
@@ -105,9 +104,7 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         Name = draft.Name;
         About = draft.About;
         Genres = draft.Genres.ToEfSet();
-        SettlementPaymentReference = new PaymentCommitment(
-            booking.Commitment.OperationType,
-            booking.Commitment.ConsumerCorrelation);
+        SettlementPaymentReference = booking.Commitment;
     }
 
     public void IncrementTicketsSold(int quantity) => TicketsSold += quantity;
@@ -187,31 +184,20 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
                 $"Concert {Id} expects settlement operation {SettlementOperationId}, not {operationId}.");
     }
 
-    public void RecordSettlementReference(string providerReferenceId)
-    {
-        if (State != ConcertState.AwaitingSettlement)
-            throw new InvalidOperationException(
-                $"Concert {Id} cannot record a settlement reference from {State}.");
-        EnsureSettlementReference(providerReferenceId);
-    }
-
-    public UnitResult<TransitionError<ConcertState, ConcertTrigger>> RecordSettlementFailure(string providerReferenceId, string code, string message)
+    public UnitResult<TransitionError<ConcertState, ConcertTrigger>> RecordSettlementFailure(string code, string message)
     {
         var transition = Fire(ConcertTrigger.RecordSettlementFailure);
         if (transition.TryGetError(out var error))
             return error;
-        EnsureSettlementReference(providerReferenceId);
         FinancialFailure = new FinancialFailure(code, message);
         return new Success();
     }
 
-    public UnitResult<TransitionError<ConcertState, ConcertTrigger>> CompleteSettlement(string? providerReferenceId = null)
+    public UnitResult<TransitionError<ConcertState, ConcertTrigger>> CompleteSettlement()
     {
         var transition = Fire(ConcertTrigger.CompleteSettlement);
         if (transition.TryGetError(out var error))
             return error;
-        if (providerReferenceId is not null)
-            EnsureSettlementReference(providerReferenceId);
         FinancialFailure = null;
         return new Success();
     }
@@ -227,16 +213,6 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     public abstract Guid SettlementPayerTenantId { get; }
 
     public abstract Guid SettlementPayeeTenantId { get; }
-
-    internal void EnsureSettlementReference(string providerReferenceId)
-    {
-        if (string.IsNullOrWhiteSpace(providerReferenceId))
-            throw new ArgumentException("A settlement reference is required.", nameof(providerReferenceId));
-        FinancialOperationReferenceId ??= providerReferenceId;
-        if (FinancialOperationReferenceId != providerReferenceId)
-            throw new InvalidOperationException(
-                $"Concert {Id} expects settlement {FinancialOperationReferenceId}, not {providerReferenceId}.");
-    }
 
     private UnitResult<TransitionError<ConcertState, ConcertTrigger>> Fire(ConcertTrigger trigger)
     {

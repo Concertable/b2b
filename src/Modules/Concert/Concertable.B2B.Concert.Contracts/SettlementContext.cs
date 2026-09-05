@@ -1,7 +1,6 @@
-namespace Concertable.B2B.Concert.Contracts;
+﻿namespace Concertable.B2B.Concert.Contracts;
 
-public sealed record ManagerSettlementContext(
-    int BookingId,
+public sealed record SettlementContext(
     int ConcertId,
     string ConcertName,
     Guid VenueTenantId,

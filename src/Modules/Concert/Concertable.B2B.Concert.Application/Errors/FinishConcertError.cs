@@ -18,7 +18,10 @@ internal abstract partial record FinishConcertError : IError
             "Door revenue must be declared before the concert can be finished."),
         InvalidTransition(var error) => ErrorDefinition.Conflict<InvalidTransition>(
             $"A concert in {error.Current} cannot be finished."),
-        ManagerPaymentFailure(var error) => error.Definition,
+        SettlementChargeFailure(var error) => error.Definition,
+        SettlementCommissionFailure(var error) => error.Definition,
+        SettlementOperationConflict => ErrorDefinition.Conflict<SettlementOperationConflict>(
+            "The settlement operation identity conflicts with a payment Payment already recorded."),
         PaymentCommitmentFailure(var error) => error.Definition,
         PaymentAuthenticationRequired => ErrorDefinition.PaymentRequired<PaymentAuthenticationRequired>(
             "The committed payment method needs the payer to authenticate before settlement can complete."),
@@ -37,7 +40,12 @@ internal abstract partial record FinishConcertError : IError
     [ErrorCode("concert.finish.invalid_state")]
     public partial record InvalidTransition(TransitionError<ConcertState, ConcertTrigger> Error);
 
-    public partial record ManagerPaymentFailure(ManagerPaymentOperationError Error);
+    public partial record SettlementChargeFailure(PaymentError Error);
+
+    public partial record SettlementCommissionFailure(CommissionError Error);
+
+    [ErrorCode("concert.finish.settlement_operation_conflict")]
+    public partial record SettlementOperationConflict;
 
     /// <summary>The commitment itself is unusable, so recovery needs a fresh payment-method setup.</summary>
     public partial record PaymentCommitmentFailure(PaymentOperationError Error);

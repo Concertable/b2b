@@ -14,7 +14,7 @@ public sealed class BookingEntityLifecycleTests
     {
         var snapshot = AcceptedApplications.FlatFee().Snapshot;
         var booking = BookingEntity.Create(snapshot);
-        Assert.False(booking.RecordFinancialFailure("pi_123", "declined", "Declined").TryGetError(out _));
+        Assert.False(booking.RecordFinancialFailure("declined", "Declined").TryGetError(out _));
         var events = booking.DomainEvents.ToArray();
 
         var result = booking.Cancel();
@@ -22,7 +22,6 @@ public sealed class BookingEntityLifecycleTests
         Assert.True(result.TryGetError(out var error));
         Assert.Equal(new TransitionError<BookingState, BookingTrigger>(BookingState.ConfirmationFailed, BookingTrigger.Cancel), error);
         Assert.Equal(BookingState.ConfirmationFailed, booking.State);
-        Assert.Equal("pi_123", booking.FinancialOperationReferenceId);
         Assert.Equal("declined", booking.FinancialFailure!.Code);
         Assert.Equal("Declined", booking.FinancialFailure!.Message);
         Assert.Equal(events, booking.DomainEvents);

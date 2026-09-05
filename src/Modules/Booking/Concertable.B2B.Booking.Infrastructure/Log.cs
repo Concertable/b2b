@@ -4,12 +4,12 @@ namespace Concertable.B2B.Booking.Infrastructure;
 
 internal static partial class Log
 {
-    [LoggerMessage(Level = LogLevel.Information, Message = "Accepting application {ApplicationId} (booking {BookingId}): binding pre-authorised PaymentIntent {PaymentIntentId} for {Amount} {Currency} from {PayerId} on behalf of {PayeeId}")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "Accepting application {ApplicationId} (booking {BookingId}): capturing the authorization held under {AuthorizationReference} for {Amount} {Currency} from {PayerId} on behalf of {PayeeId}")]
     internal static partial void AcceptingFlatFeeApplication(
         this ILogger logger,
         int applicationId,
         int bookingId,
-        string paymentIntentId,
+        string authorizationReference,
         decimal amount,
         string currency,
         Guid payerId,

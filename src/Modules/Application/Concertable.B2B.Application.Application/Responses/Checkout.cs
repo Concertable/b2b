@@ -4,6 +4,8 @@ namespace Concertable.B2B.Application.Application.Responses;
 
 internal sealed record Checkout(IPaymentAmount Amount, PayeeSummary Payee, CheckoutSession Session, CheckoutLabels Labels);
 
+internal sealed record CheckoutSession(string ClientSecret, string? CustomerSession, string? CustomerId);
+
 internal sealed record CheckoutLabels(string SummaryTitle, string SubmitLabel, string? PaymentHint)
 {
     internal static readonly CheckoutLabels Charge = new("Summary", "Confirm & Pay", null);

@@ -73,7 +73,7 @@ public sealed class TenantScopingLifecycleTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
     }
 
     private Guid TenantOf(Guid userId) =>

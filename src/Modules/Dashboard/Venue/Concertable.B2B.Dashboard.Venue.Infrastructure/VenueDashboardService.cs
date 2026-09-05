@@ -2,6 +2,7 @@ using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Dashboard.Contracts;
 using Concertable.B2B.Dashboard.Venue.Application;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Venue.Contracts;
@@ -17,7 +18,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
     private readonly IApplicationModule applicationModule;
     private readonly IConcertModule concertModule;
     private readonly IOpportunityModule opportunityModule;
-    private readonly IManagerPaymentReportingClient paymentReportingClient;
+    private readonly IPaymentReportingClient paymentReportingClient;
     private readonly IPayoutAccountOperationsClient payoutAccountClient;
     private readonly ITenantContext tenantContext;
     private readonly ITenantModule tenantModule;
@@ -28,7 +29,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         IApplicationModule applicationModule,
         IConcertModule concertModule,
         IOpportunityModule opportunityModule,
-        IManagerPaymentReportingClient paymentReportingClient,
+        IPaymentReportingClient paymentReportingClient,
         IPayoutAccountOperationsClient payoutAccountClient,
         ITenantContext tenantContext,
         ITenantModule tenantModule,
@@ -57,7 +58,7 @@ internal sealed class VenueDashboardService : IVenueDashboardService
             return null;
 
         var revenue = period.HasElapsedTime
-            ? paymentReportingClient.GetTicketRevenueAsync(
+            ? paymentReportingClient.GetPaymentRevenueAsync(
                 tenantId,
                 new DateRange(period.MonthStart, period.Now),
                 ct)
@@ -92,13 +93,13 @@ internal sealed class VenueDashboardService : IVenueDashboardService
                     await reviewSummaryTask);
             });
 
-    public async Task<IReadOnlyList<MonthlyRevenuePoint>> GetTicketRevenueAsync(
+    public async Task<IReadOnlyList<MonthlyRevenuePoint>> GetPaymentRevenueAsync(
         CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var firstMonth = DashboardReportingPeriod.From(now).MonthStart.AddMonths(-5);
-        var points = await paymentReportingClient.GetTicketRevenueByMonthAsync(
+        var points = await paymentReportingClient.GetPaymentRevenueByMonthAsync(
             tenantId,
             new DateRange(firstMonth, now),
             ct);
@@ -110,30 +111,35 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var settlements = await paymentReportingClient.GetRecentSettlementsAsync(tenantId, 5, ct);
-        var contexts = await concertModule.GetManagerSettlementContextsAsync(
-            settlements.Select(settlement => settlement.BookingId).Distinct().ToArray(),
+        var settled = (await paymentReportingClient.GetRecentSettlementsAsync(tenantId, 5, ct))
+            .Where(settlement =>
+                settlement.Reference.OperationType == PaymentOperationReferences.SettlementType)
+            .Select(settlement => (
+                Payment: settlement,
+                ConcertId: PaymentOperationReferences.ReadConcertId(settlement.Reference)))
+            .ToArray();
+        var contexts = await concertModule.GetSettlementContextsAsync(
+            settled.Select(settlement => settlement.ConcertId).Distinct().ToArray(),
             ct);
-        var contextsByBooking = contexts.ToDictionary(context => context.BookingId);
+        var contextsByConcert = contexts.ToDictionary(context => context.ConcertId);
 
-        return settlements
-            .Where(settlement => contextsByBooking.ContainsKey(settlement.BookingId))
+        return settled
+            .Where(settlement => contextsByConcert.ContainsKey(settlement.ConcertId))
             .Select(settlement =>
             {
-                var context = contextsByBooking[settlement.BookingId];
+                var context = contextsByConcert[settlement.ConcertId];
                 var counterpartyName = context.VenueTenantId == tenantId
                     ? context.ArtistName
                     : context.VenueName;
-                var direction = settlement.PayeeId == tenantId
+                var direction = settlement.Payment.PayeeId == tenantId
                     ? SettlementDirection.In
                     : SettlementDirection.Out;
-
                 return new Settlement(
-                    settlement.Id,
+                    settlement.Payment.Id,
                     context.ConcertId,
                     context.ConcertName,
-                    settlement.At,
-                    settlement.Amount.ToMinorUnits(),
+                    settlement.Payment.At,
+                    settlement.Payment.Amount.ToMinorUnits(),
                     counterpartyName,
                     direction);
             })

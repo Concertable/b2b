@@ -62,8 +62,7 @@ public sealed class ContractApiTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             new
             {
-                eSignature = new { signatoryName = "Test Signatory" },
-                paymentMethodId = "pm_card_visa"
+                eSignature = new { signatoryName = "Test Signatory" }
             });
 
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -95,8 +94,7 @@ public sealed class ContractApiTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             new
             {
-                eSignature = new { signatoryName = "Test Signatory" },
-                paymentMethodId = "pm_card_visa"
+                eSignature = new { signatoryName = "Test Signatory" }
             });
 
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -120,7 +118,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     {
         var opportunityId = await CreateOpportunityAsync(
             new VenueHireDealDto { PaymentMethod = PaymentMethod.Cash, HireFee = 250m });
-        var applicationId = await ApplyAsync(opportunityId, "pm_card_visa");
+        var applicationId = await ApplyAsync(opportunityId);
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var acceptResponse = await venueClient.PostAsync(
@@ -272,15 +270,15 @@ public sealed class ContractApiTests : IAsyncLifetime
         return opportunity.Id;
     }
 
-    private async Task<int> ApplyAsync(int opportunityId, string? paymentMethodId = null)
+    private async Task<int> ApplyAsync(int opportunityId)
     {
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        await artistClient.PostAsync($"/api/application/opportunity/{opportunityId}/checkout");
         var response = await artistClient.PostAsync(
             $"/api/application/{opportunityId}",
             new
             {
-                eSignature = new { signatoryName = "Test Signatory" },
-                paymentMethodId
+                eSignature = new { signatoryName = "Test Signatory" }
             });
         await response.ShouldBe(HttpStatusCode.Created);
         var application = await response.Content.ReadAsync<ApplicationBoundaryResponse>();

@@ -166,21 +166,11 @@ Deal-varying methods are classified by invocation shape, per module, with no sha
   module's composition root.
 - A **heterogeneous method** gets one interface per honest method header and a Dunet union over those
   interfaces. `DealUnionBuilder<TUnion>` composes the generic keyed-union builder with `DealType` and
-  `IDealStrategy`, requiring exactly one case for every deal type. Application accept is the worked example:
-  `IAccept` covers the header without a payment-method parameter, while `IAcceptPaid` covers the header that
-  requires one. FlatFee and VenueHire map to `IAccept`; DoorSplit and Versus map to `IAcceptPaid`. The caller
-  matches the interface-bearing union case, never the four Deal cases:
-
-```csharp
-return acceptFactory.Create(deal.DealType) switch
-{
-    Accept.Standard(var accept) => accept.Accept(facts, application, deal),
-    Accept.Paid when string.IsNullOrWhiteSpace(paymentMethodId) =>
-        new AcceptApplicationError.PaymentMethodRequired(),
-    Accept.Paid(var accept) => accept.Accept(facts, application, deal, paymentMethodId),
-    _ => throw new UnreachableException()
-};
-```
+  `IDealStrategy`, requiring exactly one case for every deal type. No family needs that escalation today:
+  since Payment owns payment-method commitments, apply and accept take the same arguments for every deal
+  type, so Application's `IApply` and `IMintCommitment` are same-interface families behind
+  `IDealStrategyFactory<TStrategy>`. `DealUnionBuilder` stays for the first family that genuinely fractures
+  on caller input.
 
 Concert's homogeneous Cancel/Complete strategies (`ICancel`, `IComplete`, under
 `Strategies/<Operation>`) use the shared Deal strategy factory. `IKeyedServiceProvider` never escapes
@@ -206,31 +196,39 @@ memoizer replaced an earlier `IContractLoader` design — that type no longer ex
 
 ### 2.7 Money movement
 
-Steps call two Payment facades from `Concertable.Payment.Client`: **`IEscrowClient`**
-(`DepositAsync`, `CaptureAsync`, `ReleaseByBookingIdAsync`, `RefundByBookingIdAsync`) and
-**`IManagerPaymentClient`** (`PayAsync` off-session, `CreateSetupSessionAsync`,
-`CreateVerifySessionAsync`, `CreateHoldSessionAsync`, `FindHeldIntentAsync`). Amounts flow tenant →
-tenant, sourced from the frozen tenant snapshot on the application/booking.
+Every Payment operation is named by a `PaymentOperationReference` minted by
+`PaymentOperationReferences` (`Concertable.B2B.Infrastructure/Payments`): an operation type plus the
+`app:`/`booking:`/`concert:`-prefixed id B2B itself encoded. Nothing provider-shaped crosses the
+boundary — B2B stores the reference and the opaque operation id Payment returns, and no Stripe
+identifier at all.
+
+Checkout opens a session through **`IPaymentSessionOperationsClient`** (`SetupPaymentMethodAsync`,
+`CreateAsync`). The escrow moves Payment must own and retry go over the bus as commands
+(`CaptureEscrowCommand`, `DepositEscrowCommand`, `RefundEscrowCommand`); the finish-step moves call
+**`IEscrowOperationsClient.ReleaseAsync`** and **`ISettlementOperationsClient.PayAsync`** directly.
+Amounts flow tenant → tenant, sourced from the frozen tenant snapshot on the application/booking.
 
 | Deal | Checkout session | Accept-step money | Finish-step money |
 |---|---|---|---|
-| **FlatFee**   | `HoldCheckoutStep` → hold `deal.Fee` (venue pre-auth) | `CaptureEscrowAcceptStep`: `FindHeldIntentAsync` → `CaptureAsync` (venue→artist) into escrow | `ReleaseEscrowFinishStep`: `ReleaseByBookingIdAsync` → artist |
-| **VenueHire** | `SetupCheckoutStep` (apply-time) → setup `deal.HireFee` (artist off-session) | `DepositEscrowAcceptStep`: `DepositAsync` (artist→venue) into escrow off-session | `ReleaseEscrowFinishStep`: `ReleaseByBookingIdAsync` → venue |
-| **DoorSplit** | `VerifyCheckoutStep` → `CreateVerifySessionAsync` (venue card verify) | `PaidAcceptStep`: no charge — `CreateDeferredAsync` stores the card | `PayoutFinishStep`: off-session `PayAsync` (venue→artist), `artistShare = rev × ArtistDoorPercent` |
-| **Versus**    | `VerifyCheckoutStep` → `CreateVerifySessionAsync` | `PaidAcceptStep`: no charge (deferred) | `PayoutFinishStep`: off-session `PayAsync`, `artistShare = Guarantee + rev × ArtistDoorPercent` |
+| **FlatFee**   | accept-time `CreateAsync`: `Authorization`, `EscrowHold(applicationId)`, destination-routed — venue pre-auth of `deal.Fee` | `FlatFeeConfirm`: `CaptureEscrowCommand` (venue→artist) into escrow | `ReleaseEscrowComplete`: `ReleaseAsync` → artist |
+| **VenueHire** | apply-time `SetupPaymentMethodAsync`: `PaymentMethodSetup`, `MethodSetup(opportunityId, artistTenantId)` — artist mandate for `deal.HireFee` | `VenueHireConfirm`: `DepositEscrowCommand` (artist→venue) into escrow off-session | `ReleaseEscrowComplete`: `ReleaseAsync` → venue |
+| **DoorSplit** | accept-time `SetupPaymentMethodAsync`: `PaymentMethodVerification`, `MethodVerification(applicationId)` — venue card verify | `VerifiedConfirm`: no charge; the verified method is the contract's commitment | `PayoutComplete`: off-session `PayAsync` (venue→artist), `artistShare = rev × ArtistDoorPercent` |
+| **Versus**    | as DoorSplit | `VerifiedConfirm`: no charge | `PayoutComplete`: off-session `PayAsync`, `artistShare = Guarantee + rev × ArtistDoorPercent` |
 
 Escrow deals (FlatFee, VenueHire) confirm money **at Accept** and release **at Finish**
 (`Booked +Finish→Complete`). Payout deals (DoorSplit, Versus) ring-fence nothing at Accept (verify +
-store card) and pay off-session **at Finish** (`Booked +Finish→AwaitingSettlement`, then
-`SettlementPaymentSucceeded→Complete`). Cancellation always refunds escrow. Settlement gross comes
+store the mandate) and pay off-session **at Finish** (`Booked +Finish→AwaitingSettlement`, then
+`SettlementPaymentSucceeded→Complete`). Escrow deals refund on cancellation — `EscrowCancel` in
+Booking, `RefundEscrowCancel` in Concert — while payout deals cancel outright. Settlement gross comes
 from `ISettlementAmountResolver`, whose named facade selects one keyed strategy through
 `IConcertDealStrategyFactory`. The DoorSplit and Versus leaves share the revenue-loading base that
 reads ticket revenue plus declared door revenue, then apply their own percentage-only or
-guarantee-plus-percentage formula. `PayoutFinishStep` and `InvoiceIssuer` consume that same facade so
-charged and invoiced amounts cannot diverge. Payment webhooks return as integration events
-(`PaymentSucceeded/FailedEvent`) handled by the `*Processor` classes, which route by
-`Metadata["type"]` and drive the matching executor or `VerifyCoordinator`;
-idempotency is provided by the inbox.
+guarantee-plus-percentage formula. `PayoutComplete` and `InvoiceIssuer` consume that same facade so
+charged and invoiced amounts cannot diverge. Payment reports each outcome as an integration event
+carrying that operation's reference — the escrow commands through their own `*Succeeded`/`*Rejected`
+events, a session-opened operation through `PaymentSucceeded/FailedEvent` — and the `*Processor`
+classes filter on `Reference.OperationType` and read back the id they encoded; idempotency is
+provided by the inbox.
 
 ### 2.8 Ticket payee vs settlement payee
 
@@ -247,8 +245,8 @@ so consumers never branch on deal type or invert one role to infer another.
 
 | Entity | Owns lifecycle `State`? | Role | TPH subtypes |
 |---|---|---|---|
-| `ApplicationEntity` | **Yes** — `Application.Lifecycle.ApplicationState` | Terminal after its own decision (accept/reject/withdraw) | `StandardApplication`, `PrepaidApplication { PaymentMethodId }` (VenueHire) |
-| `BookingEntity` | **Yes** — `Booking.Lifecycle.BookingState` | Owns confirmation, failure/retry, and pre-Concert cancellation | `StandardBooking`, `DeferredBooking { PaymentMethodId }` (DoorSplit/Versus) |
+| `ApplicationEntity` | **Yes** — `Application.Lifecycle.ApplicationState` | Terminal after its own decision (accept/reject/withdraw) | (single type) |
+| `BookingEntity` | **Yes** — `Booking.Lifecycle.BookingState` | Owns confirmation, failure/retry, and pre-Concert cancellation | (single type) |
 | `ConcertEntity` | **Yes** — `Concert.Lifecycle.ConcertState` | The live concert: draft/post, cancellation, settlement, completion | (single type) |
 | `ContractEntity` | No | The signed binding artifact (see below) | (single type) |
 
@@ -256,8 +254,8 @@ FK chain: `OpportunityEntity (1)→(N) ApplicationEntity (1)→(0..1) BookingEnt
 ConcertEntity`, and `BookingEntity (1)→(0..1) ContractEntity`. `OpportunityEntity` is `ITenantScoped`
 (the venue) and holds the satellite `DealId` FK into the Deal module.
 
-The TPH split on Application/Booking exists so prepaid-at-apply (VenueHire) and deferred-pay-at-finish
-(DoorSplit/Versus) can carry a `PaymentMethodId` without nullable columns on the standard variants.
+Application and Booking are each a single type: the commitment that once justified a TPH split is a
+`PaymentOperationReference` frozen onto `ContractEntity`, so neither aggregate carries a payment column.
 
 **`ContractEntity`** (`Concert.Domain/Entities/ContractEntity.cs`) is a by-value immutable snapshot
 (all private setters): `BookingId`, `VenueId`/`VenueName`, `ArtistId`/`ArtistName`, `Period`,
@@ -345,9 +343,9 @@ blocker is the *data* side (a closed `DealType`, typed TPH columns, typed step r
 - **`Deal` ≠ `Contract`.** The Deal is the editable economic offer (Deal module); the `ContractEntity`
   is the frozen signed artifact formed at Accept (Concert module). Different lifetimes, different
   models.
-- **`PaymentMethod` ≠ `paymentMethodId`.** `PaymentMethod` is the Deal-domain enum (`Cash | Transfer`)
-  used for accounting; `paymentMethodId` is a Stripe PM id (`pm_…`) flowed through the paid steps and
-  the `Prepaid`/`Deferred` TPH variants. Different things.
+- **`PaymentMethod` ≠ the payment commitment.** `PaymentMethod` is the Deal-domain enum
+  (`Cash | Transfer`) used for accounting; the commitment is the `PaymentOperationReference` B2B mints and
+  freezes onto the contract, which Payment resolves to a provider object it never shows B2B.
 - **Operation/executor interfaces are each module's own Application contracts** — no longer all
   Concert-internal. HTTP services, controllers, workers, and payment processors bind directly to the owning
   module's interface. Payment verification outcomes persist before the accept/payment join advances the

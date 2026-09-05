@@ -9,6 +9,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Payment.Contracts" />
     <PackageReference Include="Concertable.Messaging.Contracts" />
     <PackageReference Include="Dunet" />
   </ItemGroup>

@@ -14,7 +14,11 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
         builder.HasConcurrencyVersion();
         builder.Property(e => e.State).IsRequired().IsConcurrencyToken();
         builder.Property(e => e.SettlementGrossAmount).HasPrecision(18, 2);
-        builder.Property(e => e.FinancialOperationReferenceId).HasMaxLength(255);
+        builder.ComplexProperty(e => e.SettlementPaymentReference, commitment =>
+        {
+            commitment.Property(value => value.OperationType).HasMaxLength(64);
+            commitment.Property(value => value.ClientReference).HasMaxLength(256);
+        });
         builder.ComplexProperty(e => e.FinancialFailure, failure =>
         {
             failure.Property(value => value.Code)

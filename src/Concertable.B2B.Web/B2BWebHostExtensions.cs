@@ -42,6 +42,7 @@ using Concertable.Messaging.Infrastructure.Extensions;
 using Concertable.Payment.Client.Extensions;
 using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Events;
+using Concertable.Customer.Ticket.Contracts.Events;
 using Concertable.Seed.Infrastructure;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
@@ -167,6 +168,7 @@ public static class B2BWebHostExtensions
                     reg.SubscribeTo<CredentialRegisteredEvent>();
                     reg.SubscribeTo<CustomerReviewSubmittedEvent>();
                     reg.SubscribeTo<PaymentSucceededEvent>();
+                    reg.SubscribeTo<TicketPurchasedEvent>();
                     reg.SubscribeTo<PaymentFailedEvent>();
                     reg.SubscribeTo<CaptureEscrowSucceededEvent>();
                     reg.SubscribeTo<CaptureEscrowRejectedEvent>();

@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Strategies;
+using Concertable.B2B.Infrastructure.Payments;
 
 namespace Concertable.B2B.Concert.Infrastructure.Strategies;
 
@@ -12,17 +13,16 @@ internal sealed class ReleaseEscrowComplete : IComplete
         this.escrowOperationsClient = escrowOperationsClient;
     }
 
-    public async Task<Result<SettlementConfirmation, FinishConcertError>> CompleteAsync(
+    public async Task<UnitResult<FinishConcertError>> CompleteAsync(
         SettlementPreparation.Ready settlement,
         CancellationToken ct = default)
     {
-        var result = await escrowOperationsClient.ReleaseByBookingIdAsync(
+        var result = await escrowOperationsClient.ReleaseAsync(
             settlement.OperationId,
-            settlement.BookingId,
+            PaymentOperationReferences.Escrow(settlement.BookingId),
             ct);
-        if (result.TryGetError(out var error))
-            return new FinishConcertError.EscrowReleaseFailure(error);
-
-        return new SettlementConfirmation.EscrowReleased();
+        return result.TryGetError(out var error)
+            ? new FinishConcertError.EscrowReleaseFailure(error)
+            : new Success();
     }
 }

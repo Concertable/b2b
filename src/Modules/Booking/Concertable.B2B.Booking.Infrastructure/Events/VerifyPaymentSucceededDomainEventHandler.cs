@@ -25,9 +25,7 @@ internal sealed class VerifyPaymentSucceededDomainEventHandler : IPreCommitDomai
 
         await bookingService.RecordSucceededAsync(
             bookingId.Value,
-            new VerifyPaymentSucceededEvidence(
-                payment.ApplicationId,
-                payment.ProviderTransactionId),
+            new VerifyPaymentSucceededEvidence(payment.ApplicationId),
             ct);
     }
 }

@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Payments;
 using System.Net;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Deal.Contracts;
@@ -99,7 +100,7 @@ public sealed class ApplicationEntityLifecycleTests
                 "Terms",
                 "1",
                 "2026-09",
-                new PaymentCommitment("escrow-hold", $"app:{application.Id}"),
+                PaymentOperationReferences.EscrowHold(application.Id),
                 signature,
                 signature,
                 new FlatFeeTerms(100m))));

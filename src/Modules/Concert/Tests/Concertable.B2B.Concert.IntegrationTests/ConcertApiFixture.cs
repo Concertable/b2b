@@ -78,9 +78,8 @@ public sealed class ConcertApiFixture : ApiFixture
         dbContext.Database.ExecuteSqlRawAsync($"""
             ALTER TABLE [concert].[Concerts] WITH NOCHECK
             ADD CONSTRAINT [CK_Concerts_FailSettlementPersistence_ForTest] CHECK (
-                [FinancialOperationReferenceId] IS NULL
-                AND ([SettlementOperationId] IS NULL
-                     OR [State] = {(int)ConcertState.AwaitingSettlement}))
+                [SettlementOperationId] IS NULL
+                OR [State] = {(int)ConcertState.AwaitingSettlement})
             """);
 
     internal Task RestoreSettlementPersistenceAsync() =>

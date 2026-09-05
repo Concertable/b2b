@@ -100,9 +100,7 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.Conflict
         },
         {
-            new FinishConcertError.ManagerPaymentFailure(
-                new ManagerPaymentOperationError.ManagerFailure(
-                    new ManagerPaymentError.PaymentFailure(new PaymentError.PaymentRejected()))),
+            new FinishConcertError.SettlementChargeFailure(new PaymentError.PaymentRejected()),
             "payment.rejected",
             "The payment was rejected.",
             ErrorKind.PaymentRequired

@@ -13,7 +13,6 @@ internal sealed class BookingEntityConfiguration : IEntityTypeConfiguration<Book
         builder.HasConcurrencyVersion();
         builder.Property(booking => booking.State).IsRequired().IsConcurrencyToken();
         builder.Property(booking => booking.ExpectedFinancialOperation).IsRequired();
-        builder.Property(booking => booking.FinancialOperationReferenceId).HasMaxLength(255);
         builder.ComplexProperty(booking => booking.FinancialFailure, failure =>
         {
             failure.Property(value => value.Code)

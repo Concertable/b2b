@@ -30,14 +30,12 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                     DealType = table.Column<int>(type: "int", nullable: false),
                     AcceptanceOperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     TermsFingerprint = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Discriminator = table.Column<string>(type: "nvarchar(21)", maxLength: 21, nullable: false),
                     ArtistESignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ArtistESignature_DrawnSignatureImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ArtistESignature_Ip = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: false),
                     ArtistESignature_SignatoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ArtistESignature_UserAgent = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
-                    ArtistESignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    PaymentMethodId = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    ArtistESignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -70,7 +68,6 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ApplicationId = table.Column<int>(type: "int", nullable: false),
-                    ProviderTransactionId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Discriminator = table.Column<string>(type: "nvarchar(34)", maxLength: 34, nullable: false),
                     Code = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Message = table.Column<string>(type: "nvarchar(max)", nullable: true)
@@ -94,6 +91,14 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 column: "AcceptanceOperationId",
                 unique: true,
                 filter: "[AcceptanceOperationId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Applications_OpportunityId",
+                schema: "application",
+                table: "Applications",
+                column: "OpportunityId",
+                unique: true,
+                filter: "[State] = 1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Applications_OpportunityId_ArtistId",
@@ -126,13 +131,6 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 schema: "application",
                 table: "VerifyPayments",
                 column: "ApplicationId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_VerifyPayments_ProviderTransactionId",
-                schema: "application",
-                table: "VerifyPayments",
-                column: "ProviderTransactionId",
                 unique: true);
         }
 

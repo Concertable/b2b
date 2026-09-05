@@ -351,13 +351,12 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var checkout = await client.PostAsync($"/api/application/{applicationId}/checkout");
         await checkout.ShouldBe(HttpStatusCode.OK);
-        fixture.ArmApplicationConflict(() => fixture.StripeClient.SendWebhookAsync());
+        fixture.ArmApplicationConflict(() => fixture.PaymentSimulator.SendWebhookAsync());
 
         var accept = await client.PostAsync(
             $"/api/application/{applicationId}/accept",
             new
             {
-                paymentMethodId = "pm_card_visa",
                 eSignature = new { signatoryName = "Test Signatory" }
             });
 

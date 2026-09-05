@@ -13,5 +13,5 @@ internal interface IApplicationNotifier
     /// they are waiting on has stopped. Delivered to the browser rather than the conversation, because it
     /// answers an action still in flight.
     /// </summary>
-    Task VerifyPaymentFailedAsync(int applicationId, string venueManagerId, string failureMessage);
+    Task VerifyPaymentFailedAsync(int applicationId, string failureMessage);
 }

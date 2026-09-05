@@ -16,13 +16,11 @@ internal abstract class ContractFactory<TTerms> : IContractFactory<TTerms>
         DateTime createdAtUtc)
     {
         var contract = Create(bookingId, snapshot, (TTerms)snapshot.Contract.Terms, createdAtUtc);
-        // The persisted pair is the durable key Payment indexed, so it is frozen rather than derived on
-        // read. This is the one place the minted token and the arm's declared operation are both known.
         var expected = contract.ExpectedFinancialOperation switch
         {
-            FinancialOperation.CaptureEscrow => PaymentCommitmentTokens.EscrowHold,
-            FinancialOperation.DepositEscrow => PaymentCommitmentTokens.MethodSetup,
-            FinancialOperation.VerifyPayment => PaymentCommitmentTokens.MethodVerification,
+            FinancialOperation.CaptureEscrow => PaymentOperationReferences.EscrowHoldType,
+            FinancialOperation.DepositEscrow => PaymentOperationReferences.MethodSetupType,
+            FinancialOperation.VerifyPayment => PaymentOperationReferences.MethodVerificationType,
             var operation => throw new ArgumentOutOfRangeException(nameof(snapshot), operation, null)
         };
         if (contract.Commitment.OperationType != expected)

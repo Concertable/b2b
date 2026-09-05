@@ -62,18 +62,17 @@ internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
-        IReadOnlyCollection<int> bookingIds,
+    public async Task<IReadOnlyList<SettlementContext>> GetSettlementContextsAsync(
+        IReadOnlyCollection<int> concertIds,
         CancellationToken ct = default)
     {
-        if (bookingIds.Count == 0)
+        if (concertIds.Count == 0)
             return [];
 
         return await context.Concerts
             .AsNoTracking()
-            .Where(concert => bookingIds.Contains(concert.BookingId))
-            .Select(concert => new ManagerSettlementContext(
-                concert.BookingId,
+            .Where(concert => concertIds.Contains(concert.Id))
+            .Select(concert => new SettlementContext(
                 concert.Id,
                 concert.Name,
                 concert.VenueTenantId,

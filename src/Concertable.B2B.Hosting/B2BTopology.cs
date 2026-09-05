@@ -8,6 +8,7 @@ using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Payment.Contracts.Events;
 using Concertable.Payment.Contracts;
+using Concertable.Customer.Ticket.Contracts.Events;
 using Concertable.Shared.Email.Application;
 using B2BPayoutOwnerRegisteredEvent = Concertable.B2B.Tenant.Contracts.Events.PayoutOwnerRegisteredEvent;
 
@@ -33,6 +34,7 @@ public static class B2BTopology
                 .Subscribe<CustomerReviewSubmittedEvent>()
                 .Subscribe<CredentialRegisteredEvent>()
                 .Subscribe<PaymentSucceededEvent>()
+                .Subscribe<TicketPurchasedEvent>()
                 .Subscribe<PaymentFailedEvent>()
                 .Subscribe<CaptureEscrowSucceededEvent>()
                 .Subscribe<CaptureEscrowRejectedEvent>()

@@ -62,30 +62,11 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
             throw new InvalidOperationException(
                 $"Concert {concertId} returned an unknown settlement preparation.");
 
-        return await ExecuteAsync(
-            () => completeFactory.Create(ready.DealType).CompleteAsync(ready, ct),
-            ready,
-            ct);
-    }
+        var executed = await completeFactory.Create(ready.DealType).CompleteAsync(ready, ct);
+        if (executed.TryGetError(out var executionError))
+            return executionError;
 
-    private async Task<Result<SettlementOutcome, FinishConcertError>> ExecuteAsync<TConfirmation>(
-        Func<Task<Result<TConfirmation, FinishConcertError>>> execute,
-        SettlementPreparation.Ready settlement,
-        CancellationToken ct)
-        where TConfirmation : SettlementConfirmation
-    {
-        var executed = await execute();
-        if (executed.TryGetError(out var error))
-            return error;
-        if (!executed.TryGetValue(out var confirmation))
-            throw new InvalidOperationException(
-                $"Concert {settlement.ConcertId} settlement execution returned no confirmation.");
-
-        return await settlementService.CompleteAsync(
-            settlement.ConcertId,
-            settlement.OperationId,
-            confirmation,
-            ct);
+        return await settlementService.CompleteAsync(ready.ConcertId, ready.OperationId, ct);
     }
 
     private async Task<UnitResult<CancelConcertError>> ClassifyCancelConflictAsync(

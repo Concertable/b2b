@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Infrastructure.Events;
@@ -39,17 +40,15 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
             Guid.NewGuid(),
             MessageTypeAttribute.Resolve(typeof(CaptureEscrowSucceededEvent)),
             DateTimeOffset.UtcNow);
-        var succeeded = new CaptureEscrowSucceededEvent(
-            command.OperationId,
-            command.BookingId,
-            "pi_capture_123");
+        var succeeded = new CaptureEscrowSucceededEvent(command.OperationId, command.Reference);
 
         await fixture.DispatchIntegrationEventAsync(succeeded, envelope);
         await fixture.DispatchIntegrationEventAsync(succeeded, envelope);
 
-        var booking = await fixture.Bookings.SingleAsync(value => value.Id == command.BookingId);
+        var bookingId = PaymentOperationReferences.ReadBookingId(command.Reference);
+        var booking = await fixture.Bookings.SingleAsync(value => value.Id == bookingId);
         Assert.Equal(BookingState.Confirmed, booking.State);
-        Assert.Equal("pi_capture_123", booking.FinancialOperationReferenceId);
+        Assert.Equal(command.OperationId, booking.OperationId);
         var inbox = await fixture.InboxMessages
             .Where(message =>
                 message.MessageId == envelope.MessageId &&
@@ -77,10 +76,7 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
             Guid.NewGuid(),
             MessageTypeAttribute.Resolve(typeof(CaptureEscrowSucceededEvent)),
             DateTimeOffset.UtcNow);
-        var succeeded = new CaptureEscrowSucceededEvent(
-            command.OperationId,
-            command.BookingId,
-            "pi_capture_rollback");
+        var succeeded = new CaptureEscrowSucceededEvent(command.OperationId, command.Reference);
 
         await fixture.FailBookingUpdatesAsync();
         try
@@ -93,10 +89,10 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
             await fixture.RestoreBookingUpdatesAsync();
         }
 
-        var booking = await fixture.Bookings.SingleAsync(value => value.Id == command.BookingId);
+        var booking = await fixture.Bookings.SingleAsync(
+            value => value.Id == PaymentOperationReferences.ReadBookingId(command.Reference));
         Assert.Equal(BookingState.AwaitingConfirmation, booking.State);
-        Assert.Null(booking.FinancialOperationReferenceId);
-        Assert.Equal(0, await fixture.GetConcertCountAsync(command.BookingId));
+        Assert.Equal(0, await fixture.GetConcertCountAsync(PaymentOperationReferences.ReadBookingId(command.Reference)));
         var inbox = await fixture.InboxMessages
             .Where(message =>
                 message.MessageId == envelope.MessageId &&

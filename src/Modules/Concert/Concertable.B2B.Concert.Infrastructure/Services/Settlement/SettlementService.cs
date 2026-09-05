@@ -52,34 +52,20 @@ internal sealed class SettlementService : ISettlementService
     public async Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
         int concertId,
         Guid operationId,
-        SettlementConfirmation confirmation,
-        CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(confirmation);
-        return await unitOfWorkBoundary.ExecuteAsync(
-            context => CompleteAsync(context, concertId, operationId, confirmation, ct),
+        CancellationToken ct = default) =>
+        await unitOfWorkBoundary.ExecuteAsync(
+            context => CompleteAsync(context, concertId, operationId, ct),
             ct);
-    }
 
     public async Task RecordFailureAsync(
         int concertId,
         Guid operationId,
-        string providerReferenceId,
         string code,
         string message,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) =>
         await unitOfWorkBoundary.ExecuteAsync(
-            context => RecordFailureAsync(
-                context,
-                concertId,
-                operationId,
-                providerReferenceId,
-                code,
-                message,
-                ct),
+            context => RecordFailureAsync(context, concertId, operationId, code, message, ct),
             ct);
-    }
 
     // Re-runs the reservation against committed truth: whatever won the race decides the outcome, so a
     // concert cancelled underneath us reports its rejected transition rather than a lost update. The retry
@@ -175,7 +161,6 @@ internal sealed class SettlementService : ISettlementService
         ConcertDbContext context,
         int concertId,
         Guid operationId,
-        SettlementConfirmation confirmation,
         CancellationToken ct)
     {
         var concert = await context.Concerts.SingleOrDefaultAsync(concert => concert.Id == concertId, ct);
@@ -183,24 +168,9 @@ internal sealed class SettlementService : ISettlementService
             return new FinishConcertError.ConcertNotFound(concertId);
 
         concert.EnsureSettlementOperation(operationId);
-        if (concert.State is ConcertState.Complete)
-        {
-            if (confirmation is SettlementConfirmation.ManagerPaid paid)
-                concert.EnsureSettlementReference(paid.TransactionId);
-        }
-        else
-        {
-            var completion = confirmation switch
-            {
-                SettlementConfirmation.EscrowReleased => concert.CompleteSettlement(),
-                SettlementConfirmation.ManagerPaid(var transactionId) =>
-                    concert.CompleteSettlement(transactionId),
-                _ => throw new InvalidOperationException(
-                    $"Concert {concertId} received an unknown settlement confirmation.")
-            };
-            if (completion.TryGetError(out var transitionError))
-                return new FinishConcertError.InvalidTransition(transitionError);
-        }
+        if (concert.State is not ConcertState.Complete
+            && concert.CompleteSettlement().TryGetError(out var transitionError))
+            return new FinishConcertError.InvalidTransition(transitionError);
 
         await invoiceIssuer.IssueAsync(context, concert, ct);
         return SettlementOutcome.Settled;
@@ -210,7 +180,6 @@ internal sealed class SettlementService : ISettlementService
         ConcertDbContext context,
         int concertId,
         Guid operationId,
-        string providerReferenceId,
         string code,
         string message,
         CancellationToken ct)
@@ -219,18 +188,10 @@ internal sealed class SettlementService : ISettlementService
             ?? throw new InvalidOperationException($"Settlement concert {concertId} was not found.");
         concert.EnsureSettlementOperation(operationId);
 
-        if (concert.State is ConcertState.Complete)
-        {
+        if (concert.State is ConcertState.Complete or ConcertState.SettlementFailed)
             return;
-        }
 
-        if (concert.State is ConcertState.SettlementFailed)
-        {
-            concert.EnsureSettlementReference(providerReferenceId);
-            return;
-        }
-
-        var failure = concert.RecordSettlementFailure(providerReferenceId, code, message);
+        var failure = concert.RecordSettlementFailure(code, message);
         if (failure.TryGetError(out var transitionError))
             throw new InvalidOperationException(
                 $"Concert {concertId} cannot record settlement failure from {transitionError.Current}.");

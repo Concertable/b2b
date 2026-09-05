@@ -53,18 +53,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.Property<int>("ExpectedFinancialOperation")
                         .HasColumnType("int");
 
-                    b.Property<string>("FinancialFailureCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("FinancialFailureMessage")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("FinancialOperationReferenceId")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
                     b.PrimitiveCollection<string>("Genres")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -74,9 +62,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
 
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("RequiresDoorRevenue")
-                        .HasColumnType("bit");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
@@ -96,6 +81,21 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "FinancialFailure", "Concertable.B2B.Booking.Domain.Entities.BookingEntity.FinancialFailure#FinancialFailure", b1 =>
+                        {
+                            b1.Property<string>("Code")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)")
+                                .HasColumnName("FinancialFailureCode");
+
+                            b1.Property<string>("Message")
+                                .IsRequired()
+                                .HasMaxLength(1000)
+                                .HasColumnType("nvarchar(1000)")
+                                .HasColumnName("FinancialFailureMessage");
+                        });
 
                     b.HasKey("Id");
 
@@ -120,9 +120,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ArtistId")
-                        .HasColumnType("int");
-
                     b.Property<string>("ArtistName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -139,6 +136,11 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.Property<int>("DealType")
                         .HasColumnType("int");
 
+                    b.Property<string>("MandateTermsVersion")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
                     b.Property<int>("PaymentMethod")
                         .HasColumnType("int");
 
@@ -152,9 +154,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.Property<string>("TermsText")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("VenueId")
-                        .HasColumnType("int");
 
                     b.Property<string>("VenueName")
                         .IsRequired()
@@ -188,6 +187,21 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
 
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("uniqueidentifier");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Commitment", "Concertable.B2B.Booking.Domain.Entities.ContractEntity.Commitment#PaymentOperationReference", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("ClientReference")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("nvarchar(256)");
+
+                            b1.Property<string>("OperationType")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("nvarchar(64)");
                         });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Period", "Concertable.B2B.Booking.Domain.Entities.ContractEntity.Period#DateRange", b1 =>
@@ -311,23 +325,13 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.DoorSplitContract", b =>
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.DoorRevenueContract", b =>
                 {
                     b.HasBaseType("Concertable.B2B.Booking.Domain.Entities.ContractEntity");
 
                     b.Property<decimal>("ArtistDoorPercent")
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("ArtistDoorPercent");
-
-                    b.Property<string>("PaymentMethodId")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("PaymentMethodId");
-
-                    b.HasDiscriminator().HasValue(1);
                 });
 
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.FlatFeeContract", b =>
@@ -347,34 +351,22 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.Property<decimal>("HireFee")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("PaymentMethodId")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("PaymentMethodId");
-
                     b.HasDiscriminator().HasValue(3);
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.DoorSplitContract", b =>
+                {
+                    b.HasBaseType("Concertable.B2B.Booking.Domain.Entities.DoorRevenueContract");
+
+                    b.HasDiscriminator().HasValue(1);
                 });
 
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.VersusContract", b =>
                 {
-                    b.HasBaseType("Concertable.B2B.Booking.Domain.Entities.ContractEntity");
-
-                    b.Property<decimal>("ArtistDoorPercent")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("ArtistDoorPercent");
+                    b.HasBaseType("Concertable.B2B.Booking.Domain.Entities.DoorRevenueContract");
 
                     b.Property<decimal>("Guarantee")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("PaymentMethodId")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("PaymentMethodId");
 
                     b.HasDiscriminator().HasValue(2);
                 });

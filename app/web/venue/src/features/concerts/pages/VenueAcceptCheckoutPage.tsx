@@ -149,13 +149,12 @@ function VenueAcceptCheckoutForm({
 
   const summary = paymentSummary(checkout.amount);
 
-  async function handleAccept(paymentMethodId: string) {
+  async function handleAccept() {
     setError(undefined);
     try {
       await acceptMutation.mutateAsync({
         applicationId,
         eSignature: signature,
-        body: { paymentMethodId },
       });
       setSubmitted(true);
     } catch (err) {

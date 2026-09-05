@@ -2,7 +2,6 @@ using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.ValueObjects;
 using Concertable.B2B.Deal.Contracts.Enums;
-using Concertable.Kernel;
 
 namespace Concertable.B2B.Application.UnitTests;
 
@@ -20,7 +19,7 @@ public sealed class VerifyPaymentTests
     public void RecordPaymentVerification_Success_StoresAndRaisesVerifyPaymentSucceeded()
     {
         var application = CreateApplication();
-        var payment = new SuccessfulPaymentVerification(application.Id, "seti_123");
+        var payment = new SuccessfulPaymentVerification(application.Id);
 
         var recorded = application.RecordPaymentVerification(payment);
 
@@ -28,7 +27,6 @@ public sealed class VerifyPaymentTests
         Assert.Equal(payment, application.Verification);
         var raised = Assert.IsType<VerifyPaymentSucceededDomainEvent>(Assert.Single(application.DomainEvents)).Payment;
         Assert.Equal(payment.ApplicationId, raised.ApplicationId);
-        Assert.Equal(payment.ProviderTransactionId, raised.ProviderTransactionId);
     }
 
     [Fact]
@@ -37,7 +35,6 @@ public sealed class VerifyPaymentTests
         var application = CreateApplication();
         var payment = new FailedPaymentVerification(
             application.Id,
-            "seti_123",
             new PaymentVerificationFailure("card_declined", "Declined"));
 
         application.RecordPaymentVerification(payment);
@@ -45,7 +42,6 @@ public sealed class VerifyPaymentTests
         Assert.Equal(payment, application.Verification);
         var raised = Assert.IsType<VerifyPaymentFailedDomainEvent>(Assert.Single(application.DomainEvents)).Payment;
         Assert.Equal(payment.ApplicationId, raised.ApplicationId);
-        Assert.Equal(payment.ProviderTransactionId, raised.ProviderTransactionId);
         Assert.Equal(payment.Failure.Code, raised.Error.Code);
         Assert.Equal(payment.Failure.Message, raised.Error.Message);
     }
@@ -54,30 +50,29 @@ public sealed class VerifyPaymentTests
     public void RecordPaymentVerification_DuplicateDelivery_DoesNotRaiseAgain()
     {
         var application = CreateApplication();
-        var payment = new SuccessfulPaymentVerification(application.Id, "seti_123");
+        var payment = new SuccessfulPaymentVerification(application.Id);
         application.RecordPaymentVerification(payment);
         application.ClearDomainEvents();
 
         var recorded = application.RecordPaymentVerification(
-            new SuccessfulPaymentVerification(application.Id, "seti_123"));
+            new SuccessfulPaymentVerification(application.Id));
 
         Assert.False(recorded);
         Assert.Empty(application.DomainEvents);
     }
 
     [Fact]
-    public void RecordPaymentVerification_ConflictingOutcomeForTransaction_ThrowsDomainException()
+    public void RecordPaymentVerification_FailureAfterSuccess_IsIgnored()
     {
         var application = CreateApplication();
-        application.RecordPaymentVerification(new SuccessfulPaymentVerification(application.Id, "seti_123"));
+        application.RecordPaymentVerification(new SuccessfulPaymentVerification(application.Id));
         application.ClearDomainEvents();
 
-        Action action = () => application.RecordPaymentVerification(new FailedPaymentVerification(
+        var recorded = application.RecordPaymentVerification(new FailedPaymentVerification(
             application.Id,
-            "seti_123",
             new PaymentVerificationFailure("card_declined", "Declined")));
 
-        Assert.Throws<DomainException>(action);
+        Assert.False(recorded);
         Assert.Empty(application.DomainEvents);
     }
 

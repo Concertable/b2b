@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.Kernel.Enums;
 
 namespace Concertable.B2B.Concert.Infrastructure.Strategies;
@@ -20,7 +21,7 @@ internal sealed class RefundEscrowCancel : ICancel
             throw new InvalidOperationException($"Concert cannot begin cancellation from {concert.State}.");
         return bus.SendAsync(new RefundEscrowCommand(
             operationId,
-            concert.BookingId,
-            RefundReasonCodes.RequestedByCustomer), ct);
+            PaymentOperationReferences.Escrow(concert.BookingId),
+            RefundReasonCodes.RequestedByPayer), ct);
     }
 }

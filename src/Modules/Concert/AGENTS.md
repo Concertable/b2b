@@ -99,5 +99,5 @@ service (`ConcertService`), guarded and persisted directly, exactly like `Concer
 - has **one** behaviour for every revenue-share type (load concert, guard, set a field, save).
 
 So it is `ConcertService.DeclareDoorRevenueAsync` — a guarded mutation, not a workflow operation. Likewise,
-"is this a revenue-share settlement?" is already a real type (`Booking is DeferredBooking`), not a marker capability.
+"is this a revenue-share settlement?" is already a real type (`Concert is DoorRevenueConcert`), not a marker capability.
 Don't invent a strategy contract or marker for a question the type system already answers.

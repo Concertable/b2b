@@ -9,9 +9,7 @@ internal sealed class VerifyPaymentEntityConfiguration : IEntityTypeConfiguratio
     public void Configure(EntityTypeBuilder<VerifyPaymentEntity> builder)
     {
         builder.ToTable(Schema.Tables.VerifyPayments, Schema.Name);
-        builder.Property(payment => payment.ProviderTransactionId).HasMaxLength(255).IsRequired();
         builder.HasIndex(payment => payment.ApplicationId).IsUnique();
-        builder.HasIndex(payment => payment.ProviderTransactionId).IsUnique();
         builder.HasDiscriminator<string>("Discriminator")
             .HasValue<SucceededVerifyPaymentEntity>(nameof(SucceededVerifyPaymentEntity))
             .HasValue<FailedVerifyPaymentEntity>(nameof(FailedVerifyPaymentEntity));

@@ -110,6 +110,7 @@
     <PackageVersion Include="Concertable.Payment.Client" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Payment.Contracts" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Customer.Review.Contracts" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Customer.Ticket.Contracts" Version="$(ConcertablePlatformVersion)" />
   </ItemGroup>
 
   <ItemGroup>

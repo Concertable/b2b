@@ -66,10 +66,18 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         CompleteLatestAsync(serviceScopeFactory, command => command is TCommand);
 
     public Task CompleteLatestAcceptanceAsync(IServiceScopeFactory serviceScopeFactory) =>
-        CompleteLatestAsync(serviceScopeFactory, command => command is CaptureEscrowCommand or DepositEscrowCommand);
+        CompleteLatestAsync(serviceScopeFactory, IsAcceptance);
+
+    /// <summary>
+    /// Sends the acceptance outcome again. A pending command still wins, because a flow can be staging one
+    /// when this is called; otherwise the outcome the settled command already produced is repeated under the
+    /// id it carried, which is what the bus does and what the inbox recognises as a redelivery.
+    /// </summary>
+    public Task RedeliverLatestAcceptanceAsync(IServiceScopeFactory serviceScopeFactory) =>
+        CompleteLatestAsync(serviceScopeFactory, IsAcceptance, redeliver: true);
 
     public Task RejectLatestAcceptanceAsync(IServiceScopeFactory serviceScopeFactory) =>
-        RejectLatestAsync(serviceScopeFactory, command => command is CaptureEscrowCommand or DepositEscrowCommand);
+        RejectLatestAsync(serviceScopeFactory, IsAcceptance);
 
     public async Task RejectLatestAsync(IServiceScopeFactory serviceScopeFactory) =>
         await RejectLatestAsync(serviceScopeFactory, _ => true);
@@ -85,26 +93,30 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
 
     private async Task CompleteLatestAsync(
         IServiceScopeFactory serviceScopeFactory,
-        Func<object, bool> predicate)
+        Func<object, bool> predicate,
+        bool redeliver = false)
     {
-        var command = await WaitForPendingAsync(predicate);
+        var command = await WaitForPendingAsync(predicate, redeliver);
         switch (command)
         {
             case CaptureEscrowCommand capture:
                 await DispatchAsync(
-                    new CaptureEscrowSucceededEvent(capture.OperationId, capture.BookingId, "pi_test"),
+                    new CaptureEscrowSucceededEvent(capture.OperationId, capture.Reference),
+                    capture.OperationId,
                     serviceScopeFactory);
                 completed.TryAdd(capture.OperationId, 0);
                 break;
             case DepositEscrowCommand deposit:
                 await DispatchAsync(
-                    new DepositEscrowSucceededEvent(deposit.OperationId, deposit.BookingId, "pi_test"),
+                    new DepositEscrowSucceededEvent(deposit.OperationId, deposit.Reference),
+                    deposit.OperationId,
                     serviceScopeFactory);
                 completed.TryAdd(deposit.OperationId, 0);
                 break;
             case RefundEscrowCommand refund:
                 await DispatchAsync(
-                    new RefundEscrowSucceededEvent(refund.OperationId, refund.BookingId, "re_test"),
+                    new RefundEscrowSucceededEvent(refund.OperationId, refund.Reference),
+                    refund.OperationId,
                     serviceScopeFactory);
                 completed.TryAdd(refund.OperationId, 0);
                 break;
@@ -124,9 +136,10 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
                 await DispatchAsync(
                     new CaptureEscrowRejectedEvent(
                         capture.OperationId,
-                        capture.BookingId,
+                        capture.Reference,
                         "card_declined",
                         "Card was declined"),
+                    capture.OperationId,
                     serviceScopeFactory);
                 completed.TryAdd(capture.OperationId, 0);
                 break;
@@ -134,9 +147,10 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
                 await DispatchAsync(
                     new DepositEscrowRejectedEvent(
                         deposit.OperationId,
-                        deposit.BookingId,
+                        deposit.Reference,
                         "card_declined",
                         "Card was declined"),
+                    deposit.OperationId,
                     serviceScopeFactory);
                 completed.TryAdd(deposit.OperationId, 0);
                 break;
@@ -144,9 +158,10 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
                 await DispatchAsync(
                     new RefundEscrowRejectedEvent(
                         refund.OperationId,
-                        refund.BookingId,
+                        refund.Reference,
                         "refund_failed",
                         "Refund failed"),
+                    refund.OperationId,
                     serviceScopeFactory);
                 completed.TryAdd(refund.OperationId, 0);
                 break;
@@ -170,6 +185,25 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
     /// synchronous read: the command reaches this transport through outbox dispatch, which completes after
     /// the accept request has returned.
     /// </summary>
+    /// <summary>
+    /// Whether a financial command becomes pending within <paramref name="window"/>. A command reaches this
+    /// transport by outbox dispatch, so a flow that has just staged one has not necessarily produced it yet
+    /// and a synchronous read would miss it.
+    /// </summary>
+    public async Task<bool> WaitForPendingCommandAsync(TimeSpan window)
+    {
+        var deadline = DateTimeOffset.UtcNow + window;
+        while (DateTimeOffset.UtcNow <= deadline)
+        {
+            if (HasPendingCommand)
+                return true;
+
+            await Task.Delay(50);
+        }
+
+        return HasPendingCommand;
+    }
+
     public async Task<bool> WaitForAcceptanceCommandAsync()
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
@@ -206,7 +240,7 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         completed.Clear();
     }
 
-    private async Task<object> WaitForPendingAsync(Func<object, bool> predicate)
+    private async Task<object> WaitForPendingAsync(Func<object, bool> predicate, bool redeliver = false)
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
         while (DateTimeOffset.UtcNow <= deadline)
@@ -219,8 +253,15 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
             await Task.Delay(100);
         }
 
+        if (redeliver &&
+            commands.LastOrDefault(value => predicate(value) && OperationId(value) is not null) is { } settled)
+            return settled;
+
         throw new InvalidOperationException("No pending financial command was dispatched within 5 seconds.");
     }
+
+    private static bool IsAcceptance(object command) =>
+        command is CaptureEscrowCommand or DepositEscrowCommand;
 
     private static Guid? OperationId(object command) => command switch
     {
@@ -230,10 +271,16 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         _ => null
     };
 
-    private static async Task DispatchAsync<TEvent>(TEvent @event, IServiceScopeFactory serviceScopeFactory)
+    private static async Task DispatchAsync<TEvent>(
+        TEvent @event,
+        Guid operationId,
+        IServiceScopeFactory serviceScopeFactory)
         where TEvent : IIntegrationEvent
     {
-        var envelope = MessageEnvelope.Create<TEvent>(DateTimeOffset.UtcNow);
+        var envelope = new MessageEnvelope(
+            PaymentOperationEnvelopes.StableId(operationId, typeof(TEvent)),
+            MessageTypeAttribute.Resolve(typeof(TEvent)),
+            DateTimeOffset.UtcNow);
         await DispatchAsync(@event, envelope, serviceScopeFactory, CancellationToken.None);
     }
 

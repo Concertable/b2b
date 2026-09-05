@@ -46,7 +46,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
 
         // ...and settlement now charges the artist's share of the declared take.
         await fixture.FinishConcertAsync(concertId);
-        var payment = Assert.Single(fixture.ManagerPaymentClient.Payments);
+        var payment = Assert.Single(fixture.SettlementClient.Payments);
         Assert.Equal(280m, payment.Amount);
     }
 
@@ -57,7 +57,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.VenueHireApp.Id;
         await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var concert = await (await client.GetAsync($"/api/concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.Null(concert!.Actions!.DeclareDoorRevenue);
@@ -85,7 +85,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
         await client.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
         await fixture.FinishConcertAsync(concertId);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         // Act — a second declaration once the booking is no longer Booked.
         var response = await client.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = 500m });

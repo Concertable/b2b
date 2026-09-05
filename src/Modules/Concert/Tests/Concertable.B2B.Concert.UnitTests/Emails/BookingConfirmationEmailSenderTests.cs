@@ -13,8 +13,8 @@ namespace Concertable.B2B.Concert.UnitTests.Emails;
 
 public sealed class BookingConfirmationEmailSenderTests
 {
-    private static readonly Guid VenueTenant = Guid.NewGuid();
-    private static readonly Guid ArtistTenant = Guid.NewGuid();
+    private static readonly Guid VenueTenant = ConfirmedBookings.VenueTenantId;
+    private static readonly Guid ArtistTenant = ConfirmedBookings.ArtistTenantId;
 
     [Fact]
     public async Task SendAsync_MembersOfBothTenants_StagesOneEmailPerMemberWithLegalDetails()

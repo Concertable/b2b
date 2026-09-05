@@ -75,28 +75,25 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         var existing = VerifyPayment?.ToValue();
         if (existing == verification)
             return false;
-        if (existing?.ProviderTransactionId == verification.ProviderTransactionId)
-            throw new DomainException(
-                $"Verify payment {verification.ProviderTransactionId} cannot change its recorded outcome.");
         if (existing is SuccessfulPaymentVerification)
             return false;
 
         VerifyPayment = VerifyPaymentEntity.Create(verification);
-        events.Raise(verification switch
-        {
-            SuccessfulPaymentVerification succeeded =>
-                (IDomainEvent)new VerifyPaymentSucceededDomainEvent(
-                    new VerifyPaymentSucceeded(succeeded.ApplicationId, succeeded.ProviderTransactionId)),
-            FailedPaymentVerification failed =>
-                new VerifyPaymentFailedDomainEvent(
-                    new VerifyPaymentFailed(
-                        failed.ApplicationId,
-                        failed.ProviderTransactionId,
-                        new VerifyPaymentError(failed.Failure.Code, failed.Failure.Message))),
-            _ => throw new ArgumentOutOfRangeException(nameof(verification), verification, null)
-        });
+        events.Raise(VerificationEvent(verification));
         return true;
     }
+
+    private static IDomainEvent VerificationEvent(PaymentVerification verification) => verification switch
+    {
+        SuccessfulPaymentVerification succeeded =>
+            new VerifyPaymentSucceededDomainEvent(new VerifyPaymentSucceeded(succeeded.ApplicationId)),
+        FailedPaymentVerification failed =>
+            new VerifyPaymentFailedDomainEvent(
+                new VerifyPaymentFailed(
+                    failed.ApplicationId,
+                    new VerifyPaymentError(failed.Failure.Code, failed.Failure.Message))),
+        _ => throw new ArgumentOutOfRangeException(nameof(verification), verification, null)
+    };
 
     internal void RecordArtistESignature(ContractSignature eSignature, string termsFingerprint)
     {
@@ -115,6 +112,10 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         if (transition.TryGetError(out var error))
             return error;
         events.Raise(new ApplicationAcceptedDomainEvent(application));
+        // A verification that arrived before this acceptance found no booking to advance, so replay it now
+        // that the accepted application has one. The handler order puts booking creation first.
+        if (Verification is { } verification)
+            events.Raise(VerificationEvent(verification));
         return new Success();
     }
 

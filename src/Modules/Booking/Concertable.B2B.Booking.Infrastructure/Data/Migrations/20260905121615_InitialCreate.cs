@@ -30,7 +30,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     ArtistId = table.Column<int>(type: "int", nullable: false),
                     VenueId = table.Column<int>(type: "int", nullable: false),
                     DealType = table.Column<int>(type: "int", nullable: false),
-                    RequiresDoorRevenue = table.Column<bool>(type: "bit", nullable: false),
                     ExpectedFinancialOperation = table.Column<int>(type: "int", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -38,8 +37,7 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     State = table.Column<int>(type: "int", nullable: false),
                     CancellationOperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     FinancialFailureCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    FinancialFailureMessage = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    FinancialOperationReferenceId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true)
+                    FinancialFailureMessage = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -56,14 +54,13 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     BookingId = table.Column<int>(type: "int", nullable: false),
-                    VenueId = table.Column<int>(type: "int", nullable: false),
                     VenueName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ArtistId = table.Column<int>(type: "int", nullable: false),
                     ArtistName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DealType = table.Column<int>(type: "int", nullable: false),
                     PaymentMethod = table.Column<int>(type: "int", nullable: false),
                     TermsText = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PlatformTermsVersion = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MandateTermsVersion = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
                     PdfBlobName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ArtistSignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -72,6 +69,8 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     ArtistSignature_SignatoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ArtistSignature_UserAgent = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
                     ArtistSignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Commitment_ClientReference = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Commitment_OperationType = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
                     Period_End = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Period_Start = table.Column<DateTime>(type: "datetime2", nullable: false),
                     VenueSignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -81,10 +80,9 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     VenueSignature_UserAgent = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
                     VenueSignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ArtistDoorPercent = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    PaymentMethodId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Guarantee = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     Fee = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    HireFee = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    Guarantee = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
+                    HireFee = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
                 },
                 constraints: table =>
                 {

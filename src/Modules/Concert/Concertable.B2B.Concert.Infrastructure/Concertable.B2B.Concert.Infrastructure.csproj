@@ -45,6 +45,7 @@
   <ItemGroup>
     <PackageReference Include="Concertable.Customer.Review.Contracts" />
     <PackageReference Include="Concertable.DataAccess.Infrastructure" />
+    <PackageReference Include="Concertable.Customer.Ticket.Contracts" />
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Messaging.Contracts" />
     <PackageReference Include="Concertable.Messaging.Domain" />

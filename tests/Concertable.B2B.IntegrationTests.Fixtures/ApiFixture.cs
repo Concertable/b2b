@@ -2,6 +2,7 @@ using Concertable.Kernel.Notifications;
 using Concertable.Kernel.DependencyInjection;
 using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Events;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.Payment.Client;
 using Concertable.B2B.User.Contracts;
 using Concertable.B2B.User.Domain.Entities;
@@ -61,19 +62,21 @@ public class ApiFixture : IAsyncLifetime
     public void DetachOutput() => outputAccessor.Output = null;
 
     public IMockNotificationClient NotificationService { get; } = new MockNotificationClient();
-    public MockStripeApiClient StripeApiClient { get; } = new MockStripeApiClient();
     public IMockEmailSender EmailSender { get; } = new MockEmailSender();
-    public IMockManagerPaymentClient ManagerPaymentClient { get; }
-    public MockPayoutAccountClient PayoutAccountClient { get; } = new();
-    public MockEscrowClient EscrowClient { get; }
-    public MockPaymentTransport PaymentTransport { get; } = new();
+    public MockPaymentOperations PaymentOperations { get; } = new();
+    public IMockSettlementClient SettlementClient { get; }
+    public MockPaymentSessionClient PaymentSessionClient { get; }
 
     public ApiFixture()
     {
-        ManagerPaymentClient = new MockManagerPaymentClient(StripeApiClient);
-        EscrowClient = new MockEscrowClient(StripeApiClient);
+        SettlementClient = new MockSettlementClient(PaymentOperations);
+        PaymentSessionClient = new MockPaymentSessionClient(PaymentOperations);
     }
-    public IWebhookSimulator StripeClient { get; private set; } = null!;
+    public MockPayoutAccountClient PayoutAccountClient { get; } = new();
+    public MockEscrowClient EscrowClient { get; } = new();
+    public MockPaymentTransport PaymentTransport { get; } = new();
+
+    public IWebhookSimulator PaymentSimulator { get; private set; } = null!;
     public SeedState SeedState { get; private set; } = null!;
     public DateTime SeedNow => factory.Services.GetRequiredService<SeedCatalog>().Now;
 
@@ -108,12 +111,14 @@ public class ApiFixture : IAsyncLifetime
                 services.AddSingleton(PaymentTransport);
                 services.Replace(ServiceDescriptor.Singleton<IBusTransport>(PaymentTransport));
                 services.AddSingleton<INotificationClient>(NotificationService);
-                services.AddSingleton(StripeApiClient);
-                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient, PaymentTransport);
+                services.AddSingleton(PaymentOperations);
+                services.AddResettables(NotificationService, EmailSender, PaymentOperations, SettlementClient, PaymentSessionClient, PayoutAccountClient, EscrowClient, PaymentTransport);
                 services.AddSingleton<IEmailTransport>(EmailSender);
 
-                services.AddSingleton<IManagerPaymentOperationsClient>(ManagerPaymentClient);
-                services.AddSingleton<IManagerPaymentReportingClient>(ManagerPaymentClient);
+                services.AddSingleton<ISettlementOperationsClient>(SettlementClient);
+                services.AddSingleton<IPaymentReportingClient>(SettlementClient);
+                services.AddSingleton<IPaymentSessionOperationsClient>(PaymentSessionClient);
+                services.AddSingleton(PaymentSessionClient);
                 services.AddSingleton<IEscrowOperationsClient>(EscrowClient);
                 services.AddSingleton<IPayoutAccountOperationsClient>(PayoutAccountClient);
 
@@ -147,7 +152,7 @@ public class ApiFixture : IAsyncLifetime
         PaymentTransport.Connect(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
         await sqlFixture.InitializeRespawnerAsync();
-        StripeClient = factory.Services.GetRequiredService<IWebhookSimulator>();
+        PaymentSimulator = factory.Services.GetRequiredService<IWebhookSimulator>();
     }
 
     public async Task DisposeAsync()
@@ -162,7 +167,7 @@ public class ApiFixture : IAsyncLifetime
         await sqlFixture.ResetAsync();
         foreach (var resettable in factory.Services.GetServices<IResettable>())
             resettable.Reset();
-        StripeClient = factory.Services.GetRequiredService<IWebhookSimulator>();
+        PaymentSimulator = factory.Services.GetRequiredService<IWebhookSimulator>();
 
         scope?.Dispose();
         scope = factory.Services.CreateScope();
@@ -185,30 +190,26 @@ public class ApiFixture : IAsyncLifetime
             return;
         }
 
-        await SendPaymentFailedWebhookAsync(TransactionTypes.Escrow, bookingId);
+        await SendPaymentFailedWebhookAsync(PaymentOperationReferences.Escrow(bookingId));
     }
 
-    public Task SendSettlementFailedWebhookAsync(int bookingId, Guid operationId) =>
-        SendPaymentFailedWebhookAsync(TransactionTypes.Settlement, bookingId, operationId);
+    public Task SendSettlementFailedWebhookAsync(int concertId, Guid operationId) =>
+        SendPaymentFailedWebhookAsync(PaymentOperationReferences.Settlement(concertId), operationId);
 
-    private Task SendPaymentFailedWebhookAsync(string transactionType, int bookingId, Guid? operationId = null)
+    private Task SendPaymentFailedWebhookAsync(PaymentOperationReference reference, Guid? operationId = null)
     {
         var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
-        var metadata = new Dictionary<string, string>
-        {
-            [PaymentMetadataKeys.Type] = transactionType,
-            [PaymentMetadataKeys.BookingId] = bookingId.ToString()
-        };
-        if (operationId is not null)
-            metadata[PaymentMetadataKeys.OperationId] = operationId.Value.ToString();
-        var evt = new PaymentFailedEvent(
-            $"pi_fail_{bookingId}", "card_declined", "Card was declined", metadata);
+        var @event = new PaymentFailedEvent(
+            reference,
+            "card_declined",
+            "Card was declined",
+            PaymentOperationEnvelopes.Metadata(reference, operationId));
 
         return factory.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<PaymentFailedEvent>>>>()
             .RunAsync(async handlers =>
             {
                 foreach (var handler in handlers)
-                    await handler.HandleAsync(evt, envelope);
+                    await handler.HandleAsync(@event, envelope);
             });
     }
 
@@ -352,7 +353,7 @@ public class ApiFixture : IAsyncLifetime
                 b.ConfigureTestServices(options.Services);
         });
 
-        StripeClient = customFactory.Services.GetRequiredService<IWebhookSimulator>();
+        PaymentSimulator = customFactory.Services.GetRequiredService<IWebhookSimulator>();
 
         var client = customFactory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());

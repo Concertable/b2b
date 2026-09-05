@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Net;
 using Concertable.B2B.Application.Api.Responses;
 using Concertable.B2B.Application.Application.DTOs;
@@ -87,8 +88,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         var applicationId = fixture.SeedState.DoorSplitApp.Id;
         var request = new
         {
-            eSignature = new { signatoryName = "Test Signatory" },
-            paymentMethodId = "pm_card_visa"
+            eSignature = new { signatoryName = "Test Signatory" }
         };
         var firstResponse = await client.PostAsync(
             $"/api/application/{applicationId}/accept",
@@ -103,18 +103,22 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_WithoutPaymentMethod_DoesNotPersistTransition()
+    public async Task Accept_BeforeTheCardIsVerified_AcceptsAndWaitsForTheVerification()
     {
         var applicationId = fixture.SeedState.DoorSplitApp.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var checkout = await client.PostAsync($"/api/application/{applicationId}/checkout");
+        await checkout.ShouldBe(HttpStatusCode.OK);
 
         var response = await client.PostAsync(
             $"/api/application/{applicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        await response.ShouldBe(HttpStatusCode.BadRequest);
-        var application = await fixture.Applications.SingleAsync(value => value.Id == applicationId);
-        Assert.Null(application.AcceptanceOperationId);
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}");
+        await bookingResponse.ShouldBe(HttpStatusCode.OK);
+        var booking = await bookingResponse.Content.ReadAsync<JsonElement>();
+        Assert.Equal("awaitingConfirmation", booking.GetProperty("status").GetString());
     }
 
     private OpportunityBoundaryRequest BuildOpportunityRequest(DealDto deal) =>

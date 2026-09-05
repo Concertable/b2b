@@ -35,7 +35,6 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     internal BookingState State { get; private set; } = BookingState.AwaitingConfirmation;
     public Guid? CancellationOperationId { get; private set; }
     internal FinancialFailure? FinancialFailure { get; private set; }
-    public string? FinancialOperationReferenceId { get; private set; }
     public ContractEntity Contract { get; private set; } = null!;
 
     private readonly EventRaiser events = new();
@@ -73,13 +72,11 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
         ArtistTenantId = application.Artist.TenantId;
     }
 
-    internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialConfirmation(
-        string providerReferenceId)
+    internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialConfirmation()
     {
         var transition = Fire(BookingTrigger.Confirm);
         if (transition.TryGetError(out var error))
             return error;
-        FinancialOperationReferenceId = providerReferenceId;
         FinancialFailure = null;
         events.Raise(new BookingConfirmedDomainEvent(new ConfirmedBookingSnapshot(
             Id,
@@ -98,24 +95,12 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     }
 
     internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialFailure(
-        string providerReferenceId,
         string code,
         string message)
     {
         var transition = Fire(BookingTrigger.RecordConfirmationFailure);
         if (transition.TryGetError(out var error))
             return error;
-        FinancialOperationReferenceId = providerReferenceId;
-        FinancialFailure = new FinancialFailure(code, message);
-        return new Success();
-    }
-
-    internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialRejection(string code, string message)
-    {
-        var transition = Fire(BookingTrigger.RecordConfirmationFailure);
-        if (transition.TryGetError(out var error))
-            return error;
-        FinancialOperationReferenceId = null;
         FinancialFailure = new FinancialFailure(code, message);
         return new Success();
     }

@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Booking.Contracts;
 using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
@@ -31,7 +32,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         var accepted = await GetApplicationAsync(client, applicationId);
         Assert.Equal(ApplicationBoundaryStatus.Accepted, accepted.Status);
         Assert.Null(accepted.Actions.Cancel);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var concert = await GetConcertAsync(client, applicationId);
         Assert.Null(concert.DatePosted);
@@ -52,7 +53,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
             .Single(tenant => tenant.CreatedByUserId == fixture.SeedState.VenueManager1.Id)
             .Id;
         var command = fixture.PaymentTransport.SingleCommand<DepositEscrowCommand>();
-        Assert.Equal(financial.BookingId, command.BookingId);
+        Assert.Equal(PaymentOperationReferences.Escrow(financial.BookingId), command.Reference);
         Assert.Equal(artistTenantId, command.PayerId);
         Assert.Equal(venueTenantId, command.PayeeId);
         Assert.Equal(
@@ -68,9 +69,9 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         var acceptResponse = await AcceptAsync(client, applicationId);
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
         var firstConcert = await GetConcertAsync(client, applicationId);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
         var redeliveredConcert = await GetConcertAsync(client, applicationId);
 
         Assert.Equal(firstConcert.Id, redeliveredConcert.Id);
@@ -86,7 +87,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         var acceptResponse = await AcceptAsync(client, applicationId);
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var application = await GetApplicationAsync(client, applicationId);
         Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);

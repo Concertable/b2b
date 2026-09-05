@@ -1,6 +1,6 @@
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.ValueObjects;
-using PaymentCommitment = Concertable.B2B.Concert.Domain.ValueObjects.PaymentCommitment;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Strategies;
@@ -174,13 +174,12 @@ public sealed class ConcertWorkflowTests
             42,
             DealType.DoorSplit,
             7,
-            new PaymentCommitment("method-verification", "app:7"),
+            PaymentOperationReferences.MethodVerification(7),
             Guid.NewGuid(),
             Guid.NewGuid(),
             Money.Gbp(125m));
         Result<SettlementPreparation, FinishConcertError> prepared = ready;
-        Result<SettlementConfirmation, FinishConcertError> executed =
-            new SettlementConfirmation.ManagerPaid("pi_test");
+        UnitResult<FinishConcertError> executed = new Success();
         Result<SettlementOutcome, FinishConcertError> completed = SettlementOutcome.Settled;
         settlementService
             .Setup(service => service.ReserveAsync(42, default))
@@ -193,11 +192,7 @@ public sealed class ConcertWorkflowTests
             .Setup(value => value.CompleteAsync(ready, default))
             .ReturnsAsync(executed);
         settlementService
-            .Setup(service => service.CompleteAsync(
-                42,
-                operationId,
-                It.Is<SettlementConfirmation.ManagerPaid>(value => value.TransactionId == "pi_test"),
-                default))
+            .Setup(service => service.CompleteAsync(42, operationId, default))
             .ReturnsAsync(completed);
 
         var result = await workflow.CompleteAsync(42);

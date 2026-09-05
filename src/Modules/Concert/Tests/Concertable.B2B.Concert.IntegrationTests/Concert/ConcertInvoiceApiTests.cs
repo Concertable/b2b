@@ -120,7 +120,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal(invoice.Amounts.Gross, invoice.Amounts.Net);
 
         // charged == invoiced: the invoice gross is the exact share the payout step paid, via the shared resolver.
-        var payout = fixture.ManagerPaymentClient.Payments.Single(p => p.BookingId == booking.Id);
+        var payout = fixture.SettlementClient.Payments.Single(p => p.ConcertId == concert.Id);
         Assert.Equal(payout.Amount, invoice.Amounts.Gross);
     }
 
@@ -139,7 +139,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal(concert.ArtistTenantId, invoice.Supplier.TenantId);
         Assert.Equal(254m, invoice.Amounts.Gross);
 
-        var payout = fixture.ManagerPaymentClient.Payments.Single(p => p.BookingId == booking.Id);
+        var payout = fixture.SettlementClient.Payments.Single(p => p.ConcertId == concert.Id);
         Assert.Equal(payout.Amount, invoice.Amounts.Gross);
     }
 

@@ -1,8 +1,8 @@
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Infrastructure.Data;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
-using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -36,12 +36,12 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
         MessageEnvelope envelope,
         CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Verify)
+        if (@event.Reference.OperationType != PaymentOperationReferences.MethodVerificationType)
             return;
+        var applicationId = PaymentOperationReferences.ReadApplicationId(@event.Reference);
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentFailedProcessor), ct))
             return;
 
-        var applicationId = int.Parse(@event.Metadata[PaymentMetadataKeys.ApplicationId]);
         var code = string.IsNullOrWhiteSpace(@event.FailureCode)
             ? DefaultFailureCode
             : @event.FailureCode;
@@ -54,10 +54,7 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
         try
         {
             await paymentVerificationRecorder.RecordAsync(
-                new VerifyPaymentFailed(
-                    applicationId,
-                    @event.TransactionId,
-                    new VerifyPaymentError(code, message)),
+                new VerifyPaymentFailed(applicationId, new VerifyPaymentError(code, message)),
                 ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
@@ -66,7 +63,6 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
             return;
         }
 
-        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.VenueManagerId) is { } venueManagerId)
-            await applicationNotifier.VerifyPaymentFailedAsync(applicationId, venueManagerId, message);
+        await applicationNotifier.VerifyPaymentFailedAsync(applicationId, message);
     }
 }

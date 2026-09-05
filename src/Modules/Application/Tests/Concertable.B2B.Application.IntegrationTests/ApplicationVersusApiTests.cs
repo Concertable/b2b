@@ -81,8 +81,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var request = new
         {
-            eSignature = new { signatoryName = "Test Signatory" },
-            paymentMethodId = "pm_card_visa"
+            eSignature = new { signatoryName = "Test Signatory" }
         };
         var firstResponse = await client.PostAsync(
             $"/api/application/{applicationId}/accept",

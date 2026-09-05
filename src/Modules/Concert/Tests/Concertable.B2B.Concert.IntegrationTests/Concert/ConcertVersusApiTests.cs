@@ -33,14 +33,14 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concert.Id);
 
         // Assert — the off-session payment confirms inline, so the concert settles in this same call
-        var payment = Assert.Single(fixture.ManagerPaymentClient.Payments);
+        var payment = Assert.Single(fixture.SettlementClient.Payments);
         var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
         Assert.Equal(venueTenantId, payment.PayerId);
         Assert.Equal(artistTenantId, payment.PayeeId);
         Assert.Equal(254m, payment.Amount);
-        Assert.Equal(concert.SettlementPaymentMethodId, payment.PaymentMethodId);
-        Assert.Equal(concert.BookingId, payment.BookingId);
+        Assert.Equal(concert.SettlementPaymentReference, payment.PaymentMethod);
+        Assert.Equal(concert.Id, payment.ConcertId);
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
@@ -55,7 +55,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concert.Id);
 
         // Act
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         // Assert
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);

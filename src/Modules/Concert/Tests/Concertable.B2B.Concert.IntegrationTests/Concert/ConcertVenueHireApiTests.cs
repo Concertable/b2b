@@ -33,7 +33,7 @@ public sealed class ConcertVenueHireApiTests : IAsyncLifetime
         // Assert
         var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
         Assert.Equal(ConcertState.Complete, concert.State);
-        Assert.Empty(fixture.ManagerPaymentClient.Payments);
+        Assert.Empty(fixture.SettlementClient.Payments);
     }
 
     [Fact]

@@ -7,13 +7,11 @@ namespace Concertable.B2B.Booking.UnitTests;
 public sealed class FinancialOperationEvidenceTests
 {
     [Fact]
-    public void FinancialOperationSucceeded_BlankProviderReference_ThrowsArgumentException() =>
-        Assert.Throws<ArgumentException>(() => new VerifyPaymentSucceededEvidence(
-            42,
-            " "));
+    public void VerifyPaymentSucceededEvidence_NonPositiveApplicationId_ThrowsArgumentOutOfRange() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VerifyPaymentSucceededEvidence(0));
 
     [Fact]
-    public void AcceptanceFinancialOperationRejected_DoesNotRequireProviderReference()
+    public void AcceptanceFinancialOperationRejected_CarriesTheBookingAndError()
     {
         var rejected = new AcceptanceFinancialOperationRejected(
             Guid.NewGuid(),

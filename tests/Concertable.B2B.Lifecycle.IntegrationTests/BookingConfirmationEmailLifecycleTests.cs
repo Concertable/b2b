@@ -27,7 +27,7 @@ public sealed class BookingConfirmationEmailLifecycleTests : IAsyncLifetime
             $"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await accept.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var confirmations = (await fixture.GetStagedEmailsAsync())
             .Where(email => email.Subject.StartsWith("Booking confirmed:", StringComparison.Ordinal))

@@ -1,6 +1,5 @@
 using Concertable.B2B.Booking.Contracts;
-using Concertable.B2B.Concert.Domain.ValueObjects;
-using PaymentCommitment = Concertable.B2B.Concert.Domain.ValueObjects.PaymentCommitment;
+using Concertable.Payment.Contracts;
 
 namespace Concertable.B2B.Concert.Application.Models;
 
@@ -11,7 +10,7 @@ internal abstract record SettlementPreparation
         int ConcertId,
         DealType DealType,
         int BookingId,
-        PaymentCommitment Commitment,
+        PaymentOperationReference Commitment,
         Guid PayerTenantId,
         Guid PayeeTenantId,
         Money Gross) : SettlementPreparation;

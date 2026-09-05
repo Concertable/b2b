@@ -42,7 +42,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         await fixture.FinishConcertAsync(concert.Id);
 
-        Assert.DoesNotContain(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
+        Assert.DoesNotContain(fixture.SettlementClient.Payments, p => p.ConcertId == concert.Id);
         var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(ConcertState.Posted, persisted.State);
     }
@@ -56,7 +56,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         await fixture.FinishConcertAsync(concert.Id);
 
-        Assert.Contains(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
+        Assert.Contains(fixture.SettlementClient.Payments, p => p.ConcertId == concert.Id);
         var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
     }

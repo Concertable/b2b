@@ -9,6 +9,7 @@ using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Opportunity.Domain.Entities;
+using Concertable.Payment.Contracts;
 using Concertable.B2B.Venue.Domain.Entities;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
@@ -93,21 +94,15 @@ public static class ApplicationFactory
             .With(nameof(ApplicationEntity.OpportunityId), opportunityId)
             .With(nameof(ApplicationEntity.State), state);
 
-    private static PaymentCommitment Commitment(
+    private static PaymentOperationReference Commitment(
         DealTerms terms,
         int applicationId,
         int opportunityId,
         Guid artistTenantId) => terms switch
     {
-        FlatFeeTerms => new PaymentCommitment(
-            PaymentCommitmentTokens.EscrowHold,
-            PaymentCommitmentCorrelation.ForApplication(applicationId)),
-        VenueHireTerms => new PaymentCommitment(
-            PaymentCommitmentTokens.MethodSetup,
-            PaymentCommitmentCorrelation.ForOpportunityArtist(opportunityId, artistTenantId)),
-        ISettledFromDoorRevenue => new PaymentCommitment(
-            PaymentCommitmentTokens.MethodVerification,
-            PaymentCommitmentCorrelation.ForApplication(applicationId)),
+        FlatFeeTerms => PaymentOperationReferences.EscrowHold(applicationId),
+        VenueHireTerms => PaymentOperationReferences.MethodSetup(opportunityId, artistTenantId),
+        ISettledFromDoorRevenue => PaymentOperationReferences.MethodVerification(applicationId),
         _ => throw new ArgumentOutOfRangeException(nameof(terms), terms, null)
     };
 

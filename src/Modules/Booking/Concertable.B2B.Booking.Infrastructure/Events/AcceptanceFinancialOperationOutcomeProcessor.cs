@@ -4,6 +4,7 @@ using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Booking.Infrastructure.Extensions;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.Kernel.DependencyInjection;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
@@ -39,58 +40,68 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
     public Task HandleAsync(
         CaptureEscrowSucceededEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        ProcessAsync(
-            @event.BookingId,
+        CancellationToken ct = default)
+    {
+        var bookingId = PaymentOperationReferences.ReadBookingId(@event.Reference);
+        return ProcessAsync(
+            bookingId,
             envelope,
             new AcceptanceFinancialOperationSucceeded(
                 @event.OperationId,
-                @event.BookingId,
-                FinancialOperation.CaptureEscrow,
-                @event.ReferenceId),
+                bookingId,
+                FinancialOperation.CaptureEscrow),
             ct);
+    }
 
     public Task HandleAsync(
         DepositEscrowSucceededEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        ProcessAsync(
-            @event.BookingId,
+        CancellationToken ct = default)
+    {
+        var bookingId = PaymentOperationReferences.ReadBookingId(@event.Reference);
+        return ProcessAsync(
+            bookingId,
             envelope,
             new AcceptanceFinancialOperationSucceeded(
                 @event.OperationId,
-                @event.BookingId,
-                FinancialOperation.DepositEscrow,
-                @event.ReferenceId),
+                bookingId,
+                FinancialOperation.DepositEscrow),
             ct);
+    }
 
     public Task HandleAsync(
         CaptureEscrowRejectedEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        ProcessAsync(
-            @event.BookingId,
+        CancellationToken ct = default)
+    {
+        var bookingId = PaymentOperationReferences.ReadBookingId(@event.Reference);
+        return ProcessAsync(
+            bookingId,
             envelope,
             new AcceptanceFinancialOperationRejected(
                 @event.OperationId,
-                @event.BookingId,
+                bookingId,
                 FinancialOperation.CaptureEscrow,
                 new FinancialOperationError(@event.Code, @event.Message)),
             ct);
+    }
 
     public Task HandleAsync(
         DepositEscrowRejectedEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        ProcessAsync(
-            @event.BookingId,
+        CancellationToken ct = default)
+    {
+        var bookingId = PaymentOperationReferences.ReadBookingId(@event.Reference);
+        return ProcessAsync(
+            bookingId,
             envelope,
             new AcceptanceFinancialOperationRejected(
                 @event.OperationId,
-                @event.BookingId,
+                bookingId,
                 FinancialOperation.DepositEscrow,
                 new FinancialOperationError(@event.Code, @event.Message)),
             ct);
+    }
 
     // The outcome can arrive while the venue is cancelling the same booking. The transition already branches
     // on the state it reads, so losing the row is not a failure: the winner moved the booking after this

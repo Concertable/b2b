@@ -12,13 +12,11 @@ internal interface ISettlementService
     Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
         int concertId,
         Guid operationId,
-        SettlementConfirmation confirmation,
         CancellationToken ct = default);
 
     Task RecordFailureAsync(
         int concertId,
         Guid operationId,
-        string providerReferenceId,
         string code,
         string message,
         CancellationToken ct = default);

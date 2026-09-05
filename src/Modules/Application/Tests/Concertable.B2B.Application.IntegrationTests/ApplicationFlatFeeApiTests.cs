@@ -37,7 +37,6 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         var checkout = await response.Content.ReadAsync<Checkout>();
         Assert.NotNull(checkout);
         Assert.Equal(CheckoutLabels.Charge, checkout.Labels);
-        Assert.StartsWith("pi_", checkout.Session.ClientSecret);
         Assert.IsType<FlatPayment>(checkout.Amount);
         Assert.NotEmpty(checkout.Session.ClientSecret);
     }
@@ -106,7 +105,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         Assert.Equal(
             "Your application was accepted! A concert has been scheduled for you.",
             acceptedEmail.Body);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var response = await client.PostAsync(
             $"/api/application/{applicationId}/accept",

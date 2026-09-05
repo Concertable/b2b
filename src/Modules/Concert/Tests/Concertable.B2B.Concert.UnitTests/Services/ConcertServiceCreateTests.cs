@@ -22,8 +22,8 @@ public sealed class ConcertServiceCreateTests
 
     public ConcertServiceCreateTests()
     {
-        var venueTenantId = Guid.NewGuid();
-        var artistTenantId = Guid.NewGuid();
+        var venueTenantId = ConfirmedBookings.VenueTenantId;
+        var artistTenantId = ConfirmedBookings.ArtistTenantId;
         booking = ConfirmedBookings.FlatFee(500m);
         var artist = new ArtistReadModel
         {

@@ -9,30 +9,18 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Debug, Message = "Duplicate inbox message {MessageId}; skipping")]
     internal static partial void DuplicateInboxMessage(this ILogger logger, Guid messageId);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Escrow webhook received: payment intent {TransactionId} for booking {BookingId}")]
-    internal static partial void EscrowWebhookReceived(this ILogger logger, string transactionId, int bookingId);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Booking {BookingId} referenced by an escrow payment event was not found; skipping")]
-    internal static partial void BookingNotFoundForEscrowPayment(this ILogger logger, int bookingId);
-
     [LoggerMessage(Level = LogLevel.Warning, Message = "Concert {ConcertId} not found for ticket sale")]
     internal static partial void ConcertNotFoundForTicketSale(this ILogger logger, int concertId);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Settlement webhook received: payment intent {TransactionId} for booking {BookingId}")]
-    internal static partial void SettlementWebhookReceived(this ILogger logger, string transactionId, int bookingId);
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Settlement outcome received for {ClientReference} on concert {ConcertId}")]
+    internal static partial void SettlementWebhookReceived(this ILogger logger, string clientReference, int concertId);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Payment failed for booking {BookingId}: [{FailureCode}] {FailureMessage}")]
-    internal static partial void BookingPaymentFailed(this ILogger logger, int bookingId, string? failureCode, string? failureMessage);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Settlement failed for concert {ConcertId}: [{FailureCode}] {FailureMessage}")]
+    internal static partial void SettlementPaymentFailed(this ILogger logger, int concertId, string? failureCode, string? failureMessage);
 
     #endregion
 
     #region Workflow
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Accepting application {ApplicationId} (booking {BookingId}): binding pre-authorised PaymentIntent {PaymentIntentId} for {Amount} {Currency} from {PayerId} on behalf of {PayeeId}")]
-    internal static partial void AcceptingFlatFeeApplication(this ILogger logger, int applicationId, int bookingId, string paymentIntentId, decimal amount, string currency, Guid payerId, Guid payeeId);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Accepting application {ApplicationId} (booking {BookingId}): charging {Amount} GBP from {PayerId} on behalf of {PayeeId}")]
-    internal static partial void AcceptingVenueHireApplication(this ILogger logger, int applicationId, int bookingId, decimal amount, Guid payerId, Guid payeeId);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Calculated artist share for concert {ConcertId}: {Share}")]
     internal static partial void ArtistShareCalculated(this ILogger logger, int concertId, decimal share);

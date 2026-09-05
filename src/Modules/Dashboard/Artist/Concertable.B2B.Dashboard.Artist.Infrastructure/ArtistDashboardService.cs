@@ -18,7 +18,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
     private readonly IArtistModule artistModule;
     private readonly IBookingModule bookingModule;
     private readonly IConcertModule concertModule;
-    private readonly IManagerPaymentReportingClient paymentReportingClient;
+    private readonly IPaymentReportingClient paymentReportingClient;
     private readonly IPayoutAccountOperationsClient payoutAccountClient;
     private readonly ITenantContext tenantContext;
     private readonly ITenantModule tenantModule;
@@ -29,7 +29,7 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
         IArtistModule artistModule,
         IBookingModule bookingModule,
         IConcertModule concertModule,
-        IManagerPaymentReportingClient paymentReportingClient,
+        IPaymentReportingClient paymentReportingClient,
         IPayoutAccountOperationsClient payoutAccountClient,
         ITenantContext tenantContext,
         ITenantModule tenantModule,

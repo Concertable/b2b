@@ -10,6 +10,7 @@ using Concertable.B2B.Booking.Domain.Factories;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Infrastructure.Extensions;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Booking.Infrastructure.Specifications;
 using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -166,20 +167,16 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         {
             await bus.SendAsync(new RefundEscrowCommand(
                 booking.CancellationOperationId!.Value,
-                bookingId,
-                RefundReasonCodes.RequestedByCustomer), ct);
+                PaymentOperationReferences.Escrow(bookingId),
+                RefundReasonCodes.RequestedByPayer), ct);
             return;
         }
         if (booking.State is BookingState.CancellationFailed or BookingState.Cancelled)
             return;
         if (booking.State == BookingState.Confirmed)
-        {
-            EnsureSameProviderReference(booking, operation);
             return;
-        }
 
-        if (booking.RecordFinancialConfirmation(operation.ProviderReferenceId)
-            .TryGetError(out var transitionError))
+        if (booking.RecordFinancialConfirmation().TryGetError(out var transitionError))
             throw new InvalidOperationException($"Booking cannot confirm from {transitionError.Current}.");
         await bookingRepository.SaveChangesAsync(ct);
     }
@@ -207,22 +204,9 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         if (IsDuplicateFailure(booking, operation))
             return;
 
-        switch (operation)
-        {
-            case VerifyPaymentFailedEvidence verified:
-                if (booking.RecordFinancialFailure(
-                    verified.ProviderReferenceId,
-                    verified.Error.Code,
-                    verified.Error.Message).TryGetError(out var failureError))
-                    throw new InvalidOperationException($"Booking cannot record confirmation failure from {failureError.Current}.");
-                break;
-            case AcceptanceFinancialOperationRejected rejected:
-                if (booking.RecordFinancialRejection(rejected.Error.Code, rejected.Error.Message).TryGetError(out var rejectionError))
-                    throw new InvalidOperationException($"Booking cannot record confirmation rejection from {rejectionError.Current}.");
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
-        }
+        if (booking.RecordFinancialFailure(operation.Error.Code, operation.Error.Message)
+            .TryGetError(out var failureError))
+            throw new InvalidOperationException($"Booking cannot record confirmation failure from {failureError.Current}.");
         await bookingRepository.SaveChangesAsync(ct);
     }
 
@@ -259,23 +243,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private static bool IsDuplicateFailure(
         BookingEntity booking,
         FinancialOperationFailed operation) =>
-        booking.State == BookingState.ConfirmationFailed && operation switch
-        {
-            VerifyPaymentFailedEvidence verified =>
-                booking.FinancialOperationReferenceId == verified.ProviderReferenceId,
-            AcceptanceFinancialOperationRejected rejected =>
-                booking.FinancialOperationReferenceId is null &&
-                booking.FinancialFailure?.Code == rejected.Error.Code &&
-                booking.FinancialFailure?.Message == rejected.Error.Message,
-            _ => false
-        };
-
-    private static void EnsureSameProviderReference(
-        BookingEntity booking,
-        FinancialOperationSucceeded operation)
-    {
-        if (booking.FinancialOperationReferenceId != operation.ProviderReferenceId)
-            throw new InvalidOperationException(
-                $"Booking {booking.Id} was confirmed by provider reference {booking.FinancialOperationReferenceId}, not {operation.ProviderReferenceId}.");
-    }
+        booking.State == BookingState.ConfirmationFailed
+        && booking.FinancialFailure?.Code == operation.Error.Code
+        && booking.FinancialFailure?.Message == operation.Error.Message;
 }

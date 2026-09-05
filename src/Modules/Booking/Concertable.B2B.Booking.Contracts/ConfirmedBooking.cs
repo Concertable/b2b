@@ -1,4 +1,5 @@
 using Concertable.Contracts.Enums;
+using Concertable.Payment.Contracts;
 using Dunet;
 
 namespace Concertable.B2B.Booking.Contracts;
@@ -14,7 +15,7 @@ public sealed record ConfirmedBookingSnapshot(
     DateTime StartDate,
     DateTime EndDate,
     IReadOnlyList<Genre> Genres,
-    PaymentCommitment Commitment,
+    PaymentOperationReference Commitment,
     ConfirmedBookingTerms Terms);
 
 [Union(EnableImplicitConversions = false)]

@@ -248,8 +248,8 @@ handle every variant exhaustively so invalid affordance combinations are unrepre
 
 The money value-type migration (PR1 #390 → sync #393) made every
 payment-client + `ISettlementAmountResolver` signature `Money`-typed, but `FlatFeeDeal.Fee` /
-`VenueHireDeal.HireFee` (contracts + `*DealEntity`) stayed `decimal`. The workflow steps (`HoldCheckoutStep`,
-`Capture`/`DepositEscrowAcceptStep`) lift them with `Money.Gbp(deal.Fee)` at the call sites — a legitimate
+`VenueHireDeal.HireFee` (contracts + `*DealEntity`) stayed `decimal`. Checkout and the confirm strategies
+lift them with `Money.Gbp(deal.Fee)` at the call sites — a legitimate
 boundary conversion (same pattern as Customer's `Money.Gbp(concert.Price * qty)`), but it assumes GBP and keeps
 a money value untyped in the domain, inconsistent with `EscrowEntity.Amount` which is a `Money` EF
 ComplexProperty. Deferred from the sync PR because the field-type change needs an EF ComplexProperty mapping +
@@ -363,3 +363,19 @@ that is never queried independently. Do not leave the rule absolute while the co
 
 Resolves when: `grep -n "ThreadReadStates" MessageRepository.cs` returns nothing, or the rule in
 `CODE_PATTERNS.md` states the child-collection exception explicitly.
+
+---
+
+### `app/web/shared` still hands B2B a Stripe payment-method id
+
+`StripePaymentForm.onSuccess` is typed `(paymentMethodId: string) => void` and `NewCardSection.onConfirmed`
+the same, so the shared web tier offers consumers the `pm_…` id it reads off the confirmed intent. B2B no
+longer sends it — apply and accept post only the e-signature, and Payment resolves the method from the
+reference — but the seam still exposes it, and a future consumer could pick it back up.
+
+**Why it is not fixed here:** `carve-fe` builds each app against `@concertable/web` **as published to the
+feed**, so narrowing the callback in `app/web/shared` and consuming the narrower shape in `app/web/b2b/*`
+in one PR fails that gate. Same publish-first split as the `ApplicationActions.decline` entry.
+
+**Resolves when:** `web` is republished with `onSuccess: () => void` / `onConfirmed: () => void`, the b2b
+and customer callers drop the argument, and `carve-fe` is green.

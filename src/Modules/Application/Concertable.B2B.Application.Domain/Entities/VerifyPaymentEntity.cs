@@ -6,14 +6,12 @@ internal abstract class VerifyPaymentEntity
 {
     public int Id { get; private set; }
     public int ApplicationId { get; private set; }
-    public string ProviderTransactionId { get; private set; } = null!;
 
     protected VerifyPaymentEntity() { }
 
     protected VerifyPaymentEntity(PaymentVerification verification)
     {
         ApplicationId = verification.ApplicationId;
-        ProviderTransactionId = verification.ProviderTransactionId;
     }
 
     internal abstract PaymentVerification ToValue();
@@ -33,7 +31,7 @@ internal sealed class SucceededVerifyPaymentEntity : VerifyPaymentEntity
     internal SucceededVerifyPaymentEntity(SuccessfulPaymentVerification verification) : base(verification) { }
 
     internal override PaymentVerification ToValue() =>
-        new SuccessfulPaymentVerification(ApplicationId, ProviderTransactionId);
+        new SuccessfulPaymentVerification(ApplicationId);
 }
 
 internal sealed class FailedVerifyPaymentEntity : VerifyPaymentEntity
@@ -52,6 +50,5 @@ internal sealed class FailedVerifyPaymentEntity : VerifyPaymentEntity
     internal override PaymentVerification ToValue() =>
         new FailedPaymentVerification(
             ApplicationId,
-            ProviderTransactionId,
             new PaymentVerificationFailure(Code, Message));
 }

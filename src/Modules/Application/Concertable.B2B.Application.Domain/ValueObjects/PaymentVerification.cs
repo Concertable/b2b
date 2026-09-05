@@ -1,16 +1,13 @@
 namespace Concertable.B2B.Application.Domain.ValueObjects;
 
-internal abstract record PaymentVerification(int ApplicationId, string ProviderTransactionId);
+internal abstract record PaymentVerification(int ApplicationId);
 
-internal sealed record SuccessfulPaymentVerification(
-    int ApplicationId,
-    string ProviderTransactionId)
-    : PaymentVerification(ApplicationId, ProviderTransactionId);
+internal sealed record SuccessfulPaymentVerification(int ApplicationId)
+    : PaymentVerification(ApplicationId);
 
 internal sealed record FailedPaymentVerification(
     int ApplicationId,
-    string ProviderTransactionId,
     PaymentVerificationFailure Failure)
-    : PaymentVerification(ApplicationId, ProviderTransactionId);
+    : PaymentVerification(ApplicationId);
 
 internal sealed record PaymentVerificationFailure(string Code, string Message);

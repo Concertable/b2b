@@ -27,6 +27,7 @@ using Concertable.B2B.Concert.Infrastructure.Strategies;
 using Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
 using Concertable.B2B.Concert.Infrastructure.Services.Payment;
+using Concertable.Customer.Ticket.Contracts.Events;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
 using Concertable.B2B.Concert.Infrastructure.Validators;
 using Concertable.B2B.Venue.Contracts.Events;
@@ -123,7 +124,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IIntegrationCommandHandler<NotifyConcertDraftCreatedCommand>,
                 NotifyConcertDraftCreatedCommandHandler>();
             services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, SettlementPaymentProcessor>();
-            services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, TicketSaleProcessor>();
+            services.AddScoped<IIntegrationEventHandler<TicketPurchasedEvent>, TicketSaleProcessor>();
             services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, SettlementPaymentFailedProcessor>();
             services.AddScoped<FinancialOperationOutcomeProcessor>();
             services.AddScoped<IIntegrationEventHandler<RefundEscrowSucceededEvent>>(sp => sp.GetRequiredService<FinancialOperationOutcomeProcessor>());

@@ -24,10 +24,14 @@ public static class BookingFactory
 
         if (confirmed)
         {
-            booking.RecordFinancialConfirmation($"seed-financial-{id}");
+            booking.RecordFinancialConfirmation();
             booking.ClearDomainEvents();
         }
 
+        // SQL Server allows IDENTITY_INSERT on one table at a time, so the seeder inserts bookings and
+        // contracts in separate windows; leaving the navigation set would drag the contract into the
+        // booking save and break the second window.
+        booking.With(nameof(BookingEntity.Contract), null);
         return new BookingSeedAggregate(booking, contract);
     }
 

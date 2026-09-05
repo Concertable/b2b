@@ -1,6 +1,7 @@
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.Contracts.Enums;
+using Concertable.Payment.Contracts;
 
 namespace Concertable.B2B.Application.Contracts;
 
@@ -31,7 +32,7 @@ public sealed record ContractSnapshot(
     string TermsText,
     string PlatformTermsVersion,
     string MandateTermsVersion,
-    PaymentCommitment Commitment,
+    PaymentOperationReference Commitment,
     ContractSignature ArtistSignature,
     ContractSignature VenueSignature,
     DealTerms Terms);

@@ -44,11 +44,6 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                     b.Property<int>("DealType")
                         .HasColumnType("int");
 
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(21)
-                        .HasColumnType("nvarchar(21)");
-
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
 
@@ -69,7 +64,7 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "ArtistESignature", "Concertable.B2B.Application.Domain.Entities.ApplicationEntity.ArtistESignature#Signature", b1 =>
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ArtistESignature", "Concertable.B2B.Application.Domain.Entities.ApplicationEntity.ArtistESignature#ContractSignature", b1 =>
                         {
                             b1.IsRequired();
 
@@ -110,10 +105,6 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Applications", "application");
-
-                    b.HasDiscriminator<string>("Discriminator").HasValue("ApplicationEntity");
-
-                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.ConcertAvailabilityEntity", b =>
@@ -167,17 +158,9 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                         .HasMaxLength(34)
                         .HasColumnType("nvarchar(34)");
 
-                    b.Property<string>("ProviderTransactionId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ApplicationId")
-                        .IsUnique();
-
-                    b.HasIndex("ProviderTransactionId")
                         .IsUnique();
 
                     b.ToTable("VerifyPayments", "application");
@@ -254,24 +237,6 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
-                });
-
-            modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.PrepaidApplication", b =>
-                {
-                    b.HasBaseType("Concertable.B2B.Application.Domain.Entities.ApplicationEntity");
-
-                    b.Property<string>("PaymentMethodId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasDiscriminator().HasValue("PrepaidApplication");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.StandardApplication", b =>
-                {
-                    b.HasBaseType("Concertable.B2B.Application.Domain.Entities.ApplicationEntity");
-
-                    b.HasDiscriminator().HasValue("StandardApplication");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.FailedVerifyPaymentEntity", b =>

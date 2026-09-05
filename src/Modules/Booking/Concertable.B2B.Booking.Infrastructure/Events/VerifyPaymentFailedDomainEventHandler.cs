@@ -27,7 +27,6 @@ internal sealed class VerifyPaymentFailedDomainEventHandler : IPreCommitDomainEv
             bookingId.Value,
             new VerifyPaymentFailedEvidence(
                 payment.ApplicationId,
-                payment.ProviderTransactionId,
                 new FinancialOperationError(payment.Error.Code, payment.Error.Message)),
             ct);
     }

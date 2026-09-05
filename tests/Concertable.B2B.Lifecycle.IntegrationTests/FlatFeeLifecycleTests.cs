@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Booking.Contracts;
 using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
@@ -33,7 +34,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var application = await GetApplicationAsync(client, applicationId);
         Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
@@ -57,7 +58,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         var artistTenantId = fixture.SeedState.Tenants
             .Single(tenant => tenant.CreatedByUserId == fixture.SeedState.ArtistManager1.Id)
             .Id;
-        Assert.True(command.BookingId > 0);
+        Assert.Equal(PaymentOperationReferences.EscrowType, command.Reference.OperationType);
         Assert.Equal(venueTenantId, command.PayerId);
         Assert.Equal(artistTenantId, command.PayeeId);
         Assert.Equal((long)(fixture.SeedState.FlatFeeAppDeal.Fee * 100), command.AmountMinor);
@@ -76,8 +77,8 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        await fixture.StripeClient.SendWebhookAsync();
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         Assert.Equal(2, (await fixture.WaitForDraftNotificationsAsync(2)).Count);
         var financial = await GetFinancialOperationAsync(client, applicationId);
@@ -96,7 +97,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var application = await GetApplicationAsync(client, applicationId);
         Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
@@ -139,7 +140,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.StripeClient.SendWebhookAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.PaymentSimulator.SendWebhookAsync());
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.AwaitingConfirmation, financial.Status);

@@ -18,8 +18,8 @@ opportunity's reopen rather than on a delay.
 ## The agreed economics are stored three times and enumerated twice more
 
 `FlatFeeDealEntity.Fee`, `DoorSplitDealEntity.ArtistDoorPercent`, `VersusDealEntity.Guarantee` and
-`VenueHireDealEntity.HireFee` are copied onto `StandardBooking.Amount` / `DeferredBooking.{ArtistDoorPercent,
-Guarantee, PaymentMethodId}`, then again onto `ConcertEntity.{Fee, HireFee, ArtistDoorPercent, Guarantee}` as
+`VenueHireDealEntity.HireFee` are copied onto the contract's frozen terms, then again onto
+`ConcertEntity.{Fee, HireFee, ArtistDoorPercent, Guarantee}` as
 four nullables filled by a type switch and read back by a `DealType` switch on `!.Value`. A copy is required —
 every deal type has `Update(...)`, so settlement must not read the live deal — but `ContractEntity`, the
 entity that already holds the signatures, `TermsText` and the PDF, is the one place holding no figures.
@@ -28,15 +28,7 @@ Two more sites enumerate the same per-arm fields: `ApplicationTermsFingerprint.C
 renderers. Neither is wrong in shape, but nothing forces a new field on a deal arm through either, so the
 fingerprint can silently stop covering a term it is supposed to bind.
 
-`BookingEntity`'s two arms over four deal types are what produce the rest: `DeferredBooking.Guarantee` is a
-persisted `0` for every DoorSplit row, `DoorSplitAcceptedApplication` passes that literal in
-`BookingAcceptanceMappers`, and both `GetConfirmedTerms()` overrides plus the base constructor's
-`ExpectedFinancialOperation` re-ask `DealType` behind an inexhaustive `_ => throw`.
-
-**Resolves when:** `ContractEntity` is the TPH root discriminated by its existing `DealType` column with one
-arm per deal type carrying that type's figures; `BookingEntity` is a single class holding lifecycle only, so
-`StandardBooking` and `DeferredBooking` are deleted; `BookingAcceptance` stays as the Domain-side carrier
-`Booking.Domain` needs to avoid referencing `Application.Contracts`, but re-armed one-per-deal-type so each
-`AcceptedApplication` arm maps straight across; `ConcertEntity` takes the same treatment in place of its four
-nullables; and the fingerprint's per-arm payload is dispatched rather than switched — as its own keyed family,
-not a second member beside `IDealTerms.Render`, so a wording edit cannot sit next to a hash input.
+**Resolves when:** `ConcertEntity` carries one arm per deal type in place of its four nullables, the way
+`ContractEntity` already does; and the fingerprint's per-arm payload is dispatched rather than switched — as
+its own keyed family, not a second member beside `IDealTerms.Render`, so a wording edit cannot sit next to a
+hash input.

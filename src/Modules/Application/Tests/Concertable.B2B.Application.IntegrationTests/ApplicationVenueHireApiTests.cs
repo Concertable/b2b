@@ -70,8 +70,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             $"/api/application/{opportunity.Id}",
             new
             {
-                eSignature = new { signatoryName = "Test Signatory" },
-                paymentMethodId = "pm_card_visa"
+                eSignature = new { signatoryName = "Test Signatory" }
             });
 
         await applyResponse.ShouldBe(HttpStatusCode.Created);
@@ -79,7 +78,6 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             .OfType<ApplicationEntity>()
             .FirstOrDefaultAsync(value => value.OpportunityId == opportunity.Id);
         Assert.NotNull(prepaid);
-        Assert.Equal("pm_card_visa", prepaid.PaymentMethodId);
     }
 
     [Fact]
@@ -92,7 +90,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             request);
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var response = await client.PostAsync(
             $"/api/application/{applicationId}/accept",
@@ -103,35 +101,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Apply_ShouldCreateApplicationEntity_WithoutCheckout()
-    {
-        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var opportunityResponse = await venueClient.PostAsync(
-            "/api/opportunity",
-            BuildOpportunityRequest());
-        await opportunityResponse.ShouldBe(HttpStatusCode.Created);
-        var opportunity = await opportunityResponse.Content.ReadAsync<OpportunityBoundaryResponse>();
-        Assert.NotNull(opportunity);
-        var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-
-        var applyResponse = await artistClient.PostAsync(
-            $"/api/application/{opportunity.Id}",
-            new
-            {
-                eSignature = new { signatoryName = "Test Signatory" },
-                paymentMethodId = "pm_card_visa"
-            });
-
-        await applyResponse.ShouldBe(HttpStatusCode.Created);
-        var prepaid = await fixture.Applications
-            .OfType<ApplicationEntity>()
-            .FirstOrDefaultAsync(value => value.OpportunityId == opportunity.Id);
-        Assert.NotNull(prepaid);
-        Assert.Equal("pm_card_visa", prepaid.PaymentMethodId);
-    }
-
-    [Fact]
-    public async Task Apply_ShouldReturn400_WhenPaymentMethodIsMissing()
+    public async Task Apply_ShouldReturn402_WhenNoPaymentMethodIsCommitted()
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var opportunityResponse = await venueClient.PostAsync(
@@ -146,7 +116,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
             $"/api/application/{opportunity.Id}",
             new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        await applyResponse.ShouldBe(HttpStatusCode.BadRequest);
+        await applyResponse.ShouldBe(HttpStatusCode.PaymentRequired);
         Assert.False(await fixture.Applications.AnyAsync(value => value.OpportunityId == opportunity.Id));
     }
 

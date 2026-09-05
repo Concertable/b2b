@@ -43,7 +43,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
         var acceptResponse = await AcceptAsync(client, applicationId);
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var concert = await GetConcertAsync(client, applicationId);
         Assert.Null(concert.DatePosted);
@@ -68,9 +68,9 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
         var acceptResponse = await AcceptAsync(client, applicationId);
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
         var firstConcert = await GetConcertAsync(client, applicationId);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
         var redeliveredConcert = await GetConcertAsync(client, applicationId);
 
         Assert.Equal(firstConcert.Id, redeliveredConcert.Id);
@@ -87,7 +87,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
         var acceptResponse = await AcceptAsync(client, applicationId);
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
@@ -105,7 +105,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
         var applicationId = fixture.SeedState.VersusApp.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
         var beforeAccept = await client.GetAsync($"/api/concert/application/{applicationId}");
         await beforeAccept.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
@@ -124,8 +124,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             new
             {
-                eSignature = new { signatoryName = "Test Signatory" },
-                paymentMethodId = "pm_card_visa"
+                eSignature = new { signatoryName = "Test Signatory" }
             });
 
     private static async Task<ConcertBoundaryResponse> GetConcertAsync(

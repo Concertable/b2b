@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Payments;
 using System.Net;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.Payment.Contracts;
@@ -62,11 +63,11 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
 
         var cancelResponse = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
         var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
 
-        Assert.Equal(2, refunds.Count(command => command.BookingId == bookingId));
+        Assert.Equal(2, refunds.Count(command => command.Reference == PaymentOperationReferences.Escrow(bookingId)));
         var concertResponse = await client.GetAsync($"/api/concert/application/{applicationId}");
         await concertResponse.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -92,7 +93,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
         var retryRefund = refunds.Last();
         Assert.NotEqual(firstRefund.OperationId, retryRefund.OperationId);
-        Assert.Equal(firstRefund.BookingId, retryRefund.BookingId);
+        Assert.Equal(firstRefund.Reference, retryRefund.Reference);
 
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(BookingStatus.Cancelled, (await GetBookingAsync(client, applicationId)).Status);
@@ -108,7 +109,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         var accepted = await GetApplicationAsync(client, applicationId);
         Assert.Null(accepted.Actions.Cancel);
         var bookingId = (await GetBookingAsync(client, applicationId)).BookingId;
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
         Assert.DoesNotContain(await GetOpportunitiesAsync(client), value => value.Id == opportunityId);
         var concertResponse = await client.GetAsync($"/api/concert/application/{applicationId}");
         await concertResponse.ShouldBe(HttpStatusCode.OK);
@@ -119,8 +120,8 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         var refund = fixture.PaymentTransport.SingleCommand<RefundEscrowCommand>();
-        Assert.Equal(bookingId, refund.BookingId);
-        Assert.Equal(RefundReasonCodes.RequestedByCustomer, refund.Reason);
+        Assert.Equal(PaymentOperationReferences.Escrow(bookingId), refund.Reference);
+        Assert.Equal(RefundReasonCodes.RequestedByPayer, refund.Reason);
 
         Assert.Contains(await GetOpportunitiesAsync(client), value => value.Id == opportunityId);
     }
@@ -131,7 +132,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
         await AcceptFlatFeeAsync(client, applicationId);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
         var concert = await GetConcertAsync(client, applicationId);
         Assert.NotNull(concert.Actions.Cancel);
 
@@ -146,7 +147,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
         var retryRefund = refunds.Last();
         Assert.NotEqual(firstRefund.OperationId, retryRefund.OperationId);
-        Assert.Equal(firstRefund.BookingId, retryRefund.BookingId);
+        Assert.Equal(firstRefund.Reference, retryRefund.Reference);
 
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Null((await GetConcertAsync(client, applicationId)).Actions.Cancel);

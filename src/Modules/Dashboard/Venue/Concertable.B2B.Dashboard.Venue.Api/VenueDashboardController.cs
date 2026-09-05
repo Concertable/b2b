@@ -24,9 +24,9 @@ internal sealed class VenueDashboardController : ControllerBase
     public async Task<ActionResult<VenueDashboardOverview>> GetOverview(CancellationToken ct) =>
         (await service.GetOverviewAsync(ct)).ToOkOrNoContent();
 
-    [HttpGet("charts/ticket-revenue")]
-    public async Task<ActionResult<IReadOnlyList<MonthlyRevenuePoint>>> GetTicketRevenue(CancellationToken ct) =>
-        Ok(await service.GetTicketRevenueAsync(ct));
+    [HttpGet("charts/payment-revenue")]
+    public async Task<ActionResult<IReadOnlyList<MonthlyRevenuePoint>>> GetPaymentRevenue(CancellationToken ct) =>
+        Ok(await service.GetPaymentRevenueAsync(ct));
 
     [HttpGet("settlements")]
     public async Task<ActionResult<IReadOnlyList<Settlement>>> GetSettlements(CancellationToken ct) =>

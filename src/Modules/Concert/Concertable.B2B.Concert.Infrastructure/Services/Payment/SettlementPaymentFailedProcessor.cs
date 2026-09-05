@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -29,22 +30,14 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
 
     public async Task HandleAsync(PaymentFailedEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Settlement)
+        if (@event.Reference.OperationType != PaymentOperationReferences.SettlementType)
             return;
-
-        var bookingId = @event.Metadata.GetValueAs<int>(PaymentMetadataKeys.BookingId);
+        var concertId = PaymentOperationReferences.ReadConcertId(@event.Reference);
         var operationId = @event.Metadata.GetValueAs<Guid>(PaymentMetadataKeys.OperationId);
-        logger.BookingPaymentFailed(bookingId, @event.FailureCode, @event.FailureMessage);
-        var concertId = await context.Concerts
-            .AsNoTracking()
-            .Where(value => value.BookingId == bookingId)
-            .Select(value => (int?)value.Id)
-            .SingleOrDefaultAsync(ct)
-            ?? throw new InvalidOperationException($"Settlement booking {bookingId} has no concert.");
+        logger.SettlementPaymentFailed(concertId, @event.FailureCode, @event.FailureMessage);
         await settlementService.RecordFailureAsync(
             concertId,
             operationId,
-            @event.TransactionId,
             @event.FailureCode ?? "unknown",
             @event.FailureMessage ?? "Settlement payment failed.",
             ct);

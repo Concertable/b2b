@@ -87,11 +87,11 @@ public sealed class VenueDashboardApiTests : IAsyncLifetime
     #region Ticket revenue
 
     [Fact]
-    public async Task GetTicketRevenue_NoPayments_ReturnsSixEmptyMonthlyPoints()
+    public async Task GetPaymentRevenue_NoPayments_ReturnsSixEmptyMonthlyPoints()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        var response = await client.GetAsync("/api/venue-dashboard/charts/ticket-revenue");
+        var response = await client.GetAsync("/api/venue-dashboard/charts/payment-revenue");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var points = await response.Content.ReadAsync<IReadOnlyList<MonthlyRevenuePointBoundaryResponse>>();
