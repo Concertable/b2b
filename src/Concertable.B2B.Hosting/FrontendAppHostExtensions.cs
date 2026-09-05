@@ -13,29 +13,45 @@ public static class FrontendAppHostExtensions
         public IResourceBuilder<NodeAppResource> AddVenueSpa(
             IResourceBuilder<IResourceWithServiceDiscovery> backend,
             IResourceBuilder<IResourceWithServiceDiscovery> auth) =>
-            builder.AddSpaSurface(B2BLocalSpaSurfaces.Venue, ["app", "web", "b2b", "venue"], backend, auth);
+            builder.AddSpaSurface(
+                B2BLocalSpaSurfaces.Venue,
+                [["app", "web", "b2b", "venue"], ["app", "web", "venue"]],
+                backend,
+                auth);
 
         public IResourceBuilder<NodeAppResource> AddArtistSpa(
             IResourceBuilder<IResourceWithServiceDiscovery> backend,
             IResourceBuilder<IResourceWithServiceDiscovery> auth) =>
-            builder.AddSpaSurface(B2BLocalSpaSurfaces.Artist, ["app", "web", "b2b", "artist"], backend, auth);
+            builder.AddSpaSurface(
+                B2BLocalSpaSurfaces.Artist,
+                [["app", "web", "b2b", "artist"], ["app", "web", "artist"]],
+                backend,
+                auth);
 
         public IResourceBuilder<NodeAppResource> AddBusinessSpa(
             IResourceBuilder<IResourceWithServiceDiscovery> backend,
             IResourceBuilder<IResourceWithServiceDiscovery> auth) =>
-            builder.AddSpaSurface(B2BLocalSpaSurfaces.Business, ["app", "web", "b2b", "business"], backend, auth);
+            builder.AddSpaSurface(
+                B2BLocalSpaSurfaces.Business,
+                [["app", "web", "b2b", "business"], ["app", "web", "business"]],
+                backend,
+                auth);
 
         public IResourceBuilder<NodeAppResource> AddAdminSpa(
             IResourceBuilder<IResourceWithServiceDiscovery> backend,
             IResourceBuilder<IResourceWithServiceDiscovery> auth) =>
-            builder.AddSpaSurface(B2BLocalSpaSurfaces.Admin, ["app", "web", "admin"], backend, auth);
+            builder.AddSpaSurface(B2BLocalSpaSurfaces.Admin, [["app", "web", "admin"]], backend, auth);
 
         public IResourceBuilder<NodeAppResource> AddB2BMobileSurface(
             IResourceBuilder<IResourceWithServiceDiscovery> api,
             IResourceBuilder<IResourceWithServiceDiscovery> auth,
             IResourceBuilder<IResourceWithServiceDiscovery> paymentWeb,
             IResourceBuilder<DevTunnelResource> tunnel) =>
-            builder.AddMobileSurface("mobile-b2b", ["app", "mobile", "b2b"], api, tunnel,
+            builder.AddMobileSurface(
+                "mobile-b2b",
+                [["app", "mobile", "b2b"], ["app", "mobile"]],
+                api,
+                tunnel,
                 new(api, "EXPO_PUBLIC_API_URL"),
                 new(auth, "EXPO_PUBLIC_AUTH_AUTHORITY"),
                 new(paymentWeb, "EXPO_PUBLIC_PAYMENT_API_URL"));
