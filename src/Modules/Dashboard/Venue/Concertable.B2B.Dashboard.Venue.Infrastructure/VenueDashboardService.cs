@@ -111,13 +111,13 @@ internal sealed class VenueDashboardService : IVenueDashboardService
         CancellationToken ct = default)
     {
         var tenantId = tenantContext.GetTenantId();
-        var settled = (await paymentReportingClient.GetRecentSettlementsAsync(tenantId, 5, ct))
-            .Where(settlement =>
-                settlement.Reference.OperationType == PaymentOperationReferences.SettlementType)
-            .Select(settlement => (
-                Payment: settlement,
-                ConcertId: PaymentOperationReferences.ReadConcertId(settlement.Reference)))
-            .ToArray();
+        var settled = new List<(PaymentSettlement Payment, int ConcertId)>();
+        foreach (var settlement in await paymentReportingClient.GetRecentSettlementsAsync(tenantId, 5, ct))
+        {
+            if (settlement.Reference.OperationType == PaymentOperationReferences.SettlementType
+                && settlement.Reference.TryGetConcertId(out var concertId))
+                settled.Add((settlement, concertId));
+        }
         var contexts = await concertModule.GetSettlementContextsAsync(
             settled.Select(settlement => settlement.ConcertId).Distinct().ToArray(),
             ct);

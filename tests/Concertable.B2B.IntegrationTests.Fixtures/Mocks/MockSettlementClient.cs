@@ -1,5 +1,4 @@
 using Reunion;
-using Concertable.B2B.Infrastructure.Payments;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
@@ -18,7 +17,7 @@ internal sealed class MockSettlementClient : IMockSettlementClient
         this.paymentOperations = paymentOperations;
     }
 
-    public List<(Guid PayerId, Guid PayeeId, decimal Amount, PaymentOperationReference PaymentMethod, int ConcertId, Guid OperationId)> Payments { get; } = [];
+    public List<(Guid PayerId, Guid PayeeId, decimal Amount, PaymentOperationReference PaymentMethod, PaymentOperationReference Reference, Guid OperationId)> Payments { get; } = [];
 
     public void Reset()
     {
@@ -49,7 +48,7 @@ internal sealed class MockSettlementClient : IMockSettlementClient
                 payeeId,
                 amount.Amount,
                 paymentMethod,
-                PaymentOperationReferences.ReadConcertId(reference),
+                reference,
                 operationId));
             paymentOperations.Record(reference, operationId);
             return outcome;
@@ -76,7 +75,7 @@ internal sealed class MockSettlementClient : IMockSettlementClient
             payeeId,
             gross.Amount,
             paymentMethod,
-            PaymentOperationReferences.ReadConcertId(reference),
+            reference,
             commissionBindingId));
         return Task.FromResult(
             Result<PaymentOutcome, PaymentMethodChargeError>.Success(new PaymentOutcome { RequiresAction = false }));

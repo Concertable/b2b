@@ -300,6 +300,9 @@ public class ApiFixture : IAsyncLifetime
             .ToList();
     }
 
+    public Task<IReadOnlyCollection<object>> SettledFinancialCommandsAsync() =>
+        PaymentTransport.SettledFinancialCommandsAsync(TimeSpan.FromSeconds(2));
+
     public async Task<int> GetOutboxMessageCountAsync<TMessage>()
     {
         var messageType = MessageTypeAttribute.Resolve(typeof(TMessage));

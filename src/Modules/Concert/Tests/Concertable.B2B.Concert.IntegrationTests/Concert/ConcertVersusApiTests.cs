@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -40,7 +41,7 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
         Assert.Equal(artistTenantId, payment.PayeeId);
         Assert.Equal(254m, payment.Amount);
         Assert.Equal(concert.SettlementPaymentReference, payment.PaymentMethod);
-        Assert.Equal(concert.Id, payment.ConcertId);
+        Assert.Equal(PaymentOperationReferences.Settlement(concert.Id), payment.Reference);
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);

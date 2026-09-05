@@ -41,7 +41,7 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
         CaptureEscrowSucceededEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        TryReadBooking(@event.Reference, out var bookingId)
+        IsEscrowOutcome(@event.Reference, out var bookingId)
             ? ProcessAsync(
                 bookingId,
                 envelope,
@@ -56,7 +56,7 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
         DepositEscrowSucceededEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        TryReadBooking(@event.Reference, out var bookingId)
+        IsEscrowOutcome(@event.Reference, out var bookingId)
             ? ProcessAsync(
                 bookingId,
                 envelope,
@@ -71,7 +71,7 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
         CaptureEscrowRejectedEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        TryReadBooking(@event.Reference, out var bookingId)
+        IsEscrowOutcome(@event.Reference, out var bookingId)
             ? ProcessAsync(
                 bookingId,
                 envelope,
@@ -87,7 +87,7 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
         DepositEscrowRejectedEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        TryReadBooking(@event.Reference, out var bookingId)
+        IsEscrowOutcome(@event.Reference, out var bookingId)
             ? ProcessAsync(
                 bookingId,
                 envelope,
@@ -108,11 +108,11 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
     // loss propagates and the transport redelivers.
     // A reference this service did not mint is another consumer's message, not a malformed one: skipping it
     // leaves the inbox untouched, where parsing it would throw ahead of the inbox row and redeliver forever.
-    private static bool TryReadBooking(PaymentOperationReference reference, out int bookingId)
+    private static bool IsEscrowOutcome(PaymentOperationReference reference, out int bookingId)
     {
         bookingId = 0;
         return reference.OperationType == PaymentOperationReferences.EscrowType
-            && PaymentOperationReferences.TryReadBookingId(reference, out bookingId);
+            && reference.TryGetBookingId(out bookingId);
     }
 
     private Task ProcessAsync(

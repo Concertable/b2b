@@ -30,18 +30,29 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
 
     public async Task HandleAsync(PaymentFailedEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Reference.OperationType != PaymentOperationReferences.SettlementType)
+        if (@event.Reference.OperationType != PaymentOperationReferences.SettlementType
+            || !@event.Reference.TryGetConcertId(out var concertId)
+            || !@event.Metadata.TryGetOperationId(out var operationId))
             return;
-        var concertId = PaymentOperationReferences.ReadConcertId(@event.Reference);
-        var operationId = @event.Metadata.GetValueAs<Guid>(PaymentMetadataKeys.OperationId);
         logger.SettlementPaymentFailed(concertId, @event.FailureCode, @event.FailureMessage);
+        if (!await context.Concerts.AnyAsync(value => value.Id == concertId, ct))
+        {
+            logger.SettlementOutcomeForUnknownConcert(concertId);
+            await RecordInboxAsync(envelope, ct);
+            return;
+        }
+
         await settlementService.RecordFailureAsync(
             concertId,
             operationId,
             @event.FailureCode ?? "unknown",
             @event.FailureMessage ?? "Settlement payment failed.",
             ct);
+        await RecordInboxAsync(envelope, ct);
+    }
 
+    private async Task RecordInboxAsync(MessageEnvelope envelope, CancellationToken ct)
+    {
         try
         {
             await outboxUnitOfWorkBehavior.ExecuteAsync(async () =>

@@ -236,6 +236,26 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         return false;
     }
 
+    /// <summary>
+    /// The negative counterpart to <see cref="WaitForCommandsAsync{TCommand}"/>: a command that should never
+    /// have been staged still arrives by outbox dispatch after the request returns, so the transport is
+    /// watched for <paramref name="window"/> and the snapshot returned the moment one lands or the window ends.
+    /// </summary>
+    public async Task<IReadOnlyCollection<object>> SettledFinancialCommandsAsync(TimeSpan window)
+    {
+        var deadline = DateTimeOffset.UtcNow + window;
+        while (DateTimeOffset.UtcNow <= deadline)
+        {
+            var financial = FinancialCommands;
+            if (financial.Count > 0)
+                return financial;
+
+            await Task.Delay(100);
+        }
+
+        return FinancialCommands;
+    }
+
     public async Task<IReadOnlyCollection<TCommand>> WaitForCommandsAsync<TCommand>(int count)
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);

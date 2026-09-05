@@ -37,7 +37,7 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
         CancellationToken ct = default)
     {
         if (@event.Reference.OperationType != PaymentOperationReferences.MethodVerificationType
-            || !PaymentOperationReferences.TryReadApplicationId(@event.Reference, out var applicationId))
+            || !@event.Reference.TryGetApplicationId(out var applicationId))
             return;
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentFailedProcessor), ct))
             return;

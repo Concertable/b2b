@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         await fixture.FinishConcertAsync(concert.Id);
 
-        Assert.DoesNotContain(fixture.SettlementClient.Payments, p => p.ConcertId == concert.Id);
+        Assert.DoesNotContain(fixture.SettlementClient.Payments, p => p.Reference == PaymentOperationReferences.Settlement(concert.Id));
         var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(ConcertState.Posted, persisted.State);
     }
@@ -56,7 +57,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         await fixture.FinishConcertAsync(concert.Id);
 
-        Assert.Contains(fixture.SettlementClient.Payments, p => p.ConcertId == concert.Id);
+        Assert.Contains(fixture.SettlementClient.Payments, p => p.Reference == PaymentOperationReferences.Settlement(concert.Id));
         var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
     }

@@ -18,6 +18,7 @@ using Concertable.B2B.Deal.Contracts;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Booking.Infrastructure.Services;
 
@@ -32,6 +33,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly IDealStrategyFactory<ICancelStep> cancelFactory;
     private readonly IDealStrategyFactory<IContractFactory> contractFactory;
     private readonly TimeProvider timeProvider;
+    private readonly ILogger<BookingWorkflow> logger;
 
     public BookingWorkflow(
         IBookingRepository bookingRepository,
@@ -42,7 +44,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         IDealStrategyFactory<IConfirmStep> confirmFactory,
         IDealStrategyFactory<ICancelStep> cancelFactory,
         IDealStrategyFactory<IContractFactory> contractFactory,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILogger<BookingWorkflow> logger)
     {
         this.bookingRepository = bookingRepository;
         this.unitOfWork = unitOfWork;
@@ -53,6 +56,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.cancelFactory = cancelFactory;
         this.contractFactory = contractFactory;
         this.timeProvider = timeProvider;
+        this.logger = logger;
     }
 
     public Task<BookingDto> ConfirmAsync(
@@ -159,9 +163,12 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationSucceeded operation,
         CancellationToken ct)
     {
-        var booking = await bookingRepository.GetByIdAsync(bookingId, BookingSpecification.CreateWithContract(), ct)
-            ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
-        Validate(bookingId, booking, operation);
+        var booking = await bookingRepository.GetByIdAsync(bookingId, BookingSpecification.CreateWithContract(), ct);
+        if (booking is null || !Matches(bookingId, booking, operation))
+        {
+            logger.FinancialOutcomeSkipped(operation.Operation, bookingId);
+            return;
+        }
 
         if (booking.State == BookingState.CancellationPending)
         {
@@ -186,9 +193,12 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationFailed operation,
         CancellationToken ct)
     {
-        var booking = await bookingRepository.GetByIdAsync(bookingId, ct)
-            ?? throw new InvalidOperationException($"Booking {bookingId} was not found during confirmation.");
-        Validate(bookingId, booking, operation);
+        var booking = await bookingRepository.GetByIdAsync(bookingId, ct);
+        if (booking is null || !Matches(bookingId, booking, operation))
+        {
+            logger.FinancialOutcomeSkipped(operation.Operation, bookingId);
+            return;
+        }
 
         if (booking.State == BookingState.Confirmed)
             return;
@@ -210,35 +220,21 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         await bookingRepository.SaveChangesAsync(ct);
     }
 
-    private static void Validate(
+    private static bool Matches(
         int bookingId,
         BookingEntity booking,
-        FinancialOperationEvidence operation)
-    {
-        if (booking.ExpectedFinancialOperation != operation.Operation)
-            throw new InvalidOperationException(
-                $"Booking {booking.Id} expects {booking.ExpectedFinancialOperation}, not {operation.Operation}.");
-
-        switch (operation)
+        FinancialOperationEvidence operation) =>
+        booking.ExpectedFinancialOperation == operation.Operation
+        && operation switch
         {
-            case VerifyPaymentSucceededEvidence verified
-                when booking.ApplicationId != verified.ApplicationId:
-                throw new InvalidOperationException(
-                    $"Financial operation for application {verified.ApplicationId} cannot advance booking {booking.Id} for application {booking.ApplicationId}.");
-            case VerifyPaymentFailedEvidence failed
-                when booking.ApplicationId != failed.ApplicationId:
-                throw new InvalidOperationException(
-                    $"Financial operation for application {failed.ApplicationId} cannot advance booking {booking.Id} for application {booking.ApplicationId}.");
-            case AcceptanceFinancialOperationSucceeded accepted
-                when bookingId != accepted.BookingId || booking.OperationId != accepted.OperationId:
-                throw new InvalidOperationException(
-                    $"Acceptance operation {accepted.OperationId} for booking {accepted.BookingId} cannot advance booking {booking.Id} with operation {booking.OperationId}.");
-            case AcceptanceFinancialOperationRejected accepted
-                when bookingId != accepted.BookingId || booking.OperationId != accepted.OperationId:
-                throw new InvalidOperationException(
-                    $"Acceptance operation {accepted.OperationId} for booking {accepted.BookingId} cannot advance booking {booking.Id} with operation {booking.OperationId}.");
-        }
-    }
+            VerifyPaymentSucceededEvidence verified => booking.ApplicationId == verified.ApplicationId,
+            VerifyPaymentFailedEvidence failed => booking.ApplicationId == failed.ApplicationId,
+            AcceptanceFinancialOperationSucceeded accepted =>
+                bookingId == accepted.BookingId && booking.OperationId == accepted.OperationId,
+            AcceptanceFinancialOperationRejected rejected =>
+                bookingId == rejected.BookingId && booking.OperationId == rejected.OperationId,
+            _ => false
+        };
 
     private static bool IsDuplicateFailure(
         BookingEntity booking,

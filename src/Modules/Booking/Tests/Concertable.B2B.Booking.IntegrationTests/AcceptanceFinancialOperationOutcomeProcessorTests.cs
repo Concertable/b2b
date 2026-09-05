@@ -45,7 +45,7 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
         await fixture.DispatchIntegrationEventAsync(succeeded, envelope);
         await fixture.DispatchIntegrationEventAsync(succeeded, envelope);
 
-        var bookingId = PaymentOperationReferences.ReadBookingId(command.Reference);
+        Assert.True(command.Reference.TryGetBookingId(out var bookingId));
         var booking = await fixture.Bookings.SingleAsync(value => value.Id == bookingId);
         Assert.Equal(BookingState.Confirmed, booking.State);
         Assert.Equal(command.OperationId, booking.OperationId);
@@ -58,6 +58,37 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
         Assert.Contains(
             await fixture.GetStagedEmailsAsync(),
             email => email.Subject.StartsWith("Booking confirmed:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task CaptureSuccess_ForAnotherOperation_IsRecordedAndSkipped()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        await client.PostAsync($"/api/application/{applicationId}/checkout");
+        var accept = await client.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+        await accept.ShouldBe(System.Net.HttpStatusCode.NoContent);
+        var command = Assert.Single(
+            await fixture.PaymentTransport.WaitForCommandsAsync<CaptureEscrowCommand>(1));
+        var envelope = new MessageEnvelope(
+            Guid.NewGuid(),
+            MessageTypeAttribute.Resolve(typeof(CaptureEscrowSucceededEvent)),
+            DateTimeOffset.UtcNow);
+
+        await fixture.DispatchIntegrationEventAsync(
+            new CaptureEscrowSucceededEvent(Guid.NewGuid(), command.Reference),
+            envelope);
+
+        Assert.True(command.Reference.TryGetBookingId(out var bookingId));
+        var booking = await fixture.Bookings.SingleAsync(value => value.Id == bookingId);
+        Assert.Equal(BookingState.AwaitingConfirmation, booking.State);
+        Assert.Single(await fixture.InboxMessages
+            .Where(message =>
+                message.MessageId == envelope.MessageId &&
+                message.ConsumerName == nameof(AcceptanceFinancialOperationOutcomeProcessor))
+            .ToListAsync());
     }
 
     [Fact]
@@ -89,10 +120,10 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
             await fixture.RestoreBookingUpdatesAsync();
         }
 
-        var booking = await fixture.Bookings.SingleAsync(
-            value => value.Id == PaymentOperationReferences.ReadBookingId(command.Reference));
+        Assert.True(command.Reference.TryGetBookingId(out var bookingId));
+        var booking = await fixture.Bookings.SingleAsync(value => value.Id == bookingId);
         Assert.Equal(BookingState.AwaitingConfirmation, booking.State);
-        Assert.Equal(0, await fixture.GetConcertCountAsync(PaymentOperationReferences.ReadBookingId(command.Reference)));
+        Assert.Equal(0, await fixture.GetConcertCountAsync(bookingId));
         var inbox = await fixture.InboxMessages
             .Where(message =>
                 message.MessageId == envelope.MessageId &&

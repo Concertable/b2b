@@ -1,6 +1,9 @@
 using Concertable.B2B.Infrastructure.Payments;
 using System.Net;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.Messaging.Contracts;
+using Concertable.Payment.Contracts;
+using Concertable.Payment.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -42,7 +45,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         Assert.Equal(artistTenantId, payment.PayeeId);
         Assert.Equal(280m, payment.Amount);
         Assert.Equal(concert.SettlementPaymentReference, payment.PaymentMethod);
-        Assert.Equal(concert.Id, payment.ConcertId);
+        Assert.Equal(PaymentOperationReferences.Settlement(concert.Id), payment.Reference);
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
@@ -76,7 +79,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         var payment = Assert.Single(
             fixture.SettlementClient.Payments,
-            value => value.ConcertId == concert.Id);
+            value => value.Reference == PaymentOperationReferences.Settlement(concert.Id));
         Assert.Equal(interrupted.SettlementOperationId, payment.OperationId);
         var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Complete, settled.State);
@@ -91,7 +94,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         // Assert — the gig is skipped (no payout), still awaiting its declaration
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
-        Assert.DoesNotContain(fixture.SettlementClient.Payments, p => p.ConcertId == concert.Id);
+        Assert.DoesNotContain(fixture.SettlementClient.Payments, p => p.Reference == PaymentOperationReferences.Settlement(concert.Id));
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Posted, persisted.State);
     }
@@ -142,6 +145,41 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.Conflict);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.SettlementFailed, persisted.State);
+    }
+
+    [Fact]
+    public async Task SettlementOutcome_ForAReferenceThisServiceDidNotMint_IsSkipped()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+        var before = (await fixture.Concerts.SingleAsync(value => value.Id == concert.Id)).State;
+        var reference = new PaymentOperationReference(PaymentOperationReferences.SettlementType, "order:1");
+        var metadata = new Dictionary<string, string> { [PaymentMetadataKeys.OperationId] = Guid.NewGuid().ToString() };
+
+        await fixture.DispatchIntegrationEventAsync(
+            new PaymentSucceededEvent(reference, metadata),
+            MessageEnvelope.Create<PaymentSucceededEvent>(fixture.SeedNow));
+        await fixture.DispatchIntegrationEventAsync(
+            new PaymentFailedEvent(reference, "card_declined", "Card was declined", metadata),
+            MessageEnvelope.Create<PaymentFailedEvent>(fixture.SeedNow));
+
+        Assert.Equal(before, (await fixture.Concerts.SingleAsync(value => value.Id == concert.Id)).State);
+    }
+
+    [Fact]
+    public async Task SettlementOutcome_WithoutAnOperationId_IsSkipped()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+        var before = (await fixture.Concerts.SingleAsync(value => value.Id == concert.Id)).State;
+        var reference = PaymentOperationReferences.Settlement(concert.Id);
+
+        await fixture.DispatchIntegrationEventAsync(
+            new PaymentSucceededEvent(reference, new Dictionary<string, string>()),
+            MessageEnvelope.Create<PaymentSucceededEvent>(fixture.SeedNow));
+        await fixture.DispatchIntegrationEventAsync(
+            new PaymentFailedEvent(reference, "card_declined", "Card was declined", new Dictionary<string, string>()),
+            MessageEnvelope.Create<PaymentFailedEvent>(fixture.SeedNow));
+
+        Assert.Equal(before, (await fixture.Concerts.SingleAsync(value => value.Id == concert.Id)).State);
     }
 
     [Fact]

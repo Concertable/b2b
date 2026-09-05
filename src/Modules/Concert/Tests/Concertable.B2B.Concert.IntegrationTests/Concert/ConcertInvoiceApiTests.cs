@@ -1,3 +1,4 @@
+using Concertable.B2B.Infrastructure.Payments;
 using System.Net;
 using System.Text;
 using Concertable.B2B.Concert.Api.Responses;
@@ -120,7 +121,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal(invoice.Amounts.Gross, invoice.Amounts.Net);
 
         // charged == invoiced: the invoice gross is the exact share the payout step paid, via the shared resolver.
-        var payout = fixture.SettlementClient.Payments.Single(p => p.ConcertId == concert.Id);
+        var payout = fixture.SettlementClient.Payments.Single(p => p.Reference == PaymentOperationReferences.Settlement(concert.Id));
         Assert.Equal(payout.Amount, invoice.Amounts.Gross);
     }
 
@@ -139,7 +140,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal(concert.ArtistTenantId, invoice.Supplier.TenantId);
         Assert.Equal(254m, invoice.Amounts.Gross);
 
-        var payout = fixture.SettlementClient.Payments.Single(p => p.ConcertId == concert.Id);
+        var payout = fixture.SettlementClient.Payments.Single(p => p.Reference == PaymentOperationReferences.Settlement(concert.Id));
         Assert.Equal(payout.Amount, invoice.Amounts.Gross);
     }
 

@@ -18,6 +18,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Warning, Message = "Settlement failed for concert {ConcertId}: [{FailureCode}] {FailureMessage}")]
     internal static partial void SettlementPaymentFailed(this ILogger logger, int concertId, string? failureCode, string? failureMessage);
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Settlement outcome names concert {ConcertId}, which does not exist; skipping")]
+    internal static partial void SettlementOutcomeForUnknownConcert(this ILogger logger, int concertId);
+
     #endregion
 
     #region Workflow

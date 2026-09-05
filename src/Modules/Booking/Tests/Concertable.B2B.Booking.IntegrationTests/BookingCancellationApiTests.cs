@@ -53,7 +53,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var response = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Empty(fixture.PaymentTransport.FinancialCommands);
+        Assert.Empty(await fixture.SettledFinancialCommandsAsync());
         Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
     }
 
@@ -68,7 +68,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var response = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
-        Assert.DoesNotContain(fixture.PaymentTransport.Commands, command => command is RefundEscrowCommand);
+        Assert.DoesNotContain(await fixture.SettledFinancialCommandsAsync(), command => command is RefundEscrowCommand);
         Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
     }
 
