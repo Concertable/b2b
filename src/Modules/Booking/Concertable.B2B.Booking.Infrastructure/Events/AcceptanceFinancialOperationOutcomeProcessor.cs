@@ -99,15 +99,6 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
                 ct)
             : Task.CompletedTask;
 
-    // The outcome can arrive while the venue is cancelling the same booking. The transition already branches
-    // on the state it reads, so losing the row is not a failure: the winner moved the booking after this
-    // message read it. Rolling the whole message back -- inbox row included -- and reprocessing it in a FRESH
-    // scope reads committed truth and lets that branch converge on what won: a captured escrow whose booking
-    // is now CancellationPending gets refunded rather than confirmed. Convergence belongs here rather than in
-    // the transition because this scope owns the transaction; the rerun does not converge again, so a second
-    // loss propagates and the transport redelivers.
-    // A reference this service did not mint is another consumer's message, not a malformed one: skipping it
-    // leaves the inbox untouched, where parsing it would throw ahead of the inbox row and redeliver forever.
     private static bool IsEscrowOutcome(PaymentOperationReference reference, out int bookingId)
     {
         bookingId = 0;

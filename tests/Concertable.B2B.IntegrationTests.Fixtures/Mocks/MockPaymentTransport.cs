@@ -80,10 +80,6 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
     public Task RejectLatestAcceptanceAsync(IServiceScopeFactory serviceScopeFactory) =>
         RejectLatestAsync(serviceScopeFactory, IsAcceptance);
 
-    /// <summary>
-    /// Announces that Payment found nothing to refund yet. Payment leaves that operation pending rather
-    /// than terminal, so the command stays pending here too and a later completion still settles it.
-    /// </summary>
     public async Task DeferLatestAsync<TCommand>(IServiceScopeFactory serviceScopeFactory)
         where TCommand : IIntegrationCommand
     {
@@ -236,11 +232,6 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         return false;
     }
 
-    /// <summary>
-    /// The negative counterpart to <see cref="WaitForCommandsAsync{TCommand}"/>: a command that should never
-    /// have been staged still arrives by outbox dispatch after the request returns, so the transport is
-    /// watched for <paramref name="window"/> and the snapshot returned the moment one lands or the window ends.
-    /// </summary>
     public async Task<IReadOnlyCollection<object>> SettledFinancialCommandsAsync(TimeSpan window)
     {
         var deadline = DateTimeOffset.UtcNow + window;

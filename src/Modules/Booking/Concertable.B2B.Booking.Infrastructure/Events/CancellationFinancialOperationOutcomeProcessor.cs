@@ -30,8 +30,6 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, Cancel, ct);
 
-    // Deferred means the acceptance capture has not landed yet; its own outcome arm refunds or cancels
-    // this booking, so cancelling here would strand the money it later captures.
     public Task HandleAsync(
         RefundEscrowDeferredEvent @event,
         MessageEnvelope envelope,

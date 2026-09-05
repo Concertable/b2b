@@ -123,6 +123,23 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Cancel_ShouldComplete_WhenTheCaptureFailsAfterTheRefundIsDeferred()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var bookingId = await AcceptFlatFeeAsync(client);
+        var cancelResponse = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
+        await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
+
+        await fixture.DeferLatestFinancialOperationAsync<RefundEscrowCommand>();
+        Assert.Equal(BookingState.CancellationPending, await StateOfAsync(bookingId));
+
+        await fixture.RejectLatestFinancialOperationAsync<CaptureEscrowCommand>();
+
+        Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
+        Assert.Equal(0, await fixture.GetConcertCountAsync(bookingId));
+    }
+
+    [Fact]
     public async Task Cancel_ShouldStayCancelled_WhenSecondRefundIsRejectedAfterCancel()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -135,8 +152,6 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
         Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
 
-        // Both refunds carry the booking's one cancellation operation id, so the rejection this covers is a
-        // late duplicate of an operation the provider already settled -- not a second pending command.
         await fixture.DispatchIntegrationEventAsync(
             new RefundEscrowRejectedEvent(refund.OperationId, refund.Reference, "refund_failed", "Refund failed"),
             MessageEnvelope.Create<RefundEscrowRejectedEvent>(fixture.SeedNow));

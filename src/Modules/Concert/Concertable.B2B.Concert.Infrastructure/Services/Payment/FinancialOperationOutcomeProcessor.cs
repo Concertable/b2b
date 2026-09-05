@@ -28,8 +28,6 @@ internal sealed class FinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, Cancel, ct);
 
-    // Payment defers a refund it finds nothing to refund. The money never moved, so the cancellation this
-    // concert is waiting on is complete; without this arm it waits in CancellationPending forever.
     public Task HandleAsync(
         RefundEscrowDeferredEvent @event,
         MessageEnvelope envelope,

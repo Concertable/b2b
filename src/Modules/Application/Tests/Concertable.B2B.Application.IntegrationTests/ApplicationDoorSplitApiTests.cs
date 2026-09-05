@@ -10,6 +10,7 @@ using Concertable.B2B.Infrastructure.Payments;
 using Concertable.Contracts.Enums;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
+using Concertable.Payment.Contracts.Errors;
 using Concertable.Payment.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
@@ -141,6 +142,61 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
             MessageEnvelope.Create<PaymentSucceededEvent>(fixture.SeedNow));
 
         Assert.False(await fixture.PaymentVerifications.AnyAsync(verification => verification.ApplicationId == applicationId));
+    }
+
+    [Fact]
+    public async Task VerificationFailure_FromAPayerOtherThanTheVenue_IsNotRecorded()
+    {
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var reference = PaymentOperationReferences.MethodVerification(applicationId);
+        await fixture.PaymentSessionClient.SetupPaymentMethodAsync(new PaymentMethodSetupRequest(
+            reference,
+            PaymentSessionKind.PaymentMethodVerification,
+            Guid.NewGuid(),
+            "mandate"));
+        var operationId = fixture.PaymentOperations.Latest!.OperationId!.Value;
+
+        await fixture.DispatchIntegrationEventAsync(
+            new PaymentFailedEvent(
+                reference,
+                "card_declined",
+                "Card was declined",
+                new Dictionary<string, string>
+                {
+                    [PaymentMetadataKeys.OperationId] = operationId.ToString("D")
+                }),
+            MessageEnvelope.Create<PaymentFailedEvent>(fixture.SeedNow));
+
+        Assert.False(await fixture.PaymentVerifications.AnyAsync(verification => verification.ApplicationId == applicationId));
+    }
+
+    [Fact]
+    public async Task VerificationFailure_WhenPaymentIsUnavailable_IsRetried()
+    {
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var checkout = await client.PostAsync($"/api/application/{applicationId}/checkout");
+        await checkout.ShouldBe(HttpStatusCode.OK);
+        var operationId = fixture.PaymentOperations.Latest!.OperationId!.Value;
+        var reference = PaymentOperationReferences.MethodVerification(applicationId);
+        var failed = new PaymentFailedEvent(
+            reference,
+            "card_declined",
+            "Card was declined",
+            new Dictionary<string, string>
+            {
+                [PaymentMetadataKeys.OperationId] = operationId.ToString("D")
+            });
+        var envelope = MessageEnvelope.Create<PaymentFailedEvent>(fixture.SeedNow);
+        fixture.PaymentSessionClient.StatusError = new PaymentOperationError.ProviderUnavailable();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => fixture.DispatchIntegrationEventAsync(failed, envelope));
+
+        fixture.PaymentSessionClient.StatusError = null;
+        await fixture.DispatchIntegrationEventAsync(failed, envelope);
+
+        Assert.True(await fixture.PaymentVerifications.AnyAsync(verification => verification.ApplicationId == applicationId));
     }
 
     private OpportunityBoundaryRequest BuildOpportunityRequest(DealDto deal) =>

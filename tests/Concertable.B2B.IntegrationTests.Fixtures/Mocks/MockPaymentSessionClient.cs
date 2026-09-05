@@ -6,14 +6,13 @@ using Concertable.Testing.Integration;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-/// <summary>Stands in for Payment's session operations, reserving one operation id per reference and binding
-/// it to the payer that opened it, the way Payment's own reservation and resolution do.</summary>
 public sealed class MockPaymentSessionClient : IPaymentSessionOperationsClient, IResettable
 {
     private readonly Dictionary<PaymentOperationReference, MockPaymentSession> operations = [];
     private readonly MockPaymentOperations paymentOperations;
 
     public List<(PaymentOperationReference Reference, PaymentSessionKind Kind, Guid PayerOwnerId)> Sessions { get; } = [];
+    public PaymentOperationError? StatusError { get; set; }
 
     public MockPaymentSessionClient(MockPaymentOperations paymentOperations)
     {
@@ -24,6 +23,7 @@ public sealed class MockPaymentSessionClient : IPaymentSessionOperationsClient, 
     {
         Sessions.Clear();
         operations.Clear();
+        StatusError = null;
     }
 
     public Task<Result<PaymentMethodSetup, PaymentOperationError>> SetupPaymentMethodAsync(
@@ -69,17 +69,26 @@ public sealed class MockPaymentSessionClient : IPaymentSessionOperationsClient, 
 
     public Task<Result<PaymentOperationSnapshot, PaymentOperationError>> GetStatusAsync(
         PaymentSessionStatusRequest request,
-        CancellationToken ct = default) =>
-        Task.FromResult(
-            Result<PaymentOperationSnapshot, PaymentOperationError>.Success(
-                new PaymentOperationSnapshot(
-                    new PaymentOperationIdentity(request.OperationId, Guid.NewGuid(), 1),
-                    PaymentOperationState.Succeeded,
-                    PaymentOperationTerminalDisposition.OperationTerminal,
-                    PaymentOperationRetryDisposition.NotRetryable,
-                    null,
-                    null,
-                    null)));
+        CancellationToken ct = default)
+    {
+        if (StatusError is not null)
+            return Task.FromResult(Result<PaymentOperationSnapshot, PaymentOperationError>.Failure(StatusError));
+
+        var owned = operations.Values.SingleOrDefault(operation => operation.OperationId == request.OperationId);
+        return Task.FromResult(
+            owned?.PayerOwnerId == request.OwnerId
+                ? Result<PaymentOperationSnapshot, PaymentOperationError>.Success(
+                    new PaymentOperationSnapshot(
+                        new PaymentOperationIdentity(request.OperationId, Guid.NewGuid(), 1),
+                        PaymentOperationState.Succeeded,
+                        PaymentOperationTerminalDisposition.OperationTerminal,
+                        PaymentOperationRetryDisposition.NotRetryable,
+                        null,
+                        null,
+                        null))
+                : Result<PaymentOperationSnapshot, PaymentOperationError>.Failure(
+                    new PaymentOperationError.Unknown()));
+    }
 
     private Guid Record(PaymentOperationReference reference, PaymentSessionKind kind, Guid payerOwnerId)
     {
@@ -92,7 +101,7 @@ public sealed class MockPaymentSessionClient : IPaymentSessionOperationsClient, 
             }
 
             Sessions.Add((reference, kind, payerOwnerId));
-            paymentOperations.Record(reference);
+            paymentOperations.Record(reference, operation.OperationId);
             return operation.OperationId;
         }
     }
