@@ -222,6 +222,7 @@ public sealed class B2BHostGraphTests
             .BuildAsync(executionContext, NullLogger.Instance, CancellationToken.None);
         var authEnvironment = authConfiguration.EnvironmentVariables.ToDictionary();
         var b2bEnvironment = b2bConfiguration.EnvironmentVariables.ToDictionary();
+        Assert.Equal("true", authEnvironment["Auth__SpaClients__RestrictToEnabledClients"]);
         Assert.Equal(
             new[] { "Venue", "Artist", "Admin" },
             authEnvironment
