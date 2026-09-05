@@ -41,6 +41,7 @@ public static class B2BTopology
                 .Subscribe<DepositEscrowSucceededEvent>()
                 .Subscribe<DepositEscrowRejectedEvent>()
                 .Subscribe<RefundEscrowSucceededEvent>()
+                .Subscribe<RefundEscrowDeferredEvent>()
                 .Subscribe<RefundEscrowRejectedEvent>()
                 .Queue<SendEmailCommand>()
                 .Queue<NotifyConcertDraftCreatedCommand>();

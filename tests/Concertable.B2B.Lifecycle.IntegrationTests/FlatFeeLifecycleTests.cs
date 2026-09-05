@@ -140,7 +140,9 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.PaymentSimulator.SendWebhookAsync());
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => fixture.PaymentSimulator.SendWebhookAsync());
+        Assert.Equal("Email rendering failed.", failure.Message);
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.AwaitingConfirmation, financial.Status);

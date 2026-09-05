@@ -8,6 +8,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class FinancialOperationOutcomeProcessor :
     IIntegrationEventHandler<RefundEscrowSucceededEvent>,
+    IIntegrationEventHandler<RefundEscrowDeferredEvent>,
     IIntegrationEventHandler<RefundEscrowRejectedEvent>
 {
     private readonly ConcertDbContext context;
@@ -25,15 +26,15 @@ internal sealed class FinancialOperationOutcomeProcessor :
         RefundEscrowSucceededEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        ProcessAsync(@event.OperationId, envelope, concert =>
-        {
-            if (concert.State is ConcertState.Cancelled)
-                return Task.CompletedTask;
+        ProcessAsync(@event.OperationId, envelope, Cancel, ct);
 
-            if (concert.Cancel().TryGetError(out var transitionError))
-                throw new InvalidOperationException($"Concert cannot cancel from {transitionError.Current}.");
-            return Task.CompletedTask;
-        }, ct);
+    // Payment defers a refund it finds nothing to refund. The money never moved, so the cancellation this
+    // concert is waiting on is complete; without this arm it waits in CancellationPending forever.
+    public Task HandleAsync(
+        RefundEscrowDeferredEvent @event,
+        MessageEnvelope envelope,
+        CancellationToken ct = default) =>
+        ProcessAsync(@event.OperationId, envelope, Cancel, ct);
 
     public Task HandleAsync(
         RefundEscrowRejectedEvent @event,
@@ -48,6 +49,16 @@ internal sealed class FinancialOperationOutcomeProcessor :
                 throw new InvalidOperationException($"Concert cannot record cancellation failure from {transitionError.Current}.");
             return Task.CompletedTask;
         }, ct);
+
+    private static Task Cancel(ConcertEntity concert)
+    {
+        if (concert.State is ConcertState.Cancelled)
+            return Task.CompletedTask;
+
+        if (concert.Cancel().TryGetError(out var transitionError))
+            throw new InvalidOperationException($"Concert cannot cancel from {transitionError.Current}.");
+        return Task.CompletedTask;
+    }
 
     private Task ProcessAsync(
         Guid operationId,

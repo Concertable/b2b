@@ -53,9 +53,8 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var response = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
-        Assert.DoesNotContain(fixture.PaymentTransport.Commands, command => command is RefundEscrowCommand);
+        Assert.Empty(fixture.PaymentTransport.FinancialCommands);
         Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
-        Assert.Empty(fixture.EscrowClient.Holds);
     }
 
     [Fact]

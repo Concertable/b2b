@@ -21,8 +21,10 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
     /// </summary>
     public IReadOnlyCollection<object> FinancialCommands =>
         commands.Where(value => OperationId(value) is not null).ToArray();
-    public bool HasPendingCommand => commands.Any(value =>
-        OperationId(value) is { } operationId && !completed.ContainsKey(operationId));
+    public bool HasPendingAcceptance => commands.Any(value =>
+        IsAcceptance(value) && OperationId(value) is { } operationId && !completed.ContainsKey(operationId));
+
+    public bool HasSettledAcceptance => Settled(IsAcceptance) is not null;
 
     public Task PublishAsync<TEvent>(
         TEvent @event,
@@ -69,9 +71,8 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
         CompleteLatestAsync(serviceScopeFactory, IsAcceptance);
 
     /// <summary>
-    /// Sends the acceptance outcome again. A pending command still wins, because a flow can be staging one
-    /// when this is called; otherwise the outcome the settled command already produced is repeated under the
-    /// id it carried, which is what the bus does and what the inbox recognises as a redelivery.
+    /// Repeats the outcome a settled acceptance command already produced, under the id it carried, which is
+    /// what the bus does and what the inbox recognises as a redelivery.
     /// </summary>
     public Task RedeliverLatestAcceptanceAsync(IServiceScopeFactory serviceScopeFactory) =>
         CompleteLatestAsync(serviceScopeFactory, IsAcceptance, redeliver: true);
@@ -186,22 +187,22 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
     /// the accept request has returned.
     /// </summary>
     /// <summary>
-    /// Whether a financial command becomes pending within <paramref name="window"/>. A command reaches this
-    /// transport by outbox dispatch, so a flow that has just staged one has not necessarily produced it yet
-    /// and a synchronous read would miss it.
+    /// Whether an acceptance command becomes pending within <paramref name="window"/>. A command reaches
+    /// this transport by outbox dispatch, so a flow that has just staged one has not necessarily produced it
+    /// yet and a synchronous read would miss it.
     /// </summary>
-    public async Task<bool> WaitForPendingCommandAsync(TimeSpan window)
+    public async Task<bool> WaitForPendingAcceptanceAsync(TimeSpan window)
     {
         var deadline = DateTimeOffset.UtcNow + window;
         while (DateTimeOffset.UtcNow <= deadline)
         {
-            if (HasPendingCommand)
+            if (HasPendingAcceptance)
                 return true;
 
             await Task.Delay(50);
         }
 
-        return HasPendingCommand;
+        return HasPendingAcceptance;
     }
 
     public async Task<bool> WaitForAcceptanceCommandAsync()
@@ -242,6 +243,9 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
 
     private async Task<object> WaitForPendingAsync(Func<object, bool> predicate, bool redeliver = false)
     {
+        if (redeliver && Settled(predicate) is { } alreadySettled)
+            return alreadySettled;
+
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
         while (DateTimeOffset.UtcNow <= deadline)
         {
@@ -253,12 +257,15 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
             await Task.Delay(100);
         }
 
-        if (redeliver &&
-            commands.LastOrDefault(value => predicate(value) && OperationId(value) is not null) is { } settled)
+        if (redeliver && Settled(predicate) is { } settled)
             return settled;
 
         throw new InvalidOperationException("No pending financial command was dispatched within 5 seconds.");
     }
+
+    private object? Settled(Func<object, bool> predicate) =>
+        commands.LastOrDefault(value => predicate(value)
+            && OperationId(value) is { } operationId && completed.ContainsKey(operationId));
 
     private static bool IsAcceptance(object command) =>
         command is CaptureEscrowCommand or DepositEscrowCommand;

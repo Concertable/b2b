@@ -175,6 +175,7 @@ public static class B2BWebHostExtensions
                     reg.SubscribeTo<DepositEscrowSucceededEvent>();
                     reg.SubscribeTo<DepositEscrowRejectedEvent>();
                     reg.SubscribeTo<RefundEscrowSucceededEvent>();
+                    reg.SubscribeTo<RefundEscrowDeferredEvent>();
                     reg.SubscribeTo<RefundEscrowRejectedEvent>();
                     reg.HandleCommand<SendEmailCommand>();
                     reg.HandleCommand<NotifyConcertDraftCreatedCommand>();

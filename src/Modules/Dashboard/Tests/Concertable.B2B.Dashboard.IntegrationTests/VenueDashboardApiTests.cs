@@ -84,7 +84,7 @@ public sealed class VenueDashboardApiTests : IAsyncLifetime
 
     #endregion
 
-    #region Ticket revenue
+    #region Payment revenue
 
     [Fact]
     public async Task GetPaymentRevenue_NoPayments_ReturnsSixEmptyMonthlyPoints()

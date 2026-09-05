@@ -23,13 +23,21 @@ internal sealed class MockWebhookSimulator : IWebhookSimulator
     }
 
     // An escrow command settles over the bus; everything B2B opened directly settles by an outcome event
-    // for its reference. A pending command wins so a flow that has both lands on the command, and the
-    // envelope id is stable per operation so calling this twice is a genuine redelivery.
+    // for its reference. The acceptance command owns both branches while it is in play -- a flow that also
+    // opened a checkout session must redeliver the acceptance outcome rather than re-announce the session,
+    // which no handler consumes -- and every envelope id is stable per operation, so a repeat is a genuine
+    // redelivery in either branch.
     public async Task SendWebhookAsync()
     {
-        if (await paymentTransport.WaitForPendingCommandAsync(TimeSpan.FromSeconds(2)))
+        if (await paymentTransport.WaitForPendingAcceptanceAsync(TimeSpan.FromSeconds(2)))
         {
             await paymentTransport.CompleteLatestAcceptanceAsync(scopeFactory);
+            return;
+        }
+
+        if (paymentTransport.HasSettledAcceptance)
+        {
+            await paymentTransport.RedeliverLatestAcceptanceAsync(scopeFactory);
             return;
         }
 
@@ -39,7 +47,7 @@ internal sealed class MockWebhookSimulator : IWebhookSimulator
             return;
         }
 
-        await paymentTransport.RedeliverLatestAcceptanceAsync(scopeFactory);
+        await paymentTransport.CompleteLatestAcceptanceAsync(scopeFactory);
     }
 
     private async Task DispatchAsync(MockPaymentOperation operation)

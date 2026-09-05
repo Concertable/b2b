@@ -10,6 +10,7 @@ namespace Concertable.B2B.Booking.Infrastructure.Events;
 
 internal sealed class CancellationFinancialOperationOutcomeProcessor :
     IIntegrationEventHandler<RefundEscrowSucceededEvent>,
+    IIntegrationEventHandler<RefundEscrowDeferredEvent>,
     IIntegrationEventHandler<RefundEscrowRejectedEvent>
 {
     private readonly BookingDbContext context;
@@ -27,14 +28,15 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
         RefundEscrowSucceededEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        ProcessAsync(@event.OperationId, envelope, booking =>
-        {
-            if (booking.State == BookingState.Cancelled)
-                return;
+        ProcessAsync(@event.OperationId, envelope, Cancel, ct);
 
-            if (booking.Cancel().TryGetError(out var transitionError))
-                throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
-        }, ct);
+    // Payment defers a refund it finds nothing to refund. The money never moved, so the cancellation this
+    // booking is waiting on is complete; without this arm it waits in CancellationPending forever.
+    public Task HandleAsync(
+        RefundEscrowDeferredEvent @event,
+        MessageEnvelope envelope,
+        CancellationToken ct = default) =>
+        ProcessAsync(@event.OperationId, envelope, Cancel, ct);
 
     public Task HandleAsync(
         RefundEscrowRejectedEvent @event,
@@ -48,6 +50,15 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
             if (booking.RecordCancellationFailure(@event.Code, @event.Message).TryGetError(out var transitionError))
                 throw new InvalidOperationException($"Booking cannot record cancellation failure from {transitionError.Current}.");
         }, ct);
+
+    private static void Cancel(BookingEntity booking)
+    {
+        if (booking.State == BookingState.Cancelled)
+            return;
+
+        if (booking.Cancel().TryGetError(out var transitionError))
+            throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
+    }
 
     private Task ProcessAsync(
         Guid operationId,

@@ -24,7 +24,7 @@ internal sealed class MockWebhookSimulatorFail : IWebhookSimulator
 
     public async Task SendWebhookAsync()
     {
-        if (await paymentTransport.WaitForPendingCommandAsync(TimeSpan.FromSeconds(2)))
+        if (await paymentTransport.WaitForPendingAcceptanceAsync(TimeSpan.FromSeconds(2)))
         {
             await paymentTransport.RejectLatestAcceptanceAsync(scopeFactory);
             return;
@@ -43,7 +43,10 @@ internal sealed class MockWebhookSimulatorFail : IWebhookSimulator
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var handlers = scope.ServiceProvider.GetServices<IIntegrationEventHandler<PaymentFailedEvent>>();
-        var envelope = MessageEnvelope.Create<PaymentFailedEvent>(DateTimeOffset.UtcNow);
+        var envelope = new MessageEnvelope(
+            PaymentOperationEnvelopes.StableId(operation.Reference),
+            MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)),
+            DateTimeOffset.UtcNow);
         var @event = new PaymentFailedEvent(
             operation.Reference,
             "card_declined",

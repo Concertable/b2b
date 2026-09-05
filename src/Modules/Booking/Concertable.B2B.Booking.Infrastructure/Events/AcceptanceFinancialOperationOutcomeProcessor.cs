@@ -40,68 +40,64 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
     public Task HandleAsync(
         CaptureEscrowSucceededEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default)
-    {
-        var bookingId = PaymentOperationReferences.ReadBookingId(@event.Reference);
-        return ProcessAsync(
-            bookingId,
-            envelope,
-            new AcceptanceFinancialOperationSucceeded(
-                @event.OperationId,
+        CancellationToken ct = default) =>
+        TryReadBooking(@event.Reference, out var bookingId)
+            ? ProcessAsync(
                 bookingId,
-                FinancialOperation.CaptureEscrow),
-            ct);
-    }
+                envelope,
+                new AcceptanceFinancialOperationSucceeded(
+                    @event.OperationId,
+                    bookingId,
+                    FinancialOperation.CaptureEscrow),
+                ct)
+            : Task.CompletedTask;
 
     public Task HandleAsync(
         DepositEscrowSucceededEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default)
-    {
-        var bookingId = PaymentOperationReferences.ReadBookingId(@event.Reference);
-        return ProcessAsync(
-            bookingId,
-            envelope,
-            new AcceptanceFinancialOperationSucceeded(
-                @event.OperationId,
+        CancellationToken ct = default) =>
+        TryReadBooking(@event.Reference, out var bookingId)
+            ? ProcessAsync(
                 bookingId,
-                FinancialOperation.DepositEscrow),
-            ct);
-    }
+                envelope,
+                new AcceptanceFinancialOperationSucceeded(
+                    @event.OperationId,
+                    bookingId,
+                    FinancialOperation.DepositEscrow),
+                ct)
+            : Task.CompletedTask;
 
     public Task HandleAsync(
         CaptureEscrowRejectedEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default)
-    {
-        var bookingId = PaymentOperationReferences.ReadBookingId(@event.Reference);
-        return ProcessAsync(
-            bookingId,
-            envelope,
-            new AcceptanceFinancialOperationRejected(
-                @event.OperationId,
+        CancellationToken ct = default) =>
+        TryReadBooking(@event.Reference, out var bookingId)
+            ? ProcessAsync(
                 bookingId,
-                FinancialOperation.CaptureEscrow,
-                new FinancialOperationError(@event.Code, @event.Message)),
-            ct);
-    }
+                envelope,
+                new AcceptanceFinancialOperationRejected(
+                    @event.OperationId,
+                    bookingId,
+                    FinancialOperation.CaptureEscrow,
+                    new FinancialOperationError(@event.Code, @event.Message)),
+                ct)
+            : Task.CompletedTask;
 
     public Task HandleAsync(
         DepositEscrowRejectedEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default)
-    {
-        var bookingId = PaymentOperationReferences.ReadBookingId(@event.Reference);
-        return ProcessAsync(
-            bookingId,
-            envelope,
-            new AcceptanceFinancialOperationRejected(
-                @event.OperationId,
+        CancellationToken ct = default) =>
+        TryReadBooking(@event.Reference, out var bookingId)
+            ? ProcessAsync(
                 bookingId,
-                FinancialOperation.DepositEscrow,
-                new FinancialOperationError(@event.Code, @event.Message)),
-            ct);
-    }
+                envelope,
+                new AcceptanceFinancialOperationRejected(
+                    @event.OperationId,
+                    bookingId,
+                    FinancialOperation.DepositEscrow,
+                    new FinancialOperationError(@event.Code, @event.Message)),
+                ct)
+            : Task.CompletedTask;
 
     // The outcome can arrive while the venue is cancelling the same booking. The transition already branches
     // on the state it reads, so losing the row is not a failure: the winner moved the booking after this
@@ -110,6 +106,15 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
     // is now CancellationPending gets refunded rather than confirmed. Convergence belongs here rather than in
     // the transition because this scope owns the transaction; the rerun does not converge again, so a second
     // loss propagates and the transport redelivers.
+    // A reference this service did not mint is another consumer's message, not a malformed one: skipping it
+    // leaves the inbox untouched, where parsing it would throw ahead of the inbox row and redeliver forever.
+    private static bool TryReadBooking(PaymentOperationReference reference, out int bookingId)
+    {
+        bookingId = 0;
+        return reference.OperationType == PaymentOperationReferences.EscrowType
+            && PaymentOperationReferences.TryReadBookingId(reference, out bookingId);
+    }
+
     private Task ProcessAsync(
         int bookingId,
         MessageEnvelope envelope,

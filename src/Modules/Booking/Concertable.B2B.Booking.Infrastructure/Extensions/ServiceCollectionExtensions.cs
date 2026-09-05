@@ -81,6 +81,8 @@ public static class ServiceCollectionExtensions
             services.AddScoped<CancellationFinancialOperationOutcomeProcessor>();
             services.AddScoped<IIntegrationEventHandler<RefundEscrowSucceededEvent>>(provider =>
                 provider.GetRequiredService<CancellationFinancialOperationOutcomeProcessor>());
+            services.AddScoped<IIntegrationEventHandler<RefundEscrowDeferredEvent>>(provider =>
+                provider.GetRequiredService<CancellationFinancialOperationOutcomeProcessor>());
             services.AddScoped<IIntegrationEventHandler<RefundEscrowRejectedEvent>>(provider =>
                 provider.GetRequiredService<CancellationFinancialOperationOutcomeProcessor>());
 

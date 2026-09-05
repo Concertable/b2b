@@ -104,8 +104,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var cancelResponse = await client.PostAsync($"/api/concert/{concert!.Id}/cancel");
 
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        Assert.DoesNotContain(fixture.PaymentTransport.Commands, command => command is RefundEscrowCommand);
-        Assert.Empty(fixture.EscrowClient.Holds);
+        Assert.Empty(fixture.PaymentTransport.FinancialCommands);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Cancelled, persisted.State);
     }
