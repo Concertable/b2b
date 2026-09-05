@@ -26,4 +26,7 @@ internal interface IOpportunityReadRepository
         IReadOnlyCollection<int> excludedOpportunityIds,
         IReadOnlySet<Genre> genres,
         CancellationToken ct = default);
+    Task<IReadOnlyList<OpportunityEntity>> GetOpenByVenueTenantIdAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default);
 }

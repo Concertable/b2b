@@ -101,7 +101,7 @@ internal sealed class OpportunityService : IOpportunityService
     public async Task<IReadOnlyList<OpportunityDto>> GetOpenByVenueTenantIdAsync(
         Guid venueTenantId,
         CancellationToken ct = default) =>
-        (await repository.GetOpenByVenueTenantIdAsync(venueTenantId, ct))
+        (await readRepository.GetOpenByVenueTenantIdAsync(venueTenantId, ct))
             .Select(opportunity => opportunity.ToDto())
             .ToList();
 

@@ -9,6 +9,9 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Repositories;
 
 internal sealed class OpportunityReadRepository : IOpportunityReadRepository
 {
+    private const int MaxMatchCandidates = 5;
+    private const int MaxOpenOpportunities = 5;
+
     private readonly IOpportunityReadDbContext context;
     private readonly TimeProvider timeProvider;
 
@@ -90,9 +93,19 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
                 OpportunityEntityConfiguration.PersistedGenresProperty,
                 genres)
             .OrderBy(opportunity => opportunity.Period.Start)
-            .Take(5)
+            .Take(MaxMatchCandidates)
             .ToListAsync(ct);
     }
+
+    public async Task<IReadOnlyList<OpportunityEntity>> GetOpenByVenueTenantIdAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default) =>
+        await context.Opportunities
+            .Where(opportunity => opportunity.TenantId == venueTenantId)
+            .WhereActive(timeProvider.GetUtcNow().UtcDateTime)
+            .OrderBy(opportunity => opportunity.Period.Start)
+            .Take(MaxOpenOpportunities)
+            .ToListAsync(ct);
 
     private IQueryable<OpportunityEntity> ActiveForVenue(int venueId) =>
         context.Opportunities.ActiveForVenue(venueId, timeProvider.GetUtcNow().UtcDateTime);

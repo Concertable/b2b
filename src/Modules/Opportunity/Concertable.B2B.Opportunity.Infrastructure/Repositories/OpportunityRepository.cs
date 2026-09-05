@@ -32,16 +32,4 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
         await context.Opportunities
             .Where(o => ids.Contains(o.Id))
             .ToListAsync();
-
-    public async Task<IReadOnlyList<OpportunityEntity>> GetOpenByVenueTenantIdAsync(
-        Guid venueTenantId,
-        CancellationToken ct = default) =>
-        await context.Opportunities
-            .AsNoTracking()
-            .Where(opportunity => opportunity.TenantId == venueTenantId)
-            .WhereActive(timeProvider.GetUtcNow().UtcDateTime)
-            .OrderBy(opportunity => opportunity.Period.Start)
-            .Take(5)
-            .ToListAsync(ct);
-
 }
