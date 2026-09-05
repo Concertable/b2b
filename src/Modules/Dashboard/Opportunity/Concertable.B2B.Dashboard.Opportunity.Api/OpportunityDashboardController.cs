@@ -17,7 +17,7 @@ internal sealed class OpportunityDashboardController : ControllerBase
     [HttpGet("venue/current")]
     [RequiredTenantType(TenantType.Venue)]
     [HasPermission(SharedPermissions.OperationsView)]
-    public async Task<ActionResult<IReadOnlyList<OpportunityApplicationMetricsResponse>>>
+    public async Task<ActionResult<IReadOnlyList<OpportunityMetricsResponse>>>
         GetOpen(CancellationToken ct) =>
         (await service.GetOpenAsync(ct))
             .ToOkOrProblem(metrics => metrics.ToResponses());

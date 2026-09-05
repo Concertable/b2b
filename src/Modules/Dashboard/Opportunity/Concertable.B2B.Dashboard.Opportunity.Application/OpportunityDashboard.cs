@@ -12,7 +12,7 @@ internal sealed record OpportunitySummary(
     IReadOnlySet<Genre> Genres,
     DealDto Deal);
 
-internal sealed record OpportunityApplicationMetrics(
+internal sealed record OpportunityMetrics(
     OpportunitySummary Opportunity,
     int ApplicationCount,
     int DaysUntilDeadline);
