@@ -150,7 +150,7 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
-    public void AppHost_MobileGraph_ContainsOnlyB2BSurfaces()
+    public async Task AppHost_MobileGraph_ContainsOnlyB2BSurfaces()
     {
         var builder = AppHost.CreateBuilder(["--RunMobile=true"]);
         Assert.Equal(
@@ -159,6 +159,20 @@ public sealed class B2BHostGraphTests
         Assert.Single(builder.Resources, resource => resource.Name == "b2b-dev");
         Assert.DoesNotContain(builder.Resources, resource => resource.Name is "customer-web" or "search-web");
         using var app = builder.Build();
+
+        AllocateTunnelEndpoints(builder, "b2b-dev");
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var mobile = Assert.Single(builder.Resources.OfType<NodeAppResource>(), resource => resource.Name == "mobile-b2b");
+        var mobileEnvironment = await GetResolvedEnvironmentAsync(mobile, cancellation.Token);
+        AssertTunnelUrl(mobileEnvironment, "EXPO_PUBLIC_API_URL", "b2b-dev-b2b-web-http");
+        AssertTunnelUrl(mobileEnvironment, "EXPO_PUBLIC_AUTH_AUTHORITY", "b2b-dev-auth-https");
+        AssertTunnelUrl(mobileEnvironment, "EXPO_PUBLIC_PAYMENT_API_URL", "b2b-dev-payment-web-https");
+        Assert.DoesNotContain("EXPO_PUBLIC_CUSTOMER_API_URL", mobileEnvironment.Keys);
+        Assert.DoesNotContain("EXPO_PUBLIC_SEARCH_API_URL", mobileEnvironment.Keys);
+
+        var auth = builder.Resources.Single(resource => resource.Name == AuthConstants.Resource);
+        var authEnvironment = await GetRawEnvironmentAsync(auth, cancellation.Token);
+        await AssertTunnelValueAsync(authEnvironment, "Auth__PublicUrl", "b2b-dev-auth-https", cancellation.Token);
     }
 
     [Fact]
@@ -235,6 +249,60 @@ public sealed class B2BHostGraphTests
                 .GetResult();
 
         Assert.Equal(expected, args);
+    }
+
+    private static void AllocateTunnelEndpoints(IDistributedApplicationBuilder builder, string tunnelName)
+    {
+        var ports = builder.Resources.OfType<Aspire.Hosting.DevTunnels.DevTunnelPortResource>()
+            .Where(port => port.Name.StartsWith(tunnelName + "-", StringComparison.Ordinal))
+            .ToArray();
+        Assert.NotEmpty(ports);
+        foreach (var port in ports)
+            foreach (var endpoint in port.Annotations.OfType<EndpointAnnotation>())
+                endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, $"{port.Name}.example.test", 443);
+    }
+
+    private static async Task<Dictionary<string, string>> GetResolvedEnvironmentAsync(
+        IResource resource, CancellationToken cancellationToken)
+    {
+        var environmentResource = Assert.IsAssignableFrom<IResourceWithEnvironment>(resource);
+        var configuration = await ExecutionConfigurationBuilder.Create(environmentResource)
+            .WithEnvironmentVariablesConfig()
+            .BuildAsync(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run),
+                NullLogger.Instance, cancellationToken);
+        return configuration.EnvironmentVariables.ToDictionary();
+    }
+
+    private static async Task<Dictionary<string, object>> GetRawEnvironmentAsync(
+        IResource resource, CancellationToken cancellationToken)
+    {
+        var environment = new Dictionary<string, object>();
+        var context = new EnvironmentCallbackContext(
+            new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run),
+            resource, environment, cancellationToken);
+        foreach (var annotation in resource.Annotations.OfType<EnvironmentCallbackAnnotation>().ToArray())
+            await annotation.Callback(context);
+        return environment;
+    }
+
+    private static void AssertTunnelUrl(
+        IReadOnlyDictionary<string, string> environment,
+        string key,
+        string endpointName)
+    {
+        Assert.True(environment.TryGetValue(key, out var url),
+            $"Missing '{key}'. Available keys: {string.Join(", ", environment.Keys.Order())}");
+        Assert.Equal($"https://{endpointName}.example.test:443", url);
+    }
+
+    private static async Task AssertTunnelValueAsync(
+        IReadOnlyDictionary<string, object> environment,
+        string key,
+        string endpointName,
+        CancellationToken cancellationToken)
+    {
+        var url = await Assert.IsAssignableFrom<IValueProvider>(environment[key]).GetValueAsync(cancellationToken);
+        Assert.Equal($"https://{endpointName}.example.test:443", url);
     }
 
 #pragma warning disable ASPIRECERTIFICATES001 // experimental API; asserts the temporary Auth image bridge
