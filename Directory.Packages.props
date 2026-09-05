@@ -3,9 +3,6 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <ConcertablePlatformVersion>0.1.0-alpha.0.1329</ConcertablePlatformVersion>
-    <!-- Payment published v1 after the platform, so its height is lower and cannot ride the platform
-         pin: Payment.Contracts 1322 requires Kernel >= 1329, and a uniform bump fails restore. The
-         local-platform seam packs every package from source at one version, so follow it there. -->
     <ConcertablePaymentVersion Condition="'$(UseLocalPlatformPackages)' == 'true'">$(ConcertablePlatformVersion)</ConcertablePaymentVersion>
     <ConcertablePaymentVersion Condition="'$(ConcertablePaymentVersion)' == ''">0.1.0-alpha.0.1322</ConcertablePaymentVersion>
   </PropertyGroup>
