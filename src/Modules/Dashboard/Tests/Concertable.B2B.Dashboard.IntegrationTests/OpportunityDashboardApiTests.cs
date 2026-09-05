@@ -29,7 +29,7 @@ public sealed class OpportunityDashboardApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.OK);
         var metrics = await response.Content
-            .ReadAsync<IReadOnlyList<OpportunityApplicationMetricsBoundaryResponse>>();
+            .ReadAsync<IReadOnlyList<OpportunityMetricsBoundaryResponse>>();
         Assert.NotNull(metrics);
         var opportunity = fixture.SeedState.Opportunities
             .Where(item => item.VenueId == fixture.SeedState.Venue.Id)
@@ -85,7 +85,7 @@ public sealed class OpportunityDashboardApiTests : IAsyncLifetime
         Assert.NotNull(problem);
     }
 
-    private sealed record OpportunityApplicationMetricsBoundaryResponse(
+    private sealed record OpportunityMetricsBoundaryResponse(
         OpportunitySummaryBoundaryResponse Opportunity,
         int ApplicationCount,
         int DaysUntilDeadline);

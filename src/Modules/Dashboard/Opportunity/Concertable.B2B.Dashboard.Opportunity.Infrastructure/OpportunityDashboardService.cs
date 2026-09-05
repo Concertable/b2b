@@ -40,7 +40,7 @@ internal sealed class OpportunityDashboardService : IOpportunityDashboardService
         this.venueModule = venueModule;
     }
 
-    public async Task<Result<IReadOnlyList<OpportunityApplicationMetrics>, OpportunityDashboardError>>
+    public async Task<Result<IReadOnlyList<OpportunityMetrics>, OpportunityDashboardError>>
         GetOpenAsync(CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
@@ -53,7 +53,7 @@ internal sealed class OpportunityDashboardService : IOpportunityDashboardService
         var (dealsById, venuesById) = await GetLookupsAsync(items, ct);
         var today = timeProvider.GetUtcNow().UtcDateTime.Date;
 
-        return items.Select(item => new OpportunityApplicationMetrics(
+        return items.Select(item => new OpportunityMetrics(
                 item.ToSummary(dealsById, venuesById),
                 counts.GetValueOrDefault(item.Id),
                 OpportunityDashboardCalculator.CalculateDaysUntilDeadline(item.StartDate, today)))

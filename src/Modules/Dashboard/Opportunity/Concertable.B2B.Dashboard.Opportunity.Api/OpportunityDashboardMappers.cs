@@ -4,10 +4,10 @@ namespace Concertable.B2B.Dashboard.Opportunity.Api;
 
 internal static class OpportunityDashboardMappers
 {
-    extension(IReadOnlyList<OpportunityApplicationMetrics> metrics)
+    extension(IReadOnlyList<OpportunityMetrics> metrics)
     {
-        public IReadOnlyList<OpportunityApplicationMetricsResponse> ToResponses() =>
-            metrics.Select(item => new OpportunityApplicationMetricsResponse(
+        public IReadOnlyList<OpportunityMetricsResponse> ToResponses() =>
+            metrics.Select(item => new OpportunityMetricsResponse(
                     item.Opportunity.ToResponse(),
                     item.ApplicationCount,
                     item.DaysUntilDeadline))
