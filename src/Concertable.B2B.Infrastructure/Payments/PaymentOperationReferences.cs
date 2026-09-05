@@ -26,6 +26,9 @@ public static class PaymentOperationReferences
     public static PaymentOperationReference EscrowHold(int applicationId) =>
         new(EscrowHoldType, ForApplication(applicationId));
 
+    // The artist commits their method before the application row exists, so this one is keyed by the
+    // opportunity and the artist. Apply checkout, the apply-time validation and the frozen contract
+    // snapshot all compose it and must produce an identical string.
     public static PaymentOperationReference MethodSetup(int opportunityId, Guid artistTenantId) =>
         new(MethodSetupType, $"opp:{opportunityId.ToString(CultureInfo.InvariantCulture)}:artist:{artistTenantId}");
 

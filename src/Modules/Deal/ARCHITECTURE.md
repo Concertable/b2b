@@ -167,10 +167,10 @@ Deal-varying methods are classified by invocation shape, per module, with no sha
 - A **heterogeneous method** gets one interface per honest method header and a Dunet union over those
   interfaces. `DealUnionBuilder<TUnion>` composes the generic keyed-union builder with `DealType` and
   `IDealStrategy`, requiring exactly one case for every deal type. No family needs that escalation today:
-  since Payment owns payment-method commitments, apply and accept take the same arguments for every deal
-  type, so Application's `IApply` and `IMintCommitment` are same-interface families behind
-  `IDealStrategyFactory<TStrategy>`. `DealUnionBuilder` stays for the first family that genuinely fractures
-  on caller input.
+  Application's `IApply` and `INameCommitment` are same-interface families behind
+  `IDealStrategyFactory<TStrategy>`. A family fractures when a caller cannot supply the shared header
+  without a placeholder — apply checkout, which runs before the application row exists and so holds no
+  application id, is the first path that would. `DealUnionBuilder` stays for it.
 
 Concert's homogeneous Cancel/Complete strategies (`ICancel`, `IComplete`, under
 `Strategies/<Operation>`) use the shared Deal strategy factory. `IKeyedServiceProvider` never escapes

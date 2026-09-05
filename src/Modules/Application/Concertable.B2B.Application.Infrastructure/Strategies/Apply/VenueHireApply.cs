@@ -23,8 +23,6 @@ internal sealed class VenueHireApply : IApply
         Guid artistTenantId,
         CancellationToken ct = default)
     {
-        // The artist commits a payment method before the application row exists, so the commitment is
-        // keyed by the opportunity and the artist rather than by an application id.
         var reference = PaymentOperationReferences.MethodSetup(opportunityId, artistTenantId);
         var validation = await paymentSessions.ValidatePaymentMethodAsync(
             new PaymentMethodValidationRequest(reference, artistTenantId), ct);

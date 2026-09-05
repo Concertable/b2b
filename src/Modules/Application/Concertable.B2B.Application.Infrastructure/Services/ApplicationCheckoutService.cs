@@ -1,5 +1,6 @@
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Responses;
+using Concertable.B2B.Application.Application.Strategies;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Opportunity.Contracts;
@@ -18,6 +19,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private readonly IVenueModule venueModule;
     private readonly IDealModule dealModule;
     private readonly IPaymentSessionOperationsClient paymentSessions;
+    private readonly IDealStrategyFactory<INameCommitment> commitmentFactory;
     private readonly ITenantContext tenantContext;
     private readonly LegalSettings legal;
 
@@ -28,6 +30,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         IVenueModule venueModule,
         IDealModule dealModule,
         IPaymentSessionOperationsClient paymentSessions,
+        IDealStrategyFactory<INameCommitment> commitmentFactory,
         ITenantContext tenantContext,
         IOptions<LegalSettings> legal)
     {
@@ -37,6 +40,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.venueModule = venueModule;
         this.dealModule = dealModule;
         this.paymentSessions = paymentSessions;
+        this.commitmentFactory = commitmentFactory;
         this.tenantContext = tenantContext;
         this.legal = legal.Value;
     }
@@ -107,7 +111,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
                     Guid.CreateVersion7(),
                     PaymentSessionKind.Authorization,
                     PaymentSession.OnSession,
-                    PaymentOperationReferences.EscrowHold(applicationId),
+                    commitmentFactory.Create(deal.DealType).Name(application),
                     application.VenueTenantId,
                     application.ArtistTenantId,
                     Money.Gbp(flatFee.Fee).ToMinorUnits(),
@@ -131,7 +135,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 
         var verification = await paymentSessions.SetupPaymentMethodAsync(
             new PaymentMethodSetupRequest(
-                PaymentOperationReferences.MethodVerification(applicationId),
+                commitmentFactory.Create(deal.DealType).Name(application),
                 PaymentSessionKind.PaymentMethodVerification,
                 application.VenueTenantId,
                 legal.MandateTermsVersion));

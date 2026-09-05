@@ -99,16 +99,16 @@ public static class ServiceCollectionExtensions
             {
                 builder.For(DealType.FlatFee)
                     .AddScoped<IApply, StandardApply>()
-                    .AddScoped<IMintCommitment, MintEscrowHold>();
+                    .AddScoped<INameCommitment, NameEscrowHold>();
                 builder.For(DealType.DoorSplit)
                     .AddScoped<IApply, StandardApply>()
-                    .AddScoped<IMintCommitment, MintMethodVerification>();
+                    .AddScoped<INameCommitment, NameMethodVerification>();
                 builder.For(DealType.Versus)
                     .AddScoped<IApply, StandardApply>()
-                    .AddScoped<IMintCommitment, MintMethodVerification>();
+                    .AddScoped<INameCommitment, NameMethodVerification>();
                 builder.For(DealType.VenueHire)
                     .AddScoped<IApply, VenueHireApply>()
-                    .AddScoped<IMintCommitment, MintMethodSetup>();
+                    .AddScoped<INameCommitment, NameMethodSetup>();
             });
 
         internal IServiceCollection AddApplicationDealStrategies(
