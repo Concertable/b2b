@@ -13,12 +13,41 @@ internal sealed class MockManagerPaymentClient : IMockManagerPaymentClient
 
     public List<(Guid PayerId, Guid PayeeId, decimal Amount, string PaymentMethodId, int BookingId)> Payments { get; } = [];
 
+    public List<(Guid PayerId, Guid PayeeId, decimal Amount, PaymentOperationReference PaymentMethod, int BookingId)> ReferencedPayments { get; } = [];
+
     public MockManagerPaymentClient(MockStripeApiClient stripeApiClient)
     {
         this.stripeApiClient = stripeApiClient;
     }
 
-    public void Reset() => Payments.Clear();
+    public void Reset()
+    {
+        Payments.Clear();
+        ReferencedPayments.Clear();
+    }
+
+    public async Task<Result<PaymentOutcome, PaymentMethodChargeError>> PayAsync(
+        Guid operationId,
+        Guid payerId,
+        Guid payeeId,
+        Money amount,
+        PaymentOperationReference paymentMethod,
+        PaymentSession session,
+        int bookingId,
+        CancellationToken ct = default)
+    {
+        var intent = await stripeApiClient.CreatePaymentIntentAsync(new PaymentIntentCreateOptions
+        {
+            Amount = amount.ToMinorUnits(),
+            Metadata = new Dictionary<string, string>
+            {
+                [PaymentMetadataKeys.Type] = TransactionTypes.Settlement,
+                [PaymentMetadataKeys.BookingId] = bookingId.ToString()
+            }
+        });
+        ReferencedPayments.Add((payerId, payeeId, amount.Amount, paymentMethod, bookingId));
+        return Result<PaymentOutcome, PaymentMethodChargeError>.Success(new PaymentOutcome { RequiresAction = false, TransactionId = intent.Id });
+    }
 
     public async Task<Result<PaymentOutcome, ManagerPaymentError>> PayAsync(Guid payerId, Guid payeeId, Money amount, string paymentMethodId, PaymentSession session, int bookingId, CancellationToken ct = default)
     {
