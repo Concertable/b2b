@@ -6,11 +6,11 @@ using Concertable.Testing.Integration;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
-/// <summary>Stands in for Payment's session operations, reserving one operation id per reference the way
-/// Payment's own reservation does.</summary>
+/// <summary>Stands in for Payment's session operations, reserving one operation id per reference and binding
+/// it to the payer that opened it, the way Payment's own reservation and resolution do.</summary>
 public sealed class MockPaymentSessionClient : IPaymentSessionOperationsClient, IResettable
 {
-    private readonly Dictionary<PaymentOperationReference, Guid> operations = [];
+    private readonly Dictionary<PaymentOperationReference, MockPaymentSession> operations = [];
     private readonly MockPaymentOperations paymentOperations;
 
     public List<(PaymentOperationReference Reference, PaymentSessionKind Kind, Guid PayerOwnerId)> Sessions { get; } = [];
@@ -40,7 +40,8 @@ public sealed class MockPaymentSessionClient : IPaymentSessionOperationsClient, 
         PaymentMethodValidationRequest request,
         CancellationToken ct = default) =>
         Task.FromResult(
-            operations.ContainsKey(request.Reference)
+            operations.TryGetValue(request.Reference, out var operation)
+            && operation.PayerOwnerId == request.PayerOwnerId
                 ? UnitResult<PaymentOperationError>.Success()
                 : UnitResult<PaymentOperationError>.Failure(new PaymentOperationError.PaymentMethodRequired()));
 
@@ -84,18 +85,20 @@ public sealed class MockPaymentSessionClient : IPaymentSessionOperationsClient, 
     {
         lock (operations)
         {
-            if (!operations.TryGetValue(reference, out var operationId))
+            if (!operations.TryGetValue(reference, out var operation))
             {
-                operationId = Guid.CreateVersion7();
-                operations.Add(reference, operationId);
+                operation = new MockPaymentSession(Guid.CreateVersion7(), payerOwnerId);
+                operations.Add(reference, operation);
             }
 
             Sessions.Add((reference, kind, payerOwnerId));
             paymentOperations.Record(reference);
-            return operationId;
+            return operation.OperationId;
         }
     }
 
     private static string Secret(PaymentOperationReference reference) =>
         $"{reference.OperationType}:{reference.ClientReference}_secret";
+
+    private sealed record MockPaymentSession(Guid OperationId, Guid PayerOwnerId);
 }

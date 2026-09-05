@@ -80,6 +80,23 @@ public sealed class MockPaymentTransport : IBusTransport, IResettable
     public Task RejectLatestAcceptanceAsync(IServiceScopeFactory serviceScopeFactory) =>
         RejectLatestAsync(serviceScopeFactory, IsAcceptance);
 
+    /// <summary>
+    /// Announces that Payment found nothing to refund yet. Payment leaves that operation pending rather
+    /// than terminal, so the command stays pending here too and a later completion still settles it.
+    /// </summary>
+    public async Task DeferLatestAsync<TCommand>(IServiceScopeFactory serviceScopeFactory)
+        where TCommand : IIntegrationCommand
+    {
+        var command = await WaitForPendingAsync(command => command is TCommand);
+        if (command is not RefundEscrowCommand refund)
+            throw new InvalidOperationException($"Only a refund can be deferred, not {command.GetType().Name}.");
+
+        await DispatchAsync(
+            new RefundEscrowDeferredEvent(refund.OperationId, refund.Reference),
+            refund.OperationId,
+            serviceScopeFactory);
+    }
+
     public async Task RejectLatestAsync(IServiceScopeFactory serviceScopeFactory) =>
         await RejectLatestAsync(serviceScopeFactory, _ => true);
 

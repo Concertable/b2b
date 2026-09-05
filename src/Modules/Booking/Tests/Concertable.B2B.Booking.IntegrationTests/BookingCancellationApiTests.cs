@@ -103,6 +103,26 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Cancel_ShouldWaitForTheCapture_WhenTheRefundIsDeferred()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var bookingId = await AcceptFlatFeeAsync(client);
+        var cancelResponse = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
+        await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
+
+        await fixture.DeferLatestFinancialOperationAsync<RefundEscrowCommand>();
+        Assert.Equal(BookingState.CancellationPending, await StateOfAsync(bookingId));
+
+        await fixture.PaymentSimulator.SendWebhookAsync();
+        var refunds = await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2);
+        await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
+
+        Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
+        Assert.Single(refunds.Select(command => command.OperationId).Distinct());
+        Assert.Equal(0, await fixture.GetConcertCountAsync(bookingId));
+    }
+
+    [Fact]
     public async Task Cancel_ShouldStayCancelled_WhenSecondRefundIsRejectedAfterCancel()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);

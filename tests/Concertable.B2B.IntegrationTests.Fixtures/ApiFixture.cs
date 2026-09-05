@@ -220,6 +220,10 @@ public class ApiFixture : IAsyncLifetime
         where TCommand : IIntegrationCommand =>
         PaymentTransport.CompleteLatestAsync<TCommand>(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
+    public Task DeferLatestFinancialOperationAsync<TCommand>()
+        where TCommand : IIntegrationCommand =>
+        PaymentTransport.DeferLatestAsync<TCommand>(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
     public Task RejectLatestFinancialOperationAsync() =>
         PaymentTransport.RejectLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
 

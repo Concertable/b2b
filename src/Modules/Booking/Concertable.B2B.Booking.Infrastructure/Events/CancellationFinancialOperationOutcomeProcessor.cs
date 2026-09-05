@@ -30,13 +30,13 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
         CancellationToken ct = default) =>
         ProcessAsync(@event.OperationId, envelope, Cancel, ct);
 
-    // Payment defers a refund it finds nothing to refund. The money never moved, so the cancellation this
-    // booking is waiting on is complete; without this arm it waits in CancellationPending forever.
+    // Deferred means the acceptance capture has not landed yet; its own outcome arm refunds or cancels
+    // this booking, so cancelling here would strand the money it later captures.
     public Task HandleAsync(
         RefundEscrowDeferredEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        ProcessAsync(@event.OperationId, envelope, Cancel, ct);
+        outboxUnitOfWorkBehavior.ExecuteAsync(() => TryRecordInboxAsync(envelope, ct), ct);
 
     public Task HandleAsync(
         RefundEscrowRejectedEvent @event,
@@ -67,14 +67,22 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
         CancellationToken ct) =>
         outboxUnitOfWorkBehavior.ExecuteAsync(async () =>
         {
-            var handler = nameof(CancellationFinancialOperationOutcomeProcessor);
-            if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))
+            if (!await TryRecordInboxAsync(envelope, ct))
                 return;
 
-            context.AddInboxMessage(envelope, handler);
             var booking = await context.Bookings
                 .SingleOrDefaultAsync(value => value.CancellationOperationId == operationId, ct);
             if (booking is not null)
                 action(booking);
         }, ct);
+
+    private async Task<bool> TryRecordInboxAsync(MessageEnvelope envelope, CancellationToken ct)
+    {
+        var handler = nameof(CancellationFinancialOperationOutcomeProcessor);
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))
+            return false;
+
+        context.AddInboxMessage(envelope, handler);
+        return true;
+    }
 }

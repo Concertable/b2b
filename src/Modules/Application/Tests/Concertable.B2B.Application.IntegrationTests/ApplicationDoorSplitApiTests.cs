@@ -6,7 +6,11 @@ using Concertable.B2B.Application.Application.Responses;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.Contracts.Enums;
+using Concertable.Messaging.Contracts;
+using Concertable.Payment.Contracts;
+using Concertable.Payment.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
 
@@ -119,6 +123,24 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         await bookingResponse.ShouldBe(HttpStatusCode.OK);
         var booking = await bookingResponse.Content.ReadAsync<JsonElement>();
         Assert.Equal("awaitingConfirmation", booking.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task Verification_FromAPayerOtherThanTheVenue_IsNotRecorded()
+    {
+        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var reference = PaymentOperationReferences.MethodVerification(applicationId);
+        await fixture.PaymentSessionClient.SetupPaymentMethodAsync(new PaymentMethodSetupRequest(
+            reference,
+            PaymentSessionKind.PaymentMethodVerification,
+            Guid.NewGuid(),
+            "mandate"));
+
+        await fixture.DispatchIntegrationEventAsync(
+            new PaymentSucceededEvent(reference, new Dictionary<string, string>()),
+            MessageEnvelope.Create<PaymentSucceededEvent>(fixture.SeedNow));
+
+        Assert.False(await fixture.PaymentVerifications.AnyAsync(verification => verification.ApplicationId == applicationId));
     }
 
     private OpportunityBoundaryRequest BuildOpportunityRequest(DealDto deal) =>

@@ -15,6 +15,12 @@ internal static partial class Log
         string clientReference,
         int applicationId);
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Verify outcome for {ClientReference} is not owned by the venue of application {ApplicationId}; skipping")]
+    internal static partial void VerifyOutcomeNotOwnedByVenue(
+        this ILogger logger,
+        string clientReference,
+        int applicationId);
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "Verify payment failed for application {ApplicationId}: [{FailureCode}] {FailureMessage}")]
     internal static partial void VerifyPaymentFailed(
         this ILogger logger,

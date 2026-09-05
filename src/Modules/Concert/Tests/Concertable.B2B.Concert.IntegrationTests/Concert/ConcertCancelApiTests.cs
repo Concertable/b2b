@@ -87,6 +87,25 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Cancel_ShouldMarkCancelled_WhenTheRefundIsDeferred()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var appId = fixture.SeedState.VenueHireApp.Id;
+        await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        await fixture.PaymentSimulator.SendWebhookAsync();
+        var concertResponse = await fixture.GetConcertByApplicationAsync(client, appId);
+        await concertResponse.ShouldBe(HttpStatusCode.OK);
+        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
+        var cancelResponse = await client.PostAsync($"/api/concert/{concert!.Id}/cancel");
+        await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
+
+        await fixture.DeferLatestFinancialOperationAsync<RefundEscrowCommand>();
+
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Cancelled, persisted.State);
+    }
+
+    [Fact]
     public async Task Cancel_ShouldMarkCancelled_ForDoorSplit_WhereNoEscrowIsHeld()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);

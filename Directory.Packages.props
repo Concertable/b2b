@@ -9,11 +9,11 @@
     <PackageVersion Include="Concertable.Testing" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Testing.Architecture" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Testing.Integration" Version="$(ConcertablePlatformVersion)" />
-    <PackageVersion Include="Concertable.Payment.TestKit" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Payment.TestKit" Version="0.1.0-alpha.0.1322" />
     <PackageVersion Include="Concertable.B2B.TestKit" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Auth.Hosting" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.B2B.Hosting" Version="$(ConcertablePlatformVersion)" />
-    <PackageVersion Include="Concertable.Payment.Hosting" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Payment.Hosting" Version="0.1.0-alpha.0.1322" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.1.2" />
     <PackageVersion Include="Aspire.Hosting.Azure.ServiceBus" Version="13.3.2" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.3.2" />
@@ -109,8 +109,8 @@
     <PackageVersion Include="Concertable.Frontend.Hosting" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Search.Hosting" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Auth.Contracts" Version="$(ConcertablePlatformVersion)" />
-    <PackageVersion Include="Concertable.Payment.Client" Version="$(ConcertablePlatformVersion)" />
-    <PackageVersion Include="Concertable.Payment.Contracts" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Payment.Client" Version="0.1.0-alpha.0.1322" />
+    <PackageVersion Include="Concertable.Payment.Contracts" Version="0.1.0-alpha.0.1322" />
     <PackageVersion Include="Concertable.Customer.Review.Contracts" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Customer.Ticket.Contracts" Version="$(ConcertablePlatformVersion)" />
   </ItemGroup>
