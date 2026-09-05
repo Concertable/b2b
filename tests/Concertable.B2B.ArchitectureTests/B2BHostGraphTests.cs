@@ -124,7 +124,7 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
-    public void AppHost_ProductionGraphAndStrictValidation_AreValid()
+    public async Task AppHost_ProductionGraphAndStrictValidation_AreValid()
     {
         var validBuilder = AppHost.CreateBuilder([]);
         AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "https");
@@ -132,6 +132,12 @@ public sealed class B2BHostGraphTests
         AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https");
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http");
+        Assert.DoesNotContain(validBuilder.Resources.OfType<NodeAppResource>(),
+            resource => resource.Name.StartsWith("mobile-", StringComparison.Ordinal));
+        Assert.DoesNotContain(validBuilder.Resources, resource => resource.Name == "b2b-dev");
+        var auth = validBuilder.Resources.Single(resource => resource.Name == AuthConstants.Resource);
+        var authEnvironment = await GetRawEnvironmentAsync(auth, CancellationToken.None);
+        Assert.DoesNotContain("Auth__PublicUrl", authEnvironment.Keys);
         using var app = validBuilder.Build();
         var builder = AppHost.CreateBuilder([]);
         builder.Services.AddInvalidLifetimeGraph();
@@ -156,6 +162,11 @@ public sealed class B2BHostGraphTests
         Assert.Equal(
             new[] { "admin", "artist", "business", "mobile-b2b", "venue" },
             builder.Resources.OfType<NodeAppResource>().Select(resource => resource.Name).Order());
+        AssertNodeAppDirectory(builder, "venue", "app", "web", "b2b", "venue");
+        AssertNodeAppDirectory(builder, "artist", "app", "web", "b2b", "artist");
+        AssertNodeAppDirectory(builder, "business", "app", "web", "b2b", "business");
+        AssertNodeAppDirectory(builder, "admin", "app", "web", "admin");
+        AssertNodeAppDirectory(builder, "mobile-b2b", "app", "mobile", "b2b");
         Assert.Single(builder.Resources, resource => resource.Name == "b2b-dev");
         Assert.DoesNotContain(builder.Resources, resource => resource.Name is "customer-web" or "search-web");
         using var app = builder.Build();
@@ -163,7 +174,9 @@ public sealed class B2BHostGraphTests
         AllocateTunnelEndpoints(builder, "b2b-dev");
         using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var mobile = Assert.Single(builder.Resources.OfType<NodeAppResource>(), resource => resource.Name == "mobile-b2b");
+        AssertClearMetroCacheCommand(mobile);
         var mobileEnvironment = await GetResolvedEnvironmentAsync(mobile, cancellation.Token);
+        Assert.Equal("localhost", mobileEnvironment["REACT_NATIVE_PACKAGER_HOSTNAME"]);
         AssertTunnelUrl(mobileEnvironment, "EXPO_PUBLIC_API_URL", "b2b-dev-b2b-web-http");
         AssertTunnelUrl(mobileEnvironment, "EXPO_PUBLIC_AUTH_AUTHORITY", "b2b-dev-auth-https");
         AssertTunnelUrl(mobileEnvironment, "EXPO_PUBLIC_PAYMENT_API_URL", "b2b-dev-payment-web-https");
@@ -209,6 +222,12 @@ public sealed class B2BHostGraphTests
             .BuildAsync(executionContext, NullLogger.Instance, CancellationToken.None);
         var authEnvironment = authConfiguration.EnvironmentVariables.ToDictionary();
         var b2bEnvironment = b2bConfiguration.EnvironmentVariables.ToDictionary();
+        Assert.Equal(
+            new[] { "Venue", "Artist", "Admin" },
+            authEnvironment
+                .Where(pair => pair.Key.StartsWith("Auth__SpaClients__EnabledClients__", StringComparison.Ordinal))
+                .OrderBy(pair => pair.Key)
+                .Select(pair => pair.Value));
 
         Assert.Equal(
             B2BLocalSpaSurfaces.All.Select(surface => surface.ResourceName).Order(),
@@ -260,6 +279,32 @@ public sealed class B2BHostGraphTests
         foreach (var port in ports)
             foreach (var endpoint in port.Annotations.OfType<EndpointAnnotation>())
                 endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, $"{port.Name}.example.test", 443);
+    }
+
+    private static void AssertNodeAppDirectory(
+        IDistributedApplicationBuilder builder,
+        string resourceName,
+        params string[] relativePath)
+    {
+        var repoRoot = new DirectoryInfo(builder.AppHostDirectory);
+        while (repoRoot is not null && !Directory.Exists(Path.Combine(repoRoot.FullName, "app")))
+            repoRoot = repoRoot.Parent;
+
+        Assert.NotNull(repoRoot);
+        var expected = Path.GetFullPath(Path.Combine([repoRoot.FullName, .. relativePath]));
+        var resource = Assert.Single(builder.Resources.OfType<NodeAppResource>(), resource => resource.Name == resourceName);
+        var actual = Path.GetFullPath(resource.WorkingDirectory);
+        Assert.True(string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase),
+            $"Expected '{resourceName}' to use '{expected}', but it uses '{actual}'.");
+        Assert.True(Directory.Exists(actual), $"Frontend directory '{actual}' does not exist.");
+    }
+
+    private static void AssertClearMetroCacheCommand(NodeAppResource mobile)
+    {
+        var command = Assert.Single(mobile.Annotations.OfType<ResourceCommandAnnotation>(),
+            command => command.Name == "clear-metro-cache");
+        Assert.Equal("Clear Metro Cache", command.DisplayName);
+        Assert.Equal("ArrowCounterclockwise", command.IconName);
     }
 
     private static async Task<Dictionary<string, string>> GetResolvedEnvironmentAsync(
