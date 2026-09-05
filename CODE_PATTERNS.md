@@ -52,8 +52,10 @@ every family handles it. `DealStrategyArchitectureTests` guards the shape.
 
 Application, Booking and Concert each own one module-local workflow whose methods are the named lifecycle
 operations for that stage. A workflow spans no module boundary and holds no aggregate state. Deal-varying
-work sits behind operation-named interfaces resolved through `IDealStrategyFactory<TStrategy>`:
-`IApply` (Application), `IConfirm`/`ICancel`/`IContractFactory` (Booking), `ICancel`/`IComplete` (Concert).
+lifecycle work sits behind operation-named `*Step` interfaces resolved through
+`IDealStrategyFactory<TStrategy>`: `IApplyStep` and `ICommitmentReferenceStep` (Application),
+`IConfirmStep`/`ICancelStep` (Booking), and `ICancelStep`/`ICompleteStep` (Concert).
+`IContractFactory` remains a non-step strategy resolved through `IDealStrategyFactory<TStrategy>`.
 
 ## The `DealType` unions
 

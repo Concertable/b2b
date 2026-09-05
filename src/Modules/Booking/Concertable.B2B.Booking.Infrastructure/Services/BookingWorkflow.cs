@@ -28,8 +28,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
     private readonly IBus bus;
-    private readonly IDealStrategyFactory<IConfirm> confirmFactory;
-    private readonly IDealStrategyFactory<ICancel> cancelFactory;
+    private readonly IDealStrategyFactory<IConfirmStep> confirmFactory;
+    private readonly IDealStrategyFactory<ICancelStep> cancelFactory;
     private readonly IDealStrategyFactory<IContractFactory> contractFactory;
     private readonly TimeProvider timeProvider;
 
@@ -39,8 +39,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         IUnitOfWorkBehavior unitOfWorkBehavior,
         IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
         IBus bus,
-        IDealStrategyFactory<IConfirm> confirmFactory,
-        IDealStrategyFactory<ICancel> cancelFactory,
+        IDealStrategyFactory<IConfirmStep> confirmFactory,
+        IDealStrategyFactory<ICancelStep> cancelFactory,
         IDealStrategyFactory<IContractFactory> contractFactory,
         TimeProvider timeProvider)
     {

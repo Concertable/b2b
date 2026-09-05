@@ -147,26 +147,26 @@ public static class ServiceCollectionExtensions
                 builder.For(DealType.FlatFee)
                     .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                     .AddSingleton<ISettlementAmountResolver, FlatFeeSettlementAmount>()
-                    .AddScoped<IComplete, ReleaseEscrowComplete>()
-                    .AddScoped<ICancel, RefundEscrowCancel>();
+                    .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>()
+                    .AddScoped<ICancelStep, RefundEscrowCancelStep>();
 
                 builder.For(DealType.DoorSplit)
                     .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                     .AddScoped<ISettlementAmountResolver, DoorSplitSettlementAmount>()
-                    .AddScoped<IComplete, PayoutComplete>()
-                    .AddScoped<ICancel, ImmediateCancel>();
+                    .AddScoped<ICompleteStep, PayoutCompleteStep>()
+                    .AddScoped<ICancelStep, ImmediateCancelStep>();
 
                 builder.For(DealType.Versus)
                     .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                     .AddScoped<ISettlementAmountResolver, VersusSettlementAmount>()
-                    .AddScoped<IComplete, PayoutComplete>()
-                    .AddScoped<ICancel, ImmediateCancel>();
+                    .AddScoped<ICompleteStep, PayoutCompleteStep>()
+                    .AddScoped<ICancelStep, ImmediateCancelStep>();
 
                 builder.For(DealType.VenueHire)
                     .AddSingleton<IDealPayeeResolver, ArtistPaysVenueDealPayeeResolver>()
                     .AddSingleton<ISettlementAmountResolver, VenueHireSettlementAmount>()
-                    .AddScoped<IComplete, ReleaseEscrowComplete>()
-                    .AddScoped<ICancel, RefundEscrowCancel>();
+                    .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>()
+                    .AddScoped<ICancelStep, RefundEscrowCancelStep>();
             });
         }
 

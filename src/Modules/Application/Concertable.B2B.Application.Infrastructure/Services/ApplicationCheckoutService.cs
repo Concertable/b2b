@@ -19,7 +19,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private readonly IVenueModule venueModule;
     private readonly IDealModule dealModule;
     private readonly IPaymentSessionOperationsClient paymentSessions;
-    private readonly IDealStrategyFactory<INameCommitment> commitmentFactory;
+    private readonly IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory;
     private readonly ITenantContext tenantContext;
     private readonly LegalSettings legal;
 
@@ -30,7 +30,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         IVenueModule venueModule,
         IDealModule dealModule,
         IPaymentSessionOperationsClient paymentSessions,
-        IDealStrategyFactory<INameCommitment> commitmentFactory,
+        IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory,
         ITenantContext tenantContext,
         IOptions<LegalSettings> legal)
     {
@@ -111,7 +111,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
                     Guid.CreateVersion7(),
                     PaymentSessionKind.Authorization,
                     PaymentSession.OnSession,
-                    commitmentFactory.Create(deal.DealType).Name(application),
+                    commitmentFactory.Create(deal.DealType).Resolve(application),
                     application.VenueTenantId,
                     application.ArtistTenantId,
                     Money.Gbp(flatFee.Fee).ToMinorUnits(),
@@ -135,7 +135,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 
         var verification = await paymentSessions.SetupPaymentMethodAsync(
             new PaymentMethodSetupRequest(
-                commitmentFactory.Create(deal.DealType).Name(application),
+                commitmentFactory.Create(deal.DealType).Resolve(application),
                 PaymentSessionKind.PaymentMethodVerification,
                 application.VenueTenantId,
                 legal.MandateTermsVersion));

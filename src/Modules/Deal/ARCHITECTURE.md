@@ -167,13 +167,13 @@ Deal-varying methods are classified by invocation shape, per module, with no sha
 - A **heterogeneous method** gets one interface per honest method header and a Dunet union over those
   interfaces. `DealUnionBuilder<TUnion>` composes the generic keyed-union builder with `DealType` and
   `IDealStrategy`, requiring exactly one case for every deal type. No family needs that escalation today:
-  Application's `IApply` and `INameCommitment` are same-interface families behind
+  Application's `IApplyStep` and `ICommitmentReferenceStep` are same-interface families behind
   `IDealStrategyFactory<TStrategy>`. A family fractures when a caller cannot supply the shared header
   without a placeholder — apply checkout, which runs before the application row exists and so holds no
   application id, is the first path that would. `DealUnionBuilder` stays for it.
 
-Concert's homogeneous Cancel/Complete strategies (`ICancel`, `IComplete`, under
-`Strategies/<Operation>`) use the shared Deal strategy factory. `IKeyedServiceProvider` never escapes
+Concert's homogeneous Cancel/Complete steps (`ICancelStep`, `ICompleteStep`, under
+`Strategies/Steps/<Operation>`) use the shared Deal step factory. `IKeyedServiceProvider` never escapes
 into a consumer. Concert creation is uniform across `DealType` and selects no keyed strategy.
 
 ### 2.6 How the Concert module reads deal terms
@@ -210,20 +210,20 @@ Amounts flow tenant → tenant, sourced from the frozen tenant snapshot on the a
 
 | Deal | Checkout session | Accept-step money | Finish-step money |
 |---|---|---|---|
-| **FlatFee**   | accept-time `CreateAsync`: `Authorization`, `EscrowHold(applicationId)`, destination-routed — venue pre-auth of `deal.Fee` | `FlatFeeConfirm`: `CaptureEscrowCommand` (venue→artist) into escrow | `ReleaseEscrowComplete`: `ReleaseAsync` → artist |
-| **VenueHire** | apply-time `SetupPaymentMethodAsync`: `PaymentMethodSetup`, `MethodSetup(opportunityId, artistTenantId)` — artist mandate for `deal.HireFee` | `VenueHireConfirm`: `DepositEscrowCommand` (artist→venue) into escrow off-session | `ReleaseEscrowComplete`: `ReleaseAsync` → venue |
-| **DoorSplit** | accept-time `SetupPaymentMethodAsync`: `PaymentMethodVerification`, `MethodVerification(applicationId)` — venue card verify | `VerifiedConfirm`: no charge; the verified method is the contract's commitment | `PayoutComplete`: off-session `PayAsync` (venue→artist), `artistShare = rev × ArtistDoorPercent` |
-| **Versus**    | as DoorSplit | `VerifiedConfirm`: no charge | `PayoutComplete`: off-session `PayAsync`, `artistShare = Guarantee + rev × ArtistDoorPercent` |
+| **FlatFee**   | accept-time `CreateAsync`: `Authorization`, `EscrowHold(applicationId)`, destination-routed — venue pre-auth of `deal.Fee` | `FlatFeeConfirmStep`: `CaptureEscrowCommand` (venue→artist) into escrow | `ReleaseEscrowCompleteStep`: `ReleaseAsync` → artist |
+| **VenueHire** | apply-time `SetupPaymentMethodAsync`: `PaymentMethodSetup`, `MethodSetup(opportunityId, artistTenantId)` — artist mandate for `deal.HireFee` | `VenueHireConfirmStep`: `DepositEscrowCommand` (artist→venue) into escrow off-session | `ReleaseEscrowCompleteStep`: `ReleaseAsync` → venue |
+| **DoorSplit** | accept-time `SetupPaymentMethodAsync`: `PaymentMethodVerification`, `MethodVerification(applicationId)` — venue card verify | `VerifiedConfirmStep`: no charge; the verified method is the contract's commitment | `PayoutCompleteStep`: off-session `PayAsync` (venue→artist), `artistShare = rev × ArtistDoorPercent` |
+| **Versus**    | as DoorSplit | `VerifiedConfirmStep`: no charge | `PayoutCompleteStep`: off-session `PayAsync`, `artistShare = Guarantee + rev × ArtistDoorPercent` |
 
 Escrow deals (FlatFee, VenueHire) confirm money **at Accept** and release **at Finish**
 (`Booked +Finish→Complete`). Payout deals (DoorSplit, Versus) ring-fence nothing at Accept (verify +
 store the mandate) and pay off-session **at Finish** (`Booked +Finish→AwaitingSettlement`, then
-`SettlementPaymentSucceeded→Complete`). Escrow deals refund on cancellation — `EscrowCancel` in
-Booking, `RefundEscrowCancel` in Concert — while payout deals cancel outright. Settlement gross comes
+`SettlementPaymentSucceeded→Complete`). Escrow deals refund on cancellation — `EscrowCancelStep` in
+Booking, `RefundEscrowCancelStep` in Concert — while payout deals cancel outright. Settlement gross comes
 from `ISettlementAmountResolver`, whose named facade selects one keyed strategy through
 `IConcertDealStrategyFactory`. The DoorSplit and Versus leaves share the revenue-loading base that
 reads ticket revenue plus declared door revenue, then apply their own percentage-only or
-guarantee-plus-percentage formula. `PayoutComplete` and `InvoiceIssuer` consume that same facade so
+guarantee-plus-percentage formula. `PayoutCompleteStep` and `InvoiceIssuer` consume that same facade so
 charged and invoiced amounts cannot diverge. Payment reports each outcome as an integration event
 carrying that operation's reference — the escrow commands through their own `*Succeeded`/`*Rejected`
 events, a session-opened operation through `PaymentSucceeded/FailedEvent` — and the `*Processor`

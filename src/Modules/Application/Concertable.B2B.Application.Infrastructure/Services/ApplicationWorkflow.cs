@@ -37,8 +37,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly ITenantResolver tenantResolver;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
-    private readonly IDealStrategyFactory<IApply> applyFactory;
-    private readonly IDealStrategyFactory<INameCommitment> commitmentFactory;
+    private readonly IDealStrategyFactory<IApplyStep> applyFactory;
+    private readonly IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory;
     private readonly IApplicationMapper mapper;
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
@@ -59,8 +59,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ITenantResolver tenantResolver,
         ICurrentUser currentUser,
         IClientContext clientContext,
-        IDealStrategyFactory<IApply> applyFactory,
-        IDealStrategyFactory<INameCommitment> commitmentFactory,
+        IDealStrategyFactory<IApplyStep> applyFactory,
+        IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory,
         IApplicationMapper mapper,
         IOptions<LegalSettings> legal,
         TimeProvider timeProvider,
@@ -272,7 +272,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 deal.Terms.Render(),
                 legal.PlatformTermsVersion,
                 legal.MandateTermsVersion,
-                commitmentFactory.Create(deal.DealType).Name(application),
+                commitmentFactory.Create(deal.DealType).Resolve(application),
                 application.ArtistESignature,
                 venueSignature,
                 deal.Terms));

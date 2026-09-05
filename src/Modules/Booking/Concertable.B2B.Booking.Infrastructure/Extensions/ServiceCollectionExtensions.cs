@@ -97,21 +97,21 @@ public static class ServiceCollectionExtensions
             services.AddBookingDealStrategies(builder =>
             {
                 builder.For(DealType.FlatFee)
-                    .AddScoped<IConfirm, FlatFeeConfirm>()
+                    .AddScoped<IConfirmStep, FlatFeeConfirmStep>()
                     .AddScoped<IContractFactory, FlatFeeContractFactory>()
-                    .AddScoped<ICancel, EscrowCancel>();
+                    .AddScoped<ICancelStep, EscrowCancelStep>();
                 builder.For(DealType.DoorSplit)
-                    .AddScoped<IConfirm, VerifiedConfirm>()
+                    .AddScoped<IConfirmStep, VerifiedConfirmStep>()
                     .AddScoped<IContractFactory, DoorSplitContractFactory>()
-                    .AddScoped<ICancel, ImmediateCancel>();
+                    .AddScoped<ICancelStep, ImmediateCancelStep>();
                 builder.For(DealType.Versus)
-                    .AddScoped<IConfirm, VerifiedConfirm>()
+                    .AddScoped<IConfirmStep, VerifiedConfirmStep>()
                     .AddScoped<IContractFactory, VersusContractFactory>()
-                    .AddScoped<ICancel, ImmediateCancel>();
+                    .AddScoped<ICancelStep, ImmediateCancelStep>();
                 builder.For(DealType.VenueHire)
-                    .AddScoped<IConfirm, VenueHireConfirm>()
+                    .AddScoped<IConfirmStep, VenueHireConfirmStep>()
                     .AddScoped<IContractFactory, VenueHireContractFactory>()
-                    .AddScoped<ICancel, EscrowCancel>();
+                    .AddScoped<ICancelStep, EscrowCancelStep>();
             });
 
         internal IServiceCollection AddBookingDealStrategies(

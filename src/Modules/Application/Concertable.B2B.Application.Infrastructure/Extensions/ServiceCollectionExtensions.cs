@@ -98,17 +98,17 @@ public static class ServiceCollectionExtensions
             services.AddApplicationDealStrategies(builder =>
             {
                 builder.For(DealType.FlatFee)
-                    .AddScoped<IApply, StandardApply>()
-                    .AddScoped<INameCommitment, NameEscrowHold>();
+                    .AddScoped<IApplyStep, StandardApplyStep>()
+                    .AddScoped<ICommitmentReferenceStep, EscrowHoldCommitmentReferenceStep>();
                 builder.For(DealType.DoorSplit)
-                    .AddScoped<IApply, StandardApply>()
-                    .AddScoped<INameCommitment, NameMethodVerification>();
+                    .AddScoped<IApplyStep, StandardApplyStep>()
+                    .AddScoped<ICommitmentReferenceStep, MethodVerificationCommitmentReferenceStep>();
                 builder.For(DealType.Versus)
-                    .AddScoped<IApply, StandardApply>()
-                    .AddScoped<INameCommitment, NameMethodVerification>();
+                    .AddScoped<IApplyStep, StandardApplyStep>()
+                    .AddScoped<ICommitmentReferenceStep, MethodVerificationCommitmentReferenceStep>();
                 builder.For(DealType.VenueHire)
-                    .AddScoped<IApply, VenueHireApply>()
-                    .AddScoped<INameCommitment, NameMethodSetup>();
+                    .AddScoped<IApplyStep, VenueHireApplyStep>()
+                    .AddScoped<ICommitmentReferenceStep, MethodSetupCommitmentReferenceStep>();
             });
 
         internal IServiceCollection AddApplicationDealStrategies(

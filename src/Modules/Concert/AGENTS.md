@@ -75,10 +75,12 @@ rejected edge and its own additional expected cases. There is no shared error ba
   transaction boundary, Deal selection, persistence, IO, and typed failure contract. HTTP entry points begin
   at `IConcertService`; background completion invokes the workflow directly through a fresh scope.
 
-- **Deal-selected implementations** (`Application/Strategies/<Operation>` contracts,
-  `Infrastructure/Strategies/<Operation>` implementations) — `ICancel.CancelAsync(ConcertEntity)` and
-  `IComplete.CompleteAsync(SettlementPreparation.Ready)`. Each is a homogeneous operation selected through
-  `IDealStrategyFactory<T>`, with exact per-`DealType` coverage registered at this module's composition root.
+- **Deal-selected implementations** (`Application/Strategies/Steps/<Operation>` contracts,
+  `Infrastructure/Strategies/Steps/<Operation>` implementations) —
+  `ICancelStep.CancelAsync(ConcertEntity)` and
+  `ICompleteStep.CompleteAsync(SettlementPreparation.Ready)`. Each is a homogeneous operation selected
+  through `IDealStrategyFactory<TStrategy>`, with exact per-`DealType` coverage registered at this module's
+  composition root.
 
 The old cross-stage `IConcertWorkflow` dependency-holder, `ConcertWorkflowBuilder`,
 `ILifecycleTransitioner`, `IConcertStateMachineRegistry`, reflection capability registry, and combined

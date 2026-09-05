@@ -13,8 +13,8 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
 {
     private readonly IConcertRepository concertRepository;
     private readonly ISettlementService settlementService;
-    private readonly IDealStrategyFactory<ICancel> cancelFactory;
-    private readonly IDealStrategyFactory<IComplete> completeFactory;
+    private readonly IDealStrategyFactory<ICancelStep> cancelFactory;
+    private readonly IDealStrategyFactory<ICompleteStep> completeFactory;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
@@ -22,8 +22,8 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     public ConcertWorkflow(
         IConcertRepository concertRepository,
         ISettlementService settlementService,
-        IDealStrategyFactory<ICancel> cancelFactory,
-        IDealStrategyFactory<IComplete> completeFactory,
+        IDealStrategyFactory<ICancelStep> cancelFactory,
+        IDealStrategyFactory<ICompleteStep> completeFactory,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior,
         IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior)

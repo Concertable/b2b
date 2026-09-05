@@ -20,8 +20,8 @@ public sealed class ConcertWorkflowTests
 {
     private readonly Mock<IConcertRepository> concertRepository = new();
     private readonly Mock<ISettlementService> settlementService = new();
-    private readonly Mock<IDealStrategyFactory<ICancel>> cancelFactory = new();
-    private readonly Mock<IDealStrategyFactory<IComplete>> completeFactory = new();
+    private readonly Mock<IDealStrategyFactory<ICancelStep>> cancelFactory = new();
+    private readonly Mock<IDealStrategyFactory<ICompleteStep>> completeFactory = new();
     private readonly Mock<IUnitOfWork> unitOfWork = new();
     private readonly ImmediateBehavior immediateBehavior;
     private readonly ConcertWorkflow workflow;
@@ -88,7 +88,7 @@ public sealed class ConcertWorkflowTests
     public async Task CancelAsync_ValidTransition_ExecutesStrategyAndSaves()
     {
         var concert = CreateBooking();
-        var strategy = new Mock<ICancel>();
+        var strategy = new Mock<ICancelStep>();
         cancelFactory
             .Setup(factory => factory.Create(DealType.FlatFee))
             .Returns(strategy.Object);
@@ -106,7 +106,7 @@ public sealed class ConcertWorkflowTests
     public async Task CancelAsync_SaveRaceLost_ReturnsSuperseded()
     {
         immediateBehavior.ClassifiesSaveFailureAsConflict = true;
-        var strategy = new Mock<ICancel>();
+        var strategy = new Mock<ICancelStep>();
         cancelFactory
             .Setup(factory => factory.Create(DealType.FlatFee))
             .Returns(strategy.Object);
@@ -131,7 +131,7 @@ public sealed class ConcertWorkflowTests
     public async Task CancelAsync_SaveRaceLostToAnotherCancellation_ReturnsSuccess()
     {
         immediateBehavior.ClassifiesSaveFailureAsConflict = true;
-        var strategy = new Mock<ICancel>();
+        var strategy = new Mock<ICancelStep>();
         cancelFactory
             .Setup(factory => factory.Create(DealType.FlatFee))
             .Returns(strategy.Object);
@@ -184,7 +184,7 @@ public sealed class ConcertWorkflowTests
         settlementService
             .Setup(service => service.ReserveAsync(42, default))
             .ReturnsAsync(prepared);
-        var strategy = new Mock<IComplete>();
+        var strategy = new Mock<ICompleteStep>();
         completeFactory
             .Setup(factory => factory.Create(It.IsAny<DealType>()))
             .Returns(strategy.Object);
