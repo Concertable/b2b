@@ -28,10 +28,7 @@ public static class AppHost
                           .WithContainerRuntimeArgs("--user", "root")
                           .WithHttpsEndpoint(targetPort: AuthConstants.ContainerPort, name: "https");
         auth.WithSpaClients(B2BLocalSpaSurfaces.AuthClients);
-        // Payment.Client still resolves the published "https" discovery key, but the image listens on HTTP 8080.
-        var paymentWeb = builder.AddPaymentWeb(PaymentWebImage, PaymentWebDigest, auth, paymentDb, asb)
-                                .WithHttpEndpoint(targetPort: 8080, name: "https")
-                                .WithHttpEndpoint(targetPort: 8080, name: "http");
+        var paymentWeb = builder.AddPaymentWeb(PaymentWebImage, PaymentWebDigest, auth, paymentDb, asb);
         var api = builder.AddB2BWeb<Projects.Concertable_B2B_Web>(b2bDb, auth, storage, blobs, asb, paymentWeb);
         auth.WithEnvironment("Services__B2BApiUrl", api.GetEndpoint("https"));
         auth.WithEnvironment("ServiceAuth__AuthClientId", "concertable-auth");

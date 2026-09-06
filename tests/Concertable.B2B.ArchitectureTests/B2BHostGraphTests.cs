@@ -131,8 +131,18 @@ public sealed class B2BHostGraphTests
         AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "https");
         AssertContainerRuntimeArgs(validBuilder, AuthConstants.Resource, "--user", "root");
         AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
-        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https", scheme: "http");
+        AssertImageEndpoint(
+            validBuilder,
+            PaymentConstants.WebResource,
+            "https",
+            scheme: "http",
+            targetPort: PaymentConstants.HttpPort);
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http");
+        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "grpc", targetPort: PaymentConstants.GrpcPort);
+        var payment = validBuilder.Resources.Single(resource => resource.Name == PaymentConstants.WebResource);
+        var paymentEnvironment = await GetRawEnvironmentAsync(payment, CancellationToken.None);
+        Assert.Equal("8080;8081", paymentEnvironment["ASPNETCORE_HTTP_PORTS"]);
+        Assert.Equal("8081", paymentEnvironment["PaymentTransport__GrpcPort"]);
         Assert.DoesNotContain(validBuilder.Resources.OfType<NodeAppResource>(),
             resource => resource.Name.StartsWith("mobile-", StringComparison.Ordinal));
         Assert.DoesNotContain(validBuilder.Resources, resource => resource.Name == "b2b-dev");
@@ -442,7 +452,8 @@ public sealed class B2BHostGraphTests
         IDistributedApplicationBuilder builder,
         string resourceName,
         string endpointName,
-        string scheme = "http")
+        string scheme = "http",
+        int targetPort = PaymentConstants.HttpPort)
     {
         var resource = Assert.IsType<ServiceContainerResource>(
             builder.Resources.Single(resource => resource.Name == resourceName));
@@ -452,6 +463,6 @@ public sealed class B2BHostGraphTests
 
         Assert.Equal(endpointName, endpoint.Name);
         Assert.Equal(scheme, endpoint.UriScheme);
-        Assert.Equal(8080, endpoint.TargetPort);
+        Assert.Equal(targetPort, endpoint.TargetPort);
     }
 }
