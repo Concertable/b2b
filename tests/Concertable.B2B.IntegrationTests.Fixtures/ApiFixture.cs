@@ -164,6 +164,7 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task ResetAsync()
     {
+        await WaitForOutboxQuiescenceAsync();
         await sqlFixture.ResetAsync();
         foreach (var resettable in factory.Services.GetServices<IResettable>())
             resettable.Reset();
@@ -302,6 +303,35 @@ public class ApiFixture : IAsyncLifetime
 
     public Task<IReadOnlyCollection<object>> SettledFinancialCommandsAsync() =>
         PaymentTransport.SettledFinancialCommandsAsync(TimeSpan.FromSeconds(2));
+
+    /// <summary>
+    /// The dispatcher marks a batch <see cref="OutboxStatus.Dispatching"/> in the database before it
+    /// delivers any of it, so an empty Pending+Dispatching set is proof no batch is in the dispatcher's
+    /// hands. Respawning while one is leaves the previous test's messages to arrive during the next one.
+    /// </summary>
+    private async Task WaitForOutboxQuiescenceAsync()
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(30);
+        while (true)
+        {
+            var inFlight = await factory.Services
+                .GetRequiredService<IScoped<OutboxDbContext>>()
+                .RunAsync(outbox => outbox.Set<OutboxMessageEntity>()
+                    .AsNoTracking()
+                    .CountAsync(message => message.Status == OutboxStatus.Pending
+                                        || message.Status == OutboxStatus.Dispatching));
+
+            if (inFlight == 0)
+                return;
+
+            if (DateTimeOffset.UtcNow > deadline)
+                throw new InvalidOperationException(
+                    $"{inFlight} outbox message(s) were still pending or dispatching 30s into the reset. "
+                    + "The dispatcher cannot drain them, so the next test would receive them.");
+
+            await Task.Delay(25);
+        }
+    }
 
     public async Task<int> GetOutboxMessageCountAsync<TMessage>()
     {

@@ -50,6 +50,22 @@ fresh GUID, so the id is stable across reloads without relying on Payment's dupl
 
 ---
 
+### Other services' integration fixtures can still bleed outbox messages across a reset
+
+`Concertable.B2B`'s `ApiFixture.ResetAsync` waits for zero `Pending`/`Dispatching` outbox rows before it
+Respawns, because `OutboxDispatcher` is a `BackgroundService` that leases a batch into memory and delivers it
+afterwards — wiping the table mid-batch delivers the previous test's messages into the next test (PR #633,
+finding IR39).
+
+Customer, Payment and Auth register the same dispatcher through `AddOutbox` and their fixtures do not wait.
+They are green today only because their suites generate less cross-reset outbox traffic than B2B's lifecycle
+journeys; the hole is the same one.
+
+**Resolves when:** the wait lives once in the shared integration-testing library and every service fixture
+Respawns through it, rather than each `ApiFixture` owning a copy or going without.
+
+---
+
 ### No `ConcertSalesProjection`
 
 There is no sold-count / gross-revenue projection. B2B dashboards and settlement math can't read authoritative ticket sales data from Customer.
