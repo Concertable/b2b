@@ -143,6 +143,12 @@ public sealed class B2BHostGraphTests
         var paymentEnvironment = await GetRawEnvironmentAsync(payment, CancellationToken.None);
         Assert.Equal("8080;8081", paymentEnvironment["ASPNETCORE_HTTP_PORTS"]);
         Assert.Equal("8081", paymentEnvironment["PaymentTransport__GrpcPort"]);
+        foreach (var resourceName in new[] { B2BConstants.WebResource, B2BConstants.WorkersResource })
+        {
+            var consumer = validBuilder.Resources.Single(resource => resource.Name == resourceName);
+            var consumerEnvironment = await GetRawEnvironmentAsync(consumer, CancellationToken.None);
+            Assert.Equal(bool.TrueString, consumerEnvironment[PaymentConstants.AllowInsecureHttpClientEnvironmentVariable]);
+        }
         Assert.DoesNotContain(validBuilder.Resources.OfType<NodeAppResource>(),
             resource => resource.Name.StartsWith("mobile-", StringComparison.Ordinal));
         Assert.DoesNotContain(validBuilder.Resources, resource => resource.Name == "b2b-dev");
@@ -156,13 +162,19 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
-    public void AppHost_PublishGraphWithStripeCli_IsValid()
+    public async Task AppHost_PublishGraphWithStripeCli_IsValid()
     {
         var builder = AppHost.CreateBuilder(
             ["--publisher", "manifest", "--Stripe:SecretKey=sk_test_composition"]);
 
         Assert.True(builder.ExecutionContext.IsPublishMode);
         Assert.Single(builder.Resources, resource => resource.Name == PaymentConstants.StripeCliResource);
+        foreach (var resourceName in new[] { B2BConstants.WebResource, B2BConstants.WorkersResource })
+        {
+            var consumer = builder.Resources.Single(resource => resource.Name == resourceName);
+            var consumerEnvironment = await GetRawEnvironmentAsync(consumer, CancellationToken.None);
+            Assert.DoesNotContain(PaymentConstants.AllowInsecureHttpClientEnvironmentVariable, consumerEnvironment.Keys);
+        }
         using var app = builder.Build();
     }
 

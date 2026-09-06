@@ -32,7 +32,12 @@ public static class AppHost
         var api = builder.AddB2BWeb<Projects.Concertable_B2B_Web>(b2bDb, auth, storage, blobs, asb, paymentWeb);
         auth.WithEnvironment("Services__B2BApiUrl", api.GetEndpoint("https"));
         auth.WithEnvironment("ServiceAuth__AuthClientId", "concertable-auth");
-        builder.AddB2BWorkers<Projects.Concertable_B2B_Workers>(b2bDb, paymentWeb, auth);
+        var workers = builder.AddB2BWorkers<Projects.Concertable_B2B_Workers>(b2bDb, paymentWeb, auth);
+        if (builder.ExecutionContext.IsRunMode)
+        {
+            api.WithEnvironment(PaymentConstants.AllowInsecureHttpClientEnvironmentVariable, bool.TrueString);
+            workers.WithEnvironment(PaymentConstants.AllowInsecureHttpClientEnvironmentVariable, bool.TrueString);
+        }
         builder.AddPaymentWorkers(PaymentWorkersImage, PaymentWorkersDigest, paymentDb, asb);
         builder.AddVenueSpa(api, auth);
         builder.AddArtistSpa(api, auth);
