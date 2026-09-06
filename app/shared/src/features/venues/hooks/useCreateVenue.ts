@@ -3,9 +3,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
 import type { ImageFile } from "@concertable/shared/types/image";
-import type { CreateVenueRequest, Venue } from "@concertable/shared/features/venues/types";
+import type { Venue } from "@concertable/shared/features/venues/types";
 import venueApi from "../api/venueApi";
-import { createVenueRequestSchema } from "../schemas/venueRequestSchemas";
+import {
+  createVenueRequestSchema,
+  type CreateVenueRequest,
+} from "../schemas/venueRequestSchemas";
 import { useVenueStore, type VenueState } from "../store/useVenueStore";
 import { venueKeys } from "./useVenueQuery";
 

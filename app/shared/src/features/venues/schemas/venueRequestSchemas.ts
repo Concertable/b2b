@@ -1,9 +1,6 @@
 import { z } from "zod";
+import type { Venue } from "@concertable/shared/features/venues/types";
 import type { ImageFile } from "@concertable/shared/types/image";
-import type {
-  CreateVenueRequest,
-  UpdateVenueRequest,
-} from "@concertable/shared/features/venues/types";
 
 function isImageFile(value: unknown): value is ImageFile {
   if (typeof value !== "object" || value === null) return false;
@@ -38,10 +35,22 @@ export const createVenueRequestSchema = z.object({
   ...venueRequestFields,
   banner: imageFileSchema,
   avatar: imageFileSchema,
-}) satisfies z.ZodType<CreateVenueRequest>;
+});
 
 export const updateVenueRequestSchema = z.object({
   ...venueRequestFields,
   banner: imageFileSchema.optional(),
   avatar: imageFileSchema.optional(),
-}) satisfies z.ZodType<UpdateVenueRequest>;
+});
+
+export type CreateVenueRequest = z.infer<typeof createVenueRequestSchema>;
+export type UpdateVenueRequest = z.infer<typeof updateVenueRequestSchema>;
+
+export function toUpdateVenueRequest(venue: Venue): UpdateVenueRequest {
+  return {
+    name: venue.name,
+    about: venue.about,
+    latitude: venue.latitude,
+    longitude: venue.longitude,
+  };
+}

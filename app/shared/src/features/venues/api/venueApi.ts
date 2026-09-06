@@ -1,9 +1,9 @@
 import { apiClient } from "@concertable/shared/lib/apiClient";
+import type { Venue } from "@concertable/shared/features/venues/types";
 import type {
-  Venue,
   CreateVenueRequest,
   UpdateVenueRequest,
-} from "@concertable/shared/features/venues/types";
+} from "../schemas/venueRequestSchemas";
 
 type FormDataValue = Parameters<FormData["append"]>[1];
 

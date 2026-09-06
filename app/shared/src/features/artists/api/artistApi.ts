@@ -1,9 +1,9 @@
 import { apiClient } from "@concertable/shared/lib/apiClient";
+import type { Artist } from "@concertable/shared/features/artists/types";
 import type {
-  Artist,
   CreateArtistRequest,
   UpdateArtistRequest,
-} from "@concertable/shared/features/artists/types";
+} from "../schemas/artistRequestSchemas";
 
 type FormDataValue = Parameters<FormData["append"]>[1];
 

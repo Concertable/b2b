@@ -3,10 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
 import type { ImageFile } from "@concertable/shared/types/image";
-import { Venue } from "@concertable/shared/features/venues";
-import type { UpdateVenueRequest } from "@concertable/shared/features/venues/types";
+import type { Venue } from "@concertable/shared/features/venues/types";
 import venueApi from "../api/venueApi";
-import { updateVenueRequestSchema } from "../schemas/venueRequestSchemas";
+import {
+  toUpdateVenueRequest,
+  updateVenueRequestSchema,
+  type UpdateVenueRequest,
+} from "../schemas/venueRequestSchemas";
 import { useVenueStore } from "../store/useVenueStore";
 import { venueKeys, useVenueQuery } from "./useVenueQuery";
 
@@ -85,7 +88,7 @@ export function useMyVenue(options?: UseMyVenueOptions): UseMyVenueResult {
     onSuccess: (saved) => {
       queryClient.setQueryData(venueKeys.my(), saved);
       queryClient.setQueryData(venueKeys.byId(saved.id), saved);
-      reset(Venue.toUpdateRequest(saved));
+      reset(toUpdateVenueRequest(saved));
       endEdit();
       options?.onSuccess?.(saved);
     },
@@ -96,7 +99,7 @@ export function useMyVenue(options?: UseMyVenueOptions): UseMyVenueResult {
     editMode && venue && venueDraft ? { ...venue, ...venueDraft } : undefined;
 
   const resetDraft = () => {
-    if (venue) reset(Venue.toUpdateRequest(venue));
+    if (venue) reset(toUpdateVenueRequest(venue));
     endEdit();
     options?.onResetDraft?.();
   };
@@ -104,7 +107,7 @@ export function useMyVenue(options?: UseMyVenueOptions): UseMyVenueResult {
   const toggleEdit = () => {
     if (editMode) resetDraft();
     else if (venue) {
-      reset(Venue.toUpdateRequest(venue));
+      reset(toUpdateVenueRequest(venue));
       void trigger();
       beginEdit(venue);
     }

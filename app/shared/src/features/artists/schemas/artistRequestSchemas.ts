@@ -1,10 +1,7 @@
 import { z } from "zod";
+import type { Artist } from "@concertable/shared/features/artists/types";
 import { GENRE_VALUES } from "@concertable/shared/types";
 import type { ImageFile } from "@concertable/shared/types/image";
-import type {
-  CreateArtistRequest,
-  UpdateArtistRequest,
-} from "@concertable/shared/features/artists/types";
 
 function isImageFile(value: unknown): value is ImageFile {
   if (typeof value !== "object" || value === null) return false;
@@ -40,10 +37,23 @@ export const createArtistRequestSchema = z.object({
   ...artistRequestFields,
   banner: imageFileSchema,
   avatar: imageFileSchema,
-}) satisfies z.ZodType<CreateArtistRequest>;
+});
 
 export const updateArtistRequestSchema = z.object({
   ...artistRequestFields,
   banner: imageFileSchema.optional(),
   avatar: imageFileSchema.optional(),
-}) satisfies z.ZodType<UpdateArtistRequest>;
+});
+
+export type CreateArtistRequest = z.infer<typeof createArtistRequestSchema>;
+export type UpdateArtistRequest = z.infer<typeof updateArtistRequestSchema>;
+
+export function toUpdateArtistRequest(artist: Artist): UpdateArtistRequest {
+  return {
+    name: artist.name,
+    about: artist.about,
+    latitude: artist.latitude,
+    longitude: artist.longitude,
+    genres: artist.genres,
+  };
+}

@@ -11,8 +11,8 @@ export {
   useCreateVenueMutation,
   useUpdateVenueMutation,
 } from "./hooks/useVenueMutations";
+export type { Venue } from "@concertable/shared/features/venues/types";
 export type {
-  Venue,
   CreateVenueRequest,
   UpdateVenueRequest,
-} from "@concertable/shared/features/venues/types";
+} from "./schemas/venueRequestSchemas";

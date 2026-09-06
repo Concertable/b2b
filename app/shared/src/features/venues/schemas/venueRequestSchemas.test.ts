@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createVenueRequestSchema,
+  toUpdateVenueRequest,
   updateVenueRequestSchema,
 } from "./venueRequestSchemas";
 
@@ -48,5 +49,28 @@ describe("venue request schemas", () => {
         longitude: -0.1,
       }).success,
     ).toBe(true);
+  });
+
+  it("projects only writable fields into an update request", () => {
+    expect(
+      toUpdateVenueRequest({
+        id: 42,
+        name: "Example Venue",
+        about: "About",
+        bannerUrl: "banner",
+        avatar: "avatar",
+        rating: 4.5,
+        email: "venue@example.com",
+        county: "Greater London",
+        town: "London",
+        latitude: 51.5,
+        longitude: -0.1,
+      }),
+    ).toEqual({
+      name: "Example Venue",
+      about: "About",
+      latitude: 51.5,
+      longitude: -0.1,
+    });
   });
 });

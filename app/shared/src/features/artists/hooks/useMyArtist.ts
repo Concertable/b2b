@@ -3,10 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
 import type { ImageFile } from "@concertable/shared/types/image";
-import { Artist } from "@concertable/shared/features/artists";
-import type { UpdateArtistRequest } from "@concertable/shared/features/artists/types";
+import type { Artist } from "@concertable/shared/features/artists/types";
 import artistApi from "../api/artistApi";
-import { updateArtistRequestSchema } from "../schemas/artistRequestSchemas";
+import {
+  toUpdateArtistRequest,
+  updateArtistRequestSchema,
+  type UpdateArtistRequest,
+} from "../schemas/artistRequestSchemas";
 import { useArtistStore } from "../store/useArtistStore";
 import { artistKeys, useArtistQuery } from "./useArtistQuery";
 
@@ -70,7 +73,7 @@ export function useMyArtist(options?: UseMyArtistOptions): UseMyArtistResult {
     onSuccess: (saved) => {
       queryClient.setQueryData(artistKeys.my(), saved);
       queryClient.setQueryData(artistKeys.byId(saved.id), saved);
-      reset(Artist.toUpdateRequest(saved));
+      reset(toUpdateArtistRequest(saved));
       endEdit();
       options?.onSuccess?.(saved);
     },
@@ -83,14 +86,14 @@ export function useMyArtist(options?: UseMyArtistOptions): UseMyArtistResult {
       : undefined;
 
   const resetDraft = () => {
-    if (artist) reset(Artist.toUpdateRequest(artist));
+    if (artist) reset(toUpdateArtistRequest(artist));
     endEdit();
   };
 
   const toggleEdit = () => {
     if (editMode) resetDraft();
     else if (artist) {
-      reset(Artist.toUpdateRequest(artist));
+      reset(toUpdateArtistRequest(artist));
       beginEdit(artist);
     }
   };
