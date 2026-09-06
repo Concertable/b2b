@@ -10,7 +10,13 @@ namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
 public sealed class MockEscrowClient : IEscrowOperationsClient, IResettable
 {
+    private readonly MockPaymentSessionClient paymentSessions;
     private readonly HashSet<Guid> releaseOperations = [];
+
+    public MockEscrowClient(MockPaymentSessionClient paymentSessions)
+    {
+        this.paymentSessions = paymentSessions;
+    }
 
     /// <summary>The escrow holds B2B initiated, in call order — assert B2B passed the right parties/reference.</summary>
     public List<EscrowHold> Holds { get; } = [];
@@ -27,6 +33,26 @@ public sealed class MockEscrowClient : IEscrowOperationsClient, IResettable
         Releases.Clear();
         releaseOperations.Clear();
     }
+
+    public Task<Result<PaymentSessionDescriptor, PaymentOperationError>> AuthorizeAsync(
+        Guid operationId,
+        PaymentOperationReference reference,
+        Guid payerId,
+        Guid payeeId,
+        Money amount,
+        CancellationToken ct = default) =>
+        paymentSessions.CreateAsync(
+            new PaymentSessionOperationRequest(
+                operationId,
+                PaymentSessionKind.Authorization,
+                PaymentSession.OnSession,
+                reference,
+                payerId,
+                payeeId,
+                amount.ToMinorUnits(),
+                amount.Currency,
+                PaymentSessionFundsRouting.Destination),
+            ct);
 
     public Task<Result<EscrowDeposit, EscrowDepositError>> DepositAsync(
         Guid operationId,

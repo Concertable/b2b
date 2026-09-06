@@ -19,6 +19,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private readonly IVenueModule venueModule;
     private readonly IDealModule dealModule;
     private readonly IPaymentSessionOperationsClient paymentSessions;
+    private readonly IEscrowOperationsClient escrowOperationsClient;
     private readonly IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory;
     private readonly ITenantContext tenantContext;
     private readonly LegalSettings legal;
@@ -30,6 +31,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         IVenueModule venueModule,
         IDealModule dealModule,
         IPaymentSessionOperationsClient paymentSessions,
+        IEscrowOperationsClient escrowOperationsClient,
         IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory,
         ITenantContext tenantContext,
         IOptions<LegalSettings> legal)
@@ -40,6 +42,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.venueModule = venueModule;
         this.dealModule = dealModule;
         this.paymentSessions = paymentSessions;
+        this.escrowOperationsClient = escrowOperationsClient;
         this.commitmentFactory = commitmentFactory;
         this.tenantContext = tenantContext;
         this.legal = legal.Value;
@@ -106,17 +109,12 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 
         if (deal is FlatFeeDealDto flatFee)
         {
-            var authorization = await paymentSessions.CreateAsync(
-                new PaymentSessionOperationRequest(
-                    Guid.CreateVersion7(),
-                    PaymentSessionKind.Authorization,
-                    PaymentSession.OnSession,
-                    commitmentFactory.Create(deal.DealType).Resolve(application),
-                    application.VenueTenantId,
-                    application.ArtistTenantId,
-                    Money.Gbp(flatFee.Fee).ToMinorUnits(),
-                    Currency.Gbp,
-                    PaymentSessionFundsRouting.Destination));
+            var authorization = await escrowOperationsClient.AuthorizeAsync(
+                Guid.CreateVersion7(),
+                commitmentFactory.Create(deal.DealType).Resolve(application),
+                application.VenueTenantId,
+                application.ArtistTenantId,
+                Money.Gbp(flatFee.Fee));
             if (!authorization.TryGetValue(out var hold))
             {
                 authorization.TryGetError(out var authorizationError);
