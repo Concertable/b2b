@@ -381,13 +381,22 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_WhenPaymentVerificationWinsTheRace_StillConfirmsTheBooking()
+    public async Task Accept_WhenPaymentVerificationWinsTheRace_ReportsContendedAndSucceedsOnRetry()
     {
         var applicationId = fixture.SeedState.DoorSplitApp.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var checkout = await client.PostAsync($"/api/application/{applicationId}/checkout");
         await checkout.ShouldBe(HttpStatusCode.OK);
         fixture.ArmApplicationConflict(() => fixture.PaymentSimulator.SendWebhookAsync());
+
+        var contended = await client.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new
+            {
+                eSignature = new { signatoryName = "Test Signatory" }
+            });
+
+        await AssertProblemCodeAsync(contended, HttpStatusCode.Conflict, "application.accept.contended");
 
         var accept = await client.PostAsync(
             $"/api/application/{applicationId}/accept",

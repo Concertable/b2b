@@ -15,11 +15,11 @@ using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
-using Concertable.Kernel.DependencyInjection;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Concertable.B2B.Application.Infrastructure.Specifications;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
@@ -43,7 +43,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly TimeProvider timeProvider;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
-    private readonly IScoped<ApplicationWorkflow> acceptance;
 
     public ApplicationWorkflow(
         IApplicationRepository applicationRepository,
@@ -63,8 +62,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IOptions<LegalSettings> legal,
         TimeProvider timeProvider,
         IUnitOfWork unitOfWork,
-        IUnitOfWorkBehavior unitOfWorkBehavior,
-        IScoped<ApplicationWorkflow> acceptance)
+        IUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.applicationRepository = applicationRepository;
         this.validator = validator;
@@ -84,7 +82,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.timeProvider = timeProvider;
         this.unitOfWork = unitOfWork;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
-        this.acceptance = acceptance;
     }
 
     public async Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
@@ -156,23 +153,14 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         int applicationId,
         ESignatureRequest eSignature,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
+        unitOfWorkBehavior.AttemptAsync(
             () => AcceptCoreAsync(applicationId, eSignature, ct),
             exception => exception.IsApplicationAcceptanceConflict(applicationId),
-            _ => ClassifyAcceptConflictAsync(applicationId, eSignature, ct),
+            _ => ClassifyAcceptConflictAsync(applicationId, ct),
             ct);
 
-    internal Task<UnitResult<AcceptApplicationError>> AcceptOnceAsync(
+    private async Task<AttemptVerdict<UnitResult<AcceptApplicationError>>> ClassifyAcceptConflictAsync(
         int applicationId,
-        ESignatureRequest eSignature,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(
-            () => AcceptCoreAsync(applicationId, eSignature, ct),
-            ct);
-
-    private async Task<UnitResult<AcceptApplicationError>> ClassifyAcceptConflictAsync(
-        int applicationId,
-        ESignatureRequest eSignature,
         CancellationToken ct)
     {
         var opportunityId = await applicationRepository.GetByIdAsync(
@@ -181,15 +169,14 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             ct);
         if (opportunityId is { } opportunity &&
             await applicationRepository.AnyAcceptedByOpportunityIdAsync(opportunity, ct))
-            return new AcceptApplicationError.AlreadyAccepted();
+            return new AttemptVerdict<UnitResult<AcceptApplicationError>>.Unrecoverable(
+                new AcceptApplicationError.AlreadyAccepted());
         if (await applicationRepository.GetStateByIdAsync(applicationId, ct) is not ApplicationState.Applied)
-            return new AcceptApplicationError.Superseded(applicationId);
+            return new AttemptVerdict<UnitResult<AcceptApplicationError>>.Unrecoverable(
+                new AcceptApplicationError.Superseded(applicationId));
 
-        // Nothing about the application forbids the acceptance, so the loss was to a change the acceptance
-        // reads -- a payment verification landing mid-flight -- and rerunning in a FRESH scope decides on the
-        // recorded outcome. The rerun does not rerun again, so a second loss is reported.
-        return await acceptance.RunAsync(fresh =>
-            fresh.AcceptOnceAsync(applicationId, eSignature, ct));
+        return new AttemptVerdict<UnitResult<AcceptApplicationError>>.Recoverable(
+            new AcceptApplicationError.Contended(applicationId));
     }
 
     private async Task<UnitResult<AcceptApplicationError>> AcceptCoreAsync(

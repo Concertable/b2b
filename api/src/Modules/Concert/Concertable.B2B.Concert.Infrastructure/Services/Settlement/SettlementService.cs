@@ -10,6 +10,8 @@ using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.DataAccess.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Settlement;
 
@@ -42,7 +44,8 @@ internal sealed class SettlementService : ISettlementService
         int concertId,
         CancellationToken ct = default)
     {
-        return await unitOfWorkBoundary.TryExecuteAsync(
+        return await unitOfWorkBoundary.AttemptAsync(
+            2,
             context => ReserveAsync(context, concertId, ct),
             exception => exception.IsConcertConcurrencyConflict(concertId),
             _ => ClassifyReservationConflictAsync(concertId, ct),
@@ -67,17 +70,10 @@ internal sealed class SettlementService : ISettlementService
             context => RecordFailureAsync(context, concertId, operationId, code, message, ct),
             ct);
 
-    // Re-runs the reservation against committed truth: whatever won the race decides the outcome, so a
-    // concert cancelled underneath us reports its rejected transition rather than a lost update. The retry
-    // is bounded — a second loss reports the state it lost to rather than escaping as an unclassified fault.
-    private Task<Result<SettlementPreparation, FinishConcertError>> ClassifyReservationConflictAsync(
+    private async Task<AttemptVerdict<Result<SettlementPreparation, FinishConcertError>>> ClassifyReservationConflictAsync(
         int concertId,
         CancellationToken ct) =>
-        unitOfWorkBoundary.TryExecuteAsync(
-            context => ReserveAsync(context, concertId, ct),
-            exception => exception.IsConcertConcurrencyConflict(concertId),
-            _ => ReportContendedAsync(concertId, ct),
-            ct);
+        new AttemptVerdict<Result<SettlementPreparation, FinishConcertError>>.Recoverable(await ReportContendedAsync(concertId, ct));
 
     private Task<Result<SettlementPreparation, FinishConcertError>> ReportContendedAsync(
         int concertId,

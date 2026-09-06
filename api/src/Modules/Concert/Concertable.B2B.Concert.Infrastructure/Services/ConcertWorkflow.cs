@@ -6,6 +6,8 @@ using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
@@ -40,7 +42,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     public Task<UnitResult<CancelConcertError>> CancelAsync(
         int concertId,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
+        unitOfWorkBehavior.AttemptAsync(
             () => outboxUnitOfWorkBehavior.ExecuteAsync(() => CancelCoreAsync(concertId, ct), ct),
             exception => exception.IsConcertConcurrencyConflict(concertId),
             _ => ClassifyCancelConflictAsync(concertId, ct),
@@ -69,15 +71,16 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         return await settlementService.CompleteAsync(ready.ConcertId, ready.OperationId, ct);
     }
 
-    private async Task<UnitResult<CancelConcertError>> ClassifyCancelConflictAsync(
+    private async Task<AttemptVerdict<UnitResult<CancelConcertError>>> ClassifyCancelConflictAsync(
         int concertId,
         CancellationToken ct)
     {
         if (await concertRepository.GetStateByIdAsync(concertId, ct)
             is ConcertState.Cancelled or ConcertState.CancellationPending)
-            return new Success();
+            return new AttemptVerdict<UnitResult<CancelConcertError>>.Settled(new Success());
 
-        return new CancelConcertError.Superseded(concertId);
+        return new AttemptVerdict<UnitResult<CancelConcertError>>.Unrecoverable(
+            new CancelConcertError.Superseded(concertId));
     }
 
     private async Task<UnitResult<CancelConcertError>> CancelCoreAsync(

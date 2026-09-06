@@ -19,6 +19,7 @@ using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Booking.Infrastructure.Services;
 
@@ -67,7 +68,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     public Task<UnitResult<CancelBookingError>> CancelAsync(
         int bookingId,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
+        unitOfWorkBehavior.AttemptAsync(
             () => outboxUnitOfWorkBehavior.ExecuteAsync(() => CancelCoreAsync(bookingId, ct), ct),
             exception => exception.IsBookingConcurrencyConflict(bookingId),
             _ => ClassifyCancelConflictAsync(bookingId, ct),
@@ -85,15 +86,16 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct = default) =>
         unitOfWorkBehavior.ExecuteAsync(() => RecordFailedCoreAsync(bookingId, operation, ct), ct);
 
-    private async Task<UnitResult<CancelBookingError>> ClassifyCancelConflictAsync(
+    private async Task<AttemptVerdict<UnitResult<CancelBookingError>>> ClassifyCancelConflictAsync(
         int bookingId,
         CancellationToken ct)
     {
         if (await bookingRepository.GetStateByIdAsync(bookingId, ct)
             is BookingState.Cancelled or BookingState.CancellationPending)
-            return new Success();
+            return new AttemptVerdict<UnitResult<CancelBookingError>>.Settled(new Success());
 
-        return new CancelBookingError.Superseded(bookingId);
+        return new AttemptVerdict<UnitResult<CancelBookingError>>.Unrecoverable(
+            new CancelBookingError.Superseded(bookingId));
     }
 
     private async Task<UnitResult<CancelBookingError>> CancelCoreAsync(

@@ -7,6 +7,7 @@ using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
@@ -177,7 +178,7 @@ internal sealed class ApplicationService : IApplicationService
     public Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
+        unitOfWorkBehavior.AttemptAsync(
             () => WithdrawCoreAsync(applicationId, ct),
             exception => exception.IsApplicationConcurrencyConflict(applicationId),
             _ => ClassifyWithdrawConflictAsync(applicationId, ct),
@@ -186,7 +187,7 @@ internal sealed class ApplicationService : IApplicationService
     public Task<UnitResult<RejectApplicationError>> RejectAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
+        unitOfWorkBehavior.AttemptAsync(
             () => RejectCoreAsync(applicationId, ct),
             exception => exception.IsApplicationConcurrencyConflict(applicationId),
             _ => ClassifyRejectConflictAsync(applicationId, ct),
@@ -195,20 +196,21 @@ internal sealed class ApplicationService : IApplicationService
     public Task<UnitResult<CancelApplicationError>> CancelAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
+        unitOfWorkBehavior.AttemptAsync(
             () => CancelCoreAsync(applicationId, ct),
             exception => exception.IsApplicationConcurrencyConflict(applicationId),
             _ => ClassifyCancelConflictAsync(applicationId, ct),
             ct);
 
-    private async Task<UnitResult<WithdrawApplicationError>> ClassifyWithdrawConflictAsync(
+    private async Task<AttemptVerdict<UnitResult<WithdrawApplicationError>>> ClassifyWithdrawConflictAsync(
         int applicationId,
         CancellationToken ct)
     {
         if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Withdrawn)
-            return new Success();
+            return new AttemptVerdict<UnitResult<WithdrawApplicationError>>.Settled(new Success());
 
-        return new WithdrawApplicationError.Superseded(applicationId);
+        return new AttemptVerdict<UnitResult<WithdrawApplicationError>>.Unrecoverable(
+            new WithdrawApplicationError.Superseded(applicationId));
     }
 
     private async Task<UnitResult<WithdrawApplicationError>> WithdrawCoreAsync(
@@ -226,14 +228,15 @@ internal sealed class ApplicationService : IApplicationService
         return new Success();
     }
 
-    private async Task<UnitResult<RejectApplicationError>> ClassifyRejectConflictAsync(
+    private async Task<AttemptVerdict<UnitResult<RejectApplicationError>>> ClassifyRejectConflictAsync(
         int applicationId,
         CancellationToken ct)
     {
         if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Rejected)
-            return new Success();
+            return new AttemptVerdict<UnitResult<RejectApplicationError>>.Settled(new Success());
 
-        return new RejectApplicationError.Superseded(applicationId);
+        return new AttemptVerdict<UnitResult<RejectApplicationError>>.Unrecoverable(
+            new RejectApplicationError.Superseded(applicationId));
     }
 
     private async Task<UnitResult<RejectApplicationError>> RejectCoreAsync(
@@ -251,14 +254,15 @@ internal sealed class ApplicationService : IApplicationService
         return new Success();
     }
 
-    private async Task<UnitResult<CancelApplicationError>> ClassifyCancelConflictAsync(
+    private async Task<AttemptVerdict<UnitResult<CancelApplicationError>>> ClassifyCancelConflictAsync(
         int applicationId,
         CancellationToken ct)
     {
         if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Cancelled)
-            return new Success();
+            return new AttemptVerdict<UnitResult<CancelApplicationError>>.Settled(new Success());
 
-        return new CancelApplicationError.Superseded(applicationId);
+        return new AttemptVerdict<UnitResult<CancelApplicationError>>.Unrecoverable(
+            new CancelApplicationError.Superseded(applicationId));
     }
 
     private async Task<UnitResult<CancelApplicationError>> CancelCoreAsync(
