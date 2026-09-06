@@ -7,12 +7,14 @@ interface TenantSwitcherProps {
   readonly activeMembership: Membership;
   readonly memberships: ReadonlyArray<Membership>;
   readonly onSelect: (tenantId: string) => void;
+  readonly disabled: boolean;
 }
 
 export function TenantSwitcher({
   activeMembership,
   memberships,
   onSelect,
+  disabled,
 }: Readonly<TenantSwitcherProps>) {
   if (memberships.length <= 1) return null;
 
@@ -27,6 +29,7 @@ export function TenantSwitcher({
             <Button
               key={membership.tenantId}
               size="sm"
+              disabled={disabled}
               variant={
                 membership.tenantId === activeMembership.tenantId
                   ? "default"

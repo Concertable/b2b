@@ -9,9 +9,11 @@ import { Skeleton } from "@concertable/mobile/components/ui/skeleton";
 import { ErrorState } from "@concertable/mobile/components/ui/ErrorState";
 import { ConfigBar } from "@concertable/mobile/components/ConfigBar";
 import { ArtistDetails } from "@concertable/mobile/features/artists/components/ArtistDetails";
+import { useActiveTenantId } from "../../tenant/ActiveTenantContext";
 
 export function MyArtistScreen() {
   const nav = useNavigation();
+  const tenantId = useActiveTenantId();
 
   const {
     artist,
@@ -30,7 +32,7 @@ export function MyArtistScreen() {
     setAbout,
     setBanner,
     setAvatar,
-  } = useMyArtist({
+  } = useMyArtist(tenantId, {
     onSuccess: () => notify("Artist saved!", "success"),
   });
 

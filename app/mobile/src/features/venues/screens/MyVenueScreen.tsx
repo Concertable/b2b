@@ -9,9 +9,11 @@ import { Skeleton } from "@concertable/mobile/components/ui/skeleton";
 import { ErrorState } from "@concertable/mobile/components/ui/ErrorState";
 import { ConfigBar } from "@concertable/mobile/components/ConfigBar";
 import { VenueDetails } from "@concertable/mobile/features/venues/components/VenueDetails";
+import { useActiveTenantId } from "../../tenant/ActiveTenantContext";
 
 export function MyVenueScreen() {
   const nav = useNavigation();
+  const tenantId = useActiveTenantId();
 
   const {
     venue,
@@ -31,7 +33,7 @@ export function MyVenueScreen() {
     setBanner,
     setAvatar,
     setLocation,
-  } = useMyVenue({
+  } = useMyVenue(tenantId, {
     onSuccess: () => notify("Venue saved!", "success"),
   });
 

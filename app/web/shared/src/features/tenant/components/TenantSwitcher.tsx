@@ -9,7 +9,12 @@ import {
 import { useTenant } from "../hooks/useTenant";
 
 export function TenantSwitcher({ tenantType }: Readonly<{ tenantType: TenantType }>) {
-  const { memberships, activeMembership, selectTenant } = useTenant(tenantType);
+  const {
+    memberships,
+    activeMembership,
+    isSelectionPending,
+    selectTenant,
+  } = useTenant(tenantType);
 
   if (memberships.length <= 1) return null;
 
@@ -17,6 +22,7 @@ export function TenantSwitcher({ tenantType }: Readonly<{ tenantType: TenantType
     <Select
       value={activeMembership?.tenantId ?? ""}
       onValueChange={selectTenant}
+      disabled={isSelectionPending}
     >
       <SelectTrigger
         size="sm"

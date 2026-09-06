@@ -12,14 +12,18 @@ import { queryClient } from "@concertable/mobile/providers/AppProviders";
 import { configureClient } from "@concertable/shared/lib/client";
 import { tenantStorage } from "../features/tenant/tenantStorage";
 
-export const tenantSessionReady = tenantSession.configure({
+const tenantSessionConfiguration = {
   storage: tenantStorage,
   memberships: () =>
     queryClient.getQueryData<B2bIdentity>(b2bIdentityKeys.all())?.memberships ??
     [],
   clearMemberships: () =>
     queryClient.removeQueries({ queryKey: b2bIdentityKeys.all() }),
-});
+};
+
+export function initializeTenantSession() {
+  return tenantSession.configure(tenantSessionConfiguration);
+}
 
 configureClient(apiClient, `${Config.apiUrl}/api`).withTenant(
   tenantSession.tenantIdForRequest,

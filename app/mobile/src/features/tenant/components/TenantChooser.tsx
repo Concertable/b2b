@@ -7,11 +7,13 @@ import { Text } from "@concertable/mobile/components/ui/text";
 interface TenantChooserProps {
   readonly memberships: ReadonlyArray<Membership>;
   readonly onSelect: (tenantId: string) => void;
+  readonly disabled: boolean;
 }
 
 export function TenantChooser({
   memberships,
   onSelect,
+  disabled,
 }: Readonly<TenantChooserProps>) {
   return (
     <Screen>
@@ -30,6 +32,7 @@ export function TenantChooser({
             <Button
               key={membership.tenantId}
               variant="outline"
+              disabled={disabled}
               onPress={() => onSelect(membership.tenantId)}
               accessibilityLabel={`Manage ${membership.legalName}`}
             >
