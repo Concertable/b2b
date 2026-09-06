@@ -1,23 +1,20 @@
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.Contracts.Enums;
-using Concertable.Kernel.ValueObjects;
-using Xunit;
 
-namespace Concertable.B2B.Concert.UnitTests.Domain;
+namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class ConcertEntityTests
 {
     [Fact]
     public void CreateDraft_DuplicateGenre_IsStoredOnceInInsertionOrder()
     {
-        var application = StandardApplication.Create(1, 2, DealType.FlatFee, Guid.NewGuid(), Guid.NewGuid());
-        var booking = StandardBooking.Create(application);
-        var period = new DateRange(
-            new DateTime(2035, 1, 1, 19, 0, 0, DateTimeKind.Utc),
-            new DateTime(2035, 1, 1, 22, 0, 0, DateTimeKind.Utc));
+        var booking = ConfirmedBookings.FlatFee();
 
         var concert = ConcertEntity.CreateDraft(
-            booking, 1, 2, period, "Concert", "About", [Genre.Rock, Genre.Rock, Genre.Jazz]);
+            booking,
+            new ConcertDraft("Concert", "About", [Genre.Rock, Genre.Rock, Genre.Jazz]));
 
         Assert.Equal([Genre.Rock, Genre.Jazz], concert.Genres);
     }

@@ -2,7 +2,6 @@ using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.User.Domain.Entities;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
@@ -42,9 +41,9 @@ public sealed class InvitationTests : IAsyncLifetime
     }
 
     // A member who also owns another tenant must name the acting tenant explicitly, or resolution fails closed.
-    private HttpClient ClientInTenant(UserEntity user, Guid tenantId)
+    private HttpClient ClientInTenant(Guid userId, string email, Guid tenantId)
     {
-        var client = fixture.CreateClient(user);
+        var client = fixture.CreateClient(userId, email);
         client.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
         return client;
     }
@@ -143,7 +142,10 @@ public sealed class InvitationTests : IAsyncLifetime
         var manager = fixture.SeedState.VenueManagerNoVenue;
         await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
 
-        var response = await Invite(ClientInTenant(manager, tenantId), "invitee@example.com", TenantRole.Staff);
+        var response = await Invite(
+            ClientInTenant(manager.Id, manager.Email, tenantId),
+            "invitee@example.com",
+            TenantRole.Staff);
 
         await response.ShouldBe(HttpStatusCode.Created);
     }
@@ -156,7 +158,10 @@ public sealed class InvitationTests : IAsyncLifetime
         var staff = fixture.SeedState.VenueManagerNoVenue;
         await fixture.AddMembershipAsync(tenantId, staff.Id, TenantRole.Staff);
 
-        var response = await Invite(ClientInTenant(staff, tenantId), "invitee@example.com", TenantRole.Staff);
+        var response = await Invite(
+            ClientInTenant(staff.Id, staff.Email, tenantId),
+            "invitee@example.com",
+            TenantRole.Staff);
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }

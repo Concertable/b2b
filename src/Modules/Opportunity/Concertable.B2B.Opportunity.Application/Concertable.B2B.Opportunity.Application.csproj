@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Concertable.B2B.Opportunity.Contracts\Concertable.B2B.Opportunity.Contracts.csproj" />
+    <ProjectReference Include="..\Concertable.B2B.Opportunity.Domain\Concertable.B2B.Opportunity.Domain.csproj" />
+    <ProjectReference Include="..\..\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
+    <ProjectReference Include="..\..\Venue\Concertable.B2B.Venue.Contracts\Concertable.B2B.Venue.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Application\Concertable.B2B.DataAccess.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Concertable.Contracts" />
+    <PackageReference Include="Concertable.DataAccess.Application" />
+    <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Dunet" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
+  </ItemGroup>
+</Project>

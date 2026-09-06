@@ -1,9 +1,7 @@
 using System.Net;
 using Concertable.B2B.Artist.Application.DTOs;
-using Concertable.B2B.Artist.Application.Interfaces;
 using Concertable.B2B.Artist.Api.Responses;
-using Concertable.B2B.IntegrationTests.Fixtures;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using static Concertable.B2B.Artist.IntegrationTests.ArtistRequestBuilders;
 using Xunit.Abstractions;
 
@@ -13,9 +11,9 @@ namespace Concertable.B2B.Artist.IntegrationTests;
 
 public sealed class ArtistApiTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly ArtistApiFixture fixture;
 
-    public ArtistApiTests(ApiFixture fixture, ITestOutputHelper output)
+    public ArtistApiTests(ArtistApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -197,9 +195,9 @@ public sealed class ArtistApiTests : IAsyncLifetime
 
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Created));
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Conflict));
-        using var scope = fixture.Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IArtistRepository>();
-        var profiles = await repository.GetAllByTenantIdAsync(tenantId);
+        var profiles = await fixture.Artists
+            .Where(value => value.TenantId == tenantId)
+            .ToListAsync();
         Assert.Single(profiles);
     }
 
@@ -270,27 +268,4 @@ public sealed class ArtistApiTests : IAsyncLifetime
 
     #endregion
 
-    #region Dashboard
-
-    [Fact]
-    public async Task GetDashboardKpis_ShouldReturn200_WhenProfileExists()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-
-        var response = await client.GetAsync("/api/artist-dashboard/kpis");
-
-        await response.ShouldBe(HttpStatusCode.OK);
-    }
-
-    [Fact]
-    public async Task GetDashboardKpis_ShouldReturn204_WhenProfileDoesNotExist()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
-
-        var response = await client.GetAsync("/api/artist-dashboard/kpis");
-
-        await response.ShouldBe(HttpStatusCode.NoContent);
-    }
-
-    #endregion
 }

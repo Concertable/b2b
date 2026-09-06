@@ -12,4 +12,5 @@ public abstract record class DealDto
     public int Id { get; init; }
     public PaymentMethod PaymentMethod { get; init; }
     public abstract DealType DealType { get; }
+    public abstract DealTerms Terms { get; }
 }

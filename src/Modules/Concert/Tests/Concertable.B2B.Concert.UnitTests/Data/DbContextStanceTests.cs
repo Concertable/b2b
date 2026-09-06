@@ -5,15 +5,13 @@ using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
-namespace Concertable.B2B.Concert.UnitTests.Data;
+namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class DbContextStanceTests
 {
     private static readonly Type[] TenantFilteredTypes =
     [
-        typeof(ApplicationEntity),
-        typeof(BookingEntity),
-        typeof(ContractEntity),
+        typeof(ConcertEntity),
         typeof(InvoiceEntity),
         typeof(SelfBillingAgreementEntity)
     ];
@@ -35,7 +33,6 @@ public sealed class DbContextStanceTests
         Assert.Equal(QueryTrackingBehavior.NoTracking, readContext.ChangeTracker.QueryTrackingBehavior);
         Assert.All(TenantFilteredTypes, type =>
             Assert.Empty(readContext.Model.FindEntityType(type)!.GetDeclaredQueryFilters()));
-        Assert.Empty(tenantContext.Model.FindEntityType(typeof(ConcertEntity))!.GetDeclaredQueryFilters());
         await Assert.ThrowsAsync<InvalidOperationException>(() => readContext.SaveChangesAsync());
         Assert.IsAssignableFrom<IDbContext>(tenantContext);
         Assert.All(TenantFilteredTypes, type =>

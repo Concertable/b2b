@@ -1,10 +1,10 @@
+using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Errors;
-using Concertable.Contracts;
 using Concertable.Contracts.Enums;
-using Concertable.Kernel.ValueObjects;
 
-namespace Concertable.B2B.Concert.UnitTests.Domain;
+namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class DoorRevenueDeclarationTests
 {
@@ -33,24 +33,10 @@ public sealed class DoorRevenueDeclarationTests
         Assert.Equal(doorRevenue, concert.DoorRevenue);
     }
 
-    private static ConcertEntity CreateConcert()
+    private static DoorRevenueConcert CreateConcert()
     {
-        var application = StandardApplication.Create(
-            1,
-            2,
-            DealType.DoorSplit,
-            Guid.NewGuid(),
-            Guid.NewGuid());
-        var booking = StandardBooking.Create(application);
-        return ConcertEntity.CreateDraft(
-            booking,
-            1,
-            2,
-            new DateRange(
-                new DateTime(2026, 8, 10, 19, 0, 0, DateTimeKind.Utc),
-                new DateTime(2026, 8, 10, 22, 0, 0, DateTimeKind.Utc)),
-            "Concert",
-            "About",
-            [Genre.Rock]);
+        var booking = ConfirmedBookings.DoorSplit(50m);
+        return (DoorRevenueConcert)ConcertEntity.CreateDraft(
+            booking, new ConcertDraft("Concert", "About", [Genre.Rock]));
     }
 }

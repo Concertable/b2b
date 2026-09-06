@@ -1,6 +1,5 @@
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Application.Mappers;
-using Concertable.B2B.Deal.Application.Strategies;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
@@ -33,10 +32,10 @@ public sealed class DealStrategyFactoryTests
         var updaterFactory = scope.ServiceProvider
             .GetRequiredService<IDealStrategyFactory<IDealUpdater>>();
 
-        Assert.IsType(expectedMapperType, mapperFactory.Create(deal));
-        Assert.IsType(expectedMapperType, mapperFactory.Create(entity));
-        Assert.IsType(expectedUpdaterType, updaterFactory.Create(deal));
-        Assert.IsType(expectedUpdaterType, updaterFactory.Create(entity));
+        Assert.IsType(expectedMapperType, mapperFactory.Create(deal.DealType));
+        Assert.IsType(expectedMapperType, mapperFactory.Create(entity.DealType));
+        Assert.IsType(expectedUpdaterType, updaterFactory.Create(deal.DealType));
+        Assert.IsType(expectedUpdaterType, updaterFactory.Create(entity.DealType));
     }
 
     [Fact]
@@ -79,9 +78,9 @@ public sealed class DealStrategyFactoryTests
         var secondFactory = secondScope.ServiceProvider
             .GetRequiredService<IDealStrategyFactory<IDealMapper>>();
 
-        var first = firstFactory.Create(deal);
-        Assert.Same(first, firstFactory.Create(deal));
-        Assert.Same(first, secondFactory.Create(deal));
+        var first = firstFactory.Create(deal.DealType);
+        Assert.Same(first, firstFactory.Create(deal.DealType));
+        Assert.Same(first, secondFactory.Create(deal.DealType));
     }
 
     [Fact]

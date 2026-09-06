@@ -45,6 +45,28 @@
     <Project Path="src/Modules/Artist/Tests/Concertable.B2B.Artist.IntegrationTests/Concertable.B2B.Artist.IntegrationTests.csproj" />
     <Project Path="src/Modules/Artist/Tests/Concertable.B2B.Artist.UnitTests/Concertable.B2B.Artist.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/Modules/Application/">
+    <Project Path="src/Modules/Application/Concertable.B2B.Application.Api/Concertable.B2B.Application.Api.csproj" />
+    <Project Path="src/Modules/Application/Concertable.B2B.Application.Application/Concertable.B2B.Application.Application.csproj" />
+    <Project Path="src/Modules/Application/Concertable.B2B.Application.Contracts/Concertable.B2B.Application.Contracts.csproj" />
+    <Project Path="src/Modules/Application/Concertable.B2B.Application.Domain/Concertable.B2B.Application.Domain.csproj" />
+    <Project Path="src/Modules/Application/Concertable.B2B.Application.Infrastructure/Concertable.B2B.Application.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Application/Tests/">
+    <Project Path="src/Modules/Application/Tests/Concertable.B2B.Application.IntegrationTests/Concertable.B2B.Application.IntegrationTests.csproj" />
+    <Project Path="src/Modules/Application/Tests/Concertable.B2B.Application.UnitTests/Concertable.B2B.Application.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Booking/">
+    <Project Path="src/Modules/Booking/Concertable.B2B.Booking.Api/Concertable.B2B.Booking.Api.csproj" />
+    <Project Path="src/Modules/Booking/Concertable.B2B.Booking.Application/Concertable.B2B.Booking.Application.csproj" />
+    <Project Path="src/Modules/Booking/Concertable.B2B.Booking.Contracts/Concertable.B2B.Booking.Contracts.csproj" />
+    <Project Path="src/Modules/Booking/Concertable.B2B.Booking.Domain/Concertable.B2B.Booking.Domain.csproj" />
+    <Project Path="src/Modules/Booking/Concertable.B2B.Booking.Infrastructure/Concertable.B2B.Booking.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Booking/Tests/">
+    <Project Path="src/Modules/Booking/Tests/Concertable.B2B.Booking.IntegrationTests/Concertable.B2B.Booking.IntegrationTests.csproj" />
+    <Project Path="src/Modules/Booking/Tests/Concertable.B2B.Booking.UnitTests/Concertable.B2B.Booking.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/Modules/Concert/">
     <Project Path="src/Modules/Concert/Concertable.B2B.Concert.Api/Concertable.B2B.Concert.Api.csproj" />
     <Project Path="src/Modules/Concert/Concertable.B2B.Concert.Application/Concertable.B2B.Concert.Application.csproj" />
@@ -64,7 +86,40 @@
     <Project Path="src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Concertable.B2B.Deal.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/Deal/Tests/">
+    <Project Path="src/Modules/Deal/Tests/Concertable.B2B.Deal.IntegrationTests/Concertable.B2B.Deal.IntegrationTests.csproj" />
     <Project Path="src/Modules/Deal/Tests/Concertable.B2B.Deal.UnitTests/Concertable.B2B.Deal.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Dashboard/">
+    <Project Path="src/Modules/Dashboard/Concertable.B2B.Dashboard.Contracts/Concertable.B2B.Dashboard.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Dashboard/Artist/">
+    <Project Path="src/Modules/Dashboard/Artist/Concertable.B2B.Dashboard.Artist.Api/Concertable.B2B.Dashboard.Artist.Api.csproj" />
+    <Project Path="src/Modules/Dashboard/Artist/Concertable.B2B.Dashboard.Artist.Application/Concertable.B2B.Dashboard.Artist.Application.csproj" />
+    <Project Path="src/Modules/Dashboard/Artist/Concertable.B2B.Dashboard.Artist.Infrastructure/Concertable.B2B.Dashboard.Artist.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Dashboard/Opportunity/">
+    <Project Path="src/Modules/Dashboard/Opportunity/Concertable.B2B.Dashboard.Opportunity.Api/Concertable.B2B.Dashboard.Opportunity.Api.csproj" />
+    <Project Path="src/Modules/Dashboard/Opportunity/Concertable.B2B.Dashboard.Opportunity.Application/Concertable.B2B.Dashboard.Opportunity.Application.csproj" />
+    <Project Path="src/Modules/Dashboard/Opportunity/Concertable.B2B.Dashboard.Opportunity.Infrastructure/Concertable.B2B.Dashboard.Opportunity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Dashboard/Venue/">
+    <Project Path="src/Modules/Dashboard/Venue/Concertable.B2B.Dashboard.Venue.Api/Concertable.B2B.Dashboard.Venue.Api.csproj" />
+    <Project Path="src/Modules/Dashboard/Venue/Concertable.B2B.Dashboard.Venue.Application/Concertable.B2B.Dashboard.Venue.Application.csproj" />
+    <Project Path="src/Modules/Dashboard/Venue/Concertable.B2B.Dashboard.Venue.Infrastructure/Concertable.B2B.Dashboard.Venue.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Dashboard/Tests/">
+    <Project Path="src/Modules/Dashboard/Tests/Concertable.B2B.Dashboard.IntegrationTests/Concertable.B2B.Dashboard.IntegrationTests.csproj" />
+    <Project Path="src/Modules/Dashboard/Tests/Concertable.B2B.Dashboard.Opportunity.UnitTests/Concertable.B2B.Dashboard.Opportunity.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Opportunity/">
+    <Project Path="src/Modules/Opportunity/Concertable.B2B.Opportunity.Api/Concertable.B2B.Opportunity.Api.csproj" />
+    <Project Path="src/Modules/Opportunity/Concertable.B2B.Opportunity.Application/Concertable.B2B.Opportunity.Application.csproj" />
+    <Project Path="src/Modules/Opportunity/Concertable.B2B.Opportunity.Contracts/Concertable.B2B.Opportunity.Contracts.csproj" />
+    <Project Path="src/Modules/Opportunity/Concertable.B2B.Opportunity.Domain/Concertable.B2B.Opportunity.Domain.csproj" />
+    <Project Path="src/Modules/Opportunity/Concertable.B2B.Opportunity.Infrastructure/Concertable.B2B.Opportunity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Opportunity/Tests/">
+    <Project Path="src/Modules/Opportunity/Tests/Concertable.B2B.Opportunity.IntegrationTests/Concertable.B2B.Opportunity.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/Modules/Conversations/">
     <Project Path="src/Modules/Conversations/Concertable.B2B.Conversations.Api/Concertable.B2B.Conversations.Api.csproj" />
@@ -119,7 +174,7 @@
     <Project Path="tests/Concertable.B2B.E2EAdmin.IntegrationTests/Concertable.B2B.E2EAdmin.IntegrationTests.csproj" />
     <Project Path="tests/Concertable.B2B.KeyedStrategies.UnitTests/Concertable.B2B.KeyedStrategies.UnitTests.csproj" />
     <Project Path="tests/Concertable.B2B.IntegrationTests.Fixtures/Concertable.B2B.IntegrationTests.Fixtures.csproj" />
-    <Project Path="tests/Concertable.B2B.Workers.UnitTests/Concertable.B2B.Workers.UnitTests.csproj" />
+    <Project Path="tests/Concertable.B2B.Lifecycle.IntegrationTests/Concertable.B2B.Lifecycle.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/Tests/E2ETests/">
     <Project Path="tests/E2ETests/Concertable.B2B.E2ETests/Concertable.B2B.E2ETests.csproj" />

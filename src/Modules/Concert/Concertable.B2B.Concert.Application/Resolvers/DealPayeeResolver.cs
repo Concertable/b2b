@@ -1,16 +1,15 @@
 using Concertable.B2B.Concert.Application.Interfaces;
-using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Domain.Entities;
 
 namespace Concertable.B2B.Concert.Application.Resolvers;
 
 internal sealed class DealPayeeResolver : IDealPayeeResolver
 {
-    private readonly IConcertDealStrategyFactory<IDealPayeeResolver> resolvers;
+    private readonly IDealStrategyFactory<IDealPayeeResolver> payeeResolverFactory;
 
-    public DealPayeeResolver(IConcertDealStrategyFactory<IDealPayeeResolver> resolvers)
+    public DealPayeeResolver(IDealStrategyFactory<IDealPayeeResolver> payeeResolverFactory)
     {
-        this.resolvers = resolvers;
+        this.payeeResolverFactory = payeeResolverFactory;
     }
 
     public Guid ResolveTicketUserId(ConcertEntity concert) =>
@@ -23,5 +22,5 @@ internal sealed class DealPayeeResolver : IDealPayeeResolver
         Resolve(concert).ResolveSettlementTenantId(concert);
 
     private IDealPayeeResolver Resolve(ConcertEntity concert) =>
-        resolvers.Create(concert.Booking.Application.DealType);
+        payeeResolverFactory.Create(concert.DealType);
 }

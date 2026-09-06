@@ -11,10 +11,16 @@ The bases live in `B2B.DataAccess.Infrastructure`; each concrete context lives i
 
 | Stance | Base | Concrete examples |
 |---|---|---|
-| Tenant-filtered, venue↔artist pair | `VenueArtistTenantScopedDbContext` | `ConcertDbContext` |
-| Tenant-filtered, single owner | `TenantScopedDbContext` | `VenueDbContext` (filters `Venue`/`VenueImage`), `ArtistDbContext` |
-| Tenant-independent read, `SaveChanges` throws | `ReadDbContext` (shared DataAccess) | `ConcertReadDbContext` |
+| Tenant-filtered (both venue↔artist pair and single owner) | `TenantScopedDbContext` | `ConcertDbContext`, `BookingDbContext` (pair); `VenueDbContext` (filters `Venue`/`VenueImage`), `ArtistDbContext` (single owner) |
+| Tenant-independent read, `SaveChanges` throws | `ReadDbContext` (shared DataAccess) | `Application`, `Artist`, `Booking`, `Concert`, `Opportunity`, `Venue` |
 | Unscoped but writable | `PrivilegedDbContext` | `ConversationsPrivilegedDbContext` (moderation) |
+| Untenanted module | `DbContextBase` + own `OnModelCreating` | `Admin`, `Deal`, `Tenant`, `User` — no base owns their `OnModelCreating`; `api/TECH_DEBT.md` holds the repo-wide entry |
+
+One base covers both tenant-filtered stances: the pair/single-owner distinction is carried entirely by which
+helper the context's `ApplyTenantFilters` calls, so a separate `VenueArtistTenantScopedDbContext` base bought
+nothing and no longer exists. The **repository** pair is a real distinction and does survive —
+`VenueArtistTenantScopedRepository` adds `GetTenantPairAsync` / `GetVenueTenantIdAsync` /
+`GetArtistTenantIdAsync`, which need both columns.
 
 Filters are declared per entity through the abstract `ApplyTenantFilters` hook —
 `modelBuilder.ApplyVenueArtist<TEntity>(this)` or `modelBuilder.ApplySingleOwner<TEntity>(this)` — never
@@ -34,19 +40,60 @@ its own purpose-named abstraction over the read context — `IConcertAvailabilit
 
 ## The `DealType` strategy families
 
-Declared vertically at the Deal module's composition root through `AddDealStrategies`, resolved by the
-module-local `IDealStrategyFactory<TStrategy>`. Named facades are the business API: `DealMapper`,
-`DealUpdater`, `DealTermsRenderer`, `SettlementAmountResolver`. `IConcertWorkflowFactory` stays a *named*
-factory because its caller genuinely needs the selected workflow instance.
+Declared vertically at each owning module's composition root through `DealStrategyBuilder`, then resolved
+through the shared scoped `IDealStrategyFactory<TStrategy>`. Named facades remain the business API:
+`DealMapper`, `DealUpdater`, `DealTermsRenderer`, and `SettlementAmountResolver`.
 
-Every family declares `RequireAll<T>()` or `RequireExactly<T>(...)`, so adding a `DealType` member fails
-composition until the new type is handled. `DealStrategyArchitectureTests` guards the shape.
+The Deal-specific builder composes `KeyedStrategyBuilder<DealType>` and makes complete `DealType` coverage
+innate for every registered strategy family. Adding a `DealType` member therefore fails composition until
+every family handles it. `DealStrategyArchitectureTests` guards the shape.
 
-Deal and Concert own separate factory implementations — different runtime concerns, module-local by rule.
+## The workflow operations a `DealType` selects
 
-## The workflow steps a `DealType` selects
+Application, Booking and Concert each own one module-local workflow whose methods are the named lifecycle
+operations for that stage. A workflow spans no module boundary and holds no aggregate state. Deal-varying
+lifecycle work sits behind operation-named `*Step` interfaces resolved through
+`IDealStrategyFactory<TStrategy>`: `IApplyStep` and `ICommitmentReferenceStep` (Application),
+`IConfirmStep`/`ICancelStep` (Booking), and `ICancelStep`/`ICompleteStep` (Concert).
+`IContractFactory` remains a non-step strategy resolved through `IDealStrategyFactory<TStrategy>`.
 
-`IConcertWorkflow` implementations in `Modules/Concert/…/Services/Workflow/Workflows/` surface the five
-steps — `Apply`, `Accept`, `Book`, `Finish`, `Cancel` — as public get-only properties. They are the
-canonical dependency-holder shape (`dependency-injection` skill): concrete constructor parameters, so DI
-resolves the registered step, assigned to interface-typed properties.
+## The `DealType` unions
+
+Where the variation is data rather than injected behaviour, `DealType` selects a type, not a strategy.
+
+| Union | Arms | Role |
+|---|---|---|
+| `DealEntity` | `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity` | the editable offer; TPH, each leaf overriding `DealType` |
+| `ConfirmedBookingTerms` | `FlatFee`, `VenueHire`, `DoorSplit`, `Versus` | the frozen economics carried on `ConfirmedBookingSnapshot` across the Booking→Concert seam |
+
+`AcceptedApplication` is deliberately *not* a union: once Payment owned the payment-method commitment the
+Accept arms became identical, so it is one record carrying the immutable `ApplicationAcceptanceSnapshot`.
+
+`BookingEntity` is the exception, not the pattern: two arms (`Standard`, `Deferred`) over four deal types,
+so each leaf re-asks `DealType` — `src/Modules/Booking/TECH_DEBT.md` holds the shape that resolves it.
+
+## Capability, not `DealType`
+
+The concerns partition the four types differently, so no one hierarchy serves them all:
+
+| Concern | Types |
+|---|---|
+| Door revenue drives settlement | DoorSplit, Versus |
+| `FinancialOperation` raised at confirmation | FlatFee (capture), VenueHire (deposit), DoorSplit + Versus (verify) |
+| Payment commitment minted at checkout | FlatFee (authorization hold), VenueHire (method setup), DoorSplit + Versus (method verification) |
+| Supply direction reverses ([`LEGAL_REQUIREMENTS.md`](./src/Modules/Deal/LEGAL_REQUIREMENTS.md)) | VenueHire |
+
+Split an interface on the capability a row names, never on the deal type holding it.
+
+Which mechanism a varying input earns:
+
+| The input is | Mechanism |
+|---|---|
+| stored in the deal's terms | keyed strategy family (`IDealStrategyFactory<TStrategy>`) |
+| chosen by the user during one shared action | capability-keyed union over a tagged request union (`IDealUnionFactory<TUnion>`) |
+| negotiated as its own act | its own endpoint |
+
+`KeyedUnionBuilder`, `DealUnionBuilder` and `IDealUnionFactory<TUnion>` are the retained typed-escalation
+tier. They currently have no lifecycle consumer — `Apply` and `Accept` both collapsed to keyed families once
+the payment-method input left B2B — and are kept for the next capability whose shared action genuinely
+fractures on legitimate client input.

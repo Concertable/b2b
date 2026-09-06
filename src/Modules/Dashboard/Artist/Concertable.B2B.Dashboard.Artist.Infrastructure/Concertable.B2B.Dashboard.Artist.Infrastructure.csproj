@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Concertable.B2B.Dashboard.Artist.Application\Concertable.B2B.Dashboard.Artist.Application.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Dashboard.Contracts\Concertable.B2B.Dashboard.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Application\Concertable.B2B.Application.Contracts\Concertable.B2B.Application.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Artist\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Booking\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Payment.Client" />
+    <PackageReference Include="Reunion" />
+  </ItemGroup>
+</Project>

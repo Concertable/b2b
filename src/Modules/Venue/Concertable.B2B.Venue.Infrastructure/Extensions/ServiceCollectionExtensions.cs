@@ -43,7 +43,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVenueReadDbContext>(sp => sp.GetRequiredService<VenueReadDbContext>());
 
         services.AddScoped<IVenueService, VenueService>();
-        services.AddScoped<IVenueDashboardService, VenueDashboardService>();
         services.AddScoped<IVenueReviewService, VenueReviewService>();
         services.AddScoped<IVenueRepository, VenueRepository>();
         services.AddScoped<IVenueReviewRepository, VenueReviewRepository>();

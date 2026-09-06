@@ -15,8 +15,10 @@
     <PackageReference Include="Concertable.AppHost.Shared" />
     <PackageReference Include="Concertable.Shared.Email.Application" />
     <PackageReference Include="Concertable.Customer.Review.Contracts" />
+    <PackageReference Include="Concertable.Customer.Ticket.Contracts" />
     <PackageReference Include="Concertable.Auth.Contracts" />
     <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\Modules\Booking\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\Modules\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Contracts\Concertable.B2B.Venue.Contracts.csproj" IsAspireProjectResource="false" />

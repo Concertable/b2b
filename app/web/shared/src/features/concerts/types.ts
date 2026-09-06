@@ -47,14 +47,22 @@ export const Opportunity = {
   },
 };
 
-export interface ApplicationActions {
-  accept: ActionLink;
-  checkout?: ActionLink;
-  withdraw?: ActionLink;
+export type ApplicationActionName =
+  | "accept"
+  | "checkout"
+  | "decline"
+  | "cancel"
+  | "withdraw"
+  | "contract";
+
+export type ApplicationActionsOf<TName extends ApplicationActionName> = {
+  [K in TName]?: ActionLink;
+};
+
+export type ApplicationActions = ApplicationActionsOf<ApplicationActionName> & {
+  /** @deprecated the wire field is `decline`; drops once consumers cut over. */
   reject?: ActionLink;
-  cancel?: ActionLink;
-  contract?: ActionLink;
-}
+};
 
 export interface ConcertActions {
   cancel?: ActionLink;

@@ -1,8 +1,6 @@
 using System.Net;
 using Concertable.B2B.Concert.Api.Responses;
-using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -32,7 +30,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         // Arrange — a past, still-Booked DoorSplit gig awaiting its door take.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.PastDoorSplitApp.Id;
-        var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
         var before = await (await client.GetAsync($"/api/concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.NotNull(before!.Actions!.DeclareDoorRevenue); // offered while ended, Booked, undeclared
@@ -48,7 +46,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
 
         // ...and settlement now charges the artist's share of the declared take.
         await fixture.FinishConcertAsync(concertId);
-        var payment = Assert.Single(fixture.ManagerPaymentClient.Payments);
+        var payment = Assert.Single(fixture.SettlementClient.Payments);
         Assert.Equal(280m, payment.Amount);
     }
 
@@ -59,7 +57,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.VenueHireApp.Id;
         await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         var concert = await (await client.GetAsync($"/api/concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
         Assert.Null(concert!.Actions!.DeclareDoorRevenue);
@@ -70,13 +68,13 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
     {
         // Declaring the door take is a venue decision; the artist lacks the permission.
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
         var response = await artistClient.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
+        Assert.Equal(ConcertState.Posted, persisted.State);
     }
 
     [Fact]
@@ -84,10 +82,10 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
     {
         // Arrange — declare, settle, complete.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
         await client.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
         await fixture.FinishConcertAsync(concertId);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         // Act — a second declaration once the booking is no longer Booked.
         var response = await client.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = 500m });
@@ -97,20 +95,18 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Declare_ShouldReturnStableProblem_WhenRevenueIsNegative()
+    public async Task Declare_ShouldReturnValidationProblem_WhenRevenueIsNegative()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var concertId = fixture.SeedState.PastDoorSplitBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
         var response = await client.PostAsync(
             $"/api/concert/{concertId}/door-revenue",
             new { doorRevenue = -0.01m });
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
-        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
         Assert.NotNull(problem);
-        Assert.Equal("Door revenue must be zero or greater.", problem.Detail);
-        Assert.True(problem.Extensions.TryGetValue("code", out var code));
-        Assert.Equal("declare.door_revenue_negative", code?.ToString());
+        Assert.Equal(["Door revenue must be zero or greater."], problem.Errors["DoorRevenue"]);
     }
 }

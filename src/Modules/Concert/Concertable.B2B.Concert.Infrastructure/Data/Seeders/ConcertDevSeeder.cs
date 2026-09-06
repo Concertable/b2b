@@ -1,6 +1,6 @@
-using Concertable.B2B.Concert.Application.Interfaces;
+using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.Deal.Contracts;
+using Concertable.Messaging.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
@@ -12,75 +12,50 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Seeders;
 
 internal sealed class ConcertDevSeeder : IDevSeeder
 {
-    public int Order => 4;
+    public int Order => 7;
 
     private readonly ConcertDbContext context;
     private readonly SeedState seed;
-    private readonly IDealModule deals;
-    private readonly IDealTermsRenderer termsRenderer;
-    private readonly ITermsFingerprintCalculator fingerprint;
     private readonly ITenantModule tenants;
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
+    private readonly IBus bus;
 
     public ConcertDevSeeder(
         ConcertDbContext context,
         SeedState seed,
-        IDealModule deals,
-        IDealTermsRenderer termsRenderer,
-        ITermsFingerprintCalculator fingerprint,
         ITenantModule tenants,
         IOptions<LegalSettings> legal,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IBus bus)
     {
         this.context = context;
         this.seed = seed;
-        this.deals = deals;
-        this.termsRenderer = termsRenderer;
-        this.fingerprint = fingerprint;
         this.tenants = tenants;
         this.legal = legal.Value;
         this.timeProvider = timeProvider;
+        this.bus = bus;
     }
 
     public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        await context.Opportunities.SeedIfEmptyAsync(async () =>
+        await context.Concerts.SeedIfEmptyAsync(async () =>
         {
-            context.Opportunities.AddRange(seed.Opportunities);
-            await context.SaveChangesAsync(ct);
-        });
-
-        await context.Applications.SeedIfEmptyAsync(async () =>
-        {
-            await SeededApplicationSigner.SignAsync(
-                seed, deals, fingerprint, timeProvider.GetUtcNow().UtcDateTime, ct);
-            context.Applications.AddRange(seed.Applications);
-            await context.SaveChangesAsync(ct);
-
             context.Concerts.AddRange(seed.Concerts);
             await context.SaveChangesAsync(ct);
-        });
 
-        await context.Contracts.SeedIfEmptyAsync(async () =>
-        {
-            var bookedApplications = await context.Applications
-                .Include(application => application.Booking)
-                .Include(application => application.Opportunity)
-                .Where(application => application.Booking != null)
-                .ToListAsync(ct);
-            var contracts = await SeededContractFactory.CreateAsync(
-                seed,
-                bookedApplications,
-                deals,
-                termsRenderer,
-                legal.PlatformTermsVersion,
-                timeProvider.GetUtcNow().UtcDateTime,
-                ct);
-            context.Contracts.AddRange(contracts);
-            await context.SaveChangesAsync(ct);
+            foreach (var concert in seed.Concerts)
+                await bus.PublishAsync(new ConcertCreatedEvent(
+                    concert.Id,
+                    concert.ApplicationId,
+                    concert.OpportunityId,
+                    concert.ArtistId,
+                    concert.VenueId,
+                    concert.VenueTenantId,
+                    concert.ArtistTenantId,
+                    concert.Period.Start), ct);
         });
 
         await context.SelfBillingAgreements.SeedIfEmptyAsync(async () =>

@@ -10,9 +10,7 @@ export function useCancelApplication(opportunityId: number) {
     if (target == null) return;
     mutation.mutate(target, {
       onSuccess: () => {
-        toast.success(
-          "Application cancelled. Any payment held is refunded in full.",
-        );
+        toast.success("Application cancelled.");
         setTarget(undefined);
       },
     });

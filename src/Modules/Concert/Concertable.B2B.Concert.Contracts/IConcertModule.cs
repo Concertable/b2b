@@ -10,7 +10,7 @@ public interface IConcertModule
     Task<Option<ArtistDashboardCounts>> GetArtistDashboardCountsAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
-    Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
-        IReadOnlyCollection<int> bookingIds,
+    Task<IReadOnlyList<SettlementContext>> GetSettlementContextsAsync(
+        IReadOnlyCollection<int> concertIds,
         CancellationToken ct = default);
 }

@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Application.Requests;
+using Concertable.B2B.Concert.Application.Requests;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 

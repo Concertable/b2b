@@ -1,10 +1,13 @@
 using Concertable.B2B.Admin.Infrastructure.Extensions;
+using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
+using Concertable.B2B.Booking.Infrastructure.Extensions;
 using Concertable.Kernel;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
+using Concertable.B2B.Opportunity.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
 using Concertable.Shared.Email.Infrastructure.Extensions;
@@ -30,8 +33,10 @@ namespace Concertable.B2B.Workers;
 
 internal static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
+    extension(IServiceCollection services)
     {
+        public IServiceCollection AddInfrastructure(IConfiguration configuration, IHostEnvironment environment)
+        {
         services.AddSeedingInfrastructure();
         services.AddSharedInfrastructure(configuration);
         services.AddUris(configuration);
@@ -53,6 +58,7 @@ internal static class ServiceCollectionExtensions
         services.AddDataAccessSpecifications();
 
         services.AddGeometry();
+        services.AddClientContext();
 
         services.AddCurrentUser();
         services.AddAdminModule(configuration);
@@ -60,8 +66,11 @@ internal static class ServiceCollectionExtensions
         services.AddUserModule(configuration);
         services.AddArtistModule(configuration);
         services.AddVenueModule(configuration);
-        services.AddConcertModule(configuration);
         services.AddDealModule(configuration);
+        services.AddOpportunityModule(configuration);
+        services.AddApplicationModule(configuration);
+        services.AddBookingModule(configuration);
+        services.AddConcertModule(configuration);
         services.AddClientCredentials(opts =>
         {
             opts.Authority = configuration["Auth:Authority"] ?? configuration["services:auth:https:0"]
@@ -79,6 +88,7 @@ internal static class ServiceCollectionExtensions
 
         services.AddSingleton(TimeProvider.System);
 
-        return services;
+            return services;
+        }
     }
 }

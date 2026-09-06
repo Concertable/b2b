@@ -1,7 +1,7 @@
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Concert.Application.Errors;
+using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -27,43 +27,104 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
     public async Task Finish_ShouldCompleteBookingAndFinishConcert()
     {
         // Arrange
-        var concertId = fixture.SeedState.PastFlatFeeBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking).Id;
 
         // Act
         await fixture.FinishConcertAsync(concertId);
 
         // Assert
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastFlatFeeApp.Id);
-        Assert.Equal(LifecycleState.Complete, application.State);
-        Assert.Empty(fixture.ManagerPaymentClient.Payments);
+        var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
+        Assert.Equal(ConcertState.Complete, concert.State);
+        Assert.Empty(fixture.SettlementClient.Payments);
+    }
+
+    [Fact]
+    public async Task Finish_WhenPersistenceFailsAfterRelease_RetryUsesTheSameOperation()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
+        await fixture.FailSettlementPersistenceAsync();
+
+        try
+        {
+            await Assert.ThrowsAnyAsync<DbUpdateException>(
+                () => fixture.CompleteConcertAsync(concert.Id));
+        }
+        finally
+        {
+            await fixture.RestoreSettlementPersistenceAsync();
+        }
+
+        var interrupted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.AwaitingSettlement, interrupted.State);
+        Assert.NotNull(interrupted.SettlementOperationId);
+
+        var retry = await fixture.CompleteConcertAsync(concert.Id);
+
+        Assert.True(retry.TryGetValue(out var outcome));
+        Assert.Equal(SettlementOutcome.Settled, outcome);
+        var release = Assert.Single(
+            fixture.EscrowClient.Releases,
+            value => value.Reference == PaymentOperationReferences.Escrow(concert.BookingId));
+        Assert.Equal(interrupted.SettlementOperationId, release.OperationId);
+        var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, settled.State);
+        Assert.NotNull(await fixture.Invoices.SingleOrDefaultAsync(invoice => invoice.BookingId == concert.BookingId));
+    }
+
+    [Fact]
+    public async Task Finish_WhenAnotherFinishWinsTheRace_ReleasesEscrowAndIssuesInvoiceOnce()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
+        fixture.ArmConcertConflict(async () =>
+        {
+            var winner = await fixture.CompleteConcertAsync(concert.Id);
+            Assert.True(winner.TryGetValue(out _));
+        });
+
+        var loser = await fixture.CompleteConcertAsync(concert.Id);
+
+        Assert.True(loser.TryGetValue(out var outcome));
+        Assert.Equal(SettlementOutcome.Settled, outcome);
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        var release = Assert.Single(
+            fixture.EscrowClient.Releases,
+            value => value.Reference == PaymentOperationReferences.Escrow(concert.BookingId));
+        var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(release.OperationId, settled.SettlementOperationId);
+        Assert.Equal(ConcertState.Complete, settled.State);
+        Assert.Equal(1, await fixture.Invoices.CountAsync(invoice => invoice.BookingId == concert.BookingId));
     }
 
     [Fact]
     public async Task Finish_ShouldFail_WhenConcertNotEnded()
     {
         // Arrange
-        var concertId = fixture.SeedState.UpcomingFlatFeeBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.UpcomingFlatFeeBooking).Id;
 
         // Act & Assert
         var result = await fixture.FinishConcertAsync(concertId);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<FinishConcertError.ConcertNotEnded>(error);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.UpcomingFlatFeeApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
+        Assert.Equal(ConcertState.Posted, concert.State);
     }
 
     [Fact]
-    public async Task Finish_ShouldFail_WhenAlreadyFinished()
+    public async Task Finish_ShouldBeIdempotent_WhenAlreadyFinished()
     {
         // Arrange
-        var concertId = fixture.SeedState.PastFlatFeeBooking.Concert!.Id;
+        var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking).Id;
         await fixture.FinishConcertAsync(concertId);
 
         // Act & Assert
         var result = await fixture.FinishConcertAsync(concertId);
 
-        Assert.True(result.TryGetError(out var error));
-        Assert.IsType<FinishConcertError.TransitionFailure>(error);
+        Assert.True(result.TryGetValue(out var outcome));
+        Assert.Equal(SettlementOutcome.Settled, outcome);
+        var concert = await fixture.Concerts.SingleAsync(value => value.Id == concertId);
+        Assert.Equal(ConcertState.Complete, concert.State);
     }
 }

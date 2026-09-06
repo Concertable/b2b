@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.User.Domain.Entities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,9 +28,9 @@ public sealed class MemberManagementTests : IAsyncLifetime
         client.PutAsJsonAsync($"/api/organization/members/{userId}/role", new { role = role.ToString() });
 
     // A member who owns another tenant must name the acting tenant explicitly, or resolution fails closed.
-    private HttpClient ClientInTenant(UserEntity user, Guid tenantId)
+    private HttpClient ClientInTenant(Guid userId, string email, Guid tenantId)
     {
-        var client = fixture.CreateClient(user);
+        var client = fixture.CreateClient(userId, email);
         client.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
         return client;
     }
@@ -61,7 +60,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var tenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
         await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
 
-        var response = await ClientInTenant(manager, tenantId).GetAsync("/api/organization/members");
+        var response = await ClientInTenant(manager.Id, manager.Email, tenantId).GetAsync("/api/organization/members");
 
         await response.ShouldBe(HttpStatusCode.OK);
     }
@@ -93,7 +92,10 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var tenantId = TenantOf(owner.Id);
         await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
 
-        var response = await PutRole(ClientInTenant(manager, tenantId), owner.Id, TenantRole.Staff);
+        var response = await PutRole(
+            ClientInTenant(manager.Id, manager.Email, tenantId),
+            owner.Id,
+            TenantRole.Staff);
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -146,7 +148,8 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var tenantId = TenantOf(owner.Id);
         await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
 
-        var response = await ClientInTenant(manager, tenantId).DeleteAsync($"/api/organization/members/{owner.Id}");
+        var response = await ClientInTenant(manager.Id, manager.Email, tenantId)
+            .DeleteAsync($"/api/organization/members/{owner.Id}");
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -205,7 +208,8 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var tenantId = TenantOf(owner.Id);
         await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
 
-        var response = await ClientInTenant(manager, tenantId).DeleteAsync("/api/organization");
+        var response = await ClientInTenant(manager.Id, manager.Email, tenantId)
+            .DeleteAsync("/api/organization");
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }

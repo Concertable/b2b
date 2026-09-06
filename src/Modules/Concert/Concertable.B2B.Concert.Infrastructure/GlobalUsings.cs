@@ -23,7 +23,6 @@ global using Concertable.B2B.Concert.Contracts;
 global using Concertable.B2B.Concert.Application.DTOs;
 global using Concertable.B2B.Concert.Application.Interfaces;
 global using Concertable.B2B.Concert.Application.Errors;
-global using Concertable.B2B.Concert.Application.Workflow.Executors;
 global using Concertable.B2B.Concert.Application.Mappers;
 global using Concertable.B2B.Concert.Application.Requests;
 global using Concertable.B2B.Concert.Application.Responses;

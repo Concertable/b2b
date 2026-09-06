@@ -1,6 +1,6 @@
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.Kernel;
 using Concertable.Payment.Contracts.Errors;
 using Reunion.Errors;
 
@@ -14,147 +14,6 @@ public sealed class ErrorDefinitionContractTests
     public static TheoryData<IError, string, string, ErrorKind> Cases => new()
     {
         {
-            new ApplicationEligibilityError.MissingArtist(),
-            "application.eligibility.missing_artist",
-            "You must have an artist account to apply for a concert opportunity",
-            ErrorKind.Forbidden
-        },
-        {
-            new ApplicationEligibilityError.OpportunityNotFound(),
-            "application.eligibility.opportunity_not_found",
-            "Concert opportunity does not exist",
-            ErrorKind.NotFound
-        },
-        {
-            new ApplicationEligibilityError.ApplicationNotFound(),
-            "application.eligibility.application_not_found",
-            "Concert application does not exist",
-            ErrorKind.NotFound
-        },
-        {
-            new ApplicationError.NotFound(42),
-            "application.get.not_found",
-            "Application 42 was not found.",
-            ErrorKind.NotFound
-        },
-        {
-            new ApplicationError.OpportunityForbidden(42),
-            "application.query.opportunity_forbidden",
-            "You do not own concert opportunity 42.",
-            ErrorKind.Forbidden
-        },
-        {
-            new ApplicationError.MissingArtist(),
-            "application.query.missing_artist",
-            "You must have an artist account.",
-            ErrorKind.Forbidden
-        },
-        {
-            new ApplyApplicationError.MissingArtist(),
-            "application.apply.missing_artist",
-            "You must create an artist account before applying for a concert opportunity.",
-            ErrorKind.Forbidden
-        },
-        {
-            new ApplyApplicationError.OpportunityNotFound(42),
-            "application.apply.opportunity_not_found",
-            "Concert opportunity 42 was not found.",
-            ErrorKind.NotFound
-        },
-        {
-            new ApplyApplicationError.AlreadyApplied(),
-            "application.apply.duplicate",
-            "You have already applied to this concert opportunity.",
-            ErrorKind.Invalid
-        },
-        {
-            new ApplyApplicationError.GenreMismatch(),
-            "application.apply.genre_mismatch",
-            "Your artist must share a genre with this concert opportunity.",
-            ErrorKind.Invalid
-        },
-        {
-            new ApplyApplicationError.UnsupportedDeal(DealType.FlatFee),
-            "application.apply.unsupported_deal",
-            "Deal FlatFee does not support applications.",
-            ErrorKind.Invalid
-        },
-        {
-            new ApplyApplicationError.MissingTenant(),
-            "application.apply.missing_tenant",
-            "No active organization was found for the current user.",
-            ErrorKind.Forbidden
-        },
-        {
-            new ApplyApplicationError.MissingUser(),
-            "application.apply.missing_user",
-            "No user was found for the current request.",
-            ErrorKind.Forbidden
-        },
-        {
-            new AcceptApplicationError.Ineligible(new ApplicationEligibilityError.MissingArtist()),
-            "application.eligibility.missing_artist",
-            "You must have an artist account to apply for a concert opportunity",
-            ErrorKind.Forbidden
-        },
-        {
-            new AcceptApplicationError.TransitionFailure(new LifecycleTransitionError.ApplicationNotFound(42)),
-            "concert.lifecycle.application_not_found",
-            "Application 42 was not found.",
-            ErrorKind.NotFound
-        },
-        {
-            new AcceptApplicationError.TermsChanged(),
-            "application.accept.terms_changed",
-            "The deal terms have changed since the artist applied. The artist must re-apply before acceptance.",
-            ErrorKind.Conflict
-        },
-        {
-            new AcceptApplicationError.PaymentMethodRequired(),
-            "application.accept.payment_method_required",
-            "This deal requires a payment method at acceptance.",
-            ErrorKind.Invalid
-        },
-        {
-            new AcceptApplicationError.UnsupportedDeal(DealType.FlatFee),
-            "application.accept.unsupported_deal",
-            "Deal FlatFee does not support acceptance.",
-            ErrorKind.Invalid
-        },
-        {
-            new AcceptApplicationError.EscrowCaptureFailure(
-                new EscrowCaptureError.PaymentFailure(new PaymentError.PaymentRejected())),
-            "payment.rejected",
-            "The payment was rejected.",
-            ErrorKind.PaymentRequired
-        },
-        {
-            new AcceptApplicationError.EscrowDepositFailure(
-                new EscrowDepositError.CommissionFailure(new CommissionError.PricingChanged())),
-            "payment.commission_pricing_changed",
-            "The commission pricing has changed.",
-            ErrorKind.Conflict
-        },
-        {
-            new CancelApplicationError.TransitionFailure(
-                new LifecycleTransitionError.InvalidTransition(LifecycleState.Applied, Trigger.Withdraw)),
-            "concert.lifecycle.invalid_transition",
-            "Cannot Withdraw from Applied.",
-            ErrorKind.Conflict
-        },
-        {
-            new CancelApplicationError.InvalidState(LifecycleState.Accepted),
-            "application.cancel.invalid_state",
-            "Cannot cancel an application from Accepted.",
-            ErrorKind.Conflict
-        },
-        {
-            new CancelApplicationError.EscrowRefundFailure(new EscrowRefundError.EscrowNotRefundable()),
-            "escrow.refund_not_allowed",
-            "Escrow cannot be refunded in its current state.",
-            ErrorKind.Conflict
-        },
-        {
             new ConcertError.NotFound(42),
             "concert.get.not_found",
             "Concert 42 was not found.",
@@ -167,47 +26,17 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.NotFound
         },
         {
-            new ContractError.ApplicationNotFound(42),
-            "contract.get_by_application.not_found",
-            "No contract was found for application 42.",
-            ErrorKind.NotFound
-        },
-        {
-            new ContractError.ConcertNotFound(42),
-            "contract.get_by_concert.not_found",
-            "No contract was found for concert 42.",
-            ErrorKind.NotFound
-        },
-        {
             new CancelConcertError.ConcertNotFound(42),
             "concert.cancel.not_found",
             "Concert 42 was not found.",
             ErrorKind.NotFound
         },
         {
-            new CancelConcertError.TransitionFailure(
-                new LifecycleTransitionError.InvalidTransition(LifecycleState.Accepted, Trigger.Cancel)),
-            "concert.lifecycle.invalid_transition",
-            "Cannot Cancel from Accepted.",
+            new CancelConcertError.InvalidTransition(
+                new TransitionError<ConcertState, ConcertTrigger>(ConcertState.Complete, ConcertTrigger.BeginCancellation)),
+            "concert.cancel.invalid_state",
+            "A concert in Complete cannot be cancelled.",
             ErrorKind.Conflict
-        },
-        {
-            new CancelConcertError.EscrowRefundFailure(new EscrowRefundError.Conflict()),
-            "escrow.refund_conflict",
-            "Another refund changed the refundable amount.",
-            ErrorKind.Conflict
-        },
-        {
-            new CreateConcertDraftError.BookingNotFound(42),
-            "concert.draft.booking_not_found",
-            "Booking 42 was not found.",
-            ErrorKind.NotFound
-        },
-        {
-            new CreateConcertDraftError.GenreMismatch(),
-            "concert.draft.genre_mismatch",
-            "The artist does not match any genres required by the concert opportunity.",
-            ErrorKind.Invalid
         },
         {
             new DeclareDoorRevenueError.ConcertNotFound(42),
@@ -246,12 +75,6 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.Invalid
         },
         {
-            new InvoiceError.ConcertNotFound(42),
-            "invoice.get_by_concert.not_found",
-            "No invoice was found for concert 42.",
-            ErrorKind.NotFound
-        },
-        {
             new FinishConcertError.ConcertNotFound(42),
             "concert.finish.not_found",
             "Concert 42 was not found.",
@@ -264,21 +87,28 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.Invalid
         },
         {
-            new FinishConcertError.TransitionFailure(
-                new LifecycleTransitionError.InvalidTransition(LifecycleState.Booked, Trigger.Finish)),
-            "concert.lifecycle.invalid_transition",
-            "Cannot Finish from Booked.",
+            new FinishConcertError.DoorRevenueRequired(),
+            "concert.finish.door_revenue_required",
+            "Door revenue must be declared before the concert can be finished.",
+            ErrorKind.Invalid
+        },
+        {
+            new FinishConcertError.InvalidTransition(
+                new TransitionError<ConcertState, ConcertTrigger>(ConcertState.Cancelled, ConcertTrigger.CompleteSettlement)),
+            "concert.finish.invalid_state",
+            "A concert in Cancelled cannot be finished.",
             ErrorKind.Conflict
         },
         {
-            new FinishConcertError.ManagerPaymentFailure(
-                new ManagerPaymentError.PaymentFailure(new PaymentError.PaymentRejected())),
+            new FinishConcertError.SettlementChargeFailure(new PaymentError.PaymentRejected()),
             "payment.rejected",
             "The payment was rejected.",
             ErrorKind.PaymentRequired
         },
         {
-            new FinishConcertError.EscrowReleaseFailure(new EscrowReleaseError.EscrowNotHeld()),
+            new FinishConcertError.EscrowReleaseFailure(
+                new EscrowReleaseOperationError.ReleaseFailure(
+                    new EscrowReleaseError.EscrowNotHeld())),
             "escrow.release_not_held",
             "Only held escrow can be released.",
             ErrorKind.Conflict
@@ -308,34 +138,10 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.Forbidden
         },
         {
-            new SelfBillingAgreementPdfError.NotFound(),
-            "self_billing.pdf.not_found",
-            "Self-Billing Agreement not found",
+            new InvoiceError.ConcertNotFound(42),
+            "invoice.get_by_concert.not_found",
+            "No invoice was found for concert 42.",
             ErrorKind.NotFound
-        },
-        {
-            new OpportunityError.NotFound(42),
-            "opportunity.get.not_found",
-            "Opportunity 42 was not found.",
-            ErrorKind.NotFound
-        },
-        {
-            new OpportunityMutationError.VenueNotFound(),
-            "opportunity.venue_not_found",
-            "No venue was found for the current organization.",
-            ErrorKind.NotFound
-        },
-        {
-            new OpportunityMutationError.VenueNotVerified(),
-            "opportunity.venue_not_verified",
-            "This venue is not yet verified.",
-            ErrorKind.Forbidden
-        },
-        {
-            new OpportunityMutationError.VenueForbidden(),
-            "opportunity.venue_forbidden",
-            "You do not own this venue.",
-            ErrorKind.Forbidden
         },
         {
             new PostConcertError.ConcertNotFound(42),
@@ -344,54 +150,21 @@ public sealed class ErrorDefinitionContractTests
             ErrorKind.NotFound
         },
         {
-            new RejectApplicationError.ApplicationNotFound(42),
-            "application.reject.not_found",
-            "Application 42 was not found.",
+            new SelfBillingAgreementPdfError.NotFound(),
+            "self_billing.pdf.not_found",
+            "Self-Billing Agreement not found",
             ErrorKind.NotFound
-        },
-        {
-            new RejectApplicationError.InvalidTransition(LifecycleState.Applied, Trigger.Reject),
-            "application.reject.invalid_transition",
-            "Cannot Reject from Applied.",
-            ErrorKind.Conflict
         },
         {
             new UpdateConcertError.ConcertNotFound(42),
             "concert.update.not_found",
             "Concert 42 was not found.",
             ErrorKind.NotFound
-        },
-        {
-            new LifecycleTransitionError.ApplicationNotFound(42),
-            "concert.lifecycle.application_not_found",
-            "Application 42 was not found.",
-            ErrorKind.NotFound
-        },
-        {
-            new LifecycleTransitionError.InvalidTransition(LifecycleState.Applied, Trigger.Reject),
-            "concert.lifecycle.invalid_transition",
-            "Cannot Reject from Applied.",
-            ErrorKind.Conflict
         }
     };
 
     public static TheoryData<IError, string, string> ValidationCases => new()
     {
-        {
-            new ApplicationEligibilityError.Invalid(ValidationErrors),
-            "application.eligibility.invalid",
-            "The application is not eligible."
-        },
-        {
-            new ApplyApplicationError.Invalid(ValidationErrors),
-            "application.apply.invalid",
-            "The application is not eligible."
-        },
-        {
-            new OpportunityMutationError.InvalidDeal(ValidationErrors),
-            "opportunity.deal.invalid",
-            "The opportunity deal is invalid."
-        },
         {
             new PostConcertError.Invalid(ValidationErrors),
             "concert.post.invalid",

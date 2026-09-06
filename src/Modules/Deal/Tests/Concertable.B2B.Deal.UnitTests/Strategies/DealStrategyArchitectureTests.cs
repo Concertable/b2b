@@ -82,23 +82,13 @@ public sealed class DealStrategyArchitectureTests
     }
 
     [Fact]
-    public void DealTypeFrozenDictionaries_AppearOnlyInWorkflowRegistries()
+    public void DealTypeFrozenDictionaries_AreAbsent()
     {
         var violations = EnumerateProductionFiles()
             .Where(path => File.ReadAllText(path).Contains("FrozenDictionary<DealType", StringComparison.Ordinal))
-            .Where(path => !IsAllowlisted(path, WorkflowRegistryFiles))
             .ToArray();
 
         Assert.Empty(violations);
-    }
-
-    [Theory]
-    [MemberData(nameof(WorkflowRegistryFiles))]
-    public void WorkflowRegistryAllowlist_StillContainsDealTypeFrozenDictionary(string relativePath)
-    {
-        var source = File.ReadAllText(FindSourceFile(relativePath));
-
-        Assert.Contains("FrozenDictionary<DealType", source, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -141,65 +131,17 @@ public sealed class DealStrategyArchitectureTests
         Assert.Contains("GetRequiredKeyedService", source, StringComparison.Ordinal);
     }
 
-    [Theory]
-    [MemberData(nameof(RequiredCoverageDeclarations))]
-    public void RequiredStrategyFamily_DeclaresExactCoverage(string relativePath, string declaration)
-    {
-        var source = File.ReadAllText(FindSourceFile(relativePath));
-
-        Assert.Contains(declaration, source, StringComparison.Ordinal);
-    }
-
-    public static TheoryData<string> WorkflowRegistryFiles { get; } = new()
-    {
-        "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/Workflow/ConcertStateMachineRegistry.cs",
-        "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/Workflow/ConcertWorkflowCapabilityRegistry.cs"
-    };
-
     public static TheoryData<string> KeyedProviderFiles { get; } = new()
     {
-        "Concertable.B2B/src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-        "Concertable.B2B/src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
-        "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-        "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/Strategies/ConcertDealStrategyFactory.cs"
+        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
+        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
+        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Services/Strategies/DealUnionFactory.cs"
     };
 
     public static TheoryData<string> StrategyFactoryFiles { get; } = new()
     {
-        "Concertable.B2B/src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
-        "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/Strategies/ConcertDealStrategyFactory.cs"
-    };
-
-    public static TheoryData<string, string> RequiredCoverageDeclarations { get; } = new()
-    {
-        {
-            "Concertable.B2B/src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-            "strategies.RequireAll<IDealMapper>();"
-        },
-        {
-            "Concertable.B2B/src/Modules/Deal/Concertable.B2B.Deal.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-            "strategies.RequireAll<IDealUpdater>();"
-        },
-        {
-            "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-            "strategies.RequireAll<IDealTerms>();"
-        },
-        {
-            "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-            "strategies.RequireAll<IDealPayeeResolver>();"
-        },
-        {
-            "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-            "strategies.RequireAll<IPaymentAmountMapper>();"
-        },
-        {
-            "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-            "strategies.RequireAll<ISettlementAmountResolver>();"
-        },
-        {
-            "Concertable.B2B/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-            "strategies.RequireAll<IConcertWorkflow>();"
-        }
+        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
+        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Services/Strategies/DealUnionFactory.cs"
     };
 
     private static IEnumerable<string> EnumerateProductionFiles()

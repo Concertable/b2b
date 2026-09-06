@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.Customer.Ticket.Contracts.Events;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
 using Concertable.B2B.Tenant.Contracts;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
-internal sealed class TicketSaleProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
+internal sealed class TicketSaleProcessor : IIntegrationEventHandler<TicketPurchasedEvent>
 {
     private readonly ConcertDbContext context;
     private readonly ILogger<TicketSaleProcessor> logger;
@@ -28,31 +29,24 @@ internal sealed class TicketSaleProcessor : IIntegrationEventHandler<PaymentSucc
         this.outboxBehavior = outboxBehavior;
     }
 
-    public async Task HandleAsync(PaymentSucceededEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
+    public async Task HandleAsync(TicketPurchasedEvent @event, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (@event.Metadata.GetValueOrDefault(PaymentMetadataKeys.Type) != TransactionTypes.Ticket)
-            return;
-
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(TicketSaleProcessor), ct))
             return;
-
-        var meta = @event.Metadata;
-        var concertId = meta.GetValueAs<int>(PaymentMetadataKeys.ConcertId);
-        var quantity = meta.TryGetValue(PaymentMetadataKeys.Quantity, out var q) ? int.Parse(q) : 1;
 
         try
         {
             await outboxBehavior.ExecuteAsync(async () =>
             {
                 context.AddInboxMessage(envelope, nameof(TicketSaleProcessor));
-                var concert = await context.Concerts.FirstOrDefaultAsync(c => c.Id == concertId, ct);
+                var concert = await context.Concerts.FirstOrDefaultAsync(c => c.Id == @event.ConcertId, ct);
                 if (concert is null)
                 {
-                    logger.ConcertNotFoundForTicketSale(concertId);
+                    logger.ConcertNotFoundForTicketSale(@event.ConcertId);
                     return;
                 }
 
-                concert.IncrementTicketsSold(quantity);
+                concert.IncrementTicketsSold(1);
                 await bus.PublishAsync(new TenantActivityRecordedEvent(new ActivityRecord(
                     $"ticket-sale:{envelope.MessageId}",
                     concert.VenueTenantId,

@@ -2,6 +2,7 @@ using Concertable.Kernel.Notifications;
 using Concertable.Kernel.DependencyInjection;
 using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Events;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.Payment.Client;
 using Concertable.B2B.User.Contracts;
 using Concertable.B2B.User.Domain.Entities;
@@ -11,6 +12,8 @@ using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Logging;
 using Concertable.Testing.Integration.Mocks;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
+using Concertable.B2B.Application.Infrastructure.Extensions;
+using Concertable.B2B.Booking.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
@@ -18,6 +21,7 @@ using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
+using Concertable.B2B.Opportunity.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Seed.Contracts;
 using Concertable.B2B.Seed.Infrastructure;
@@ -52,25 +56,28 @@ public class ApiFixture : IAsyncLifetime
     private SqlFixture sqlFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
     private IServiceScope? scope;
+    private readonly List<WebApplicationFactory<Program>> customFactories = [];
     private readonly XunitOutputAccessor outputAccessor = new();
 
     public void AttachOutput(ITestOutputHelper output) => outputAccessor.Output = output;
     public void DetachOutput() => outputAccessor.Output = null;
 
     public IMockNotificationClient NotificationService { get; } = new MockNotificationClient();
-    public MockStripeApiClient StripeApiClient { get; } = new MockStripeApiClient();
     public IMockEmailSender EmailSender { get; } = new MockEmailSender();
-    public IMockManagerPaymentClient ManagerPaymentClient { get; }
-    public MockPayoutAccountClient PayoutAccountClient { get; } = new();
-    public MockEscrowClient EscrowClient { get; }
-    public MockPaymentTransport PaymentTransport { get; } = new();
+    public MockPaymentOperations PaymentOperations { get; } = new();
+    public IMockSettlementClient SettlementClient { get; }
+    public MockPaymentSessionClient PaymentSessionClient { get; }
 
     public ApiFixture()
     {
-        ManagerPaymentClient = new MockManagerPaymentClient(StripeApiClient);
-        EscrowClient = new MockEscrowClient(StripeApiClient);
+        SettlementClient = new MockSettlementClient(PaymentOperations);
+        PaymentSessionClient = new MockPaymentSessionClient(PaymentOperations);
     }
-    public IWebhookSimulator StripeClient { get; private set; } = null!;
+    public MockPayoutAccountClient PayoutAccountClient { get; } = new();
+    public MockEscrowClient EscrowClient { get; } = new();
+    public MockPaymentTransport PaymentTransport { get; } = new();
+
+    public IWebhookSimulator PaymentSimulator { get; private set; } = null!;
     public SeedState SeedState { get; private set; } = null!;
     public DateTime SeedNow => factory.Services.GetRequiredService<SeedCatalog>().Now;
 
@@ -99,18 +106,22 @@ public class ApiFixture : IAsyncLifetime
             builder.ConfigureTestServices(services =>
             {
                 services.AddXunitLogging(outputAccessor);
+                services.Configure<HostOptions>(host =>
+                    host.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
                 services.RemoveAzureServiceBus();
                 services.AddTransient<IStartupFilter, TestClientIpStartupFilter>();
 
                 services.AddSingleton(PaymentTransport);
                 services.Replace(ServiceDescriptor.Singleton<IBusTransport>(PaymentTransport));
                 services.AddSingleton<INotificationClient>(NotificationService);
-                services.AddSingleton(StripeApiClient);
-                services.AddResettables(NotificationService, StripeApiClient, EmailSender, ManagerPaymentClient, PayoutAccountClient, EscrowClient, PaymentTransport);
+                services.AddSingleton(PaymentOperations);
+                services.AddResettables(NotificationService, EmailSender, PaymentOperations, SettlementClient, PaymentSessionClient, PayoutAccountClient, EscrowClient, PaymentTransport);
                 services.AddSingleton<IEmailTransport>(EmailSender);
 
-                services.AddSingleton<IManagerPaymentOperationsClient>(ManagerPaymentClient);
-                services.AddSingleton<IManagerPaymentReportingClient>(ManagerPaymentClient);
+                services.AddSingleton<ISettlementOperationsClient>(SettlementClient);
+                services.AddSingleton<IPaymentReportingClient>(SettlementClient);
+                services.AddSingleton<IPaymentSessionOperationsClient>(PaymentSessionClient);
+                services.AddSingleton(PaymentSessionClient);
                 services.AddSingleton<IEscrowOperationsClient>(EscrowClient);
                 services.AddSingleton<IPayoutAccountOperationsClient>(PayoutAccountClient);
 
@@ -129,17 +140,22 @@ public class ApiFixture : IAsyncLifetime
                 services.AddArtistTestSeeder();
                 services.AddVenueTestSeeder();
                 services.AddDealTestSeeder();
+                services.AddOpportunityTestSeeder();
+                services.AddApplicationTestSeeder();
+                services.AddBookingTestSeeder();
                 services.AddConcertTestSeeder();
                 services.AddConversationsTestSeeder();
 
                 services.AddTestAuthentication();
+                OnConfigureServices(services);
             });
         });
 
         _ = factory.Services;
+        PaymentTransport.Connect(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
         await sqlFixture.InitializeRespawnerAsync();
-        StripeClient = factory.Services.GetRequiredService<IWebhookSimulator>();
+        PaymentSimulator = factory.Services.GetRequiredService<IWebhookSimulator>();
     }
 
     public async Task DisposeAsync()
@@ -151,10 +167,12 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task ResetAsync()
     {
+        await StopBackgroundDispatchAsync();
+
         await sqlFixture.ResetAsync();
         foreach (var resettable in factory.Services.GetServices<IResettable>())
             resettable.Reset();
-        StripeClient = factory.Services.GetRequiredService<IWebhookSimulator>();
+        PaymentSimulator = factory.Services.GetRequiredService<IWebhookSimulator>();
 
         scope?.Dispose();
         scope = factory.Services.CreateScope();
@@ -162,41 +180,67 @@ public class ApiFixture : IAsyncLifetime
         await initializer.InitializeAsync();
         SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
         OnReset(scope);
+
+        await StartBackgroundDispatchAsync();
     }
 
-    /// <summary>Resolve module-specific read-back from the freshly-created reset <paramref name="scope"/>.</summary>
+    private async Task StopBackgroundDispatchAsync()
+    {
+        foreach (var customFactory in customFactories)
+            await StopBackgroundServicesAsync(customFactory.Services);
+        customFactories.Clear();
+
+        await StopBackgroundServicesAsync(factory.Services);
+    }
+
+    private async Task StartBackgroundDispatchAsync()
+    {
+        foreach (var service in BackgroundServices(factory.Services))
+            await service.StartAsync(CancellationToken.None);
+    }
+
+    private static async Task StopBackgroundServicesAsync(IServiceProvider services)
+    {
+        foreach (var service in BackgroundServices(services))
+            await service.StopAsync(CancellationToken.None);
+    }
+
+    private static IEnumerable<BackgroundService> BackgroundServices(IServiceProvider services) =>
+        services.GetServices<IHostedService>().OfType<BackgroundService>();
+
     protected virtual void OnReset(IServiceScope scope) { }
 
-    /// <summary>Fires B2B's <see cref="PaymentFailedEvent"/> handlers for an escrow payment on
-    /// <paramref name="bookingId"/> — the failure leg <see cref="IWebhookSimulator"/> cannot simulate.</summary>
+    /// <summary>Per-module fixture wiring, applied after the shared test services.</summary>
+    protected virtual void OnConfigureServices(IServiceCollection services) { }
+
     public async Task SendEscrowFailedWebhookAsync(int bookingId)
     {
-        if (PaymentTransport.Commands.Any(command => command is CaptureEscrowCommand or DepositEscrowCommand))
+        if (await PaymentTransport.WaitForAcceptanceCommandAsync())
         {
             await PaymentTransport.RejectLatestAcceptanceAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
             return;
         }
 
-        await SendPaymentFailedWebhookAsync(TransactionTypes.Escrow, bookingId);
+        await SendPaymentFailedWebhookAsync(PaymentOperationReferences.Escrow(bookingId));
     }
 
-    public Task SendSettlementFailedWebhookAsync(int bookingId) =>
-        SendPaymentFailedWebhookAsync(TransactionTypes.Settlement, bookingId);
+    public Task SendSettlementFailedWebhookAsync(int concertId, Guid operationId) =>
+        SendPaymentFailedWebhookAsync(PaymentOperationReferences.Settlement(concertId), operationId);
 
-    private Task SendPaymentFailedWebhookAsync(string transactionType, int bookingId)
+    private Task SendPaymentFailedWebhookAsync(PaymentOperationReference reference, Guid? operationId = null)
     {
         var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
-        var evt = new PaymentFailedEvent($"pi_fail_{bookingId}", "card_declined", "Card was declined", new Dictionary<string, string>
-        {
-            [PaymentMetadataKeys.Type] = transactionType,
-            [PaymentMetadataKeys.BookingId] = bookingId.ToString()
-        });
+        var @event = new PaymentFailedEvent(
+            reference,
+            "card_declined",
+            "Card was declined",
+            PaymentOperationEnvelopes.Metadata(reference, operationId));
 
         return factory.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<PaymentFailedEvent>>>>()
             .RunAsync(async handlers =>
             {
                 foreach (var handler in handlers)
-                    await handler.HandleAsync(evt, envelope);
+                    await handler.HandleAsync(@event, envelope);
             });
     }
 
@@ -207,10 +251,67 @@ public class ApiFixture : IAsyncLifetime
         where TCommand : IIntegrationCommand =>
         PaymentTransport.CompleteLatestAsync<TCommand>(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
+    public Task DeferLatestFinancialOperationAsync<TCommand>()
+        where TCommand : IIntegrationCommand =>
+        PaymentTransport.DeferLatestAsync<TCommand>(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
     public Task RejectLatestFinancialOperationAsync() =>
         PaymentTransport.RejectLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
+    public Task RejectLatestFinancialOperationAsync<TCommand>()
+        where TCommand : IIntegrationCommand =>
+        PaymentTransport.RejectLatestAsync<TCommand>(
+            factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+    public Task DispatchIntegrationEventAsync<TEvent>(TEvent @event, MessageEnvelope envelope)
+        where TEvent : IIntegrationEvent =>
+        factory.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<TEvent>>>>()
+            .RunAsync(async handlers =>
+            {
+                foreach (var handler in handlers)
+                    await handler.HandleAsync(@event, envelope);
+            });
+
     public IServiceProvider Services => factory.Services;
+
+    public async Task<IReadOnlyCollection<(string UserId, object Payload)>> WaitForDraftNotificationsAsync(
+        int count)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow <= deadline)
+        {
+            var notifications = NotificationService.DraftCreated.ToArray();
+            if (notifications.Length >= count)
+                return notifications;
+
+            await Task.Delay(100);
+        }
+
+        throw new InvalidOperationException($"Expected {count} concert draft notifications within 5 seconds.");
+    }
+
+    /// <summary>
+    /// The counterpart to <see cref="WaitForDraftNotificationsAsync"/> for a named event. A notification is
+    /// staged in the outbox and delivered after the request that raised it has returned, so reading
+    /// <c>NotificationService.Other</c> synchronously races the dispatcher.
+    /// </summary>
+    public async Task<IReadOnlyCollection<(string UserId, string EventName, object Payload)>>
+        WaitForNotificationsAsync(string eventName)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow <= deadline)
+        {
+            var matches = NotificationService.Other
+                .Where(value => value.EventName == eventName)
+                .ToArray();
+            if (matches.Length > 0)
+                return matches;
+
+            await Task.Delay(100);
+        }
+
+        throw new InvalidOperationException($"Expected a {eventName} notification within 5 seconds.");
+    }
 
     public async Task<IReadOnlyList<SendEmailCommand>> GetStagedEmailsAsync()
     {
@@ -230,15 +331,54 @@ public class ApiFixture : IAsyncLifetime
             .ToList();
     }
 
-    public HttpClient CreateClient(UserEntity user)
+    public Task<IReadOnlyCollection<object>> SettledFinancialCommandsAsync() =>
+        PaymentTransport.SettledFinancialCommandsAsync(TimeSpan.FromSeconds(2));
+
+    public async Task<int> GetOutboxMessageCountAsync<TMessage>()
+    {
+        var messageType = MessageTypeAttribute.Resolve(typeof(TMessage));
+        return await factory.Services
+            .GetRequiredService<IScoped<OutboxDbContext>>()
+            .RunAsync(outbox => outbox.Set<OutboxMessageEntity>()
+                .AsNoTracking()
+                .CountAsync(message => message.MessageType == messageType));
+    }
+
+    public Task<OutboxMessageSnapshot> GetOutboxMessageAsync(string messageType) => factory.Services
+        .GetRequiredService<IScoped<OutboxDbContext>>()
+        .RunAsync(async outbox =>
+        {
+            var row = await outbox.Set<OutboxMessageEntity>()
+                .AsNoTracking()
+                .SingleAsync(message => message.MessageType == messageType);
+            return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
+        });
+
+    public Task<OutboxMessageSnapshot> GetOutboxMessageAsync(Guid id) => factory.Services
+        .GetRequiredService<IScoped<OutboxDbContext>>()
+        .RunAsync(async outbox =>
+        {
+            var row = await outbox.Set<OutboxMessageEntity>()
+                .AsNoTracking()
+                .SingleAsync(message => message.Id == id);
+            return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
+        });
+
+    public HttpClient CreateClient(UserEntity user) =>
+        CreateClient(user.Id, user.Email);
+
+    public HttpClient CreateClient(Guid userId, string email)
     {
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, email);
         return client;
     }
 
-    public HttpClient CreateClient(UserEntity user, Action<TestClientOptions> configure)
+    public HttpClient CreateClient(UserEntity user, Action<TestClientOptions> configure) =>
+        CreateClient(user.Id, user.Email, configure);
+
+    private HttpClient CreateClient(Guid userId, string email, Action<TestClientOptions> configure)
     {
         var options = new TestClientOptions();
         configure(options);
@@ -251,13 +391,16 @@ public class ApiFixture : IAsyncLifetime
                 b.ConfigureTestServices(options.Services);
         });
 
-        StripeClient = customFactory.Services.GetRequiredService<IWebhookSimulator>();
+        PaymentSimulator = customFactory.Services.GetRequiredService<IWebhookSimulator>();
+        customFactories.Add(customFactory);
 
         var client = customFactory.CreateClient();
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, user.Id.ToString());
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, user.Email);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, email);
         return client;
     }
 
     public HttpClient CreateClient() => factory.CreateClient();
 }
+
+public sealed record OutboxMessageSnapshot(Guid Id, string Payload, bool IsDispatched);

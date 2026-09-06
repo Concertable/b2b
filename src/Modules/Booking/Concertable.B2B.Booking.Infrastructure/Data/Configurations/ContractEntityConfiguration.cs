@@ -1,0 +1,49 @@
+using System.Net;
+using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Booking.Domain.Entities;
+using Concertable.B2B.Deal.Contracts.Enums;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+
+namespace Concertable.B2B.Booking.Infrastructure.Data.Configurations;
+
+internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<ContractEntity>
+{
+    private static readonly ValueConverter<IPAddress, string> IpConverter =
+        new(ip => ip.ToString(), text => IPAddress.Parse(text));
+
+    public void Configure(EntityTypeBuilder<ContractEntity> builder)
+    {
+        builder.ToTable(Schema.Tables.Contracts, Schema.Name);
+        builder.HasOne<BookingEntity>()
+            .WithOne(booking => booking.Contract)
+            .HasForeignKey<ContractEntity>(contract => contract.BookingId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.NoAction);
+        builder.ComplexProperty(contract => contract.Period, period =>
+        {
+            period.Property(value => value.Start).HasColumnName("Period_Start");
+            period.Property(value => value.End).HasColumnName("Period_End");
+        });
+        builder.Property(contract => contract.MandateTermsVersion).HasMaxLength(32);
+        builder.ComplexProperty(contract => contract.Commitment, commitment =>
+        {
+            commitment.Property(value => value.OperationType).HasMaxLength(64);
+            commitment.Property(value => value.ClientReference).HasMaxLength(256);
+        });
+        builder.ComplexProperty(contract => contract.ArtistSignature, ConfigureSignature);
+        builder.ComplexProperty(contract => contract.VenueSignature, ConfigureSignature);
+        builder.HasDiscriminator(contract => contract.DealType)
+            .HasValue<FlatFeeContract>(DealType.FlatFee)
+            .HasValue<VenueHireContract>(DealType.VenueHire)
+            .HasValue<DoorSplitContract>(DealType.DoorSplit)
+            .HasValue<VersusContract>(DealType.Versus);
+    }
+
+    private static void ConfigureSignature(ComplexPropertyBuilder<Signature> builder)
+    {
+        builder.Property(signature => signature.Ip).HasConversion(IpConverter).HasMaxLength(45);
+        builder.Property(signature => signature.UserAgent).HasMaxLength(512);
+    }
+}

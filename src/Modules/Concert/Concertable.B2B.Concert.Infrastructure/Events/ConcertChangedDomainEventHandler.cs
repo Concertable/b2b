@@ -24,8 +24,7 @@ internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHa
     {
         var spec = new ConcertSpecification()
             .Include(concert => concert.Artist)
-            .Include(concert => concert.Venue)
-            .Include(concert => concert.Booking.Application);
+            .Include(concert => concert.Venue);
 
         var concert = await concertRepository.GetByIdAsync(e.ConcertId, spec, ct)
             ?? throw new InvalidOperationException(

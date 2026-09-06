@@ -17,18 +17,6 @@ const applicationApi = {
     return data;
   },
 
-  applyToOpportunityWithPayment: async (
-    opportunityId: number,
-    paymentMethodId: string,
-    eSignature: ESignatureRequest,
-  ): Promise<Application> => {
-    const { data } = await apiClient.post<Application>(
-      `/application/${opportunityId}`,
-      { eSignature, paymentMethodId },
-    );
-    return data;
-  },
-
   applyCheckout: async (opportunityId: number): Promise<Checkout> => {
     const { data } = await apiClient.post<Checkout>(
       `/application/opportunity/${opportunityId}/checkout`,
@@ -62,12 +50,8 @@ const applicationApi = {
   acceptApplication: async (
     applicationId: number,
     eSignature: ESignatureRequest,
-    body?: { paymentMethodId: string },
   ): Promise<void> => {
-    await apiClient.post(`/application/${applicationId}/accept`, {
-      eSignature,
-      ...body,
-    });
+    await apiClient.post(`/application/${applicationId}/accept`, { eSignature });
   },
 
   canAccept: async (applicationId: number): Promise<boolean> => {

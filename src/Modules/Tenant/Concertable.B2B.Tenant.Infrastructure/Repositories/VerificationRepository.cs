@@ -1,5 +1,7 @@
 using Concertable.B2B.Tenant.Domain.Enums;
 using Concertable.B2B.Tenant.Infrastructure.Data;
+using Concertable.DataAccess.Infrastructure.Specifications;
+using Concertable.Kernel.Specifications;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
@@ -9,7 +11,14 @@ internal sealed class VerificationRepository(TenantDbContext context)
 {
     public Task<TenantVerificationEntity?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         Context.Query<TenantVerificationEntity>()
-            .Include(v => v.Documents)
+            .FirstOrDefaultAsync(v => v.TenantId == tenantId, ct);
+
+    public Task<TenantVerificationEntity?> GetByTenantIdAsync(
+        Guid tenantId,
+        ISpecification<TenantVerificationEntity> spec,
+        CancellationToken ct = default) =>
+        Context.Query<TenantVerificationEntity>()
+            .Apply(spec)
             .FirstOrDefaultAsync(v => v.TenantId == tenantId, ct);
 
     public Task<bool> IsApprovedByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>

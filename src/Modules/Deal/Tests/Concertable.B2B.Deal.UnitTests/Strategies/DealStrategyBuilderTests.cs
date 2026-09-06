@@ -11,9 +11,9 @@ public sealed class DealStrategyBuilderTests
         var services = new ServiceCollection();
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.AddDealStrategies(strategies =>
+            services.AddDealStrategies(builder =>
             {
-                strategies.For(DealType.FlatFee)
+                builder.For(DealType.FlatFee)
                     .AddSingleton<ITestStrategy, TestStrategy>()
                     .AddSingleton<ITestStrategy, OtherTestStrategy>();
             }));
@@ -23,52 +23,18 @@ public sealed class DealStrategyBuilderTests
     }
 
     [Fact]
-    public void RequireAll_MissingDealTypes_ThrowsBeforeRegistration()
+    public void Build_MissingDealTypes_ThrowsBeforeRegistration()
     {
         var services = new ServiceCollection();
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.AddDealStrategies(strategies =>
+            services.AddDealStrategies(builder =>
             {
-                strategies.For(DealType.FlatFee)
+                builder.For(DealType.FlatFee)
                     .AddSingleton<ITestStrategy, TestStrategy>();
-                strategies.RequireAll<ITestStrategy>();
             }));
 
         Assert.Contains("Missing: DoorSplit, Versus, VenueHire", exception.Message);
-        Assert.Empty(services);
-    }
-
-    [Fact]
-    public void RequireExactly_UnexpectedDealType_ThrowsBeforeRegistration()
-    {
-        var services = new ServiceCollection();
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.AddDealStrategies(strategies =>
-            {
-                strategies.For(DealType.FlatFee)
-                    .AddSingleton<ITestStrategy, TestStrategy>();
-                strategies.For(DealType.DoorSplit)
-                    .AddSingleton<ITestStrategy, OtherTestStrategy>();
-                strategies.RequireExactly<ITestStrategy>(DealType.FlatFee);
-            }));
-
-        Assert.Contains("Unexpected: DoorSplit", exception.Message);
-        Assert.Empty(services);
-    }
-
-    [Fact]
-    public void Build_StrategyWithoutCoverageDeclaration_ThrowsBeforeRegistration()
-    {
-        var services = new ServiceCollection();
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.AddDealStrategies(strategies =>
-                strategies.For(DealType.FlatFee)
-                    .AddSingleton<ITestStrategy, TestStrategy>()));
-
-        Assert.Contains("Coverage has not been declared for: ITestStrategy", exception.Message);
         Assert.Empty(services);
     }
 
@@ -78,20 +44,23 @@ public sealed class DealStrategyBuilderTests
         var services = new ServiceCollection();
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.AddDealStrategies(strategies =>
+            services.AddDealStrategies(builder =>
             {
-                strategies.For(DealType.FlatFee)
+                builder.For(DealType.FlatFee)
                     .AddSingleton<ITestStrategy, TestStrategy>();
-                strategies.For(DealType.DoorSplit)
+                builder.For(DealType.DoorSplit)
                     .AddScoped<ITestStrategy, TestStrategy>();
-                strategies.RequireExactly<ITestStrategy>(DealType.FlatFee, DealType.DoorSplit);
+                builder.For(DealType.Versus)
+                    .AddScoped<ITestStrategy, TestStrategy>();
+                builder.For(DealType.VenueHire)
+                    .AddScoped<ITestStrategy, TestStrategy>();
             }));
 
         Assert.Contains("TestStrategy has conflicting strategy lifetimes: Singleton, Scoped", exception.Message);
         Assert.Empty(services);
     }
 
-    private interface ITestStrategy;
+    private interface ITestStrategy : IDealStrategy;
 
     private sealed class TestStrategy : ITestStrategy;
 

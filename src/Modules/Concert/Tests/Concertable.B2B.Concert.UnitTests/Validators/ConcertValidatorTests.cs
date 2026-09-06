@@ -1,11 +1,10 @@
+using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Validators;
-using Concertable.Contracts;
 using Concertable.Contracts.Enums;
-using Concertable.Kernel.ValueObjects;
 
-namespace Concertable.B2B.Concert.UnitTests.Validators;
+namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class ConcertValidatorTests
 {
@@ -13,7 +12,7 @@ public sealed class ConcertValidatorTests
 
     public ConcertValidatorTests()
     {
-        this.validator = new ConcertValidator();
+        validator = new ConcertValidator();
     }
 
     [Fact]
@@ -22,7 +21,7 @@ public sealed class ConcertValidatorTests
         var concert = CreateConcert();
         concert.IncrementTicketsSold(4);
 
-        var result = this.validator.CanUpdate(concert, 4);
+        var result = validator.CanUpdate(concert, 4);
 
         Assert.True(result.IsValid);
     }
@@ -33,7 +32,7 @@ public sealed class ConcertValidatorTests
         var concert = CreateConcert();
         concert.IncrementTicketsSold(4);
 
-        var result = this.validator.CanUpdate(concert, 3);
+        var result = validator.CanUpdate(concert, 3);
 
         Assert.True(result.TryGetErrors(out var errors));
         Assert.Equal(
@@ -42,51 +41,31 @@ public sealed class ConcertValidatorTests
     }
 
     [Fact]
-    public void CanPost_UnconfirmedPostedConcert_AccumulatesOrderedStructuredErrors()
+    public void CanPost_PostedConcert_ReturnsStructuredFailure()
     {
         var concert = CreateConcert();
         concert.Post("Concert", "About", 10m, 100, DateTime.UtcNow);
 
-        var result = this.validator.CanPost(concert);
+        var result = validator.CanPost(concert);
 
         Assert.True(result.TryGetErrors(out var errors));
-        Assert.Equal(
-            ["Concert cannot be posted until the booking is confirmed"],
-            errors.Errors["booking"]);
         Assert.Equal(["Concert has already been posted"], errors.Errors["datePosted"]);
-        Assert.Equal(["booking", "datePosted"], errors.Errors.Keys);
     }
 
     [Fact]
-    public void CanPost_ConfirmedUnpostedConcert_ReturnsValid()
+    public void CanPost_UnpostedConcert_ReturnsValid()
     {
         var concert = CreateConcert();
-        concert.Booking.Application.Transition(LifecycleState.Booked);
 
-        var result = this.validator.CanPost(concert);
+        var result = validator.CanPost(concert);
 
         Assert.True(result.IsValid);
     }
 
     private static ConcertEntity CreateConcert()
     {
-        var application = StandardApplication.Create(
-            1,
-            2,
-            DealType.FlatFee,
-            Guid.NewGuid(),
-            Guid.NewGuid());
-        var booking = StandardBooking.Create(application);
+        var booking = ConfirmedBookings.FlatFee(100m);
 
-        return ConcertEntity.CreateDraft(
-            booking,
-            1,
-            2,
-            new DateRange(
-                new DateTime(2026, 6, 1, 20, 0, 0, DateTimeKind.Utc),
-                new DateTime(2026, 6, 1, 23, 0, 0, DateTimeKind.Utc)),
-            "Concert",
-            "About",
-            [Genre.Rock]);
+        return ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", [Genre.Rock]));
     }
 }

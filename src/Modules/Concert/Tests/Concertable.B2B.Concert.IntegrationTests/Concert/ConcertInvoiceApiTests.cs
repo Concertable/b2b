@@ -1,24 +1,15 @@
+using Concertable.B2B.Infrastructure.Payments;
 using System.Net;
 using System.Text;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.User.Domain.Entities;
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
-/// <summary>
-/// The self-billed VAT invoice minted at settlement (<c>IInvoiceIssuer</c>, inside the Finish transaction).
-/// Asserts the supply direction (supplier = settlement payee, customer = its inverse), the VAT decomposition
-/// (unregistered supplier ⇒ no VAT; registered ⇒ inclusive gross decomposed), gap-free per-supplier
-/// numbering, and that a deferred settlement mints nothing. Amounts are the seeded Past* bookings' fees.
-/// </summary>
 [Collection("Integration")]
 public sealed class ConcertInvoiceApiTests : IAsyncLifetime
 {
@@ -36,24 +27,39 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     private Task<InvoiceEntity?> InvoiceForBookingAsync(int bookingId) =>
-        fixture.ConcertReads.Set<InvoiceEntity>().FirstOrDefaultAsync(i => i.BookingId == bookingId);
+        fixture.Invoices.FirstOrDefaultAsync(invoice => invoice.BookingId == bookingId);
 
     private Guid TenantOf(Guid userId) =>
         fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
 
     private async Task RepointArtistTenantAsync(int concertId, Guid artistTenantId)
     {
-        using var scope = fixture.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
-        await context.Concerts.Where(c => c.Id == concertId)
-            .ExecuteUpdateAsync(s => s.SetProperty(c => c.ArtistTenantId, artistTenantId));
+        await fixture.RepointConcertTenantsAsync(concertId, artistTenantId: artistTenantId);
     }
 
-    // The write validator only runs on the org-setup HTTP path; here we set the raw column so a seeded
-    // (VAT-null) supplier becomes registered. VatPolicy keys off presence, not format, so any value registers.
-    private Task SetVatNumberAsync(Guid tenantId, string vatNumber) =>
-        fixture.ConcertReads.Database.ExecuteSqlRawAsync(
-            "UPDATE [tenant].[Tenants] SET TaxCompliance_VatNumber = {0} WHERE Id = {1}", vatNumber, tenantId);
+    private async Task SetVatNumberAsync(Guid tenantId, string vatNumber)
+    {
+        var response = await ClientOfTenant(tenantId).PutAsync("/api/organization", new
+        {
+            legalName = "Registered Supplier Ltd",
+            taxCompliance = new
+            {
+                vatNumber,
+                sellerIdentifier = "12345678",
+                registeredAddress = new
+                {
+                    line1 = "1 High Street",
+                    line2 = (string?)null,
+                    city = "Manchester",
+                    postcode = "M1 1AA",
+                    country = "United Kingdom"
+                },
+                bankReference = "GB29NWBK60161331926819",
+                holdsMusicLicence = true
+            }
+        });
+        await response.ShouldBe(HttpStatusCode.OK);
+    }
 
     // --- Direction + no-VAT (unregistered seed suppliers) ---
 
@@ -61,7 +67,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task Finish_FlatFee_MintsInvoice_ArtistSupplierVenueCustomer_NoVatWhenUnregistered()
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
 
         await fixture.FinishConcertAsync(concert.Id);
 
@@ -82,7 +88,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task Finish_VenueHire_MintsInvoice_VenueSupplierArtistCustomer()
     {
         var booking = fixture.SeedState.PastVenueHireBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
 
         await fixture.FinishConcertAsync(concert.Id);
 
@@ -100,7 +106,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task Finish_DoorSplit_MintsInvoice_ArtistSupplier_GrossMatchesPayout()
     {
         var booking = fixture.SeedState.PastDoorSplitBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
         await fixture.FinishConcertAsync(concert.Id);
@@ -115,7 +121,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal(invoice.Amounts.Gross, invoice.Amounts.Net);
 
         // charged == invoiced: the invoice gross is the exact share the payout step paid, via the shared resolver.
-        var payout = fixture.ManagerPaymentClient.Payments.Single(p => p.BookingId == booking.Id);
+        var payout = fixture.SettlementClient.Payments.Single(p => p.Reference == PaymentOperationReferences.Settlement(concert.Id));
         Assert.Equal(payout.Amount, invoice.Amounts.Gross);
     }
 
@@ -123,7 +129,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task Finish_Versus_MintsInvoice_ArtistSupplier_GrossMatchesPayout()
     {
         var booking = fixture.SeedState.PastVersusBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
         await fixture.FinishConcertAsync(concert.Id);
@@ -134,7 +140,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal(concert.ArtistTenantId, invoice.Supplier.TenantId);
         Assert.Equal(254m, invoice.Amounts.Gross);
 
-        var payout = fixture.ManagerPaymentClient.Payments.Single(p => p.BookingId == booking.Id);
+        var payout = fixture.SettlementClient.Payments.Single(p => p.Reference == PaymentOperationReferences.Settlement(concert.Id));
         Assert.Equal(payout.Amount, invoice.Amounts.Gross);
     }
 
@@ -144,7 +150,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task Finish_FlatFee_RegisteredArtist_DecomposesInclusiveVat()
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await SetVatNumberAsync(concert.ArtistTenantId, "GB123456789");
 
         await fixture.FinishConcertAsync(concert.Id);
@@ -164,7 +170,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task Finish_Deferred_WhenPayeeTaxComplianceIncomplete_MintsNoInvoice()
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await RepointArtistTenantAsync(concert.Id, TenantOf(fixture.SeedState.ArtistManagerNoArtist.Id));
 
         await fixture.FinishConcertAsync(concert.Id);
@@ -180,10 +186,10 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         // Both Past FlatFee and Past DoorSplit are booked to artist 1, so they share a supplier tenant.
         var flatFee = fixture.SeedState.PastFlatFeeBooking;
         var doorSplit = fixture.SeedState.PastDoorSplitBooking;
-        await fixture.DeclareDoorRevenueAsync(doorSplit.Concert!.Id, DoorRevenue);
+        await fixture.DeclareDoorRevenueAsync(fixture.SeedState.ConcertFor(doorSplit).Id, DoorRevenue);
 
-        await fixture.FinishConcertAsync(flatFee.Concert!.Id);
-        await fixture.FinishConcertAsync(doorSplit.Concert!.Id);
+        await fixture.FinishConcertAsync(fixture.SeedState.ConcertFor(flatFee).Id);
+        await fixture.FinishConcertAsync(fixture.SeedState.ConcertFor(doorSplit).Id);
 
         var first = await InvoiceForBookingAsync(flatFee.Id);
         var second = await InvoiceForBookingAsync(doorSplit.Id);
@@ -202,7 +208,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task GetInvoice_IsReadableByPartyVenue_And404ForStranger()
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.FinishConcertAsync(concert.Id);
 
         var venueUser = fixture.SeedState.Users.Single(u => u.Id == TenantUserOf(concert.VenueTenantId));
@@ -224,12 +230,12 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task GetInvoicePdf_IsDownloadableByBothParties()
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.FinishConcertAsync(concert.Id);
 
         foreach (var tenantId in new[] { concert.VenueTenantId, concert.ArtistTenantId })
         {
-            var party = fixture.CreateClient(UserOfTenant(tenantId));
+            var party = ClientOfTenant(tenantId);
             var response = await party.GetAsync($"/api/concert/{concert.Id}/invoice/pdf");
 
             await response.ShouldBe(HttpStatusCode.OK);
@@ -244,10 +250,11 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task GetInvoicePdf_Returns404ForStranger()
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.FinishConcertAsync(concert.Id);
 
-        var venueUser = UserOfTenant(concert.VenueTenantId);
+        var venueUser = fixture.SeedState.Users.Single(
+            user => user.Id == TenantUserOf(concert.VenueTenantId));
         var strangerUser = venueUser.Id == fixture.SeedState.VenueManager1.Id
             ? fixture.SeedState.VenueManager2
             : fixture.SeedState.VenueManager1;
@@ -262,7 +269,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task GetInvoicePdf_LazyRendersMissingBlob_UnderInvoicesPrefix()
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.FinishConcertAsync(concert.Id);
 
         // The blob location is assigned at mint (in the finish transaction) under the invoices/ prefix,
@@ -272,7 +279,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.NotNull(invoice);
         Assert.StartsWith("invoices/", invoice!.PdfBlobName);
 
-        var response = await fixture.CreateClient(UserOfTenant(concert.VenueTenantId))
+        var response = await ClientOfTenant(concert.VenueTenantId)
             .GetAsync($"/api/concert/{concert.Id}/invoice/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.Equal("%PDF", Encoding.ASCII.GetString(await response.Content.ReadAsByteArrayAsync(), 0, 4));
@@ -282,12 +289,12 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task GetInvoicePdf_RendersSelfBillingLegends_AndBothPartyVatNumbers()
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await SetVatNumberAsync(concert.ArtistTenantId, "GB111111111");   // supplier registered
         await SetVatNumberAsync(concert.VenueTenantId, "GB222222222");    // customer registered
         await fixture.FinishConcertAsync(concert.Id);
 
-        var response = await fixture.CreateClient(UserOfTenant(concert.VenueTenantId))
+        var response = await ClientOfTenant(concert.VenueTenantId)
             .GetAsync($"/api/concert/{concert.Id}/invoice/pdf");
         await response.ShouldBe(HttpStatusCode.OK);
         var text = Pdf.ExtractText(await response.Content.ReadAsByteArrayAsync());
@@ -305,8 +312,8 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     public async Task ConcertUserRead_ExposesInvoiceLink_OnlyAfterSettlement()
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
-        var concert = booking.Concert!;
-        var party = fixture.CreateClient(UserOfTenant(concert.VenueTenantId));
+        var concert = fixture.SeedState.ConcertFor(booking);
+        var party = ClientOfTenant(concert.VenueTenantId);
 
         // Before settlement: the party reads its concert, but no invoice exists yet -> no link.
         var before = await (await party.GetAsync($"/api/organization/concert/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
@@ -320,8 +327,9 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal($"/api/concert/{concert.Id}/invoice/pdf", after!.Actions!.Invoice!.Href);
     }
 
-    private UserEntity UserOfTenant(Guid tenantId) =>
-        fixture.SeedState.Users.Single(u => u.Id == TenantUserOf(tenantId));
+    private HttpClient ClientOfTenant(Guid tenantId) =>
+        fixture.CreateClient(fixture.SeedState.Users.Single(
+            user => user.Id == TenantUserOf(tenantId)));
 
     private Guid TenantUserOf(Guid tenantId) =>
         fixture.SeedState.Tenants.Single(t => t.Id == tenantId).CreatedByUserId;

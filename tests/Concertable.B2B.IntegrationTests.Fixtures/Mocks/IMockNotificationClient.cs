@@ -5,6 +5,6 @@ namespace Concertable.B2B.IntegrationTests.Fixtures.Mocks;
 
 public interface IMockNotificationClient : INotificationClient, IResettable
 {
-    List<(string UserId, object Payload)> DraftCreated { get; }
-    List<(string UserId, string EventName, object Payload)> Other { get; }
+    IReadOnlyCollection<(string UserId, object Payload)> DraftCreated { get; }
+    IReadOnlyCollection<(string UserId, string EventName, object Payload)> Other { get; }
 }

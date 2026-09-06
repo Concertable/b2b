@@ -2,11 +2,7 @@ using System.Net;
 using System.Text;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Domain.ValueObjects;
-using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -60,7 +56,7 @@ public sealed class SelfBillingAgreementApiTests : IAsyncLifetime
 
         await grant.ShouldBe(HttpStatusCode.NoContent);
         var tenantId = TenantIdOf(fixture.SeedState.VenueManager1.Id);
-        var row = await fixture.ConcertReads.Set<SelfBillingAgreementEntity>().SingleAsync(a => a.TenantId == tenantId);
+        var row = await fixture.SelfBillingAgreements.SingleAsync(a => a.TenantId == tenantId);
         Assert.Equal(fixture.SeedState.VenueManager1.Id, row.SupplierESignature.UserId);
         Assert.Equal("Vince Venue", row.SupplierESignature.SignatoryName);
 
@@ -80,7 +76,7 @@ public sealed class SelfBillingAgreementApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var tenantId = TenantIdOf(fixture.SeedState.VenueManager1.Id);
-        Assert.False(await fixture.ConcertReads.Set<SelfBillingAgreementEntity>().AnyAsync(a => a.TenantId == tenantId));
+        Assert.False(await fixture.SelfBillingAgreements.AnyAsync(a => a.TenantId == tenantId));
     }
 
     [Fact]
@@ -98,7 +94,7 @@ public sealed class SelfBillingAgreementApiTests : IAsyncLifetime
     public async Task Renew_BeforeExpiry_OffersRenewAffordance_AndAppendsAcceptance()
     {
         var tenantId = TenantIdOf(fixture.SeedState.VenueManager1.Id);
-        await InsertAgreementAsync(tenantId, AppNowUtc().AddDays(-350)); // in force, but within the 30-day renewal window
+        await InsertAgreementAsync(tenantId, fixture.SeedNow.AddDays(-350)); // in force, but within the 30-day renewal window
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var status = await ReadStatusAsync(client);
@@ -108,14 +104,14 @@ public sealed class SelfBillingAgreementApiTests : IAsyncLifetime
 
         var renew = await client.PostAsync(Path, new { eSignature = new { signatoryName = "Vince Venue" } });
         await renew.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Equal(2, await fixture.ConcertReads.Set<SelfBillingAgreementEntity>().CountAsync(a => a.TenantId == tenantId));
+        Assert.Equal(2, await fixture.SelfBillingAgreements.CountAsync(a => a.TenantId == tenantId));
     }
 
     [Fact]
     public async Task Renew_AfterExpiry_FlipsFromExpiredToActive()
     {
         var tenantId = TenantIdOf(fixture.SeedState.VenueManager1.Id);
-        await InsertAgreementAsync(tenantId, AppNowUtc().AddMonths(-13)); // lapsed
+        await InsertAgreementAsync(tenantId, fixture.SeedNow.AddMonths(-13)); // lapsed
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var expired = await ReadStatusAsync(client);
@@ -166,25 +162,6 @@ public sealed class SelfBillingAgreementApiTests : IAsyncLifetime
     private Guid TenantIdOf(Guid userId) =>
         fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
 
-    private DateTime AppNowUtc()
-    {
-        using var scope = fixture.Services.CreateScope();
-        return scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime;
-    }
-
-    // A host (no-HTTP) scope, so the tenant interceptor no-ops and the row keeps the explicit supplier TenantId.
-    private async Task InsertAgreementAsync(Guid tenantId, DateTime acceptedAtUtc)
-    {
-        using var scope = fixture.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
-        context.SelfBillingAgreements.Add(SelfBillingAgreementEntity.Create(
-            tenantId,
-            new InvoiceParty(tenantId, "Sally Supplier Ltd", "GB123456789", "1 Road", null, "Town", "AB1 2CD", "United Kingdom"),
-            new ESignature(Guid.NewGuid(), acceptedAtUtc, IPAddress.Loopback, "supplier-agent", "Sally Supplier", null),
-            "This self-billing agreement authorises self-billed invoices.",
-            "2026-07",
-            acceptedAtUtc,
-            acceptedAtUtc));
-        await context.SaveChangesAsync();
-    }
+    private Task InsertAgreementAsync(Guid tenantId, DateTime acceptedAtUtc) =>
+        fixture.AddSelfBillingAgreementAsync(tenantId, acceptedAtUtc);
 }

@@ -58,16 +58,10 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
         var seededConcert = fixture.SeedState.Concerts.First(concert => concert.DatePosted is not null);
         var concert = await context.Concerts
-            .Include(entity => entity.Booking)
-            .ThenInclude(booking => booking.Application)
-            .ThenInclude(application => application.Opportunity)
             .SingleAsync(entity => entity.Id == seededConcert.Id);
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime;
-        var opportunity = concert.Booking.Application.Opportunity;
-        opportunity.Update(
-            new DateRange(now.AddHours(-1), now.AddHours(1)),
-            opportunity.DealId,
-            opportunity.Genres);
+        context.Entry(concert).ComplexProperty(entity => entity.Period).CurrentValue =
+            new DateRange(now.AddHours(-1), now.AddHours(1));
         await context.SaveChangesAsync();
 
         var venueResponse = await CreateOwningVenueClient(concert.VenueId)
@@ -91,6 +85,39 @@ public sealed class ConcertApiTests : IAsyncLifetime
         fixture.CreateClient(fixture.SeedState.ArtistManagers.Single(manager =>
             manager.Id == fixture.SeedState.Artists.Single(artist => artist.Id == artistId).UserId));
 
+    #region Update
+
+    [Fact]
+    public async Task Update_WhenAnotherUpdateWinsTheRace_ReturnsConflictAndPreservesWinner()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
+        var client = CreateOwningVenueClient(concert.VenueId);
+        var competitor = CreateOwningVenueClient(concert.VenueId);
+        HttpResponseMessage? winnerResponse = null;
+        fixture.ArmConcertConflict(async () =>
+        {
+            winnerResponse = await competitor.PutAsync(
+                $"/api/concert/{concert.Id}",
+                BuildPostRequest(name: "Winner"));
+        });
+
+        var response = await client.PutAsync(
+            $"/api/concert/{concert.Id}",
+            BuildPostRequest(name: "Loser"));
+
+        Assert.NotNull(winnerResponse);
+        await winnerResponse.ShouldBe(HttpStatusCode.OK);
+        await response.ShouldBe(HttpStatusCode.Conflict);
+        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal("concert.update.superseded", problem.Extensions["code"]?.ToString());
+        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal("Winner", persisted.Name);
+    }
+
+    #endregion
+
     #region Post
 
     [Fact]
@@ -100,7 +127,7 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.Unauthorized);
@@ -113,39 +140,20 @@ public sealed class ConcertApiTests : IAsyncLifetime
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
-    public async Task Post_ShouldReturn400_WhenBookingNotConfirmed()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var request = BuildPostRequest();
-
-        var response = await client.PutAsync(
-            $"/api/concert/post/{fixture.SeedState.AwaitingPaymentBooking.Concert!.Id}",
-            request);
-
-        await response.ShouldBe(HttpStatusCode.BadRequest);
-        var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
-        Assert.NotNull(problem);
-        Assert.Equal("concert.post.invalid", problem.Extensions["code"].ToString());
-        Assert.Equal(
-            ["Concert cannot be posted until the booking is confirmed"],
-            problem.Errors["booking"]);
-    }
-
-    [Fact]
     public async Task Post_ShouldReturn204_WhenPostedSuccessfully()
     {
-        var client = CreateOwningVenueClient(fixture.SeedState.ConfirmedBooking.Concert!.VenueId);
+        var client = CreateOwningVenueClient(fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).VenueId);
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
-            $"/api/concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -154,21 +162,21 @@ public sealed class ConcertApiTests : IAsyncLifetime
     [Fact]
     public async Task Post_ShouldReturn400_WhenAlreadyPosted()
     {
-        var client = CreateOwningVenueClient(fixture.SeedState.ConfirmedBooking.Concert!.VenueId);
+        var client = CreateOwningVenueClient(fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).VenueId);
         var request = BuildPostRequest();
 
         await client.PutAsync(
-            $"/api/concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).Id}",
             request);
 
         var response = await client.PutAsync(
-            $"/api/concert/post/{fixture.SeedState.ConfirmedBooking.Concert!.Id}",
+            $"/api/concert/post/{fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).Id}",
             request);
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadAsync<ValidationProblemDetails>();
         Assert.NotNull(problem);
-        Assert.Equal("concert.post.invalid", problem.Extensions["code"].ToString());
+        Assert.Equal("concert.post.invalid", problem.Extensions["code"]?.ToString());
         Assert.Equal(["Concert has already been posted"], problem.Errors["datePosted"]);
     }
 

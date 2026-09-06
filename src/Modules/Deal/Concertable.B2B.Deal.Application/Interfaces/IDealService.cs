@@ -13,5 +13,4 @@ internal interface IDealService
     UnitResult<ValidationErrors> Validate(DealDto deal);
     Task<Result<int, CreateDealError>> CreateAsync(DealDto deal, CancellationToken ct = default);
     Task<UnitResult<UpdateDealError>> UpdateAsync(int dealId, DealDto deal, CancellationToken ct = default);
-    Task DeleteAsync(int dealId, CancellationToken ct = default);
 }

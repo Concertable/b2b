@@ -1,0 +1,10 @@
+global using Concertable.B2B.Application.Application.DTOs;
+global using Concertable.B2B.Application.Application.Interfaces;
+global using Concertable.B2B.Application.Application.Requests;
+global using Concertable.B2B.Application.Application.Responses;
+global using Concertable.B2B.Tenant.Contracts;
+global using Concertable.B2B.Tenant.Contracts.Enums;
+global using Concertable.Contracts;
+global using Concertable.Contracts.Enums;
+global using Reunion;
+global using Reunion.AspNetCore.Mvc;

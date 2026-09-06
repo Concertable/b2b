@@ -8,11 +8,18 @@ namespace Concertable.B2B.Venue.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddVenueApi(this IServiceCollection services, IConfiguration configuration)
+    extension(IServiceCollection services)
     {
-        services.AddVenueModule(configuration);
-        services.AddControllers()
-            .AddInternalControllers(typeof(VenueController).Assembly);
-        return services;
+        public IServiceCollection AddVenueApi(IConfiguration configuration)
+        {
+            services.AddVenueModule(configuration);
+            services.AddControllers()
+                .AddInternalControllers(typeof(VenueController).Assembly);
+            return services;
+        }
+
+        public IServiceCollection AddVenueDevSeeder() =>
+            Concertable.B2B.Venue.Infrastructure.Extensions.ServiceCollectionExtensions
+                .AddVenueDevSeeder(services);
     }
 }

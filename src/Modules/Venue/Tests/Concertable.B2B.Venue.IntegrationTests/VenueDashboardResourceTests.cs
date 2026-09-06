@@ -13,9 +13,9 @@ namespace Concertable.B2B.Venue.IntegrationTests;
 [Collection("Integration")]
 public sealed class VenueDashboardResourceTests : IAsyncLifetime
 {
-    private readonly ApiFixture fixture;
+    private readonly VenueApiFixture fixture;
 
-    public VenueDashboardResourceTests(ApiFixture fixture, ITestOutputHelper output)
+    public VenueDashboardResourceTests(VenueApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);

@@ -78,7 +78,7 @@ export function useVenueApplicationActions() {
           description:
             pendingAction.name === "decline"
               ? "The artist will be notified that their application was declined."
-              : "The application will be cancelled and any payment held will be refunded in full.",
+              : "The artist will be notified that their application was cancelled.",
           confirmLabel:
             pendingAction.name === "decline"
               ? "Decline application"

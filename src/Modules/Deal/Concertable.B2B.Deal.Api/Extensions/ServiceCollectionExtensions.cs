@@ -15,4 +15,8 @@ public static class ServiceCollectionExtensions
             .AddInternalControllers(typeof(DealController).Assembly);
         return services;
     }
+
+    public static IServiceCollection AddDealDevSeeder(this IServiceCollection services) =>
+        Concertable.B2B.Deal.Infrastructure.Extensions.ServiceCollectionExtensions
+            .AddDealDevSeeder(services);
 }

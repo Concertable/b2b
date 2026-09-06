@@ -1,7 +1,4 @@
-using Concertable.B2B.Concert.Contracts;
-using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.Concert.Infrastructure.Extensions;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
 using Microsoft.EntityFrameworkCore;
@@ -15,105 +12,73 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 internal sealed class ConcertDashboardRepository : IConcertDashboardRepository
 {
     private readonly ConcertDbContext context;
-    private readonly IUpcomingSpecification<OpportunityEntity> opportunityUpcomingSpec;
-    private readonly IUpcomingSpecification<ConcertEntity> concertUpcomingSpec;
-    private readonly IEndedAndBookedSpecification endedAndBookedSpec;
-    private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstandingSpec;
+    private readonly IUpcomingSpecification<ConcertEntity> concertUpcoming;
+    private readonly IEndedSpecification endedSpecification;
+    private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
 
     public ConcertDashboardRepository(
         ConcertDbContext context,
-        IUpcomingSpecification<OpportunityEntity> opportunityUpcomingSpec,
-        IUpcomingSpecification<ConcertEntity> concertUpcomingSpec,
-        IEndedAndBookedSpecification endedAndBookedSpec,
-        IDoorRevenueOutstandingSpecification doorRevenueOutstandingSpec)
+        IUpcomingSpecification<ConcertEntity> concertUpcoming,
+        IEndedSpecification endedSpecification,
+        IDoorRevenueOutstandingSpecification doorRevenueOutstanding)
     {
         this.context = context;
-        this.opportunityUpcomingSpec = opportunityUpcomingSpec;
-        this.concertUpcomingSpec = concertUpcomingSpec;
-        this.endedAndBookedSpec = endedAndBookedSpec;
-        this.doorRevenueOutstandingSpec = doorRevenueOutstandingSpec;
+        this.concertUpcoming = concertUpcoming;
+        this.endedSpecification = endedSpecification;
+        this.doorRevenueOutstanding = doorRevenueOutstanding;
     }
 
-    public Task<VenueDashboardCounts?> GetVenueCountsAsync(
+    public Task<VenueConcertDashboardCounts?> GetVenueCountsAsync(
         Guid venueTenantId,
         CancellationToken ct = default)
     {
-        var applicationOpportunityUpcomingSpec =
-            opportunityUpcomingSpec.Via((ApplicationEntity a) => a.Opportunity);
-
-        var applications = context.Applications
-                .Where(a => a.State == LifecycleState.Applied
-                    && a.VenueTenantId == venueTenantId)
-                .Where(applicationOpportunityUpcomingSpec.ToExpression());
-
-        var openOpportunities = context.Opportunities
-                .Where(o => o.TenantId == venueTenantId)
-                .WhereOpen()
-                .Where(opportunityUpcomingSpec.ToExpression());
-
         var upcomingConcerts = context.Concerts
             .Where(c => c.VenueTenantId == venueTenantId)
-            .Where(concertUpcomingSpec.ToExpression());
+            .Where(concertUpcoming.ToExpression());
 
-        var awaitingDoorRevenueSpec = endedAndBookedSpec.And(doorRevenueOutstandingSpec);
-
-        var awaitingDoorRevenueConcerts = context.Concerts
-            .Where(c => c.VenueTenantId == venueTenantId)
-            .Where(awaitingDoorRevenueSpec.ToExpression());
+        var awaitingDoorRevenue = context.Concerts
+            .Where(c =>
+                c.VenueTenantId == venueTenantId &&
+                (c.State == ConcertState.Draft || c.State == ConcertState.Posted))
+            .Where(endedSpecification.And(doorRevenueOutstanding).ToExpression());
 
         return context.VenueReadModels
             .Where(v => v.TenantId == venueTenantId)
-            .ToVenueCounts(applications, openOpportunities, upcomingConcerts, awaitingDoorRevenueConcerts)
+            .ToVenueCounts(upcomingConcerts, awaitingDoorRevenue)
             .FirstOrDefaultAsync(ct);
     }
 
-    public Task<ArtistDashboardCounts?> GetArtistCountsAsync(
+    public Task<ArtistConcertDashboardCounts?> GetArtistCountsAsync(
         Guid artistTenantId,
-        IReadOnlyCollection<DealType> checkoutCapableDealTypes,
         CancellationToken ct = default)
     {
-        var applicationOpportunityUpcomingSpec =
-            opportunityUpcomingSpec.Via((ApplicationEntity a) => a.Opportunity);
-
-        var applications = context.Applications
-                .Where(a => a.State == LifecycleState.Applied
-                    && a.ArtistTenantId == artistTenantId)
-                .Where(applicationOpportunityUpcomingSpec.ToExpression());
-
-        var acceptedAwaitingCheckout = context.Applications
-                .Where(a => a.State == LifecycleState.Accepted
-                    && a.ArtistTenantId == artistTenantId
-                    && checkoutCapableDealTypes.Contains(a.DealType))
-                .Where(applicationOpportunityUpcomingSpec.ToExpression());
-
         var upcomingConcerts = context.Concerts
             .Where(c => c.ArtistTenantId == artistTenantId)
-            .Where(concertUpcomingSpec.ToExpression());
+            .Where(concertUpcoming.ToExpression());
 
         return context.ArtistReadModels
             .Where(a => a.TenantId == artistTenantId)
-            .ToArtistCounts(applications, acceptedAwaitingCheckout, upcomingConcerts)
+            .ToArtistCounts(upcomingConcerts)
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
-        IReadOnlyCollection<int> bookingIds,
+    public async Task<IReadOnlyList<SettlementContext>> GetSettlementContextsAsync(
+        IReadOnlyCollection<int> concertIds,
         CancellationToken ct = default)
     {
-        if (bookingIds.Count == 0)
+        if (concertIds.Count == 0)
             return [];
 
-        return await context.Bookings
+        return await context.Concerts
             .AsNoTracking()
-            .Where(b => bookingIds.Contains(b.Id) && b.Concert != null)
-            .Select(b => new ManagerSettlementContext(
-                b.Id,
-                b.Concert!.Id,
-                b.Concert.Name,
-                b.VenueTenantId,
-                b.ArtistTenantId,
-                b.Application.Opportunity.Venue.Name,
-                b.Application.Artist.Name))
+            .Where(concert => concertIds.Contains(concert.Id))
+            .Select(concert => new SettlementContext(
+                concert.Id,
+                concert.Name,
+                concert.VenueTenantId,
+                concert.ArtistTenantId,
+                concert.Venue.Name,
+                concert.Artist.Name))
             .ToListAsync(ct);
     }
 }
