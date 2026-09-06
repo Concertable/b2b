@@ -193,13 +193,16 @@ public sealed class B2BHostGraphTests
     {
         SpaSurface[] expected =
         [
-            new("venue", 5175, "Venue"),
-            new("artist", 5176, "Artist"),
-            new("business", 5177, null),
-            new("admin", 5178, "Admin")
+            new("venue", 5175),
+            new("artist", 5176),
+            new("business", 5177),
+            new("admin", 5178)
         ];
 
         Assert.Equal(expected, B2BLocalSpaSurfaces.All);
+        Assert.Equal(
+            new[] { (expected[0], "Venue"), (expected[1], "Artist"), (expected[3], "Admin") },
+            B2BLocalSpaSurfaces.AuthClients);
         Assert.Equal(expected.Length, B2BLocalSpaSurfaces.All.Select(surface => surface.ResourceName).Distinct().Count());
         Assert.Equal(expected.Length, B2BLocalSpaSurfaces.All.Select(surface => surface.HttpsPort).Distinct().Count());
     }
@@ -233,6 +236,9 @@ public sealed class B2BHostGraphTests
         Assert.Equal(
             B2BLocalSpaSurfaces.All.Select(surface => surface.ResourceName).Order(),
             nodeApps.Select(resource => resource.Name).Order());
+        var authClients = B2BLocalSpaSurfaces.AuthClients.ToDictionary(
+            registration => registration.Surface,
+            registration => registration.ClientName);
 
         for (var index = 0; index < B2BLocalSpaSurfaces.All.Count; index++)
         {
@@ -244,7 +250,7 @@ public sealed class B2BHostGraphTests
             Assert.Equal(surface.HttpsPort, endpoint.Port);
             Assert.Equal(surface.Origin, b2bEnvironment[$"Cors__AllowedOrigins__{index}"]);
 
-            if (surface.AuthClient is not { } authClient)
+            if (!authClients.TryGetValue(surface, out var authClient))
                 continue;
 
             Assert.Equal(
