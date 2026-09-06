@@ -138,6 +138,7 @@ public sealed class OpportunityApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.Created);
         var created = await response.Content.ReadAsync<OpportunityResponse>();
+        Assert.NotNull(created);
         Assert.Equal([Genre.Rock, Genre.Pop], created.Genres);
 
         var persisted = await fixture.Opportunities.SingleAsync(o => o.Id == created.Id);
