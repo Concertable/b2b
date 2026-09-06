@@ -24,9 +24,9 @@ function appendVenueFields(
 }
 
 const venueApi = {
-  getVenue: async (): Promise<Venue | undefined> => {
+  getVenue: async (): Promise<Venue | null> => {
     const { data } = await apiClient.getOptional<Venue>("/organization/venue");
-    return data ?? undefined;
+    return data;
   },
 
   createVenue: async (request: CreateVenueRequest): Promise<Venue> => {

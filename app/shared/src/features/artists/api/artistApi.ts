@@ -27,9 +27,9 @@ function appendArtistFields(
 }
 
 const artistApi = {
-  getArtist: async (): Promise<Artist | undefined> => {
+  getArtist: async (): Promise<Artist | null> => {
     const { data } = await apiClient.getOptional<Artist>("/organization/artist");
-    return data ?? undefined;
+    return data;
   },
 
   createArtist: async (request: CreateArtistRequest): Promise<Artist> => {

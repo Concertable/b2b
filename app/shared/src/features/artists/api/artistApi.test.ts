@@ -2,13 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import artistApi from "./artistApi";
 
 const mocks = vi.hoisted(() => ({
+  getOptional: vi.fn(),
   post: vi.fn(),
   put: vi.fn(),
 }));
 
 vi.mock("@concertable/shared/lib/apiClient", () => ({
   apiClient: {
-    getOptional: vi.fn(),
+    getOptional: mocks.getOptional,
     post: mocks.post,
     put: mocks.put,
   },
@@ -26,6 +27,14 @@ describe("artistApi", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal("FormData", CapturingFormData);
+  });
+
+  it("preserves the organization-profile route's null result", async () => {
+    mocks.getOptional.mockResolvedValue({ data: null });
+
+    await expect(artistApi.getArtist()).resolves.toBeNull();
+
+    expect(mocks.getOptional).toHaveBeenCalledWith("/organization/artist");
   });
 
   it("creates an artist with the complete multipart request", async () => {

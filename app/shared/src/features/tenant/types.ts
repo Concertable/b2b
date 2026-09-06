@@ -1,8 +1,23 @@
 import type { User } from "@concertable/shared/features/auth/types";
 import type { TENANT_ROLES } from "./constants";
 
-export type TenantType = "Venue" | "Artist";
+export type TenantType = "venue" | "artist";
 export type TenantRole = (typeof TENANT_ROLES)[number];
+
+export type TenantPermission =
+  | "OperationsView"
+  | "ProfileEdit"
+  | "PayoutsManage"
+  | "SettlementView"
+  | "SettlementTrigger"
+  | "TenantSettingsEdit"
+  | "TenantDelete"
+  | "MembersInvite"
+  | "MembersRemove"
+  | "MembersManageRoles"
+  | "MessagesRead"
+  | "MessagesSend"
+  | "ConcertsOpsEdit";
 
 export interface Membership {
   readonly tenantId: string;
