@@ -6,6 +6,7 @@ using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Hosting;
+using Concertable.B2B.Hosting.Frontend;
 using Concertable.B2B.Seed.Simulator;
 using Concertable.B2B.Web;
 using Concertable.B2B.Workers;
@@ -188,6 +189,59 @@ public sealed class B2BHostGraphTests
         await AssertTunnelValueAsync(authEnvironment, "Auth__PublicUrl", "b2b-dev-auth-https", cancellation.Token);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FrontendWorkspaces_ExtractedAndMonorepoLayouts_ResolveEveryProductionCandidate(
+        bool includeMonorepoLayout)
+    {
+        var root = Directory.CreateTempSubdirectory("concertable-b2b-frontend-");
+        try
+        {
+            CreateDirectories(root, [
+                ["app", "web", "venue"],
+                ["app", "web", "artist"],
+                ["app", "web", "business"],
+                ["app", "web", "admin"],
+                ["app", "mobile"]
+            ]);
+            if (includeMonorepoLayout)
+            {
+                CreateDirectories(root, [
+                    ["app", "web", "b2b", "venue"],
+                    ["app", "web", "b2b", "artist"],
+                    ["app", "web", "b2b", "business"],
+                    ["app", "mobile", "b2b"]
+                ]);
+            }
+
+            var builder = CreateFrontendBuilder(root);
+            IResourceBuilder<IResourceWithServiceDiscovery> api =
+                builder.AddResource(new ServiceContainerResource("b2b-api"));
+            IResourceBuilder<IResourceWithServiceDiscovery> auth =
+                builder.AddResource(new ServiceContainerResource("auth"));
+            IResourceBuilder<IResourceWithServiceDiscovery> payment =
+                builder.AddResource(new ServiceContainerResource("payment"));
+            builder.AddVenueSpa(api, auth);
+            builder.AddArtistSpa(api, auth);
+            builder.AddBusinessSpa(api, auth);
+            builder.AddAdminSpa(api, auth);
+            Assert.NotNull(builder.AddMobileB2B(api, auth, payment));
+
+            var webPrefix = includeMonorepoLayout ? new[] { "app", "web", "b2b" } : ["app", "web"];
+            AssertNodeAppDirectory(builder, "venue", [.. webPrefix, "venue"]);
+            AssertNodeAppDirectory(builder, "artist", [.. webPrefix, "artist"]);
+            AssertNodeAppDirectory(builder, "business", [.. webPrefix, "business"]);
+            AssertNodeAppDirectory(builder, "admin", "app", "web", "admin");
+            AssertNodeAppDirectory(builder, "mobile-b2b",
+                includeMonorepoLayout ? ["app", "mobile", "b2b"] : ["app", "mobile"]);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public void LocalSpaSurfaces_AreCanonicalAndCollisionFree()
     {
@@ -275,6 +329,20 @@ public sealed class B2BHostGraphTests
                 .GetResult();
 
         Assert.Equal(expected, args);
+    }
+
+    private static IDistributedApplicationBuilder CreateFrontendBuilder(DirectoryInfo root) =>
+        DistributedApplication.CreateBuilder(new DistributedApplicationOptions
+        {
+            Args = ["--environment", "Development", "--RunMobile=true"],
+            DisableDashboard = true,
+            ProjectDirectory = root.FullName
+        });
+
+    private static void CreateDirectories(DirectoryInfo root, IReadOnlyList<string[]> relativePaths)
+    {
+        foreach (var relativePath in relativePaths)
+            Directory.CreateDirectory(Path.Combine([root.FullName, .. relativePath]));
     }
 
     private static void AllocateTunnelEndpoints(IDistributedApplicationBuilder builder, string tunnelName)
