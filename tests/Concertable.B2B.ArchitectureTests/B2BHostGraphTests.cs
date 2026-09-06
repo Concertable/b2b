@@ -131,7 +131,7 @@ public sealed class B2BHostGraphTests
         AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "https");
         AssertContainerRuntimeArgs(validBuilder, AuthConstants.Resource, "--user", "root");
         AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
-        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https");
+        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https", scheme: "https");
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http");
         Assert.DoesNotContain(validBuilder.Resources.OfType<NodeAppResource>(),
             resource => resource.Name.StartsWith("mobile-", StringComparison.Ordinal));

@@ -29,7 +29,7 @@ public static class AppHost
                           .WithHttpsEndpoint(targetPort: AuthConstants.ContainerPort, name: "https");
         auth.WithSpaClients(B2BLocalSpaSurfaces.AuthClients);
         var paymentWeb = builder.AddPaymentWeb(PaymentWebImage, PaymentWebDigest, auth, paymentDb, asb)
-                                .WithHttpEndpoint(targetPort: 8080, name: "https")
+                                .WithHttpsEndpoint(targetPort: 8080, name: "https")
                                 .WithHttpEndpoint(targetPort: 8080, name: "http");
         var api = builder.AddB2BWeb<Projects.Concertable_B2B_Web>(b2bDb, auth, storage, blobs, asb, paymentWeb);
         auth.WithEnvironment("Services__B2BApiUrl", api.GetEndpoint("https"));
