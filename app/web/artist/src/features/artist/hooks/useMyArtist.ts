@@ -1,4 +1,4 @@
-import { useMyArtist as useMyArtistShared } from "@concertable/shared/features/artists";
+import { useMyArtist as useMyArtistShared } from "@concertable/b2b/features/artists";
 import { toast } from "sonner";
 
 export function useMyArtist() {

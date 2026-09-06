@@ -1,4 +1,4 @@
-import type { TenantType } from "../types";
+import type { TenantType } from "@concertable/b2b/features/tenant/types";
 import {
   Select,
   SelectContent,

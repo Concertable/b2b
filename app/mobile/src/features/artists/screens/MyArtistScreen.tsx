@@ -2,7 +2,7 @@ import { useLayoutEffect } from "react";
 import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { notify } from "@concertable/mobile/lib/toast";
-import { useMyArtist } from "@concertable/shared/features/artists";
+import { useMyArtist } from "@concertable/b2b/features/artists";
 import { EditableProvider } from "@concertable/shared/providers";
 import { Screen } from "@concertable/mobile/components/ui/Screen";
 import { Skeleton } from "@concertable/mobile/components/ui/skeleton";

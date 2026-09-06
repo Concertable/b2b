@@ -1,4 +1,4 @@
-import { useCreateArtist as useCreateArtistShared } from "@concertable/shared/features/artists";
+import { useCreateArtist as useCreateArtistShared } from "@concertable/b2b/features/artists";
 import { useNavigate } from "@tanstack/react-router";
 
 export function useCreateArtist() {

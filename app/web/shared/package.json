@@ -96,6 +96,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "dependencies": {
+    "@concertable/b2b": "*",
     "@concertable/shared": "*",
     "@concertable/web": "*",
     "@hookform/resolvers": "^5.9.1",

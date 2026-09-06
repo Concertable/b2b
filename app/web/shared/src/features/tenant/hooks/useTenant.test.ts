@@ -9,23 +9,20 @@ const mocks = vi.hoisted(() => ({
       {
         tenantId: "existing-tenant",
         legalName: "Existing Venue",
-        type: "venue",
-        role: "staff",
+        type: "venue" as const,
+        role: "staff" as const,
       },
     ],
   },
   invalidateQueries: vi.fn(),
   invalidateRouter: vi.fn(),
-  selectInStore: vi.fn(),
-  synchronizeTenant: vi.fn(),
+  selectTenant: vi.fn(),
 }));
 
 vi.mock("react", () => ({
   useCallback: (callback: unknown) => callback,
-  useEffect: vi.fn(),
 }));
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: mocks.identity }),
   useQueryClient: () => ({
     fetchQuery: mocks.fetchQuery,
     invalidateQueries: mocks.invalidateQueries,
@@ -34,44 +31,24 @@ vi.mock("@tanstack/react-query", () => ({
 vi.mock("@tanstack/react-router", () => ({
   useRouter: () => ({ invalidate: mocks.invalidateRouter }),
 }));
-
-vi.mock("@concertable/web/features/user", () => ({
-  meQueryKey: ["auth", "me"],
-  useMeQuery: () => ({ data: mocks.identity }),
-}));
-vi.mock("../api/identityApi", () => ({
-  default: { getMe: mocks.getMe },
-}));
-vi.mock("../memberships", () => ({
-  resolveTenant: vi.fn(() => ({
+vi.mock("@concertable/b2b/features/tenant", () => ({
+  b2bIdentityKeys: { all: () => ["auth", "me"] },
+  identityApi: { getMe: mocks.getMe },
+  tenantSession: { select: mocks.selectTenant },
+  useB2bIdentityQuery: () => ({ data: mocks.identity }),
+  useTenant: () => ({
     activeMembership: undefined,
-    activeTenant: undefined,
     memberships: [],
+    permissions: new Set(),
     selectionRequired: false,
-  })),
-}));
-vi.mock("../permissions", () => ({
-  permissionsForRole: vi.fn(() => ({})),
-}));
-vi.mock("../store/useTenantStore", () => ({
-  useTenantStore: (
-    selector: (state: {
-      activeTenantId: string;
-      selectTenant: typeof mocks.selectInStore;
-      synchronizeTenant: typeof mocks.synchronizeTenant;
-    }) => unknown,
-  ) =>
-    selector({
-      activeTenantId: "existing-tenant",
-      selectTenant: mocks.selectInStore,
-      synchronizeTenant: mocks.synchronizeTenant,
-    }),
+  }),
 }));
 
-describe("useTenant selection", () => {
+describe("web tenant selection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.fetchQuery.mockResolvedValue(undefined);
+    mocks.selectTenant.mockResolvedValue(undefined);
     mocks.invalidateQueries.mockResolvedValue(undefined);
     mocks.invalidateRouter.mockResolvedValue(undefined);
   });
@@ -81,7 +58,9 @@ describe("useTenant selection", () => {
     mocks.fetchQuery.mockImplementation(async () => {
       order.push("refresh");
     });
-    mocks.selectInStore.mockImplementation(() => order.push("select"));
+    mocks.selectTenant.mockImplementation(async () => {
+      order.push("select");
+    });
     mocks.invalidateRouter.mockImplementation(async () => {
       order.push("router");
     });

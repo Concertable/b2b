@@ -1,4 +1,4 @@
-import type { TenantType } from "../types";
+import type { TenantType } from "@concertable/b2b/features/tenant/types";
 import { Button } from "@concertable/web/components/ui/button";
 import { useTenant } from "../hooks/useTenant";
 

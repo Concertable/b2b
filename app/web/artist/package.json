@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@concertable/b2b": "*",
     "@concertable/shared": "*",
     "@concertable/web": "*",
     "@concertable/web-b2b": "*",

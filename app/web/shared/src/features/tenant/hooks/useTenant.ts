@@ -1,35 +1,24 @@
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { meQueryKey, useMeQuery } from "@concertable/web/features/user";
-import identityApi from "../api/identityApi";
-import { resolveTenant } from "../memberships";
-import { permissionsForRole } from "../permissions";
-import { useTenantStore } from "../store/useTenantStore";
-import type { TenantType } from "../types";
+import {
+  b2bIdentityKeys,
+  identityApi,
+  tenantSession,
+  useB2bIdentityQuery,
+  useTenant as useCoreTenant,
+} from "@concertable/b2b/features/tenant";
+import type { TenantType } from "@concertable/b2b/features/tenant/types";
 
 export function useTenantIdentity() {
-  return useMeQuery(identityApi.getMe);
+  return useB2bIdentityQuery();
 }
 
 export function useTenant(tenantType: TenantType) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const activeTenantId = useTenantStore((state) => state.activeTenantId);
-  const selectInStore = useTenantStore((state) => state.selectTenant);
-  const synchronizeTenant = useTenantStore(
-    (state) => state.synchronizeTenant,
-  );
   const { data: identity } = useTenantIdentity();
-  const resolution = resolveTenant(
-    identity?.memberships ?? [],
-    tenantType,
-    activeTenantId,
-  );
-
-  useEffect(() => {
-    if (identity) synchronizeTenant(identity.memberships, tenantType);
-  }, [identity, tenantType, synchronizeTenant]);
+  const tenant = useCoreTenant(identity?.memberships ?? [], tenantType);
 
   const selectTenant = useCallback(
     async (tenantId: string) => {
@@ -39,21 +28,16 @@ export function useTenant(tenantType: TenantType) {
         )
       ) {
         await queryClient.fetchQuery({
-          queryKey: meQueryKey,
+          queryKey: b2bIdentityKeys.all(),
           queryFn: identityApi.getMe,
           staleTime: 0,
         });
       }
-      selectInStore(tenantId);
-      void router.invalidate();
-      void queryClient.invalidateQueries();
+      await tenantSession.select(tenantId);
+      await Promise.all([router.invalidate(), queryClient.invalidateQueries()]);
     },
-    [identity, queryClient, router, selectInStore],
+    [identity, queryClient, router],
   );
 
-  return {
-    ...resolution,
-    permissions: permissionsForRole(resolution.activeMembership?.role),
-    selectTenant,
-  };
+  return { ...tenant, selectTenant };
 }
