@@ -442,3 +442,22 @@ in one PR fails that gate. Same publish-first split as the `ApplicationActions.d
 
 **Resolves when:** `web` is republished with `onSuccess: () => void` / `onConfirmed: () => void`, the b2b
 and customer callers drop the argument, and `carve-fe` is green.
+
+---
+
+### `Concertable.B2B.E2ETests` builds to `bin/` 14 characters from the native-path limit
+
+`docs/LOCAL_DEV.md` records the measured 250-character cap on native DLL loading, which the four E2E host
+executables now clear by building to `artifacts/e2e/` via `BaseOutputPath`. This project still builds to
+`bin/`, where its `runtimes/win-x64/native/Microsoft.Data.SqlClient.SNI.dll` is 236 characters from a
+101-character worktree root. A branch folder 15 characters longer than
+`Refactor-launch_deal-lifecycle-modules-phase2` therefore kills the API E2E suite itself with
+`DllNotFoundException ... (0x800700CE)` before a single test runs.
+
+It cannot simply follow the four hosts, because two consumers address its output at its default location:
+`scripts/local-platform.ps1`'s `Assert-DataAccessAssembly` scans `<project>/bin/<configuration>` for the
+`Concertable.DataAccess.Infrastructure` version check, and `.github/workflows/test.yml` invokes
+`playwright.ps1` at a literal `.../Concertable.B2B.E2ETests.Ui/bin/Release/net10.0/` path.
+
+**Resolves when:** this project builds through a short artifacts root like the E2E hosts do, with both
+consumers resolving the output path from MSBuild rather than assuming `bin/<configuration>/<tfm>`.
