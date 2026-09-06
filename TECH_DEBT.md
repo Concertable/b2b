@@ -50,19 +50,29 @@ fresh GUID, so the id is stable across reloads without relying on Payment's dupl
 
 ---
 
-### Other services' integration fixtures can still bleed outbox messages across a reset
+### Integration fixtures bleed outbox messages across a reset, making suites flaky
 
-`Concertable.B2B`'s `ApiFixture.ResetAsync` waits for zero `Pending`/`Dispatching` outbox rows before it
-Respawns, because `OutboxDispatcher` is a `BackgroundService` that leases a batch into memory and delivers it
-afterwards — wiping the table mid-batch delivers the previous test's messages into the next test (PR #633,
-finding IR39).
+`OutboxDispatcher` is a `BackgroundService` polling every second. `GetPendingAsync` marks a batch
+`Dispatching` and returns it; delivery happens afterwards. `ApiFixture.ResetAsync` Respawns the database
+between tests, which does not recall a batch the dispatcher already holds — so the previous test's messages
+are delivered into the next test.
 
-Customer, Payment and Auth register the same dispatcher through `AddOutbox` and their fixtures do not wait.
-They are green today only because their suites generate less cross-reset outbox traffic than B2B's lifecycle
-journeys; the hole is the same one.
+`Concertable.B2B.Lifecycle.IntegrationTests` fails roughly one run in two because of this, on a different
+test each time. Proof from a failing run: a `booking-confirmed.v1` dispatch inside
+`Accept_ShouldNotConfirmBooking_WhenWebhookFails`, a test that confirms no booking, throwing
+`KeyNotFoundException` because the in-memory transport map had already been reset. That exception appears
+zero times in a passing run. Customer, Payment and Auth register the same dispatcher and have the same hole;
+their suites simply generate less cross-reset outbox traffic today.
 
-**Resolves when:** the wait lives once in the shared integration-testing library and every service fixture
-Respawns through it, rather than each `ApiFixture` owning a copy or going without.
+**A waiting fix was tried and reverted — do not retry it in that form.** Having `ResetAsync` wait for zero
+`Pending`/`Dispatching` rows before Respawn is not a reachable condition: the suite leaves outbox rows that
+are never dispatched in the test host, so the wait always hits its timeout. Measured at 39 of 40 tests
+failing and 19m38s instead of 4m41s.
+
+**Resolves when:** the rows that never drain are identified and either dispatched or excluded, and the
+dispatcher is prevented from straddling a reset — the quiescence wait then lives once in the shared
+integration-testing library rather than per fixture. Until then the suite is a known flake and a merge-queue
+risk.
 
 ---
 
