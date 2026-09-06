@@ -14,6 +14,12 @@ public sealed class TenantContextTests
     private readonly Mock<IMembershipRepository> repository = new();
     private readonly DefaultHttpContext httpContext = new();
     private static readonly IPermissionCatalog Catalog = BuildCatalog();
+    private readonly TenantContextAccessor accessor;
+
+    public TenantContextTests()
+    {
+        accessor = new TenantContextAccessor(httpContextAccessor.Object);
+    }
 
     private static IPermissionCatalog BuildCatalog()
     {
@@ -22,7 +28,7 @@ public sealed class TenantContextTests
     }
 
     private TenantContext CreateContext() =>
-        new(currentUser.Object, httpContextAccessor.Object, repository.Object, Catalog);
+        new(currentUser.Object, httpContextAccessor.Object, repository.Object, Catalog, accessor);
 
     private void WithHttpRequest() =>
         httpContextAccessor.SetupGet(h => h.HttpContext).Returns(httpContext);

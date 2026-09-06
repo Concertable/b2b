@@ -34,7 +34,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly IVenueModule venueModule;
     private readonly IDealModule dealModule;
     private readonly ITenantContext tenantContext;
-    private readonly ITenantResolver tenantResolver;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
     private readonly IDealStrategyFactory<IApplyStep> applyFactory;
@@ -56,7 +55,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IVenueModule venueModule,
         IDealModule dealModule,
         ITenantContext tenantContext,
-        ITenantResolver tenantResolver,
         ICurrentUser currentUser,
         IClientContext clientContext,
         IDealStrategyFactory<IApplyStep> applyFactory,
@@ -77,7 +75,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.venueModule = venueModule;
         this.dealModule = dealModule;
         this.tenantContext = tenantContext;
-        this.tenantResolver = tenantResolver;
         this.currentUser = currentUser;
         this.clientContext = clientContext;
         this.applyFactory = applyFactory;
@@ -165,18 +162,13 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             _ => ClassifyAcceptConflictAsync(applicationId, eSignature, ct),
             ct);
 
-    internal async Task<UnitResult<AcceptApplicationError>> AcceptOnceAsync(
+    internal Task<UnitResult<AcceptApplicationError>> AcceptOnceAsync(
         int applicationId,
         ESignatureRequest eSignature,
-        CancellationToken ct = default)
-    {
-        // A fresh scope has its own tenant context, and the middleware only resolved the one it created, so
-        // without this every tenant-filtered read here answers as though the caller belonged to no tenant.
-        await tenantResolver.ResolveAsync(ct);
-        return await unitOfWorkBehavior.ExecuteAsync(
+        CancellationToken ct = default) =>
+        unitOfWorkBehavior.ExecuteAsync(
             () => AcceptCoreAsync(applicationId, eSignature, ct),
             ct);
-    }
 
     private async Task<UnitResult<AcceptApplicationError>> ClassifyAcceptConflictAsync(
         int applicationId,
