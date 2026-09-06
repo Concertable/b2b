@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Domain.Events;
@@ -138,7 +138,7 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         var transition = Fire(ConcertTrigger.BeginCancellation);
         if (transition.TryGetError(out var error))
             return error;
-        CancellationOperationId = Guid.NewGuid();
+        CancellationOperationId = Guid.CreateVersion7();
         return CancellationOperationId.Value;
     }
 
@@ -169,7 +169,7 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         var transition = Fire(ConcertTrigger.BeginSettlement);
         if (transition.TryGetError(out var error))
             return error;
-        SettlementOperationId ??= Guid.NewGuid();
+        SettlementOperationId ??= Guid.CreateVersion7();
         SettlementGrossAmount ??= CalculateSettlementGross();
         FinancialFailure = null;
         return SettlementOperationId.Value;
