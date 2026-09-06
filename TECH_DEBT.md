@@ -77,32 +77,6 @@ fresh GUID, so the id is stable across reloads without relying on Payment's dupl
 
 ---
 
-### Integration fixtures bleed outbox messages across a reset, making suites flaky
-
-`OutboxDispatcher` is a `BackgroundService` polling every second. `GetPendingAsync` marks a batch
-`Dispatching` and returns it; delivery happens afterwards. `ApiFixture.ResetAsync` Respawns the database
-between tests, which does not recall a batch the dispatcher already holds — so the previous test's messages
-are delivered into the next test.
-
-`Concertable.B2B.Lifecycle.IntegrationTests` fails roughly one run in two because of this, on a different
-test each time. Proof from a failing run: a `booking-confirmed.v1` dispatch inside
-`Accept_ShouldNotConfirmBooking_WhenWebhookFails`, a test that confirms no booking, throwing
-`KeyNotFoundException` because the in-memory transport map had already been reset. That exception appears
-zero times in a passing run. Customer, Payment and Auth register the same dispatcher and have the same hole;
-their suites simply generate less cross-reset outbox traffic today.
-
-**A waiting fix was tried and reverted — do not retry it in that form.** Having `ResetAsync` wait for zero
-`Pending`/`Dispatching` rows before Respawn is not a reachable condition: the suite leaves outbox rows that
-are never dispatched in the test host, so the wait always hits its timeout. Measured at 39 of 40 tests
-failing and 19m38s instead of 4m41s.
-
-**Resolves when:** the rows that never drain are identified and either dispatched or excluded, and the
-dispatcher is prevented from straddling a reset — the quiescence wait then lives once in the shared
-integration-testing library rather than per fixture. Until then the suite is a known flake and a merge-queue
-risk.
-
----
-
 ### No `ConcertSalesProjection`
 
 There is no sold-count / gross-revenue projection. B2B dashboards and settlement math can't read authoritative ticket sales data from Customer.
