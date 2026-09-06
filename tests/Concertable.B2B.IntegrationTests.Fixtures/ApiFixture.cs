@@ -56,6 +56,7 @@ public class ApiFixture : IAsyncLifetime
     private SqlFixture sqlFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
     private IServiceScope? scope;
+    private readonly List<WebApplicationFactory<Program>> customFactories = [];
     private readonly XunitOutputAccessor outputAccessor = new();
 
     public void AttachOutput(ITestOutputHelper output) => outputAccessor.Output = output;
@@ -105,6 +106,8 @@ public class ApiFixture : IAsyncLifetime
             builder.ConfigureTestServices(services =>
             {
                 services.AddXunitLogging(outputAccessor);
+                services.Configure<HostOptions>(host =>
+                    host.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
                 services.RemoveAzureServiceBus();
                 services.AddTransient<IStartupFilter, TestClientIpStartupFilter>();
 
@@ -164,6 +167,8 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task ResetAsync()
     {
+        await StopBackgroundDispatchAsync();
+
         await sqlFixture.ResetAsync();
         foreach (var resettable in factory.Services.GetServices<IResettable>())
             resettable.Reset();
@@ -175,7 +180,33 @@ public class ApiFixture : IAsyncLifetime
         await initializer.InitializeAsync();
         SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
         OnReset(scope);
+
+        await StartBackgroundDispatchAsync();
     }
+
+    private async Task StopBackgroundDispatchAsync()
+    {
+        foreach (var customFactory in customFactories)
+            await StopBackgroundServicesAsync(customFactory.Services);
+        customFactories.Clear();
+
+        await StopBackgroundServicesAsync(factory.Services);
+    }
+
+    private async Task StartBackgroundDispatchAsync()
+    {
+        foreach (var service in BackgroundServices(factory.Services))
+            await service.StartAsync(CancellationToken.None);
+    }
+
+    private static async Task StopBackgroundServicesAsync(IServiceProvider services)
+    {
+        foreach (var service in BackgroundServices(services))
+            await service.StopAsync(CancellationToken.None);
+    }
+
+    private static IEnumerable<BackgroundService> BackgroundServices(IServiceProvider services) =>
+        services.GetServices<IHostedService>().OfType<BackgroundService>();
 
     protected virtual void OnReset(IServiceScope scope) { }
 
@@ -361,6 +392,7 @@ public class ApiFixture : IAsyncLifetime
         });
 
         PaymentSimulator = customFactory.Services.GetRequiredService<IWebhookSimulator>();
+        customFactories.Add(customFactory);
 
         var client = customFactory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
