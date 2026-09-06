@@ -14,8 +14,8 @@ export {
   useCreateArtistMutation,
   useUpdateArtistMutation,
 } from "./hooks/useArtistMutations";
-export type { Artist } from "@concertable/shared/features/artists/types";
 export type {
+  Artist,
   CreateArtistRequest,
   UpdateArtistRequest,
-} from "./schemas/artistRequestSchemas";
+} from "./types";

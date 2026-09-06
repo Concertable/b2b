@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   createArtistRequestSchema,
-  toUpdateArtistRequest,
   updateArtistRequestSchema,
 } from "./artistRequestSchemas";
+import { toUpdateArtistRequest } from "../types";
 
 const banner = { uri: "banner", name: "banner.jpg", type: "image/jpeg" };
 const avatar = { uri: "avatar", name: "avatar.jpg", type: "image/jpeg" };

@@ -3,13 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
 import type { ImageFile } from "@concertable/shared/types/image";
-import type { Artist } from "@concertable/shared/features/artists/types";
 import artistApi from "../api/artistApi";
+import { updateArtistRequestSchema } from "../schemas/artistRequestSchemas";
 import {
   toUpdateArtistRequest,
-  updateArtistRequestSchema,
+  type Artist,
   type UpdateArtistRequest,
-} from "../schemas/artistRequestSchemas";
+} from "../types";
 import { useArtistStore } from "../store/useArtistStore";
 import { artistKeys, useArtistQuery } from "./useArtistQuery";
 

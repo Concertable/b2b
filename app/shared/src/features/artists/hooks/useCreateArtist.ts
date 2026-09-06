@@ -3,12 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
 import type { ImageFile } from "@concertable/shared/types/image";
-import type { Artist } from "@concertable/shared/features/artists/types";
 import artistApi from "../api/artistApi";
-import {
-  createArtistRequestSchema,
-  type CreateArtistRequest,
-} from "../schemas/artistRequestSchemas";
+import { createArtistRequestSchema } from "../schemas/artistRequestSchemas";
+import type { Artist, CreateArtistRequest } from "../types";
 import { useArtistStore, type ArtistState } from "../store/useArtistStore";
 import { artistKeys } from "./useArtistQuery";
 
