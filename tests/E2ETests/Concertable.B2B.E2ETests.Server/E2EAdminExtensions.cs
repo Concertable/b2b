@@ -1,9 +1,12 @@
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.DataAccess.Application;
 using Concertable.Kernel;
+using Concertable.Payment.Client;
+using Concertable.Payment.Contracts;
 using Dapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -54,6 +57,7 @@ public static class E2EAdminExtensions
             group.MapGet("/applications/{applicationId:int}/state", GetApplicationStateAsync);
             group.MapGet("/applications/{applicationId:int}/concert-state", GetConcertStateAsync);
             group.MapGet("/venues/{venueId:int}/opportunities/newest-id", GetNewestOpportunityIdAsync);
+            group.MapPost("/applications/{applicationId:int}/method-verification", OpenMethodVerificationAsync);
             group.MapPost("/concerts/{concertId:int}/door-revenue", DeclareDoorRevenueAsync);
             return app;
         }
@@ -98,11 +102,15 @@ public static class E2EAdminExtensions
             FlatFeeApp = new { Id = await GetApplicationIdAsync(connection, seed.FlatFeeApp) },
             DoorSplitApp = new { Id = await GetApplicationIdAsync(connection, seed.DoorSplitApp) },
             VersusApp = new { Id = await GetApplicationIdAsync(connection, seed.VersusApp) },
-            VenueHireApp = new { Id = await GetApplicationIdAsync(connection, seed.VenueHireApp) },
+            VenueHireApp = new
+            {
+                Id = await GetApplicationIdAsync(connection, seed.VenueHireApp),
+                seed.VenueHireApp.OpportunityId,
+            },
             PastFlatFeeApp = new { Id = await GetApplicationIdAsync(connection, seed.PastFlatFeeApp) },
             PastVenueHireApp = new { Id = await GetApplicationIdAsync(connection, seed.PastVenueHireApp) },
-            PastDoorSplitBooking = Booking(seed, seed.PastDoorSplitBooking),
-            PastVersusBooking = Booking(seed, seed.PastVersusBooking),
+            PastDoorSplitBooking = await BookingAsync(connection, seed, seed.PastDoorSplitBooking),
+            PastVersusBooking = await BookingAsync(connection, seed, seed.PastVersusBooking),
         });
     }
 
@@ -116,7 +124,8 @@ public static class E2EAdminExtensions
             "SELECT Id FROM application.Applications WHERE ArtistId = @ArtistId AND OpportunityId = @OpportunityId",
             new { application.ArtistId, application.OpportunityId });
 
-    private static object Booking(
+    private static async Task<object> BookingAsync(
+        IDbConnection connection,
         SeedState seed,
         Concertable.B2B.Booking.Domain.Entities.BookingEntity booking)
     {
@@ -124,6 +133,9 @@ public static class E2EAdminExtensions
         return new
         {
             booking.Id,
+            ApplicationId = await connection.QuerySingleAsync<int>(
+                "SELECT ApplicationId FROM booking.Bookings WHERE Id = @Id",
+                new { booking.Id }),
             Concert = new
             {
                 concert.Id,
@@ -157,6 +169,35 @@ public static class E2EAdminExtensions
             WHERE bookings.ApplicationId = @applicationId
             """,
             new { applicationId }));
+
+    // Accept checkout is closed once the opportunity has passed, so a seeded past application cannot be
+    // sent back through it to obtain the card its venue verified while the opportunity was live. This
+    // opens the same Payment operation that checkout would have, and the caller confirms it with Stripe.
+    private static async Task<IResult> OpenMethodVerificationAsync(
+        int applicationId,
+        IDbConnection connection,
+        IPaymentSessionOperationsClient paymentSessions,
+        IConfiguration configuration)
+    {
+        var venueTenantId = await connection.QuerySingleAsync<Guid>(
+            "SELECT VenueTenantId FROM application.Applications WHERE Id = @applicationId",
+            new { applicationId });
+
+        var setup = await paymentSessions.SetupPaymentMethodAsync(
+            new PaymentMethodSetupRequest(
+                PaymentOperationReferences.MethodVerification(applicationId),
+                PaymentSessionKind.PaymentMethodVerification,
+                venueTenantId,
+                configuration["Legal:MandateTermsVersion"]));
+
+        if (!setup.TryGetValue(out var session))
+        {
+            setup.TryGetError(out var error);
+            return Results.Problem($"Payment refused the verification session: {error!.Definition.Code}.");
+        }
+
+        return Results.Ok(session.ClientSecret);
+    }
 
     private static async Task<IResult> GetNewestOpportunityIdAsync(
         int venueId,

@@ -11,6 +11,10 @@
   <ItemGroup>
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.DataAccess.Application" />
+    <PackageReference Include="Concertable.Payment.Client" />
+    <PackageReference Include="Concertable.Payment.Contracts" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
     <PackageReference Include="Dapper" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference Include="Respawn" />
