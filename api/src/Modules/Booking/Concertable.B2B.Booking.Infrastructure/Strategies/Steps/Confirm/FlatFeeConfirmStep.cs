@@ -36,7 +36,7 @@ internal sealed class FlatFeeConfirmStep : IConfirmStep
             flatFee.VenueTenantId,
             flatFee.ArtistTenantId);
         await bus.SendAsync(new CaptureEscrowCommand(
-            booking.OperationId,
+            booking.Acceptance.OperationId!.Value,
             PaymentOperationReferences.Escrow(booking.Id),
             flatFee.VenueTenantId,
             flatFee.ArtistTenantId,

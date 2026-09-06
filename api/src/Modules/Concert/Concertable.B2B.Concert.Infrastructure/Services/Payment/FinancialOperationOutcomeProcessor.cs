@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
@@ -71,7 +72,8 @@ internal sealed class FinancialOperationOutcomeProcessor :
 
             context.AddInboxMessage(envelope, handler);
             var concert = await context.Concerts
-                .SingleOrDefaultAsync(value => value.CancellationOperationId == operationId, ct);
+                .WithCancellationClaim(operationId)
+                .SingleOrDefaultAsync(ct);
             if (concert is not null)
                 await action(concert);
         }, ct);

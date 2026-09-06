@@ -18,7 +18,7 @@ public sealed class BookingEntityTests
 
         var booking = BookingEntity.Create(snapshot);
 
-        Assert.Equal(snapshot.OperationId, booking.OperationId);
+        Assert.Equal(snapshot.OperationId, booking.Acceptance.OperationId);
         Assert.Equal(snapshot.Application.Id, booking.ApplicationId);
     }
 

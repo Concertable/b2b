@@ -57,7 +57,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
 
         var interrupted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.AwaitingSettlement, interrupted.State);
-        Assert.NotNull(interrupted.SettlementOperationId);
+        Assert.NotNull(interrupted.Settlement.OperationId);
 
         var retry = await fixture.CompleteConcertAsync(concert.Id);
 
@@ -66,7 +66,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
         var release = Assert.Single(
             fixture.EscrowClient.Releases,
             value => value.Reference == PaymentOperationReferences.Escrow(concert.BookingId));
-        Assert.Equal(interrupted.SettlementOperationId, release.OperationId);
+        Assert.Equal(interrupted.Settlement.OperationId, release.OperationId);
         var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Complete, settled.State);
         Assert.NotNull(await fixture.Invoices.SingleOrDefaultAsync(invoice => invoice.BookingId == concert.BookingId));
@@ -92,7 +92,7 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
             fixture.EscrowClient.Releases,
             value => value.Reference == PaymentOperationReferences.Escrow(concert.BookingId));
         var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal(release.OperationId, settled.SettlementOperationId);
+        Assert.Equal(release.OperationId, settled.Settlement.OperationId);
         Assert.Equal(ConcertState.Complete, settled.State);
         Assert.Equal(1, await fixture.Invoices.CountAsync(invoice => invoice.BookingId == concert.BookingId));
     }

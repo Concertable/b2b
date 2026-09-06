@@ -25,29 +25,6 @@ owner rather than copying a second handwritten implementation into B2B.
 owners, current rosters are clearly separated from historical examples/targets, and the standards-owned
 guidance/skill tooling validates this installed-plugin microrepo layout and its instruction reachability.
 
-### Operation-claim idempotency is copy-pasted per entity, in three different shapes
-
-Five long-running operations anchor themselves to a row with an operation id, and no two do it the same way.
-There is no shared domain vocabulary for "this row is claimed by this operation", so each entity invents one.
-
-| Entity | Field | Shape |
-|---|---|---|
-| `ApplicationEntity` | `AcceptanceOperationId` | caller supplies the id; `??=` then throw if it differs |
-| `ConcertEntity` | `SettlementOperationId` | the entity mints the id (`??= Guid.NewGuid()`); a separate `Ensure` method throws two different ways |
-| `ConcertEntity` | `CancellationOperationId` | — |
-| `BookingEntity` | `OperationId`, `CancellationOperationId` | neither a `Begin` nor an `Ensure` — a third shape |
-
-The two decisions that actually vary — who mints the id (caller or entity), and claim-versus-verify — are
-answered differently each time, so an operation that spans entities cannot reason about a claim uniformly.
-`ApplicationEntity.BeginAcceptance` also assigns before validating the assignment, and carries a no-argument
-overload whose only caller is a unit test.
-
-**Resolves when:** a composed domain type owns the claim, following the `EventRaiser` precedent — a small
-sealed class the entity holds rather than a base class it inherits — with one instance per claimable
-operation and a single vocabulary (`Claim` / `IsHeldBy`) that every entity above uses. Unlike `EventRaiser`
-this one persists, so the design must settle how the backing value maps (owned type or mapped backing field)
-before the entities are migrated.
-
 ---
 
 ## HIGH

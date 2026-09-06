@@ -239,7 +239,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
 
-        var operationId = application.AcceptanceOperationId ?? Guid.NewGuid();
+        var operationId = application.Acceptance.OperationId ?? Guid.NewGuid();
         var venueSignature = eSignature.ToSignature(
             userId, timeProvider.GetUtcNow().UtcDateTime, clientContext.IpAddress, clientContext.UserAgent);
         var snapshot = new ApplicationAcceptanceSnapshot(

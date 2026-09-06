@@ -49,7 +49,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
-        Assert.Equal(payment.OperationId, persisted.SettlementOperationId);
+        Assert.Equal(payment.OperationId, persisted.Settlement.OperationId);
         Assert.NotNull(await fixture.Invoices.SingleOrDefaultAsync(invoice => invoice.BookingId == concert.BookingId));
     }
 
@@ -73,14 +73,14 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         var interrupted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.AwaitingSettlement, interrupted.State);
-        Assert.NotNull(interrupted.SettlementOperationId);
+        Assert.NotNull(interrupted.Settlement.OperationId);
 
         await fixture.RunCompletionAsync();
 
         var payment = Assert.Single(
             fixture.SettlementClient.Payments,
             value => value.Reference == PaymentOperationReferences.Settlement(concert.Id));
-        Assert.Equal(interrupted.SettlementOperationId, payment.OperationId);
+        Assert.Equal(interrupted.Settlement.OperationId, payment.OperationId);
         var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Complete, settled.State);
         Assert.Equal(1, await fixture.Invoices.CountAsync(invoice => invoice.BookingId == concert.BookingId));
@@ -110,7 +110,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
 
         await fixture.SendSettlementFailedWebhookAsync(
             concert.Id,
-            completed.SettlementOperationId!.Value);
+            completed.Settlement.OperationId!.Value);
         await fixture.PaymentSimulator.SendWebhookAsync();
 
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
@@ -138,7 +138,7 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         var awaiting = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         await fixture.SendSettlementFailedWebhookAsync(
             concert.Id,
-            awaiting.SettlementOperationId!.Value);
+            awaiting.Settlement.OperationId!.Value);
 
         var response = await client.PostAsync($"/api/concert/{concert.Id}/cancel");
 

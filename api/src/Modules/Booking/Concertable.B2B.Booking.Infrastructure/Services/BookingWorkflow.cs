@@ -173,7 +173,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         if (booking.State == BookingState.CancellationPending)
         {
             await bus.SendAsync(new RefundEscrowCommand(
-                booking.CancellationOperationId!.Value,
+                booking.Cancellation.OperationId!.Value,
                 PaymentOperationReferences.Escrow(bookingId),
                 RefundReasonCodes.RequestedByPayer), ct);
             return;
@@ -230,9 +230,9 @@ internal sealed class BookingWorkflow : IBookingWorkflow
             VerifyPaymentSucceededEvidence verified => booking.ApplicationId == verified.ApplicationId,
             VerifyPaymentFailedEvidence failed => booking.ApplicationId == failed.ApplicationId,
             AcceptanceFinancialOperationSucceeded accepted =>
-                bookingId == accepted.BookingId && booking.OperationId == accepted.OperationId,
+                bookingId == accepted.BookingId && booking.Acceptance.IsHeldBy(accepted.OperationId),
             AcceptanceFinancialOperationRejected rejected =>
-                bookingId == rejected.BookingId && booking.OperationId == rejected.OperationId,
+                bookingId == rejected.BookingId && booking.Acceptance.IsHeldBy(rejected.OperationId),
             _ => false
         };
 

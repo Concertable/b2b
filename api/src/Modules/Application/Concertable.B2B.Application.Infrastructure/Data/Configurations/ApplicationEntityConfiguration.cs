@@ -24,9 +24,7 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
             .HasForeignKey<VerifyPaymentEntity>(payment => payment.ApplicationId)
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(application => application.VerifyPayment).AutoInclude();
-        builder.HasIndex(application => application.AcceptanceOperationId)
-            .IsUnique()
-            .HasFilter("[AcceptanceOperationId] IS NOT NULL");
+        builder.OwnsClaim(application => application.Acceptance, "AcceptanceOperationId");
         builder.HasIndex(application => new { application.OpportunityId, application.ArtistId }).IsUnique();
         builder.HasIndex(application => application.OpportunityId)
             .IsUnique()

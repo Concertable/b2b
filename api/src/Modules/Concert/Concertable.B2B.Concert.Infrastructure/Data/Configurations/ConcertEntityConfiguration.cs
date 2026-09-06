@@ -40,12 +40,8 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
             p.Property(x => x.End).HasColumnName("EndDate");
         });
         builder.HasIndex(e => e.BookingId).IsUnique();
-        builder.HasIndex(e => e.CancellationOperationId)
-            .IsUnique()
-            .HasFilter("[CancellationOperationId] IS NOT NULL");
-        builder.HasIndex(e => e.SettlementOperationId)
-            .IsUnique()
-            .HasFilter("[SettlementOperationId] IS NOT NULL");
+        builder.OwnsClaim(e => e.Cancellation, "CancellationOperationId");
+        builder.OwnsClaim(e => e.Settlement, "SettlementOperationId");
 
         builder.HasOne(e => e.Artist)
             .WithMany()

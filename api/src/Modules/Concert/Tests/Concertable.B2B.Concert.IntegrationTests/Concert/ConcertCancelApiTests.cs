@@ -148,8 +148,8 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
-        Assert.NotNull(persisted.SettlementOperationId);
-        Assert.Null(persisted.CancellationOperationId);
+        Assert.NotNull(persisted.Settlement.OperationId);
+        Assert.Null(persisted.Cancellation.OperationId);
         Assert.Single(
             fixture.SettlementClient.Payments,
             value => value.Reference == PaymentOperationReferences.Settlement(concert.Id));
@@ -175,7 +175,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Cancelled, persisted.State);
-        Assert.Null(persisted.SettlementOperationId);
+        Assert.Null(persisted.Settlement.OperationId);
         Assert.DoesNotContain(
             fixture.SettlementClient.Payments,
             value => value.Reference == PaymentOperationReferences.Settlement(concert.Id));

@@ -26,7 +26,7 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
     public int OpportunityId { get; private set; }
     public int ArtistId { get; private set; }
     public DealType DealType { get; private set; }
-    public Guid? AcceptanceOperationId { get; private set; }
+    public OperationClaim Acceptance { get; private set; } = new();
 
     internal ContractSignature ArtistESignature { get; private set; } = null!;
     public string TermsFingerprint { get; private set; } = null!;
@@ -50,19 +50,7 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         ArtistTenantId = artistTenantId;
     }
 
-    public Guid BeginAcceptance() => BeginAcceptance(Guid.NewGuid());
-
-    public Guid BeginAcceptance(Guid operationId)
-    {
-        if (operationId == Guid.Empty)
-            throw new ArgumentException("An acceptance operation id is required.", nameof(operationId));
-
-        AcceptanceOperationId ??= operationId;
-        if (AcceptanceOperationId != operationId)
-            throw new InvalidOperationException("The application already belongs to another acceptance operation.");
-
-        return AcceptanceOperationId.Value;
-    }
+    public Guid BeginAcceptance(Guid operationId) => Acceptance.Claim(operationId);
 
     /// <summary>Whether the outcome was recorded; a redelivery or a later attempt on an already verified
     /// payment records nothing.</summary>
@@ -106,7 +94,7 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         AcceptedApplication application)
     {
         var snapshot = application.Snapshot;
-        if (snapshot.Application.Id != Id || snapshot.OperationId != AcceptanceOperationId)
+        if (snapshot.Application.Id != Id || !Acceptance.IsHeldBy(snapshot.OperationId))
             throw new InvalidOperationException("Accepted application facts do not match the application transition.");
 
         var transition = Transition(ApplicationTrigger.Accept);

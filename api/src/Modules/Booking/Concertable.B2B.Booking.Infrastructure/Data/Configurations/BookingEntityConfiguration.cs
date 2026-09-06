@@ -24,9 +24,7 @@ internal sealed class BookingEntityConfiguration : IEntityTypeConfiguration<Book
         });
         builder.PrimitiveCollection(booking => booking.Genres);
         builder.HasIndex(booking => booking.ApplicationId).IsUnique();
-        builder.HasIndex(booking => booking.OperationId).IsUnique();
-        builder.HasIndex(booking => booking.CancellationOperationId)
-            .IsUnique()
-            .HasFilter("[CancellationOperationId] IS NOT NULL");
+        builder.OwnsRequiredClaim(booking => booking.Acceptance, "OperationId");
+        builder.OwnsClaim(booking => booking.Cancellation, "CancellationOperationId");
     }
 }

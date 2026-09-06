@@ -42,7 +42,7 @@ internal sealed class BookingRepository : VenueArtistTenantScopedRepository<Book
         Guid operationId,
         CancellationToken ct = default) =>
         context.Bookings.SingleOrDefaultAsync(
-            booking => booking.OperationId == operationId,
+            booking => booking.Acceptance.OperationId == operationId,
             ct);
 
     public Task<int?> GetApplicationIdByIdAsync(

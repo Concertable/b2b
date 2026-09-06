@@ -5,6 +5,7 @@ using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Booking.Infrastructure.Events;
 
@@ -69,7 +70,8 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
                 return;
 
             var booking = await context.Bookings
-                .SingleOrDefaultAsync(value => value.CancellationOperationId == operationId, ct);
+                .WithCancellationClaim(operationId)
+                .SingleOrDefaultAsync(ct);
             if (booking is not null)
                 action(booking);
         }, ct);

@@ -113,7 +113,7 @@ internal sealed class SettlementService : ISettlementService
         {
             var prepared = CreatePreparation(
                 concert,
-                concert.SettlementOperationId
+                concert.Settlement.OperationId
                 ?? throw new InvalidOperationException(
                     $"Concert {concertId} awaits settlement without an operation."));
             return prepared;

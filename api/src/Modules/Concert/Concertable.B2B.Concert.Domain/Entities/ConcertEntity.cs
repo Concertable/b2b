@@ -20,7 +20,9 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// so the Concert module can satisfy queries in a single DB context without crossing module boundaries.
 /// </summary>
 [DisplayName(DisplayNames.Concert)]
-public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurrencyVersioned, IEventRaiser, IVenueArtistTenantScoped
+public abstract class ConcertEntity
+    : IIdEntity, IHasName, IHasDateRange, IConcurrencyVersioned, IEventRaiser, IVenueArtistTenantScoped,
+      IHasCancellationClaim
 {
     private static readonly ConcertStateMachine stateMachine = new();
 
@@ -35,8 +37,8 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     public int VenueId { get; private set; }
     public DealType DealType { get; private set; }
     public ConcertState State { get; private set; } = ConcertState.Draft;
-    public Guid? CancellationOperationId { get; private set; }
-    public Guid? SettlementOperationId { get; private set; }
+    public OperationClaim Cancellation { get; private set; } = new();
+    public OperationClaim Settlement { get; private set; } = new();
     internal PaymentOperationReference SettlementPaymentReference { get; private set; }
     public decimal? SettlementGrossAmount { get; private set; }
     internal FinancialFailure? FinancialFailure { get; private set; }
@@ -138,8 +140,7 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         var transition = Fire(ConcertTrigger.BeginCancellation);
         if (transition.TryGetError(out var error))
             return error;
-        CancellationOperationId = Guid.CreateVersion7();
-        return CancellationOperationId.Value;
+        return Cancellation.Claim();
     }
 
     internal UnitResult<TransitionError<ConcertState, ConcertTrigger>> ValidateBeginCancellation() =>
@@ -169,19 +170,17 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         var transition = Fire(ConcertTrigger.BeginSettlement);
         if (transition.TryGetError(out var error))
             return error;
-        SettlementOperationId ??= Guid.CreateVersion7();
+        var operationId = Settlement.Claim();
         SettlementGrossAmount ??= CalculateSettlementGross();
         FinancialFailure = null;
-        return SettlementOperationId.Value;
+        return operationId;
     }
 
     internal void EnsureSettlementOperation(Guid operationId)
     {
-        if (SettlementOperationId is null)
-            throw new InvalidOperationException($"Concert {Id} has no settlement operation.");
-        if (SettlementOperationId != operationId)
+        if (!Settlement.IsHeldBy(operationId))
             throw new InvalidOperationException(
-                $"Concert {Id} expects settlement operation {SettlementOperationId}, not {operationId}.");
+                $"Concert {Id} settlement operation is {Settlement.OperationId?.ToString() ?? "unclaimed"}, not {operationId}.");
     }
 
     public UnitResult<TransitionError<ConcertState, ConcertTrigger>> RecordSettlementFailure(string code, string message)

@@ -48,7 +48,7 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
         Assert.True(command.Reference.TryGetBookingId(out var bookingId));
         var booking = await fixture.Bookings.SingleAsync(value => value.Id == bookingId);
         Assert.Equal(BookingState.Confirmed, booking.State);
-        Assert.Equal(command.OperationId, booking.OperationId);
+        Assert.Equal(command.OperationId, booking.Acceptance.OperationId);
         var inbox = await fixture.InboxMessages
             .Where(message =>
                 message.MessageId == envelope.MessageId &&

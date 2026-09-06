@@ -15,7 +15,8 @@ using Reunion;
 namespace Concertable.B2B.Booking.Domain.Entities;
 
 [DisplayName(Booking.Contracts.DisplayNames.Booking)]
-public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
+public sealed class BookingEntity
+    : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser, IHasCancellationClaim
 {
     private static readonly BookingStateMachine stateMachine = new();
 
@@ -23,7 +24,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     public byte[] Version { get; private set; } = null!;
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
-    public Guid OperationId { get; private set; }
+    public OperationClaim Acceptance { get; private set; } = new();
     public int ApplicationId { get; private set; }
     public int OpportunityId { get; private set; }
     public int ArtistId { get; private set; }
@@ -34,7 +35,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     public DateTime EndDate { get; private set; }
     public List<Genre> Genres { get; private set; } = [];
     internal BookingState State { get; private set; } = BookingState.AwaitingConfirmation;
-    public Guid? CancellationOperationId { get; private set; }
+    public OperationClaim Cancellation { get; private set; } = new();
     internal FinancialFailure? FinancialFailure { get; private set; }
     public ContractEntity Contract { get; private set; } = null!;
 
@@ -60,7 +61,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
         if (opportunity.Venue.TenantId == Guid.Empty || application.Artist.TenantId == Guid.Empty)
             throw new InvalidOperationException("A booking cannot inherit unresolved application tenants.");
 
-        OperationId = snapshot.OperationId;
+        Acceptance.Claim(snapshot.OperationId);
         ApplicationId = application.Id;
         OpportunityId = opportunity.Id;
         ArtistId = application.Artist.Id;
@@ -111,8 +112,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
         var transition = Fire(BookingTrigger.BeginCancellation);
         if (transition.TryGetError(out var error))
             return error;
-        CancellationOperationId = Guid.NewGuid();
-        return CancellationOperationId.Value;
+        return Cancellation.Claim();
     }
 
     internal UnitResult<TransitionError<BookingState, BookingTrigger>> ValidateBeginCancellation() =>

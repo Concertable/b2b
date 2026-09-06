@@ -34,7 +34,7 @@ internal sealed class VenueHireConfirmStep : IConfirmStep
             venueHire.ArtistTenantId,
             venueHire.VenueTenantId);
         await bus.SendAsync(new DepositEscrowCommand(
-            booking.OperationId,
+            booking.Acceptance.OperationId!.Value,
             PaymentOperationReferences.Escrow(booking.Id),
             venueHire.ArtistTenantId,
             venueHire.VenueTenantId,

@@ -253,7 +253,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var booking = await fixture.Bookings.SingleAsync(value => value.Id == bookingId);
         Assert.Equal(BookingState.Confirmed, booking.State);
-        Assert.Null(booking.CancellationOperationId);
+        Assert.Null(booking.Cancellation.OperationId);
         Assert.Equal(1, await fixture.GetConcertCountAsync(bookingId));
         Assert.DoesNotContain(
             fixture.PaymentTransport.Commands,

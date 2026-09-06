@@ -59,7 +59,7 @@ public sealed class ApplicationEntityLifecycleTests
             DealType.FlatFee,
             Guid.NewGuid(),
             Guid.NewGuid());
-        var operationId = application.BeginAcceptance();
+        var operationId = application.BeginAcceptance(Guid.NewGuid());
         var accepted = CreateAcceptedApplication(application, operationId);
         Assert.False(application.Accept(accepted).TryGetError(out _));
         var events = application.DomainEvents.ToArray();
@@ -69,7 +69,7 @@ public sealed class ApplicationEntityLifecycleTests
         Assert.True(result.TryGetError(out var error));
         Assert.Equal(new TransitionError<ApplicationState, ApplicationTrigger>(ApplicationState.Accepted, ApplicationTrigger.Accept), error);
         Assert.Equal(ApplicationState.Accepted, application.State);
-        Assert.Equal(operationId, application.AcceptanceOperationId);
+        Assert.Equal(operationId, application.Acceptance.OperationId);
         Assert.Equal(events, application.DomainEvents);
     }
 

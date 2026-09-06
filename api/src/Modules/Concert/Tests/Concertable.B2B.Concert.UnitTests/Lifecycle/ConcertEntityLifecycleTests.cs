@@ -20,7 +20,7 @@ public sealed class ConcertEntityLifecycleTests
         Assert.True(result.TryGetError(out var error));
         Assert.Equal(new TransitionError<ConcertState, ConcertTrigger>(ConcertState.AwaitingSettlement, ConcertTrigger.Post), error);
         Assert.Equal(ConcertState.AwaitingSettlement, concert.State);
-        Assert.Equal(operationId, concert.SettlementOperationId);
+        Assert.Equal(operationId, concert.Settlement.OperationId);
         Assert.Equal("Concert", concert.Name);
         Assert.Equal("About", concert.About);
         Assert.Equal(0m, concert.Price);
@@ -40,7 +40,7 @@ public sealed class ConcertEntityLifecycleTests
 
         Assert.True(retry.TryGetValue(out var retryOperationId));
         Assert.Equal(firstOperationId, retryOperationId);
-        Assert.Equal(retryOperationId, concert.SettlementOperationId);
+        Assert.Equal(retryOperationId, concert.Settlement.OperationId);
         Assert.Equal(ConcertState.AwaitingSettlement, concert.State);
     }
 
@@ -53,7 +53,7 @@ public sealed class ConcertEntityLifecycleTests
 
         Assert.True(result.TryGetError(out var error));
         Assert.Equal(new TransitionError<ConcertState, ConcertTrigger>(ConcertState.Draft, ConcertTrigger.RecordSettlementFailure), error);
-        Assert.Null(concert.SettlementOperationId);
+        Assert.Null(concert.Settlement.OperationId);
     }
 
     [Fact]

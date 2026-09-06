@@ -42,7 +42,7 @@ internal sealed class BookingService : IBookingService
                 booking.Id,
                 booking.ApplicationId,
                 booking.State,
-                booking.OperationId,
+                booking.Acceptance.OperationId!.Value,
                 booking.FinancialFailure?.Code,
                 booking.FinancialFailure?.Message);
     }
@@ -55,7 +55,7 @@ internal sealed class BookingService : IBookingService
                 booking.Id,
                 booking.ApplicationId,
                 booking.State,
-                booking.OperationId,
+                booking.Acceptance.OperationId!.Value,
                 booking.FinancialFailure?.Code,
                 booking.FinancialFailure?.Message))
             .ToList();
