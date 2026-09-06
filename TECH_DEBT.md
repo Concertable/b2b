@@ -33,6 +33,23 @@ its transaction recorder on the operation kind rather than a `type` string no pr
 
 ---
 
+### Accept checkout mints a throwaway authorization operation id
+
+`ApplicationCheckoutService` passes `Guid.CreateVersion7()` as the FlatFee authorization's `OperationId`, so
+every GET of the accept checkout page mints a fresh id. Every other operation-id site in B2B is `??=`-stable
+and uniquely indexed, and the accept path itself reuses `application.AcceptanceOperationId`.
+
+It does not double-charge today only because Payment's `ReserveInitialAsync` catches the duplicate key on
+`(OperationType, ClientReference)` and re-resolves the existing operation by reference. Correctness therefore
+rests on Payment's fallback rather than on the reference B2B already owns and freezes.
+
+Found by independent review during PR #633 (finding IR37).
+
+**Resolves when:** the accept checkout passes the application's own acceptance operation id rather than a
+fresh GUID, so the id is stable across reloads without relying on Payment's duplicate-key recovery.
+
+---
+
 ### No `ConcertSalesProjection`
 
 There is no sold-count / gross-revenue projection. B2B dashboards and settlement math can't read authoritative ticket sales data from Customer.
