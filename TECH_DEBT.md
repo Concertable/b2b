@@ -14,6 +14,25 @@ When an item is fixed, update both this file and [`ARCHITECTURE.md`](./ARCHITECT
 
 ---
 
+### Venue dashboard revenue reads a table nothing writes
+
+`VenueDashboardService` (`GetAsync`, `GetPaymentRevenueAsync`) calls `IPaymentReportingClient.GetPaymentRevenueAsync` /
+`GetPaymentRevenueByMonthAsync`, which sum `PaymentTransactionEntity` rows. The only writer of that entity is Payment's
+`PaymentTransactionRecorder`, registered under the keyed value `TransactionTypes.Payment` (`"payment"`). Nothing in the
+system ever emits that key: `PaymentSessionProviderRequest` stamps the metadata `type` with the operation's own
+`OperationType`, and the only payment-kind operation is Customer's ticket purchase, whose type is `"ticket-purchase"`.
+The venue revenue KPI and its six-month chart are therefore structurally zero, with no exception and no failing test —
+`MockSettlementClient` hard-codes `Money.Gbp(0m)` and `[]`, so the B2B suite cannot see it.
+
+This is not introduced by the v1 cut-over's renaming: the pre-v1 `GetTicketRevenueAsync` summed the same table against
+the then-live `TransactionTypes.Ticket` key, which v1 deleted. B2B had no other reporting query to migrate to.
+
+**Resolves when:** the venue revenue widgets read the `ConcertSalesProjection` below instead of Payment, or Payment keys
+its transaction recorder on the operation kind rather than a `type` string no producer emits (and adds `AmountMinor` to
+`PaymentSessionProviderRequest.MetadataOf`, which the recorder reads and nothing writes).
+
+---
+
 ### No `ConcertSalesProjection`
 
 There is no sold-count / gross-revenue projection. B2B dashboards and settlement math can't read authoritative ticket sales data from Customer.

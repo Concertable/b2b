@@ -1,6 +1,5 @@
 using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.B2B.Opportunity.Infrastructure.Data;
-using Concertable.B2B.Opportunity.Infrastructure.Data.Configurations;
 using Concertable.B2B.Opportunity.Infrastructure.Extensions;
 using Concertable.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -86,12 +85,13 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
         CancellationToken ct = default)
     {
         var excludedIds = excludedOpportunityIds.ToArray();
+        var requestedGenres = genres.ToArray();
         return await context.Opportunities
             .WhereActive(timeProvider.GetUtcNow().UtcDateTime)
             .Where(opportunity => !excludedIds.Contains(opportunity.Id))
-            .WhereEmptyOrOverlaps(
-                OpportunityEntityConfiguration.PersistedGenresProperty,
-                genres)
+            .Where(opportunity =>
+                !opportunity.Genres.Any() ||
+                opportunity.Genres.Any(genre => requestedGenres.Contains(genre)))
             .OrderBy(opportunity => opportunity.Period.Start)
             .Take(MaxMatchCandidates)
             .ToListAsync(ct);

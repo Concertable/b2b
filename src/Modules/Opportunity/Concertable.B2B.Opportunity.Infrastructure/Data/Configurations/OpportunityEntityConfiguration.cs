@@ -6,8 +6,6 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Configurations;
 
 internal sealed class OpportunityEntityConfiguration : IEntityTypeConfiguration<OpportunityEntity>
 {
-    internal const string PersistedGenresProperty = "PersistedGenres";
-
     public void Configure(EntityTypeBuilder<OpportunityEntity> builder)
     {
         builder.ToTable(Schema.Tables.Opportunities, Schema.Name);
@@ -20,8 +18,6 @@ internal sealed class OpportunityEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(o => o.DealId).IsRequired();
         builder.Property(o => o.State).IsRequired();
         builder.HasIndex(o => o.DealId).IsUnique();
-        builder.Ignore(o => o.Genres);
-        builder.PrimitiveCollection<List<Genre>>(PersistedGenresProperty)
-            .HasColumnName(nameof(OpportunityEntity.Genres));
+        builder.PrimitiveCollection(o => o.Genres);
     }
 }
