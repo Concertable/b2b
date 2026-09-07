@@ -7,7 +7,7 @@ export function useCreateArtistMutation() {
   return useMutation({
     mutationFn: artistApi.createArtist,
     onSuccess: (artist) =>
-      queryClient.setQueryData(artistKeys.details(), artist),
+      queryClient.setQueryData(artistKeys.my(), artist),
   });
 }
 
@@ -16,6 +16,6 @@ export function useUpdateArtistMutation() {
   return useMutation({
     mutationFn: artistApi.updateArtist,
     onSuccess: (artist) =>
-      queryClient.setQueryData(artistKeys.details(), artist),
+      queryClient.setQueryData(artistKeys.my(), artist),
   });
 }

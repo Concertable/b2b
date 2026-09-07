@@ -1,9 +1,9 @@
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import type {
-  Venue,
   CreateVenueRequest,
   UpdateVenueRequest,
-} from "@concertable/shared/features/venues/types";
+  Venue,
+} from "../types";
 
 type FormDataValue = Parameters<FormData["append"]>[1];
 
@@ -24,9 +24,9 @@ function appendVenueFields(
 }
 
 const venueApi = {
-  getVenue: async (): Promise<Venue | undefined> => {
+  getVenue: async (): Promise<Venue | null> => {
     const { data } = await apiClient.getOptional<Venue>("/organization/venue");
-    return data ?? undefined;
+    return data;
   },
 
   createVenue: async (request: CreateVenueRequest): Promise<Venue> => {

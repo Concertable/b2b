@@ -1,26 +1,11 @@
-import type { TenantRole } from "./types";
-
-export type TenantPermission =
-  | "OperationsView"
-  | "ProfileEdit"
-  | "PayoutsManage"
-  | "SettlementView"
-  | "SettlementTrigger"
-  | "TenantSettingsEdit"
-  | "TenantDelete"
-  | "MembersInvite"
-  | "MembersRemove"
-  | "MembersManageRoles"
-  | "MessagesRead"
-  | "MessagesSend"
-  | "ConcertsOpsEdit";
+import type { TenantPermission, TenantRole } from "./types";
 
 const EMPTY_PERMISSIONS: ReadonlySet<TenantPermission> = new Set();
 
 const PERMISSIONS_BY_ROLE: Readonly<
   Record<TenantRole, ReadonlySet<TenantPermission>>
 > = {
-  Owner: new Set<TenantPermission>([
+  owner: new Set<TenantPermission>([
     "OperationsView",
     "ProfileEdit",
     "PayoutsManage",
@@ -35,7 +20,7 @@ const PERMISSIONS_BY_ROLE: Readonly<
     "MessagesSend",
     "ConcertsOpsEdit",
   ]),
-  Manager: new Set<TenantPermission>([
+  manager: new Set<TenantPermission>([
     "OperationsView",
     "ProfileEdit",
     "SettlementView",
@@ -44,21 +29,21 @@ const PERMISSIONS_BY_ROLE: Readonly<
     "MessagesSend",
     "ConcertsOpsEdit",
   ]),
-  Finance: new Set<TenantPermission>([
+  finance: new Set<TenantPermission>([
     "OperationsView",
     "PayoutsManage",
     "SettlementView",
     "SettlementTrigger",
     "MessagesRead",
   ]),
-  Staff: new Set<TenantPermission>([
+  staff: new Set<TenantPermission>([
     "OperationsView",
     "MessagesRead",
     "MessagesSend",
     "ConcertsOpsEdit",
   ]),
-  Door: new Set<TenantPermission>(["OperationsView"]),
-  Sound: new Set<TenantPermission>(["OperationsView", "ConcertsOpsEdit"]),
+  door: new Set<TenantPermission>(["OperationsView"]),
+  sound: new Set<TenantPermission>(["OperationsView", "ConcertsOpsEdit"]),
 };
 
 export function permissionsForRole(

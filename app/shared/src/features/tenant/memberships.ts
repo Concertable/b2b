@@ -8,14 +8,16 @@ export interface TenantResolution {
 
 export function filterMembershipsByTenantType(
   memberships: ReadonlyArray<Membership>,
-  tenantType: TenantType,
+  tenantType?: TenantType,
 ): ReadonlyArray<Membership> {
-  return memberships.filter((membership) => membership.type === tenantType);
+  return tenantType === undefined
+    ? memberships
+    : memberships.filter((membership) => membership.type === tenantType);
 }
 
 export function resolveActiveMembership(
   memberships: ReadonlyArray<Membership>,
-  tenantType: TenantType,
+  tenantType: TenantType | undefined,
   activeTenantId: string | undefined,
 ): Membership | undefined {
   const matchingMemberships = filterMembershipsByTenantType(
@@ -31,7 +33,7 @@ export function resolveActiveMembership(
 
 export function hasPendingTenantChoice(
   memberships: ReadonlyArray<Membership>,
-  tenantType: TenantType,
+  tenantType: TenantType | undefined,
   activeTenantId: string | undefined,
 ): boolean {
   const matchingMemberships = filterMembershipsByTenantType(
@@ -48,7 +50,7 @@ export function hasPendingTenantChoice(
 
 export function resolveTenant(
   memberships: ReadonlyArray<Membership>,
-  tenantType: TenantType,
+  tenantType: TenantType | undefined,
   activeTenantId: string | undefined,
 ): TenantResolution {
   return {
