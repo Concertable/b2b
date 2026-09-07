@@ -1,2 +1,2 @@
-global using Concertable.B2B.Deal.Contracts.Enums;
+global using Concertable.B2B.Vocabulary;
 global using Reunion.Errors;

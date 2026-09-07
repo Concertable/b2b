@@ -1,5 +1,5 @@
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Infrastructure.Services.Strategies;

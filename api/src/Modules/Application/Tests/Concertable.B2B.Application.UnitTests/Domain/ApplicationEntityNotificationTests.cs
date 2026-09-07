@@ -1,6 +1,6 @@
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 
 namespace Concertable.B2B.Application.UnitTests;
 

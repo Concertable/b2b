@@ -1,5 +1,5 @@
 using Concertable.B2B.Application.Domain.Lifecycle;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 
 namespace Concertable.B2B.Application.Application.Models;
 

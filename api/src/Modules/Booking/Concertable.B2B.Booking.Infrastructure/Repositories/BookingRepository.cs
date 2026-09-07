@@ -2,7 +2,7 @@ using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Infrastructure.Data;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 

@@ -5,7 +5,7 @@ using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Concertable.Kernel;
 using Concertable.Kernel.ValueObjects;
 using Concertable.Payment.Contracts;

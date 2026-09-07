@@ -11,7 +11,7 @@ global using Concertable.B2B.Conversations.Contracts.Enums;
 global using Concertable.B2B.DataAccess.Application;
 global using Concertable.B2B.DataAccess.Infrastructure;
 global using Concertable.B2B.Deal.Contracts;
-global using Concertable.B2B.Deal.Contracts.Enums;
+global using Concertable.B2B.Vocabulary;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
 global using Concertable.DataAccess;

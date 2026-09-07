@@ -1,4 +1,4 @@
-namespace Concertable.B2B.Deal.Contracts.Enums;
+namespace Concertable.B2B.Vocabulary;
 
 public enum PaymentMethod
 {

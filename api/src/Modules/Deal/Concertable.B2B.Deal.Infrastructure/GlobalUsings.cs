@@ -3,7 +3,7 @@ global using Concertable.Kernel.ValueObjects;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
 global using Concertable.B2B.Deal.Contracts;
-global using Concertable.B2B.Deal.Contracts.Enums;
+global using Concertable.B2B.Vocabulary;
 global using Concertable.B2B.Deal.Domain;
 global using Concertable.DataAccess.Infrastructure;
 global using Reunion.Errors;

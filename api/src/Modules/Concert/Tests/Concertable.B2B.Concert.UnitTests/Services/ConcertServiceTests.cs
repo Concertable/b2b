@@ -6,7 +6,7 @@ using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Concertable.Kernel.Identity;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;

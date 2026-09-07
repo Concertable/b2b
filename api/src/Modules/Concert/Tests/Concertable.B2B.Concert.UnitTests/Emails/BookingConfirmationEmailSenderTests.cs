@@ -1,6 +1,6 @@
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Infrastructure.Emails;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
 using Reunion;

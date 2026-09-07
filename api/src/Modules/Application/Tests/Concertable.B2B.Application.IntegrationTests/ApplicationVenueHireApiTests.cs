@@ -2,7 +2,7 @@ using System.Net;
 using Concertable.B2B.Application.Application.Responses;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Concertable.Contracts.Enums;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;

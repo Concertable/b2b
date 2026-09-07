@@ -1,6 +1,6 @@
 using System.Net;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Concertable.Contracts.Enums;
 using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;

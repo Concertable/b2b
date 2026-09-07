@@ -7,7 +7,7 @@ using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Application.Mappers;
 using Concertable.B2B.Deal.Application.Services;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Concertable.B2B.Deal.Infrastructure.Data;
 using Concertable.B2B.Deal.Infrastructure.Data.Seeders;
 using Concertable.B2B.Deal.Infrastructure.Repositories;

@@ -4,7 +4,7 @@ using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Concertable.Kernel;
 using Reunion;
 

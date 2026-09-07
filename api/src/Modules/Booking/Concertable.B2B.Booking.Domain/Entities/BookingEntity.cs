@@ -6,7 +6,7 @@ using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel;
 using Reunion;

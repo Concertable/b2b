@@ -9,7 +9,7 @@ global using Concertable.B2B.Venue.Contracts;
 global using Concertable.B2B.Concert.Contracts;
 global using Concertable.B2B.Concert.Domain;
 global using Concertable.B2B.Deal.Contracts;
-global using Concertable.B2B.Deal.Contracts.Enums;
+global using Concertable.B2B.Vocabulary;
 global using Concertable.B2B.Concert.Application.Interfaces;
 global using Concertable.B2B.Concert.Application.DTOs;
 global using Concertable.B2B.Concert.Application.Requests;

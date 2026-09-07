@@ -1,7 +1,7 @@
 using Concertable.B2B.Application.Application.Interfaces;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Infrastructure.Validators;
-using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Vocabulary;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel.Identity;
