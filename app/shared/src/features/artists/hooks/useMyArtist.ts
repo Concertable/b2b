@@ -44,11 +44,15 @@ const emptyRequest: UpdateArtistRequest = {
   genres: [],
 };
 
-export function useMyArtist(options?: UseMyArtistOptions): UseMyArtistResult {
-  const query = useArtistQuery();
+export function useMyArtist(
+  tenantId: string | undefined,
+  options?: UseMyArtistOptions,
+): UseMyArtistResult {
+  const query = useArtistQuery(tenantId);
   const queryClient = useQueryClient();
   const artistDraft = useArtistStore((state) => state.draft);
-  const editMode = useArtistStore((state) => state.editMode);
+  const draftTenantId = useArtistStore((state) => state.tenantId);
+  const storeEditMode = useArtistStore((state) => state.editMode);
   const beginEdit = useArtistStore((state) => state.beginEdit);
   const endEdit = useArtistStore((state) => state.endEdit);
   const setStoreName = useArtistStore((state) => state.setName);
@@ -71,7 +75,7 @@ export function useMyArtist(options?: UseMyArtistOptions): UseMyArtistResult {
   const mutation = useMutation({
     mutationFn: artistApi.updateArtist,
     onSuccess: (saved) => {
-      queryClient.setQueryData(artistKeys.my(), saved);
+      queryClient.setQueryData(artistKeys.myForTenant(tenantId), saved);
       queryClient.setQueryData(artistKeys.byId(saved.id), saved);
       reset(toUpdateArtistRequest(saved));
       endEdit();
@@ -80,6 +84,7 @@ export function useMyArtist(options?: UseMyArtistOptions): UseMyArtistResult {
   });
 
   const artist = query.data ?? undefined;
+  const editMode = storeEditMode && draftTenantId === tenantId;
   const draft =
     editMode && artist && artistDraft
       ? { ...artist, ...artistDraft }
@@ -94,7 +99,7 @@ export function useMyArtist(options?: UseMyArtistOptions): UseMyArtistResult {
     if (editMode) resetDraft();
     else if (artist) {
       reset(toUpdateArtistRequest(artist));
-      beginEdit(artist);
+      beginEdit(tenantId, artist);
     }
   };
 

@@ -6,16 +6,16 @@ export function useCreateArtistMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: artistApi.createArtist,
-    onSuccess: (artist) =>
-      queryClient.setQueryData(artistKeys.my(), artist),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: artistKeys.my() }),
   });
 }
 
-export function useUpdateArtistMutation() {
+export function useUpdateArtistMutation(tenantId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: artistApi.updateArtist,
     onSuccess: (artist) =>
-      queryClient.setQueryData(artistKeys.my(), artist),
+      queryClient.setQueryData(artistKeys.myForTenant(tenantId), artist),
   });
 }

@@ -68,7 +68,7 @@ export function useCreateArtist(
   });
 
   useMountEffect(() => {
-    beginEdit(initialArtist);
+    beginEdit(undefined, initialArtist);
     reset(defaultValues);
     return endEdit;
   });
@@ -76,7 +76,7 @@ export function useCreateArtist(
   const mutation = useMutation({
     mutationFn: artistApi.createArtist,
     onSuccess: (saved) => {
-      queryClient.setQueryData(artistKeys.my(), saved);
+      void queryClient.invalidateQueries({ queryKey: artistKeys.my() });
       queryClient.setQueryData(artistKeys.byId(saved.id), saved);
       endEdit();
       options?.onSuccess?.(saved);

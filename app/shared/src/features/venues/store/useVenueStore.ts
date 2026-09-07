@@ -4,6 +4,7 @@ import type { ImageFile } from "@concertable/shared/types/image";
 import type { Venue } from "@concertable/shared/features/venues/types";
 
 export interface VenueState {
+  tenantId: string | undefined;
   draft:
     | Pick<
         Venue,
@@ -20,7 +21,10 @@ export interface VenueState {
   banner: ImageFile | undefined;
   avatar: ImageFile | undefined;
   editMode: boolean;
-  beginEdit: (venue: NonNullable<VenueState["draft"]>) => void;
+  beginEdit: (
+    tenantId: string | undefined,
+    venue: NonNullable<VenueState["draft"]>,
+  ) => void;
   endEdit: () => void;
   setName: (name: string) => void;
   setAbout: (about: string) => void;
@@ -36,12 +40,14 @@ export interface VenueState {
 
 export const useVenueStore = create<VenueState>()(
   immer((set) => ({
+    tenantId: undefined,
     draft: undefined,
     banner: undefined,
     avatar: undefined,
     editMode: false,
-    beginEdit: (venue) =>
+    beginEdit: (tenantId, venue) =>
       set((state) => {
+        state.tenantId = tenantId;
         state.draft = {
           name: venue.name,
           about: venue.about,
@@ -58,6 +64,7 @@ export const useVenueStore = create<VenueState>()(
       }),
     endEdit: () =>
       set((state) => {
+        state.tenantId = undefined;
         state.draft = undefined;
         state.banner = undefined;
         state.avatar = undefined;

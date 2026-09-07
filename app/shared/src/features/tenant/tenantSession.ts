@@ -28,6 +28,14 @@ async function persistSelection(
 
 export function createTenantSession(store: StoreApi<TenantStoreState>) {
   let configuration: TenantSessionConfiguration | undefined;
+  let latestSelection = 0;
+  let selectionQueue = Promise.resolve();
+
+  const enqueue = (operation: () => Promise<void>) => {
+    const queued = selectionQueue.catch(() => undefined).then(operation);
+    selectionQueue = queued.catch(() => undefined);
+    return queued;
+  };
 
   return {
     configure: async (nextConfiguration: TenantSessionConfiguration) => {
@@ -53,16 +61,42 @@ export function createTenantSession(store: StoreApi<TenantStoreState>) {
           .some((membership) => membership.tenantId === tenantId)
       )
         throw new RangeError(`Tenant ${tenantId} is not an active membership.`);
-      store.getState().selectTenant(tenantId);
-      await current.storage.saveActiveTenantId(tenantId);
+      const selection = ++latestSelection;
+      store.getState().beginSelection();
+
+      try {
+        await enqueue(async () => {
+          if (selection !== latestSelection) return;
+          if (
+            !current
+              .memberships()
+              .some((membership) => membership.tenantId === tenantId)
+          )
+            throw new RangeError(
+              `Tenant ${tenantId} is not an active membership.`,
+            );
+
+          await current.storage.saveActiveTenantId(tenantId);
+          if (selection === latestSelection)
+            store.getState().selectTenant(tenantId);
+        });
+      } catch (error) {
+        if (selection === latestSelection) throw error;
+      } finally {
+        if (selection === latestSelection) store.getState().endSelection();
+      }
     },
     clear: async () => {
+      ++latestSelection;
       store.getState().clearTenant();
-      if (configuration === undefined) return;
-      await Promise.all([
-        configuration.storage.clearActiveTenantId(),
-        configuration.clearMemberships(),
-      ]);
+      const current = configuration;
+      if (current === undefined) return;
+      await enqueue(async () => {
+        await Promise.all([
+          current.storage.clearActiveTenantId(),
+          current.clearMemberships(),
+        ]);
+      });
     },
     resolve: async (tenantType?: TenantType) => {
       const current = requireConfiguration(configuration);

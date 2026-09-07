@@ -53,11 +53,15 @@ const emptyRequest: UpdateVenueRequest = {
   longitude: 0,
 };
 
-export function useMyVenue(options?: UseMyVenueOptions): UseMyVenueResult {
-  const query = useVenueQuery();
+export function useMyVenue(
+  tenantId: string | undefined,
+  options?: UseMyVenueOptions,
+): UseMyVenueResult {
+  const query = useVenueQuery(tenantId);
   const queryClient = useQueryClient();
   const venueDraft = useVenueStore((state) => state.draft);
-  const editMode = useVenueStore((state) => state.editMode);
+  const draftTenantId = useVenueStore((state) => state.tenantId);
+  const storeEditMode = useVenueStore((state) => state.editMode);
   const beginEdit = useVenueStore((state) => state.beginEdit);
   const endEdit = useVenueStore((state) => state.endEdit);
   const setStoreName = useVenueStore((state) => state.setName);
@@ -86,7 +90,7 @@ export function useMyVenue(options?: UseMyVenueOptions): UseMyVenueResult {
       return saved;
     },
     onSuccess: (saved) => {
-      queryClient.setQueryData(venueKeys.my(), saved);
+      queryClient.setQueryData(venueKeys.myForTenant(tenantId), saved);
       queryClient.setQueryData(venueKeys.byId(saved.id), saved);
       reset(toUpdateVenueRequest(saved));
       endEdit();
@@ -95,6 +99,7 @@ export function useMyVenue(options?: UseMyVenueOptions): UseMyVenueResult {
   });
 
   const venue = query.data ?? undefined;
+  const editMode = storeEditMode && draftTenantId === tenantId;
   const draft =
     editMode && venue && venueDraft ? { ...venue, ...venueDraft } : undefined;
 
@@ -109,7 +114,7 @@ export function useMyVenue(options?: UseMyVenueOptions): UseMyVenueResult {
     else if (venue) {
       reset(toUpdateVenueRequest(venue));
       void trigger();
-      beginEdit(venue);
+      beginEdit(tenantId, venue);
     }
     options?.onToggleEdit?.();
   };

@@ -73,6 +73,76 @@ describe("tenant session", () => {
     expect(storage.saveActiveTenantId).toHaveBeenCalledWith("venue-two");
   });
 
+  it("serializes concurrent selections and commits only the latest tenant", async () => {
+    let releaseFirstSave: (() => void) | undefined;
+    const firstSave = new Promise<void>((resolve) => {
+      releaseFirstSave = resolve;
+    });
+    const { session, storage } = await createSession(venueMemberships);
+    vi.mocked(storage.saveActiveTenantId)
+      .mockImplementationOnce(() => firstSave)
+      .mockResolvedValueOnce(undefined);
+
+    const firstSelection = session.select("venue-one");
+    await vi.waitFor(() =>
+      expect(storage.saveActiveTenantId).toHaveBeenCalledWith("venue-one"),
+    );
+    const latestSelection = session.select("venue-two");
+
+    expect(useTenantStore.getState().isSelectionPending).toBe(true);
+    expect(session.tenantIdForRequest()).toBeUndefined();
+    releaseFirstSave?.();
+    await Promise.all([firstSelection, latestSelection]);
+
+    expect(storage.saveActiveTenantId).toHaveBeenNthCalledWith(1, "venue-one");
+    expect(storage.saveActiveTenantId).toHaveBeenNthCalledWith(2, "venue-two");
+    expect(session.tenantIdForRequest()).toBe("venue-two");
+    expect(useTenantStore.getState().isSelectionPending).toBe(false);
+  });
+
+  it("suppresses an older failure after a newer selection succeeds", async () => {
+    let rejectFirstSave: ((error: Error) => void) | undefined;
+    const firstSave = new Promise<void>((_, reject) => {
+      rejectFirstSave = reject;
+    });
+    const { session, storage } = await createSession(venueMemberships);
+    vi.mocked(storage.saveActiveTenantId)
+      .mockImplementationOnce(() => firstSave)
+      .mockResolvedValueOnce(undefined);
+
+    const olderSelection = session.select("venue-one");
+    await vi.waitFor(() =>
+      expect(storage.saveActiveTenantId).toHaveBeenCalledWith("venue-one"),
+    );
+    const latestSelection = session.select("venue-two");
+    rejectFirstSave?.(new Error("stale write failed"));
+
+    await expect(olderSelection).resolves.toBeUndefined();
+    await expect(latestSelection).resolves.toBeUndefined();
+    expect(session.tenantIdForRequest()).toBe("venue-two");
+    expect(useTenantStore.getState().isSelectionPending).toBe(false);
+  });
+
+  it("recovers from a failed hydration when configuration is retried", async () => {
+    const storage = createStorage("venue-one");
+    vi.mocked(storage.loadActiveTenantId)
+      .mockRejectedValueOnce(new Error("SecureStore unavailable"))
+      .mockResolvedValueOnce("venue-one");
+    const session = createTenantSession(useTenantStore);
+    const configuration = {
+      storage,
+      memberships: () => venueMemberships,
+      clearMemberships: vi.fn(),
+    };
+
+    await expect(session.configure(configuration)).rejects.toThrow(
+      "SecureStore unavailable",
+    );
+    await expect(session.configure(configuration)).resolves.toBeUndefined();
+
+    expect(session.tenantIdForRequest()).toBe("venue-one");
+  });
+
   it("persists a sole membership while resolving a route", async () => {
     const { session, storage } = await createSession(
       venueMemberships.slice(0, 1),
