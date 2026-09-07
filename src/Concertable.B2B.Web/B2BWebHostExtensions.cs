@@ -2,6 +2,7 @@ using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Admin.Api.Extensions;
 using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.Application.Api.Extensions;
+using Concertable.B2B.Application.Contracts.Events;
 using Concertable.B2B.Artist.Api.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Booking.Api.Extensions;
@@ -162,6 +163,8 @@ public static class B2BWebHostExtensions
                     reg.Publishes<ConcertCreatedEvent>();
                     reg.Publishes<B2BPayoutOwnerRegisteredEvent>();
                     reg.Publishes<TenantActivityRecordedEvent>();
+                    reg.Publishes<ApplicationAcceptedEvent>();
+                    reg.SubscribeTo<ApplicationAcceptedEvent>();
                     reg.SendsTo<CaptureEscrowCommand>(PaymentServiceIdentity.Name);
                     reg.SendsTo<DepositEscrowCommand>(PaymentServiceIdentity.Name);
                     reg.SendsTo<RefundEscrowCommand>(PaymentServiceIdentity.Name);
