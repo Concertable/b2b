@@ -59,6 +59,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@concertable/build-config": "*",
     "@types/react": "~19.1.0",
     "qrcode-terminal": "^0.12.0",
     "typescript": "~5.9.2"
