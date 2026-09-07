@@ -7,14 +7,14 @@ const venueMemberships: ReadonlyArray<Membership> = [
   {
     tenantId: "venue-one",
     legalName: "Venue One",
-    type: "Venue",
-    role: "Owner",
+    type: "venue",
+    role: "owner",
   },
   {
     tenantId: "venue-two",
     legalName: "Venue Two",
-    type: "Venue",
-    role: "Staff",
+    type: "venue",
+    role: "staff",
   },
 ];
 
@@ -78,10 +78,28 @@ describe("tenant session", () => {
       venueMemberships.slice(0, 1),
     );
 
-    const resolution = await session.resolve("Venue");
+    const resolution = await session.resolve("venue");
 
     expect(resolution.activeMembership).toEqual(venueMemberships[0]);
     expect(storage.saveActiveTenantId).toHaveBeenCalledWith("venue-one");
+  });
+
+  it("selects across all membership types for a cross-platform B2B app", async () => {
+    const memberships: ReadonlyArray<Membership> = [
+      ...venueMemberships,
+      {
+        tenantId: "artist-one",
+        legalName: "Artist One",
+        type: "artist",
+        role: "manager",
+      },
+    ];
+    const { session } = await createSession(memberships);
+
+    await session.select("artist-one");
+
+    expect((await session.resolve()).activeMembership).toEqual(memberships[2]);
+    expect(session.tenantIdForRequest()).toBe("artist-one");
   });
 
   it("clears persisted selection and memberships on logout", async () => {
