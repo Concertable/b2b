@@ -9,7 +9,7 @@ export interface TenantStoreState {
   readonly clearTenant: () => void;
   readonly synchronizeTenant: (
     memberships: ReadonlyArray<Membership>,
-    tenantType: TenantType,
+    tenantType?: TenantType,
   ) => string | undefined;
 }
 
