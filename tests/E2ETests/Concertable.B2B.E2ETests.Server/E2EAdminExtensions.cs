@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Security.Cryptography;
 using System.Text;
 using Concertable.B2B.Infrastructure.Payments;
@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Respawn;
 using Respawn.Graph;
+using Reunion;
 
 namespace Concertable.B2B.E2ETests.Server;
 

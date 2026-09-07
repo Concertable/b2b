@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -14,7 +14,6 @@
     <PackageReference Include="Concertable.Payment.Client" />
     <PackageReference Include="Concertable.Payment.Contracts" />
     <PackageReference Include="Reunion" />
-    <PackageReference Include="Reunion.Errors" />
     <PackageReference Include="Dapper" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference Include="Respawn" />
