@@ -1,6 +1,4 @@
 using Concertable.B2B.Concert.Application.Interfaces;
-using Concertable.B2B.Concert.Application.Workflow;
-using Concertable.B2B.Concert.Application.Workflow.Capabilities;
 using Concertable.B2B.Concert.Contracts;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
@@ -8,31 +6,38 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class ConcertDashboardService : IConcertDashboardService
 {
     private readonly IConcertDashboardRepository repository;
-    private readonly IConcertWorkflowCapabilityRegistry capabilityRegistry;
 
-    public ConcertDashboardService(
-        IConcertDashboardRepository repository,
-        IConcertWorkflowCapabilityRegistry capabilityRegistry)
+    public ConcertDashboardService(IConcertDashboardRepository repository)
     {
         this.repository = repository;
-        this.capabilityRegistry = capabilityRegistry;
     }
 
     public async Task<Option<VenueDashboardCounts>> GetVenueCountsAsync(
         Guid venueTenantId,
-        CancellationToken ct = default) =>
-        await repository.GetVenueCountsAsync(venueTenantId, ct);
+        CancellationToken ct = default)
+    {
+        var concertCounts = await repository.GetVenueCountsAsync(venueTenantId, ct);
+        if (concertCounts is null)
+            return Option.None<VenueDashboardCounts>();
+
+        return Option.Some(new VenueDashboardCounts(
+            concertCounts.UpcomingConcerts,
+            concertCounts.AwaitingDoorRevenue));
+    }
 
     public async Task<Option<ArtistDashboardCounts>> GetArtistCountsAsync(
         Guid artistTenantId,
-        CancellationToken ct = default) =>
-        await repository.GetArtistCountsAsync(
-            artistTenantId,
-            capabilityRegistry.DealTypesWith<IAcceptsCheckout>(),
-            ct);
+        CancellationToken ct = default)
+    {
+        var concertCounts = await repository.GetArtistCountsAsync(artistTenantId, ct);
+        if (concertCounts is null)
+            return Option.None<ArtistDashboardCounts>();
 
-    public Task<IReadOnlyList<ManagerSettlementContext>> GetManagerSettlementContextsAsync(
-        IReadOnlyCollection<int> bookingIds,
+        return Option.Some(new ArtistDashboardCounts(concertCounts.UpcomingConcerts));
+    }
+
+    public Task<IReadOnlyList<SettlementContext>> GetSettlementContextsAsync(
+        IReadOnlyCollection<int> concertIds,
         CancellationToken ct = default) =>
-        repository.GetManagerSettlementContextsAsync(bookingIds, ct);
+        repository.GetSettlementContextsAsync(concertIds, ct);
 }

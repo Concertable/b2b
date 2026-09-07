@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Concertable.B2B.Booking.Application\Concertable.B2B.Booking.Application.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Booking.Domain\Concertable.B2B.Booking.Domain.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Booking.Infrastructure\Concertable.B2B.Booking.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Application\Concertable.B2B.Application.Contracts\Concertable.B2B.Application.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

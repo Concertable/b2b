@@ -140,8 +140,33 @@ internal sealed class VenueService : IVenueService
         CancellationToken ct = default) =>
         await readRepository.GetSummaryAsync(id, ct);
 
+    public async Task<Option<int>> GetCurrentIdAsync(CancellationToken ct = default)
+    {
+        if (tenantContext.TenantId is not { } tenantId)
+            return Option.None<int>();
+
+        var venue = await repository.GetByTenantIdAsync(tenantId, ct);
+        return venue is null ? Option.None<int>() : Option.Some(venue.Id);
+    }
+
+    public async Task<Option<VenueProfile>> GetProfileAsync(
+        int id,
+        CancellationToken ct = default) =>
+        (await readRepository.GetProfileAsync(id, ct)).ToOption();
+
+    public Task<IReadOnlyList<VenueProfile>> GetProfilesAsync(
+        IReadOnlyCollection<int> ids,
+        CancellationToken ct = default) =>
+        readRepository.GetProfilesAsync(ids, ct);
+
+    public async Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default) =>
+        tenantContext.TenantId is { } tenantId
+            ? (await readRepository.GetProfileByTenantIdAsync(tenantId, ct)).ToOption()
+            : Option.None<VenueProfile>();
+
     public async Task<Option<TenantContact>> GetContactByTenantIdAsync(
         Guid tenantId,
         CancellationToken ct = default) =>
         (await readRepository.GetContactByTenantIdAsync(tenantId, ct)).ToOption();
+
 }

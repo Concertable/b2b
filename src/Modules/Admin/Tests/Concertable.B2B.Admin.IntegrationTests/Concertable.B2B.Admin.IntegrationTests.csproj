@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Concertable.Auth.Contracts" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
@@ -17,6 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Concertable.B2B.Admin.Application\Concertable.B2B.Admin.Application.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Admin.Domain\Concertable.B2B.Admin.Domain.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Admin.Infrastructure\Concertable.B2B.Admin.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\..\..\tests\Concertable.B2B.IntegrationTests.Fixtures\Concertable.B2B.IntegrationTests.Fixtures.csproj" />
     <PackageReference Include="Concertable.Testing" />
   </ItemGroup>

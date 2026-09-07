@@ -1,5 +1,5 @@
 using Concertable.B2B.Concert.Application.Errors;
-using Concertable.B2B.Concert.Application.Requests;
+using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.Kernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,25 +16,12 @@ namespace Concertable.B2B.Concert.Api.Controllers;
 internal sealed class DevController : ControllerBase
 {
     [Authorize]
-    [HttpPost("accept")]
-    public async Task<IActionResult> Accept(
-        [FromQuery] int applicationId,
-        [FromServices] IAcceptExecutor acceptExecutor)
-    {
-        return (await acceptExecutor.AcceptAsync(
-            applicationId,
-            null,
-            new ESignatureRequest { SignatoryName = "Dev Venue Manager" }))
-            .ToNoContentOrProblem();
-    }
-
-    [Authorize]
     [HttpPost("complete")]
     public async Task<IActionResult> Complete(
         [FromQuery] int concertId,
-        [FromServices] IFinishExecutor finishExecutor)
+        [FromServices] IConcertWorkflow workflow)
     {
-        return (await finishExecutor.FinishAsync(concertId))
+        return (await workflow.CompleteAsync(concertId))
             .Bind(_ => UnitResult.Success<FinishConcertError>())
             .ToNoContentOrProblem();
     }

@@ -38,9 +38,9 @@ const dashboardApi = {
     );
     return data;
   },
-  getTicketRevenue: async (): Promise<MonthlyRevenuePoint[]> => {
+  getPaymentRevenue: async (): Promise<MonthlyRevenuePoint[]> => {
     const { data } = await apiClient.get<MonthlyRevenuePoint[]>(
-      "/venue-dashboard/charts/ticket-revenue",
+      "/venue-dashboard/charts/payment-revenue",
     );
     return data;
   },

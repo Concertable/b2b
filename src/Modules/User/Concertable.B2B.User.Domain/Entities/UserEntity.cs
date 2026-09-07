@@ -5,7 +5,7 @@ namespace Concertable.B2B.User.Domain.Entities;
 
 public sealed class UserEntity : IGuidEntity
 {
-    protected UserEntity() { }
+    private UserEntity() { }
 
     private UserEntity(Guid id, string email)
     {

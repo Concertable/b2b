@@ -40,11 +40,15 @@
     <ProjectReference Include="..\Modules\Admin\Concertable.B2B.Admin.Api\Concertable.B2B.Admin.Api.csproj" />
     <ProjectReference Include="..\Modules\User\Concertable.B2B.User.Api\Concertable.B2B.User.Api.csproj" />
     <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Api\Concertable.B2B.Artist.Api.csproj" />
+    <ProjectReference Include="..\Modules\Application\Concertable.B2B.Application.Api\Concertable.B2B.Application.Api.csproj" />
+    <ProjectReference Include="..\Modules\Booking\Concertable.B2B.Booking.Api\Concertable.B2B.Booking.Api.csproj" />
     <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Api\Concertable.B2B.Venue.Api.csproj" />
-    <ProjectReference Include="..\Modules\Venue\Concertable.B2B.Venue.Infrastructure\Concertable.B2B.Venue.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Api\Concertable.B2B.Concert.Api.csproj" />
-    <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Deal\Concertable.B2B.Deal.Api\Concertable.B2B.Deal.Api.csproj" />
+    <ProjectReference Include="..\Modules\Dashboard\Artist\Concertable.B2B.Dashboard.Artist.Api\Concertable.B2B.Dashboard.Artist.Api.csproj" />
+    <ProjectReference Include="..\Modules\Dashboard\Opportunity\Concertable.B2B.Dashboard.Opportunity.Api\Concertable.B2B.Dashboard.Opportunity.Api.csproj" />
+    <ProjectReference Include="..\Modules\Dashboard\Venue\Concertable.B2B.Dashboard.Venue.Api\Concertable.B2B.Dashboard.Venue.Api.csproj" />
+    <ProjectReference Include="..\Modules\Opportunity\Concertable.B2B.Opportunity.Api\Concertable.B2B.Opportunity.Api.csproj" />
     <ProjectReference Include="..\Modules\Conversations\Concertable.B2B.Conversations.Api\Concertable.B2B.Conversations.Api.csproj" />
     <ProjectReference Include="..\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
     <ProjectReference Include="..\Concertable.B2B.Infrastructure\Concertable.B2B.Infrastructure.csproj" />
@@ -55,6 +59,7 @@
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
   <ItemGroup>
     <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Customer.Ticket.Contracts" />
     <PackageReference Include="Concertable.Messaging.AzureServiceBus" />
     <PackageReference Include="Concertable.Messaging.Infrastructure" />
     <PackageReference Include="Concertable.Payment.Client" />

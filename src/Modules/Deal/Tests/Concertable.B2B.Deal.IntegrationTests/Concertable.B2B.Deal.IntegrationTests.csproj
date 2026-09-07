@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);xUnit1000</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\tests\Concertable.B2B.IntegrationTests.Fixtures\Concertable.B2B.IntegrationTests.Fixtures.csproj" />
+    <PackageReference Include="Concertable.Testing" />
+    <ProjectReference Include="..\..\Concertable.B2B.Deal.Api\Concertable.B2B.Deal.Api.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Deal.Application\Concertable.B2B.Deal.Application.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Deal.Domain\Concertable.B2B.Deal.Domain.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Deal.Infrastructure\Concertable.B2B.Deal.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

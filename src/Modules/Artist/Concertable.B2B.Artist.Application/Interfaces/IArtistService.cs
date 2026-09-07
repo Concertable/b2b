@@ -20,7 +20,11 @@ internal interface IArtistService
     Task<bool> OwnsArtistAsync(int artistId, CancellationToken ct = default);
 
     Task<Option<ArtistSummary>> GetSummaryAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<ArtistSummary>> GetSummariesAsync(
+        IReadOnlyCollection<int> ids,
+        CancellationToken ct = default);
     Task<IReadOnlySet<Genre>> GetGenresAsync(int id, CancellationToken ct = default);
-
+    Task<Option<ArtistProfile>> GetProfileAsync(int id, CancellationToken ct = default);
+    Task<Option<ArtistProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
     Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

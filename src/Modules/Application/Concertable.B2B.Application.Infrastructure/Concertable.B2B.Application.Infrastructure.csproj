@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Concertable.B2B.Infrastructure\Concertable.B2B.Infrastructure.csproj" />
+    <ProjectReference Include="..\Concertable.B2B.Application.Contracts\Concertable.B2B.Application.Contracts.csproj" />
+    <ProjectReference Include="..\Concertable.B2B.Application.Application\Concertable.B2B.Application.Application.csproj" />
+    <ProjectReference Include="..\Concertable.B2B.Application.Domain\Concertable.B2B.Application.Domain.csproj" />
+    <ProjectReference Include="..\..\Artist\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" />
+    <ProjectReference Include="..\..\Booking\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" />
+    <ProjectReference Include="..\..\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
+    <ProjectReference Include="..\..\Conversations\Concertable.B2B.Conversations.Contracts\Concertable.B2B.Conversations.Contracts.csproj" />
+    <ProjectReference Include="..\..\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
+    <ProjectReference Include="..\..\Opportunity\Concertable.B2B.Opportunity.Contracts\Concertable.B2B.Opportunity.Contracts.csproj" />
+    <ProjectReference Include="..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
+    <ProjectReference Include="..\..\User\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
+    <ProjectReference Include="..\..\Venue\Concertable.B2B.Venue.Contracts\Concertable.B2B.Venue.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Infrastructure\Concertable.B2B.DataAccess.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Seed\Concertable.B2B.Seed.Infrastructure\Concertable.B2B.Seed.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Concertable.DataAccess.Application" />
+    <PackageReference Include="Concertable.DataAccess.Infrastructure" />
+    <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Messaging.Contracts" />
+    <PackageReference Include="Concertable.Messaging.Infrastructure" />
+    <PackageReference Include="Concertable.Payment.Client" />
+    <PackageReference Include="Concertable.Payment.Contracts" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
+    <PackageReference Include="Reunion.Validation" />
+    <PackageReference Include="Concertable.Seed.Shared" />
+    <PackageReference Include="Concertable.Shared.Email.Application" />
+  </ItemGroup>
+</Project>

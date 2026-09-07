@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Application.Requests;
+using Concertable.B2B.Concert.Application.Requests;
 using FluentValidation;
 
 namespace Concertable.B2B.Concert.Application.Validators;
@@ -18,15 +18,8 @@ internal sealed class DoorRevenueRequestValidator : AbstractValidator<DoorRevenu
 {
     public DoorRevenueRequestValidator()
     {
-        RuleFor(x => x.DoorRevenue).GreaterThanOrEqualTo(0);
-    }
-}
-
-internal sealed class BookingParamsValidator : AbstractValidator<BookingParams>
-{
-    public BookingParamsValidator()
-    {
-        RuleFor(x => x.PaymentMethodId).NotEmpty().WithMessage("Payment method ID is required");
-        RuleFor(x => x.ApplicationId).GreaterThan(0).WithMessage("Application ID is required");
+        RuleFor(x => x.DoorRevenue)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Door revenue must be zero or greater.");
     }
 }

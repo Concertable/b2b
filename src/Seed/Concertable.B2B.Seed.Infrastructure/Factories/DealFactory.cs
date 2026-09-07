@@ -32,6 +32,28 @@ public static class VenueHireDealFactory
 
 internal static class DealFactory
 {
+    public static DealEntity Clone(int id, DealEntity source)
+    {
+        DealEntity clone = source switch
+        {
+            FlatFeeDealEntity flatFee =>
+                FlatFeeDealFactory.Create(id, flatFee.Fee, flatFee.PaymentMethod),
+            DoorSplitDealEntity doorSplit =>
+                DoorSplitDealFactory.Create(id, doorSplit.ArtistDoorPercent, doorSplit.PaymentMethod),
+            VersusDealEntity versus =>
+                VersusDealFactory.Create(
+                    id,
+                    versus.Guarantee,
+                    versus.ArtistDoorPercent,
+                    versus.PaymentMethod),
+            VenueHireDealEntity venueHire =>
+                VenueHireDealFactory.Create(id, venueHire.HireFee, venueHire.PaymentMethod),
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
+        };
+        clone.TenantId = source.TenantId;
+        return clone;
+    }
+
     internal static TDeal RequireValid<TDeal>(Result<TDeal, ValidationErrors> result, int id)
         where TDeal : DealEntity =>
         result.Match(

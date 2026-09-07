@@ -1,6 +1,9 @@
+using Concertable.B2B.Infrastructure.Payments;
+using System.Net;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Messaging.Contracts;
+using Concertable.Payment.Contracts;
+using Concertable.Payment.Contracts.Events;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -28,25 +31,59 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
     public async Task Finish_ShouldChargeArtistDoorShareOffSession_AfterDoorRevenueDeclared()
     {
         // Arrange — the venue declares the night's door revenue; settlement is a % of that
-        var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
-        var deferred = (DeferredBooking)fixture.SeedState.PastDoorSplitBooking;
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
         // Act
         await fixture.FinishConcertAsync(concert.Id);
 
         // Assert — booking awaits the off-session settlement payment; completion happens on the webhook
-        var payment = Assert.Single(fixture.ManagerPaymentClient.Payments);
+        var payment = Assert.Single(fixture.SettlementClient.Payments);
         var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
         Assert.Equal(venueTenantId, payment.PayerId);
         Assert.Equal(artistTenantId, payment.PayeeId);
         Assert.Equal(280m, payment.Amount);
-        Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
-        Assert.Equal(deferred.Id, payment.BookingId);
+        Assert.Equal(concert.SettlementPaymentReference, payment.PaymentMethod);
+        Assert.Equal(PaymentOperationReferences.Settlement(concert.Id), payment.Reference);
 
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.AwaitingSettlement, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
+        Assert.Equal(payment.OperationId, persisted.SettlementOperationId);
+        Assert.NotNull(await fixture.Invoices.SingleOrDefaultAsync(invoice => invoice.BookingId == concert.BookingId));
+    }
+
+    [Fact]
+    public async Task Finish_WhenPersistenceFailsAfterPayment_RetryUsesTheSameOperation()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
+        await fixture.FailSettlementPersistenceAsync();
+
+        try
+        {
+            await Assert.ThrowsAnyAsync<DbUpdateException>(
+                () => fixture.CompleteConcertAsync(concert.Id));
+        }
+        finally
+        {
+            await fixture.RestoreSettlementPersistenceAsync();
+        }
+
+        var interrupted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.AwaitingSettlement, interrupted.State);
+        Assert.NotNull(interrupted.SettlementOperationId);
+
+        await fixture.RunCompletionAsync();
+
+        var payment = Assert.Single(
+            fixture.SettlementClient.Payments,
+            value => value.Reference == PaymentOperationReferences.Settlement(concert.Id));
+        Assert.Equal(interrupted.SettlementOperationId, payment.OperationId);
+        var settled = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, settled.State);
+        Assert.Equal(1, await fixture.Invoices.CountAsync(invoice => invoice.BookingId == concert.BookingId));
     }
 
     [Fact]
@@ -56,43 +93,109 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.RunCompletionAsync();
 
         // Assert — the gig is skipped (no payout), still awaiting its declaration
-        Assert.DoesNotContain(fixture.ManagerPaymentClient.Payments, p => p.BookingId == fixture.SeedState.PastDoorSplitBooking.Id);
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.Booked, application.State);
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+        Assert.DoesNotContain(fixture.SettlementClient.Payments, p => p.Reference == PaymentOperationReferences.Settlement(concert.Id));
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Posted, persisted.State);
     }
 
     [Fact]
-    public async Task Finish_ShouldCompleteBooking_WhenFailedSettlementIsRetriedSuccessfully()
+    public async Task SettlementFailureAfterCompletion_IsIgnored()
     {
-        // Arrange
         var booking = fixture.SeedState.PastDoorSplitBooking;
-        var concert = booking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(booking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
         await fixture.FinishConcertAsync(concert.Id);
+        var completed = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
 
-        // Act
-        await fixture.SendSettlementFailedWebhookAsync(booking.Id);
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.SendSettlementFailedWebhookAsync(
+            concert.Id,
+            completed.SettlementOperationId!.Value);
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
-        // Assert
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.Complete, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
+    }
+
+    [Fact]
+    public async Task Cancel_ShouldReturnConflict_WhenSettlementFailed()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var booking = fixture.SeedState.PastDoorSplitBooking;
+        var concert = fixture.SeedState.ConcertFor(booking);
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
+        await fixture.FailSettlementPersistenceAsync();
+        try
+        {
+            await Assert.ThrowsAnyAsync<DbUpdateException>(
+                () => fixture.CompleteConcertAsync(concert.Id));
+        }
+        finally
+        {
+            await fixture.RestoreSettlementPersistenceAsync();
+        }
+        var awaiting = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        await fixture.SendSettlementFailedWebhookAsync(
+            concert.Id,
+            awaiting.SettlementOperationId!.Value);
+
+        var response = await client.PostAsync($"/api/concert/{concert.Id}/cancel");
+
+        await response.ShouldBe(HttpStatusCode.Conflict);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.SettlementFailed, persisted.State);
+    }
+
+    [Fact]
+    public async Task SettlementOutcome_ForAReferenceThisServiceDidNotMint_IsSkipped()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+        var before = (await fixture.Concerts.SingleAsync(value => value.Id == concert.Id)).State;
+        var reference = new PaymentOperationReference(PaymentOperationReferences.SettlementType, "order:1");
+        var metadata = new Dictionary<string, string> { [PaymentMetadataKeys.OperationId] = Guid.NewGuid().ToString() };
+
+        await fixture.DispatchIntegrationEventAsync(
+            new PaymentSucceededEvent(reference, metadata),
+            MessageEnvelope.Create<PaymentSucceededEvent>(fixture.SeedNow));
+        await fixture.DispatchIntegrationEventAsync(
+            new PaymentFailedEvent(reference, "card_declined", "Card was declined", metadata),
+            MessageEnvelope.Create<PaymentFailedEvent>(fixture.SeedNow));
+
+        Assert.Equal(before, (await fixture.Concerts.SingleAsync(value => value.Id == concert.Id)).State);
+    }
+
+    [Fact]
+    public async Task SettlementOutcome_WithoutAnOperationId_IsSkipped()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
+        var before = (await fixture.Concerts.SingleAsync(value => value.Id == concert.Id)).State;
+        var reference = PaymentOperationReferences.Settlement(concert.Id);
+
+        await fixture.DispatchIntegrationEventAsync(
+            new PaymentSucceededEvent(reference, new Dictionary<string, string>()),
+            MessageEnvelope.Create<PaymentSucceededEvent>(fixture.SeedNow));
+        await fixture.DispatchIntegrationEventAsync(
+            new PaymentFailedEvent(reference, "card_declined", "Card was declined", new Dictionary<string, string>()),
+            MessageEnvelope.Create<PaymentFailedEvent>(fixture.SeedNow));
+
+        Assert.Equal(before, (await fixture.Concerts.SingleAsync(value => value.Id == concert.Id)).State);
     }
 
     [Fact]
     public async Task Finish_ShouldIgnoreDuplicateSettlementWebhookEvent()
     {
         // Arrange
-        var concert = fixture.SeedState.PastDoorSplitBooking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
         await fixture.FinishConcertAsync(concert.Id);
 
         // Act
-        await fixture.StripeClient.SendWebhookAsync();
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastDoorSplitApp.Id);
-        Assert.Equal(LifecycleState.Complete, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 }

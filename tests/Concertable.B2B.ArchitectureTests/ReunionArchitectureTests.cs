@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using Concertable.Testing;
 using Xunit;
 
 namespace Concertable.B2B.ArchitectureTests;
@@ -14,13 +15,13 @@ public sealed class ReunionArchitectureTests
         var oldFunctionalNamespace = "Concertable.Kernel." + "Functional";
         var oldApiResultsNamespace = "Concertable.Shared.Api." + "Results";
         var oldPackage = "Fluent" + "Results";
-        var violations = Directory
-            .EnumerateFiles(FindB2BRoot(), "*.*", SearchOption.AllDirectories)
-            .Where(path => Path.GetExtension(path) is ".cs" or ".csproj" or ".props")
-            .Where(path => !IsGeneratedPath(path))
-            .Where(path =>
+        var violations = FindB2BRoot()
+            .EnumerateFiles("*.*", SearchOption.AllDirectories)
+            .Where(file => file.Extension is ".cs" or ".csproj" or ".props")
+            .Where(file => !IsGeneratedPath(file))
+            .Where(file =>
             {
-                var source = File.ReadAllText(path);
+                var source = File.ReadAllText(file.FullName);
                 return source.Contains(oldFunctionalNamespace, StringComparison.Ordinal)
                     || source.Contains(oldApiResultsNamespace, StringComparison.Ordinal)
                     || source.Contains(oldPackage, StringComparison.Ordinal);
@@ -33,22 +34,23 @@ public sealed class ReunionArchitectureTests
     [Fact]
     public void ReunionPackages_AreOwnedDirectlyByTheirSourceConsumers()
     {
-        foreach (var projectPath in Directory.EnumerateFiles(FindB2BRoot(), "*.csproj", SearchOption.AllDirectories)
-                     .Where(path => !IsGeneratedPath(path)))
+        foreach (var projectFile in FindB2BRoot()
+                     .EnumerateFiles("*.csproj", SearchOption.AllDirectories)
+                     .Where(file => !IsGeneratedPath(file)))
         {
-            var projectDirectory = Path.GetDirectoryName(projectPath)!;
+            var projectDirectory = projectFile.Directory!;
             var source = string.Join(
                 '\n',
-                Directory.EnumerateFiles(projectDirectory, "*.cs", SearchOption.AllDirectories)
-                    .Where(path => !IsGeneratedPath(path))
-                    .Where(path => !path.EndsWith(nameof(ReunionArchitectureTests) + ".cs", StringComparison.Ordinal))
-                    .Select(File.ReadAllText));
+                projectDirectory.EnumerateFiles("*.cs", SearchOption.AllDirectories)
+                    .Where(file => !IsGeneratedPath(file))
+                    .Where(file => file.Name != nameof(ReunionArchitectureTests) + ".cs")
+                    .Select(file => File.ReadAllText(file.FullName)));
             var expected = ReunionPackages
                 .Where(package => SourceUses(source, package))
                 .Order()
                 .ToArray();
             var actual = XDocument
-                .Load(projectPath)
+                .Load(projectFile.FullName)
                 .Descendants("PackageReference")
                 .Select(reference => (string?)reference.Attribute("Include"))
                 .Where(package => package is not null && ReunionPackages.Contains(package))
@@ -57,7 +59,7 @@ public sealed class ReunionArchitectureTests
 
             Assert.True(
                 expected.SequenceEqual(actual),
-                $"{projectPath}: expected [{string.Join(", ", expected)}], actual [{string.Join(", ", actual)}]");
+                $"{projectFile.FullName}: expected [{string.Join(", ", expected)}], actual [{string.Join(", ", actual)}]");
         }
     }
 
@@ -71,25 +73,9 @@ public sealed class ReunionArchitectureTests
         _ => false
     };
 
-    private static bool IsGeneratedPath(string path)
-    {
-        var separator = Path.DirectorySeparatorChar;
-        return path.Contains($"{separator}bin{separator}", StringComparison.OrdinalIgnoreCase)
-            || path.Contains($"{separator}obj{separator}", StringComparison.OrdinalIgnoreCase);
-    }
+    private static bool IsGeneratedPath(FileInfo file) =>
+        file.Directory!.AncestorsAndSelf().Any(ancestor => ancestor.Name is "bin" or "obj");
 
-    private static string FindB2BRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "Concertable.B2B.slnx")))
-                return directory.FullName;
-
-            directory = directory.Parent;
-        }
-
-        throw new DirectoryNotFoundException("Could not locate api/Concertable.B2B.");
-    }
+    private static DirectoryInfo FindB2BRoot() =>
+        typeof(ReunionArchitectureTests).Assembly.SolutionDirectory;
 }

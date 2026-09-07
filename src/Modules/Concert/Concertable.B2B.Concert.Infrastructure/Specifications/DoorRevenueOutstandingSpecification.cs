@@ -6,13 +6,12 @@ namespace Concertable.B2B.Concert.Infrastructure.Specifications;
 
 internal interface IDoorRevenueOutstandingSpecification : IPredicateSpecification<ConcertEntity> { }
 
-/// <summary>
-/// A revenue-share gig whose venue has not yet declared the door take — not ready to settle. The
-/// completion sweep skips it (negated); the venue dashboard counts it. One definition, both consumers.
-/// </summary>
 internal sealed class DoorRevenueOutstandingSpecification
     : PredicateSpecification<ConcertEntity>, IDoorRevenueOutstandingSpecification
 {
+    // Cast to the concrete leaves, not to the abstract DoorRevenueConcert: EF cannot translate a downcast
+    // to an intermediate TPH type, and this predicate is also composed into a correlated subquery.
     protected override Expression<Func<ConcertEntity, bool>> Predicate =>
-        c => c.Booking is DeferredBooking && c.DoorRevenue == null;
+        concert => (concert is DoorSplitConcert && ((DoorSplitConcert)concert).DoorRevenue == null)
+            || (concert is VersusConcert && ((VersusConcert)concert).DoorRevenue == null);
 }

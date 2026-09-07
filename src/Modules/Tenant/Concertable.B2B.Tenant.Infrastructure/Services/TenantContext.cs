@@ -10,28 +10,28 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
     private readonly IHttpContextAccessor httpContextAccessor;
     private readonly IMembershipRepository repository;
     private readonly IPermissionCatalog permissionCatalog;
-
-    private Guid? tenantId;
-    private TenantRole? role;
-    private TenantType? tenantType;
-    private bool resolved;
+    private readonly ITenantContextAccessor accessor;
 
     public TenantContext(
         ICurrentUser currentUser,
         IHttpContextAccessor httpContextAccessor,
         IMembershipRepository repository,
-        IPermissionCatalog permissionCatalog)
+        IPermissionCatalog permissionCatalog,
+        ITenantContextAccessor accessor)
     {
         this.currentUser = currentUser;
         this.httpContextAccessor = httpContextAccessor;
         this.repository = repository;
         this.permissionCatalog = permissionCatalog;
+        this.accessor = accessor;
     }
 
-    public Guid? TenantId => tenantId;
+    private ActiveTenant? Active => accessor.Resolution?.Tenant;
 
-    public TenantRole? Role => role;
-    public TenantType? Type => tenantType;
+    public Guid? TenantId => Active?.TenantId;
+
+    public TenantRole? Role => Active?.Role;
+    public TenantType? Type => Active?.Type;
 
     /// <summary>
     /// No HTTP request in scope (worker, outbox dispatcher, event/projection handler) = system caller = filter bypass.
@@ -41,32 +41,31 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
 
     public bool HasPermission(string permission, TenantType? requiredTenantType = null)
     {
-        if (role is not { } activeRole || tenantType is not { } activeTenantType)
+        if (Active is not { } active)
             return false;
 
-        if (requiredTenantType is { } required && activeTenantType != required)
+        if (requiredTenantType is { } required && active.Type != required)
             return false;
 
-        return permissionCatalog.Grants(activeTenantType, activeRole, permission);
+        return permissionCatalog.Grants(active.Type, active.Role, permission);
     }
 
     public async Task ResolveAsync(CancellationToken ct = default)
     {
-        if (resolved || IsHost)
+        if (accessor.Resolution is not null || IsHost)
             return;
-
-        resolved = true;
 
         if (currentUser.Id is not { } userId)
+        {
+            accessor.Resolution = new TenantResolution(null);
             return;
+        }
 
         var membership = await ResolveMembershipAsync(userId, ct);
-        if (membership is null)
-            return;
-
-        tenantId = membership.TenantId;
-        role = membership.Role;
-        tenantType = membership.Type;
+        accessor.Resolution = new TenantResolution(
+            membership is null
+                ? null
+                : new ActiveTenant(membership.TenantId, membership.Role, membership.Type));
     }
 
     /// <summary>

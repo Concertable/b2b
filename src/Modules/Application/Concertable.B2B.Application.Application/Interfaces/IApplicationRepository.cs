@@ -1,0 +1,56 @@
+using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Application.Application.Models;
+using Concertable.B2B.DataAccess.Application;
+
+namespace Concertable.B2B.Application.Application.Interfaces;
+
+internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<ApplicationEntity>
+{
+    Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
+        int opportunityId,
+        CancellationToken ct = default);
+    Task<bool> ExistsByOpportunityIdAndArtistTenantIdAsync(
+        int opportunityId,
+        Guid artistTenantId,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationEntity>> GetByArtistTenantIdAndStateAsync(
+        Guid artistTenantId,
+        ApplicationState state,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationEntity>> GetByVenueTenantIdAndStateAsync(
+        Guid venueTenantId,
+        ApplicationState state,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationEntity>> GetCurrentByArtistTenantIdAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
+    Task<ApplicationState?> GetStateByIdAsync(
+        int applicationId,
+        CancellationToken ct = default);
+    Task<bool> AnyAcceptedByOpportunityIdAsync(
+        int opportunityId,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<int>> RejectAllExceptAsync(
+        int opportunityId,
+        int applicationId,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationDashboardProjection>> GetVenueDashboardProjectionsAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationDashboardProjection>> GetArtistDashboardProjectionsAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
+    Task<IReadOnlyDictionary<int, int>> GetCountsByOpportunityIdsAsync(
+        IReadOnlyCollection<int> opportunityIds,
+        CancellationToken ct = default);
+    Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
+        Guid artistTenantId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Brings a write to one of the application's own child tables inside the application's concurrency
+    /// token, so a decision taken against the row it hung off cannot commit over it.
+    /// </summary>
+    void MarkChanged(ApplicationEntity application);
+}

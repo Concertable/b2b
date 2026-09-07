@@ -12,17 +12,13 @@ internal sealed class ConcertDbContext(
     DbContextOptions<ConcertDbContext> options,
     ConcertConfigurationProvider provider,
     ITenantContext tenantContext)
-    : VenueArtistTenantScopedDbContext(options, provider, tenantContext, Schema.Name)
+    : TenantScopedDbContext(options, provider, tenantContext, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
-    public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
-    public DbSet<ContractEntity> Contracts => Set<ContractEntity>();
     public DbSet<InvoiceEntity> Invoices => Set<InvoiceEntity>();
     public DbSet<InvoiceSequenceEntity> InvoiceSequences => Set<InvoiceSequenceEntity>();
     public DbSet<SelfBillingAgreementEntity> SelfBillingAgreements => Set<SelfBillingAgreementEntity>();
     public DbSet<ConcertImageEntity> ConcertImages => Set<ConcertImageEntity>();
-    public DbSet<OpportunityEntity> Opportunities => Set<OpportunityEntity>();
-    public DbSet<ApplicationEntity> Applications => Set<ApplicationEntity>();
     public DbSet<ArtistReadModel> ArtistReadModels => Set<ArtistReadModel>();
     public DbSet<VenueReadModel> VenueReadModels => Set<VenueReadModel>();
     public DbSet<ConcertRatingProjection> ConcertRatingProjections => Set<ConcertRatingProjection>();
@@ -31,9 +27,7 @@ internal sealed class ConcertDbContext(
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyVenueArtist<ApplicationEntity>(this);
-        modelBuilder.ApplyVenueArtist<BookingEntity>(this);
-        modelBuilder.ApplyVenueArtist<ContractEntity>(this);
+        modelBuilder.ApplyVenueArtist<ConcertEntity>(this);
         modelBuilder.ApplyVenueArtist<InvoiceEntity>(this);
         modelBuilder.ApplySingleOwner<SelfBillingAgreementEntity>(this);
     }

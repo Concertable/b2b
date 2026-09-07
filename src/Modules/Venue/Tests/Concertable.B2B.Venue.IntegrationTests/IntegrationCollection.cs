@@ -1,4 +1,4 @@
-using Concertable.B2B.IntegrationTests.Fixtures;
+namespace Concertable.B2B.Venue.IntegrationTests;
 
 [CollectionDefinition("Integration")]
-public sealed class IntegrationCollection : ICollectionFixture<ApiFixture>;
+public sealed class IntegrationCollection : ICollectionFixture<VenueApiFixture>;

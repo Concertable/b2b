@@ -3,7 +3,7 @@ export { useVenueKpisQuery } from "./useVenueKpisQuery";
 export { useVenueApplicationsToReviewQuery } from "./useVenueApplicationsToReviewQuery";
 export { useVenueInboxQuery } from "./useVenueInboxQuery";
 export { useVenueUpcomingConcertsQuery } from "./useVenueUpcomingConcertsQuery";
-export { useVenueTicketRevenueQuery } from "./useVenueTicketRevenueQuery";
+export { useVenuePaymentRevenueQuery } from "./useVenuePaymentRevenueQuery";
 export { useVenueOpenOpportunitiesQuery } from "./useVenueOpenOpportunitiesQuery";
 export { useVenueActivityQuery } from "./useVenueActivityQuery";
 export { useVenueSettlementsQuery } from "./useVenueSettlementsQuery";

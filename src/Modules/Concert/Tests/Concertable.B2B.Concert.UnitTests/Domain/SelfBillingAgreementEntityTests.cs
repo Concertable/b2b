@@ -3,7 +3,7 @@ using System.Reflection;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 
-namespace Concertable.B2B.Concert.UnitTests.Domain;
+namespace Concertable.B2B.Concert.UnitTests;
 
 public sealed class SelfBillingAgreementEntityTests
 {
@@ -39,8 +39,6 @@ public sealed class SelfBillingAgreementEntityTests
         Assert.EndsWith(".pdf", agreement.PdfBlobName);
     }
 
-    // Immutable evidence: only TenantId is settable (for the tenant interceptor); everything else is
-    // frozen at Create, mirroring InvoiceEntity/ContractEntity.
     [Fact]
     public void Entity_IsImmutable_OnlyTenantIdHasAPublicSetter()
     {

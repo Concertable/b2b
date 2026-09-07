@@ -1,4 +1,7 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.ValueObjects;
+using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Seed.Contracts.Specs;
 using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
@@ -6,10 +9,24 @@ namespace Concertable.B2B.Seed.Infrastructure.Factories;
 
 public static class ConcertFactory
 {
-    public static ConcertEntity Create(ConcertSeedSpec spec, BookingEntity booking)
+    public static ConcertEntity Create(ConcertSeedSpec spec, BookingEntity booking, ContractEntity contract)
     {
         var concert = ConcertEntity
-            .CreateDraft(booking, spec.ArtistId, spec.VenueId, spec.Period, spec.Name, spec.About, spec.Genres)
+            .CreateDraft(
+                new ConfirmedBookingSnapshot(
+                    booking.Id,
+                    booking.ApplicationId,
+                    booking.OpportunityId,
+                    spec.ArtistId,
+                    spec.VenueId,
+                    booking.VenueTenantId,
+                    booking.ArtistTenantId,
+                    spec.Period.Start,
+                    spec.Period.End,
+                    booking.Genres,
+                    contract.Commitment,
+                    contract.ConfirmedTerms),
+                new ConcertDraft(spec.Name, spec.About, spec.Genres))
             .With(nameof(ConcertEntity.Id), spec.ConcertId)
             .With(nameof(ConcertEntity.Price), spec.Price)
             .With(nameof(ConcertEntity.TotalTickets), spec.TotalTickets)

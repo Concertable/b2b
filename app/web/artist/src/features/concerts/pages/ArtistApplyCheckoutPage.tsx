@@ -54,12 +54,7 @@ export function ArtistApplyCheckoutFlow({
   const [submitted, setSubmitted] = useState(false);
   const { signature, setSignature, isValid } = useESignature();
   const { mutate, isPending, error } = useMutation({
-    mutationFn: (paymentMethodId: string) =>
-      applicationApi.applyToOpportunityWithPayment(
-        opportunityId,
-        paymentMethodId,
-        signature,
-      ),
+    mutationFn: () => applicationApi.applyToOpportunity(opportunityId, signature),
     onSuccess: () => setSubmitted(true),
   });
 
@@ -120,7 +115,7 @@ export function ArtistApplyCheckoutFlow({
             session={checkout.session}
             submitLabel="Authorise & Apply"
             disabled={!isValid}
-            onSuccess={mutate}
+            onSuccess={() => mutate()}
           />
         </div>
       </CheckoutSection>

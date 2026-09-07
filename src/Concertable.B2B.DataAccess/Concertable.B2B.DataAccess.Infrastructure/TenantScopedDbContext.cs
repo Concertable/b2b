@@ -6,11 +6,14 @@ using Microsoft.EntityFrameworkCore;
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
 /// <summary>
-/// The tenant-filtered stance for a module context with single-owner (<see cref="Concertable.Kernel.ITenantScoped"/>)
-/// rows — a row is visible to its owning tenant and the host. Composes the module's anemic configuration provider
-/// first, then the module's filter declarations — the order is sealed so filters can never run before the model
-/// exists. The tenant-independent counterpart (same provider, no tenancy) is <see cref="ReadDbContext"/>; the two-party
-/// sibling is <see cref="VenueArtistTenantScopedDbContext"/>.
+/// The tenant-filtered stance for a module context — a row is visible to the tenant(s) that own it, and to the
+/// host. Composes the module's anemic configuration provider first, then the module's filter declarations — the
+/// order is sealed so filters can never run before the model exists. The tenant-independent counterpart (same
+/// provider, no tenancy) is <see cref="ReadDbContext"/>.
+/// <para>
+/// Single-owner and two-party rows share this one base: the stance a context takes is expressed by which helper
+/// its <see cref="ApplyTenantFilters"/> calls, not by a separate base type.
+/// </para>
 /// </summary>
 public abstract class TenantScopedDbContext : DbContextBase, IHasTenantContext
 {
@@ -40,9 +43,13 @@ public abstract class TenantScopedDbContext : DbContextBase, IHasTenantContext
     }
 
     /// <summary>
-    /// Declare which single-owner entities are filtered, via <c>modelBuilder.ApplySingleOwner&lt;T&gt;(this)</c>.
-    /// Deliberately NOT automatic off the <see cref="Concertable.Kernel.ITenantScoped"/> marker:
-    /// marked ≠ filtered is a per-entity product decision (a contract carries the owner but is read cross-tenant).
+    /// Declare which entities are filtered, and on which stance: single-owner
+    /// (<see cref="Concertable.Kernel.ITenantScoped"/>) rows via
+    /// <c>modelBuilder.ApplySingleOwner&lt;T&gt;(this)</c>, two-party venue↔artist
+    /// (<see cref="Application.IVenueArtistTenantScoped"/>) rows via
+    /// <c>modelBuilder.ApplyVenueArtist&lt;T&gt;(this)</c>. Deliberately NOT automatic off either marker:
+    /// marked ≠ filtered is a per-entity product decision (a contract carries the owner but is read
+    /// cross-tenant; a concert carries the pair but stays public).
     /// </summary>
     protected abstract void ApplyTenantFilters(ModelBuilder modelBuilder);
 }

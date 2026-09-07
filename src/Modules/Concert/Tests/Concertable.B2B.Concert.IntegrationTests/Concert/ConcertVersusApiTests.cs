@@ -1,6 +1,5 @@
+using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Concert.Domain.Lifecycle;
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -28,40 +27,39 @@ public sealed class ConcertVersusApiTests : IAsyncLifetime
     public async Task Finish_ShouldChargeGuaranteePlusDoorShareOffSession_AfterDoorRevenueDeclared()
     {
         // Arrange — the venue declares the door revenue; Versus settles guarantee + a % of it
-        var concert = fixture.SeedState.PastVersusBooking.Concert!;
-        var deferred = (DeferredBooking)fixture.SeedState.PastVersusBooking;
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastVersusBooking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
         // Act
         await fixture.FinishConcertAsync(concert.Id);
 
-        // Assert — booking awaits the off-session settlement payment; completion happens on the webhook
-        var payment = Assert.Single(fixture.ManagerPaymentClient.Payments);
+        // Assert — the off-session payment confirms inline, so the concert settles in this same call
+        var payment = Assert.Single(fixture.SettlementClient.Payments);
         var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
         var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
         Assert.Equal(venueTenantId, payment.PayerId);
         Assert.Equal(artistTenantId, payment.PayeeId);
         Assert.Equal(254m, payment.Amount);
-        Assert.Equal(deferred.PaymentMethodId, payment.PaymentMethodId);
-        Assert.Equal(deferred.Id, payment.BookingId);
+        Assert.Equal(concert.SettlementPaymentReference, payment.PaymentMethod);
+        Assert.Equal(PaymentOperationReferences.Settlement(concert.Id), payment.Reference);
 
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastVersusApp.Id);
-        Assert.Equal(LifecycleState.AwaitingSettlement, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 
     [Fact]
     public async Task Finish_ShouldCompleteBooking_WhenSettlementWebhookSucceeds()
     {
         // Arrange
-        var concert = fixture.SeedState.PastVersusBooking.Concert!;
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastVersusBooking);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
         await fixture.FinishConcertAsync(concert.Id);
 
         // Act
-        await fixture.StripeClient.SendWebhookAsync();
+        await fixture.PaymentSimulator.SendWebhookAsync();
 
         // Assert
-        var application = await fixture.ConcertReads.Set<ApplicationEntity>().FirstAsync(a => a.Id == fixture.SeedState.PastVersusApp.Id);
-        Assert.Equal(LifecycleState.Complete, application.State);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
     }
 }

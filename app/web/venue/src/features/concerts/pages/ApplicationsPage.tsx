@@ -46,7 +46,7 @@ export function ApplicationsPage() {
       <ConfirmActionDialog
         open={cancel.isOpen}
         title="Cancel this application?"
-        description="The booking is unwound and any payment held is refunded in full. This can't be undone."
+        description="The artist is notified that their application was cancelled. This can't be undone."
         dismissLabel="Keep application"
         confirmLabel="Cancel application"
         pendingLabel="Cancelling..."

@@ -1,0 +1,86 @@
+using Concertable.B2B.Booking.Domain.Entities;
+using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.Financial;
+using Concertable.B2B.Booking.Infrastructure.Data;
+using Concertable.Messaging.Contracts;
+using Concertable.Payment.Contracts;
+using Microsoft.EntityFrameworkCore;
+
+namespace Concertable.B2B.Booking.Infrastructure.Events;
+
+internal sealed class CancellationFinancialOperationOutcomeProcessor :
+    IIntegrationEventHandler<RefundEscrowSucceededEvent>,
+    IIntegrationEventHandler<RefundEscrowDeferredEvent>,
+    IIntegrationEventHandler<RefundEscrowRejectedEvent>
+{
+    private readonly BookingDbContext context;
+    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
+
+    public CancellationFinancialOperationOutcomeProcessor(
+        BookingDbContext context,
+        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior)
+    {
+        this.context = context;
+        this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
+    }
+
+    public Task HandleAsync(
+        RefundEscrowSucceededEvent @event,
+        MessageEnvelope envelope,
+        CancellationToken ct = default) =>
+        ProcessAsync(@event.OperationId, envelope, Cancel, ct);
+
+    public Task HandleAsync(
+        RefundEscrowDeferredEvent @event,
+        MessageEnvelope envelope,
+        CancellationToken ct = default) =>
+        outboxUnitOfWorkBehavior.ExecuteAsync(() => TryRecordInboxAsync(envelope, ct), ct);
+
+    public Task HandleAsync(
+        RefundEscrowRejectedEvent @event,
+        MessageEnvelope envelope,
+        CancellationToken ct = default) =>
+        ProcessAsync(@event.OperationId, envelope, booking =>
+        {
+            if (booking.State is BookingState.CancellationFailed or BookingState.Cancelled)
+                return;
+
+            if (booking.RecordCancellationFailure(@event.Code, @event.Message).TryGetError(out var transitionError))
+                throw new InvalidOperationException($"Booking cannot record cancellation failure from {transitionError.Current}.");
+        }, ct);
+
+    private static void Cancel(BookingEntity booking)
+    {
+        if (booking.State == BookingState.Cancelled)
+            return;
+
+        if (booking.Cancel().TryGetError(out var transitionError))
+            throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
+    }
+
+    private Task ProcessAsync(
+        Guid operationId,
+        MessageEnvelope envelope,
+        Action<BookingEntity> action,
+        CancellationToken ct) =>
+        outboxUnitOfWorkBehavior.ExecuteAsync(async () =>
+        {
+            if (!await TryRecordInboxAsync(envelope, ct))
+                return;
+
+            var booking = await context.Bookings
+                .SingleOrDefaultAsync(value => value.CancellationOperationId == operationId, ct);
+            if (booking is not null)
+                action(booking);
+        }, ct);
+
+    private async Task<bool> TryRecordInboxAsync(MessageEnvelope envelope, CancellationToken ct)
+    {
+        var handler = nameof(CancellationFinancialOperationOutcomeProcessor);
+        if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))
+            return false;
+
+        context.AddInboxMessage(envelope, handler);
+        return true;
+    }
+}

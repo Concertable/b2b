@@ -1,3 +1,4 @@
+using Concertable.Contracts;
 using Reunion;
 
 namespace Concertable.B2B.Venue.Contracts;
@@ -5,8 +6,12 @@ namespace Concertable.B2B.Venue.Contracts;
 public interface IVenueModule
 {
     Task<Option<VenueSummary>> GetSummaryAsync(int venueId, CancellationToken ct = default);
-
-    /// <summary>The venue's display name and business email for a given tenant — <see cref="Option{T}.None"/>
-    /// when the tenant owns no venue. Used cross-module by admin listing and notification (verification review).</summary>
+    Task<Option<int>> GetCurrentIdAsync(CancellationToken ct = default);
+    Task<Option<VenueProfile>> GetProfileAsync(int venueId, CancellationToken ct = default);
+    Task<IReadOnlyList<VenueProfile>> GetProfilesAsync(
+        IReadOnlyCollection<int> venueIds,
+        CancellationToken ct = default);
+    Task<Option<VenueProfile>> GetCurrentProfileAsync(CancellationToken ct = default);
+    Task<ReviewSummary> GetReviewSummaryAsync(int venueId, CancellationToken ct = default);
     Task<Option<TenantContact>> GetContactByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

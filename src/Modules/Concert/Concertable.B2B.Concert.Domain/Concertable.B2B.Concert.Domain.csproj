@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
+    <ProjectReference Include="..\..\Application\Concertable.B2B.Application.Contracts\Concertable.B2B.Application.Contracts.csproj" />
+    <ProjectReference Include="..\..\Booking\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" />
     <ProjectReference Include="..\..\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Application\Concertable.B2B.DataAccess.Application.csproj" />
   </ItemGroup>
@@ -23,6 +25,7 @@
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
   <ItemGroup>
     <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Concertable.Payment.Contracts" />
   </ItemGroup>
 
 </Project>
