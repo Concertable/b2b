@@ -9,7 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Concertable.B2B.Vocabulary\Concertable.B2B.Vocabulary.csproj" />
+    <ProjectReference Include="..\..\..\Concertable.B2B.Enums\Concertable.B2B.Enums.csproj" />
+    <ProjectReference Include="..\Concertable.B2B.Deal.Domain\Concertable.B2B.Deal.Domain.csproj" />
   </ItemGroup>
 
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->

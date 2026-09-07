@@ -1,7 +1,8 @@
 using System.Net;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Domain.Entities;
-using Concertable.B2B.Vocabulary;
+using Concertable.B2B.Deal.Domain;
+using Concertable.B2B.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;

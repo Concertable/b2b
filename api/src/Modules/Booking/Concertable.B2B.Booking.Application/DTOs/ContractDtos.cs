@@ -1,4 +1,5 @@
-using Concertable.B2B.Vocabulary;
+using Concertable.B2B.Deal.Domain;
+using Concertable.B2B.Enums;
 
 namespace Concertable.B2B.Booking.Application.DTOs;
 

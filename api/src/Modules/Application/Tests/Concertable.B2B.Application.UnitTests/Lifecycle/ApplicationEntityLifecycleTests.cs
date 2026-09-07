@@ -5,7 +5,8 @@ using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Domain.ValueObjects;
-using Concertable.B2B.Vocabulary;
+using Concertable.B2B.Deal.Domain;
+using Concertable.B2B.Enums;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel;
 

@@ -1,6 +1,7 @@
 global using Concertable.B2B.Application.Contracts;
 global using Concertable.B2B.Deal.Contracts;
-global using Concertable.B2B.Vocabulary;
+global using Concertable.B2B.Deal.Domain;
+global using Concertable.B2B.Enums;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
 global using Concertable.Kernel;

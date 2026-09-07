@@ -1,7 +1,8 @@
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.ValueObjects;
-using Concertable.B2B.Vocabulary;
+using Concertable.B2B.Deal.Domain;
+using Concertable.B2B.Enums;
 
 namespace Concertable.B2B.Application.UnitTests;
 

@@ -1,4 +1,4 @@
-namespace Concertable.B2B.Vocabulary;
+namespace Concertable.B2B.Deal.Domain;
 
 public enum DealType
 {

@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Concertable.B2B.Vocabulary\Concertable.B2B.Vocabulary.csproj" />
+    <ProjectReference Include="..\..\..\Concertable.B2B.Enums\Concertable.B2B.Enums.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,8 @@
 using System.Net;
 using System.Text;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.Vocabulary;
+using Concertable.B2B.Deal.Domain;
+using Concertable.B2B.Enums;
 using Concertable.Contracts.Enums;
 using Xunit.Abstractions;
 

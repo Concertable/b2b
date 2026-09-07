@@ -2,5 +2,6 @@ global using Concertable.Kernel;
 global using Concertable.Kernel.ValueObjects;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
-global using Concertable.B2B.Vocabulary;
+global using Concertable.B2B.Deal.Domain;
+global using Concertable.B2B.Enums;
 global using Reunion.Errors;

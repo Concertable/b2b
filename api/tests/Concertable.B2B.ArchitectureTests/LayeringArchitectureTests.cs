@@ -6,7 +6,7 @@ namespace Concertable.B2B.ArchitectureTests;
 
 public sealed class LayeringArchitectureTests
 {
-    private static readonly string[] ModulesPendingVocabularyMigration =
+    private static readonly string[] ModulesStillReferencingContracts =
     [
         "Concertable.B2B.Admin.Domain",
         "Concertable.B2B.Application.Domain",
@@ -29,7 +29,7 @@ public sealed class LayeringArchitectureTests
             .Order(StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(ModulesPendingVocabularyMigration, violations);
+        Assert.Equal(ModulesStillReferencingContracts, violations);
     }
 
     private static FileInfo[] DomainProjects() =>
