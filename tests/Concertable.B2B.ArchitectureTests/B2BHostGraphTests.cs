@@ -6,6 +6,7 @@ using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Hosting;
+using Concertable.B2B.Hosting.Frontend;
 using Concertable.B2B.Seed.Simulator;
 using Concertable.B2B.Web;
 using Concertable.B2B.Workers;
@@ -124,7 +125,7 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
-    public void AppHost_ProductionGraphAndStrictValidation_AreValid()
+    public async Task AppHost_ProductionGraphAndStrictValidation_AreValid()
     {
         var validBuilder = AppHost.CreateBuilder([]);
         AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "https");
@@ -132,6 +133,12 @@ public sealed class B2BHostGraphTests
         AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https");
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http");
+        Assert.DoesNotContain(validBuilder.Resources.OfType<NodeAppResource>(),
+            resource => resource.Name.StartsWith("mobile-", StringComparison.Ordinal));
+        Assert.DoesNotContain(validBuilder.Resources, resource => resource.Name == "b2b-dev");
+        var auth = validBuilder.Resources.Single(resource => resource.Name == AuthConstants.Resource);
+        var authEnvironment = await GetRawEnvironmentAsync(auth, CancellationToken.None);
+        Assert.DoesNotContain("Auth__PublicUrl", authEnvironment.Keys);
         using var app = validBuilder.Build();
         var builder = AppHost.CreateBuilder([]);
         builder.Services.AddInvalidLifetimeGraph();
@@ -150,26 +157,108 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
+    public async Task AppHost_MobileGraph_ContainsOnlyB2BSurfaces()
+    {
+        var builder = AppHost.CreateBuilder(["--RunMobile=true"]);
+        Assert.Equal(
+            new[] { "admin", "artist", "business", "mobile-b2b", "venue" },
+            builder.Resources.OfType<NodeAppResource>().Select(resource => resource.Name).Order());
+        AssertNodeAppDirectory(builder, "venue", "app", "web", "b2b", "venue");
+        AssertNodeAppDirectory(builder, "artist", "app", "web", "b2b", "artist");
+        AssertNodeAppDirectory(builder, "business", "app", "web", "b2b", "business");
+        AssertNodeAppDirectory(builder, "admin", "app", "web", "admin");
+        AssertNodeAppDirectory(builder, "mobile-b2b", "app", "mobile", "b2b");
+        Assert.Single(builder.Resources, resource => resource.Name == "b2b-dev");
+        Assert.DoesNotContain(builder.Resources, resource => resource.Name is "customer-web" or "search-web");
+        using var app = builder.Build();
+
+        AllocateTunnelEndpoints(builder, "b2b-dev");
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var mobile = Assert.Single(builder.Resources.OfType<NodeAppResource>(), resource => resource.Name == "mobile-b2b");
+        AssertClearMetroCacheCommand(mobile);
+        var mobileEnvironment = await GetResolvedEnvironmentAsync(mobile, cancellation.Token);
+        Assert.Equal("localhost", mobileEnvironment["REACT_NATIVE_PACKAGER_HOSTNAME"]);
+        AssertTunnelUrl(mobileEnvironment, "EXPO_PUBLIC_API_URL", "b2b-dev-b2b-web-http");
+        AssertTunnelUrl(mobileEnvironment, "EXPO_PUBLIC_AUTH_AUTHORITY", "b2b-dev-auth-https");
+        AssertTunnelUrl(mobileEnvironment, "EXPO_PUBLIC_PAYMENT_API_URL", "b2b-dev-payment-web-https");
+        Assert.DoesNotContain("EXPO_PUBLIC_CUSTOMER_API_URL", mobileEnvironment.Keys);
+        Assert.DoesNotContain("EXPO_PUBLIC_SEARCH_API_URL", mobileEnvironment.Keys);
+
+        var auth = builder.Resources.Single(resource => resource.Name == AuthConstants.Resource);
+        var authEnvironment = await GetRawEnvironmentAsync(auth, cancellation.Token);
+        await AssertTunnelValueAsync(authEnvironment, "Auth__PublicUrl", "b2b-dev-auth-https", cancellation.Token);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FrontendWorkspaces_ExtractedAndMonorepoLayouts_ResolveEveryProductionCandidate(
+        bool includeMonorepoLayout)
+    {
+        var root = Directory.CreateTempSubdirectory("concertable-b2b-frontend-");
+        try
+        {
+            CreateDirectories(root, [
+                ["app", "web", "venue"],
+                ["app", "web", "artist"],
+                ["app", "web", "business"],
+                ["app", "web", "admin"],
+                ["app", "mobile"]
+            ]);
+            if (includeMonorepoLayout)
+            {
+                CreateDirectories(root, [
+                    ["app", "web", "b2b", "venue"],
+                    ["app", "web", "b2b", "artist"],
+                    ["app", "web", "b2b", "business"],
+                    ["app", "mobile", "b2b"]
+                ]);
+            }
+
+            var builder = CreateFrontendBuilder(root);
+            IResourceBuilder<IResourceWithServiceDiscovery> api =
+                builder.AddResource(new ServiceContainerResource("b2b-api"));
+            IResourceBuilder<IResourceWithServiceDiscovery> auth =
+                builder.AddResource(new ServiceContainerResource("auth"));
+            IResourceBuilder<IResourceWithServiceDiscovery> payment =
+                builder.AddResource(new ServiceContainerResource("payment"));
+            builder.AddVenueSpa(api, auth);
+            builder.AddArtistSpa(api, auth);
+            builder.AddBusinessSpa(api, auth);
+            builder.AddAdminSpa(api, auth);
+            Assert.NotNull(builder.AddMobileB2B(api, auth, payment));
+
+            var webPrefix = includeMonorepoLayout ? new[] { "app", "web", "b2b" } : ["app", "web"];
+            AssertNodeAppDirectory(builder, "venue", [.. webPrefix, "venue"]);
+            AssertNodeAppDirectory(builder, "artist", [.. webPrefix, "artist"]);
+            AssertNodeAppDirectory(builder, "business", [.. webPrefix, "business"]);
+            AssertNodeAppDirectory(builder, "admin", "app", "web", "admin");
+            AssertNodeAppDirectory(builder, "mobile-b2b",
+                includeMonorepoLayout ? ["app", "mobile", "b2b"] : ["app", "mobile"]);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void LocalSpaSurfaces_AreCanonicalAndCollisionFree()
     {
-        LocalSpaSurface[] expected =
+        SpaSurface[] expected =
         [
-            new("customer", 5174, LocalSpaClient.Customer),
-            new("venue", 5175, LocalSpaClient.Venue),
-            new("artist", 5176, LocalSpaClient.Artist),
-            new("business", 5177, null),
-            new("admin", 5178, LocalSpaClient.Admin)
+            new("venue", 5175),
+            new("artist", 5176),
+            new("business", 5177),
+            new("admin", 5178)
         ];
 
-        Assert.Equal(expected, LocalSpaSurfaces.All);
-        Assert.Equal(expected.Length, LocalSpaSurfaces.All.Select(surface => surface.ResourceName).Distinct().Count());
-        Assert.Equal(expected.Length, LocalSpaSurfaces.All.Select(surface => surface.HttpsPort).Distinct().Count());
+        Assert.Equal(expected, B2BLocalSpaSurfaces.All);
         Assert.Equal(
-            expected.Where(surface => surface.AuthClient is not null),
-            LocalSpaSurfaces.Authenticated);
-        Assert.Equal(
-            expected.Where(surface => surface != LocalSpaSurfaces.Customer),
-            LocalSpaSurfaces.B2B);
+            new[] { (expected[0], "Venue"), (expected[1], "Artist"), (expected[3], "Admin") },
+            B2BLocalSpaSurfaces.AuthClients);
+        Assert.Equal(expected.Length, B2BLocalSpaSurfaces.All.Select(surface => surface.ResourceName).Distinct().Count());
+        Assert.Equal(expected.Length, B2BLocalSpaSurfaces.All.Select(surface => surface.HttpsPort).Distinct().Count());
     }
 
     [Fact]
@@ -190,14 +279,24 @@ public sealed class B2BHostGraphTests
             .BuildAsync(executionContext, NullLogger.Instance, CancellationToken.None);
         var authEnvironment = authConfiguration.EnvironmentVariables.ToDictionary();
         var b2bEnvironment = b2bConfiguration.EnvironmentVariables.ToDictionary();
+        Assert.Equal("true", authEnvironment["Auth__SpaClients__RestrictToEnabledClients"]);
+        Assert.Equal(
+            new[] { "Venue", "Artist", "Admin" },
+            authEnvironment
+                .Where(pair => pair.Key.StartsWith("Auth__SpaClients__EnabledClients__", StringComparison.Ordinal))
+                .OrderBy(pair => pair.Key)
+                .Select(pair => pair.Value));
 
         Assert.Equal(
-            LocalSpaSurfaces.B2B.Select(surface => surface.ResourceName).Order(),
+            B2BLocalSpaSurfaces.All.Select(surface => surface.ResourceName).Order(),
             nodeApps.Select(resource => resource.Name).Order());
+        var authClients = B2BLocalSpaSurfaces.AuthClients.ToDictionary(
+            registration => registration.Surface,
+            registration => registration.ClientName);
 
-        for (var index = 0; index < LocalSpaSurfaces.B2B.Count; index++)
+        for (var index = 0; index < B2BLocalSpaSurfaces.All.Count; index++)
         {
-            var surface = LocalSpaSurfaces.B2B[index];
+            var surface = B2BLocalSpaSurfaces.All[index];
             var nodeApp = Assert.Single(nodeApps, resource => resource.Name == surface.ResourceName);
             var endpoint = Assert.Single(nodeApp.Annotations.OfType<EndpointAnnotation>());
 
@@ -205,7 +304,7 @@ public sealed class B2BHostGraphTests
             Assert.Equal(surface.HttpsPort, endpoint.Port);
             Assert.Equal(surface.Origin, b2bEnvironment[$"Cors__AllowedOrigins__{index}"]);
 
-            if (surface.AuthClient is not { } authClient)
+            if (!authClients.TryGetValue(surface, out var authClient))
                 continue;
 
             Assert.Equal(
@@ -230,6 +329,100 @@ public sealed class B2BHostGraphTests
                 .GetResult();
 
         Assert.Equal(expected, args);
+    }
+
+    private static IDistributedApplicationBuilder CreateFrontendBuilder(DirectoryInfo root) =>
+        DistributedApplication.CreateBuilder(new DistributedApplicationOptions
+        {
+            Args = ["--environment", "Development", "--RunMobile=true"],
+            DisableDashboard = true,
+            ProjectDirectory = root.FullName
+        });
+
+    private static void CreateDirectories(DirectoryInfo root, IReadOnlyList<string[]> relativePaths)
+    {
+        foreach (var relativePath in relativePaths)
+            Directory.CreateDirectory(Path.Combine([root.FullName, .. relativePath]));
+    }
+
+    private static void AllocateTunnelEndpoints(IDistributedApplicationBuilder builder, string tunnelName)
+    {
+        var ports = builder.Resources.OfType<Aspire.Hosting.DevTunnels.DevTunnelPortResource>()
+            .Where(port => port.Name.StartsWith(tunnelName + "-", StringComparison.Ordinal))
+            .ToArray();
+        Assert.NotEmpty(ports);
+        foreach (var port in ports)
+            foreach (var endpoint in port.Annotations.OfType<EndpointAnnotation>())
+                endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, $"{port.Name}.example.test", 443);
+    }
+
+    private static void AssertNodeAppDirectory(
+        IDistributedApplicationBuilder builder,
+        string resourceName,
+        params string[] relativePath)
+    {
+        var repoRoot = new DirectoryInfo(builder.AppHostDirectory);
+        while (repoRoot is not null && !Directory.Exists(Path.Combine(repoRoot.FullName, "app")))
+            repoRoot = repoRoot.Parent;
+
+        Assert.NotNull(repoRoot);
+        var expected = Path.GetFullPath(Path.Combine([repoRoot.FullName, .. relativePath]));
+        var resource = Assert.Single(builder.Resources.OfType<NodeAppResource>(), resource => resource.Name == resourceName);
+        var actual = Path.GetFullPath(resource.WorkingDirectory);
+        Assert.True(string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase),
+            $"Expected '{resourceName}' to use '{expected}', but it uses '{actual}'.");
+        Assert.True(Directory.Exists(actual), $"Frontend directory '{actual}' does not exist.");
+    }
+
+    private static void AssertClearMetroCacheCommand(NodeAppResource mobile)
+    {
+        var command = Assert.Single(mobile.Annotations.OfType<ResourceCommandAnnotation>(),
+            command => command.Name == "clear-metro-cache");
+        Assert.Equal("Clear Metro Cache", command.DisplayName);
+        Assert.Equal("ArrowCounterclockwise", command.IconName);
+    }
+
+    private static async Task<Dictionary<string, string>> GetResolvedEnvironmentAsync(
+        IResource resource, CancellationToken cancellationToken)
+    {
+        var environmentResource = Assert.IsAssignableFrom<IResourceWithEnvironment>(resource);
+        var configuration = await ExecutionConfigurationBuilder.Create(environmentResource)
+            .WithEnvironmentVariablesConfig()
+            .BuildAsync(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run),
+                NullLogger.Instance, cancellationToken);
+        return configuration.EnvironmentVariables.ToDictionary();
+    }
+
+    private static async Task<Dictionary<string, object>> GetRawEnvironmentAsync(
+        IResource resource, CancellationToken cancellationToken)
+    {
+        var environment = new Dictionary<string, object>();
+        var context = new EnvironmentCallbackContext(
+            new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run),
+            resource, environment, cancellationToken);
+        foreach (var annotation in resource.Annotations.OfType<EnvironmentCallbackAnnotation>().ToArray())
+            await annotation.Callback(context);
+        return environment;
+    }
+
+    private static void AssertTunnelUrl(
+        IReadOnlyDictionary<string, string> environment,
+        string key,
+        string endpointName)
+    {
+        Assert.True(environment.TryGetValue(key, out var url),
+            $"Missing '{key}'. Available keys: {string.Join(", ", environment.Keys.Order())}");
+        Assert.Equal($"https://{endpointName}.example.test:443", url);
+    }
+
+    private static async Task AssertTunnelValueAsync(
+        IReadOnlyDictionary<string, object> environment,
+        string key,
+        string endpointName,
+        CancellationToken cancellationToken)
+    {
+        var url = await Assert.IsAssignableFrom<IValueProvider>(environment[key]).GetValueAsync(cancellationToken);
+        Assert.Equal($"https://{endpointName}.example.test:443", url);
     }
 
 #pragma warning disable ASPIRECERTIFICATES001 // experimental API; asserts the temporary Auth image bridge
