@@ -1,5 +1,4 @@
-using Concertable.B2B.Deal.Application.Interfaces;
-using Concertable.B2B.Deal.Application.Mappers;
+﻿using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
@@ -15,7 +14,6 @@ public sealed class DealStrategyFactoryTests
     public void Create_DealCase_ResolvesExpectedStrategies(
         DealDto deal,
         DealEntity entity,
-        Type expectedMapperType,
         Type expectedUpdaterType)
     {
         var services = new ServiceCollection();
@@ -27,13 +25,9 @@ public sealed class DealStrategyFactoryTests
         });
         using var scope = provider.CreateScope();
 
-        var mapperFactory = scope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<IDealMapper>>();
         var updaterFactory = scope.ServiceProvider
             .GetRequiredService<IDealStrategyFactory<IDealUpdater>>();
 
-        Assert.IsType(expectedMapperType, mapperFactory.Create(deal.DealType));
-        Assert.IsType(expectedMapperType, mapperFactory.Create(entity.DealType));
         Assert.IsType(expectedUpdaterType, updaterFactory.Create(deal.DealType));
         Assert.IsType(expectedUpdaterType, updaterFactory.Create(entity.DealType));
     }
@@ -45,7 +39,7 @@ public sealed class DealStrategyFactoryTests
 
         services.AddDealStrategies();
 
-        foreach (var serviceType in new[] { typeof(IDealMapper), typeof(IDealUpdater) })
+        foreach (var serviceType in new[] { typeof(IDealUpdater) })
         {
             var descriptor = Assert.Single(
                 services,
@@ -74,9 +68,9 @@ public sealed class DealStrategyFactoryTests
         var deal = new FlatFeeDealDto();
 
         var firstFactory = firstScope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<IDealMapper>>();
+            .GetRequiredService<IDealStrategyFactory<IDealUpdater>>();
         var secondFactory = secondScope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<IDealMapper>>();
+            .GetRequiredService<IDealStrategyFactory<IDealUpdater>>();
 
         var first = firstFactory.Create(deal.DealType);
         Assert.Same(first, firstFactory.Create(deal.DealType));
@@ -105,30 +99,26 @@ public sealed class DealStrategyFactoryTests
         Assert.Equal(100, existing.Fee);
     }
 
-    public static TheoryData<DealDto, DealEntity, Type, Type> Cases { get; } = new()
+    public static TheoryData<DealDto, DealEntity, Type> Cases { get; } = new()
     {
         {
             new FlatFeeDealDto(),
             CreateFlatFeeEntity(),
-            typeof(FlatFeeDealMapper),
             typeof(FlatFeeDealUpdater)
         },
         {
             new DoorSplitDealDto(),
             CreateDoorSplitEntity(),
-            typeof(DoorSplitDealMapper),
             typeof(DoorSplitDealUpdater)
         },
         {
             new VersusDealDto(),
             CreateVersusEntity(),
-            typeof(VersusDealMapper),
             typeof(VersusDealUpdater)
         },
         {
             new VenueHireDealDto(),
             CreateVenueHireEntity(),
-            typeof(VenueHireDealMapper),
             typeof(VenueHireDealUpdater)
         }
     };

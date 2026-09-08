@@ -19,6 +19,7 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Dunet" />
+    <PackageReference Include="Riok.Mapperly" />
     <PackageReference Include="Reunion" />
     <PackageReference Include="Reunion.Errors" />
   </ItemGroup>

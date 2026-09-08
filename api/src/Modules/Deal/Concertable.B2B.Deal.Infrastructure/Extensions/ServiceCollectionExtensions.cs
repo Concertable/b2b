@@ -1,11 +1,10 @@
-using Concertable.B2B.DataAccess.Infrastructure;
+﻿using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.DataAccess;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Deal.Application.Interfaces;
-using Concertable.B2B.Deal.Application.Mappers;
 using Concertable.B2B.Deal.Application.Services;
 using Concertable.B2B.Deal.Domain;
 using Concertable.B2B.Enums;
@@ -47,22 +46,17 @@ public static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddDealStrategies(this IServiceCollection services)
     {
-        services.AddScoped<IDealMapper, DealMapper>();
         services.AddScoped<IDealUpdater, DealUpdater>();
 
         return services.AddDealStrategies(builder =>
         {
             builder.For(DealType.FlatFee)
-                .AddSingleton<IDealMapper, FlatFeeDealMapper>()
                 .AddSingleton<IDealUpdater, FlatFeeDealUpdater>();
             builder.For(DealType.DoorSplit)
-                .AddSingleton<IDealMapper, DoorSplitDealMapper>()
                 .AddSingleton<IDealUpdater, DoorSplitDealUpdater>();
             builder.For(DealType.Versus)
-                .AddSingleton<IDealMapper, VersusDealMapper>()
                 .AddSingleton<IDealUpdater, VersusDealUpdater>();
             builder.For(DealType.VenueHire)
-                .AddSingleton<IDealMapper, VenueHireDealMapper>()
                 .AddSingleton<IDealUpdater, VenueHireDealUpdater>();
         });
     }

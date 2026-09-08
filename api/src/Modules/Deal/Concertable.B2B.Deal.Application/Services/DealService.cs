@@ -1,4 +1,4 @@
-using Concertable.B2B.Deal.Application.Errors;
+﻿using Concertable.B2B.Deal.Application.Errors;
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Application.Mappers;
 using Concertable.B2B.Deal.Contracts.Errors;
@@ -11,23 +11,18 @@ namespace Concertable.B2B.Deal.Application.Services;
 internal sealed class DealService : IDealService
 {
     private readonly IDealRepository dealRepository;
-    private readonly IDealMapper mapper;
     private readonly IDealUpdater updater;
 
-    public DealService(
-        IDealRepository dealRepository,
-        IDealMapper mapper,
-        IDealUpdater updater)
+    public DealService(IDealRepository dealRepository, IDealUpdater updater)
     {
         this.dealRepository = dealRepository;
-        this.mapper = mapper;
         this.updater = updater;
     }
 
     public Task<Option<DealDto>> FindByIdAsync(int dealId, CancellationToken ct = default) =>
         dealRepository.GetByIdAsync(dealId, ct)
             .ToOption()
-            .Map(mapper.ToDeal);
+            .Map(DealMapper.ToDto);
 
     public Task<Result<DealDto, DealError>> GetByIdAsync(int dealId, CancellationToken ct = default) =>
         FindByIdAsync(dealId, ct)
@@ -36,16 +31,16 @@ internal sealed class DealService : IDealService
     public async Task<IReadOnlyList<DealDto>> GetByIdsAsync(IEnumerable<int> dealIds, CancellationToken ct = default)
     {
         var entities = await dealRepository.GetByIdsAsync(dealIds, ct);
-        return mapper.ToDeals(entities);
+        return DealMapper.ToDtos(entities);
     }
 
     public UnitResult<ValidationErrors> Validate(DealDto deal) =>
-        mapper.ToEntity(deal).Match(
+        deal.ToEntity().Match(
             _ => UnitResult.Success<ValidationErrors>(),
             UnitResult.Failure);
 
     public Task<Result<int, CreateDealError>> CreateAsync(DealDto deal, CancellationToken ct = default) =>
-        mapper.ToEntity(deal)
+        deal.ToEntity()
             .BindAsync(async (DealEntity entity) =>
             {
                 await dealRepository.AddAsync(entity, ct);

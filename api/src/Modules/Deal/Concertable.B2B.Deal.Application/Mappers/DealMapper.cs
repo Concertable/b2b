@@ -1,22 +1,17 @@
-using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
-using Reunion.Errors;
-using Reunion;
+using Riok.Mapperly.Abstractions;
 
 namespace Concertable.B2B.Deal.Application.Mappers;
 
-internal sealed class DealMapper : IDealMapper
+[Mapper]
+internal static partial class DealMapper
 {
-    private readonly IDealStrategyFactory<IDealMapper> factory;
+    [MapperIgnoreSource(nameof(DealEntity.TenantId))]
+    [MapDerivedType<FlatFeeDealEntity, FlatFeeDealDto>]
+    [MapDerivedType<DoorSplitDealEntity, DoorSplitDealDto>]
+    [MapDerivedType<VersusDealEntity, VersusDealDto>]
+    [MapDerivedType<VenueHireDealEntity, VenueHireDealDto>]
+    public static partial DealDto ToDto(DealEntity entity);
 
-    public DealMapper(IDealStrategyFactory<IDealMapper> factory)
-    {
-        this.factory = factory;
-    }
-
-    public DealDto ToDeal(DealEntity entity) =>
-        factory.Create(entity.DealType).ToDeal(entity);
-
-    public Result<DealEntity, ValidationErrors> ToEntity(DealDto deal) =>
-        factory.Create(deal.DealType).ToEntity(deal);
+    public static partial IReadOnlyList<DealDto> ToDtos(IEnumerable<DealEntity> entities);
 }

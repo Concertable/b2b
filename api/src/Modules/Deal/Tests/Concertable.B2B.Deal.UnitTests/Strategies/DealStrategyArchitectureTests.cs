@@ -1,7 +1,6 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Concertable.B2B.Deal.Application.Interfaces;
-using Concertable.B2B.Deal.Application.Mappers;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
 using Concertable.B2B.Deal.Infrastructure.Extensions;
@@ -52,22 +51,17 @@ public sealed class DealStrategyArchitectureTests
         services.AddDealStrategies();
         var expected = new Dictionary<(Type Family, DealType Case), Type>
         {
-            [(typeof(IDealMapper), DealType.FlatFee)] = typeof(FlatFeeDealMapper),
-            [(typeof(IDealMapper), DealType.DoorSplit)] = typeof(DoorSplitDealMapper),
-            [(typeof(IDealMapper), DealType.Versus)] = typeof(VersusDealMapper),
-            [(typeof(IDealMapper), DealType.VenueHire)] = typeof(VenueHireDealMapper),
             [(typeof(IDealUpdater), DealType.FlatFee)] = typeof(FlatFeeDealUpdater),
             [(typeof(IDealUpdater), DealType.DoorSplit)] = typeof(DoorSplitDealUpdater),
             [(typeof(IDealUpdater), DealType.Versus)] = typeof(VersusDealUpdater),
             [(typeof(IDealUpdater), DealType.VenueHire)] = typeof(VenueHireDealUpdater)
         };
-        var catalog = new[] { typeof(IDealMapper), typeof(IDealUpdater) }
+        var catalog = new[] { typeof(IDealUpdater) }
             .SelectMany(family => Enum.GetValues<DealType>().Select(dealType => (family, dealType)))
             .ToHashSet();
         var actual = services
             .Where(descriptor => descriptor.IsKeyedService)
-            .Where(descriptor => descriptor.ServiceType == typeof(IDealMapper)
-                || descriptor.ServiceType == typeof(IDealUpdater))
+            .Where(descriptor => descriptor.ServiceType == typeof(IDealUpdater))
             .ToArray();
 
         Assert.True(catalog.SetEquals(expected.Keys));
