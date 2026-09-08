@@ -1,11 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Domain.Entities;
-using Concertable.B2B.Deal.Infrastructure.Extensions;
-using Concertable.B2B.Deal.Infrastructure.Services.Updaters;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.B2B.Deal.UnitTests.Strategies;
 
@@ -42,36 +38,6 @@ public sealed class DealStrategyArchitectureTests
         Assert.Equal(dtoCases, jsonCases.Select(item => item.Stem));
         foreach (var item in jsonCases)
             Assert.Contains($"$type: \"{item.Discriminator}\"", typeScript, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void KeyedRegistrations_CoverEveryStrategyFamilyAndDealTypeExactlyOnce()
-    {
-        var services = new ServiceCollection();
-        services.AddDealStrategies();
-        var expected = new Dictionary<(Type Family, DealType Case), Type>
-        {
-            [(typeof(IDealUpdater), DealType.FlatFee)] = typeof(FlatFeeDealUpdater),
-            [(typeof(IDealUpdater), DealType.DoorSplit)] = typeof(DoorSplitDealUpdater),
-            [(typeof(IDealUpdater), DealType.Versus)] = typeof(VersusDealUpdater),
-            [(typeof(IDealUpdater), DealType.VenueHire)] = typeof(VenueHireDealUpdater)
-        };
-        var catalog = new[] { typeof(IDealUpdater) }
-            .SelectMany(family => Enum.GetValues<DealType>().Select(dealType => (family, dealType)))
-            .ToHashSet();
-        var actual = services
-            .Where(descriptor => descriptor.IsKeyedService)
-            .Where(descriptor => descriptor.ServiceType == typeof(IDealUpdater))
-            .ToArray();
-
-        Assert.True(catalog.SetEquals(expected.Keys));
-        Assert.Equal(expected.Count, actual.Length);
-        foreach (var descriptor in actual)
-        {
-            var key = (descriptor.ServiceType, Assert.IsType<DealType>(descriptor.ServiceKey));
-            Assert.Equal(expected[key], descriptor.KeyedImplementationType);
-            Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
-        }
     }
 
     [Fact]

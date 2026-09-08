@@ -1,6 +1,7 @@
 ﻿using Concertable.B2B.Deal.Application.Errors;
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Application.Mappers;
+using Concertable.B2B.Deal.Application.Updaters;
 using Concertable.B2B.Deal.Contracts.Errors;
 using Concertable.B2B.Deal.Domain.Entities;
 using Reunion.Errors;
@@ -11,12 +12,10 @@ namespace Concertable.B2B.Deal.Application.Services;
 internal sealed class DealService : IDealService
 {
     private readonly IDealRepository dealRepository;
-    private readonly IDealUpdater updater;
 
-    public DealService(IDealRepository dealRepository, IDealUpdater updater)
+    public DealService(IDealRepository dealRepository)
     {
         this.dealRepository = dealRepository;
-        this.updater = updater;
     }
 
     public Task<Option<DealDto>> FindByIdAsync(int dealId, CancellationToken ct = default) =>
@@ -54,7 +53,7 @@ internal sealed class DealService : IDealService
         if (existing is null)
             return new UpdateDealError.DealNotFound();
 
-        var update = updater.Apply(existing, deal)
+        var update = DealUpdater.Update(existing, deal)
             .MapError<UpdateDealError>(errors => new UpdateDealError.Invalid(errors));
         if (update.IsFailure)
             return update;
