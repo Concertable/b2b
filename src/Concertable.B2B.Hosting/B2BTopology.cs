@@ -35,6 +35,7 @@ public static class B2BTopology
                     .Publish<B2BPayoutOwnerRegisteredEvent>()
                     .Publish<TenantActivityRecordedEvent>()
                     .Publish<ApplicationAcceptedEvent>()
+                    .Publish<BookingConfirmedEvent>()
                     .Subscribe<CustomerReviewSubmittedEvent>()
                     .Subscribe<CredentialRegisteredEvent>()
                     .Subscribe<PaymentSucceededEvent>()
@@ -48,6 +49,7 @@ public static class B2BTopology
                     .Subscribe<RefundEscrowDeferredEvent>()
                     .Subscribe<RefundEscrowRejectedEvent>()
                     .Subscribe<ApplicationAcceptedEvent>()
+                    .Subscribe<BookingConfirmedEvent>()
                     .Queue<SendEmailCommand>()
                     .Queue<NotifyConcertDraftCreatedCommand>();
 
