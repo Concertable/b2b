@@ -1,6 +1,7 @@
 using Concertable.Contracts.Enums;
 using Concertable.Payment.Contracts;
 using Dunet;
+using System.Text.Json.Serialization;
 
 namespace Concertable.B2B.Booking.Contracts;
 
@@ -18,6 +19,11 @@ public sealed record ConfirmedBookingSnapshot(
     PaymentOperationReference Commitment,
     ConfirmedBookingTerms Terms);
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(ConfirmedBookingTerms.FlatFee), "flatFee")]
+[JsonDerivedType(typeof(ConfirmedBookingTerms.VenueHire), "venueHire")]
+[JsonDerivedType(typeof(ConfirmedBookingTerms.DoorSplit), "doorSplit")]
+[JsonDerivedType(typeof(ConfirmedBookingTerms.Versus), "versus")]
 [Union(EnableImplicitConversions = false)]
 public abstract partial record ConfirmedBookingTerms
 {

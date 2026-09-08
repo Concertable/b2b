@@ -6,7 +6,7 @@ export function useCreateVenueMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: venueApi.createVenue,
-    onSuccess: (venue) => queryClient.setQueryData(venueKeys.details(), venue),
+    onSuccess: (venue) => queryClient.setQueryData(venueKeys.my(), venue),
   });
 }
 
@@ -14,6 +14,6 @@ export function useUpdateVenueMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: venueApi.updateVenue,
-    onSuccess: (venue) => queryClient.setQueryData(venueKeys.details(), venue),
+    onSuccess: (venue) => queryClient.setQueryData(venueKeys.my(), venue),
   });
 }

@@ -442,3 +442,53 @@ in one PR fails that gate. Same publish-first split as the `ApplicationActions.d
 
 **Resolves when:** `web` is republished with `onSuccess: () => void` / `onConfirmed: () => void`, the b2b
 and customer callers drop the argument, and `carve-fe` is green.
+
+---
+
+### `Concertable.B2B.E2ETests` builds to `bin/` 14 characters from the native-path limit
+
+`docs/LOCAL_DEV.md` records the measured 250-character cap on native DLL loading, which the four E2E host
+executables now clear by building to `artifacts/e2e/` via `BaseOutputPath`. This project still builds to
+`bin/`, where its `runtimes/win-x64/native/Microsoft.Data.SqlClient.SNI.dll` is 236 characters from a
+101-character worktree root. A branch folder 15 characters longer than
+`Refactor-launch_deal-lifecycle-modules-phase2` therefore kills the API E2E suite itself with
+`DllNotFoundException ... (0x800700CE)` before a single test runs.
+
+It cannot simply follow the four hosts, because two consumers address its output at its default location:
+`scripts/local-platform.ps1`'s `Assert-DataAccessAssembly` scans `<project>/bin/<configuration>` for the
+`Concertable.DataAccess.Infrastructure` version check, and `.github/workflows/test.yml` invokes
+`playwright.ps1` at a literal `.../Concertable.B2B.E2ETests.Ui/bin/Release/net10.0/` path.
+
+**Resolves when:** this project builds through a short artifacts root like the E2E hosts do, with both
+consumers resolving the output path from MSBuild rather than assuming `bin/<configuration>/<tfm>`.
+
+---
+
+### `Concertable.B2B.TestKit.SeedState` names most of its seed handles `TestEntity`
+
+`TestEntity(int Id)` stands in for a flat-fee application, a door-split application, a versus application,
+a venue and two past applications — six different things behind one name that says nothing about any of
+them. A reader of `fixture.SeedState.FlatFeeApp.Id` cannot tell from the type what else that handle could
+carry, and any field a caller needs (an opportunity id, an artist id) has nowhere to live without either
+widening the shared placeholder for every unrelated consumer or minting a one-off beside it — which is what
+`TestApplication(int Id, int OpportunityId)` already is.
+
+**Resolves when:** each seed handle has a record named for what it is (`TestApplication`, `TestVenue`, …)
+carrying the fields that handle actually needs, and `TestEntity` is gone.
+
+---
+
+### Accept and apply checkout quote the base fee, not what the payer is charged
+
+`ApplicationCheckoutService` returns `new FlatPayment(flatFee.Fee)` / `new FlatPayment(venueHire.HireFee)`
+as the checkout amount, while Payment sizes the actual hold as fee plus the platform fee — £180 shown and
+£190 taken for the seeded flat-fee deal, £300 shown and £310 taken for venue hire. The two flows now agree
+with each other and with the escrow they create, so nothing reconciles wrongly; the number the payer reads
+before confirming is simply not the number that leaves their card.
+
+B2B cannot close this by arithmetic: the platform fee is Payment's, and duplicating it in B2B is the split
+brain this branch removed. `IEscrowOperationsClient.AuthorizeAsync` already computes the payer total server
+side and its `PaymentSessionDescriptor` is the natural place to return it.
+
+**Resolves when:** the escrow authorization reports the payer total it charged, `Checkout` carries that
+alongside the payee amount, and the B2B checkout surfaces the split rather than one figure that is neither.

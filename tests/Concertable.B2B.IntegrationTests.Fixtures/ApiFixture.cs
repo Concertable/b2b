@@ -72,9 +72,10 @@ public class ApiFixture : IAsyncLifetime
     {
         SettlementClient = new MockSettlementClient(PaymentOperations);
         PaymentSessionClient = new MockPaymentSessionClient(PaymentOperations);
+        EscrowClient = new MockEscrowClient(PaymentSessionClient);
     }
     public MockPayoutAccountClient PayoutAccountClient { get; } = new();
-    public MockEscrowClient EscrowClient { get; } = new();
+    public MockEscrowClient EscrowClient { get; }
     public MockPaymentTransport PaymentTransport { get; } = new();
 
     public IWebhookSimulator PaymentSimulator { get; private set; } = null!;

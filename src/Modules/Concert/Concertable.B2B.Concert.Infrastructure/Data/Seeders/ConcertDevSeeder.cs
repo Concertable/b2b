@@ -1,6 +1,4 @@
-using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.Messaging.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
@@ -19,22 +17,19 @@ internal sealed class ConcertDevSeeder : IDevSeeder
     private readonly ITenantModule tenants;
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
-    private readonly IBus bus;
 
     public ConcertDevSeeder(
         ConcertDbContext context,
         SeedState seed,
         ITenantModule tenants,
         IOptions<LegalSettings> legal,
-        TimeProvider timeProvider,
-        IBus bus)
+        TimeProvider timeProvider)
     {
         this.context = context;
         this.seed = seed;
         this.tenants = tenants;
         this.legal = legal.Value;
         this.timeProvider = timeProvider;
-        this.bus = bus;
     }
 
     public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
@@ -45,17 +40,6 @@ internal sealed class ConcertDevSeeder : IDevSeeder
         {
             context.Concerts.AddRange(seed.Concerts);
             await context.SaveChangesAsync(ct);
-
-            foreach (var concert in seed.Concerts)
-                await bus.PublishAsync(new ConcertCreatedEvent(
-                    concert.Id,
-                    concert.ApplicationId,
-                    concert.OpportunityId,
-                    concert.ArtistId,
-                    concert.VenueId,
-                    concert.VenueTenantId,
-                    concert.ArtistTenantId,
-                    concert.Period.Start), ct);
         });
 
         await context.SelfBillingAgreements.SeedIfEmptyAsync(async () =>

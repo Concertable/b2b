@@ -33,6 +33,20 @@ public sealed class B2BTestClient
     public async Task<int> GetConcertStateByApplicationAsync(int applicationId, CancellationToken cancellationToken = default) =>
         await client.GetFromJsonAsync<int>($"/_e2e/applications/{applicationId}/concert-state", cancellationToken);
 
+    public async Task<string> OpenMethodVerificationAsync(
+        int applicationId,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await client.PostAsync(
+            $"/_e2e/applications/{applicationId}/method-verification",
+            null,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<string>(cancellationToken)
+            ?? throw new InvalidOperationException(
+                $"The verification session for application {applicationId} carried no client secret.");
+    }
+
     public async Task<int> GetNewestOpportunityIdAsync(int venueId, CancellationToken cancellationToken = default) =>
         await client.GetFromJsonAsync<int>($"/_e2e/venues/{venueId}/opportunities/newest-id", cancellationToken);
 

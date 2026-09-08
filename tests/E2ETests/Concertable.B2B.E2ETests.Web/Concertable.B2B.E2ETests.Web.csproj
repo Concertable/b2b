@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <IsTestProject>false</IsTestProject>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)..\..\..\..\..\artifacts\e2e\b2b-web\</BaseOutputPath>
     <CompositionValidationExclusion>E2E admin executable covered by the production B2B Web composition root.</CompositionValidationExclusion>
   </PropertyGroup>
 

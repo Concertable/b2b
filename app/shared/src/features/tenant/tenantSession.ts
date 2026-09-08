@@ -64,7 +64,7 @@ export function createTenantSession(store: StoreApi<TenantStoreState>) {
         configuration.clearMemberships(),
       ]);
     },
-    resolve: async (tenantType: TenantType) => {
+    resolve: async (tenantType?: TenantType) => {
       const current = requireConfiguration(configuration);
       const memberships = current.memberships();
       const previousTenantId = store.getState().activeTenantId;

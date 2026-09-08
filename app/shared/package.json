@@ -47,7 +47,11 @@
   },
   "dependencies": {
     "@concertable/shared": "*",
+    "@hookform/resolvers": "^5.9.1",
     "@tanstack/react-query": "^5.90.21",
+    "immer": "^11.1.4",
+    "react-hook-form": "^7.86.0",
+    "zod": "^4.3.6",
     "zustand": "^5.0.12"
   },
   "peerDependencies": {
