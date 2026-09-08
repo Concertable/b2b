@@ -9,7 +9,7 @@ export const artistKeys = {
   byId: (id: number) => ["artist", id] as const,
 };
 
-export function useArtistQuery(tenantId?: string) {
+export function useArtistQuery(tenantId: string | undefined) {
   return useQuery({
     queryKey: artistKeys.myForTenant(tenantId),
     queryFn: artistApi.getArtist,

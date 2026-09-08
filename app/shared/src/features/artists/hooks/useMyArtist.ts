@@ -136,7 +136,7 @@ export function useMyArtist(
   return {
     artist,
     draft,
-    isLoading: query.isLoading,
+    isLoading: tenantId === undefined || query.isLoading,
     isError: query.isError,
     editMode,
     isDirty,

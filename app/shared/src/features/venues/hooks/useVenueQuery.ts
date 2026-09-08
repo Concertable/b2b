@@ -9,7 +9,7 @@ export const venueKeys = {
   byId: (id: number) => ["venue", id] as const,
 };
 
-export function useVenueQuery(tenantId?: string) {
+export function useVenueQuery(tenantId: string | undefined) {
   return useQuery({
     queryKey: venueKeys.myForTenant(tenantId),
     queryFn: venueApi.getVenue,

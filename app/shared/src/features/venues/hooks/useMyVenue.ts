@@ -167,7 +167,7 @@ export function useMyVenue(
   return {
     venue,
     draft,
-    isLoading: query.isLoading,
+    isLoading: tenantId === undefined || query.isLoading,
     isError: query.isError,
     editMode,
     isDirty: venueIsDirty || (options?.extraDirty ?? false),
