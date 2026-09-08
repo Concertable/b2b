@@ -55,7 +55,6 @@ public static class E2EAdminExtensions
             group.MapPost("/reset", ResetAsync);
             group.MapGet("/seed-state", GetSeedStateAsync);
             group.MapGet("/applications/{applicationId:int}/booking-id", GetBookingIdAsync);
-            group.MapGet("/applications/{applicationId:int}/booking-state", GetBookingStateAsync);
             group.MapGet("/applications/{applicationId:int}/state", GetApplicationStateAsync);
             group.MapGet("/applications/{applicationId:int}/concert-state", GetConcertStateAsync);
             group.MapGet("/venues/{venueId:int}/opportunities/newest-id", GetNewestOpportunityIdAsync);
@@ -151,13 +150,6 @@ public static class E2EAdminExtensions
         IDbConnection connection) =>
         Results.Ok(await connection.QuerySingleAsync<int>(
             "SELECT Id FROM booking.Bookings WHERE ApplicationId = @applicationId",
-            new { applicationId }));
-
-    private static async Task<IResult> GetBookingStateAsync(
-        int applicationId,
-        IDbConnection connection) =>
-        Results.Ok(await connection.QuerySingleAsync<int>(
-            "SELECT State FROM booking.Bookings WHERE ApplicationId = @applicationId",
             new { applicationId }));
 
     private static async Task<IResult> GetApplicationStateAsync(
