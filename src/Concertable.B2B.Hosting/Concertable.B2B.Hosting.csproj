@@ -13,10 +13,12 @@
     <PackageReference Include="Aspire.Hosting.Azure.ServiceBus" />
     <PackageReference Include="Concertable.Payment.Contracts" />
     <PackageReference Include="Concertable.AppHost.Shared" />
+    <PackageReference Include="Concertable.Frontend.Hosting" />
     <PackageReference Include="Concertable.Shared.Email.Application" />
     <PackageReference Include="Concertable.Customer.Review.Contracts" />
     <PackageReference Include="Concertable.Customer.Ticket.Contracts" />
     <PackageReference Include="Concertable.Auth.Contracts" />
+    <ProjectReference Include="..\Modules\Application\Concertable.B2B.Application.Contracts\Concertable.B2B.Application.Contracts.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Contracts\Concertable.B2B.Artist.Contracts.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\Modules\Booking\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" IsAspireProjectResource="false" />

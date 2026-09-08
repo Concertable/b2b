@@ -164,7 +164,9 @@ public static class B2BWebHostExtensions
                     reg.Publishes<B2BPayoutOwnerRegisteredEvent>();
                     reg.Publishes<TenantActivityRecordedEvent>();
                     reg.Publishes<ApplicationAcceptedEvent>();
+                    reg.Publishes<BookingConfirmedEvent>();
                     reg.SubscribeTo<ApplicationAcceptedEvent>();
+                    reg.SubscribeTo<BookingConfirmedEvent>();
                     reg.SendsTo<CaptureEscrowCommand>(PaymentServiceIdentity.Name);
                     reg.SendsTo<DepositEscrowCommand>(PaymentServiceIdentity.Name);
                     reg.SendsTo<RefundEscrowCommand>(PaymentServiceIdentity.Name);
