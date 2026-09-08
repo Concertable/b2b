@@ -14,3 +14,11 @@ public abstract record class DealDto
     public abstract DealType DealType { get; }
     public abstract DealTerms Terms { get; }
 }
+
+internal static class DealTypeNames
+{
+    public const string FlatFee = "flatFee";
+    public const string DoorSplit = "doorSplit";
+    public const string Versus = "versus";
+    public const string VenueHire = "venueHire";
+}
