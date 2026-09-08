@@ -137,15 +137,6 @@ public static class AppHostExtensions
     extension<T>(IResourceBuilder<T> resource)
         where T : IResourceWithEnvironment
     {
-        public IResourceBuilder<T> WithLocalSpaCorsOrigins(
-            IReadOnlyList<LocalSpaSurface> surfaces)
-        {
-            for (var index = 0; index < surfaces.Count; index++)
-                resource = resource.WithEnvironment($"Cors__AllowedOrigins__{index}", surfaces[index].Origin);
-
-            return resource;
-        }
-
         public IResourceBuilder<T> WithSpaCorsOrigins(
             IReadOnlyList<SpaSurface> surfaces)
         {
