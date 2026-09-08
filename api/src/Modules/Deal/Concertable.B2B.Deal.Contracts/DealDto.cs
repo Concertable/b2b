@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Concertable.B2B.Deal.Contracts;
 
@@ -13,6 +13,8 @@ public abstract record class DealDto
     public PaymentMethod PaymentMethod { get; init; }
     public abstract DealType DealType { get; }
     public abstract DealTerms Terms { get; }
+
+    public abstract Result<DealEntity, ValidationErrors> ToEntity();
 }
 
 internal static class DealTypeNames

@@ -1,4 +1,4 @@
-namespace Concertable.B2B.Deal.Contracts;
+﻿namespace Concertable.B2B.Deal.Contracts;
 
 public sealed record DoorSplitDealDto : DealDto
 {
@@ -6,4 +6,7 @@ public sealed record DoorSplitDealDto : DealDto
     public decimal ArtistDoorPercent { get; init; }
 
     public override DealTerms Terms => new DoorSplitTerms(ArtistDoorPercent);
+
+    public override Result<DealEntity, ValidationErrors> ToEntity() =>
+        DoorSplitDealEntity.Create(ArtistDoorPercent, PaymentMethod).Map<DealEntity>(entity => entity);
 }

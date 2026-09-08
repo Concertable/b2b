@@ -1,4 +1,4 @@
-namespace Concertable.B2B.Deal.Contracts;
+﻿namespace Concertable.B2B.Deal.Contracts;
 
 public sealed record VenueHireDealDto : DealDto
 {
@@ -6,4 +6,7 @@ public sealed record VenueHireDealDto : DealDto
     public decimal HireFee { get; init; }
 
     public override DealTerms Terms => new VenueHireTerms(HireFee);
+
+    public override Result<DealEntity, ValidationErrors> ToEntity() =>
+        VenueHireDealEntity.Create(HireFee, PaymentMethod).Map<DealEntity>(entity => entity);
 }

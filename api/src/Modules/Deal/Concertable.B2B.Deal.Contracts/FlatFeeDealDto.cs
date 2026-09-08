@@ -1,4 +1,4 @@
-namespace Concertable.B2B.Deal.Contracts;
+﻿namespace Concertable.B2B.Deal.Contracts;
 
 public sealed record FlatFeeDealDto : DealDto
 {
@@ -6,4 +6,7 @@ public sealed record FlatFeeDealDto : DealDto
     public decimal Fee { get; init; }
 
     public override DealTerms Terms => new FlatFeeTerms(Fee);
+
+    public override Result<DealEntity, ValidationErrors> ToEntity() =>
+        FlatFeeDealEntity.Create(Fee, PaymentMethod).Map<DealEntity>(entity => entity);
 }
