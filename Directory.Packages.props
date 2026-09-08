@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <ConcertablePlatformVersion>0.1.0-alpha.0.1329</ConcertablePlatformVersion>
+    <ConcertablePlatformVersion>0.1.0-alpha.0.1330</ConcertablePlatformVersion>
     <ConcertablePaymentVersion Condition="'$(UseLocalPlatformPackages)' == 'true'">$(ConcertablePlatformVersion)</ConcertablePaymentVersion>
-    <ConcertablePaymentVersion Condition="'$(ConcertablePaymentVersion)' == ''">0.1.0-alpha.0.1322</ConcertablePaymentVersion>
+    <ConcertablePaymentVersion Condition="'$(ConcertablePaymentVersion)' == ''">0.1.0-alpha.0.1330</ConcertablePaymentVersion>
   </PropertyGroup>
 
   <ItemGroup>
