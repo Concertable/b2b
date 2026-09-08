@@ -23,122 +23,25 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace Concertable.B2B.ArchitectureTests;
+namespace Concertable.B2B.StartupTests;
 
-public sealed class B2BHostGraphTests
+public sealed class ResourceGraphTests
 {
     [Fact]
-    public void Web_ProductionGraphAndStrictValidation_AreValid()
-    {
-        var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
-        builder.AddB2BWebHost();
-        using var app = builder.Build();
-        builder.Services.ValidateComposition(app.Services, new CompositionValidationOptions
-        {
-            RootAssemblies = [typeof(B2BWebHostExtensions).Assembly]
-        });
-        var jwtOptions = app.Services.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
-            .Get(JwtBearerDefaults.AuthenticationScheme);
-        Assert.False(jwtOptions.RequireHttpsMetadata);
-        var invalidBuilder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
-        invalidBuilder.AddB2BWebHost();
-        invalidBuilder.Services.AddInvalidLifetimeGraph();
-        Assert.ThrowsAny<Exception>(() => invalidBuilder.Build());
-    }
-
-    [Fact]
-    public void Web_MessageTopology_HandlesDurableCommandsWithoutSelfSubscriptions()
-    {
-        var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
-        builder.AddB2BWebHost();
-        using var app = builder.Build();
-        var registry = app.Services.GetRequiredService<MessageTypeRegistry>();
-
-        Assert.Contains(typeof(NotifyConcertDraftCreatedCommand), registry.HandledCommandTypes);
-        Assert.DoesNotContain(typeof(BookingCancelledEvent), registry.SubscribedEventTypes);
-        Assert.DoesNotContain(typeof(ConcertCancelledEvent), registry.SubscribedEventTypes);
-        Assert.DoesNotContain(typeof(ConcertCreatedEvent), registry.SubscribedEventTypes);
-    }
-
-    [Fact]
-    public void Web_ProductionEnvironment_RequiresHttpsMetadata()
-    {
-        var arguments = CompositionTestArguments.Create();
-        arguments[0] = "--environment=Production";
-        var builder = WebApplication.CreateBuilder(arguments);
-        builder.AddB2BWebHost();
-        using var app = builder.Build();
-        var jwtOptions = app.Services.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
-            .Get(JwtBearerDefaults.AuthenticationScheme);
-
-        Assert.True(jwtOptions.RequireHttpsMetadata);
-    }
-
-    [Fact]
-    public void Functions_ProductionGraphAndStrictValidation_AreValid()
-    {
-        var builder = B2BWorkerHost.CreateBuilder(CompositionTestArguments.Create());
-        using var app = builder.Build();
-        builder.Services.ValidateComposition(app.Services, new CompositionValidationOptions
-        {
-            RootAssemblies = [typeof(B2BWorkerHost).Assembly],
-            IsFunction = method => method.IsDefined(typeof(FunctionAttribute), inherit: false)
-        });
-        var invalidBuilder = B2BWorkerHost.CreateBuilder(CompositionTestArguments.Create());
-        invalidBuilder.Services.AddInvalidLifetimeGraph();
-        Assert.ThrowsAny<Exception>(() => invalidBuilder.Build());
-    }
-
-    [Fact]
-    public void Web_MissingAdminModule_FailsWithUnresolvedDependency()
-    {
-        // IAdminModule's only consumer is UserController.Me() — Web-hosted, not Workers.
-        var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
-        builder.AddB2BWebHost();
-        builder.Services.RemoveAll<IAdminModule>();
-        var exception = Record.Exception(() =>
-        {
-            using var app = builder.Build();
-            builder.Services.ValidateComposition(app.Services, new CompositionValidationOptions
-            {
-                RootAssemblies = [typeof(B2BWebHostExtensions).Assembly]
-            });
-        });
-        Assert.NotNull(exception);
-        Assert.Contains(typeof(IAdminModule).FullName!, exception.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void SeedSimulator_ProductionGraphAndStrictValidation_AreValid()
-    {
-        var builder = Host.CreateApplicationBuilder(CompositionTestArguments.Create());
-        builder.AddSeedSimulatorHost();
-        using var app = builder.Build();
-        builder.Services.ValidateComposition(app.Services, new CompositionValidationOptions
-        {
-            RootAssemblies = [typeof(HostExtensions).Assembly]
-        });
-        var invalidBuilder = Host.CreateApplicationBuilder(CompositionTestArguments.Create());
-        invalidBuilder.AddSeedSimulatorHost();
-        invalidBuilder.Services.AddInvalidLifetimeGraph();
-        Assert.ThrowsAny<Exception>(() => invalidBuilder.Build());
-    }
-
-    [Fact]
-    public async Task AppHost_ProductionGraphAndStrictValidation_AreValid()
+    public async Task ProductionGraphAndStrictValidation_AreValid()
     {
         var validBuilder = AppHost.CreateBuilder([]);
         AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "https");
         AssertContainerRuntimeArgs(validBuilder, AuthConstants.Resource, "--user", "root");
         AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
+        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https", scheme: "http");
+        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http", scheme: "http");
         AssertImageEndpoint(
             validBuilder,
             PaymentConstants.WebResource,
-            "https",
+            "grpc",
             scheme: "http",
-            targetPort: PaymentConstants.HttpPort);
-        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http");
-        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "grpc", targetPort: PaymentConstants.GrpcPort);
+            targetPort: PaymentConstants.GrpcPort);
         var payment = validBuilder.Resources.Single(resource => resource.Name == PaymentConstants.WebResource);
         var paymentEnvironment = await GetRawEnvironmentAsync(payment, CancellationToken.None);
         Assert.Equal("8080;8081", paymentEnvironment["ASPNETCORE_HTTP_PORTS"]);
@@ -162,7 +65,7 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
-    public async Task AppHost_PublishGraphWithStripeCli_IsValid()
+    public async Task PublishGraphWithStripeCli_IsValid()
     {
         var builder = AppHost.CreateBuilder(
             ["--publisher", "manifest", "--Stripe:SecretKey=sk_test_composition"]);
@@ -179,7 +82,7 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
-    public async Task AppHost_MobileGraph_ContainsOnlyB2BSurfaces()
+    public async Task MobileGraph_ContainsOnlyB2BSurfaces()
     {
         var builder = AppHost.CreateBuilder(["--RunMobile=true"]);
         Assert.Equal(
@@ -284,7 +187,7 @@ public sealed class B2BHostGraphTests
     }
 
     [Fact]
-    public async Task AppHost_WebSpaOrigins_AreConsistent()
+    public async Task WebSpaOrigins_AreConsistent()
     {
         var builder = AppHost.CreateBuilder([]);
         var nodeApps = builder.Resources.OfType<NodeAppResource>().ToArray();
@@ -458,13 +361,14 @@ public sealed class B2BHostGraphTests
 
         Assert.True(certificate.UseDeveloperCertificate);
     }
+
 #pragma warning restore ASPIRECERTIFICATES001
 
     private static void AssertImageEndpoint(
         IDistributedApplicationBuilder builder,
         string resourceName,
         string endpointName,
-        string scheme = "http",
+        string scheme,
         int targetPort = PaymentConstants.HttpPort)
     {
         var resource = Assert.IsType<ServiceContainerResource>(
