@@ -59,6 +59,8 @@ public sealed class IntegrationTestBoundaryTests
 
     private static IEnumerable<string> FindCrossModuleProjectReferences(FileInfo project)
     {
+        // The module the suite owns — its third name segment; a nested-module suite (Dashboard) owns the
+        // whole `Dashboard.*` family, so compare on the first module segment.
         var owner = Path.GetFileNameWithoutExtension(project.Name).Split('.')[2];
         foreach (var reference in XDocument.Load(project.FullName).Descendants("ProjectReference"))
         {
@@ -67,7 +69,7 @@ public sealed class IntegrationTestBoundaryTests
                 continue;
 
             if (Topology.Parse(Path.GetFileNameWithoutExtension(include)) is { Module: var module, Layer: var layer } &&
-                module != owner &&
+                module.Split('.')[0] != owner &&
                 layer is ArchitectureLayer.Domain or ArchitectureLayer.Infrastructure)
                 yield return $"{project.Name} -> {Path.GetFileNameWithoutExtension(include)}";
         }

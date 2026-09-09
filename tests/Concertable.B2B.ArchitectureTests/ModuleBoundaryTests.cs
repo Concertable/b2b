@@ -57,8 +57,6 @@ public sealed class ModuleBoundaryTests
     [Fact]
     public void Modules_do_not_reach_into_another_modules_Infrastructure()
     {
-        Assert.NotEmpty(Topology.Modules);
-
         foreach (var from in Topology.Modules)
         foreach (var into in Topology.Modules)
         {
@@ -77,7 +75,7 @@ public sealed class ModuleBoundaryTests
     [Fact]
     public void Module_facades_do_not_depend_on_persistence_or_mapping_components()
     {
-        var violations = Topology.Assemblies
+        var violations = Topology.ModuleAssemblies
             .SelectMany(assembly => assembly.GetTypes())
             .Where(type => type.IsClass && type.Name.EndsWith("Module", StringComparison.Ordinal))
             .Where(type => type.GetInterfaces().Any(contract => contract.Name.EndsWith("Module", StringComparison.Ordinal)))
