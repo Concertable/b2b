@@ -4,10 +4,14 @@ import {
   identityApi,
   tenantSession,
 } from "@concertable/b2b/features/tenant";
+import type { TenantType } from "@concertable/b2b/features/tenant/types";
 import { acceptInvitation } from "../acceptInvitation";
 import invitationApi from "../api/invitationApi";
 
-export function useAcceptInvitation(invitationId: string) {
+export function useAcceptInvitation(
+  invitationId: string,
+  tenantType: TenantType,
+) {
   const queryClient = useQueryClient();
   const { isError } = useQuery({
     queryKey: ["accept-invitation", invitationId],
@@ -23,6 +27,7 @@ export function useAcceptInvitation(invitationId: string) {
             staleTime: 0,
           });
           await tenantSession.select(tenantId);
+          await tenantSession.resolve(tenantType);
         },
         navigate: (path) => window.location.assign(path),
       }),
