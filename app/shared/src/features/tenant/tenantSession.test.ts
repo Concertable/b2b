@@ -123,6 +123,31 @@ describe("tenant session", () => {
     expect(useTenantStore.getState().isSelectionPending).toBe(false);
   });
 
+  it("orders a route resolve behind an in-flight selection", async () => {
+    let releaseSave: (() => void) | undefined;
+    const save = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+    const { session, storage } = await createSession(
+      venueMemberships,
+      "venue-one",
+    );
+    vi.mocked(storage.saveActiveTenantId).mockImplementationOnce(() => save);
+
+    const selection = session.select("venue-two");
+    await vi.waitFor(() =>
+      expect(storage.saveActiveTenantId).toHaveBeenCalledWith("venue-two"),
+    );
+    const resolution = session.resolve("artist");
+
+    expect(storage.clearActiveTenantId).not.toHaveBeenCalled();
+    releaseSave?.();
+    await Promise.all([selection, resolution]);
+
+    expect(storage.clearActiveTenantId).toHaveBeenCalledOnce();
+    expect(session.tenantIdForRequest()).toBeUndefined();
+  });
+
   it("recovers from a failed hydration when configuration is retried", async () => {
     const storage = createStorage("venue-one");
     vi.mocked(storage.loadActiveTenantId)

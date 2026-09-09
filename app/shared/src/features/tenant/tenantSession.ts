@@ -31,18 +31,23 @@ export function createTenantSession(store: StoreApi<TenantStoreState>) {
   let latestSelection = 0;
   let selectionQueue = Promise.resolve();
 
-  const enqueue = (operation: () => Promise<void>) => {
+  const enqueue = <T>(operation: () => Promise<T>) => {
     const queued = selectionQueue.catch(() => undefined).then(operation);
-    selectionQueue = queued.catch(() => undefined);
+    selectionQueue = queued.then(
+      () => undefined,
+      () => undefined,
+    );
     return queued;
   };
 
   return {
     configure: async (nextConfiguration: TenantSessionConfiguration) => {
       configuration = nextConfiguration;
-      store
-        .getState()
-        .hydrateTenant(await nextConfiguration.storage.loadActiveTenantId());
+      await enqueue(async () => {
+        store
+          .getState()
+          .hydrateTenant(await nextConfiguration.storage.loadActiveTenantId());
+      });
     },
     tenantIdForRequest: () => {
       if (configuration === undefined) return undefined;
@@ -101,12 +106,18 @@ export function createTenantSession(store: StoreApi<TenantStoreState>) {
     resolve: async (tenantType?: TenantType) => {
       const current = requireConfiguration(configuration);
       const memberships = current.memberships();
-      const previousTenantId = store.getState().activeTenantId;
-      const activeTenantId = store
-        .getState()
-        .synchronizeTenant(memberships, tenantType);
-      if (activeTenantId !== previousTenantId)
-        await persistSelection(current.storage, activeTenantId);
+      const selection = latestSelection;
+      const activeTenantId = await enqueue(async () => {
+        if (selection !== latestSelection)
+          return store.getState().activeTenantId;
+        const previousTenantId = store.getState().activeTenantId;
+        const nextTenantId = store
+          .getState()
+          .synchronizeTenant(memberships, tenantType);
+        if (nextTenantId !== previousTenantId)
+          await persistSelection(current.storage, nextTenantId);
+        return nextTenantId;
+      });
       return resolveTenant(memberships, tenantType, activeTenantId);
     },
   };

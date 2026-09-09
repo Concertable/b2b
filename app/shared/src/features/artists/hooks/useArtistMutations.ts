@@ -11,7 +11,7 @@ export function useCreateArtistMutation() {
   });
 }
 
-export function useUpdateArtistMutation(tenantId?: string) {
+export function useUpdateArtistMutation(tenantId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: artistApi.updateArtist,

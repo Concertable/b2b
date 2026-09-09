@@ -11,7 +11,7 @@ export function useCreateVenueMutation() {
   });
 }
 
-export function useUpdateVenueMutation(tenantId?: string) {
+export function useUpdateVenueMutation(tenantId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: venueApi.updateVenue,
