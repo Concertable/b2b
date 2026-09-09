@@ -66,9 +66,9 @@ public sealed class IntegrationTestBoundaryTests
             if (include is null)
                 continue;
 
-            if (Path.GetFileNameWithoutExtension(include).Split('.') is
-                    [var product, var service, var module, "Domain" or "Infrastructure"] &&
-                product == Topology.Company && service == Topology.Service && module != owner)
+            if (Topology.Parse(Path.GetFileNameWithoutExtension(include)) is { Module: var module, Layer: var layer } &&
+                module != owner &&
+                layer is ArchitectureLayer.Domain or ArchitectureLayer.Infrastructure)
                 yield return $"{project.Name} -> {Path.GetFileNameWithoutExtension(include)}";
         }
     }
