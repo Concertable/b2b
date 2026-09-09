@@ -11,6 +11,14 @@ internal static class ApplicationMappers
 {
     extension(ApplicationDto dto)
     {
+        public ApplicationResponse ToResponse(TenantType membershipType, BookingSummary? booking) =>
+            membershipType switch
+            {
+                TenantType.Venue => dto.ToVenueResponse(booking),
+                TenantType.Artist => dto.ToArtistResponse(booking),
+                _ => throw new ArgumentOutOfRangeException(nameof(membershipType), membershipType, null)
+            };
+
         public ApplicationResponse<VenueApplicationActions> ToVenueResponse(BookingSummary? booking)
         {
             var isPending = dto.State == ApplicationState.Applied;

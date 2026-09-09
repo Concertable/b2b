@@ -240,27 +240,6 @@ instead of per row.
 
 ---
 
-### `ApplicationController.GetById` branches on `TenantType` to pick a response mapper
-
-`GetById` (Concert.Api) switches on `membership.Type` to choose between `mapper.ToVenueResponse` and
-`mapper.ToArtistResponse`, with a `default:` arm returning `Forbid()` — the same "branching on the key
-inside a key-agnostic component" anti-pattern the `keyed-strategies` standard names, in a controller
-that is otherwise key-agnostic. Found while resolving the Tenant-side equivalent, whose entry asserted
-the branch was confined to `VerificationService.GetContactAsync`; it was not.
-
-Deliberately left out of that fix for two reasons. It lives in the **Concert** module, so it needs
-Concert's own `TenantType`-keyed spine rather than Tenant's — factories and key enums stay module-local.
-And what varies is an Api-layer *response shape* rather than an application-layer value, so the leaves
-are response mappers and the `default:` arm is an authorization decision that must survive the refactor
-as an explicit check, not silently become a composition-time coverage failure.
-
-**Resolves when:** Concert declares a `TenantType`-keyed family over the shared `KeyedStrategyBuilder<TKey>`
-(`src/Concertable.B2B.KeyedStrategies`) with the venue/artist response mappers as its keyed leaves, and
-`GetById` selects through it — the not-a-party case staying an explicit authorization check ahead of the
-lookup rather than a missing key.
-
----
-
 ### Application affordances are not yet modelled as role-and-state discriminated unions
 
 Application responses need different affordances for venue and artist callers, and those affordances also vary by

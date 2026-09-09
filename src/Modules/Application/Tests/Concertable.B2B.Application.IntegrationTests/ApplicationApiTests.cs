@@ -72,6 +72,42 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         Assert.Contains(artistApplications.EnumerateArray(), item => item.GetProperty("id").GetInt32() == application.Id);
     }
 
+    #region Get
+
+    [Fact]
+    public async Task GetById_AsVenueParty_ReturnsVenueShapedActions()
+    {
+        var application = fixture.SeedState.FlatFeeApp;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync($"/api/application/{application.Id}");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsync<JsonElement>();
+        Assert.Equal(application.Id, body.GetProperty("id").GetInt32());
+        var actions = body.GetProperty("actions");
+        Assert.True(actions.TryGetProperty("accept", out _));
+        Assert.False(actions.TryGetProperty("withdraw", out _));
+    }
+
+    [Fact]
+    public async Task GetById_AsArtistParty_ReturnsArtistShapedActions()
+    {
+        var application = fixture.SeedState.FlatFeeApp;
+        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+
+        var response = await client.GetAsync($"/api/application/{application.Id}");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsync<JsonElement>();
+        Assert.Equal(application.Id, body.GetProperty("id").GetInt32());
+        var actions = body.GetProperty("actions");
+        Assert.True(actions.TryGetProperty("withdraw", out _));
+        Assert.False(actions.TryGetProperty("accept", out _));
+    }
+
+    #endregion
+
     #region Eligibility
 
     [Fact]
