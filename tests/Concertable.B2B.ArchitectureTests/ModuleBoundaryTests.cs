@@ -6,6 +6,7 @@ using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
+using Concertable.Testing.Architecture;
 using Xunit;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
@@ -15,81 +16,68 @@ namespace Concertable.B2B.ArchitectureTests;
 /// Enforces the modular-monolith rules (the `dotnet-standards:module-structure` skill) that the compiler alone
 /// can't: cross-module isolation once a type is <c>public</c>, plus the layer reference graph as
 /// defense-in-depth. ArchUnitNET reads compiled IL, so it sees <c>internal</c> types too.
+///
+/// The module set comes from <see cref="ServiceArchitecture"/> — read off the loaded assembly graph, never a
+/// hand-maintained list — so a new, renamed or moved module is covered without touching this file.
 /// </summary>
 public sealed class ModuleBoundaryTests
 {
-    // Each entry is a full module namespace segment under `Concertable.B2B.` — bare for an ordinary module,
-    // dotted for a nested sub-module family (Dashboard has no layer of its own; only its sub-modules do).
-    private static readonly string[] Modules =
-        [
-            "Application", "Artist", "Booking", "Concert", "Conversations", "Deal", "Opportunity", "Tenant", "User", "Venue",
-            @"Dashboard\.Artist", @"Dashboard\.Opportunity", @"Dashboard\.Venue"
-        ];
+    private static readonly ServiceArchitecture Topology =
+        ServiceArchitecture.Create(typeof(ModuleBoundaryTests).Assembly);
 
-    private static readonly string ModsAlt = string.Join("|", Modules);
-
-    private static readonly System.Reflection.Assembly[] Assemblies = LoadAssemblies();
-
-    private static readonly Architecture Architecture = new ArchLoader()
-        .LoadAssemblies(Assemblies)
+    private static readonly Architecture Graph = new ArchLoader()
+        .LoadAssemblies([.. Topology.Assemblies])
         .Build();
-
-    private static System.Reflection.Assembly[] LoadAssemblies()
-    {
-        var dir = Path.GetDirectoryName(typeof(ModuleBoundaryTests).Assembly.Location)!;
-        return Directory.GetFiles(dir, "Concertable.B2B.*.dll")
-            .Where(p => !Path.GetFileNameWithoutExtension(p).Contains("Test", StringComparison.Ordinal))
-            .Select(System.Reflection.Assembly.LoadFrom)
-            .Append(System.Reflection.Assembly.LoadFrom(Path.Combine(dir, "Concertable.Kernel.dll")))
-            .ToArray();
-    }
 
     // Layering — the reference graph only points inward (toward Contracts/Kernel).
 
     [Fact]
     public void Domain_does_not_depend_on_Application_Infrastructure_or_Api() =>
-        Forbid("Domain", "Application", "Infrastructure", "Api");
+        Forbid(ArchitectureLayer.Domain, ArchitectureLayer.Application, ArchitectureLayer.Infrastructure, ArchitectureLayer.Api);
 
     [Fact]
     public void Application_does_not_depend_on_Infrastructure_or_Api() =>
-        Forbid("Application", "Infrastructure", "Api");
+        Forbid(ArchitectureLayer.Application, ArchitectureLayer.Infrastructure, ArchitectureLayer.Api);
 
     [Fact]
     public void Contracts_do_not_depend_on_inner_layers() =>
-        Forbid("Contracts", "Domain", "Application", "Infrastructure", "Api");
+        Forbid(ArchitectureLayer.Contracts, ArchitectureLayer.Domain, ArchitectureLayer.Application, ArchitectureLayer.Infrastructure, ArchitectureLayer.Api);
 
     [Fact]
     public void Api_does_not_depend_on_Option() =>
-        Types().That().ResideInNamespace($@"^Concertable\.B2B\.({ModsAlt})\.Api($|\.)", useRegularExpressions: true)
+        Types().That().ResideInNamespace(Topology.NamespacePattern(ArchitectureLayer.Api), useRegularExpressions: true)
             .Should().NotDependOnAny(Types().That().AreAssignableTo("Reunion.Option`1", useRegularExpressions: false))
             .Because("controllers receive application-owned Results rather than deciding what absence means")
-            .Check(Architecture);
+            .Check(Graph);
 
     // Cross-module isolation — a module talks to another only via its Contracts / integration events,
     // never reaching into its Infrastructure. (Domain is intentionally allowed: public read-model
-    // types are shared cross-module as projection targets — MODULE_STRUCTURE.md.)
+    // types are shared cross-module as projection targets — MODULES.md.)
 
     [Fact]
     public void Modules_do_not_reach_into_another_modules_Infrastructure()
     {
-        foreach (var from in Modules)
-        foreach (var into in Modules)
+        Assert.NotEmpty(Topology.Modules);
+
+        foreach (var from in Topology.Modules)
+        foreach (var into in Topology.Modules)
         {
             if (from == into)
                 continue;
 
-            Types().That().ResideInNamespace($@"^Concertable\.B2B\.{from}\.", useRegularExpressions: true)
+            Types().That().ResideInNamespace(Topology.NamespacePattern(from), useRegularExpressions: true)
                 .Should().NotDependOnAny(
-                    Types().That().ResideInNamespace($@"^Concertable\.B2B\.{into}\.Infrastructure($|\.)", useRegularExpressions: true))
+                    Types().That().ResideInNamespace(
+                        Topology.NamespacePattern(into, ArchitectureLayer.Infrastructure), useRegularExpressions: true))
                 .Because($"{from} must reach {into} only via {into}.Contracts or integration events, never its Infrastructure.")
-                .Check(Architecture);
+                .Check(Graph);
         }
     }
 
     [Fact]
     public void Module_facades_do_not_depend_on_persistence_or_mapping_components()
     {
-        var violations = Assemblies
+        var violations = Topology.Assemblies
             .SelectMany(assembly => assembly.GetTypes())
             .Where(type => type.IsClass && type.Name.EndsWith("Module", StringComparison.Ordinal))
             .Where(type => type.GetInterfaces().Any(contract => contract.Name.EndsWith("Module", StringComparison.Ordinal)))
@@ -135,7 +123,7 @@ public sealed class ModuleBoundaryTests
                 .Should().HaveNameStartingWith("Get")
                 .Because($"{contract.Name} is a lifecycle-stage facade: it may publish facts for a later " +
                           "stage to read, never accept a command (MM_BOUNDARY_HARDENING_PROMPT.md Part A3).")
-                .Check(Architecture);
+                .Check(Graph);
     }
 
     [Fact]
@@ -150,22 +138,20 @@ public sealed class ModuleBoundaryTests
             MethodMembers().That()
                 .AreDeclaredIn(earlierContract).And()
                 .DoNotHaveNameStartingWith("Get")
-                .Should().NotBeCalledBy($@"^Concertable\.B2B\.{laterModule}\.", useRegularExpressions: true)
+                .Should().NotBeCalledBy(Topology.NamespacePattern(laterModule), useRegularExpressions: true)
                 .Because($"{laterModule} is downstream of {earlierContract.Name} in the deal lifecycle; a " +
                           "downstream stage may read an upstream stage's contract but never command it.")
                 .WithoutRequiringPositiveResults()
-                .Check(Architecture);
+                .Check(Graph);
         }
     }
 
-    private static void Forbid(string layer, params string[] forbiddenLayers)
+    private static void Forbid(ArchitectureLayer layer, params ArchitectureLayer[] forbiddenLayers)
     {
-        var source = $@"^Concertable\.B2B\.({ModsAlt})\.{layer}($|\.)";
-        var forbidden = $@"^Concertable\.B2B\.({ModsAlt})\.({string.Join("|", forbiddenLayers)})($|\.)";
-
-        Types().That().ResideInNamespace(source, useRegularExpressions: true)
-            .Should().NotDependOnAny(Types().That().ResideInNamespace(forbidden, useRegularExpressions: true))
-            .Because($"the {layer} layer must not depend on {string.Join("/", forbiddenLayers)} (MODULE_STRUCTURE.md reference graph).")
-            .Check(Architecture);
+        Types().That().ResideInNamespace(Topology.NamespacePattern(layer), useRegularExpressions: true)
+            .Should().NotDependOnAny(
+                Types().That().ResideInNamespace(Topology.NamespacePattern(forbiddenLayers), useRegularExpressions: true))
+            .Because($"the {layer} layer must not depend on {string.Join("/", forbiddenLayers)} (MODULES.md reference graph).")
+            .Check(Graph);
     }
 }

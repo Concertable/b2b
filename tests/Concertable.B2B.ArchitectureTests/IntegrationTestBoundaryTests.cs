@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Xml.Linq;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Testing;
+using Concertable.Testing.Architecture;
 using Xunit;
 
 namespace Concertable.B2B.ArchitectureTests;
@@ -15,15 +16,22 @@ public sealed class IntegrationTestBoundaryTests
         BindingFlags.Static |
         BindingFlags.DeclaredOnly;
 
+    private static readonly ServiceArchitecture Topology =
+        ServiceArchitecture.Create(typeof(IntegrationTestBoundaryTests).Assembly);
+
+    // The fixture project every module integration suite (and the cross-module Lifecycle suite) references to
+    // boot its module. Selecting suites by this reference — not a maintained path or name list — means a new
+    // suite is covered the moment it opts into the fixture. Whether a suite *declares* a reference to another
+    // module's Domain or Infrastructure is a project-file question — a transitive assembly reference is not a
+    // declared one — so the check itself reads the .csproj.
+    private static readonly string ModuleFixtureProject = typeof(ApiFixture).Assembly.GetName().Name!;
+
     [Fact]
     public void ModuleIntegrationProjects_DoNotReferenceAnotherModulesDomainOrInfrastructure()
     {
-        var violations = FindB2BRoot()
-            .EnumerateFiles("Concertable.B2B.*.IntegrationTests.csproj", SearchOption.AllDirectories)
-            .Where(project => project.FullName.Contains(
-                    $"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}Modules{Path.DirectorySeparatorChar}",
-                    StringComparison.Ordinal) ||
-                project.Name == "Concertable.B2B.Lifecycle.IntegrationTests.csproj")
+        var violations = SolutionDirectory
+            .EnumerateFiles($"{Topology.Company}.{Topology.Service}.*.IntegrationTests.csproj", SearchOption.AllDirectories)
+            .Where(ReferencesModuleFixture)
             .SelectMany(FindCrossModuleProjectReferences)
             .Order()
             .ToArray();
@@ -34,7 +42,8 @@ public sealed class IntegrationTestBoundaryTests
     [Fact]
     public void ModuleIntegrationTests_UseOwningFixture()
     {
-        var violations = FindModuleIntegrationAssemblies()
+        var violations = typeof(IntegrationTestBoundaryTests).Assembly
+            .LoadSiblingModuleIntegrationTestAssemblies()
             .SelectMany(FindSharedFixtureConsumers)
             .Order()
             .ToArray();
@@ -42,8 +51,11 @@ public sealed class IntegrationTestBoundaryTests
         Assert.Empty(violations);
     }
 
-    private static IReadOnlyCollection<Assembly> FindModuleIntegrationAssemblies() =>
-        typeof(IntegrationTestBoundaryTests).Assembly.LoadSiblingModuleIntegrationTestAssemblies();
+    private static bool ReferencesModuleFixture(FileInfo project) =>
+        XDocument.Load(project.FullName).Descendants("ProjectReference")
+            .Select(reference => (string?)reference.Attribute("Include"))
+            .Any(include => include is not null &&
+                Path.GetFileNameWithoutExtension(include) == ModuleFixtureProject);
 
     private static IEnumerable<string> FindCrossModuleProjectReferences(FileInfo project)
     {
@@ -54,9 +66,9 @@ public sealed class IntegrationTestBoundaryTests
             if (include is null)
                 continue;
 
-            var referenceName = Path.GetFileNameWithoutExtension(include).Split('.');
-            if (referenceName is ["Concertable", "B2B", var module, "Domain" or "Infrastructure"] &&
-                module != owner)
+            if (Path.GetFileNameWithoutExtension(include).Split('.') is
+                    [var product, var service, var module, "Domain" or "Infrastructure"] &&
+                product == Topology.Company && service == Topology.Service && module != owner)
                 yield return $"{project.Name} -> {Path.GetFileNameWithoutExtension(include)}";
         }
     }
@@ -81,6 +93,6 @@ public sealed class IntegrationTestBoundaryTests
         }
     }
 
-    private static DirectoryInfo FindB2BRoot() =>
+    private static DirectoryInfo SolutionDirectory =>
         typeof(IntegrationTestBoundaryTests).Assembly.SolutionDirectory;
 }
