@@ -6,6 +6,7 @@ const { withNativeWind } = require("nativewind/metro");
 const withPackageResolution = require("@concertable/build-config/metro");
 
 const config = withPackageResolution(getDefaultConfig(__dirname), __dirname, [
+  "@concertable/b2b",
   "@concertable/mobile",
   "@concertable/shared",
 ]);
