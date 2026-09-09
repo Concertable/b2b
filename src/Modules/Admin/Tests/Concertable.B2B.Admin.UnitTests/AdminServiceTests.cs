@@ -3,6 +3,7 @@ using Concertable.B2B.Admin.Application.Interfaces;
 using Concertable.B2B.Admin.Application.Requests;
 using Concertable.B2B.Admin.Domain.Entities;
 using Concertable.B2B.Admin.Domain.Errors;
+using Concertable.B2B.Admin.Infrastructure;
 using Concertable.B2B.Admin.Infrastructure.Services;
 using Concertable.B2B.Admin.Infrastructure.Settings;
 using Concertable.B2B.User.Contracts;
@@ -20,6 +21,7 @@ public sealed class AdminServiceTests
 
     private readonly Mock<IAdminInvitationRepository> invitationRepository;
     private readonly Mock<IAdminProfileRepository> profileRepository;
+    private readonly Mock<IUnitOfWork> unitOfWork;
     private readonly Mock<ICurrentUser> currentUser;
     private readonly Mock<IUserModule> userModule;
     private readonly AdminService service;
@@ -28,6 +30,10 @@ public sealed class AdminServiceTests
     {
         this.invitationRepository = new Mock<IAdminInvitationRepository>();
         this.profileRepository = new Mock<IAdminProfileRepository>();
+        this.unitOfWork = new Mock<IUnitOfWork>();
+        this.unitOfWork
+            .Setup(value => value.TrySaveChangesAsync(It.IsAny<Func<DbUpdateException, bool>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         this.currentUser = new Mock<ICurrentUser>();
         this.userModule = new Mock<IUserModule>();
         this.userModule
@@ -36,6 +42,7 @@ public sealed class AdminServiceTests
         this.service = new AdminService(
             invitationRepository.Object,
             profileRepository.Object,
+            unitOfWork.Object,
             currentUser.Object,
             userModule.Object,
             TimeProvider.System,
@@ -301,7 +308,9 @@ public sealed class AdminServiceTests
         Assert.Equal(AdminInvitationStatus.Accepted, invitation.Status);
         Assert.Equal(sub, invitation.AcceptedByUserId);
         profileRepository.Verify(value => value.GrantAdmin(sub), Times.Once);
-        invitationRepository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        unitOfWork.Verify(
+            value => value.TrySaveChangesAsync(It.IsAny<Func<DbUpdateException, bool>>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -315,7 +324,9 @@ public sealed class AdminServiceTests
         invitationRepository.Setup(value => value.GetPendingInvitationByEmailAsync("invitee@example.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync(invitation);
         var exception = new DbUpdateException();
-        invitationRepository.Setup(value => value.SaveChangesAsync(It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+        unitOfWork
+            .Setup(value => value.TrySaveChangesAsync(It.IsAny<Func<DbUpdateException, bool>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(exception);
 
         var actual = await Assert.ThrowsAsync<DbUpdateException>(
             () => service.EnsureCurrentUserAdminGrantedIfEligibleAsync());
@@ -338,7 +349,9 @@ public sealed class AdminServiceTests
 
         Assert.True(result);
         profileRepository.Verify(value => value.GrantAdmin(sub), Times.Once);
-        invitationRepository.Verify(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        unitOfWork.Verify(
+            value => value.TrySaveChangesAsync(It.IsAny<Func<DbUpdateException, bool>>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]

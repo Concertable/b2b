@@ -1,6 +1,7 @@
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Admin.Application.Validators;
 using Concertable.B2B.Admin.Domain.Events;
+using Concertable.B2B.Admin.Infrastructure;
 using Concertable.B2B.Admin.Infrastructure.Authorization;
 using Concertable.B2B.Admin.Infrastructure.Data;
 using Concertable.B2B.Admin.Infrastructure.Data.Seeders;
@@ -34,6 +35,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IAdminInvitationRepository, AdminInvitationRepository>();
         services.AddScoped<IAdminProfileRepository, AdminProfileRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IAdminModule, AdminModule>();
 
