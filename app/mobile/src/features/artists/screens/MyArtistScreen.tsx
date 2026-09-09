@@ -2,16 +2,18 @@ import { useLayoutEffect } from "react";
 import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { notify } from "@concertable/mobile/lib/toast";
-import { useMyArtist } from "@concertable/shared/features/artists";
+import { useMyArtist } from "@concertable/b2b/features/artists";
 import { EditableProvider } from "@concertable/shared/providers";
 import { Screen } from "@concertable/mobile/components/ui/Screen";
 import { Skeleton } from "@concertable/mobile/components/ui/skeleton";
 import { ErrorState } from "@concertable/mobile/components/ui/ErrorState";
 import { ConfigBar } from "@concertable/mobile/components/ConfigBar";
 import { ArtistDetails } from "@concertable/mobile/features/artists/components/ArtistDetails";
+import { useActiveTenantId } from "../../tenant/ActiveTenantContext";
 
 export function MyArtistScreen() {
   const nav = useNavigation();
+  const tenantId = useActiveTenantId();
 
   const {
     artist,
@@ -30,7 +32,7 @@ export function MyArtistScreen() {
     setAbout,
     setBanner,
     setAvatar,
-  } = useMyArtist({
+  } = useMyArtist(tenantId, {
     onSuccess: () => notify("Artist saved!", "success"),
   });
 
@@ -60,6 +62,15 @@ export function MyArtistScreen() {
     save,
     resetDraft,
   ]);
+
+  // useMyArtist reports isLoading forever without a tenant, and no route guard covers this screen.
+  if (tenantId === undefined) {
+    return (
+      <View className="flex-1 bg-background">
+        <ErrorState message="Sign in to an organization to manage your artist." />
+      </View>
+    );
+  }
 
   if (isLoading) {
     return (

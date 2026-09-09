@@ -12,6 +12,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@concertable/b2b": "*",
     "@concertable/shared": "*",
     "@concertable/mobile": "*",
     "@expo-google-fonts/geist": "^0.4.2",

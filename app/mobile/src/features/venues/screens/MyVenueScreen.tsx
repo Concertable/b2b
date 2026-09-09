@@ -2,16 +2,18 @@ import { useLayoutEffect } from "react";
 import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { notify } from "@concertable/mobile/lib/toast";
-import { useMyVenue } from "@concertable/shared/features/venues";
+import { useMyVenue } from "@concertable/b2b/features/venues";
 import { EditableProvider } from "@concertable/shared/providers";
 import { Screen } from "@concertable/mobile/components/ui/Screen";
 import { Skeleton } from "@concertable/mobile/components/ui/skeleton";
 import { ErrorState } from "@concertable/mobile/components/ui/ErrorState";
 import { ConfigBar } from "@concertable/mobile/components/ConfigBar";
 import { VenueDetails } from "@concertable/mobile/features/venues/components/VenueDetails";
+import { useActiveTenantId } from "../../tenant/ActiveTenantContext";
 
 export function MyVenueScreen() {
   const nav = useNavigation();
+  const tenantId = useActiveTenantId();
 
   const {
     venue,
@@ -31,7 +33,7 @@ export function MyVenueScreen() {
     setBanner,
     setAvatar,
     setLocation,
-  } = useMyVenue({
+  } = useMyVenue(tenantId, {
     onSuccess: () => notify("Venue saved!", "success"),
   });
 
@@ -61,6 +63,15 @@ export function MyVenueScreen() {
     save,
     resetDraft,
   ]);
+
+  // useMyVenue reports isLoading forever without a tenant, and no route guard covers this screen.
+  if (tenantId === undefined) {
+    return (
+      <View className="flex-1 bg-background">
+        <ErrorState message="Sign in to an organization to manage your venue." />
+      </View>
+    );
+  }
 
   if (isLoading) {
     return (

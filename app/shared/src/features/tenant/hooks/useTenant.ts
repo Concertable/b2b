@@ -10,6 +10,9 @@ export function useTenant(
   tenantType?: TenantType,
 ) {
   const activeTenantId = useTenantStore((state) => state.activeTenantId);
+  const isSelectionPending = useTenantStore(
+    (state) => state.isSelectionPending,
+  );
   const resolution = resolveTenant(memberships, tenantType, activeTenantId);
 
   useEffect(() => {
@@ -19,6 +22,7 @@ export function useTenant(
   return {
     ...resolution,
     permissions: permissionsForRole(resolution.activeMembership?.role),
+    isSelectionPending,
     selectTenant: tenantSession.select,
   };
 }

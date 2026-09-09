@@ -1,4 +1,4 @@
-import { useCreateVenue as useCreateVenueShared } from "@concertable/shared/features/venues";
+import { useCreateVenue as useCreateVenueShared } from "@concertable/b2b/features/venues";
 import { useNavigate } from "@tanstack/react-router";
 
 export function useCreateVenue() {

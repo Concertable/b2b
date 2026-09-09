@@ -28,13 +28,26 @@ async function persistSelection(
 
 export function createTenantSession(store: StoreApi<TenantStoreState>) {
   let configuration: TenantSessionConfiguration | undefined;
+  let latestSelection = 0;
+  let selectionQueue = Promise.resolve();
+
+  const enqueue = <T>(operation: () => Promise<T>) => {
+    const queued = selectionQueue.catch(() => undefined).then(operation);
+    selectionQueue = queued.then(
+      () => undefined,
+      () => undefined,
+    );
+    return queued;
+  };
 
   return {
     configure: async (nextConfiguration: TenantSessionConfiguration) => {
       configuration = nextConfiguration;
-      store
-        .getState()
-        .hydrateTenant(await nextConfiguration.storage.loadActiveTenantId());
+      await enqueue(async () => {
+        store
+          .getState()
+          .hydrateTenant(await nextConfiguration.storage.loadActiveTenantId());
+      });
     },
     tenantIdForRequest: () => {
       if (configuration === undefined) return undefined;
@@ -53,26 +66,58 @@ export function createTenantSession(store: StoreApi<TenantStoreState>) {
           .some((membership) => membership.tenantId === tenantId)
       )
         throw new RangeError(`Tenant ${tenantId} is not an active membership.`);
-      store.getState().selectTenant(tenantId);
-      await current.storage.saveActiveTenantId(tenantId);
+      const selection = ++latestSelection;
+      store.getState().beginSelection();
+
+      try {
+        await enqueue(async () => {
+          if (selection !== latestSelection) return;
+          if (
+            !current
+              .memberships()
+              .some((membership) => membership.tenantId === tenantId)
+          )
+            throw new RangeError(
+              `Tenant ${tenantId} is not an active membership.`,
+            );
+
+          await current.storage.saveActiveTenantId(tenantId);
+          if (selection === latestSelection)
+            store.getState().selectTenant(tenantId);
+        });
+      } catch (error) {
+        if (selection === latestSelection) throw error;
+      } finally {
+        if (selection === latestSelection) store.getState().endSelection();
+      }
     },
     clear: async () => {
+      ++latestSelection;
       store.getState().clearTenant();
-      if (configuration === undefined) return;
-      await Promise.all([
-        configuration.storage.clearActiveTenantId(),
-        configuration.clearMemberships(),
-      ]);
+      const current = configuration;
+      if (current === undefined) return;
+      await enqueue(async () => {
+        await Promise.all([
+          current.storage.clearActiveTenantId(),
+          current.clearMemberships(),
+        ]);
+      });
     },
     resolve: async (tenantType?: TenantType) => {
       const current = requireConfiguration(configuration);
       const memberships = current.memberships();
-      const previousTenantId = store.getState().activeTenantId;
-      const activeTenantId = store
-        .getState()
-        .synchronizeTenant(memberships, tenantType);
-      if (activeTenantId !== previousTenantId)
-        await persistSelection(current.storage, activeTenantId);
+      const selection = latestSelection;
+      const activeTenantId = await enqueue(async () => {
+        if (selection !== latestSelection)
+          return store.getState().activeTenantId;
+        const previousTenantId = store.getState().activeTenantId;
+        const nextTenantId = store
+          .getState()
+          .synchronizeTenant(memberships, tenantType);
+        if (nextTenantId !== previousTenantId)
+          await persistSelection(current.storage, nextTenantId);
+        return nextTenantId;
+      });
       return resolveTenant(memberships, tenantType, activeTenantId);
     },
   };

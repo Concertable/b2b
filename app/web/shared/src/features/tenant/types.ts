@@ -1,16 +1,6 @@
-import type { User } from "@concertable/web/features/auth/types";
-import type { TENANT_ROLES } from "./constants";
-
-export type TenantType = "venue" | "artist";
-export type TenantRole = (typeof TENANT_ROLES)[number];
-
-export interface Membership {
-  readonly tenantId: string;
-  readonly legalName: string;
-  readonly type: TenantType;
-  readonly role: TenantRole;
-}
-
-export interface B2bIdentity extends User {
-  readonly memberships: ReadonlyArray<Membership>;
-}
+export type {
+  B2bIdentity,
+  Membership,
+  TenantRole,
+  TenantType,
+} from "@concertable/b2b/features/tenant/types";

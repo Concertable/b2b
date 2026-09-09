@@ -9,6 +9,7 @@ import {
 import { PortalHost } from "@rn-primitives/portal";
 import { AppProviders } from "@concertable/mobile/providers/AppProviders";
 import { RootNavigator } from "./src/navigation/RootNavigator";
+import "./src/lib/b2bClient";
 
 export default function App() {
   const [fontsLoaded] = useFonts({

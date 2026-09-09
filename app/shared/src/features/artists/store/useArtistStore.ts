@@ -4,6 +4,7 @@ import type { ImageFile } from "@concertable/shared/types/image";
 import type { Artist } from "@concertable/shared/features/artists/types";
 
 export interface ArtistState {
+  tenantId: string | undefined;
   draft:
     | Pick<
         Artist,
@@ -21,7 +22,10 @@ export interface ArtistState {
   banner: ImageFile | undefined;
   avatar: ImageFile | undefined;
   editMode: boolean;
-  beginEdit: (artist: NonNullable<ArtistState["draft"]>) => void;
+  beginEdit: (
+    tenantId: string | undefined,
+    artist: NonNullable<ArtistState["draft"]>,
+  ) => void;
   endEdit: () => void;
   setName: (name: string) => void;
   setAbout: (about: string) => void;
@@ -31,12 +35,14 @@ export interface ArtistState {
 
 export const useArtistStore = create<ArtistState>()(
   immer((set) => ({
+    tenantId: undefined,
     draft: undefined,
     banner: undefined,
     avatar: undefined,
     editMode: false,
-    beginEdit: (artist) =>
+    beginEdit: (tenantId, artist) =>
       set((state) => {
+        state.tenantId = tenantId;
         state.draft = {
           name: artist.name,
           about: artist.about,
@@ -54,6 +60,7 @@ export const useArtistStore = create<ArtistState>()(
       }),
     endEdit: () =>
       set((state) => {
+        state.tenantId = undefined;
         state.draft = undefined;
         state.banner = undefined;
         state.avatar = undefined;
