@@ -66,7 +66,7 @@ export function useCreateVenue(
   });
 
   useMountEffect(() => {
-    beginEdit(initialVenue);
+    beginEdit(undefined, initialVenue);
     reset(defaultValues);
     return endEdit;
   });
@@ -74,7 +74,7 @@ export function useCreateVenue(
   const mutation = useMutation({
     mutationFn: venueApi.createVenue,
     onSuccess: (saved) => {
-      queryClient.setQueryData(venueKeys.my(), saved);
+      void queryClient.invalidateQueries({ queryKey: venueKeys.my() });
       queryClient.setQueryData(venueKeys.byId(saved.id), saved);
       endEdit();
       options?.onSuccess?.(saved);

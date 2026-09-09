@@ -4,8 +4,11 @@ import type { Membership, TenantType } from "../types";
 
 export interface TenantStoreState {
   readonly activeTenantId: string | undefined;
+  readonly isSelectionPending: boolean;
   readonly hydrateTenant: (tenantId: string | undefined) => void;
   readonly selectTenant: (tenantId: string) => void;
+  readonly beginSelection: () => void;
+  readonly endSelection: () => void;
   readonly clearTenant: () => void;
   readonly synchronizeTenant: (
     memberships: ReadonlyArray<Membership>,
@@ -15,9 +18,13 @@ export interface TenantStoreState {
 
 export const useTenantStore = create<TenantStoreState>()((set, get) => ({
   activeTenantId: undefined,
+  isSelectionPending: false,
   hydrateTenant: (activeTenantId) => set({ activeTenantId }),
   selectTenant: (activeTenantId) => set({ activeTenantId }),
-  clearTenant: () => set({ activeTenantId: undefined }),
+  beginSelection: () => set({ isSelectionPending: true }),
+  endSelection: () => set({ isSelectionPending: false }),
+  clearTenant: () =>
+    set({ activeTenantId: undefined, isSelectionPending: false }),
   synchronizeTenant: (memberships, tenantType) => {
     const matchingMemberships = filterMembershipsByTenantType(
       memberships,
