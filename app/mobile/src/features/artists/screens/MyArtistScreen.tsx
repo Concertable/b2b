@@ -63,6 +63,15 @@ export function MyArtistScreen() {
     resetDraft,
   ]);
 
+  // useMyArtist reports isLoading forever without a tenant, and no route guard covers this screen.
+  if (tenantId === undefined) {
+    return (
+      <View className="flex-1 bg-background">
+        <ErrorState message="Sign in to an organization to manage your artist." />
+      </View>
+    );
+  }
+
   if (isLoading) {
     return (
       <View className="flex-1 bg-background">
