@@ -83,21 +83,11 @@ internal sealed class ApplicationController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ApplicationResponse>> GetById(int id)
     {
-        Func<ApplicationDto, Task<ApplicationResponse>> responseMapper;
-        switch (membership.Type)
-        {
-            case TenantType.Venue:
-                responseMapper = async dto => await mapper.ToVenueResponseAsync(dto);
-                break;
-            case TenantType.Artist:
-                responseMapper = async dto => await mapper.ToArtistResponseAsync(dto);
-                break;
-            default:
-                return Forbid();
-        }
+        if (membership.Type is not { } membershipType)
+            return Forbid();
 
         var result = await applicationService.GetByIdAsync(id);
-        return (await result.MapAsync(responseMapper)).ToOkOrProblem();
+        return (await result.MapAsync(dto => mapper.ToResponseAsync(dto, membershipType))).ToOkOrProblem();
     }
 
     [HasPermission(ArtistPermissions.ApplicationsSubmit)]

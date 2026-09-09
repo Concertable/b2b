@@ -13,11 +13,11 @@ internal sealed class ApplicationMapper : IApplicationMapper
         this.bookingModule = bookingModule;
     }
 
-    public async Task<ApplicationResponse<VenueApplicationActions>> ToVenueResponseAsync(ApplicationDto dto)
+    public async Task<ApplicationResponse> ToResponseAsync(ApplicationDto dto, TenantType membershipType)
     {
         var bookingOption = await bookingModule.GetByApplicationIdAsync(dto.Id);
         bookingOption.TryGetValue(out var booking);
-        return dto.ToVenueResponse(booking);
+        return dto.ToResponse(membershipType, booking);
     }
 
     public async Task<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>> ToVenueResponsesAsync(
