@@ -22,6 +22,7 @@ public static class AppHostExtensions
         {
             var b2bSecret = builder.Configuration["ServiceAuth:B2BClientSecret"];
             return builder.AddContainerImage(B2BConstants.WebResource, image, digest)
+                          .WithHttpEndpoint(targetPort: B2BConstants.ContainerPort, name: "https")
                           .WithReference(sql)
                           .WaitFor(sql)
                           .WithReference(auth)
