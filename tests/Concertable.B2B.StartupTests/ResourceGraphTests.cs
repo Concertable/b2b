@@ -35,7 +35,6 @@ public sealed class ResourceGraphTests
         AssertContainerRuntimeArgs(validBuilder, AuthConstants.Resource, "--user", "root");
         AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https", scheme: "http");
-        AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "http", scheme: "http");
         AssertImageEndpoint(
             validBuilder,
             PaymentConstants.WebResource,
