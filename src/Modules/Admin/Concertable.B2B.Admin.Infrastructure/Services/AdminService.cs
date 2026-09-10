@@ -1,10 +1,10 @@
 using Concertable.B2B.Admin.Application.DTOs;
 using Concertable.B2B.Admin.Application.Mappers;
 using Concertable.B2B.Admin.Application.Requests;
+using Concertable.B2B.Admin.Infrastructure;
 using Concertable.B2B.Admin.Infrastructure.Settings;
 using Concertable.B2B.User.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -16,6 +16,7 @@ internal sealed class AdminService : IAdminService
 
     private readonly IAdminInvitationRepository invitationRepository;
     private readonly IAdminProfileRepository profileRepository;
+    private readonly IUnitOfWork unitOfWork;
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
     private readonly TimeProvider timeProvider;
@@ -25,6 +26,7 @@ internal sealed class AdminService : IAdminService
     public AdminService(
         IAdminInvitationRepository invitationRepository,
         IAdminProfileRepository profileRepository,
+        IUnitOfWork unitOfWork,
         ICurrentUser currentUser,
         IUserModule userModule,
         TimeProvider timeProvider,
@@ -33,6 +35,7 @@ internal sealed class AdminService : IAdminService
     {
         this.invitationRepository = invitationRepository;
         this.profileRepository = profileRepository;
+        this.unitOfWork = unitOfWork;
         this.currentUser = currentUser;
         this.userModule = userModule;
         this.timeProvider = timeProvider;
@@ -123,6 +126,11 @@ internal sealed class AdminService : IAdminService
     public Task<bool> IsCurrentUserAdminAsync(CancellationToken ct = default) =>
         currentUser.Id is { } id ? profileRepository.IsAdminAsync(id, ct) : Task.FromResult(false);
 
+    // Runs on every /api/auth/me call rather than once inside a single serialized registration handler,
+    // so two concurrent calls for the same newly-eligible user can both pass the IsAdminAsync check above
+    // and race to grant. The loser's insert hits the AdminProfiles.Sub primary key the winner just
+    // committed; treat that as the natural race-loser no-op the old registration-time design got for
+    // free, not a real failure.
     public async Task<bool> EnsureCurrentUserAdminGrantedIfEligibleAsync(CancellationToken ct = default)
     {
         if (currentUser.Id is not { } userId || currentUser.Email is not { } email)
@@ -138,7 +146,7 @@ internal sealed class AdminService : IAdminService
         {
             invitation.Accept(userId, now);
             profileRepository.GrantAdmin(userId);
-            if (!await TrySaveGrantAsync(ct))
+            if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
                 return true; // a concurrent Me() call already granted the same user; not a failure
 
             logger.GrantedAdminProfile(userId, "invitation");
@@ -149,7 +157,7 @@ internal sealed class AdminService : IAdminService
             await profileRepository.CountAdminsAsync(ct) == 0)
         {
             profileRepository.GrantAdmin(userId);
-            if (!await TrySaveGrantAsync(ct))
+            if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
                 return true; // a concurrent Me() call already granted the same user; not a failure
 
             logger.GrantedAdminProfile(userId, "bootstrap");
@@ -157,24 +165,5 @@ internal sealed class AdminService : IAdminService
         }
 
         return false;
-    }
-
-    // EnsureCurrentUserAdminGrantedIfEligibleAsync runs on every /api/auth/me call rather than once
-    // inside a single serialized registration handler, so two concurrent calls for the same
-    // newly-eligible user can both pass the IsAdminAsync check above and race to grant. The loser's
-    // insert hits the AdminProfiles.Sub primary key the winner just committed; treat that as the
-    // natural race-loser no-op the old registration-time design got for free, not a real failure.
-    private async Task<bool> TrySaveGrantAsync(CancellationToken ct)
-    {
-        try
-        {
-            await invitationRepository.SaveChangesAsync(ct);
-            return true;
-        }
-        catch (DbUpdateException ex) when (ex.IsDuplicateKey())
-        {
-            ex.DiscardFailedChanges();
-            return false;
-        }
     }
 }
