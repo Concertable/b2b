@@ -7,4 +7,6 @@ public static class B2BConstants
     public const string WorkersResource = "workers";
     public const string SeedingSimulatorResource = "b2b-seeding-simulator";
     public const string ServiceName = "concertable-b2b";
+
+    public const int ContainerPort = 8080;
 }
