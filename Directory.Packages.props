@@ -3,8 +3,9 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <ConcertableDotNetPlatformVersion>0.1.0-alpha.0.1366</ConcertableDotNetPlatformVersion>
-    <ConcertablePaymentVersion Condition="'$(UseLocalPlatformPackages)' == 'true'">$(ConcertableDotNetPlatformVersion)</ConcertablePaymentVersion>
-    <ConcertablePaymentVersion Condition="'$(ConcertablePaymentVersion)' == ''">0.1.0-alpha.0.1330</ConcertablePaymentVersion>
+    <!-- Payment publishes in the same train as the platform packages, so tracking that version
+         is what keeps them in step; a literal here silently ships a stale Payment client. -->
+    <ConcertablePaymentVersion Condition="'$(ConcertablePaymentVersion)' == ''">$(ConcertableDotNetPlatformVersion)</ConcertablePaymentVersion>
   </PropertyGroup>
 
   <ItemGroup>
