@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Application.Mappers;
@@ -29,10 +29,9 @@ public sealed class DealStrategyArchitectureTests
             .OrderBy(item => item.Stem, StringComparer.Ordinal)
             .ToArray();
         var typeScript = File.ReadAllText(Path.Combine(
-            Path.GetDirectoryName(FindApiRoot())!,
+            FindRepositoryRoot(),
             "app",
             "web",
-            "b2b",
             "shared",
             "src",
             "features",
@@ -133,24 +132,24 @@ public sealed class DealStrategyArchitectureTests
 
     public static TheoryData<string> KeyedProviderFiles { get; } = new()
     {
-        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
-        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Services/Strategies/DealUnionFactory.cs"
+        "src/Concertable.B2B.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
+        "src/Concertable.B2B.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
+        "src/Concertable.B2B.Infrastructure/Services/Strategies/DealUnionFactory.cs"
     };
 
     public static TheoryData<string> StrategyFactoryFiles { get; } = new()
     {
-        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
-        "Concertable.B2B/src/Concertable.B2B.Infrastructure/Services/Strategies/DealUnionFactory.cs"
+        "src/Concertable.B2B.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
+        "src/Concertable.B2B.Infrastructure/Services/Strategies/DealUnionFactory.cs"
     };
 
     private static IEnumerable<string> EnumerateProductionFiles()
     {
-        var apiRoot = FindApiRoot();
+        var repositoryRoot = FindRepositoryRoot();
         var moduleRoots = new[]
         {
-            Path.Combine(apiRoot, "Concertable.B2B", "src", "Modules", "Deal"),
-            Path.Combine(apiRoot, "Concertable.B2B", "src", "Modules", "Concert")
+            Path.Combine(repositoryRoot, "src", "Modules", "Deal"),
+            Path.Combine(repositoryRoot, "src", "Modules", "Concert")
         };
 
         return moduleRoots
@@ -175,7 +174,7 @@ public sealed class DealStrategyArchitectureTests
     }
 
     private static string FindSourceFile(string relativePath) =>
-        Path.Combine(FindApiRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar));
+        Path.Combine(FindRepositoryRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar));
 
     private static string[] DirectCases(Type root, string suffix) =>
         root.Assembly.GetTypes()
@@ -189,7 +188,7 @@ public sealed class DealStrategyArchitectureTests
             ? value[..^suffix.Length]
             : value;
 
-    private static string FindApiRoot([CallerFilePath] string sourcePath = "")
+    private static string FindRepositoryRoot([CallerFilePath] string sourcePath = "")
     {
         var starts = new[]
         {
@@ -204,14 +203,13 @@ public sealed class DealStrategyArchitectureTests
 
             while (directory is not null)
             {
-                var apiRoot = Path.Combine(directory.FullName, "api");
-                if (File.Exists(Path.Combine(apiRoot, "Concertable.slnx")))
-                    return apiRoot;
+                if (File.Exists(Path.Combine(directory.FullName, "Concertable.B2B.slnx")))
+                    return directory.FullName;
 
                 directory = directory.Parent;
             }
         }
 
-        throw new DirectoryNotFoundException("Could not locate api/Concertable.slnx.");
+        throw new DirectoryNotFoundException("Could not locate Concertable.B2B.slnx.");
     }
 }

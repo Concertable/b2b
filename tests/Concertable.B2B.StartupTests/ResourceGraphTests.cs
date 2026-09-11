@@ -1,4 +1,4 @@
-using Aspire.Hosting;
+﻿using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Concertable.Auth.Hosting;
 using Concertable.B2B.Admin.Contracts;
@@ -87,11 +87,11 @@ public sealed class ResourceGraphTests
         Assert.Equal(
             new[] { "admin", "artist", "business", "mobile-b2b", "venue" },
             builder.Resources.OfType<NodeAppResource>().Select(resource => resource.Name).Order());
-        AssertNodeAppDirectory(builder, "venue", "app", "web", "b2b", "venue");
-        AssertNodeAppDirectory(builder, "artist", "app", "web", "b2b", "artist");
-        AssertNodeAppDirectory(builder, "business", "app", "web", "b2b", "business");
+        AssertNodeAppDirectory(builder, "venue", "app", "web", "venue");
+        AssertNodeAppDirectory(builder, "artist", "app", "web", "artist");
+        AssertNodeAppDirectory(builder, "business", "app", "web", "business");
         AssertNodeAppDirectory(builder, "admin", "app", "web", "admin");
-        AssertNodeAppDirectory(builder, "mobile-b2b", "app", "mobile", "b2b");
+        AssertNodeAppDirectory(builder, "mobile-b2b", "app", "mobile");
         Assert.Single(builder.Resources, resource => resource.Name == "b2b-dev");
         Assert.DoesNotContain(builder.Resources, resource => resource.Name is "customer-web" or "search-web");
         using var app = builder.Build();
