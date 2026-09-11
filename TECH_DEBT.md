@@ -456,3 +456,33 @@ side and its `PaymentSessionDescriptor` is the natural place to return it.
 
 **Resolves when:** the escrow authorization reports the payer total it charged, `Checkout` carries that
 alongside the payee amount, and the B2B checkout surfaces the split rather than one figure that is neither.
+
+---
+
+### The image vulnerability gate tolerates one base-image package while it stays unfixed
+
+`verify-artifact-integrity.ps1` fails CI on any HIGH or CRITICAL vulnerability in a candidate image.
+`$toleratedUnfixedPackages` exempts one name from that — `linux-libc-dev`, from the Ubuntu 24.04 layer
+of the Azure Functions base image the Workers host runs on — and only while a finding has no published
+fix.
+
+It is exempt because there is no version of that image where the gate passes. The package accounted
+for 169 findings, 5 CRITICAL and 164 HIGH, and **every one of them is unfixed**: Ubuntu publishes no
+corrected version, so there is nothing to upgrade to. They are kernel headers, and a container executes
+the host kernel rather than anything in that package. Web and the seeding simulator sit on the ASP.NET
+base image and report nothing, so this is the Functions host alone.
+
+The exposure is not the kernel headers, which are inert here — it is that any suppression is a place
+future findings can hide, so this one is drawn as tightly as it can be. Trivy scans at HIGH and
+CRITICAL with `--ignorefile /dev/null`, every finding at those severities reaches the retained evidence
+unfiltered, and the decision about what blocks is made afterwards in the script where it can be read.
+A blanket `--ignore-unfixed` was rejected: it would also have silenced an unfixable CRITICAL in OpenSSL
+or any other runtime dependency, which is exactly the case worth knowing about because it needs
+mitigating another way. A package-scoped `.trivyignore.yaml` was tried first and does not work: Trivy
+0.74 reads the file, but its `purls` matching does not match this package — verified against the real
+image. The secret scan is unconditional at every severity.
+
+**Resolves when:** Ubuntu ships a fixed `linux-libc-dev` in the Functions base image, or the Workers
+host no longer runs on that base — at which point `$toleratedUnfixedPackages` becomes empty and the
+helper goes with it. A *fixable* `linux-libc-dev` finding already fails today, so the gate reports the
+day this stops being true rather than waiting to be noticed.
