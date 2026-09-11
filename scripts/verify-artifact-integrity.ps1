@@ -34,6 +34,59 @@ $expectedImageNames = @(
     'b2b-workers.tar.gz'
 )
 
+function Expand-OciArchive {
+    param(
+        [Parameter(Mandatory)] [System.IO.FileInfo] $Archive,
+        [Parameter(Mandatory)] [string] $Destination
+    )
+
+    # Trivy reads an OCI image layout as a directory and never as a tar, so an OCI archive has to be
+    # unpacked before it can be scanned at all. A Docker archive it reads directly, so this returns
+    # $null for one and the caller keeps the original path.
+    $fileStream = $Archive.OpenRead()
+    try {
+        $firstByte = $fileStream.ReadByte()
+        $secondByte = $fileStream.ReadByte()
+        $fileStream.Position = 0
+        $isGzip = $firstByte -eq 0x1f -and $secondByte -eq 0x8b
+        $archiveStream = if ($isGzip) {
+            [System.IO.Compression.GZipStream]::new(
+                $fileStream,
+                [System.IO.Compression.CompressionMode]::Decompress,
+                $true)
+        }
+        else {
+            $fileStream
+        }
+        try {
+            if ([System.IO.Directory]::Exists($Destination)) {
+                Remove-Item -LiteralPath $Destination -Recurse -Force
+            }
+            [System.IO.Directory]::CreateDirectory($Destination) | Out-Null
+            [System.Formats.Tar.TarFile]::ExtractToDirectory($archiveStream, $Destination, $false)
+        }
+        finally {
+            if ($isGzip) {
+                $archiveStream.Dispose()
+            }
+        }
+    }
+    finally {
+        $fileStream.Dispose()
+    }
+
+    # docker save writes a hybrid carrying both layouts, and Trivy reads that in place, so only an
+    # archive with no manifest.json at all has to be handed over as a directory.
+    $isOciOnly = [System.IO.File]::Exists((Join-Path $Destination 'oci-layout')) -and
+                 -not [System.IO.File]::Exists((Join-Path $Destination 'manifest.json'))
+    if (-not $isOciOnly) {
+        Remove-Item -LiteralPath $Destination -Recurse -Force
+        return $null
+    }
+
+    return $Destination
+}
+
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $pathComparison = if ($IsWindows) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
 $artifactsRoot = [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot 'artifacts'))
@@ -109,9 +162,11 @@ try {
     $sbomDirectory = Join-Path $resolvedEvidenceDirectory 'sboms'
     $scanDirectory = Join-Path $resolvedEvidenceDirectory 'scans'
     $cacheDirectory = Join-Path $repositoryRoot 'artifacts/.integrity-cache/trivy'
+    $ociDirectory = Join-Path $repositoryRoot 'artifacts/.integrity-cache/oci'
     [System.IO.Directory]::CreateDirectory($sbomDirectory) | Out-Null
     [System.IO.Directory]::CreateDirectory($scanDirectory) | Out-Null
     [System.IO.Directory]::CreateDirectory($cacheDirectory) | Out-Null
+    [System.IO.Directory]::CreateDirectory($ociDirectory) | Out-Null
 
     foreach ($package in $packages | Sort-Object Name) {
         $inputPath = [System.IO.Path]::GetRelativePath($repositoryRoot, $package.FullName).Replace('\', '/')
@@ -127,6 +182,13 @@ try {
     $scanFailed = $false
     foreach ($image in $images | Sort-Object Name) {
         $inputPath = [System.IO.Path]::GetRelativePath($repositoryRoot, $image.FullName).Replace('\', '/')
+        $expanded = Expand-OciArchive -Archive $image -Destination (Join-Path $ociDirectory $image.Name)
+        $scanPath = if ($null -eq $expanded) {
+            $inputPath
+        }
+        else {
+            [System.IO.Path]::GetRelativePath($repositoryRoot, $expanded).Replace('\', '/')
+        }
         $sbomPath = [System.IO.Path]::GetRelativePath(
             $repositoryRoot,
             (Join-Path $sbomDirectory "$($image.Name).cdx.json")).Replace('\', '/')
@@ -146,7 +208,7 @@ try {
             --volume "${repositoryRoot}:/workspace" `
             --volume "${cacheDirectory}:/root/.cache/trivy" `
             $trivyImage image `
-            --input "/workspace/$inputPath" `
+            --input "/workspace/$scanPath" `
             --scanners vuln `
             --severity HIGH,CRITICAL `
             --exit-code 1 `
@@ -164,7 +226,7 @@ try {
             --volume "${repositoryRoot}:/workspace" `
             --volume "${cacheDirectory}:/root/.cache/trivy" `
             $trivyImage image `
-            --input "/workspace/$inputPath" `
+            --input "/workspace/$scanPath" `
             --scanners secret `
             --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL `
             --exit-code 1 `
