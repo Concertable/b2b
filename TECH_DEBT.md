@@ -33,6 +33,28 @@ before the entities are migrated.
 
 ## HIGH
 
+### The image vulnerability scan suppresses every unfixable finding, not just the one that forced it
+
+`scripts/verify-artifact-integrity.ps1` runs Trivy with `--ignore-unfixed`, so a HIGH or CRITICAL
+vulnerability with **no patch available** is not reported for any image. Only findings with a fix
+still fail the gate. The secret scanner is a separate invocation and is unaffected at any severity.
+
+It was added because `b2b-workers` is an Azure Functions host whose Ubuntu 24.04 base ships
+`linux-libc-dev` with 169 findings — 5 CRITICAL, 164 HIGH — and an empty `FixedVersion` on every one.
+Those are Linux kernel headers: a container runs the host kernel and executes none of that code, and
+no version of the base image exists where the gate passes. `b2b-web` and `b2b-seeding-simulator` are
+on the ASP.NET base and report zero, so only a Functions host meets this.
+
+**Why it is debt rather than a decision.** The suppression is image-wide. An unpatched critical in a
+runtime dependency the image *does* execute — OpenSSL, ICU, a .NET runtime package — would be silent,
+and that is exactly the case where the finding matters most, because it would need mitigating some
+other way.
+
+**Resolution:** replace `--ignore-unfixed` with an `.trivyignore` naming `linux-libc-dev` and the
+reason, so every other unfixable finding stays loud. Delete this entry when that lands, or when the
+Functions base image ships a fixed `linux-libc-dev` and the suppression can be removed outright.
+
+
 ### Workers uses `AddInMemoryTransport`, not ASB
 
 `Concertable.B2B.Workers/ServiceCollectionExtensions.cs` line 35 wires `services.AddInMemoryTransport()`. The Workers host cannot consume any cross-service events from the bus. Settlement triggers and payout reconciliation that belong in Workers run inside `Concertable.B2B.Web` today.
