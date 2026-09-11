@@ -34,6 +34,38 @@ $expectedImageNames = @(
     'b2b-workers.tar.gz'
 )
 
+$toleratedUnfixedPackages = @(
+    # Kernel headers from the Azure Functions base image the Workers host runs on. Ubuntu publishes no
+    # fixed version for any of them and a container executes the host kernel, not this package. Tolerated
+    # only while unfixed, and only for this one name, so an unfixable finding anywhere else still fails.
+    # See TECH_DEBT.md.
+    'linux-libc-dev'
+)
+
+function Get-BlockingVulnerabilities {
+    param([Parameter(Mandatory)] [string] $ReportPath)
+
+    $report = Get-Content -LiteralPath $ReportPath -Raw | ConvertFrom-Json -Depth 20
+    # A result with no vulnerabilities yields $null, and @($null) is a one-element array, so an image
+    # with nothing to report would otherwise block on one empty finding per result set.
+    foreach ($result in @($report.Results | Where-Object { $null -ne $_ })) {
+        foreach ($vulnerability in @($result.Vulnerabilities | Where-Object { $null -ne $_ })) {
+            $isUnfixed = [string]::IsNullOrWhiteSpace($vulnerability.FixedVersion)
+            if ($isUnfixed -and $toleratedUnfixedPackages -ccontains $vulnerability.PkgName) {
+                continue
+            }
+
+            [pscustomobject]@{
+                Id = $vulnerability.VulnerabilityID
+                Package = $vulnerability.PkgName
+                Version = $vulnerability.InstalledVersion
+                Severity = $vulnerability.Severity
+                FixedVersion = if ($isUnfixed) { 'no fix published' } else { $vulnerability.FixedVersion }
+            }
+        }
+    }
+}
+
 function Expand-OciArchive {
     param(
         [Parameter(Mandatory)] [System.IO.FileInfo] $Archive,
@@ -211,8 +243,7 @@ try {
             --input "/workspace/$scanPath" `
             --scanners vuln `
             --severity HIGH,CRITICAL `
-            --exit-code 1 `
-            --ignore-unfixed `
+            --exit-code 0 `
             --format json `
             --output "/workspace/$vulnerabilityScanPath" `
             --ignorefile /dev/null `
@@ -220,6 +251,11 @@ try {
             --skip-version-check `
             --no-progress
         if ($LASTEXITCODE -ne 0) {
+            throw "Trivy vulnerability scan failed for '$($image.Name)' with exit code $LASTEXITCODE."
+        }
+
+        foreach ($finding in Get-BlockingVulnerabilities -ReportPath (Join-Path $scanDirectory "$($image.Name).vulnerabilities.trivy.json")) {
+            Write-Host "::error::$($image.Name): $($finding.Severity) $($finding.Id) in $($finding.Package) $($finding.Version), fixed in $($finding.FixedVersion)."
             $scanFailed = $true
         }
 
