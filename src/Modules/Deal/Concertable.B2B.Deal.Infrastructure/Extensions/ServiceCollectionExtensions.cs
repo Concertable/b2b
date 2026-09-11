@@ -1,0 +1,91 @@
+using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Infrastructure.Extensions;
+using Concertable.B2B.Infrastructure.Services.Strategies;
+using Concertable.DataAccess;
+using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
+using Concertable.B2B.Deal.Application.Interfaces;
+using Concertable.B2B.Deal.Application.Mappers;
+using Concertable.B2B.Deal.Application.Services;
+using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.B2B.Deal.Infrastructure.Data;
+using Concertable.B2B.Deal.Infrastructure.Data.Seeders;
+using Concertable.B2B.Deal.Infrastructure.Repositories;
+using Concertable.B2B.Deal.Infrastructure.Services.Updaters;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Concertable.DataAccess.Infrastructure.Data;
+
+namespace Concertable.B2B.Deal.Infrastructure.Extensions;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddDealModule(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddDbContext<DealDbContext>((sp, opt) =>
+            opt.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<TenantInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
+                .UseSeedingSupport(sp));
+
+        services.AddScoped<IDealRepository, DealRepository>();
+        services.AddScoped<IDealService, DealService>();
+        services.AddScoped<IDealModule, DealModule>();
+
+        services.AddDealStrategies();
+
+        services.AddSingleton<DealConfigurationProvider>();
+        services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<DealConfigurationProvider>());
+
+        return services;
+    }
+
+    internal static IServiceCollection AddDealStrategies(this IServiceCollection services)
+    {
+        services.AddScoped<IDealMapper, DealMapper>();
+        services.AddScoped<IDealUpdater, DealUpdater>();
+
+        return services.AddDealStrategies(builder =>
+        {
+            builder.For(DealType.FlatFee)
+                .AddSingleton<IDealMapper, FlatFeeDealMapper>()
+                .AddSingleton<IDealUpdater, FlatFeeDealUpdater>();
+            builder.For(DealType.DoorSplit)
+                .AddSingleton<IDealMapper, DoorSplitDealMapper>()
+                .AddSingleton<IDealUpdater, DoorSplitDealUpdater>();
+            builder.For(DealType.Versus)
+                .AddSingleton<IDealMapper, VersusDealMapper>()
+                .AddSingleton<IDealUpdater, VersusDealUpdater>();
+            builder.For(DealType.VenueHire)
+                .AddSingleton<IDealMapper, VenueHireDealMapper>()
+                .AddSingleton<IDealUpdater, VenueHireDealUpdater>();
+        });
+    }
+
+    internal static IServiceCollection AddDealStrategies(
+        this IServiceCollection services,
+        Action<DealStrategyBuilder> configure)
+    {
+        var builder = new DealStrategyBuilder(services);
+        configure(builder);
+        builder.Build();
+
+        return services;
+    }
+
+    public static IServiceCollection AddDealDevSeeder(this IServiceCollection services)
+    {
+        services.AddScoped<IDevSeeder, DealDevSeeder>();
+        return services;
+    }
+
+    public static IServiceCollection AddDealTestSeeder(this IServiceCollection services)
+    {
+        services.AddScoped<ITestSeeder, DealTestSeeder>();
+        return services;
+    }
+}

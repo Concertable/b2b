@@ -1,0 +1,16 @@
+global using Concertable.Kernel;
+global using Reunion;
+global using Reunion.AspNetCore.Mvc;
+global using Concertable.Kernel.ValueObjects;
+global using Concertable.Contracts;
+global using Concertable.Contracts.Enums;
+global using Concertable.B2B.Concert.Contracts;
+global using Concertable.B2B.Concert.Domain;
+global using Concertable.B2B.Deal.Contracts;
+global using Concertable.B2B.Deal.Contracts.Enums;
+global using Concertable.B2B.Concert.Application.Interfaces;
+global using Concertable.B2B.Concert.Application.DTOs;
+global using Concertable.B2B.Concert.Application.Requests;
+global using Concertable.B2B.Concert.Application.Responses;
+global using Concertable.B2B.Tenant.Contracts.Enums;
+global using Concertable.B2B.Concert.Domain.ValueObjects;

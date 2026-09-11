@@ -1,0 +1,26 @@
+using Concertable.B2B.Tenant.Application.DTOs;
+using Concertable.DataAccess.Application;
+using Concertable.Kernel.Specifications;
+
+namespace Concertable.B2B.Tenant.Application.Interfaces;
+
+internal interface IVerificationRepository : IRepository<TenantVerificationEntity, Guid>
+{
+    /// <summary>The tracked verification row for a tenant, or null if the tenant has never submitted —
+    /// the fail-closed "not verified" state has no row at all.</summary>
+    Task<TenantVerificationEntity?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+
+    /// <inheritdoc cref="GetByTenantIdAsync(Guid, CancellationToken)"/>
+    Task<TenantVerificationEntity?> GetByTenantIdAsync(
+        Guid tenantId,
+        ISpecification<TenantVerificationEntity> spec,
+        CancellationToken ct = default);
+
+    /// <summary>Whether the tenant has a verification row in <see cref="Domain.Enums.TenantVerificationStatus.Approved"/> —
+    /// false when no row exists (never submitted) or the row is <c>Pending</c>/<c>Rejected</c>.</summary>
+    Task<bool> IsApprovedByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+
+    /// <summary>The admin review queue: every <see cref="Domain.Enums.TenantVerificationStatus.Pending"/> row,
+    /// oldest first, joined with its tenant's type.</summary>
+    Task<IPagination<PendingVerificationProjection>> GetPendingAsync(IPageParams pageParams);
+}

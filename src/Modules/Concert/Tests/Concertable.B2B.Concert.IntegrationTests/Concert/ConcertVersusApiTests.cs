@@ -1,0 +1,65 @@
+using Concertable.B2B.Infrastructure.Payments;
+using Concertable.B2B.Concert.Domain.Lifecycle;
+using Microsoft.EntityFrameworkCore;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Concertable.B2B.Concert.IntegrationTests.Concert;
+
+[Collection("Integration")]
+
+public sealed class ConcertVersusApiTests : IAsyncLifetime
+{
+    private const decimal DoorRevenue = 200m;
+
+    private readonly ConcertApiFixture fixture;
+
+    public ConcertVersusApiTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    {
+        this.fixture = fixture;
+        fixture.AttachOutput(output);
+    }
+
+    public Task InitializeAsync() => fixture.ResetAsync();
+    public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
+
+    [Fact]
+    public async Task Finish_ShouldChargeGuaranteePlusDoorShareOffSession_AfterDoorRevenueDeclared()
+    {
+        // Arrange — the venue declares the door revenue; Versus settles guarantee + a % of it
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastVersusBooking);
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
+
+        // Act
+        await fixture.FinishConcertAsync(concert.Id);
+
+        // Assert — the off-session payment confirms inline, so the concert settles in this same call
+        var payment = Assert.Single(fixture.SettlementClient.Payments);
+        var venueTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.VenueManager1.Id).Id;
+        var artistTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == fixture.SeedState.ArtistManager1.Id).Id;
+        Assert.Equal(venueTenantId, payment.PayerId);
+        Assert.Equal(artistTenantId, payment.PayeeId);
+        Assert.Equal(254m, payment.Amount);
+        Assert.Equal(concert.SettlementPaymentReference, payment.PaymentMethod);
+        Assert.Equal(PaymentOperationReferences.Settlement(concert.Id), payment.Reference);
+
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
+    }
+
+    [Fact]
+    public async Task Finish_ShouldCompleteBooking_WhenSettlementWebhookSucceeds()
+    {
+        // Arrange
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastVersusBooking);
+        await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
+        await fixture.FinishConcertAsync(concert.Id);
+
+        // Act
+        await fixture.PaymentSimulator.SendWebhookAsync();
+
+        // Assert
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(ConcertState.Complete, persisted.State);
+    }
+}

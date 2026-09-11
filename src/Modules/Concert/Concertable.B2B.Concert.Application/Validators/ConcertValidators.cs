@@ -1,0 +1,25 @@
+using Concertable.B2B.Concert.Application.Requests;
+using FluentValidation;
+
+namespace Concertable.B2B.Concert.Application.Validators;
+
+internal sealed class UpdateConcertRequestValidator : AbstractValidator<UpdateConcertRequest>
+{
+    public UpdateConcertRequestValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.About).MaximumLength(1000);
+        RuleFor(x => x.Price).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.TotalTickets).GreaterThanOrEqualTo(0);
+    }
+}
+
+internal sealed class DoorRevenueRequestValidator : AbstractValidator<DoorRevenueRequest>
+{
+    public DoorRevenueRequestValidator()
+    {
+        RuleFor(x => x.DoorRevenue)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Door revenue must be zero or greater.");
+    }
+}

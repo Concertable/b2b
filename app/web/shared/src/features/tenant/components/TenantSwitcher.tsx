@@ -1,0 +1,47 @@
+import type { TenantType } from "@concertable/b2b/features/tenant/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@concertable/web/components/ui/select";
+import { useTenant } from "../hooks/useTenant";
+
+export function TenantSwitcher({ tenantType }: Readonly<{ tenantType: TenantType }>) {
+  const {
+    memberships,
+    activeMembership,
+    isSelectionPending,
+    selectTenant,
+  } = useTenant(tenantType);
+
+  if (memberships.length <= 1) return null;
+
+  return (
+    <Select
+      value={activeMembership?.tenantId ?? ""}
+      onValueChange={selectTenant}
+      disabled={isSelectionPending}
+    >
+      <SelectTrigger
+        size="sm"
+        data-testid="tenant-switcher"
+        className="border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground max-w-48"
+      >
+        <SelectValue placeholder="Select organization" />
+      </SelectTrigger>
+      <SelectContent>
+        {memberships.map((m) => (
+          <SelectItem
+            key={m.tenantId}
+            value={m.tenantId}
+            data-testid={`tenant-option-${m.tenantId}`}
+          >
+            {m.legalName}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}

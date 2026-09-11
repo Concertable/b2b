@@ -1,0 +1,35 @@
+using Concertable.B2B.Opportunity.Domain.Entities;
+using Concertable.B2B.Opportunity.Infrastructure.Data;
+using Concertable.B2B.Opportunity.Infrastructure.Extensions;
+using Microsoft.EntityFrameworkCore;
+
+namespace Concertable.B2B.Opportunity.Infrastructure.Repositories;
+
+internal sealed class OpportunityRepository : TenantScopedRepository<OpportunityEntity>, IOpportunityRepository
+{
+    private readonly OpportunityDbContext context;
+    private readonly TimeProvider timeProvider;
+
+    public OpportunityRepository(OpportunityDbContext context, ITenantContext tenant, TimeProvider timeProvider)
+        : base(context, tenant)
+    {
+        this.context = context;
+        this.timeProvider = timeProvider;
+    }
+
+    public async Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId) =>
+        await context.Opportunities
+            .ActiveForVenue(venueId, timeProvider.GetUtcNow().UtcDateTime)
+            .ToListAsync();
+
+    public Task<int?> GetDealIdByIdAsync(int opportunityId) =>
+        context.Opportunities
+            .Where(o => o.Id == opportunityId)
+            .Select(o => (int?)o.DealId)
+            .FirstOrDefaultAsync();
+
+    public async Task<IReadOnlyList<OpportunityEntity>> GetByIdsAsync(IReadOnlyCollection<int> ids) =>
+        await context.Opportunities
+            .Where(o => ids.Contains(o.Id))
+            .ToListAsync();
+}

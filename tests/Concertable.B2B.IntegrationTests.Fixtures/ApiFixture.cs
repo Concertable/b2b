@@ -1,0 +1,407 @@
+using Concertable.Kernel.Notifications;
+using Concertable.Kernel.DependencyInjection;
+using Concertable.Payment.Contracts;
+using Concertable.Payment.Contracts.Events;
+using Concertable.B2B.Infrastructure.Payments;
+using Concertable.Payment.Client;
+using Concertable.B2B.User.Contracts;
+using Concertable.B2B.User.Domain.Entities;
+using Concertable.Kernel;
+using Concertable.B2B.Tenant.Contracts;
+using Concertable.Testing.Integration;
+using Concertable.Testing.Integration.Logging;
+using Concertable.Testing.Integration.Mocks;
+using Concertable.B2B.Artist.Infrastructure.Extensions;
+using Concertable.B2B.Application.Infrastructure.Extensions;
+using Concertable.B2B.Booking.Infrastructure.Extensions;
+using Concertable.B2B.Concert.Infrastructure.Extensions;
+using Concertable.B2B.Deal.Infrastructure.Extensions;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
+using Concertable.B2B.Admin.Infrastructure.Extensions;
+using Concertable.B2B.User.Infrastructure.Extensions;
+using Concertable.B2B.Venue.Infrastructure.Extensions;
+using Concertable.B2B.Conversations.Infrastructure.Extensions;
+using Concertable.B2B.Opportunity.Infrastructure.Extensions;
+using Concertable.DataAccess.Infrastructure.Extensions;
+using Concertable.B2B.Seed.Contracts;
+using Concertable.B2B.Seed.Infrastructure;
+using Concertable.Seed.Infrastructure;
+using Concertable.Seed.Shared.Extensions;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Xunit;
+using Xunit.Abstractions;
+using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Messaging.Application;
+using Concertable.Messaging.Contracts;
+using Concertable.Messaging.Domain;
+using Concertable.Messaging.Infrastructure.Outbox;
+using Concertable.Shared.Email.Application;
+using Concertable.Shared.Geocoding.Application;
+using Concertable.Shared.Imaging.Application;
+using Concertable.B2B.IntegrationTests.Fixtures.Mocks;
+using Concertable.B2B.DataAccess.Infrastructure;
+using IDbInitializer = Concertable.DataAccess.Application.IDbInitializer;
+
+namespace Concertable.B2B.IntegrationTests.Fixtures;
+
+public class ApiFixture : IAsyncLifetime
+{
+    private SqlFixture sqlFixture = null!;
+    private WebApplicationFactory<Program> factory = null!;
+    private IServiceScope? scope;
+    private readonly List<WebApplicationFactory<Program>> customFactories = [];
+    private readonly XunitOutputAccessor outputAccessor = new();
+
+    public void AttachOutput(ITestOutputHelper output) => outputAccessor.Output = output;
+    public void DetachOutput() => outputAccessor.Output = null;
+
+    public IMockNotificationClient NotificationService { get; } = new MockNotificationClient();
+    public IMockEmailSender EmailSender { get; } = new MockEmailSender();
+    public MockPaymentOperations PaymentOperations { get; } = new();
+    public IMockSettlementClient SettlementClient { get; }
+    public MockPaymentSessionClient PaymentSessionClient { get; }
+
+    public ApiFixture()
+    {
+        SettlementClient = new MockSettlementClient(PaymentOperations);
+        PaymentSessionClient = new MockPaymentSessionClient(PaymentOperations);
+        EscrowClient = new MockEscrowClient(PaymentSessionClient);
+    }
+    public MockPayoutAccountClient PayoutAccountClient { get; } = new();
+    public MockEscrowClient EscrowClient { get; }
+    public MockPaymentTransport PaymentTransport { get; } = new();
+
+    public IWebhookSimulator PaymentSimulator { get; private set; } = null!;
+    public SeedState SeedState { get; private set; } = null!;
+    public DateTime SeedNow => factory.Services.GetRequiredService<SeedCatalog>().Now;
+
+    public async Task InitializeAsync()
+    {
+        sqlFixture = new SqlFixture();
+        await sqlFixture.InitializeAsync();
+        factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment(Environments.Integration);
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["ConnectionStrings:B2BDb"] = sqlFixture.ConnectionString,
+                    ["ExternalServices:UseRealStripe"] = "false",
+                    ["ExternalServices:UseRealBlob"] = "false",
+                    ["ExternalServices:UseRealEmail"] = "false",
+                    ["Urls:Frontends:Venue"] = "https://localhost:5175",
+                    ["Urls:Frontends:Artist"] = "https://localhost:5176",
+                    ["BlobStorage:ContainerName"] = "images",
+                });
+                config.RelaxRateLimiting(RateLimitPolicies.All);
+            });
+
+            builder.ConfigureTestServices(services =>
+            {
+                services.AddXunitLogging(outputAccessor);
+                services.Configure<HostOptions>(host =>
+                    host.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
+                services.RemoveAzureServiceBus();
+                services.AddTransient<IStartupFilter, TestClientIpStartupFilter>();
+
+                services.AddSingleton(PaymentTransport);
+                services.Replace(ServiceDescriptor.Singleton<IBusTransport>(PaymentTransport));
+                services.AddSingleton<INotificationClient>(NotificationService);
+                services.AddSingleton(PaymentOperations);
+                services.AddResettables(NotificationService, EmailSender, PaymentOperations, SettlementClient, PaymentSessionClient, PayoutAccountClient, EscrowClient, PaymentTransport);
+                services.AddSingleton<IEmailTransport>(EmailSender);
+
+                services.AddSingleton<ISettlementOperationsClient>(SettlementClient);
+                services.AddSingleton<IPaymentReportingClient>(SettlementClient);
+                services.AddSingleton<IPaymentSessionOperationsClient>(PaymentSessionClient);
+                services.AddSingleton(PaymentSessionClient);
+                services.AddSingleton<IEscrowOperationsClient>(EscrowClient);
+                services.AddSingleton<IPayoutAccountOperationsClient>(PayoutAccountClient);
+
+                services.AddSingleton<IWebhookSimulator, MockWebhookSimulator>();
+                services.Replace(ServiceDescriptor.Singleton<IHttpClientFactory>(_ => new WebApplicationHttpClientFactory(factory)));
+                services.AddScoped<IGeocodingClient, MockGeocodingClient>();
+                services.AddScoped<IImageService, MockImageService>();
+                services.AddScoped<IDbInitializer, IntegrationDbInitializer>();
+                services.AddSeedingInfrastructure();
+                services.Replace(ServiceDescriptor.Scoped<IDomainEventDispatchInterceptor, SeedingDomainEventDispatchInterceptor>());
+                services.AddSingleton<SeedCatalog>();
+                services.AddScoped<SeedState>();
+                services.AddUserTestSeeder();
+                services.AddTenantTestSeeder();
+                services.AddAdminTestSeeder();
+                services.AddArtistTestSeeder();
+                services.AddVenueTestSeeder();
+                services.AddDealTestSeeder();
+                services.AddOpportunityTestSeeder();
+                services.AddApplicationTestSeeder();
+                services.AddBookingTestSeeder();
+                services.AddConcertTestSeeder();
+                services.AddConversationsTestSeeder();
+
+                services.AddTestAuthentication();
+                OnConfigureServices(services);
+            });
+        });
+
+        _ = factory.Services;
+        PaymentTransport.Connect(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+        await sqlFixture.InitializeRespawnerAsync();
+        PaymentSimulator = factory.Services.GetRequiredService<IWebhookSimulator>();
+    }
+
+    public async Task DisposeAsync()
+    {
+        scope?.Dispose();
+        await factory.DisposeAsync();
+        await sqlFixture.DisposeAsync();
+    }
+
+    public async Task ResetAsync()
+    {
+        await StopBackgroundDispatchAsync();
+
+        await sqlFixture.ResetAsync();
+        foreach (var resettable in factory.Services.GetServices<IResettable>())
+            resettable.Reset();
+        PaymentSimulator = factory.Services.GetRequiredService<IWebhookSimulator>();
+
+        scope?.Dispose();
+        scope = factory.Services.CreateScope();
+        var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+        await initializer.InitializeAsync();
+        SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
+        OnReset(scope);
+
+        await StartBackgroundDispatchAsync();
+    }
+
+    private async Task StopBackgroundDispatchAsync()
+    {
+        foreach (var customFactory in customFactories)
+            await StopBackgroundServicesAsync(customFactory.Services);
+        customFactories.Clear();
+
+        await StopBackgroundServicesAsync(factory.Services);
+    }
+
+    private async Task StartBackgroundDispatchAsync()
+    {
+        foreach (var service in BackgroundServices(factory.Services))
+            await service.StartAsync(CancellationToken.None);
+    }
+
+    private static async Task StopBackgroundServicesAsync(IServiceProvider services)
+    {
+        foreach (var service in BackgroundServices(services))
+            await service.StopAsync(CancellationToken.None);
+    }
+
+    private static IEnumerable<BackgroundService> BackgroundServices(IServiceProvider services) =>
+        services.GetServices<IHostedService>().OfType<BackgroundService>();
+
+    protected virtual void OnReset(IServiceScope scope) { }
+
+    /// <summary>Per-module fixture wiring, applied after the shared test services.</summary>
+    protected virtual void OnConfigureServices(IServiceCollection services) { }
+
+    public async Task SendEscrowFailedWebhookAsync(int bookingId)
+    {
+        if (await PaymentTransport.WaitForAcceptanceCommandAsync())
+        {
+            await PaymentTransport.RejectLatestAcceptanceAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
+            return;
+        }
+
+        await SendPaymentFailedWebhookAsync(PaymentOperationReferences.Escrow(bookingId));
+    }
+
+    public Task SendSettlementFailedWebhookAsync(int concertId, Guid operationId) =>
+        SendPaymentFailedWebhookAsync(PaymentOperationReferences.Settlement(concertId), operationId);
+
+    private Task SendPaymentFailedWebhookAsync(PaymentOperationReference reference, Guid? operationId = null)
+    {
+        var envelope = new MessageEnvelope(Guid.NewGuid(), MessageTypeAttribute.Resolve(typeof(PaymentFailedEvent)), DateTimeOffset.UtcNow);
+        var @event = new PaymentFailedEvent(
+            reference,
+            "card_declined",
+            "Card was declined",
+            PaymentOperationEnvelopes.Metadata(reference, operationId));
+
+        return factory.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<PaymentFailedEvent>>>>()
+            .RunAsync(async handlers =>
+            {
+                foreach (var handler in handlers)
+                    await handler.HandleAsync(@event, envelope);
+            });
+    }
+
+    public Task CompleteLatestFinancialOperationAsync() =>
+        PaymentTransport.CompleteLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+    public Task CompleteLatestFinancialOperationAsync<TCommand>()
+        where TCommand : IIntegrationCommand =>
+        PaymentTransport.CompleteLatestAsync<TCommand>(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+    public Task DeferLatestFinancialOperationAsync<TCommand>()
+        where TCommand : IIntegrationCommand =>
+        PaymentTransport.DeferLatestAsync<TCommand>(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+    public Task RejectLatestFinancialOperationAsync() =>
+        PaymentTransport.RejectLatestAsync(factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+    public Task RejectLatestFinancialOperationAsync<TCommand>()
+        where TCommand : IIntegrationCommand =>
+        PaymentTransport.RejectLatestAsync<TCommand>(
+            factory.Services.GetRequiredService<IServiceScopeFactory>());
+
+    public Task DispatchIntegrationEventAsync<TEvent>(TEvent @event, MessageEnvelope envelope)
+        where TEvent : IIntegrationEvent =>
+        factory.Services.GetRequiredService<IScoped<IEnumerable<IIntegrationEventHandler<TEvent>>>>()
+            .RunAsync(async handlers =>
+            {
+                foreach (var handler in handlers)
+                    await handler.HandleAsync(@event, envelope);
+            });
+
+    public IServiceProvider Services => factory.Services;
+
+    public async Task<IReadOnlyCollection<(string UserId, object Payload)>> WaitForDraftNotificationsAsync(
+        int count)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow <= deadline)
+        {
+            var notifications = NotificationService.DraftCreated.ToArray();
+            if (notifications.Length >= count)
+                return notifications;
+
+            await Task.Delay(100);
+        }
+
+        throw new InvalidOperationException($"Expected {count} concert draft notifications within 5 seconds.");
+    }
+
+    /// <summary>
+    /// The counterpart to <see cref="WaitForDraftNotificationsAsync"/> for a named event. A notification is
+    /// staged in the outbox and delivered after the request that raised it has returned, so reading
+    /// <c>NotificationService.Other</c> synchronously races the dispatcher.
+    /// </summary>
+    public async Task<IReadOnlyCollection<(string UserId, string EventName, object Payload)>>
+        WaitForNotificationsAsync(string eventName)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow <= deadline)
+        {
+            var matches = NotificationService.Other
+                .Where(value => value.EventName == eventName)
+                .ToArray();
+            if (matches.Length > 0)
+                return matches;
+
+            await Task.Delay(100);
+        }
+
+        throw new InvalidOperationException($"Expected a {eventName} notification within 5 seconds.");
+    }
+
+    public async Task<IReadOnlyList<SendEmailCommand>> GetStagedEmailsAsync()
+    {
+        using var readScope = factory.Services.CreateScope();
+        var outbox = readScope.ServiceProvider.GetRequiredService<OutboxDbContext>();
+        var serializer = readScope.ServiceProvider.GetRequiredService<MessageSerializer>();
+        var messageType = MessageTypeAttribute.Resolve(typeof(SendEmailCommand));
+
+        var rows = await outbox.Set<OutboxMessageEntity>()
+            .AsNoTracking()
+            .Where(m => m.MessageType == messageType)
+            .OrderBy(m => m.OccurredAtUtc)
+            .ToListAsync();
+
+        return rows
+            .Select(r => (SendEmailCommand)serializer.Deserialize(BinaryData.FromString(r.Payload), typeof(SendEmailCommand)))
+            .ToList();
+    }
+
+    public Task<IReadOnlyCollection<object>> SettledFinancialCommandsAsync() =>
+        PaymentTransport.SettledFinancialCommandsAsync(TimeSpan.FromSeconds(2));
+
+    public async Task<int> GetOutboxMessageCountAsync<TMessage>()
+    {
+        var messageType = MessageTypeAttribute.Resolve(typeof(TMessage));
+        return await factory.Services
+            .GetRequiredService<IScoped<OutboxDbContext>>()
+            .RunAsync(outbox => outbox.Set<OutboxMessageEntity>()
+                .AsNoTracking()
+                .CountAsync(message => message.MessageType == messageType));
+    }
+
+    public Task<OutboxMessageSnapshot> GetOutboxMessageAsync(string messageType) => factory.Services
+        .GetRequiredService<IScoped<OutboxDbContext>>()
+        .RunAsync(async outbox =>
+        {
+            var row = await outbox.Set<OutboxMessageEntity>()
+                .AsNoTracking()
+                .SingleAsync(message => message.MessageType == messageType);
+            return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
+        });
+
+    public Task<OutboxMessageSnapshot> GetOutboxMessageAsync(Guid id) => factory.Services
+        .GetRequiredService<IScoped<OutboxDbContext>>()
+        .RunAsync(async outbox =>
+        {
+            var row = await outbox.Set<OutboxMessageEntity>()
+                .AsNoTracking()
+                .SingleAsync(message => message.Id == id);
+            return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
+        });
+
+    public HttpClient CreateClient(UserEntity user) =>
+        CreateClient(user.Id, user.Email);
+
+    public HttpClient CreateClient(Guid userId, string email)
+    {
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, email);
+        return client;
+    }
+
+    public HttpClient CreateClient(UserEntity user, Action<TestClientOptions> configure) =>
+        CreateClient(user.Id, user.Email, configure);
+
+    private HttpClient CreateClient(Guid userId, string email, Action<TestClientOptions> configure)
+    {
+        var options = new TestClientOptions();
+        configure(options);
+
+        var customFactory = factory.WithWebHostBuilder(b =>
+        {
+            if (options.Configure is not null)
+                b.ConfigureAppConfiguration((_, config) => options.Configure(config));
+            if (options.Services is not null)
+                b.ConfigureTestServices(options.Services);
+        });
+
+        PaymentSimulator = customFactory.Services.GetRequiredService<IWebhookSimulator>();
+        customFactories.Add(customFactory);
+
+        var client = customFactory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, email);
+        return client;
+    }
+
+    public HttpClient CreateClient() => factory.CreateClient();
+}
+
+public sealed record OutboxMessageSnapshot(Guid Id, string Payload, bool IsDispatched);

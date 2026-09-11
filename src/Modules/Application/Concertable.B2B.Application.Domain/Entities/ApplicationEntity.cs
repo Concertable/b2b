@@ -1,0 +1,166 @@
+using System.ComponentModel;
+using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Domain.Events;
+using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Application.Domain.ValueObjects;
+using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.Deal.Contracts.Enums;
+using Concertable.Kernel;
+using Reunion;
+
+namespace Concertable.B2B.Application.Domain.Entities;
+
+[DisplayName(DisplayNames.Application)]
+public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
+{
+    private static readonly ApplicationStateMachine stateMachine = new();
+
+    public int Id { get; private set; }
+    public byte[] Version { get; private set; } = null!;
+    public Guid VenueTenantId { get; private set; }
+    public Guid ArtistTenantId { get; private set; }
+    internal ApplicationState State { get; private set; } = ApplicationState.Applied;
+    internal VerifyPaymentEntity? VerifyPayment { get; private set; }
+    internal PaymentVerification? Verification => VerifyPayment?.ToValue();
+    public int OpportunityId { get; private set; }
+    public int ArtistId { get; private set; }
+    public DealType DealType { get; private set; }
+    public Guid? AcceptanceOperationId { get; private set; }
+
+    internal ContractSignature ArtistESignature { get; private set; } = null!;
+    public string TermsFingerprint { get; private set; } = null!;
+
+    private ApplicationEntity() { }
+
+    private ApplicationEntity(
+        int artistId,
+        int opportunityId,
+        DealType dealType,
+        Guid venueTenantId,
+        Guid artistTenantId)
+    {
+        if (venueTenantId == Guid.Empty || artistTenantId == Guid.Empty)
+            throw new InvalidOperationException("An application requires resolved venue and artist tenants.");
+
+        ArtistId = artistId;
+        OpportunityId = opportunityId;
+        DealType = dealType;
+        VenueTenantId = venueTenantId;
+        ArtistTenantId = artistTenantId;
+    }
+
+    public Guid BeginAcceptance() => BeginAcceptance(Guid.NewGuid());
+
+    public Guid BeginAcceptance(Guid operationId)
+    {
+        if (operationId == Guid.Empty)
+            throw new ArgumentException("An acceptance operation id is required.", nameof(operationId));
+
+        AcceptanceOperationId ??= operationId;
+        if (AcceptanceOperationId != operationId)
+            throw new InvalidOperationException("The application already belongs to another acceptance operation.");
+
+        return AcceptanceOperationId.Value;
+    }
+
+    /// <summary>Whether the outcome was recorded; a redelivery or a later attempt on an already verified
+    /// payment records nothing.</summary>
+    internal bool RecordPaymentVerification(PaymentVerification verification)
+    {
+        ArgumentNullException.ThrowIfNull(verification);
+        if (verification.ApplicationId != Id)
+            throw new InvalidOperationException(
+                $"Verify payment for application {verification.ApplicationId} cannot be recorded against application {Id}.");
+
+        var existing = VerifyPayment?.ToValue();
+        if (existing == verification)
+            return false;
+        if (existing is SuccessfulPaymentVerification)
+            return false;
+
+        VerifyPayment = VerifyPaymentEntity.Create(verification);
+        events.Raise(VerificationEvent(verification));
+        return true;
+    }
+
+    private static IDomainEvent VerificationEvent(PaymentVerification verification) => verification switch
+    {
+        SuccessfulPaymentVerification succeeded =>
+            new VerifyPaymentSucceededDomainEvent(new VerifyPaymentSucceeded(succeeded.ApplicationId)),
+        FailedPaymentVerification failed =>
+            new VerifyPaymentFailedDomainEvent(
+                new VerifyPaymentFailed(
+                    failed.ApplicationId,
+                    new VerifyPaymentError(failed.Failure.Code, failed.Failure.Message))),
+        _ => throw new ArgumentOutOfRangeException(nameof(verification), verification, null)
+    };
+
+    internal void RecordArtistESignature(ContractSignature eSignature, string termsFingerprint)
+    {
+        ArtistESignature = eSignature;
+        TermsFingerprint = termsFingerprint;
+    }
+
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Accept(
+        AcceptedApplication application)
+    {
+        var snapshot = application.Snapshot;
+        if (snapshot.Application.Id != Id || snapshot.OperationId != AcceptanceOperationId)
+            throw new InvalidOperationException("Accepted application facts do not match the application transition.");
+
+        var transition = Transition(ApplicationTrigger.Accept);
+        if (transition.TryGetError(out var error))
+            return error;
+        events.Raise(new ApplicationAcceptedDomainEvent(application));
+        // A verification that arrived before this acceptance found no booking to advance, so replay it now
+        // that the accepted application has one. The handler order puts booking creation first.
+        if (Verification is { } verification)
+            events.Raise(VerificationEvent(verification));
+        return new Success();
+    }
+
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> ValidateAccept() => Validate(ApplicationTrigger.Accept);
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Reject() => Fire(ApplicationTrigger.Reject);
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Withdraw() => Fire(ApplicationTrigger.Withdraw);
+    internal UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Cancel() => Fire(ApplicationTrigger.Cancel);
+
+    private readonly EventRaiser events = new();
+    public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
+    public void ClearDomainEvents() => events.Clear();
+
+    public void NotifyCounterparty(ApplicationNotification kind)
+    {
+        var recipient = kind is ApplicationNotification.Applied or ApplicationNotification.Withdrawn
+            ? VenueTenantId
+            : ArtistTenantId;
+        events.Raise(new ApplicationCounterpartyNotifiedDomainEvent(recipient, kind));
+    }
+
+    private UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Validate(ApplicationTrigger trigger)
+    {
+        var transition = stateMachine.Transition(State, trigger);
+        return transition.TryGetError(out var error) ? error : new Success();
+    }
+
+    private UnitResult<TransitionError<ApplicationState, ApplicationTrigger>> Fire(ApplicationTrigger trigger)
+    {
+        var transition = Transition(trigger);
+        return transition.TryGetError(out var error) ? error : new Success();
+    }
+
+    private Result<ApplicationState, TransitionError<ApplicationState, ApplicationTrigger>> Transition(ApplicationTrigger trigger)
+    {
+        var transition = stateMachine.Transition(State, trigger);
+        if (transition.TryGetValue(out var next))
+            State = next;
+        return transition;
+    }
+
+    public static ApplicationEntity Create(
+        int artistId,
+        int opportunityId,
+        DealType dealType,
+        Guid venueTenantId,
+        Guid artistTenantId) =>
+        new(artistId, opportunityId, dealType, venueTenantId, artistTenantId);
+}

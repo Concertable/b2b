@@ -1,0 +1,33 @@
+using Concertable.B2B.Booking.Application.Models;
+using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Domain.Financial;
+
+namespace Concertable.B2B.Booking.UnitTests;
+
+public sealed class FinancialOperationEvidenceTests
+{
+    [Fact]
+    public void VerifyPaymentSucceededEvidence_NonPositiveApplicationId_ThrowsArgumentOutOfRange() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VerifyPaymentSucceededEvidence(0));
+
+    [Fact]
+    public void AcceptanceFinancialOperationRejected_CarriesTheBookingAndError()
+    {
+        var rejected = new AcceptanceFinancialOperationRejected(
+            Guid.NewGuid(),
+            42,
+            FinancialOperation.CaptureEscrow,
+            new FinancialOperationError("capture_failed", "Capture failed"));
+
+        Assert.Equal(42, rejected.BookingId);
+        Assert.Equal("capture_failed", rejected.Error.Code);
+    }
+
+    [Fact]
+    public void FinancialOperationError_BlankCode_ThrowsArgumentException() =>
+        Assert.Throws<ArgumentException>(() => new FinancialOperationError(" ", "Declined"));
+
+    [Fact]
+    public void FinancialOperationError_BlankMessage_ThrowsArgumentException() =>
+        Assert.Throws<ArgumentException>(() => new FinancialOperationError("card_declined", " "));
+}

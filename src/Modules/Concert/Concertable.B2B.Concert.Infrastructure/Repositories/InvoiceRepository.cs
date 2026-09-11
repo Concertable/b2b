@@ -1,0 +1,24 @@
+using Concertable.B2B.Concert.Application.Interfaces;
+using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace Concertable.B2B.Concert.Infrastructure.Repositories;
+
+internal sealed class InvoiceRepository : VenueArtistTenantScopedRepository<InvoiceEntity>, IInvoiceRepository
+{
+    private readonly ConcertDbContext context;
+
+    public InvoiceRepository(ConcertDbContext context) : base(context)
+    {
+        this.context = context;
+    }
+
+    public Task<InvoiceEntity?> GetByConcertIdAsync(int concertId, CancellationToken ct = default) =>
+        context.Invoices
+            .FirstOrDefaultAsync(i => context.Concerts.Any(c => c.Id == concertId && c.BookingId == i.BookingId), ct);
+
+    public Task<InvoiceEntity?> GetByApplicationIdAsync(int applicationId, CancellationToken ct = default) =>
+        context.Invoices
+            .FirstOrDefaultAsync(i => context.Concerts.Any(c => c.BookingId == i.BookingId && c.ApplicationId == applicationId), ct);
+}
