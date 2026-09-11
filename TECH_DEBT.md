@@ -459,6 +459,7 @@ alongside the payee amount, and the B2B checkout surfaces the split rather than 
 
 ---
 
+
 ### The image vulnerability gate tolerates one base-image package while it stays unfixed
 
 `verify-artifact-integrity.ps1` fails CI on any HIGH or CRITICAL vulnerability in a candidate image.
@@ -486,3 +487,25 @@ image. The secret scan is unconditional at every severity.
 host no longer runs on that base — at which point `$toleratedUnfixedPackages` becomes empty and the
 helper goes with it. A *fixable* `linux-libc-dev` finding already fails today, so the gate reports the
 day this stops being true rather than waiting to be noticed.
+
+### `PublishContainer` pushes to ghcr.io by default, including from a developer's machine
+
+`Directory.Build.props` sets `<ContainerRegistry Condition="'$(ContainerRegistry)' == ''">ghcr.io</ContainerRegistry>`,
+so `dotnet publish -t:PublishContainer` on any of the three container projects **pushes to the
+production registry** unless the caller overrides it. There is no confirmation step and no tag
+namespacing that would make an accidental push obviously a test.
+
+CI is not exposed: every image step passes `ContainerArchiveOutputPath`, which redirects the output to
+a tarball and never contacts a registry. The exposure is a developer or an agent running the documented
+publish command directly. It was found exactly that way — the command was run to inspect image
+metadata, and the only thing that stopped a real push to `ghcr.io/concertable/b2b-web` was the absence
+of a credential in that shell. With `docker login ghcr.io` already done, which is ordinary for anyone
+who has pulled a private image, it would have succeeded.
+
+The property is deliberate — it is here rather than in a workflow so the carve carries it — so the fix
+is not to delete it but to make the destination explicit at the call site: default to the local daemon
+and have publication opt in, which is the direction that also lets the release-candidate flow scan and
+push the *same* tar rather than rebuilding.
+
+**Resolves when:** a plain `dotnet publish -t:PublishContainer` with no extra properties cannot reach a
+remote registry, and the publish workflow names its registry explicitly.
