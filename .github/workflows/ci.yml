@@ -24,7 +24,6 @@ permissions:
   packages: read
 
 env:
-  GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
   DOTNET_NOLOGO: true
   CANDIDATE_IMAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.sha }}
 
@@ -33,6 +32,8 @@ jobs:
     name: Backend, tests, packages, and images
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -155,6 +156,8 @@ jobs:
     name: Frontend
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
