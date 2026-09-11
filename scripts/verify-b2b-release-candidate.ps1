@@ -336,7 +336,7 @@ try {
             -p:ContainerRepository=$repository `
             -p:ContainerImageTag=$releaseVersion `
             -p:ContainerArchiveOutputPath=$archivePath `
-            -p:ContainerLabels="org.opencontainers.image.source=$repositoryUrl;org.opencontainers.image.revision=$revision"
+            -p:SourceRevisionId=$revision
         if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $archivePath) -or (Get-Item -LiteralPath $archivePath).Length -eq 0) {
             throw "Could not build release-candidate image for '$($candidate.project)'."
         }

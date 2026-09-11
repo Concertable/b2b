@@ -60,6 +60,18 @@
     <ContainerRegistry Condition="'$(ContainerRegistry)' == ''">ghcr.io</ContainerRegistry>
   </PropertyGroup>
 
+  <!-- ContainerLabel is an item, not a property: a label name contains dots, and MSBuild rejects
+       those in -p:. The SDK sets image.version but neither image.source nor image.revision, so a
+       pulled image could not otherwise be traced to the commit that produced it. -->
+  <ItemGroup Condition="'$(ContainerRepository)' != ''">
+    <ContainerLabel Include="org.opencontainers.image.source" Value="$(RepositoryUrl)" />
+    <ContainerLabel Include="org.opencontainers.image.revision" Value="$(SourceRevisionId)"
+                    Condition="'$(SourceRevisionId)' != ''" />
+  </ItemGroup>
+
+  <PropertyGroup>
+  </PropertyGroup>
+
   <!-- Banned-API list for Microsoft.CodeAnalysis.BannedApiAnalyzers (shared across services). -->
   <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)../BannedSymbols.txt" Condition="Exists('$(MSBuildThisFileDirectory)../BannedSymbols.txt')" />
