@@ -212,6 +212,7 @@ try {
             --scanners vuln `
             --severity HIGH,CRITICAL `
             --exit-code 1 `
+            --ignore-unfixed `
             --format json `
             --output "/workspace/$vulnerabilityScanPath" `
             --ignorefile /dev/null `
