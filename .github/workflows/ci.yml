@@ -1,0 +1,183 @@
+name: CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing annotated v-prefixed tag to validate; this workflow never publishes
+        required: true
+        type: string
+  pull_request:
+  push:
+    branches:
+      - main
+  merge_group:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+  DOTNET_NOLOGO: true
+  CANDIDATE_IMAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.sha }}
+
+jobs:
+  backend:
+    name: Backend, tests, packages, and images
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Validate manual release ref
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: >-
+          ./scripts/validate-promotion-config.ps1
+          -ReleaseTag $env:RELEASE_TAG
+          -ExpectedCommit $env:EXPECTED_COMMIT
+
+      - name: Restore backend
+        run: dotnet restore Concertable.B2B.slnx
+
+      - name: Build backend
+        run: dotnet build Concertable.B2B.slnx --configuration Release --no-restore
+
+      - name: Test backend
+        # Fourteen integration projects each own a Testcontainers SQL fixture. Serialize project
+        # execution so they do not race Docker startup on the same runner.
+        run: dotnet test Concertable.B2B.slnx --configuration Release --no-build --no-restore -m:1
+
+      - name: Validate migration snapshots
+        shell: pwsh
+        run: ./scripts/validate-migrations.ps1 -Configuration Release
+
+      - name: Pack B2B-owned packages
+        run: dotnet pack Concertable.B2B.slnx --configuration Release --no-build --no-restore --output artifacts/packages
+
+      - name: Verify package candidates from a clean consumer
+        shell: pwsh
+        run: ./scripts/verify-package-candidates.ps1 -PackageDirectory artifacts/packages
+
+      - name: Build B2B Web image candidate
+        run: |
+          mkdir -p artifacts/images
+          dotnet publish src/Concertable.B2B.Web/Concertable.B2B.Web.csproj \
+            --configuration Release \
+            --no-restore \
+            /t:PublishContainer \
+            -p:ContainerImageTag="$CANDIDATE_IMAGE_TAG" \
+            -p:ContainerArchiveOutputPath=${{ github.workspace }}/artifacts/images/b2b-web.tar.gz
+
+      - name: Build B2B Workers image candidate
+        run: |
+          dotnet publish src/Concertable.B2B.Workers/Concertable.B2B.Workers.csproj \
+            --configuration Release \
+            --no-restore \
+            /t:PublishContainer \
+            -p:ContainerImageTag="$CANDIDATE_IMAGE_TAG" \
+            -p:ContainerArchiveOutputPath=${{ github.workspace }}/artifacts/images/b2b-workers.tar.gz
+
+      - name: Build B2B seeding simulator image candidate
+        run: |
+          dotnet publish src/Seed/Concertable.B2B.Seed.Simulator/Concertable.B2B.Seed.Simulator.csproj \
+            --configuration Release \
+            --no-restore \
+            /t:PublishContainer \
+            -p:ContainerImageTag="$CANDIDATE_IMAGE_TAG" \
+            -p:ContainerArchiveOutputPath=${{ github.workspace }}/artifacts/images/b2b-seeding-simulator.tar.gz
+
+      - name: Verify image candidates
+        run: |
+          test -s artifacts/images/b2b-web.tar.gz
+          test -s artifacts/images/b2b-workers.tar.gz
+          test -s artifacts/images/b2b-seeding-simulator.tar.gz
+
+      - name: Validate promotion candidate selection
+        shell: pwsh
+        env:
+          EXPECTED_IMAGE_TAG: ${{ env.CANDIDATE_IMAGE_TAG }}
+        run: >-
+          ./scripts/validate-promotion-config.ps1
+          -PackageDirectory artifacts/packages
+          -ImageDirectory artifacts/images
+          -ExpectedImageTag $env:EXPECTED_IMAGE_TAG
+
+      - name: Validate manual release gate
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: >-
+          ./scripts/validate-promotion-config.ps1
+          -PackageDirectory artifacts/packages
+          -ImageDirectory artifacts/images
+          -ExpectedImageTag $env:RELEASE_TAG
+          -ReleaseTag $env:RELEASE_TAG
+          -ExpectedCommit $env:EXPECTED_COMMIT
+
+      - name: Verify and inventory candidate integrity
+        shell: pwsh
+        run: >-
+          ./scripts/verify-artifact-integrity.ps1
+          -PackageDirectory artifacts/packages
+          -ImageDirectory artifacts/images
+          -EvidenceDirectory artifacts/integrity
+
+      - name: Retain candidate integrity evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: b2b-candidate-integrity-${{ github.sha }}
+          path: artifacts/integrity
+          if-no-files-found: error
+          retention-days: 30
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Clean install
+        run: npm ci
+
+      - name: Test and build shared packages
+        run: npm run build:shared
+
+      - name: Test web apps
+        run: |
+          npm -w @concertable/web-admin test
+          npm -w @concertable/web-venue run test:tenant
+
+      - name: Build web apps
+        run: npm run build:web
+
+      - name: Typecheck and export mobile app
+        run: npm run build:mobile

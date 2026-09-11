@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "nuget": [
+    {
+      "id": "Concertable.B2B.Admin.Contracts",
+      "project": "src/Modules/Admin/Concertable.B2B.Admin.Contracts/Concertable.B2B.Admin.Contracts.csproj"
+    },
+    {
+      "id": "Concertable.B2B.Application.Contracts",
+      "project": "src/Modules/Application/Concertable.B2B.Application.Contracts/Concertable.B2B.Application.Contracts.csproj"
+    },
+    {
+      "id": "Concertable.B2B.Artist.Contracts",
+      "project": "src/Modules/Artist/Concertable.B2B.Artist.Contracts/Concertable.B2B.Artist.Contracts.csproj"
+    },
+    {
+      "id": "Concertable.B2B.Booking.Contracts",
+      "project": "src/Modules/Booking/Concertable.B2B.Booking.Contracts/Concertable.B2B.Booking.Contracts.csproj"
+    },
+    {
+      "id": "Concertable.B2B.Concert.Contracts",
+      "project": "src/Modules/Concert/Concertable.B2B.Concert.Contracts/Concertable.B2B.Concert.Contracts.csproj"
+    },
+    {
+      "id": "Concertable.B2B.Deal.Contracts",
+      "project": "src/Modules/Deal/Concertable.B2B.Deal.Contracts/Concertable.B2B.Deal.Contracts.csproj"
+    },
+    {
+      "id": "Concertable.B2B.Hosting",
+      "project": "src/Concertable.B2B.Hosting/Concertable.B2B.Hosting.csproj"
+    },
+    {
+      "id": "Concertable.B2B.Seed.Contracts",
+      "project": "src/Seed/Concertable.B2B.Seed.Contracts/Concertable.B2B.Seed.Contracts.csproj"
+    },
+    {
+      "id": "Concertable.B2B.Tenant.Contracts",
+      "project": "src/Modules/Tenant/Concertable.B2B.Tenant.Contracts/Concertable.B2B.Tenant.Contracts.csproj"
+    },
+    {
+      "id": "Concertable.B2B.TestKit",
+      "project": "src/Concertable.B2B.TestKit/Concertable.B2B.TestKit.csproj"
+    },
+    {
+      "id": "Concertable.B2B.User.Contracts",
+      "project": "src/Modules/User/Concertable.B2B.User.Contracts/Concertable.B2B.User.Contracts.csproj"
+    },
+    {
+      "id": "Concertable.B2B.Venue.Contracts",
+      "project": "src/Modules/Venue/Concertable.B2B.Venue.Contracts/Concertable.B2B.Venue.Contracts.csproj"
+    }
+  ],
+  "oci": [
+    {
+      "repository": "ghcr.io/concertable/b2b-seeding-simulator",
+      "project": "src/Seed/Concertable.B2B.Seed.Simulator/Concertable.B2B.Seed.Simulator.csproj",
+      "archive": "b2b-seeding-simulator.tar.gz"
+    },
+    {
+      "repository": "ghcr.io/concertable/b2b-web",
+      "project": "src/Concertable.B2B.Web/Concertable.B2B.Web.csproj",
+      "archive": "b2b-web.tar.gz"
+    },
+    {
+      "repository": "ghcr.io/concertable/b2b-workers",
+      "project": "src/Concertable.B2B.Workers/Concertable.B2B.Workers.csproj",
+      "archive": "b2b-workers.tar.gz"
+    }
+  ]
+}
