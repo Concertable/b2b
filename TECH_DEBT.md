@@ -509,3 +509,27 @@ push the *same* tar rather than rebuilding.
 
 **Resolves when:** a plain `dotnet publish -t:PublishContainer` with no extra properties cannot reach a
 remote registry, and the publish workflow names its registry explicitly.
+
+---
+
+### Publishable client keys were committed to `app/web/.env.development`
+
+`.env.production` states the convention — "Publishable (client-side) keys — injected by CI at build,
+blank in git on purpose" — and holds both keys blank. `.env.development` did not follow it: it carried
+a live Google Maps API key and a Stripe **test** publishable key. Both are now blank there too, so
+`HEAD` is clean and the release-candidate source scan passes.
+
+**Blanking them does not unpublish them.** Both values are in this repository's history and in the
+monorepo's, where the file has been tracked across fourteen commits going back to the earliest
+frontend work. Promotion to public at `10C` makes that history readable, so the values must be treated
+as disclosed regardless of what the current tree says.
+
+The Stripe key is test-mode and publishable, which is the category designed to ship in client
+JavaScript, so its disclosure carries no authority. The Google Maps key is the one that matters: an
+unrestricted browser key is billable by anyone who finds it, and Trivy does not flag `AIza` prefixes at
+all — the secret scan passed it silently and it was found by reading the file.
+
+**Resolves when:** the Google Maps key is rotated and the replacement is restricted by HTTP referrer,
+and the Stripe test key is rotated or consciously accepted as disclosed. Rotation is not something this
+repository can do for itself; it belongs to whoever owns those consoles, and it should happen before
+the repository becomes public rather than after.

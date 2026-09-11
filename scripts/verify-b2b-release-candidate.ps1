@@ -74,6 +74,7 @@ $packageRoot = Join-Path $releaseRoot 'packages'
 $imageRoot = Join-Path $releaseRoot 'images'
 $evidenceRoot = Join-Path $releaseRoot 'evidence'
 $scanRoot = Join-Path $releaseRoot 'scan-input'
+$sourceRoot = Join-Path $releaseRoot 'source'
 $releaseManifestPath = Join-Path $releaseRoot 'release-manifest.json'
 $trivyImage = 'aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969'
 $trivyCacheVolume = "concertable-b2b-trivy-cache-$releaseId"
@@ -178,7 +179,7 @@ function Invoke-Trivy {
     param([Parameter(Mandatory)][string[]] $Arguments)
 
     & docker run --rm `
-        --volume "${repositoryRoot}:/work:ro" `
+        --volume "${sourceRoot}:/work:ro" `
         --volume "${scanRoot}:/scan:ro" `
         --volume "${evidenceRoot}:/evidence" `
         --volume "${trivyCacheVolume}:/root/.cache/trivy" `
@@ -252,7 +253,7 @@ try {
         $releaseRootCreated = $false
         throw
     }
-    New-Item -ItemType Directory -Path $packageRoot, $imageRoot, $evidenceRoot, $scanRoot | Out-Null
+    New-Item -ItemType Directory -Path $packageRoot, $imageRoot, $evidenceRoot, $scanRoot, $sourceRoot | Out-Null
 
     # ---- packages -------------------------------------------------------------------------------
 
@@ -344,13 +345,18 @@ try {
     New-TrivyCacheVolume
     $trivyCacheVolumeCreated = $true
 
+    # Scan tracked source, not the working tree. git archive materialises exactly what is committed,
+    # so the scan sees the files that ship and none of the build output that --skip-dirs has to exclude
+    # by hand — which measurably did not work: the same scan over the working tree ran past ten minutes
+    # with bin, obj and node_modules excluded, and over tracked source it is under two.
+    & git -C $repositoryRoot archive --format=tar $revision | & tar -x -C $sourceRoot
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Could not materialise tracked source for the secret scan.'
+    }
+
     Invoke-Trivy -Arguments @(
         'filesystem', '--scanners', 'secret', '--exit-code', '1', '--format', 'json',
-        '--output', '/evidence/source-secrets.json', '--no-progress',
-        '--skip-dirs', '/work/.git', '--skip-dirs', '/work/artifacts',
-        '--skip-dirs', '/work/**/bin', '--skip-dirs', '/work/**/obj',
-        '--skip-dirs', '/work/**/node_modules',
-        '/work'
+        '--output', '/evidence/source-secrets.json', '--no-progress', '/work'
     )
 
     $scanFailed = $false
