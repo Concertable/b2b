@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Black-box HTTP test client and seed-state models for exercising Concertable B2B from another service’s test suite.</Description>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 

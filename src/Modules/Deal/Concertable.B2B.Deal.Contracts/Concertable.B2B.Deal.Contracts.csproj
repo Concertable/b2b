@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Concertable B2B deal contracts: the DealType union and its per-type terms, shared by every consumer that reads or settles a B2B deal.</Description>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
