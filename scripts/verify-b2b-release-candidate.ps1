@@ -82,7 +82,7 @@ $trivyCacheVolume = "concertable-b2b-trivy-cache-$releaseId"
 $packageToken = $env:GITHUB_PACKAGES_TOKEN
 $trivyCacheVolumeCreated = $false
 $releaseRootCreated = $false
-$loadedImages = [System.Collections.Generic.List[string]]::new()
+$loadedImages = [System.Collections.Generic.List[object]]::new()
 $completed = $false
 $releaseVersion = ''
 
@@ -204,7 +204,8 @@ function Remove-TrivyCacheVolume {
     }
 
     $inspection = ($inspectionJson | ConvertFrom-Json)[0]
-    if ($inspection.Labels.'com.concertable.b2b.release-candidate' -ne $releaseId) {
+    $labels = Get-MemberValue -Source $inspection -Name 'Labels'
+    if ((Get-MemberValue -Source $labels -Name 'com.concertable.b2b.release-candidate') -ne $releaseId) {
         throw "Refusing to remove unowned Trivy cache volume '$trivyCacheVolume'."
     }
 
@@ -215,8 +216,14 @@ function Remove-TrivyCacheVolume {
 }
 
 function Remove-LoadedImage {
-    param([Parameter(Mandatory)][string] $Image)
+    param(
+        [Parameter(Mandatory)][string] $Image,
+        [Parameter(Mandatory)][string] $ExpectedImageId
+    )
 
+    # Ownership is the id this run loaded, not a label. PublishContainer sets
+    # org.opencontainers.image.version but never .revision, so checking the latter asserted a
+    # Dockerfile convention these images do not follow and threw instead of matching.
     $previous = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
@@ -231,8 +238,8 @@ function Remove-LoadedImage {
     }
 
     $inspection = ($inspectionJson | ConvertFrom-Json)[0]
-    if ($inspection.Config.Labels.'org.opencontainers.image.revision' -ne $revision) {
-        throw "Refusing to remove unowned release-candidate image '$Image'."
+    if ((Get-MemberValue -Source $inspection -Name 'Id') -ne $ExpectedImageId) {
+        throw "Refusing to remove '$Image': it no longer resolves to the image this run loaded."
     }
 
     & docker image rm --force $Image | Out-Null
@@ -328,7 +335,8 @@ try {
             -t:PublishContainer `
             -p:ContainerRepository=$repository `
             -p:ContainerImageTag=$releaseVersion `
-            -p:ContainerArchiveOutputPath=$archivePath
+            -p:ContainerArchiveOutputPath=$archivePath `
+            -p:ContainerLabels="org.opencontainers.image.source=$repositoryUrl;org.opencontainers.image.revision=$revision"
         if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $archivePath) -or (Get-Item -LiteralPath $archivePath).Length -eq 0) {
             throw "Could not build release-candidate image for '$($candidate.project)'."
         }
@@ -403,19 +411,18 @@ try {
         if ($LASTEXITCODE -ne 0) {
             throw "Could not load release-candidate image '$($item.LocalReference)'."
         }
-        $loadedImages.Add($item.LocalReference)
-
         $inspectionJson = & docker image inspect $item.LocalReference
         if ($LASTEXITCODE -ne 0) {
             throw "Could not inspect release-candidate image '$($item.LocalReference)'."
         }
         $inspection = ($inspectionJson | ConvertFrom-Json)[0]
-        $configuredEnvironment = @($inspection.Config.Env) -join "`n"
+        $configuredEnvironment = @((Get-MemberValue -Source (Get-MemberValue -Source $inspection -Name 'Config') -Name 'Env')) -join "`n"
         if ($configuredEnvironment -match 'GITHUB_PACKAGES_TOKEN') {
             throw "Image '$($item.LocalReference)' retains the package-token environment variable."
         }
 
-        $item.LocalImageId = [string] $inspection.Id
+        $item.LocalImageId = [string] (Get-MemberValue -Source $inspection -Name 'Id')
+        $loadedImages.Add([pscustomobject]@{ Reference = $item.LocalReference; ImageId = $item.LocalImageId })
         $item.Archive = Get-ArtifactRecord -Path $archive.FullName
         $item.Sbom = Get-ArtifactRecord -Path $sbomPath
         $item.Vulnerabilities = Get-ArtifactRecord -Path $vulnerabilityPath
@@ -473,7 +480,7 @@ try {
 }
 finally {
     foreach ($image in $loadedImages) {
-        Remove-LoadedImage -Image $image
+        Remove-LoadedImage -Image $image.Reference -ExpectedImageId $image.ImageId
     }
 
     try {
