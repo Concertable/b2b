@@ -1,0 +1,35 @@
+{
+  "name": "@concertable/b2b-repository",
+  "private": true,
+  "workspaces": [
+    "app/web/shared",
+    "app/web/artist",
+    "app/web/venue",
+    "app/web/business",
+    "app/web/admin",
+    "app/mobile",
+    "app/shared"
+  ],
+  "scripts": {
+    "build:shared": "npm -w @concertable/b2b run build && npm -w @concertable/web-b2b run build",
+    "build:artist": "npm run build:shared && npm -w @concertable/web-artist run build",
+    "build:venue": "npm run build:shared && npm -w @concertable/web-venue run build",
+    "build:business": "npm run build:shared && npm -w @concertable/web-business run build",
+    "build:admin": "npm run build:shared && npm -w @concertable/web-admin run build",
+    "build:web": "npm run build:shared && npm -w @concertable/web-artist run build && npm -w @concertable/web-venue run build && npm -w @concertable/web-business run build && npm -w @concertable/web-admin run build",
+    "typecheck:mobile": "npm run build:shared && npm -w @concertable/mobile-b2b exec -- tsc --noEmit -p tsconfig.json",
+    "build:mobile": "npm run typecheck:mobile && npm -w @concertable/mobile-b2b exec -- expo export --platform android",
+    "dev:artist": "npm -w @concertable/web-artist run dev",
+    "dev:venue": "npm -w @concertable/web-venue run dev",
+    "dev:business": "npm -w @concertable/web-business run dev",
+    "dev:admin": "npm -w @concertable/web-admin run dev",
+    "dev:mobile": "npm -w @concertable/mobile-b2b run start"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native-css-interop": {
+      "tailwindcss": "^3"
+    }
+  }
+}

@@ -96,9 +96,9 @@
     "registry": "https://npm.pkg.github.com"
   },
   "dependencies": {
-    "@concertable/b2b": "*",
-    "@concertable/shared": "*",
-    "@concertable/web": "*",
+    "@concertable/b2b": "file:../../shared",
+    "@concertable/shared": "alpha",
+    "@concertable/web": "alpha",
     "@hookform/resolvers": "^5.9.1",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-router": "^1",

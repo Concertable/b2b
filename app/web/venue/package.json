@@ -10,10 +10,10 @@
     "test:tenant": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@concertable/b2b": "*",
-    "@concertable/shared": "*",
-    "@concertable/web": "*",
-    "@concertable/web-b2b": "*",
+    "@concertable/b2b": "file:../../shared",
+    "@concertable/shared": "alpha",
+    "@concertable/web": "alpha",
+    "@concertable/web-b2b": "file:../shared",
     "@fontsource-variable/geist": "^5",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-router": "^1",

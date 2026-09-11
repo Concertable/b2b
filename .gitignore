@@ -1,0 +1,23 @@
+# Local tooling
+.claude/settings.local.json
+.vs/
+.vscode/
+*.suo
+*.user
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+TestResults/
+*.binlog
+
+# Frontend dependencies and build output
+node_modules/
+dist/
+.expo/
+*.log
+
+# Local configuration and operating-system files
+appsettings.Development.json
+.DS_Store

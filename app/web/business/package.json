@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@concertable/shared": "*",
-    "@concertable/web": "*",
+    "@concertable/shared": "alpha",
+    "@concertable/web": "alpha",
     "@fontsource-variable/geist": "^5",
     "react": "19.1.0",
     "react-dom": "19.1.0",
