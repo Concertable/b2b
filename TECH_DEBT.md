@@ -473,14 +473,14 @@ the host kernel rather than anything in that package. Web and the seeding simula
 base image and report nothing, so this is the Functions host alone.
 
 The exposure is not the kernel headers, which are inert here — it is that any suppression is a place
-future findings can hide, so this one is drawn as tightly as it can be. Trivy still scans at full
-severity with `--ignorefile /dev/null`, reports every finding into the retained evidence, and the
-decision about what blocks is made afterwards in the script where it can be read. A blanket
-`--ignore-unfixed` was rejected: it would also have silenced an unfixable CRITICAL in OpenSSL or any
-other runtime dependency, which is exactly the case worth knowing about because it needs mitigating
-another way. A package-scoped `.trivyignore.yaml` was tried first and does not work — Trivy 0.74 reads
-the file but its `purls` matching does not match this package, verified against the real image. The
-secret scan is unconditional at every severity.
+future findings can hide, so this one is drawn as tightly as it can be. Trivy scans at HIGH and
+CRITICAL with `--ignorefile /dev/null`, every finding at those severities reaches the retained evidence
+unfiltered, and the decision about what blocks is made afterwards in the script where it can be read.
+A blanket `--ignore-unfixed` was rejected: it would also have silenced an unfixable CRITICAL in OpenSSL
+or any other runtime dependency, which is exactly the case worth knowing about because it needs
+mitigating another way. A package-scoped `.trivyignore.yaml` was tried first and does not work: Trivy
+0.74 reads the file, but its `purls` matching does not match this package — verified against the real
+image. The secret scan is unconditional at every severity.
 
 **Resolves when:** Ubuntu ships a fixed `linux-libc-dev` in the Functions base image, or the Workers
 host no longer runs on that base — at which point `$toleratedUnfixedPackages` becomes empty and the

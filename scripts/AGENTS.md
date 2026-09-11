@@ -34,8 +34,9 @@ gate against a report with findings **and** one without before trusting it.
 
 ## A suppression is a decision, so keep it where a reader will find it
 
-`verify-artifact-integrity.ps1` scans at full severity with `--ignorefile /dev/null` and `--exit-code 0`,
-then decides what blocks in `Get-BlockingVulnerabilities`. That is deliberate: narrowing what the scanner
-*collects* hides the finding from the retained evidence too, while narrowing what the gate *blocks* leaves
-the full report intact and the reasoning readable. Anything tolerated belongs in
+`verify-artifact-integrity.ps1` scans vulnerabilities at HIGH and CRITICAL, and secrets at every
+severity, both with `--ignorefile /dev/null` and `--exit-code 0`, then decides what blocks in
+`Get-BlockingVulnerabilities`. That is deliberate: narrowing what the scanner *collects* hides the
+finding from the retained evidence too, while narrowing what the gate *blocks* leaves the report intact
+and the reasoning readable. Anything tolerated belongs in
 `$toleratedUnfixedPackages` with a comment, and in `TECH_DEBT.md` with a condition that lets it be deleted.
