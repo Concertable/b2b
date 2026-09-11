@@ -137,7 +137,7 @@ try {
             $repositoryRoot,
             (Join-Path $scanDirectory "$($image.Name).secrets.trivy.json")).Replace('\', '/')
 
-        & docker run --rm --volume "${repositoryRoot}:/workspace" $syftImage scan "docker-archive:/workspace/$inputPath" --output "cyclonedx-json=/workspace/$sbomPath"
+        & docker run --rm --volume "${repositoryRoot}:/workspace" $syftImage scan "/workspace/$inputPath" --output "cyclonedx-json=/workspace/$sbomPath"
         if ($LASTEXITCODE -ne 0) {
             throw "Syft failed for '$($image.Name)' with exit code $LASTEXITCODE."
         }

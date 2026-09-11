@@ -113,13 +113,25 @@ function Read-ContainerArchiveManifest {
             $tarReader = [System.Formats.Tar.TarReader]::new($archiveStream, $true)
             try {
                 while ($null -ne ($entry = $tarReader.GetNextEntry())) {
-                    if ($entry.Name -cne 'manifest.json') {
+                    if ($entry.Name -cne 'manifest.json' -and $entry.Name -cne 'index.json') {
                         continue
                     }
 
                     $reader = [System.IO.StreamReader]::new($entry.DataStream)
                     try {
-                        return $reader.ReadToEnd() | ConvertFrom-Json -Depth 10
+                        $document = $reader.ReadToEnd() | ConvertFrom-Json -Depth 10
+                        if ($entry.Name -ceq 'manifest.json') {
+                            return @($document | ForEach-Object {
+                                [pscustomobject]@{ RepoTag = @($_.RepoTags)[0]; Digest = $_.Config }
+                            })
+                        }
+
+                        return @($document.manifests | ForEach-Object {
+                            [pscustomobject]@{
+                                RepoTag = $_.annotations.'io.containerd.image.name'
+                                Digest = $_.digest
+                            }
+                        })
                     }
                     finally {
                         $reader.Dispose()
@@ -140,7 +152,7 @@ function Read-ContainerArchiveManifest {
         $fileStream.Dispose()
     }
 
-    throw "OCI archive '$($Archive.Name)' does not contain manifest.json."
+    throw "OCI archive '$($Archive.Name)' contains neither manifest.json nor index.json."
 }
 
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
@@ -245,12 +257,13 @@ if (-not [string]::IsNullOrWhiteSpace($PackageDirectory)) {
             $repository = $repository.Substring('ghcr.io/'.Length)
         }
         $expectedRepoTag = "${repository}:$ExpectedImageTag"
-        $repoTags = @($archiveManifest[0].RepoTags)
-        if ($repoTags.Count -ne 1 -or $repoTags[0] -cne $expectedRepoTag) {
-            throw "OCI archive '$($candidate.archive)' contains tag '$($repoTags -join ', ')', not '$expectedRepoTag'."
+        $repoTag = $archiveManifest[0].RepoTag
+        # An OCI index names the image fully qualified; a Docker archive names it as tagged.
+        if ($repoTag -cne $expectedRepoTag -and $repoTag -cne "docker.io/$expectedRepoTag") {
+            throw "OCI archive '$($candidate.archive)' contains tag '$repoTag', not '$expectedRepoTag'."
         }
-        if ($archiveManifest[0].Config -notmatch '^[0-9a-f]{64}\.json$') {
-            throw "OCI archive '$($candidate.archive)' has invalid config digest '$($archiveManifest[0].Config)'."
+        if ($archiveManifest[0].Digest -notmatch '^(sha256:)?[0-9a-f]{64}(\.json)?$') {
+            throw "OCI archive '$($candidate.archive)' has invalid image digest '$($archiveManifest[0].Digest)'."
         }
     }
 }
