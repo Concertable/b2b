@@ -24,7 +24,7 @@ permissions:
   packages: read
 
 env:
-  GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+  GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
   DOTNET_NOLOGO: true
   CANDIDATE_IMAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.sha }}
 
