@@ -29,7 +29,7 @@ public sealed class UserProvisioningTests : IAsyncLifetime
         var userId = Guid.NewGuid();
         var email = $"{Guid.NewGuid():N}@test.com";
 
-        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, email, client.Info().Id));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, email, InteractiveClientInfo.Get(client).Id));
 
         var user = await fixture.Users.SingleOrDefaultAsync(value => value.Id == userId);
         Assert.NotNull(user);
@@ -41,7 +41,7 @@ public sealed class UserProvisioningTests : IAsyncLifetime
     {
         var userId = Guid.NewGuid();
 
-        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, "customer@test.com", InteractiveClient.CustomerBrowser.Info().Id));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, "customer@test.com", InteractiveClientInfo.Get(InteractiveClient.CustomerBrowser).Id));
 
         Assert.False(await fixture.Users.AnyAsync(value => value.Id == userId));
     }
@@ -52,7 +52,7 @@ public sealed class UserProvisioningTests : IAsyncLifetime
         var userId = Guid.NewGuid();
         var email = $"{Guid.NewGuid():N}@test.com";
         var envelope = MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow);
-        var @event = new CredentialRegisteredEvent(userId, email, InteractiveClient.VenueBrowser.Info().Id);
+        var @event = new CredentialRegisteredEvent(userId, email, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id);
 
         await fixture.ProvisionAsync(@event, envelope);
         await fixture.ProvisionAsync(@event, envelope);
