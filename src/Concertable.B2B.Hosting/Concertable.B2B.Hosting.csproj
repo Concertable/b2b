@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <!-- AppHost composition is exempt from deployable-closure boundaries; see the packages skill. -->
     <EnforceServiceBoundary>false</EnforceServiceBoundary>
+    <Description>Concertable B2B service hosting metadata and Aspire topology registration for B2B Web, Workers and the seeding simulator.</Description>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 

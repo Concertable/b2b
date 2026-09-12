@@ -459,6 +459,7 @@ alongside the payee amount, and the B2B checkout surfaces the split rather than 
 
 ---
 
+
 ### The image vulnerability gate tolerates one base-image package while it stays unfixed
 
 `verify-artifact-integrity.ps1` fails CI on any HIGH or CRITICAL vulnerability in a candidate image.
@@ -486,3 +487,49 @@ image. The secret scan is unconditional at every severity.
 host no longer runs on that base — at which point `$toleratedUnfixedPackages` becomes empty and the
 helper goes with it. A *fixable* `linux-libc-dev` finding already fails today, so the gate reports the
 day this stops being true rather than waiting to be noticed.
+
+### `PublishContainer` pushes to ghcr.io by default, including from a developer's machine
+
+`Directory.Build.props` sets `<ContainerRegistry Condition="'$(ContainerRegistry)' == ''">ghcr.io</ContainerRegistry>`,
+so `dotnet publish -t:PublishContainer` on any of the three container projects **pushes to the
+production registry** unless the caller overrides it. There is no confirmation step and no tag
+namespacing that would make an accidental push obviously a test.
+
+CI is not exposed: every image step passes `ContainerArchiveOutputPath`, which redirects the output to
+a tarball and never contacts a registry. The exposure is a developer or an agent running the documented
+publish command directly. It was found exactly that way — the command was run to inspect image
+metadata, and the only thing that stopped a real push to `ghcr.io/concertable/b2b-web` was the absence
+of a credential in that shell. With `docker login ghcr.io` already done, which is ordinary for anyone
+who has pulled a private image, it would have succeeded.
+
+The property is deliberate — it is here rather than in a workflow so the carve carries it — so the fix
+is not to delete it but to make the destination explicit at the call site: default to the local daemon
+and have publication opt in, which is the direction that also lets the release-candidate flow scan and
+push the *same* tar rather than rebuilding.
+
+**Resolves when:** a plain `dotnet publish -t:PublishContainer` with no extra properties cannot reach a
+remote registry, and the publish workflow names its registry explicitly.
+
+---
+
+### Publishable client keys were committed to `app/web/.env.development`
+
+`.env.production` states the convention — "Publishable (client-side) keys — injected by CI at build,
+blank in git on purpose" — and holds both keys blank. `.env.development` did not follow it: it carried
+a live Google Maps API key and a Stripe **test** publishable key. Both are now blank there too, so
+`HEAD` is clean and the release-candidate source scan passes.
+
+**Blanking them does not unpublish them.** Both values are in this repository's history and in the
+monorepo's, where the file has been tracked across fourteen commits going back to the earliest
+frontend work. Promotion to public at `10C` makes that history readable, so the values must be treated
+as disclosed regardless of what the current tree says.
+
+The Stripe key is test-mode and publishable, which is the category designed to ship in client
+JavaScript, so its disclosure carries no authority. The Google Maps key is the one that matters: an
+unrestricted browser key is billable by anyone who finds it, and Trivy does not flag `AIza` prefixes at
+all — the secret scan passed it silently and it was found by reading the file.
+
+**Resolves when:** the Google Maps key is rotated and the replacement is restricted by HTTP referrer,
+and the Stripe test key is rotated or consciously accepted as disclosed. Rotation is not something this
+repository can do for itself; it belongs to whoever owns those consoles, and it should happen before
+the repository becomes public rather than after.

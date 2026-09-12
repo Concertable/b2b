@@ -43,13 +43,33 @@
     <PackageProjectUrl>https://github.com/Concertable/b2b</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <MinVerTagPrefix>v</MinVerTagPrefix>
-    <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
+    <!-- The monorepo published these ids up to 0.1.0-alpha.0.1393. MinVer counts height from this
+         repository's own history, which is far shorter, so a 0.1 floor would publish beneath the
+         feed high-water and consumers would never resolve the canonical build. -->
+    <MinVerMinimumMajorMinor>0.2</MinVerMinimumMajorMinor>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <!-- Registry lives here, not in publish-images.yml: a carve takes only the service folder. -->
   <PropertyGroup>
     <ContainerRegistry Condition="'$(ContainerRegistry)' == ''">ghcr.io</ContainerRegistry>
+  </PropertyGroup>
+
+  <!-- ContainerLabel is an item, not a property: a label name contains dots, and MSBuild rejects
+       those in -p:. The SDK sets image.version but neither image.source nor image.revision, so a
+       pulled image could not otherwise be traced to the commit that produced it. -->
+  <ItemGroup Condition="'$(ContainerRepository)' != ''">
+    <ContainerLabel Include="org.opencontainers.image.source" Value="$(RepositoryUrl)" />
+    <ContainerLabel Include="org.opencontainers.image.revision" Value="$(SourceRevisionId)"
+                    Condition="'$(SourceRevisionId)' != ''" />
+  </ItemGroup>
+
+  <PropertyGroup>
   </PropertyGroup>
 
   <!-- Banned-API list for Microsoft.CodeAnalysis.BannedApiAnalyzers (shared across services). -->
