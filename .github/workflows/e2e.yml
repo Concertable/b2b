@@ -35,8 +35,8 @@ jobs:
     timeout-minutes: 90
 
     env:
-      GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ }}
-      Stripe__SecretKey: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ || secrets.GITHUB_TOKEN }}
+      Stripe__SecretKey: ${{ secrets.STRIPE_SECRET_KEY }}
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -54,7 +54,7 @@ jobs:
         # suite rather than an unset secret — which is exactly how it first presented.
         run: |
           test -n "$GITHUB_PACKAGES_TOKEN" || { echo '::error::CONCERTABLE_PACKAGES_READ is not set on this repository.'; exit 1; }
-          test -n "$Stripe__SecretKey" || { echo '::error::STRIPE_TEST_SECRET_KEY is not set on this repository. The E2E fixtures cannot start without it.'; exit 1; }
+          test -n "$Stripe__SecretKey" || { echo '::error::STRIPE_SECRET_KEY is not set on this repository. Copy it from Concertable/concertable, which holds it under the same name. The E2E fixtures cannot start without it.'; exit 1; }
 
       - name: Restore
         run: dotnet restore Concertable.B2B.slnx
