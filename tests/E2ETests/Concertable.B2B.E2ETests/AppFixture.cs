@@ -1,11 +1,14 @@
 ﻿using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Azure;
 using Aspire.Hosting.Testing;
+using Concertable.Auth.Hosting;
 using Concertable.B2B.Hosting;
 using Concertable.B2B.TestKit;
 using Concertable.E2E;
 using Concertable.Payment.Hosting;
 using Concertable.Payment.TestKit;
+using Concertable.Search.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -17,6 +20,11 @@ namespace Concertable.B2B.E2ETests;
 
 public sealed class AppFixture : IAsyncLifetime
 {
+    private const string SearchWebImage = "ghcr.io/concertable/search-web";
+    private const string SearchWebDigest = "sha256:ad43bdbddbfe115fd81c0d0d89bc67906e7ea5e22ade39cb06a4bd131ac965a8";
+    private const string SearchWorkersImage = "ghcr.io/concertable/search-workers";
+    private const string SearchWorkersDigest = "sha256:00a9ae9fe5fc93a90700961ac1f2771c61dc86bd511e8db13ac795a4155ca9f8";
+
     private DistributedApplication app = null!;
     private AspireResourceLogger resourceLogger = null!;
     private HealthWaiter healthWaiter = null!;
@@ -91,6 +99,16 @@ public sealed class AppFixture : IAsyncLifetime
         StripeCustomerResolver = await Concertable.Testing.E2E.StripeCustomerResolver.CreateAsync(stripeClient);
         var run = Run.Create(Profile.B2B(B2BWebUrl, SearchWebUrl, authUrl, PaymentWebUrl));
 
+        // Search is not in b2b's production graph, so the E2E composition adds it from the same
+        // pinned images the fleet qualifies against — the neighbours are the point of the test.
+        var sql = builder.Resources.OfType<SqlServerServerResource>().Single();
+        var searchDb = builder.CreateResourceBuilder(sql).AddDatabase(SearchConstants.Database);
+        var authService = builder.CreateResourceBuilder(
+            (IResourceWithServiceDiscovery)builder.Resources.Single(resource => resource.Name == AuthConstants.Resource));
+        builder.AddSearchWeb(SearchWebImage, SearchWebDigest, authService, searchDb);
+        builder.AddSearchWorkers(SearchWorkersImage, SearchWorkersDigest, searchDb,
+            builder.CreateResourceBuilder(builder.Resources.OfType<AzureServiceBusResource>().Single()));
+
         var b2bWeb = builder.Resources.OfType<ProjectResource>()
             .Single(resource => resource.Name == B2BConstants.WebResource);
         b2bWeb.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
@@ -107,13 +125,14 @@ public sealed class AppFixture : IAsyncLifetime
         await app.StartAsync();
 
         B2BClient = new HttpClient { BaseAddress = new Uri(B2BWebUrl) };
+        SearchClient = new HttpClient { BaseAddress = new Uri(SearchWebUrl) };
         PaymentClient = new HttpClient { BaseAddress = new Uri(PaymentWebUrl) };
         Workers = new WorkersFixture(app, Polling);
 
         // WORKAROUND (TECH_DEBT.md): 12 not 6 — the 71 demo users seed via the async
         // credential-registration chain, slow on CI's ASB emulator. Revert to 6 once seed is faster.
         await healthWaiter.WaitForAllHealthyAsync(
-            [B2BWebUrl, PaymentWebUrl],
+            [B2BWebUrl, SearchWebUrl, PaymentWebUrl],
             TimeSpan.FromMinutes(12));
 
         payoutAccounts = new PayoutAccountDb(
