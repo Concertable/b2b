@@ -64,7 +64,14 @@ jobs:
       - name: Test backend
         # Fourteen integration projects each own a Testcontainers SQL fixture. Serialize project
         # execution so they do not race Docker startup on the same runner.
-        run: dotnet test Concertable.B2B.slnx --configuration Release --no-build --no-restore -m:1
+        #
+        # The tiers are named rather than excluded. The E2E suites (Category Api and Ui) boot the
+        # whole fleet from pinned images and need Stripe credentials, so they belong to e2e.yml and
+        # not to a pull request. Naming what runs means a future E2E category cannot leak in here by
+        # being something this step forgot to exclude.
+        run: >-
+          dotnet test Concertable.B2B.slnx --configuration Release --no-build --no-restore -m:1
+          --filter "Category=Unit|Category=Integration|Category=Architecture|Category=Startup"
 
       - name: Validate migration snapshots
         shell: pwsh

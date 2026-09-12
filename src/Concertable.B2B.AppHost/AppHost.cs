@@ -1,4 +1,4 @@
-using Concertable.B2B.Hosting.Frontend;
+﻿using Concertable.B2B.Hosting.Frontend;
 using Aspire.Hosting;
 using Concertable.Auth.Hosting;
 using Concertable.B2B.Hosting;
@@ -14,7 +14,17 @@ public static class AppHost
     private const string PaymentWorkersImage = "ghcr.io/concertable/payment-workers";
     private const string PaymentWorkersDigest = "sha256:dc9670dffdd9b8f63cbae682c9c81be2b52f0fad394aa239debed632009d144c";
 
-    public static IDistributedApplicationBuilder CreateBuilder(string[] args)
+    public static IDistributedApplicationBuilder CreateBuilder(string[] args) =>
+        CreateBuilder<Projects.Concertable_B2B_Web>(args);
+
+    /// <summary>
+    /// The same graph with the B2B web host substituted. The E2E suite passes
+    /// <c>Concertable.B2B.E2ETests.Web</c>, which wraps this host and adds the <c>/_e2e</c> admin
+    /// surface its fixture resets and seeds through; the production host does not carry it and
+    /// must not.
+    /// </summary>
+    public static IDistributedApplicationBuilder CreateBuilder<TWebProject>(string[] args)
+        where TWebProject : IProjectMetadata, new()
     {
         var builder = StrictDistributedApplication.CreateBuilder(args);
         var sql = builder.AddSqlServerContainer("concertable-b2b-sql-data");
@@ -29,7 +39,7 @@ public static class AppHost
                           .WithHttpsEndpoint(targetPort: AuthConstants.ContainerPort, name: "https");
         auth.WithSpaClients(B2BLocalSpaSurfaces.AuthClients);
         var paymentWeb = builder.AddPaymentWeb(PaymentWebImage, PaymentWebDigest, auth, paymentDb, asb);
-        var api = builder.AddB2BWeb<Projects.Concertable_B2B_Web>(b2bDb, auth, storage, blobs, asb, paymentWeb);
+        var api = builder.AddB2BWeb<TWebProject>(b2bDb, auth, storage, blobs, asb, paymentWeb);
         auth.WithEnvironment("Services__B2BApiUrl", api.GetEndpoint("https"));
         auth.WithEnvironment("ServiceAuth__AuthClientId", "concertable-auth");
         var workers = builder.AddB2BWorkers<Projects.Concertable_B2B_Workers>(b2bDb, paymentWeb, auth);

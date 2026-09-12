@@ -21,15 +21,15 @@ public sealed class UserProvisioningTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Theory]
-    [InlineData(ClientIds.VenueWeb)]
-    [InlineData(ClientIds.ArtistWeb)]
-    [InlineData(ClientIds.Admin)]
-    public async Task Registration_ManagerClient_CreatesUser(string clientId)
+    [InlineData(InteractiveClient.VenueBrowser)]
+    [InlineData(InteractiveClient.ArtistBrowser)]
+    [InlineData(InteractiveClient.Admin)]
+    public async Task Registration_ManagerClient_CreatesUser(InteractiveClient client)
     {
         var userId = Guid.NewGuid();
         var email = $"{Guid.NewGuid():N}@test.com";
 
-        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, email, clientId));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, email, client.Info().Id));
 
         var user = await fixture.Users.SingleOrDefaultAsync(value => value.Id == userId);
         Assert.NotNull(user);
@@ -41,7 +41,7 @@ public sealed class UserProvisioningTests : IAsyncLifetime
     {
         var userId = Guid.NewGuid();
 
-        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, "customer@test.com", ClientIds.CustomerWeb));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, "customer@test.com", InteractiveClient.CustomerBrowser.Info().Id));
 
         Assert.False(await fixture.Users.AnyAsync(value => value.Id == userId));
     }
@@ -52,7 +52,7 @@ public sealed class UserProvisioningTests : IAsyncLifetime
         var userId = Guid.NewGuid();
         var email = $"{Guid.NewGuid():N}@test.com";
         var envelope = MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow);
-        var @event = new CredentialRegisteredEvent(userId, email, ClientIds.VenueWeb);
+        var @event = new CredentialRegisteredEvent(userId, email, InteractiveClient.VenueBrowser.Info().Id);
 
         await fixture.ProvisionAsync(@event, envelope);
         await fixture.ProvisionAsync(@event, envelope);

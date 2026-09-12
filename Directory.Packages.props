@@ -2,21 +2,29 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <ConcertableDotNetPlatformVersion>0.1.0-alpha.0.1370</ConcertableDotNetPlatformVersion>
-    <!-- Payment publishes in the same train as the platform packages, so tracking that version
-         is what keeps them in step; a literal here silently ships a stale Payment client. -->
-    <ConcertablePaymentVersion Condition="'$(ConcertablePaymentVersion)' == ''">$(ConcertableDotNetPlatformVersion)</ConcertablePaymentVersion>
+    <ConcertableDotNetPlatformVersion>0.2.0-alpha.0.5</ConcertableDotNetPlatformVersion>
+    <!-- Each service publishes on its own train, so a service package cannot track the platform
+         version; a shared literal here silently ships a stale client for whichever service moved. -->
+    <ConcertableAuthVersion>0.1.0-alpha.0.1384</ConcertableAuthVersion>
+    <ConcertableCustomerVersion>0.1.0-alpha.0.1381</ConcertableCustomerVersion>
+    <ConcertablePaymentVersion>0.1.0-alpha.0.1384</ConcertablePaymentVersion>
+    <ConcertableSearchVersion>0.1.0-alpha.0.1381</ConcertableSearchVersion>
+    <ConcertableSystemVersion>0.2.0-alpha.0.192</ConcertableSystemVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageVersion Include="Concertable.Testing" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Testing.Architecture" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Testing.Integration" Version="$(ConcertableDotNetPlatformVersion)" />
+    <PackageVersion Include="Concertable.Testing.E2E" Version="$(ConcertableSystemVersion)" />
+    <PackageVersion Include="Concertable.E2E" Version="$(ConcertableSystemVersion)" />
+    <PackageVersion Include="Concertable.Payment.E2ETests.Helpers" Version="$(ConcertableSystemVersion)" />
     <PackageVersion Include="Concertable.Payment.TestKit" Version="$(ConcertablePaymentVersion)" />
-    <PackageVersion Include="Concertable.Auth.Hosting" Version="$(ConcertableDotNetPlatformVersion)" />
+    <PackageVersion Include="Concertable.Auth.Hosting" Version="$(ConcertableAuthVersion)" />
     <PackageVersion Include="Concertable.Payment.Hosting" Version="$(ConcertablePaymentVersion)" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.1.2" />
     <PackageVersion Include="Aspire.Hosting.Azure.ServiceBus" Version="13.3.2" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.3.2" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.3.2" />
     <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.1.2" />
     <PackageVersion Include="Dunet" Version="1.16.2" />
@@ -75,8 +83,9 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
   </ItemGroup>
 
-  <!-- Shared platform + cross-service contracts from the org feed, pinned lockstep via
-       ConcertableDotNetPlatformVersion above. Bump only to a version already published to the feed,
+  <!-- Shared platform packages from the org feed, pinned lockstep via
+       ConcertableDotNetPlatformVersion above; each cross-service contract tracks its owning
+       service's train instead. Bump only to a version already published to the feed,
        else restore fails NU1101. The churny core (Kernel, Messaging.*) is consumed as packages
        by default; set UseLocalCore=true (env CONCERTABLE_LOCAL_CORE) to switch it to in-repo
        ProjectReferences for fast cross-cutting local dev — see Directory.Build.props. -->
@@ -108,12 +117,12 @@
     <PackageVersion Include="Concertable.Seed.Infrastructure" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.AppHost.Shared" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Frontend.Hosting" Version="$(ConcertableDotNetPlatformVersion)" />
-    <PackageVersion Include="Concertable.Search.Hosting" Version="$(ConcertableDotNetPlatformVersion)" />
-    <PackageVersion Include="Concertable.Auth.Contracts" Version="$(ConcertableDotNetPlatformVersion)" />
+    <PackageVersion Include="Concertable.Search.Hosting" Version="$(ConcertableSearchVersion)" />
+    <PackageVersion Include="Concertable.Auth.Contracts" Version="$(ConcertableAuthVersion)" />
     <PackageVersion Include="Concertable.Payment.Client" Version="$(ConcertablePaymentVersion)" />
     <PackageVersion Include="Concertable.Payment.Contracts" Version="$(ConcertablePaymentVersion)" />
-    <PackageVersion Include="Concertable.Customer.Review.Contracts" Version="$(ConcertableDotNetPlatformVersion)" />
-    <PackageVersion Include="Concertable.Customer.Ticket.Contracts" Version="$(ConcertableDotNetPlatformVersion)" />
+    <PackageVersion Include="Concertable.Customer.Review.Contracts" Version="$(ConcertableCustomerVersion)" />
+    <PackageVersion Include="Concertable.Customer.Ticket.Contracts" Version="$(ConcertableCustomerVersion)" />
   </ItemGroup>
 
   <ItemGroup>

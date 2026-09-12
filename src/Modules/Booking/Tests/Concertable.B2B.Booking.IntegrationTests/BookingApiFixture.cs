@@ -32,19 +32,21 @@ public sealed class BookingApiFixture : ApiFixture
     // Server rejects OUTPUT against a table that has an enabled trigger. It must name a column every booking
     // update writes -- SQL Server skips constraints whose columns the UPDATE leaves alone -- and NOCHECK
     // keeps the rows already seeded valid.
-    internal Task FailBookingUpdatesAsync() =>
-        dbContext.Database.ExecuteSqlRawAsync("""
-            ALTER TABLE [booking].[Bookings] WITH NOCHECK
-            ADD CONSTRAINT [CK_Bookings_FailUpdate_ForTest] CHECK ([State] IS NULL)
-            """);
+    internal Task FailBookingUpdatesAsync()
+    {
+        var state = dbContext.Database.DelimitIdentifier("State");
+        return dbContext.Database.AddUnvalidatedCheckConstraintAsync(
+            "booking",
+            "Bookings",
+            "CK_Bookings_FailUpdate_ForTest",
+            $"{state} IS NULL");
+    }
 
     internal Task RestoreBookingUpdatesAsync() =>
-        dbContext.Database.ExecuteSqlRawAsync("""
-            IF EXISTS (
-                SELECT 1 FROM sys.check_constraints
-                WHERE [name] = 'CK_Bookings_FailUpdate_ForTest')
-                ALTER TABLE [booking].[Bookings] DROP CONSTRAINT [CK_Bookings_FailUpdate_ForTest]
-            """);
+        dbContext.Database.DropCheckConstraintIfExistsAsync(
+            "booking",
+            "Bookings",
+            "CK_Bookings_FailUpdate_ForTest");
 
     internal Task<int> GetConcertCountAsync(int bookingId) =>
         dbContext.Database.SqlQuery<int>($"""

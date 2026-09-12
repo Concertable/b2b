@@ -169,5 +169,7 @@
   <Folder Name="/Tests/E2ETests/">
     <Project Path="tests/E2ETests/Concertable.B2B.E2ETests.Server/Concertable.B2B.E2ETests.Server.csproj" />
     <Project Path="tests/E2ETests/Concertable.B2B.E2ETests.Web/Concertable.B2B.E2ETests.Web.csproj" />
+    <Project Path="tests/E2ETests/Concertable.B2B.E2ETests/Concertable.B2B.E2ETests.csproj" />
+    <Project Path="tests/E2ETests/Concertable.B2B.E2ETests.Ui/Concertable.B2B.E2ETests.Ui.csproj" />
   </Folder>
 </Solution>

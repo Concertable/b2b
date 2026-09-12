@@ -1,4 +1,4 @@
-# Concertable.B2B — Technical Debt
+﻿# Concertable.B2B — Technical Debt
 
 When an item is fixed, update both this file and [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
@@ -32,6 +32,32 @@ before the entities are migrated.
 ---
 
 ## HIGH
+
+### Authorization code is homed by accident-of-ownership, not by a real module
+
+`PermissionAuthorizationHandler` / `PermissionRequirement` / `IMembershipContext` (request-time policy
+checks) live inside `Concertable.B2B.Tenant.Infrastructure`/`.Contracts` purely because Tenant happens to
+own the membership data they read — so *every* B2B module with a protected endpoint depends on
+`Tenant.Contracts` for an orthogonal concern, the wrong dependency direction. `ManagerClients`
+(registration-time role assignment, added by the auth-identity-model plan — a different lifecycle moment,
+same underlying concern) now sits in `Concertable.B2B.Infrastructure/Authorization/` as a second instance
+of the same accidental placement: the smallest correct move for *that* PR, not a resolution of the module
+question.
+
+**Not this item's fault, but this item's opportunity:** a genuine `Concertable.B2B.Authorization` module —
+`.Contracts` (`PermissionRequirement`, a membership/role-fact facade interface Tenant *implements*);
+`.Infrastructure` (`PermissionAuthorizationHandler`, `ManagerClients`); no `.Domain`/`.Api`, no persisted
+aggregate of its own — would invert today's direction so every module depends on Authorization directly
+instead of on Tenant. Materially bigger than any single feature PR: it rewires every B2B module's policy
+registration. Tracked as `b2b-authorization/authorization-module` — see
+[`plans/b2b-authorization/B2B_AUTHORIZATION_ROADMAP.md`](../../plans/b2b-authorization/B2B_AUTHORIZATION_ROADMAP.md).
+
+**Resolves when:** `Concertable.B2B.Authorization` exists as above, `PermissionAuthorizationHandler` and
+`ManagerClients` both live in it, no B2B module outside Authorization/Tenant itself references
+`Tenant.Contracts` for a permission or role-fact check, and every module's policy registration goes through
+Authorization.
+
+---
 
 ### Workers uses `AddInMemoryTransport`, not ASB
 

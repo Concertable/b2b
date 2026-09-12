@@ -31,7 +31,7 @@ public sealed class AdminRegistrationTests : IAsyncLifetime
     {
         var userId = Guid.NewGuid();
         var email = $"{Guid.NewGuid():N}@uninvited.test";
-        var registration = new CredentialRegisteredEvent(userId, email, ClientIds.Admin);
+        var registration = new CredentialRegisteredEvent(userId, email, InteractiveClient.Admin.Info().Id);
 
         await fixture.DispatchIntegrationEventAsync(
             registration,

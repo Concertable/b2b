@@ -2,7 +2,9 @@
 
 How the **deal** data and the **per-stage lifecycle** fit together. Read this before touching
 `api/.../Modules/Deal/` or any of the `Application`, `Booking`, and `Concert` modules' `Domain/Lifecycle/`
-and Deal-strategy code.
+and Deal-strategy code. Section 5 is the configurable-product target. The detailed four-case walkthrough
+in §§1–4 retains historical symbol examples; refresh concrete interfaces against the owning module when
+changing them, rather than recreating a superseded mapper or lifecycle contract.
 
 Two names that are easy to confuse, and that a past refactor deliberately separated:
 
@@ -10,21 +12,21 @@ Two names that are easy to confuse, and that a past refactor deliberately separa
   numbers (`Fee`, `HireFee`, `ArtistDoorPercent`, `Guarantee`) and its `PaymentMethod`. It is the
   editable current offer. Lives in the **Deal module** (`Modules/Deal/`), keyed by the `DealType` enum.
 - **Contract** — the *signed binding artifact* (parties + both e-signatures + rendered legal terms +
-  PDF), a frozen by-value snapshot formed at Accept. It is the `ContractEntity` in the **Concert
+  PDF), a frozen by-value snapshot formed at Accept. It is the `ContractEntity` in the **Booking
   module**, and is a different thing from the Deal it was rendered from.
 
 ---
 
 ## TL;DR
 
-Two collaborating sub-systems, connected by a `DealType` enum value:
+Separate economic data from module-owned lifecycle behaviour:
 
 1. **The Deal module** owns the *data* — what kind of deal, with what numbers, on which
-   `PaymentMethod`. Shape per deal type is fixed at compile time via a TPH (table-per-hierarchy)
-   entity model in `Concertable.B2B.Deal.Domain`. It knows nothing about the lifecycle.
-2. **The Concert workflow** owns the *behaviour* — how an application progresses from `Applied → … →
-   Complete` for that deal type, who pays whom, when Stripe is called, and what each lifecycle step
-   does. It lives entirely in the Concert module and reads deals through the `IDealModule` facade.
+   `PaymentMethod`. The current four shapes use TPT (table-per-type) persistence in
+   `Concertable.B2B.Deal.Domain`; §5 replaces whole-Deal subtype identity with configurations.
+2. **Application, Booking and Concert** own their respective lifecycle behaviour and fixed stage order.
+   Each stage owns its operations and capability implementations. Deal does not orchestrate the journey;
+   Payment remains unaware of B2B deal types.
 
 ```
                 Apply        Checkout       Accept (money leg)     Finish            Settle
@@ -257,7 +259,7 @@ ConcertEntity`, and `BookingEntity (1)→(0..1) ContractEntity`. `OpportunityEnt
 Application and Booking are each a single type: the commitment that once justified a TPH split is a
 `PaymentOperationReference` frozen onto `ContractEntity`, so neither aggregate carries a payment column.
 
-**`ContractEntity`** (`Concert.Domain/Entities/ContractEntity.cs`) is a by-value immutable snapshot
+**`ContractEntity`** (`Booking.Domain/Entities/ContractEntity.cs`) is a by-value immutable snapshot
 (all private setters): `BookingId`, `VenueId`/`VenueName`, `ArtistId`/`ArtistName`, `Period`,
 `DealType`, `PaymentMethod`, `TermsText` (rendered legal prose), `PlatformTermsVersion`,
 `ArtistESignature` + `VenueESignature`, `PdfBlobName` (assigned in `Create`),
@@ -272,7 +274,10 @@ capture), the client-supplied `UserAgent` stays optional.
 
 ---
 
-## 4. Adding a new deal type
+## 4. Adding a new deal type in the current four-case model
+
+This section describes the developer-defined subtype approach. It is not the extension mechanism for
+the configurable product in §5; that target makes the current four arrangements supplied presets.
 
 A new deal type touches each module's Deal-varying leaves, not a shared workflow. The lifecycle machines are
 `DealType`-agnostic (the legal edges never vary by deal) and need no changes; only the per-module method
@@ -304,44 +309,119 @@ unhandled new type fails composition/tests in each owning module.
 
 ---
 
-## 5. Could this support custom / drag-and-drop deals?
+## 5. Configurable deals — target design
 
-**Short answer:** not in its current shape — but the workflow scaffold is closer than it looks. The
-blocker is the *data* side (a closed `DealType`, typed TPH columns, typed step reads), not the
-*behaviour* side (the capability + workflow-builder pattern already composes cleanly).
+The four-case relational model is appropriate for the four current products. Configurable deals change
+that requirement: whole deals become data assembled from a finite, code-owned economic and capability
+language. The target is one versioned template/configuration model, not four permanent built-ins plus a
+`Composite` exception. Current persistence uses TPT (`UseTptMappingStrategy`), not a single TPH table.
+The limitation is per-deal subtype identity/columns and typed subtype reads, not relational storage
+itself or module-local capability composition.
 
-### 5.1 What stands in the way
+This is a target design, not a claim that configuration storage or a builder is already implemented.
+The MVP still exposes the four existing arrangements through normal forms. The representation refactor
+is not an additional launch gate; tenant authoring, tenant-specific entitlements and a visual builder
+are separate future product features.
 
-| Concern | Where | Why it blocks dynamic deals |
-|---|---|---|
-| `DealType` is a closed enum | `Deal.Contracts/DealType.cs` | Every keyed-DI lookup, capability match, and JSON discriminator assumes a finite compile-time set. User-defined deals need an open identifier + runtime registration. |
-| TPH schema per subtype | `Deal.Domain/Entities/*DealEntity.cs` + EF configs | Each deal type gets its own columns; a user-defined deal has unknown shape at migration time (needs a JSON blob or rule list). |
-| Strategy leaves read typed properties | `Concert.Infrastructure/Services/Settlement/*SettlementAmount.cs` | Revenue-share leaves read `ArtistDoorPercent` and optional `Guarantee`; a custom deal has no typed property — you'd need a rule interpreter or a finite set of rule kinds. |
-| Stripe primitives are rigid | Payment | Connect exposes a small finite set of operations; custom deals still map onto that set. |
-| `DealPayeeResolver` selects a closed directional strategy | `Concert.Application/Resolvers/` | Who keeps ticket revenue and who receives settlement are cohesive values keyed by `DealType`; a custom deal must declare both. |
+### 5.1 Domain and lifetime
 
-### 5.2 Realistic options
+| Concept | Meaning |
+|---|---|
+| `DealTemplate` | Reusable blueprint with typed parameters/defaults and permitted rule/capability structure; stable identity, editable draft, immutable published revisions |
+| `DealConfiguration` | Reusable specialization pinned to one template revision, selecting capabilities and fixed/default terms plus allowed per-offer inputs; separately versioned |
+| `Deal` | Concrete editable offer, pinned to a configuration revision, with offer-specific values bound; edits create immutable offer revisions under a concurrency-controlled head |
+| `DealTerms` | Immutable typed economic value/graph, with no independent identity or workflow; future settlement facts are explicit typed input references, not unspecified agreed terms |
+| `Contract` | Booking-owned immutable accepted snapshot: complete effective terms, selected capabilities/semantic versions, parties, provenance and signing artifacts |
 
-- **Option A — keep the closed shape, make adding types cheaper.** Adding a developer-defined type is
-  already largely mechanical (§4). QoL wins: move the share formula to a single home (§6.1) and keep
-  every per-type strategy family in the vertical registration block.
-- **Option B (recommended if drag-and-drop is the goal) — one `Composite` deal type.** Add a single
-  `DealType.Composite` whose `CompositeDealEntity` stores a JSON *template* (a list of `Rule`s: kind,
-  amount expression, payer/payee, trigger state); a `CompositeWorkflow` whose steps **interpret** the
-  template against a finite rule vocabulary (`FlatCharge`, `PercentSplit`, `Guarantee`, `Hold`,
-  `Release`, `Refund`) — which is exactly the SPA's drag-and-drop palette. Keeps the four built-ins
-  unchanged, needs no per-deal migration (one JSON column), maps cleanly to Stripe primitives, and can
-  be built incrementally.
-- **Option C — open the `DealType` identifier entirely** (string/Guid + template table + runtime DI +
-  generic factory). Workable but invasive (breaks the JSON discriminator, touches many files); only
-  worth it if Option B proves too restrictive.
+Templates/configurations start as explicitly platform-owned presets. Future tenant-owned specializations
+can narrow parameters or select allowed capabilities without mutating a shared template or cloning every
+preset for every tenant. Drafts are editable; publishing freezes a revision. New revisions never change
+existing references. A Contract contains the resolved snapshot, not only IDs pointing to a configuration
+that must be looked up later. Archival controls new use, not historical interpretation.
+
+### 5.2 Hybrid PostgreSQL persistence
+
+Keep identity, owner scope/tenant, status, revision numbers, provenance, concurrency tokens and selected
+capability declarations relational. Store the strongly typed term/rule graph in `jsonb` on immutable
+revision rows. Capability children and the graph form one validated aggregate committed atomically.
+The Contract's frozen document materializes the entire effective graph and capability selection.
+
+A single JSON document with a relational envelope is viable but makes capability relationships harder
+to constrain/query. Fully normalized rule/parameter tables help some reports but add graph joins and
+either subtype-table churn or weakly typed EAV parameters; they still need semantic validation.
+Keeping only a `Composite` JSON escape hatch creates parallel execution, validation, snapshot and
+reporting models for equivalent arrangements. None justifies permanent whole-Deal subclasses.
+
+Use relational keys/uniqueness and row-local JSON type/range checks, with required fields and SQL-null
+behaviour made explicit. These constraints cannot prove arbitrary graph semantics or deployed handler
+compatibility. Enforce revision and capability-child immutability at the database write boundary.
+Use ordinary indexes for tenant/status/identity/revision/capability queries, selective GIN for relevant
+containment/path queries, and expression indexes or typed read projections for financial ranges and
+analytics. Derived projections never become a second editable source of terms. Actual money reporting
+continues to use recorded settlement, invoice and Payment ledger facts.
+
+### 5.3 Finite typed rules and capability compatibility
+
+The language has closed C# alternatives with typed parameters, not arbitrary user-authored code.
+Concepts such as FlatCharge, PercentSplit and Guarantee express economics; Hold, Release and Refund
+refer to supported effects and their module-owned capabilities. No scripts, free-form executable
+expressions, CLR type names, runtime DI registrations, unbounded loops or arbitrary network calls are
+part of a configuration.
+
+A server write-boundary compiler rejects unknown kinds/versions, invalid types/ranges/currency/roles,
+unbounded or cyclic graphs, unavailable phase inputs and incompatible capabilities. Validate the
+whole graph and its ordering/dependencies, not only pairwise allowlists. A release requiring held funds
+must be backed by the allowed funding path; no template can expand the code-owned capability language.
+Incomplete drafts are not executable. Publication, bound offer creation and acceptance require validated
+values; execution additionally checks current permissions, balances and provider/lifecycle state.
+
+The runtime catalog is finite and composition-tested; configuration IDs are open data identifiers,
+never DI keys. Multiple configurations can select the same operational capability. A new supported
+combination needs data publication, not a new Deal enum case, migration or deployment. New rule/effect
+semantics require code deployment; relational schema/index changes can still need migrations.
+
+### 5.4 Reproducibility, acceptance and concurrency
+
+Separate business revision, document schema version and rule/capability semantic version. Preserve
+versioned readers/evaluators and recorded settlement inputs/results for historical agreements.
+Configuration migrations produce new validated revisions; they never rewrite a signed agreement.
+Hash a versioned canonical semantic payload and separately retain exact signed text/PDF bytes: `jsonb`
+does not preserve original JSON bytes or key order.
+
+Acceptance atomically verifies the specific offered revision and signature bindings, creates the
+Contract snapshot and advances the owning lifecycle within the established transaction/idempotency
+boundary. Later offer edits cannot change the agreement. Currency, rounding, party direction and future
+revenue-input definitions are part of the frozen economics, not ambient configuration.
+
+An explicit aggregate `bigint` edit token guards mutable heads/drafts. Every child selection update
+participates in the same compare-and-swap transaction. Immutable revision IDs are not edit tokens.
+
+### 5.5 Behaviour and future tenant access
+
+Application, Booking and Concert retain their fixed stage order and independent state machines.
+Configuration selects approved capabilities within module-owned extension points; it does not own an
+end-to-end workflow or permit arbitrary stage reordering. Factories dispatch on validated finite
+capability kind/version. Keep genuine same-interface families and operation-owned honest-header unions
+where required; uniform operations stay uniform. Do not manufacture per-preset strategies or restore
+an obsolete interface merely because earlier examples named it.
+
+B2B retains one authority for deal-gross calculations, shared with payout and invoicing. Payment stays
+deal-agnostic, owns commission bindings and moves money through its existing primitives. The four current
+formulas are equivalence fixtures, including Versus as guarantee **plus** percentage share.
+
+Economic compatibility, tenant eligibility, actor permissions and row visibility are separate concerns.
+Future tenant restrictions can use existing active-tenant/membership authorization at author/publish/use
+boundaries; they must also inspect the selected capabilities, not just template IDs. Private libraries
+and counterparty-visible offers need their own authorized read surfaces. Later entitlement revocation
+does not rewrite Contracts or remove the ability to complete/refund existing obligations. This does not
+require Finbuckle; replacing tenant resolution/options/isolation infrastructure is a separate decision.
 
 ---
 
 ## 6. Frequently confused things & open issues
 
 - **`Deal` ≠ `Contract`.** The Deal is the editable economic offer (Deal module); the `ContractEntity`
-  is the frozen signed artifact formed at Accept (Concert module). Different lifetimes, different
+  is the frozen signed artifact formed at Accept (Booking module). Different lifetimes, different
   models.
 - **`PaymentMethod` ≠ the payment commitment.** `PaymentMethod` is the Deal-domain enum
   (`Cash | Transfer`) used for accounting; the commitment is the `PaymentOperationReference` B2B mints and

@@ -1,3 +1,4 @@
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,7 +11,7 @@ internal sealed class VenueEntityConfiguration : IEntityTypeConfiguration<VenueE
     {
         builder.ToTable(Schema.Tables.Venues, Schema.Name);
         builder.HasIndex(v => v.TenantId).IsUnique();
-        builder.Property(v => v.Location).HasColumnType("geography");
+        builder.Property(v => v.Location).HasGeographyColumn();
         builder.OwnsAddress(v => v.Address);
     }
 }

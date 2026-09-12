@@ -1,3 +1,4 @@
+using Concertable.Auth.Contracts;
 using Concertable.Kernel.Serializers;
 using Concertable.DataAccess.Infrastructure.Repositories;
 using FluentValidation;
@@ -58,7 +59,7 @@ public static class ServiceCollectionExtensions
                 options.MapInboundClaims = false;
                 options.Authority = configuration["Auth:Authority"] ?? configuration["services__auth__https__0"];
                 options.RequireHttpsMetadata = !environment.IsDevelopment();
-                options.Audience = "concertable.b2b.api";
+                options.Audience = AuthResource.B2B.Audience();
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ClockSkew = TimeSpan.Zero,
