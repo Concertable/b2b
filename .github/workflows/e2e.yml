@@ -1,0 +1,85 @@
+name: E2E
+
+# B2B's end-to-end suites. Deliberately triggered, never on a pull request: they boot the whole fleet
+# — auth, payment and search from the digests the fleet is qualified against, B2B itself from this
+# repository's source with the E2E admin host substituted — and they drive real Stripe test-mode
+# payments. That needs credentials, a Docker host and tens of minutes, none of which belongs on the
+# path of a pull request. CI proves the unit, integration, architecture and startup tiers there.
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Which suites to run.
+        required: true
+        default: all
+        type: choice
+        options: [all, api, ui]
+  schedule:
+    # 03:00 UTC, so an overnight result is waiting rather than a pull request being held up.
+    - cron: '0 3 * * *'
+
+concurrency:
+  # Never two fleets on one runner, and never cancel a run midway — a half-torn-down fleet leaves
+  # containers behind.
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    env:
+      GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ }}
+      Stripe__SecretKey: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Require the credentials this suite cannot run without
+        # Both are checked before the build. Without this, a missing Stripe key surfaces forty minutes
+        # later as an InvalidOperationException inside every fixture at 1 ms, which reads as a broken
+        # suite rather than an unset secret — which is exactly how it first presented.
+        run: |
+          test -n "$GITHUB_PACKAGES_TOKEN" || { echo '::error::CONCERTABLE_PACKAGES_READ is not set on this repository.'; exit 1; }
+          test -n "$Stripe__SecretKey" || { echo '::error::STRIPE_TEST_SECRET_KEY is not set on this repository. The E2E fixtures cannot start without it.'; exit 1; }
+
+      - name: Restore
+        run: dotnet restore Concertable.B2B.slnx
+
+      - name: Build
+        run: dotnet build Concertable.B2B.slnx --configuration Release --no-restore
+
+      - name: Install Playwright
+        if: inputs.suite != 'api'
+        run: pwsh tests/E2ETests/Concertable.B2B.E2ETests.Ui/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Run the suites
+        # One fleet at a time: each suite composes its own AppHost, so running them concurrently would
+        # contend for the same host ports and the same Docker daemon.
+        run: >-
+          dotnet test Concertable.B2B.slnx --configuration Release --no-build --no-restore -m:1
+          --filter "${{ inputs.suite == 'api' && 'Category=Api' || inputs.suite == 'ui' && 'Category=Ui' || 'Category=Api|Category=Ui' }}"
+          --logger "trx;LogFileName=e2e.trx"
+
+      - name: Retain the results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: b2b-e2e-results
+          path: |
+            **/TestResults/*.trx
+            **/e2e-diagnostics.log
+          if-no-files-found: warn
