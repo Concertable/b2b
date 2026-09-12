@@ -1,5 +1,6 @@
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
+using Concertable.B2B.Infrastructure.Authorization;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -24,14 +25,6 @@ namespace Concertable.B2B.Tenant.Infrastructure.Events;
 /// </summary>
 internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<CredentialRegisteredEvent>
 {
-    private static readonly IReadOnlyDictionary<string, TenantType> TenantTypeByClientId = new Dictionary<string, TenantType>
-    {
-        [ClientIds.VenueWeb] = TenantType.Venue,
-        [ClientIds.VenueMobile] = TenantType.Venue,
-        [ClientIds.ArtistWeb] = TenantType.Artist,
-        [ClientIds.ArtistMobile] = TenantType.Artist,
-    };
-
     private readonly TenantDbContext context;
     private readonly TimeProvider timeProvider;
 
@@ -43,7 +36,7 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
 
     public async Task HandleAsync(CredentialRegisteredEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (!TenantTypeByClientId.TryGetValue(e.ClientId, out var type))
+        if (InteractiveClients.Find(e.ClientId) is not { } client || client.Client.ManagerTenantType is not { } type)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(TenantProvisioningHandler), ct))

@@ -1,3 +1,4 @@
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,7 +11,7 @@ internal sealed class ArtistEntityConfiguration : IEntityTypeConfiguration<Artis
     {
         builder.ToTable(Schema.Tables.Artists, Schema.Name);
         builder.HasIndex(a => a.TenantId).IsUnique();
-        builder.Property(a => a.Location).HasColumnType("geography");
+        builder.Property(a => a.Location).HasGeographyColumn();
         builder.OwnsAddress(a => a.Address);
         builder.PrimitiveCollection(a => a.Genres);
     }

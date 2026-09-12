@@ -22,12 +22,12 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Theory]
-    [InlineData(ClientIds.VenueWeb, TenantType.Venue)]
-    [InlineData(ClientIds.ArtistWeb, TenantType.Artist)]
-    public async Task Registration_NewManager_ProvisionsTenantWithTypeAndFoundingOwner(string clientId, TenantType expected)
+    [InlineData(InteractiveClient.VenueBrowser, TenantType.Venue)]
+    [InlineData(InteractiveClient.ArtistBrowser, TenantType.Artist)]
+    public async Task Registration_NewManager_ProvisionsTenantWithTypeAndFoundingOwner(InteractiveClient client, TenantType expected)
     {
         var userId = Guid.NewGuid();
-        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, $"{Guid.NewGuid():N}@test.com", clientId));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, $"{Guid.NewGuid():N}@test.com", client.Info().Id));
 
         var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == userId);
         Assert.NotNull(membership);
@@ -44,7 +44,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
     public async Task Registration_NonManagerClient_ProvisionsNothing()
     {
         var userId = Guid.NewGuid();
-        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, "customer@test.com", ClientIds.CustomerWeb));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, "customer@test.com", InteractiveClient.CustomerBrowser.Info().Id));
 
         Assert.False(await fixture.Memberships.AnyAsync(m => m.UserId == userId));
     }
@@ -58,7 +58,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         var newEmail = $"{Guid.NewGuid():N}@invited.test";
         await fixture.AddInvitationAsync(tenantId, newEmail, TenantRole.Manager, inviter.Id, DateTime.UtcNow.AddDays(7));
 
-        await fixture.ProvisionAsync(new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.VenueWeb));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(newUserId, newEmail, InteractiveClient.VenueBrowser.Info().Id));
 
         var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == newUserId);
         Assert.NotNull(membership);
@@ -83,7 +83,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         await fixture.AddInvitationAsync(tenantId, "invitee@casing.test", TenantRole.Staff, inviter.Id, DateTime.UtcNow.AddDays(7));
 
         // Auth carries the email verbatim; the handler normalizes it before matching the stored (normalized) invite.
-        await fixture.ProvisionAsync(new CredentialRegisteredEvent(newUserId, "  Invitee@Casing.TEST ", ClientIds.VenueWeb));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(newUserId, "  Invitee@Casing.TEST ", InteractiveClient.VenueBrowser.Info().Id));
 
         var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == newUserId);
         Assert.NotNull(membership);
@@ -102,7 +102,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
 
         // Same envelope → same MessageId → the inbox dedup swallows the redelivery.
         var envelope = MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow);
-        var e = new CredentialRegisteredEvent(newUserId, newEmail, ClientIds.VenueWeb);
+        var e = new CredentialRegisteredEvent(newUserId, newEmail, InteractiveClient.VenueBrowser.Info().Id);
         await fixture.ProvisionAsync(e, envelope);
         await fixture.ProvisionAsync(e, envelope);
 
@@ -117,7 +117,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         /* The seeder already created this operator's tenant + Owner membership; re-running the handler (as the
            bus would on the real CredentialRegisteredEvent) must not duplicate either — the unique (TenantId,
            UserId) index would throw on a duplicate insert, so a clean run is itself the dedup assertion. */
-        await fixture.ProvisionAsync(new CredentialRegisteredEvent(manager.Id, manager.Email, ClientIds.VenueWeb));
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(manager.Id, manager.Email, InteractiveClient.VenueBrowser.Info().Id));
 
         var ownerCount = await fixture.Memberships.CountAsync(m => m.UserId == manager.Id && m.Role == TenantRole.Owner);
         var tenantCount = await fixture.Tenants.CountAsync(t => t.CreatedByUserId == manager.Id);

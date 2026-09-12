@@ -74,22 +74,22 @@ public sealed class ConcertApiFixture : ApiFixture
     // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause,
     // and SQL Server rejects OUTPUT against a table that has an enabled trigger. Stated over the new
     // row alone, it still admits the settlement reservation and rejects only what follows it.
-    internal Task FailSettlementPersistenceAsync() =>
-        dbContext.Database.ExecuteSqlRawAsync($"""
-            ALTER TABLE [concert].[Concerts] WITH NOCHECK
-            ADD CONSTRAINT [CK_Concerts_FailSettlementPersistence_ForTest] CHECK (
-                [SettlementOperationId] IS NULL
-                OR [State] = {(int)ConcertState.AwaitingSettlement})
-            """);
+    internal Task FailSettlementPersistenceAsync()
+    {
+        var settlementOperationId = dbContext.Database.DelimitIdentifier("SettlementOperationId");
+        var state = dbContext.Database.DelimitIdentifier("State");
+        return dbContext.Database.AddUnvalidatedCheckConstraintAsync(
+            "concert",
+            "Concerts",
+            "CK_Concerts_FailSettlementPersistence_ForTest",
+            $"{settlementOperationId} IS NULL OR {state} = {(int)ConcertState.AwaitingSettlement}");
+    }
 
     internal Task RestoreSettlementPersistenceAsync() =>
-        dbContext.Database.ExecuteSqlRawAsync("""
-            IF EXISTS (
-                SELECT 1 FROM sys.check_constraints
-                WHERE [name] = 'CK_Concerts_FailSettlementPersistence_ForTest')
-                ALTER TABLE [concert].[Concerts]
-                DROP CONSTRAINT [CK_Concerts_FailSettlementPersistence_ForTest]
-            """);
+        dbContext.Database.DropCheckConstraintIfExistsAsync(
+            "concert",
+            "Concerts",
+            "CK_Concerts_FailSettlementPersistence_ForTest");
 
     internal Task RunCompletionAsync() => completionRunner.RunAsync();
 

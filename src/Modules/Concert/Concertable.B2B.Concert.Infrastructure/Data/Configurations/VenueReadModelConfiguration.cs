@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.ReadModels;
+using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -12,7 +13,7 @@ internal sealed class VenueReadModelConfiguration : IEntityTypeConfiguration<Ven
         builder.ToTable(Schema.Tables.VenueReadModels, Schema.Name);
         builder.Property(v => v.Id).ValueGeneratedNever();
         builder.HasIndex(v => v.TenantId).IsUnique();
-        builder.Property(v => v.Location).HasColumnType("geography").IsRequired();
+        builder.Property(v => v.Location).HasGeographyColumn().IsRequired();
         builder.OwnsAddress(v => v.Address);
     }
 }

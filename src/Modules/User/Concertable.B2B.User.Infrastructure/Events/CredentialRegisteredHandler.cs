@@ -1,5 +1,6 @@
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
+using Concertable.B2B.Infrastructure.Authorization;
 using Concertable.B2B.User.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -9,15 +10,6 @@ namespace Concertable.B2B.User.Infrastructure.Events;
 
 internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<CredentialRegisteredEvent>
 {
-    private static readonly IReadOnlySet<string> ManagerClientIds = new HashSet<string>
-    {
-        ClientIds.VenueWeb,
-        ClientIds.VenueMobile,
-        ClientIds.ArtistWeb,
-        ClientIds.ArtistMobile,
-        ClientIds.Admin,
-    };
-
     private readonly UserDbContext context;
     private readonly ILogger<CredentialRegisteredHandler> logger;
 
@@ -38,7 +30,7 @@ internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<Cre
     {
         logger.HandlingCredentialRegistered(e.UserId, e.ClientId);
 
-        if (!ManagerClientIds.Contains(e.ClientId))
+        if (InteractiveClients.Find(e.ClientId) is not { } client || !client.Client.IsManagerClient)
         {
             logger.SkippedCredentialRegistered(e.UserId, $"ClientId '{e.ClientId}' is not a manager client");
             return;

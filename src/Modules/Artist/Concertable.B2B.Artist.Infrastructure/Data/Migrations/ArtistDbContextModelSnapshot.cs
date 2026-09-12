@@ -133,6 +133,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Data.Migrations
 
                     b.Property<string>("MessageType")
                         .IsRequired()
+                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTimeOffset>("ReceivedAt")

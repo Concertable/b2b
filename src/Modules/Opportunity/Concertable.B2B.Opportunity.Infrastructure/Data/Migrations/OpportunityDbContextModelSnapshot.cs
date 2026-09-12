@@ -80,6 +80,7 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
 
                     b.Property<string>("MessageType")
                         .IsRequired()
+                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTimeOffset>("ReceivedAt")
