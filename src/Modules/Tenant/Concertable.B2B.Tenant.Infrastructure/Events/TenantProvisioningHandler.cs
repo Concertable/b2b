@@ -36,7 +36,7 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
 
     public async Task HandleAsync(CredentialRegisteredEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (InteractiveClients.Find(e.ClientId) is not { } client || client.Client.ManagerTenantType is not { } type)
+        if (InteractiveClientInfo.GetOrDefault(e.ClientId) is not { } client || client.Client.ManagerTenantType is not { } type)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(TenantProvisioningHandler), ct))

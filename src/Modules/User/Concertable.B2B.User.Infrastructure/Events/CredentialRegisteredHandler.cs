@@ -30,7 +30,7 @@ internal sealed class CredentialRegisteredHandler : IIntegrationEventHandler<Cre
     {
         logger.HandlingCredentialRegistered(e.UserId, e.ClientId);
 
-        if (InteractiveClients.Find(e.ClientId) is not { } client || !client.Client.IsManagerClient)
+        if (InteractiveClientInfo.GetOrDefault(e.ClientId) is not { } client || !client.Client.IsManagerClient)
         {
             logger.SkippedCredentialRegistered(e.UserId, $"ClientId '{e.ClientId}' is not a manager client");
             return;
