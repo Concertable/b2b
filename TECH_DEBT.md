@@ -6,6 +6,25 @@ When an item is fixed, update both this file and [`ARCHITECTURE.md`](./ARCHITECT
 
 ## MEDIUM
 
+### Imported guidance still contains monorepo-era paths and runtime rosters
+
+The lifecycle/product pointers now distinguish current B2B stages from configurable-workflow targets,
+but the broader imported guidance has not had a source-accuracy pass in this microrepo. Examples include
+the `.NET 9` label and old event/processor rosters in `ARCHITECTURE.md`, `api/TECH_DEBT.md` in
+`CODE_PATTERNS.md`, and the `api/...` paths and historical symbol examples in Deal's architecture.
+Existing debt entries also link outside this repository to former monorepo plans. Treat those paths
+and symbol lists as unverified, not instructions to recreate removed types. Repairing the whole imported
+corpus is separate from the configurable-workflow context update.
+
+The microrepo has no `.agents/skill-routes.json` or frozen-tree `.agents/hooks/docs_reachability.py`;
+the installed workflow helper also assumes repo-local skill bodies for its rules manifest. Manual
+changed-link checks do not establish whole-corpus reachability. Keep generic enforcement in its standards
+owner rather than copying a second handwritten implementation into B2B.
+
+**Resolves when:** imported guidance and debt references match this repo's current source and durable
+owners, current rosters are clearly separated from historical examples/targets, and the standards-owned
+guidance/skill tooling validates this installed-plugin microrepo layout and its instruction reachability.
+
 ### Operation-claim idempotency is copy-pasted per entity, in three different shapes
 
 Five long-running operations anchor themselves to a row with an operation id, and no two do it the same way.

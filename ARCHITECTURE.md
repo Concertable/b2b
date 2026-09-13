@@ -8,7 +8,7 @@
 
 ## Bounded context
 
-B2B owns the venue/artist side of Concertable: opportunities, applications, bookings, contracts, concert workflow, settlement, and manager/admin profiles. The concert here is a **workflow entity** (`Posted → Applied → Accepted → Verified → Finished → Settled`) with contract terms and settlement obligations. B2B does **not** own ticket buyers, customer reviews, or browse/search — those belong to Customer and Search respectively.
+B2B owns the venue/artist side of Concertable: opportunities, applications, bookings, contracts, concert workflow, settlement, and manager/admin profiles. Opportunity, Application, Booking and Concert are separate stage aggregates in separate modules; Concert is the final stage, not the entire recruitment/booking lifecycle. It consumes Booking's immutable `ConfirmedBooking` handoff, rather than loading live Application/Opportunity terms. Product direction and the target direct-invitation route are routed from [`AGENTS.md`](./AGENTS.md#product-direction--configurable-work-within-fixed-lifecycle-routes); the current lifecycle is owned by [`src/Modules/Concert/AGENTS.md`](./src/Modules/Concert/AGENTS.md). B2B does **not** own ticket buyers, customer reviews, or browse/search — those belong to Customer and Search respectively.
 
 ---
 
@@ -29,13 +29,16 @@ B2B owns the venue/artist side of Concertable: opportunities, applications, book
 
 ## Modules
 
-All modules live under `Modules/`. Each follows the `Concertable.B2B.<Module>.*` naming convention.
+Modules live under `src/Modules/`. Each follows the `Concertable.B2B.<Module>.*` naming convention.
 
 | Module | Canonical entities | Projects |
 |---|---|---|
 | **Artist** | `ArtistEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
-| **Concert** | `ConcertEntity` (workflow: stage, BookingId; deal type derives through Booking → Application), `OpportunityEntity`, `ApplicationEntity`, `BookingEntity`, `SettlementTransactionEntity`, `TicketTransactionEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
-| **Contract** | `DealEntity` (TPH: `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity`), `EscrowEntity` | Api, Application, Contracts, Domain, Infrastructure, UnitTests |
+| **Opportunity** | `OpportunityEntity` (recruitment listing, state and `DealId`) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
+| **Application** | `ApplicationEntity` (application decision and accepted snapshot handoff) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
+| **Booking** | `BookingEntity` (confirmation and pre-Concert cancellation), `ContractEntity` (accepted terms/signatures) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
+| **Concert** | `ConcertEntity` (live concert, publication, cancellation and settlement; frozen booking snapshot), `InvoiceEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
+| **Deal** | `DealEntity` (current TPT: `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity`) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
 | **Conversations** | `MessageEntity`, `ParticipantProfile` (local sender-display projection) | Api, Application, Contracts, Domain, Infrastructure |
 | **Tenant** | `TenantEntity` (business account, membership boundary, legal/VAT/Stripe identity, settlement payee) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
 | **User** | `UserEntity` (flat) + standalone `AdminProfileEntity` — no TPH, no manager-profile subtypes | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
