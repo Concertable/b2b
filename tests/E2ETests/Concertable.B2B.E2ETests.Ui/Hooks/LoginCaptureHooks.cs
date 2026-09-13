@@ -38,6 +38,7 @@ public static class LoginCaptureHooks
         var page = await context.NewPageAsync();
         var login = new LoginPage(page, spaUrl);
 
+        await fixture.App.WaitForTokenMintingAsync(email, password);
         await login.GotoAsync();
         await login.SignInAsync(email, password);
         await page.WaitForURLAsync($"{spaUrl}/");

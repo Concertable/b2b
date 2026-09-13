@@ -103,7 +103,10 @@ public sealed class AppFixture : IAsyncLifetime
 
         var sql = builder.Resources.OfType<SqlServerServerResource>().Single();
         var searchDb = builder.CreateResourceBuilder(sql).AddDatabase(SearchConstants.Database);
-        var authResource = builder.Resources.Single(resource => resource.Name == AuthConstants.Resource);
+        var authResource = builder.Resources.OfType<ServiceContainerResource>()
+            .Single(resource => resource.Name == AuthConstants.Resource);
+        var authBuilder = builder.CreateResourceBuilder(authResource);
+        authBuilder.WithEnvironment("Auth__VerificationBaseUrl", authBuilder.GetEndpoint("https"));
         var authService = builder.CreateResourceBuilder((IResourceWithServiceDiscovery)authResource);
         var searchWeb = builder.AddSearchWeb(SearchWebImage, SearchWebDigest, authService, searchDb);
         builder.AddSearchWorkers(SearchWorkersImage, SearchWorkersDigest, searchDb,
