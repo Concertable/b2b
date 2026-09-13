@@ -24,8 +24,8 @@ public sealed class AppFixture : IAsyncLifetime
     private const string SearchWebDigest = "sha256:5bfb93f03c875d2adb5bbd18499f2ff11ef9a71902cd7f62811cb0d7876976cb";
     private const string SearchWorkersImage = "ghcr.io/concertable/search-workers";
     private const string SearchWorkersDigest = "sha256:c0c7d64a4b2702a0186963472ab8bf4030c2cba873748eb8fdb6be9905c84d11";
-    private const string PaymentE2EWebDigest = "sha256:676ec14f68e0f7f477491b3e92617c008a42c57d6d87cc239df761866df76793";
-    private const string PaymentE2EWorkersDigest = "sha256:14ff5132e49b6ddd83a9d3bffe4e2ef3a44a4464ff0529f89af2f91c239a5bb8";
+    private const string PaymentE2EWebDigest = "sha256:df33de77f2d01558f9ffb3b0d1cc68ddcd26e41f6d54f65045caf3e466b4a775";
+    private const string PaymentE2EWorkersDigest = "sha256:4385c505153cca1df16983864b0c99807537b37f8aea801d434092cce47c87c8";
 
     private DistributedApplication app = null!;
     private AspireResourceLogger resourceLogger = null!;
