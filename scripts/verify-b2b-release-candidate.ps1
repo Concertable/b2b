@@ -335,6 +335,7 @@ try {
             -t:PublishContainer `
             -p:ContainerRepository=$repository `
             -p:ContainerImageTag=$releaseVersion `
+            -p:ContainerImageFormat=Docker `
             -p:ContainerArchiveOutputPath=$archivePath `
             -p:SourceRevisionId=$revision
         if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $archivePath) -or (Get-Item -LiteralPath $archivePath).Length -eq 0) {
