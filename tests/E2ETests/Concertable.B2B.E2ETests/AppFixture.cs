@@ -101,14 +101,37 @@ public sealed class AppFixture : IAsyncLifetime
 
         var sql = builder.Resources.OfType<SqlServerServerResource>().Single();
         var searchDb = builder.CreateResourceBuilder(sql).AddDatabase(SearchConstants.Database);
-        var authService = builder.CreateResourceBuilder(
-            (IResourceWithServiceDiscovery)builder.Resources.Single(resource => resource.Name == AuthConstants.Resource));
-        builder.AddSearchWeb(SearchWebImage, SearchWebDigest, authService, searchDb);
+        var authResource = builder.Resources.Single(resource => resource.Name == AuthConstants.Resource);
+        var authService = builder.CreateResourceBuilder((IResourceWithServiceDiscovery)authResource);
+        var searchWeb = builder.AddSearchWeb(SearchWebImage, SearchWebDigest, authService, searchDb);
         builder.AddSearchWorkers(SearchWorkersImage, SearchWorkersDigest, searchDb,
             builder.CreateResourceBuilder(builder.Resources.OfType<AzureServiceBusResource>().Single()));
 
         var b2bWeb = builder.Resources.OfType<ProjectResource>()
             .Single(resource => resource.Name == B2BConstants.WebResource);
+        var paymentWeb = builder.Resources.Single(resource => resource.Name == PaymentConstants.WebResource);
+        Concertable.Testing.E2E.DistributedApplicationBuilderExtensions.PinHttpsEndpoint(
+            builder, authResource, new Uri(authUrl).Port);
+        Concertable.Testing.E2E.DistributedApplicationBuilderExtensions.PinHttpsEndpoint(
+            builder, paymentWeb, new Uri(PaymentWebUrl).Port);
+        Concertable.Testing.E2E.DistributedApplicationBuilderExtensions.PinHttpsEndpoint(
+            builder, searchWeb.Resource, new Uri(SearchWebUrl).Port);
+        Concertable.Testing.E2E.DistributedApplicationBuilderExtensions.PinHttpsEndpoint(
+            builder, b2bWeb, new Uri(B2BWebUrl).Port);
+        foreach (var resource in new[] { authResource, paymentWeb, searchWeb.Resource })
+            resource.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
+                context.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "E2E"));
+        var paymentWorkers = builder.Resources.Single(resource => resource.Name == PaymentConstants.WorkersResource);
+        paymentWeb.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
+        {
+            context.EnvironmentVariables["E2E__AdminKey"] = run.AdminKey;
+            AddStripeCustomers(context, StripeCustomerResolver);
+        }));
+        paymentWorkers.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
+        {
+            context.EnvironmentVariables["DOTNET_ENVIRONMENT"] = "E2E";
+            AddStripeCustomers(context, StripeCustomerResolver);
+        }));
         b2bWeb.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
         {
             context.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "E2E";
@@ -237,6 +260,14 @@ public sealed class AppFixture : IAsyncLifetime
     }
 
     public ResourceNotificationService ResourceNotifications => app.ResourceNotifications;
+
+    private static void AddStripeCustomers(
+        EnvironmentCallbackContext context,
+        StripeCustomerResolver stripeCustomers)
+    {
+        foreach (var (key, value) in stripeCustomers.GetConfiguration())
+            context.EnvironmentVariables[key.Replace(":", "__", StringComparison.Ordinal)] = value;
+    }
 
     // AddNpmApp has no HTTP readiness check, so Aspire reports a SPA 'Running' before its Vite dev
     // server actually serves. UI runs must gate on real serving (polls until 200, throws on timeout)

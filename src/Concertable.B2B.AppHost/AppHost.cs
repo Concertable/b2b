@@ -38,7 +38,7 @@ public static class AppHost
         asb.Topology().AddB2BTopology().AddSearchTopology().AddPaymentTopology().AddAuthTopology().RunAsEmulator();
         var auth = builder.AddAuth(AuthImage, AuthDigest, authDb, asb)
                           .WithContainerRuntimeArgs("--user", "root")
-                          .WithHttpsEndpoint(targetPort: AuthConstants.ContainerPort, name: "https");
+                          .WithHttpEndpoint(targetPort: AuthConstants.ContainerPort, name: "https");
         auth.WithSpaClients(B2BLocalSpaSurfaces.AuthClients);
         var paymentWeb = builder.AddPaymentWeb(PaymentWebImage, PaymentWebDigest, auth, paymentDb, asb);
         var api = builder.AddB2BWeb<TWebProject>(b2bDb, auth, storage, blobs, asb, paymentWeb);

@@ -31,7 +31,7 @@ public sealed class ResourceGraphTests
     public async Task ProductionGraphAndStrictValidation_AreValid()
     {
         var validBuilder = AppHost.CreateBuilder([]);
-        AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "https");
+        AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "http");
         AssertContainerRuntimeArgs(validBuilder, AuthConstants.Resource, "--user", "root");
         AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
         AssertImageEndpoint(validBuilder, PaymentConstants.WebResource, "https", scheme: "http");
