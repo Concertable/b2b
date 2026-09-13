@@ -24,6 +24,8 @@ public sealed class AppFixture : IAsyncLifetime
     private const string SearchWebDigest = "sha256:5bfb93f03c875d2adb5bbd18499f2ff11ef9a71902cd7f62811cb0d7876976cb";
     private const string SearchWorkersImage = "ghcr.io/concertable/search-workers";
     private const string SearchWorkersDigest = "sha256:c0c7d64a4b2702a0186963472ab8bf4030c2cba873748eb8fdb6be9905c84d11";
+    private const string SearchMigrationsImage = "ghcr.io/concertable/search-migrations";
+    private const string SearchMigrationsDigest = "sha256:0ac571000b44f5683efa6890b23b9ef5d8b9e1cb5aa3461d314ececdccd453ea";
     private const string AuthE2EDigest = "sha256:b92399c92ddff69b7916935b0b7b31afb52460b3151997f60d32124c9ff70c2c";
     private const string PaymentE2EWebDigest = "sha256:df33de77f2d01558f9ffb3b0d1cc68ddcd26e41f6d54f65045caf3e466b4a775";
     private const string PaymentE2EWorkersDigest = "sha256:4385c505153cca1df16983864b0c99807537b37f8aea801d434092cce47c87c8";
@@ -110,9 +112,17 @@ public sealed class AppFixture : IAsyncLifetime
         authBuilder.WithImageSHA256(AuthE2EDigest["sha256:".Length..]);
         authBuilder.WithEnvironment("Auth__VerificationBaseUrl", authBuilder.GetEndpoint("https"));
         var authService = builder.CreateResourceBuilder((IResourceWithServiceDiscovery)authResource);
-        var searchWeb = builder.AddSearchWeb(SearchWebImage, SearchWebDigest, authService, searchDb);
+        var searchMigrations = builder.AddContainerImage(
+                "search-migrations",
+                SearchMigrationsImage,
+                SearchMigrationsDigest)
+            .WithReference(searchDb)
+            .WaitFor(searchDb);
+        var searchWeb = builder.AddSearchWeb(SearchWebImage, SearchWebDigest, authService, searchDb)
+            .WaitForCompletion(searchMigrations);
         builder.AddSearchWorkers(SearchWorkersImage, SearchWorkersDigest, searchDb,
-            builder.CreateResourceBuilder(builder.Resources.OfType<AzureServiceBusResource>().Single()));
+                builder.CreateResourceBuilder(builder.Resources.OfType<AzureServiceBusResource>().Single()))
+            .WaitForCompletion(searchMigrations);
 
         var b2bWeb = builder.Resources.OfType<ProjectResource>()
             .Single(resource => resource.Name == B2BConstants.WebResource);

@@ -55,6 +55,7 @@ jobs:
           docker pull ghcr.io/concertable/payment-workers@sha256:4385c505153cca1df16983864b0c99807537b37f8aea801d434092cce47c87c8
           docker pull ghcr.io/concertable/search-web@sha256:5bfb93f03c875d2adb5bbd18499f2ff11ef9a71902cd7f62811cb0d7876976cb
           docker pull ghcr.io/concertable/search-workers@sha256:c0c7d64a4b2702a0186963472ab8bf4030c2cba873748eb8fdb6be9905c84d11
+          docker pull ghcr.io/concertable/search-migrations@sha256:0ac571000b44f5683efa6890b23b9ef5d8b9e1cb5aa3461d314ececdccd453ea
 
       - name: Provision HTTPS dev certificate
         run: |
