@@ -111,6 +111,7 @@ public sealed class AppFixture : IAsyncLifetime
         var authBuilder = builder.CreateResourceBuilder(authResource);
         authBuilder.WithImageSHA256(AuthE2EDigest["sha256:".Length..]);
         authBuilder.WithEnvironment("Auth__VerificationBaseUrl", authBuilder.GetEndpoint("https"));
+        authBuilder.WithEnvironment("RateLimiting__credential__PermitLimit", "1000");
         var authService = builder.CreateResourceBuilder((IResourceWithServiceDiscovery)authResource);
         var searchMigrations = builder.AddContainerImage(
                 "search-migrations",
