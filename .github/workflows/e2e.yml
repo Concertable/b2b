@@ -104,13 +104,13 @@ jobs:
         if: inputs.suite != 'ui'
         run: >-
           dotnet test tests/E2ETests/Concertable.B2B.E2ETests/Concertable.B2B.E2ETests.csproj
-          --configuration Release --no-restore -m:1 --logger "trx;LogFileName=e2e.trx"
+          --configuration Release -m:1 --logger "trx;LogFileName=e2e.trx"
 
       - name: Run UI E2E
         if: inputs.suite != 'api'
         run: >-
           dotnet test tests/E2ETests/Concertable.B2B.E2ETests.Ui/Concertable.B2B.E2ETests.Ui.csproj
-          --configuration Release --no-restore -m:1 --logger "trx;LogFileName=e2e.trx"
+          --configuration Release -m:1 --logger "trx;LogFileName=e2e.trx"
 
       - name: Retain the results
         if: always()
