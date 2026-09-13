@@ -48,6 +48,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Verify Auth image access
+        run: docker pull ghcr.io/concertable/auth@sha256:d888cb59d806241611eb36a5d1eeb293d472cd94e4a89bf6dab6b9b23c0c5f82
+
       - name: Provision HTTPS dev certificate
         run: |
           dotnet dev-certs https --trust || true
