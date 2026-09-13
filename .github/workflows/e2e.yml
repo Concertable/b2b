@@ -1,10 +1,5 @@
 name: E2E
 
-# B2B's end-to-end suites. Deliberately triggered, never on a pull request: they boot the whole fleet
-# — auth, payment and search from the digests the fleet is qualified against, B2B itself from this
-# repository's source with the E2E admin host substituted — and they drive real Stripe test-mode
-# payments. That needs credentials, a Docker host and tens of minutes, none of which belongs on the
-# path of a pull request. CI proves the unit, integration, architecture and startup tiers there.
 on:
   workflow_dispatch:
     inputs:
@@ -15,12 +10,9 @@ on:
         type: choice
         options: [all, api, ui]
   schedule:
-    # 03:00 UTC, so an overnight result is waiting rather than a pull request being held up.
     - cron: '0 3 * * *'
 
 concurrency:
-  # Never two fleets on one runner, and never cancel a run midway — a half-torn-down fleet leaves
-  # containers behind.
   group: e2e-${{ github.ref }}
   cancel-in-progress: false
 
@@ -36,7 +28,9 @@ jobs:
 
     env:
       GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ || secrets.GITHUB_TOKEN }}
+      GoogleApiKey: ${{ secrets.GOOGLE_API_KEY }}
       Stripe__SecretKey: ${{ secrets.STRIPE_SECRET_KEY }}
+      VITE_STRIPE_PUBLISHABLE_KEY: ${{ vars.STRIPE_PUBLISHABLE_KEY }}
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -48,13 +42,66 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Log in to GHCR
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ env.GITHUB_PACKAGES_TOKEN }}
+
+      - name: Verify image access
+        run: |
+          docker pull ghcr.io/concertable/auth@sha256:e228e89af3fa51f1dd7995d33e109bb3a9c2bf2ab3bed98df28e3ef7bac28251
+          docker pull ghcr.io/concertable/payment-web@sha256:df33de77f2d01558f9ffb3b0d1cc68ddcd26e41f6d54f65045caf3e466b4a775
+          docker pull ghcr.io/concertable/payment-workers@sha256:4385c505153cca1df16983864b0c99807537b37f8aea801d434092cce47c87c8
+          docker pull ghcr.io/concertable/search-web@sha256:5bfb93f03c875d2adb5bbd18499f2ff11ef9a71902cd7f62811cb0d7876976cb
+          docker pull ghcr.io/concertable/search-workers@sha256:c0c7d64a4b2702a0186963472ab8bf4030c2cba873748eb8fdb6be9905c84d11
+          docker pull ghcr.io/concertable/search-migrations@sha256:0ac571000b44f5683efa6890b23b9ef5d8b9e1cb5aa3461d314ececdccd453ea
+
+      - name: Provision HTTPS dev certificate
+        run: |
+          dotnet dev-certs https --trust || true
+          echo "SSL_CERT_DIR=$HOME/.aspnet/dev-certs/trust:/etc/ssl/certs:/usr/lib/ssl/certs" >> "$GITHUB_ENV"
+
+      - name: Install Stripe CLI
+        uses: ./.github/actions/setup-stripe-cli
+
+      - name: Install Azure Functions Core Tools
+        run: |
+          npm install -g azure-functions-core-tools@4.12.1 --unsafe-perm true
+          func --version
+
+      - name: Set up Node
+        if: inputs.suite != 'api'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install web dependencies
+        if: inputs.suite != 'api'
+        run: npm ci
+
+      - name: Build frontend package dependencies
+        if: inputs.suite != 'api'
+        run: npm run build:shared
+
       - name: Require the credentials this suite cannot run without
-        # Both are checked before the build. Without this, a missing Stripe key surfaces forty minutes
-        # later as an InvalidOperationException inside every fixture at 1 ms, which reads as a broken
-        # suite rather than an unset secret — which is exactly how it first presented.
         run: |
           test -n "$GITHUB_PACKAGES_TOKEN" || { echo '::error::CONCERTABLE_PACKAGES_READ is not set on this repository.'; exit 1; }
-          test -n "$Stripe__SecretKey" || { echo '::error::STRIPE_SECRET_KEY is not set on this repository. Copy it from Concertable/concertable, which holds it under the same name. The E2E fixtures cannot start without it.'; exit 1; }
+          test -n "$GoogleApiKey" || { echo '::error::GOOGLE_API_KEY is not set on this repository.'; exit 1; }
+          test -n "$Stripe__SecretKey" || { echo '::error::STRIPE_SECRET_KEY is not set on this repository.'; exit 1; }
+          if [ '${{ inputs.suite }}' != 'api' ]; then
+            test -n "$VITE_STRIPE_PUBLISHABLE_KEY" || { echo '::error::STRIPE_PUBLISHABLE_KEY is not set on this repository.'; exit 1; }
+          fi
+
+      - name: Generate service credentials
+        run: |
+          for name in ServiceAuth__B2BClientSecret ServiceAuth__CustomerClientSecret ServiceAuth__AuthClientSecret; do
+            value=$(openssl rand -hex 32)
+            echo "::add-mask::$value"
+            echo "$name=$value" >> "$GITHUB_ENV"
+          done
 
       - name: Restore
         run: dotnet restore Concertable.B2B.slnx
@@ -66,13 +113,17 @@ jobs:
         if: inputs.suite != 'api'
         run: pwsh tests/E2ETests/Concertable.B2B.E2ETests.Ui/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
-      - name: Run the suites
-        # One fleet at a time: each suite composes its own AppHost, so running them concurrently would
-        # contend for the same host ports and the same Docker daemon.
+      - name: Run API E2E
+        if: inputs.suite != 'ui'
         run: >-
-          dotnet test Concertable.B2B.slnx --configuration Release --no-build --no-restore -m:1
-          --filter "${{ inputs.suite == 'api' && 'Category=Api' || inputs.suite == 'ui' && 'Category=Ui' || 'Category=Api|Category=Ui' }}"
-          --logger "trx;LogFileName=e2e.trx"
+          dotnet test tests/E2ETests/Concertable.B2B.E2ETests/Concertable.B2B.E2ETests.csproj
+          --configuration Release -m:1 --logger "trx;LogFileName=e2e.trx"
+
+      - name: Run UI E2E
+        if: inputs.suite != 'api'
+        run: >-
+          dotnet test tests/E2ETests/Concertable.B2B.E2ETests.Ui/Concertable.B2B.E2ETests.Ui.csproj
+          --configuration Release -m:1 --logger "trx;LogFileName=e2e.trx"
 
       - name: Retain the results
         if: always()

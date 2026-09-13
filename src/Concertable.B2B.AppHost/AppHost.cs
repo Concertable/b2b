@@ -10,23 +10,25 @@ public static class AppHost
     private const string AuthImage = "ghcr.io/concertable/auth";
     private const string AuthDigest = "sha256:d888cb59d806241611eb36a5d1eeb293d472cd94e4a89bf6dab6b9b23c0c5f82";
     private const string PaymentWebImage = "ghcr.io/concertable/payment-web";
-    private const string PaymentWebDigest = "sha256:24503f1c17bce5a67b4544455ee3886e76c6711f1eed57b5c6c74d2c45febdbd";
+    private const string PaymentWebDigest = "sha256:2c7a9b30291d4adb9d94dcf0d047b86809ad487d1c7848ffc340b226497d578d";
     private const string PaymentWorkersImage = "ghcr.io/concertable/payment-workers";
-    private const string PaymentWorkersDigest = "sha256:5b31c52965054dce47c1cd8a1d1feabd976222f31be28bd8d185c281d014e52f";
+    private const string PaymentWorkersDigest = "sha256:09b1d4d0f9bf175f61dcaafde0d06b7eb7f8a710e0e775d4b385957b9e865cfc";
 
     public static IDistributedApplicationBuilder CreateBuilder(string[] args) =>
-        CreateBuilder<Projects.Concertable_B2B_Web>(args);
+        ConfigureBuilder<Projects.Concertable_B2B_Web>(StrictDistributedApplication.CreateBuilder(args));
 
-    /// <summary>
-    /// The same graph with the B2B web host substituted. The E2E suite passes
-    /// <c>Concertable.B2B.E2ETests.Web</c>, which wraps this host and adds the <c>/_e2e</c> admin
-    /// surface its fixture resets and seeds through; the production host does not carry it and
-    /// must not.
-    /// </summary>
-    public static IDistributedApplicationBuilder CreateBuilder<TWebProject>(string[] args)
+    public static IDistributedApplicationBuilder CreateE2EBuilder<TWebProject>()
+        where TWebProject : IProjectMetadata, new() =>
+        ConfigureBuilder<TWebProject>(DistributedApplication.CreateBuilder(new DistributedApplicationOptions
+        {
+            Args = ["--environment", "Development"],
+            AssemblyName = typeof(AppHost).Assembly.GetName().Name!,
+            DisableDashboard = true,
+        }));
+
+    private static IDistributedApplicationBuilder ConfigureBuilder<TWebProject>(IDistributedApplicationBuilder builder)
         where TWebProject : IProjectMetadata, new()
     {
-        var builder = StrictDistributedApplication.CreateBuilder(args);
         var sql = builder.AddSqlServerContainer("concertable-b2b-sql-data");
         var b2bDb = sql.AddDatabase(B2BConstants.Database);
         var authDb = sql.AddDatabase(AuthConstants.Database);
@@ -36,7 +38,7 @@ public static class AppHost
         asb.Topology().AddB2BTopology().AddSearchTopology().AddPaymentTopology().AddAuthTopology().RunAsEmulator();
         var auth = builder.AddAuth(AuthImage, AuthDigest, authDb, asb)
                           .WithContainerRuntimeArgs("--user", "root")
-                          .WithHttpsEndpoint(targetPort: AuthConstants.ContainerPort, name: "https");
+                          .WithHttpEndpoint(targetPort: AuthConstants.ContainerPort, name: "https");
         auth.WithSpaClients(B2BLocalSpaSurfaces.AuthClients);
         var paymentWeb = builder.AddPaymentWeb(PaymentWebImage, PaymentWebDigest, auth, paymentDb, asb);
         var api = builder.AddB2BWeb<TWebProject>(b2bDb, auth, storage, blobs, asb, paymentWeb);
