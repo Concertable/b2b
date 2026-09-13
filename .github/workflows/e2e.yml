@@ -38,9 +38,6 @@ jobs:
       GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ || secrets.GITHUB_TOKEN }}
       GoogleApiKey: ${{ secrets.GOOGLE_API_KEY }}
       Stripe__SecretKey: ${{ secrets.STRIPE_SECRET_KEY }}
-      ServiceAuth__B2BClientSecret: ${{ secrets.SERVICE_AUTH_B2B_CLIENT_SECRET }}
-      ServiceAuth__CustomerClientSecret: ${{ secrets.SERVICE_AUTH_CUSTOMER_CLIENT_SECRET }}
-      ServiceAuth__AuthClientSecret: ${{ secrets.SERVICE_AUTH_AUTH_CLIENT_SECRET }}
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -95,9 +92,14 @@ jobs:
           test -n "$GITHUB_PACKAGES_TOKEN" || { echo '::error::CONCERTABLE_PACKAGES_READ is not set on this repository.'; exit 1; }
           test -n "$GoogleApiKey" || { echo '::error::GOOGLE_API_KEY is not set on this repository.'; exit 1; }
           test -n "$Stripe__SecretKey" || { echo '::error::STRIPE_SECRET_KEY is not set on this repository.'; exit 1; }
-          test -n "$ServiceAuth__B2BClientSecret" || { echo '::error::SERVICE_AUTH_B2B_CLIENT_SECRET is not set on this repository.'; exit 1; }
-          test -n "$ServiceAuth__CustomerClientSecret" || { echo '::error::SERVICE_AUTH_CUSTOMER_CLIENT_SECRET is not set on this repository.'; exit 1; }
-          test -n "$ServiceAuth__AuthClientSecret" || { echo '::error::SERVICE_AUTH_AUTH_CLIENT_SECRET is not set on this repository.'; exit 1; }
+
+      - name: Generate service credentials
+        run: |
+          for name in ServiceAuth__B2BClientSecret ServiceAuth__CustomerClientSecret ServiceAuth__AuthClientSecret; do
+            value=$(openssl rand -hex 32)
+            echo "::add-mask::$value"
+            echo "$name=$value" >> "$GITHUB_ENV"
+          done
 
       - name: Restore
         run: dotnet restore Concertable.B2B.slnx
