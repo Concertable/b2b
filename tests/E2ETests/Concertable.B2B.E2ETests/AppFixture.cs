@@ -92,7 +92,7 @@ public sealed class AppFixture : IAsyncLifetime
         logger.InitializingE2ETestFixture();
 
         healthWaiter = new HealthWaiter(loggerFactory.CreateLogger<HealthWaiter>());
-        var builder = AppHost.CreateBuilder<Projects.Concertable_B2B_E2ETests_Web>([]);
+        var builder = AppHost.CreateE2EBuilder<Projects.Concertable_B2B_E2ETests_Web>();
         var stripeSecretKey = builder.Configuration["Stripe:SecretKey"]
             ?? throw new InvalidOperationException("Stripe:SecretKey is not configured for the B2B E2E fixture.");
         var stripeClient = new StripeClient(stripeSecretKey);
