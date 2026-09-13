@@ -64,6 +64,20 @@ public sealed class WebHostTests
     }
 
     [Fact]
+    public void E2EEnvironment_AllowsHttpMetadata()
+    {
+        var arguments = CompositionTestArguments.Create();
+        arguments[0] = "--environment=E2E";
+        var builder = WebApplication.CreateBuilder(arguments);
+        builder.AddB2BWebHost();
+        using var app = builder.Build();
+        var jwtOptions = app.Services.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+            .Get(JwtBearerDefaults.AuthenticationScheme);
+
+        Assert.False(jwtOptions.RequireHttpsMetadata);
+    }
+
+    [Fact]
     public void MissingAdminModule_FailsWithUnresolvedDependency()
     {
         // IAdminModule's only consumer is UserController.Me() — Web-hosted, not Workers.
