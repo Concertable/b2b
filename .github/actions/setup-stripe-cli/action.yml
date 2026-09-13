@@ -1,0 +1,19 @@
+name: Set up Stripe CLI
+description: Install a pinned Stripe CLI from Stripe's official apt repository
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        STRIPE_CLI_VERSION: 1.45.2
+      run: |
+        curl -fsSL https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public \
+          | gpg --dearmor --yes --output /tmp/stripe.gpg
+        sudo install -m 0644 /tmp/stripe.gpg /usr/share/keyrings/stripe.gpg
+        echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" \
+          | sudo tee /etc/apt/sources.list.d/stripe.list > /dev/null
+        sudo apt-get update
+        sudo apt-get install --yes "stripe=$STRIPE_CLI_VERSION"
+        test "$(dpkg-query --show --showformat='${Version}' stripe)" = "$STRIPE_CLI_VERSION"
+        stripe version

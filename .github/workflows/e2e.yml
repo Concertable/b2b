@@ -36,7 +36,11 @@ jobs:
 
     env:
       GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ || secrets.GITHUB_TOKEN }}
+      GoogleApiKey: ${{ secrets.GOOGLE_API_KEY }}
       Stripe__SecretKey: ${{ secrets.STRIPE_SECRET_KEY }}
+      ServiceAuth__B2BClientSecret: ${{ secrets.SERVICE_AUTH_B2B_CLIENT_SECRET }}
+      ServiceAuth__CustomerClientSecret: ${{ secrets.SERVICE_AUTH_CUSTOMER_CLIENT_SECRET }}
+      ServiceAuth__AuthClientSecret: ${{ secrets.SERVICE_AUTH_AUTH_CLIENT_SECRET }}
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -48,13 +52,52 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Log in to GHCR
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Provision HTTPS dev certificate
+        run: |
+          dotnet dev-certs https --trust || true
+          echo "SSL_CERT_DIR=$HOME/.aspnet/dev-certs/trust:/etc/ssl/certs:/usr/lib/ssl/certs" >> "$GITHUB_ENV"
+
+      - name: Install Stripe CLI
+        uses: ./.github/actions/setup-stripe-cli
+
+      - name: Install Azure Functions Core Tools
+        run: |
+          npm install -g azure-functions-core-tools@4.12.1 --unsafe-perm true
+          func --version
+
+      - name: Set up Node
+        if: inputs.suite != 'api'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install web dependencies
+        if: inputs.suite != 'api'
+        run: npm ci
+
+      - name: Build frontend package dependencies
+        if: inputs.suite != 'api'
+        run: npm run build:shared
+
       - name: Require the credentials this suite cannot run without
         # Both are checked before the build. Without this, a missing Stripe key surfaces forty minutes
         # later as an InvalidOperationException inside every fixture at 1 ms, which reads as a broken
         # suite rather than an unset secret — which is exactly how it first presented.
         run: |
           test -n "$GITHUB_PACKAGES_TOKEN" || { echo '::error::CONCERTABLE_PACKAGES_READ is not set on this repository.'; exit 1; }
-          test -n "$Stripe__SecretKey" || { echo '::error::STRIPE_SECRET_KEY is not set on this repository. Copy it from Concertable/concertable, which holds it under the same name. The E2E fixtures cannot start without it.'; exit 1; }
+          test -n "$GoogleApiKey" || { echo '::error::GOOGLE_API_KEY is not set on this repository.'; exit 1; }
+          test -n "$Stripe__SecretKey" || { echo '::error::STRIPE_SECRET_KEY is not set on this repository.'; exit 1; }
+          test -n "$ServiceAuth__B2BClientSecret" || { echo '::error::SERVICE_AUTH_B2B_CLIENT_SECRET is not set on this repository.'; exit 1; }
+          test -n "$ServiceAuth__CustomerClientSecret" || { echo '::error::SERVICE_AUTH_CUSTOMER_CLIENT_SECRET is not set on this repository.'; exit 1; }
+          test -n "$ServiceAuth__AuthClientSecret" || { echo '::error::SERVICE_AUTH_AUTH_CLIENT_SECRET is not set on this repository.'; exit 1; }
 
       - name: Restore
         run: dotnet restore Concertable.B2B.slnx
@@ -66,13 +109,17 @@ jobs:
         if: inputs.suite != 'api'
         run: pwsh tests/E2ETests/Concertable.B2B.E2ETests.Ui/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
-      - name: Run the suites
-        # One fleet at a time: each suite composes its own AppHost, so running them concurrently would
-        # contend for the same host ports and the same Docker daemon.
+      - name: Run API E2E
+        if: inputs.suite != 'ui'
         run: >-
-          dotnet test Concertable.B2B.slnx --configuration Release --no-build --no-restore -m:1
-          --filter "${{ inputs.suite == 'api' && 'Category=Api' || inputs.suite == 'ui' && 'Category=Ui' || 'Category=Api|Category=Ui' }}"
-          --logger "trx;LogFileName=e2e.trx"
+          dotnet test tests/E2ETests/Concertable.B2B.E2ETests/Concertable.B2B.E2ETests.csproj
+          --configuration Release --no-restore -m:1 --logger "trx;LogFileName=e2e.trx"
+
+      - name: Run UI E2E
+        if: inputs.suite != 'api'
+        run: >-
+          dotnet test tests/E2ETests/Concertable.B2B.E2ETests.Ui/Concertable.B2B.E2ETests.Ui.csproj
+          --configuration Release --no-restore -m:1 --logger "trx;LogFileName=e2e.trx"
 
       - name: Retain the results
         if: always()

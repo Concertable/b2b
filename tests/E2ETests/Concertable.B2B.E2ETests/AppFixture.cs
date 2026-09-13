@@ -21,9 +21,9 @@ namespace Concertable.B2B.E2ETests;
 public sealed class AppFixture : IAsyncLifetime
 {
     private const string SearchWebImage = "ghcr.io/concertable/search-web";
-    private const string SearchWebDigest = "sha256:ad43bdbddbfe115fd81c0d0d89bc67906e7ea5e22ade39cb06a4bd131ac965a8";
+    private const string SearchWebDigest = "sha256:5bfb93f03c875d2adb5bbd18499f2ff11ef9a71902cd7f62811cb0d7876976cb";
     private const string SearchWorkersImage = "ghcr.io/concertable/search-workers";
-    private const string SearchWorkersDigest = "sha256:00a9ae9fe5fc93a90700961ac1f2771c61dc86bd511e8db13ac795a4155ca9f8";
+    private const string SearchWorkersDigest = "sha256:c0c7d64a4b2702a0186963472ab8bf4030c2cba873748eb8fdb6be9905c84d11";
 
     private DistributedApplication app = null!;
     private AspireResourceLogger resourceLogger = null!;
