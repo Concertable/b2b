@@ -99,8 +99,6 @@ public sealed class AppFixture : IAsyncLifetime
         StripeCustomerResolver = await Concertable.Testing.E2E.StripeCustomerResolver.CreateAsync(stripeClient);
         var run = Run.Create(Profile.B2B(B2BWebUrl, SearchWebUrl, authUrl, PaymentWebUrl));
 
-        // Search is not in b2b's production graph, so the E2E composition adds it from the same
-        // pinned images the fleet qualifies against — the neighbours are the point of the test.
         var sql = builder.Resources.OfType<SqlServerServerResource>().Single();
         var searchDb = builder.CreateResourceBuilder(sql).AddDatabase(SearchConstants.Database);
         var authService = builder.CreateResourceBuilder(
