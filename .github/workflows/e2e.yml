@@ -1,10 +1,5 @@
 name: E2E
 
-# B2B's end-to-end suites. Deliberately triggered, never on a pull request: they boot the whole fleet
-# — auth, payment and search from the digests the fleet is qualified against, B2B itself from this
-# repository's source with the E2E admin host substituted — and they drive real Stripe test-mode
-# payments. That needs credentials, a Docker host and tens of minutes, none of which belongs on the
-# path of a pull request. CI proves the unit, integration, architecture and startup tiers there.
 on:
   workflow_dispatch:
     inputs:
@@ -15,12 +10,9 @@ on:
         type: choice
         options: [all, api, ui]
   schedule:
-    # 03:00 UTC, so an overnight result is waiting rather than a pull request being held up.
     - cron: '0 3 * * *'
 
 concurrency:
-  # Never two fleets on one runner, and never cancel a run midway — a half-torn-down fleet leaves
-  # containers behind.
   group: e2e-${{ github.ref }}
   cancel-in-progress: false
 
