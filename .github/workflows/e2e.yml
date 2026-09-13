@@ -51,7 +51,7 @@ jobs:
       - name: Verify image access
         run: |
           docker pull ghcr.io/concertable/auth@sha256:d888cb59d806241611eb36a5d1eeb293d472cd94e4a89bf6dab6b9b23c0c5f82
-          docker pull ghcr.io/concertable/payment-web@sha256:2c7a9b30291d4adb9d94dcf0d047b86809ad487d1cc7848ffc340b226497d578d
+          docker pull ghcr.io/concertable/payment-web@sha256:2c7a9b30291d4adb9d94dcf0d047b86809ad487d1c7848ffc340b226497d578d
           docker pull ghcr.io/concertable/payment-workers@sha256:09b1d4d0f9bf175f61dcaafde0d06b7eb7f8a710e0e775d4b385957b9e865cfc
           docker pull ghcr.io/concertable/search-web@sha256:5bfb93f03c875d2adb5bbd18499f2ff11ef9a71902cd7f62811cb0d7876976cb
           docker pull ghcr.io/concertable/search-workers@sha256:c0c7d64a4b2702a0186963472ab8bf4030c2cba873748eb8fdb6be9905c84d11
