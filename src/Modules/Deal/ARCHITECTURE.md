@@ -43,7 +43,7 @@ Separate economic data from module-owned lifecycle behaviour:
 ```
 api/.../Modules/Deal/
 ├─ Concertable.B2B.Deal.Domain/Entities/
-│  ├─ DealEntity.cs                  (abstract TPH root: Id, PaymentMethod, abstract DealType)
+│  ├─ DealEntity.cs                  (abstract TPT root: Id, PaymentMethod, abstract DealType)
 │  ├─ FlatFeeDealEntity.cs           { Fee }
 │  ├─ DoorSplitDealEntity.cs         { ArtistDoorPercent }
 │  ├─ VenueHireDealEntity.cs         { HireFee }
@@ -64,7 +64,7 @@ api/.../Modules/Deal/
 
 Key invariants:
 
-- **`DealEntity`** is a TPH base with `Id`, `PaymentMethod`, abstract `DealType`. Each subtype adds
+- **`DealEntity`** is a TPT base with `Id`, `PaymentMethod`, abstract `DealType`. Each subtype adds
   its own typed columns (`Fee`, `HireFee`, `ArtistDoorPercent`, `Guarantee`). Validation lives on the
   entity (`ValidateFee`, `ValidateArtistDoorPercent`).
 - **`PaymentMethod`** (`Cash | Transfer`) is metadata for the off-platform settlement channel — it
@@ -398,12 +398,33 @@ participates in the same compare-and-swap transaction. Immutable revision IDs ar
 
 ### 5.5 Behaviour and future tenant access
 
-Application, Booking and Concert retain their fixed stage order and independent state machines.
-Configuration selects approved capabilities within module-owned extension points; it does not own an
-end-to-end workflow or permit arbitrary stage reordering. Factories dispatch on validated finite
-capability kind/version. Keep genuine same-interface families and operation-owned honest-header unions
-where required; uniform operations stay uniform. Do not manufacture per-preset strategies or restore
-an obsolete interface merely because earlier examples named it.
+The [product-route constraint](../../../AGENTS.md#product-direction--configurable-work-within-fixed-lifecycle-routes)
+applies to both recruitment and direct invitation. Each stage owns its lifecycle state, legal
+transitions, prerequisites and operations. Opportunity and the future Direct Invitation can acquire
+module-owned workflows when coordinating real operations warrants them; neither needs a placeholder
+workflow merely to match another stage. Invitation acceptance must eventually provide a Booking-owned
+entry contract without inventing an Opportunity or Application. Current `BookingEntity` requires both
+IDs, so that route still needs an explicit persistence/handoff design; it is not implemented by this
+configuration proposal alone.
+
+Configuration selects approved capabilities within those stage-owned extension points. Deal owns
+economic definitions and compatibility, not runtime workflow state. Factories dispatch on validated
+finite capability kind/version. Keep genuine same-interface families and operation-owned honest-header
+unions where required; uniform operations stay uniform. A new union case is warranted by a genuinely
+different typed operation input/result contract, not by every questionnaire field, parameter or preset.
+New semantics need code, validation and tests before configurations can select them; adding database
+rows cannot introduce an unsupported operation. Do not restore an obsolete interface merely because
+earlier examples named it.
+
+The [questionnaire/requirement extension](https://github.com/Concertable/docs/blob/main/product/CONFIGURABLE_DEAL_WORKFLOWS.md#questionnaires-requirements-and-approved-answers)
+and [revised-rider benchmark](https://github.com/Concertable/docs/blob/main/product/NIGHTCLUB_SETTLEMENT_CASE_STUDY.md#questionnaire-and-change-variant)
+map to this boundary: forms collect typed evidence; a requirement evaluates it; the owning stage
+enforces any approval or transition prerequisite. Definition/response versions, operational history,
+deadlines and approval records are not nodes in immutable economic `DealTerms`. A commercial change
+uses an explicit accepted amendment and cannot silently rewrite signed terms or completed money.
+Concrete questionnaire persistence and module ownership remain later feature design, not a new global
+workflow engine, per-respondent tenant type, or form-builder launch gate. An informational update is
+still a guarded service mutation unless it actually orchestrates a lifecycle operation.
 
 B2B retains one authority for deal-gross calculations, shared with payout and invoicing. Payment stays
 deal-agnostic, owns commission bindings and moves money through its existing primitives. The four current

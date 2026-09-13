@@ -2,6 +2,14 @@
 
 Data service — venue↔artist booking + settlement. B2B's DbContext stances, filtered-entity list and `DealType` strategy/workflow rosters: @./CODE_PATTERNS.md. Internal design → [`ARCHITECTURE.md`](./ARCHITECTURE.md); deal/contract/workflow → [`src/Modules/Deal/ARCHITECTURE.md`](./src/Modules/Deal/ARCHITECTURE.md) + [`src/Modules/Concert/AGENTS.md`](./src/Modules/Concert/AGENTS.md); legal/VAT → [`src/Modules/Deal/LEGAL_REQUIREMENTS.md`](./src/Modules/Deal/LEGAL_REQUIREMENTS.md).
 
+## Product direction — configurable work within fixed lifecycle routes
+
+Before designing a deal or lifecycle change, read the central [configurable-workflow product direction](https://github.com/Concertable/docs/blob/main/product/CONFIGURABLE_DEAL_WORKFLOWS.md), especially its [entry routes and stage ownership](https://github.com/Concertable/docs/blob/main/product/CONFIGURABLE_DEAL_WORKFLOWS.md#applications-and-direct-offers): **Opportunity → Application → Booking → Concert**, or **Direct Invitation → Booking → Concert**. These are the fixed product routes; configuration composes supported work inside their owning stages, not an arbitrary replacement lifecycle.
+
+The local [Deal target design](./src/Modules/Deal/ARCHITECTURE.md#5-configurable-deals--target-design) owns the engineering mapping: finite code-owned semantics, versioned configuration and immutable accepted terms. The four current deals become presets, not the permanent limit of the product. Customer-authored configurations and the direct-invitation route are targets, not shipped capabilities; check current source before asserting support.
+
+The [nightclub/DJ benchmark](https://github.com/Concertable/docs/blob/main/product/NIGHTCLUB_SETTLEMENT_CASE_STUDY.md) supplies growth context, not an MVP gate or a claim about fabric's private contracts. Launch remains small-event B2B. External ticketing can remain the publication/sales channel; agreeing a contract before listing is distinct from final financial settlement after performance. Keep the fuller scope, questionnaire extensions and acceptance scenarios in those canonical product documents.
+
 ## Authority is the request-scoped active tenant, never a token claim
 
 Tokens are identity-only (`sub` + `email`); authority is the active tenant (`X-Tenant-Id` → membership `TenantRole`) resolved per request via `ITenantContext`. Never add a role/authority claim to a B2B token. The tenant *is* the legal/VAT/Stripe entity (`TenantEntity.TaxCompliance`).

@@ -63,14 +63,15 @@ Where the variation is data rather than injected behaviour, `DealType` selects a
 
 | Union | Arms | Role |
 |---|---|---|
-| `DealEntity` | `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity` | the editable offer; TPH, each leaf overriding `DealType` |
+| `DealEntity` | `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity` | the current editable offer; TPT, each leaf overriding `DealType` |
 | `ConfirmedBookingTerms` | `FlatFee`, `VenueHire`, `DoorSplit`, `Versus` | the frozen economics carried on `ConfirmedBookingSnapshot` across the Booking→Concert seam |
 
 `AcceptedApplication` is deliberately *not* a union: once Payment owned the payment-method commitment the
 Accept arms became identical, so it is one record carrying the immutable `ApplicationAcceptanceSnapshot`.
 
-`BookingEntity` is the exception, not the pattern: two arms (`Standard`, `Deferred`) over four deal types,
-so each leaf re-asks `DealType` — `src/Modules/Booking/TECH_DEBT.md` holds the shape that resolves it.
+`BookingEntity` is also a single sealed type; there are no `Standard`/`Deferred` entity arms.
+These are current-code rosters. The [configurable Deal target](./src/Modules/Deal/ARCHITECTURE.md#5-configurable-deals--target-design)
+describes the future representation and capability-selection boundary.
 
 ## Capability, not `DealType`
 
