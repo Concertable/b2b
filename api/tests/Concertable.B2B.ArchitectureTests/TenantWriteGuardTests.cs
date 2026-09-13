@@ -48,6 +48,7 @@ public sealed class TenantWriteGuardTests
     private static IEnumerable<FileInfo> ModuleSourceFiles() =>
         new DirectoryInfo(Path.Combine(
                 typeof(TenantWriteGuardTests).Assembly.SolutionDirectory.FullName,
+                "api",
                 "src",
                 "Modules"))
             .EnumerateFiles("*.cs", SearchOption.AllDirectories)

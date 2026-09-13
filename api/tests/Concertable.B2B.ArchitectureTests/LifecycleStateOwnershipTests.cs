@@ -13,11 +13,11 @@ public sealed partial class LifecycleStateOwnershipTests
     private static readonly (Type Aggregate, string SourcePath)[] Aggregates =
     [
         (typeof(ApplicationEntity),
-            "src/Modules/Application/Concertable.B2B.Application.Domain/Entities/ApplicationEntity.cs"),
+            "api/src/Modules/Application/Concertable.B2B.Application.Domain/Entities/ApplicationEntity.cs"),
         (typeof(BookingEntity),
-            "src/Modules/Booking/Concertable.B2B.Booking.Domain/Entities/BookingEntity.cs"),
+            "api/src/Modules/Booking/Concertable.B2B.Booking.Domain/Entities/BookingEntity.cs"),
         (typeof(ConcertEntity),
-            "src/Modules/Concert/Concertable.B2B.Concert.Domain/Entities/ConcertEntity.cs")
+            "api/src/Modules/Concert/Concertable.B2B.Concert.Domain/Entities/ConcertEntity.cs")
     ];
 
     [Fact]
@@ -42,6 +42,7 @@ public sealed partial class LifecycleStateOwnershipTests
         var violations = new[] { "Application", "Booking", "Concert", "Opportunity" }
             .Select(module => new DirectoryInfo(Path.Combine(
                 FindB2BRoot().FullName,
+                "api",
                 "src",
                 "Modules",
                 module)))

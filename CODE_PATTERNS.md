@@ -70,7 +70,7 @@ Where the variation is data rather than injected behaviour, `DealType` selects a
 Accept arms became identical, so it is one record carrying the immutable `ApplicationAcceptanceSnapshot`.
 
 `BookingEntity` is also a single sealed type; there are no `Standard`/`Deferred` entity arms.
-These are current-code rosters. The [configurable Deal target](./src/Modules/Deal/ARCHITECTURE.md#5-configurable-deals--target-design)
+These are current-code rosters. The [configurable Deal target](./api/src/Modules/Deal/ARCHITECTURE.md#5-configurable-deals--target-design)
 describes the future representation and capability-selection boundary.
 
 ## Capability, not `DealType`
@@ -82,7 +82,7 @@ The concerns partition the four types differently, so no one hierarchy serves th
 | Door revenue drives settlement | DoorSplit, Versus |
 | `FinancialOperation` raised at confirmation | FlatFee (capture), VenueHire (deposit), DoorSplit + Versus (verify) |
 | Payment commitment minted at checkout | FlatFee (authorization hold), VenueHire (method setup), DoorSplit + Versus (method verification) |
-| Supply direction reverses ([`LEGAL_REQUIREMENTS.md`](./src/Modules/Deal/LEGAL_REQUIREMENTS.md)) | VenueHire |
+| Supply direction reverses ([`LEGAL_REQUIREMENTS.md`](./api/src/Modules/Deal/LEGAL_REQUIREMENTS.md)) | VenueHire |
 
 Split an interface on the capability a row names, never on the deal type holding it.
 

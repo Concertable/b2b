@@ -11,13 +11,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Concertable.B2B.Web\Concertable.B2B.Web.csproj" />
+    <ProjectReference Include="..\..\..\api\src\Concertable.B2B.Web\Concertable.B2B.Web.csproj" />
     <ProjectReference Include="..\Concertable.B2B.E2ETests.Server\Concertable.B2B.E2ETests.Server.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\..\src\Concertable.B2B.Web\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="..\..\..\src\Concertable.B2B.Web\appsettings.E2E.json" Link="appsettings.E2E.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\..\api\src\Concertable.B2B.Web\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\..\api\src\Concertable.B2B.Web\appsettings.E2E.json" Link="appsettings.E2E.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
