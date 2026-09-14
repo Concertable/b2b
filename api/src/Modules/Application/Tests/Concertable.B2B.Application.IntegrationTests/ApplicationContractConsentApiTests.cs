@@ -124,7 +124,7 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
         var application = await response.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
         Assert.NotNull(application);
         Assert.NotNull(application.Actions.Contract);
-        Assert.Equal($"/api/application/{applicationId}/contract/pdf", application.Actions.Contract!.Href);
+        Assert.Equal($"/api/application/{applicationId}/contract/pdf", application.Actions.Contract!.Href.Value);
         Assert.Equal("GET", application.Actions.Contract.Method);
     }
 

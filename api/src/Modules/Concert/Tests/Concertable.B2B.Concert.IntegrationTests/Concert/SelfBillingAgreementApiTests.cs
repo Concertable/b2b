@@ -41,7 +41,7 @@ public sealed class SelfBillingAgreementApiTests : IAsyncLifetime
         var body = await response.Content.ReadAsync<SelfBillingAgreementResponse>();
         Assert.Equal(SelfBillingAgreementStatus.None, body!.Status);
         Assert.NotNull(body.Actions.Grant);
-        Assert.Equal(Path, body.Actions.Grant!.Href);
+        Assert.Equal(Path, body.Actions.Grant!.Href.Value);
         Assert.Equal("POST", body.Actions.Grant.Method);
         Assert.Null(body.Actions.Renew);
         Assert.Null(body.Actions.Pdf);
