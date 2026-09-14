@@ -2,7 +2,7 @@ import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
-import { aspNetDevelopmentHttps } from "../../scripts/vite-development-https";
+import { aspNetDevelopmentHttps } from "@concertable/build-config/vite-development-https";
 
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, path.resolve(__dirname, "../"), "VITE_");
