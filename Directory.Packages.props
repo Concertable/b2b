@@ -86,9 +86,8 @@
   <!-- Shared platform packages from the org feed, pinned lockstep via
        ConcertableDotNetPlatformVersion above; each cross-service contract tracks its owning
        service's train instead. Bump only to a version already published to the feed,
-       else restore fails NU1101. The churny core (Kernel, Messaging.*) is consumed as packages
-       by default; set UseLocalCore=true (env CONCERTABLE_LOCAL_CORE) to switch it to in-repo
-       ProjectReferences for fast cross-cutting local dev — see Directory.Build.props. -->
+       else restore fails NU1101. Verifying a platform change against this service before it is
+       published is the local inner loop in platform-dotnet/scripts/local-platform.ps1. -->
   <ItemGroup>
     <PackageVersion Include="Concertable.Kernel" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Contracts" Version="$(ConcertableDotNetPlatformVersion)" />
