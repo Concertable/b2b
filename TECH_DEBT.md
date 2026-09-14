@@ -6,6 +6,24 @@ When an item is fixed, update both this file and [`ARCHITECTURE.md`](./ARCHITECT
 
 ## MEDIUM
 
+### The `UseLocalCore` inner loop is dead config — its paths no longer resolve
+
+`Directory.Build.props` anchors `ConcertableCoreRoot` at `$(MSBuildThisFileDirectory)..\`, and
+`Directory.Build.targets` swaps `Concertable.Kernel` and the `Concertable.Messaging.*` packages for
+`ProjectReference`s beneath it. That assumed sibling core source on disk, which was true in the monorepo
+and is not true here — the core lives in `Concertable/platform-dotnet`, so every path the swap builds
+points at nothing. Opting in with `-p:UseLocalCore=true` fails rather than degrading.
+
+It is inconsistent across the fleet too: `auth`, `payment` and `search` still mention `UseLocalCore`,
+`customer` has none.
+
+The loss is real. There is no local inner loop for a shared-package change, so verifying one against a
+consumer requires publishing to the org feed first — which the Postgres Phase 4 harness seam hit directly.
+
+**Resolves when:** either the swap points at the real `platform-dotnet` checkout when one is present
+beside the service, or the mechanism is deleted in every service and replaced by a documented
+local-feed procedure that does not need committed config changes.
+
 ### Imported guidance still contains monorepo-era paths and runtime rosters
 
 The lifecycle/product pointers now distinguish current B2B stages from configurable-workflow targets,
