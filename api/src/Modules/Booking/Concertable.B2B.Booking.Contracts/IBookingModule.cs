@@ -19,6 +19,14 @@ public interface IBookingModule
     Task<int> GetArtistAwaitingCheckoutCountAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
+
+    /// <summary>GDPR erasure gate: whether any of the subject's tenants has a booking still committing money, so
+    /// erasure defers rather than corrupting settlement. Fail-closed and answered tenant-less by explicit ids.</summary>
+    Task<int> GetLiveObligationCountAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
+
+    /// <summary>The subject's portable contract fragment (GDPR arts. 15/20): the RETAINED contracts their tenants
+    /// are party to — read-only, never mutated by erasure.</summary>
+    Task<IReadOnlyList<ContractExport>> GetContractExportsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
 }
 
 public sealed record BookingSummary(

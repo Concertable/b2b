@@ -181,13 +181,16 @@ flow; no cookie consent.
 log); cookie consent on the SPA; versioned terms so re-acceptance can be forced on material
 change. Launch-blocking and independent of the money model.
 
-## 8. GDPR data retention + right to erasure — ABSENT
-**Legal basis:** UK GDPR arts. 5(1)(e), 17.
-No soft-delete, retention policy, or anonymisation/purge path. PII held for artists, venues,
-managers.
-**Build:** retention policy per data category; erasure path that **anonymises the person but
-preserves the statutory financial records** (invoices must survive erasure for HMRC). Note
-the tension explicitly.
+## 8. GDPR data retention + right to erasure — DESIGNED (building)
+**Legal basis:** UK GDPR arts. 5(1)(e), 15, 17, 20.
+The retain-vs-erase design is ratified and building: a gated `SubjectErasureRequest` state machine
+anonymises the natural person while **retaining the statutory financial/legal records with identity
+severed** (invoices, self-billing agreements, signed contracts + e-signatures survive erasure for the
+HMRC six-year / contract-limitation windows), plus a portable JSON export for the access/portability
+rights. The exhaustive retain-vs-erase register, the statutory retention windows, and the
+one-calendar-month DSAR SLA — the solicitor's review surface — are the standing compliance record at
+[`GDPR_SUBJECT_RIGHTS.md`](../../../../docs/plans/gdpr-subject-rights/GDPR_SUBJECT_RIGHTS.md); do not
+restate them here.
 
 ## 9. Audit trail on the booking lifecycle — PARTIAL
 **Legal basis:** dispute evidence; financial record-keeping.

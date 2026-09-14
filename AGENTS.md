@@ -1,6 +1,6 @@
 # Concertable.B2B
 
-Data service — venue↔artist booking + settlement. B2B's DbContext stances, filtered-entity list and `DealType` strategy/workflow rosters: @./CODE_PATTERNS.md. Internal design → [`ARCHITECTURE.md`](./ARCHITECTURE.md); deal/contract/workflow → [`api/src/Modules/Deal/ARCHITECTURE.md`](./api/src/Modules/Deal/ARCHITECTURE.md) + [`api/src/Modules/Concert/AGENTS.md`](./api/src/Modules/Concert/AGENTS.md); legal/VAT → [`api/src/Modules/Deal/LEGAL_REQUIREMENTS.md`](./api/src/Modules/Deal/LEGAL_REQUIREMENTS.md).
+Data service — venue↔artist booking + settlement. B2B's DbContext stances, filtered-entity list and `DealType` strategy/workflow rosters: @./CODE_PATTERNS.md. Internal design → [`ARCHITECTURE.md`](./ARCHITECTURE.md); deal/contract/workflow → [`api/src/Modules/Deal/ARCHITECTURE.md`](./api/src/Modules/Deal/ARCHITECTURE.md) + [`api/src/Modules/Concert/AGENTS.md`](./api/src/Modules/Concert/AGENTS.md); legal/VAT → [`api/src/Modules/Deal/LEGAL_REQUIREMENTS.md`](./api/src/Modules/Deal/LEGAL_REQUIREMENTS.md). B2B-only plans live in [`docs/plans/`](./docs/plans); cross-service plans stay in `Concertable/docs`.
 
 ## Product direction — configurable work within fixed lifecycle routes
 

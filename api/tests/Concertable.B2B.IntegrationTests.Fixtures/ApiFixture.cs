@@ -19,6 +19,7 @@ using Concertable.B2B.Deal.Infrastructure.Extensions;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
+using Concertable.B2B.Privacy.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Infrastructure.Extensions;
 using Concertable.B2B.Conversations.Infrastructure.Extensions;
 using Concertable.B2B.Opportunity.Infrastructure.Extensions;
@@ -138,6 +139,7 @@ public class ApiFixture : IAsyncLifetime
                 services.AddUserTestSeeder();
                 services.AddTenantTestSeeder();
                 services.AddAdminTestSeeder();
+                services.AddPrivacyTestSeeder();
                 services.AddArtistTestSeeder();
                 services.AddVenueTestSeeder();
                 services.AddDealTestSeeder();

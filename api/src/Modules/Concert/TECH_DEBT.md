@@ -44,3 +44,27 @@ Owner decision: change `IssueAsync` to return `UnitResult<TError>` over a Concer
 
 Resolves when: `IssueAsync` returns a Result, neither lookup throws, and a test proves a missing application yields the typed error rather than a `NotFoundException`.
 
+
+## Cross-tenant read-check abstractions are fragmented into one-method services
+
+`IConcertAvailability`, `ISelfBillingAgreementGate` and `ObligationChecker` each answer a read question over
+the tenant-independent `IConcertReadDbContext`, and each is its own single-purpose service. `ObligationChecker`
+follows the `XChecker` naming convention; `IConcertAvailability` (a state-noun that says nothing about what it
+does) and `ISelfBillingAgreementGate` (a `Gate` coinage — and `Gate`/`Guard` connote *throwing*, which these do
+not) still need renaming to it. Two of them also overlap: `ISelfBillingAgreementGate` and `ObligationChecker`
+both query `SelfBillingAgreements` for a current agreement (`ExpiresAtUtc > now`). The module runs two competing
+conventions for the same thing — per-entity `XReadRepository` finders (what `persistence` prescribes: "don't
+wrap a single query already owned by a repository in a one-method interface") versus purpose-named capability
+services (what `multitenancy` blessed for `IConcertAvailability`). The lifecycle carve multiplied it: Application
+and Booking now carry their own `ObligationChecker` too, so the same shape exists three times.
+
+Owner decision: settle on one convention. The read queries move to per-entity read repositories
+(`IConcertReadRepository`, `ISelfBillingAgreementReadRepository`, an application read finder), and the decisions
+that compose them stay with their consumers — apply/accept rules in `ApplicationValidator`, settlement deferral
+in `FinishExecutor`, and the GDPR obligation count + export behind each module's facade. `IConcertAvailability`
+and `ISelfBillingAgreementGate` are then deleted, and the self-billing overlap collapses to a single finder.
+Also remove the dead `IApplicationValidator` dependency that `ConcertService` injects but never calls.
+
+Resolves when: the bespoke `*Gate`/`*Availability` read-check services are gone, their queries live on read
+repositories, the self-billing overlap is a single finder, and `ConcertService` no longer injects an unused
+validator.

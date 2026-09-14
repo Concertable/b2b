@@ -51,6 +51,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<IContentReportRepository, ContentReportRepository>();
         services.AddScoped<IMessagePrivilegedRepository, MessagePrivilegedRepository>();
+        services.AddScoped<IParticipantProfilePrivilegedRepository, ParticipantProfilePrivilegedRepository>();
         services.AddScoped<IContentReportPrivilegedRepository, ContentReportPrivilegedRepository>();
         services.AddScoped<IConversationsNotifier, ConversationsNotifier>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
@@ -58,6 +59,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IContentReportNotifier, ContentReportNotifier>();
         services.AddScoped<IContentReportService, ContentReportService>();
         services.AddScoped<IModerationService, ModerationService>();
+        services.AddScoped<IConversationsErasureService, ConversationsErasureService>();
         services.AddScoped<IConversationsModule, ConversationsModule>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistParticipantProfileProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueParticipantProfileProjectionHandler>();

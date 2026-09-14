@@ -578,3 +578,28 @@ all — the secret scan passed it silently and it was found by reading the file.
 and the Stripe test key is rotated or consciously accepted as disclosed. Rotation is not something this
 repository can do for itself; it belongs to whoever owns those consoles, and it should happen before
 the repository becomes public rather than after.
+
+### No shared file-download type or terminal, so modules duplicate both
+
+Every download endpoint hand-rolls a per-module `FileDownload` record (`byte[] Content, string FileName,
+string ContentType`) and inlines `File(x.Content, x.ContentType, x.FileName)` at the controller — Concert
+carries its own copy (four controller sites) and Privacy added a second copy for the GDPR subject export.
+There is no shared file-payload DTO and no `FileDownload → IActionResult` terminal beside the existing
+`Reunion.AspNetCore` result terminals, so each new "return a file" endpoint re-invents both the type and the
+framework call.
+
+**Resolves when:** a `FileDownload` record and a `ToFileResult()` terminal land in the shared
+`Concertable.*` packages, both published, and Concert + Privacy migrate to them with their per-module copies
+deleted. Publish-first: a two-package contract addition consumed cross-service migrates through a platform
+sync, not a bare edit — which is why it is deferred here rather than folded into the feature that surfaced it.
+
+### `RunScopedAsync` lives in this repo instead of the shared testing package
+
+`ServiceProviderScopeExtensions.RunScopedAsync` — the "run this in a fresh DI scope" primitive that keeps
+integration tests from hand-rolling `CreateScope` — sits in `Concertable.B2B.IntegrationTests.Fixtures`. It is
+service-agnostic and belongs in `Concertable.Testing.Integration` alongside the rest of the shared fixture
+surface, which `integration-testing` requires; it was written here only because that package is published from
+`platform-dotnet` and could not be edited from this repository during the monorepo backlog port.
+
+**Resolves when:** the extension is published from `platform-dotnet` in `Concertable.Testing.Integration`, the
+platform version syncs, and the local copy is deleted.

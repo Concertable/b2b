@@ -16,4 +16,8 @@ internal interface IInvitationRepository : IRepository<TenantInvitationEntity, G
     /// index) or null. The caller checks its expiry: a live one blocks a duplicate invite, a lapsed one is
     /// retired before re-inviting.</summary>
     Task<TenantInvitationEntity?> GetPendingInvitationByEmailAsync(Guid tenantId, string email, CancellationToken ct = default);
+
+    /// <summary>Pending invitations addressed to an email across all tenants — GDPR erasure purges the invitee's
+    /// PII (the accepted rows are already severed with the membership).</summary>
+    Task<IReadOnlyList<TenantInvitationEntity>> ListPendingInvitationsByEmailAsync(string email, CancellationToken ct = default);
 }
