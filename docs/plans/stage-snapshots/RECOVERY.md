@@ -52,3 +52,39 @@ is a smell — read it before implementing, because it may revise Phase 4's `Pla
   *compliance and fee* snapshot at that boundary. Same transition, different payload.
 - `DEAL_CONFIGURATION_PLAN.md` Phase 2 pins a configuration revision into the accepted Contract — a third
   payload frozen at the same point. All three want one coherent Accept-time snapshot story.
+
+## Open question — is carrying the snapshot by value the right design at all?
+
+Raised 2026-09-14, deliberately unresolved. Record it here rather than lose it; settle it when the
+snapshot design is revisited.
+
+The position: the large by-value snapshots are a *consequence of the modular monolith*, not of the
+domain. Two facts make that concrete.
+
+**Sealing removes the correctness reason for copying.** Today a consumer must copy because the source
+row stays writable after the stage advances, so a reference could silently change. Once
+`LIFECYCLE_SEAL_ENFORCEMENT_PLAN.md` lands, a reference to a sealed row is exactly as trustworthy as a
+copy of it.
+
+**The boundary is code discipline, not physics.** Every B2B module context binds the same `B2BDb.Name`
+connection — Application, Booking and Concert rows are in one database, sharing one migrations history.
+There is no network hop and no independent availability between them. The prohibition on reading across
+a module ("no cross-module queries even from a read stance") is an architectural rule this service
+chose, not a constraint the deployment imposes.
+
+So after sealing, the remaining justification for a by-value snapshot is the module rule itself. That is
+a real and defensible rule, but it should be argued on its merits rather than treated as forced.
+
+### What sealing would and would not shrink
+
+| Payload | Effect |
+|---|---|
+| `ApplicationAcceptanceSnapshot` (~25 fields over 6 nested records) | the real target — it is defensive breadth, carried because re-reading is unsafe today |
+| `ConfirmedBookingSnapshot` (12 fields) | measured: Concert consumes all 12, none carried speculatively. Little to win |
+| `ContractEntity.VenueName` / `ArtistName`, `TermsText`, terms versions | **not** shrinkable. These are point-in-time legal values — the document must say what the parties were called then. A sealed row and a frozen display value are different requirements |
+
+### Do not conclude from this
+
+That the snapshots are waste. They are correct under today's rules. The question is whether the rules
+should change once sealing removes their main justification — and that is a deliberate architectural
+decision, not a cleanup.
