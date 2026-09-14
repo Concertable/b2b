@@ -87,4 +87,75 @@ public sealed class SubjectErasureServiceTests
 
         Assert.Equal(["read-email", "erase-user"], sequence);
     }
+
+    [Fact]
+    public async Task RequestErasureAsync_SubjectAlreadyHasARequest_ReDrivesItInsteadOfOpeningASecond()
+    {
+        var subjectId = Guid.NewGuid();
+        var existing = SubjectErasureRequestEntity.Create(subjectId, DateTime.UtcNow);
+        repository.Setup(r => r.GetBySubjectIdAsync(subjectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        obligationChecker.Setup(o => o.HasLiveObligationsAsync(subjectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await service.RequestErasureAsync(subjectId);
+
+        Assert.Equal(ErasureState.Completed, result.State);
+        repository.Verify(
+            r => r.InsertAsync(It.IsAny<SubjectErasureRequestEntity>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RequestErasureAsync_DeferredSubjectWhoseObligationCleared_CompletesOnTheSecondPass()
+    {
+        var subjectId = Guid.NewGuid();
+        var existing = SubjectErasureRequestEntity.Create(subjectId, DateTime.UtcNow);
+        repository.Setup(r => r.GetBySubjectIdAsync(subjectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        obligationChecker.SetupSequence(o => o.HasLiveObligationsAsync(subjectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true)
+            .ReturnsAsync(false);
+
+        var deferred = await service.RequestErasureAsync(subjectId);
+        Assert.Equal(ErasureState.Deferred, deferred.State);
+
+        var completed = await service.RequestErasureAsync(subjectId);
+        Assert.Equal(ErasureState.Completed, completed.State);
+        userModule.Verify(u => u.EraseAsync(subjectId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RequestErasureAsync_StillObligatedOnASecondPass_StaysDeferredWithoutErasing()
+    {
+        var subjectId = Guid.NewGuid();
+        var existing = SubjectErasureRequestEntity.Create(subjectId, DateTime.UtcNow);
+        repository.Setup(r => r.GetBySubjectIdAsync(subjectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        obligationChecker.Setup(o => o.HasLiveObligationsAsync(subjectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        await service.RequestErasureAsync(subjectId);
+        var again = await service.RequestErasureAsync(subjectId);
+
+        Assert.Equal(ErasureState.Deferred, again.State);
+        userModule.Verify(u => u.EraseAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RequestErasureAsync_AlreadyCompleted_IsTerminalAndDoesNotReRunTheFanOut()
+    {
+        var subjectId = Guid.NewGuid();
+        var existing = SubjectErasureRequestEntity.Create(subjectId, DateTime.UtcNow);
+        repository.Setup(r => r.GetBySubjectIdAsync(subjectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        obligationChecker.Setup(o => o.HasLiveObligationsAsync(subjectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        await service.RequestErasureAsync(subjectId);
+        var again = await service.RequestErasureAsync(subjectId);
+
+        Assert.Equal(ErasureState.Completed, again.State);
+        userModule.Verify(u => u.EraseAsync(subjectId, It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

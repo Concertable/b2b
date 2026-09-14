@@ -40,7 +40,7 @@ one records export became three:
   blocking, preserving the original's fail-closed default: Application settles on
   `Applied`/`Rejected`/`Withdrawn`/`Cancelled`; Booking only on `Cancelled`; Concert on
   `Draft`/`Complete`/`Cancelled`, plus a current self-billing agreement blocking regardless.
-- **Records export** — `IConcertModule.GetRecordsExportAsync` keeps invoices + self-billing agreements;
+- **Records export** — `IConcertModule.GetConcertExportAsync` keeps invoices + self-billing agreements;
   contracts moved to `IBookingModule.GetContractExportsAsync` with `ContractExport` re-homed into
   `Booking.Contracts`. `SubjectExporter` composes both.
 
@@ -51,7 +51,7 @@ now be cross-module queries and were not made.
 
 1. **Lifecycle facades expose `Get*` members only** (`ModuleBoundaryTests.LifecycleModuleFacades_ExposeQueryMembersOnly`).
    `HasLiveObligationsAsync` → `GetLiveObligationCountAsync` (returns a count the caller compares to zero,
-   so it stays a published fact rather than a command); `ExportRecordsAsync` → `GetRecordsExportAsync`;
+   so it stays a published fact rather than a command); `ExportRecordsAsync` → `GetConcertExportAsync`;
    `ExportContractsAsync` → `GetContractExportsAsync`.
 2. **Reunion packages must be owned by their actual source consumers**
    (`ReunionTests.ReunionPackages_AreOwnedDirectlyByTheirSourceConsumers`). The branch's
@@ -64,8 +64,8 @@ now be cross-module queries and were not made.
 ## One genuine bug on the branch tip
 
 `SubjectExporter` and `SubjectRightsApiTests` called `IUserModule.ExportAsync`, but the interface declares
-`ExportUserAsync` — the branch tip does not compile. This is the residue of the naming rework its last
-commit describes as "reverted to the last buildable commit"; it was not. Fixed to `ExportUserAsync`.
+`GetUserExportAsync` — the branch tip does not compile. This is the residue of the naming rework its last
+commit describes as "reverted to the last buildable commit"; it was not. Fixed to `GetUserExportAsync`.
 
 ## Not yet proven
 

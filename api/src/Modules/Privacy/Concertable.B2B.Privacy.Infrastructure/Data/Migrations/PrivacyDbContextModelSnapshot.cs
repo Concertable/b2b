@@ -51,7 +51,8 @@ namespace Concertable.B2B.Privacy.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SubjectId");
+                    b.HasIndex("SubjectId")
+                        .IsUnique();
 
                     b.ToTable("SubjectErasureRequests", "privacy");
                 });

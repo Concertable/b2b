@@ -12,6 +12,6 @@ internal sealed class SubjectErasureRequestConfiguration : IEntityTypeConfigurat
         builder.Property(x => x.State);
         builder.Property(x => x.DeferralReason).HasMaxLength(200);
         builder.Property(x => x.FailureReason).HasMaxLength(1000);
-        builder.HasIndex(x => x.SubjectId);
+        builder.HasIndex(x => x.SubjectId).IsUnique();
     }
 }

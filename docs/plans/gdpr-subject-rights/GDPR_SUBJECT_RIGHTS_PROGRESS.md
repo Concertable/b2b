@@ -26,7 +26,7 @@ committed and pushed; `PrivacyDbContext.InitialCreate` is scaffolded.
 
 Naming/design refactors landed on the branch after the first build: the obligation `Gate` → `Checker`
 (`ISubjectObligationChecker`); broad-facade export methods carry their subject where it adds information
-(`IConcertModule.ExportRecordsAsync`, `IConversationsModule.ExportMessagesAsync`; `IUserModule.ExportAsync`
+(`IConcertModule.ExportRecordsAsync`, `IConversationsModule.GetMessageExportsAsync`; `IUserModule.ExportAsync`
 stays bare — the subject is redundant); the two endpoints are rate-limited (`RateLimitPolicies.Sensitive`).
 The **export was re-shaped to a real file download**: `ISubjectExporter.ExportAsync` now returns a
 `FileDownload` (composed straight into an indented-JSON file, `Content-Disposition` via the controller's
@@ -102,8 +102,8 @@ do not `/review` or merge until the Concert side is rebuilt.**
   via a focused `TenantErasureService` + repo finders; Conversations `SeverAuthoredMessagesAsync`
   (`MessageEntity.SeverAuthor`)/`ScrubParticipantProfilesAsync`/`ExportAsync` via `ConversationsErasureService` +
   a privileged participant-profile repo + `MessageExport`; Concert `HasLiveObligationsAsync` (`ConcertObligationGate`
-  over the unfiltered read stance) + `ExportAsync` (`ConcertRecordsExporter` + `ConcertExportMappers`) +
-  `ConcertRecordsExport`/`InvoiceExport`/`ContractExport`/`SelfBillingAgreementExport`; `IConcertReadDbContext`
+  over the unfiltered read stance) + `ExportAsync` (`ConcertExporter` + `ConcertExportMappers`) +
+  `ConcertExport`/`InvoiceExport`/`ContractExport`/`SelfBillingAgreementExport`; `IConcertReadDbContext`
   gained `Applications`/`Invoices`/`Contracts`.
 - **Tests:** Privacy unit suite 20/20 green (state machine edges + fail-closed, entity, `ErasureTransitionError`
   definition contract, gate, erasure-service orchestration incl. defer-vs-complete and email-before-erase ordering).

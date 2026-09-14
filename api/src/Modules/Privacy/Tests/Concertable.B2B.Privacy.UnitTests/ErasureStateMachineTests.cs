@@ -10,6 +10,8 @@ public sealed class ErasureStateMachineTests
     [InlineData(ErasureState.Requested, ErasureTrigger.Begin, ErasureState.InProgress)]
     [InlineData(ErasureState.Requested, ErasureTrigger.Defer, ErasureState.Deferred)]
     [InlineData(ErasureState.Deferred, ErasureTrigger.Begin, ErasureState.InProgress)]
+    [InlineData(ErasureState.Deferred, ErasureTrigger.Defer, ErasureState.Deferred)]
+    [InlineData(ErasureState.InProgress, ErasureTrigger.Begin, ErasureState.InProgress)]
     [InlineData(ErasureState.InProgress, ErasureTrigger.Complete, ErasureState.Completed)]
     [InlineData(ErasureState.InProgress, ErasureTrigger.Fail, ErasureState.Failed)]
     public void Next_LegalEdge_ReturnsNextState(ErasureState current, ErasureTrigger trigger, ErasureState expected)
@@ -23,7 +25,7 @@ public sealed class ErasureStateMachineTests
     [Theory]
     [InlineData(ErasureState.Requested, ErasureTrigger.Complete)]
     [InlineData(ErasureState.Requested, ErasureTrigger.Fail)]
-    [InlineData(ErasureState.Deferred, ErasureTrigger.Defer)]
+    [InlineData(ErasureState.Deferred, ErasureTrigger.Complete)]
     [InlineData(ErasureState.Completed, ErasureTrigger.Begin)]
     [InlineData(ErasureState.Failed, ErasureTrigger.Complete)]
     public void Next_IllegalEdge_FailsClosedWithInvalidTransition(ErasureState current, ErasureTrigger trigger)

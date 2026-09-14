@@ -38,27 +38,48 @@ internal sealed class SubjectErasureService : ISubjectErasureService
 
     public async Task<SubjectErasureRequestDto> RequestErasureAsync(Guid subjectId, CancellationToken ct = default)
     {
-        var request = SubjectErasureRequestEntity.Create(subjectId, timeProvider.GetUtcNow().UtcDateTime);
-        await repository.InsertAsync(request, ct);
+        var request = await repository.GetBySubjectIdAsync(subjectId, ct);
+        if (request is null)
+        {
+            request = SubjectErasureRequestEntity.Create(subjectId, timeProvider.GetUtcNow().UtcDateTime);
+            await repository.InsertAsync(request, ct);
+        }
 
-        if (await obligationChecker.HasLiveObligationsAsync(subjectId, ct))
+        // Erasure is irreversible, so a completed request is the terminal answer to every later DSAR for the
+        // same subject: hand it back untouched rather than re-running the fan-out over an already-scrubbed row.
+        if (request.State == ErasureState.Completed)
+            return request.ToDto();
+
+        return await DriveAsync(request, ct);
+    }
+
+    public async Task<SubjectErasureRequestDto> ResumeAsync(
+        SubjectErasureRequestEntity request,
+        CancellationToken ct = default) =>
+        request.State == ErasureState.Completed ? request.ToDto() : await DriveAsync(request, ct);
+
+    private async Task<SubjectErasureRequestDto> DriveAsync(
+        SubjectErasureRequestEntity request,
+        CancellationToken ct)
+    {
+        if (await obligationChecker.HasLiveObligationsAsync(request.SubjectId, ct))
         {
             Advance(request, ErasureTrigger.Defer);
             request.RecordDeferral(PendingFinancialObligations);
             await repository.SaveChangesAsync(ct);
-            logger.SubjectErasureDeferred(subjectId, request.Id);
+            logger.SubjectErasureDeferred(request.SubjectId, request.Id);
             return request.ToDto();
         }
 
         Advance(request, ErasureTrigger.Begin);
         await repository.SaveChangesAsync(ct);
 
-        await AnonymiseAsync(subjectId, ct);
+        await AnonymiseAsync(request.SubjectId, ct);
 
         Advance(request, ErasureTrigger.Complete);
         request.RecordCompletion(timeProvider.GetUtcNow().UtcDateTime);
         await repository.SaveChangesAsync(ct);
-        logger.SubjectErasureCompleted(subjectId, request.Id);
+        logger.SubjectErasureCompleted(request.SubjectId, request.Id);
         return request.ToDto();
     }
 

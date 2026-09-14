@@ -58,7 +58,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IContractService, ContractService>();
             services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
             services.AddScoped<IObligationChecker, ObligationChecker>();
-            services.AddScoped<IContractExporter, ContractExporter>();
+            services.AddScoped<IContractExportReader, ContractExportReader>();
             services.AddScoped<IBookingModule, BookingModule>();
             services.AddBookingDealStrategies();
             services.AddScoped<IDomainEventHandler<ApplicationAcceptedDomainEvent>,

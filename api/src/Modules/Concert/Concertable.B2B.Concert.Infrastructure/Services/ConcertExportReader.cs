@@ -6,19 +6,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class ConcertRecordsExporter : IConcertRecordsExporter
+internal sealed class ConcertExportReader : IConcertExportReader
 {
     private readonly IConcertReadDbContext context;
 
-    public ConcertRecordsExporter(IConcertReadDbContext context)
+    public ConcertExportReader(IConcertReadDbContext context)
     {
         this.context = context;
     }
 
-    public async Task<ConcertRecordsExport> ExportAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
+    public async Task<ConcertExport> GetConcertExportAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
     {
         if (tenantIds.Count == 0)
-            return new ConcertRecordsExport();
+            return new ConcertExport();
 
         var invoices = await context.Invoices
             .Where(i => tenantIds.Contains(i.VenueTenantId) || tenantIds.Contains(i.ArtistTenantId))
@@ -27,7 +27,7 @@ internal sealed class ConcertRecordsExporter : IConcertRecordsExporter
             .Where(s => tenantIds.Contains(s.TenantId))
             .ToListAsync(ct);
 
-        return new ConcertRecordsExport
+        return new ConcertExport
         {
             Invoices = invoices.Select(i => i.ToInvoiceExport()).ToList(),
             SelfBillingAgreements = agreements.Select(s => s.ToSelfBillingAgreementExport()).ToList(),

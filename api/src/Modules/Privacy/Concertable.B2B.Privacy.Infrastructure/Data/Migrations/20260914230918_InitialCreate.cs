@@ -36,7 +36,8 @@ namespace Concertable.B2B.Privacy.Infrastructure.Data.Migrations
                 name: "IX_SubjectErasureRequests_SubjectId",
                 schema: "privacy",
                 table: "SubjectErasureRequests",
-                column: "SubjectId");
+                column: "SubjectId",
+                unique: true);
         }
 
         /// <inheritdoc />

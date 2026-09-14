@@ -24,5 +24,5 @@ public interface IUserModule
     Task EraseAsync(Guid subjectId, CancellationToken ct = default);
 
     /// <summary>The subject's portable User fragment (GDPR arts. 15/20), or None when they have no B2B User row.</summary>
-    Task<Option<UserExport>> ExportUserAsync(Guid subjectId, CancellationToken ct = default);
+    Task<Option<UserExport>> GetUserExportAsync(Guid subjectId, CancellationToken ct = default);
 }

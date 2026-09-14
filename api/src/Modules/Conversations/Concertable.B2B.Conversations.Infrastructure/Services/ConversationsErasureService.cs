@@ -42,7 +42,7 @@ internal sealed class ConversationsErasureService : IConversationsErasureService
         await participantProfiles.SaveChangesAsync(ct);
     }
 
-    public async Task<IReadOnlyList<MessageExport>> ExportMessagesAsync(Guid userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<MessageExport>> GetMessageExportsAsync(Guid userId, CancellationToken ct = default)
     {
         var authored = await messages.ListBySenderUserAsync(userId, ct);
         return authored.Select(m => m.ToMessageExport()).ToList();

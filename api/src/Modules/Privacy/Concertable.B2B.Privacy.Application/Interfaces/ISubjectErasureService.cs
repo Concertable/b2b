@@ -1,10 +1,13 @@
 namespace Concertable.B2B.Privacy.Application.Interfaces;
 
-/// <summary>Raises and drives a GDPR erasure for a data subject: records the request, evaluates the fail-closed
-/// gate, and either runs the cross-module anonymisation fan-out to completion or defers (returning the request's
-/// resulting state). Deferral and completion are both ordinary outcomes carried on the returned DTO's
-/// <see cref="ErasureState"/>, so there is no expected failure to model as a Result.</summary>
+/// <summary>Owns the subject-erasure aggregate and drives it. One request per subject: raising a DSAR for a
+/// subject who already has one re-drives that record rather than opening a second, so a deferred request keeps
+/// the <c>RequestedAtUtc</c> the statutory one-calendar-month clock runs from.</summary>
 internal interface ISubjectErasureService
 {
+    /// <summary>Raises — or re-drives — the subject's erasure. Completed is terminal and returned untouched.</summary>
     Task<SubjectErasureRequestDto> RequestErasureAsync(Guid subjectId, CancellationToken ct = default);
+
+    /// <summary>Re-drives an already-loaded request. The deferral sweep's entry point.</summary>
+    Task<SubjectErasureRequestDto> ResumeAsync(SubjectErasureRequestEntity request, CancellationToken ct = default);
 }

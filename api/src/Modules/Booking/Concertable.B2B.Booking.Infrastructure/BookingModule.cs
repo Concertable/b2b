@@ -9,18 +9,18 @@ internal sealed class BookingModule : IBookingModule
     private readonly IBookingService bookingService;
     private readonly IContractService contractService;
     private readonly IObligationChecker obligationChecker;
-    private readonly IContractExporter contractExporter;
+    private readonly IContractExportReader contractExportReader;
 
     public BookingModule(
         IBookingService bookingService,
         IContractService contractService,
         IObligationChecker obligationChecker,
-        IContractExporter contractExporter)
+        IContractExportReader contractExportReader)
     {
         this.bookingService = bookingService;
         this.contractService = contractService;
         this.obligationChecker = obligationChecker;
-        this.contractExporter = contractExporter;
+        this.contractExportReader = contractExportReader;
     }
 
     public async Task<Option<BookingSummary>> GetByApplicationIdAsync(
@@ -64,5 +64,5 @@ internal sealed class BookingModule : IBookingModule
         obligationChecker.CountLiveAsync(tenantIds, ct);
 
     public Task<IReadOnlyList<ContractExport>> GetContractExportsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default) =>
-        contractExporter.ExportAsync(tenantIds, ct);
+        contractExportReader.GetContractExportsAsync(tenantIds, ct);
 }

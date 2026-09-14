@@ -30,6 +30,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISubjectObligationChecker, SubjectObligationChecker>();
         services.AddScoped<ISubjectErasureService, SubjectErasureService>();
         services.AddScoped<ISubjectExporter, SubjectExporter>();
+        services.AddScoped<IDeferredErasureRunner, DeferredErasureRunner>();
 
         return services;
     }

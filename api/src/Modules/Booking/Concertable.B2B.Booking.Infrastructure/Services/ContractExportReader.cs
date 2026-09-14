@@ -6,16 +6,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Services;
 
-internal sealed class ContractExporter : IContractExporter
+internal sealed class ContractExportReader : IContractExportReader
 {
     private readonly IBookingReadDbContext context;
 
-    public ContractExporter(IBookingReadDbContext context)
+    public ContractExportReader(IBookingReadDbContext context)
     {
         this.context = context;
     }
 
-    public async Task<IReadOnlyList<ContractExport>> ExportAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ContractExport>> GetContractExportsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
     {
         if (tenantIds.Count == 0)
             return [];

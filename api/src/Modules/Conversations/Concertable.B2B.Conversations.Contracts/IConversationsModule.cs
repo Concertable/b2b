@@ -14,5 +14,5 @@ public interface IConversationsModule
     Task ScrubParticipantProfilesAsync(IReadOnlyList<Guid> tenantIds, CancellationToken ct = default);
 
     /// <summary>The subject's portable messages fragment (GDPR arts. 15/20): the message bodies they authored.</summary>
-    Task<IReadOnlyList<MessageExport>> ExportMessagesAsync(Guid userId, CancellationToken ct = default);
+    Task<IReadOnlyList<MessageExport>> GetMessageExportsAsync(Guid userId, CancellationToken ct = default);
 }
