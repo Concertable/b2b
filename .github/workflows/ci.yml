@@ -87,7 +87,7 @@ jobs:
       - name: Build B2B Web image candidate
         run: |
           mkdir -p artifacts/images
-          dotnet publish src/Concertable.B2B.Web/Concertable.B2B.Web.csproj \
+          dotnet publish api/src/Concertable.B2B.Web/Concertable.B2B.Web.csproj \
             --configuration Release \
             --no-restore \
             /t:PublishContainer \
@@ -96,7 +96,7 @@ jobs:
 
       - name: Build B2B Workers image candidate
         run: |
-          dotnet publish src/Concertable.B2B.Workers/Concertable.B2B.Workers.csproj \
+          dotnet publish api/src/Concertable.B2B.Workers/Concertable.B2B.Workers.csproj \
             --configuration Release \
             --no-restore \
             /t:PublishContainer \
@@ -105,7 +105,7 @@ jobs:
 
       - name: Build B2B seeding simulator image candidate
         run: |
-          dotnet publish src/Seed/Concertable.B2B.Seed.Simulator/Concertable.B2B.Seed.Simulator.csproj \
+          dotnet publish api/src/Seed/Concertable.B2B.Seed.Simulator/Concertable.B2B.Seed.Simulator.csproj \
             --configuration Release \
             --no-restore \
             /t:PublishContainer \

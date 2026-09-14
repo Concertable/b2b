@@ -8,7 +8,7 @@
 
 ## Bounded context
 
-B2B owns the venue/artist side of Concertable: opportunities, applications, bookings, contracts, concert workflow, settlement, and manager/admin profiles. Opportunity, Application, Booking and Concert are separate stage aggregates in separate modules; Concert is the final stage, not the entire recruitment/booking lifecycle. It consumes Booking's immutable `ConfirmedBooking` handoff, rather than loading live Application/Opportunity terms. Product direction and the target direct-invitation route are routed from [`AGENTS.md`](./AGENTS.md#product-direction--configurable-work-within-fixed-lifecycle-routes); the current lifecycle is owned by [`src/Modules/Concert/AGENTS.md`](./src/Modules/Concert/AGENTS.md). B2B does **not** own ticket buyers, customer reviews, or browse/search — those belong to Customer and Search respectively.
+B2B owns the venue/artist side of Concertable: opportunities, applications, bookings, contracts, concert workflow, settlement, and manager/admin profiles. Opportunity, Application, Booking and Concert are separate stage aggregates in separate modules; Concert is the final stage, not the entire recruitment/booking lifecycle. It consumes Booking's immutable `ConfirmedBooking` handoff, rather than loading live Application/Opportunity terms. Product direction and the target direct-invitation route are routed from [`AGENTS.md`](./AGENTS.md#product-direction--configurable-work-within-fixed-lifecycle-routes); the current lifecycle is owned by [`api/src/Modules/Concert/AGENTS.md`](./api/src/Modules/Concert/AGENTS.md). B2B does **not** own ticket buyers, customer reviews, or browse/search — those belong to Customer and Search respectively.
 
 ---
 
@@ -29,7 +29,7 @@ B2B owns the venue/artist side of Concertable: opportunities, applications, book
 
 ## Modules
 
-Modules live under `src/Modules/`. Each follows the `Concertable.B2B.<Module>.*` naming convention.
+Modules live under `api/src/Modules/`. Each follows the `Concertable.B2B.<Module>.*` naming convention.
 
 | Module | Canonical entities | Projects |
 |---|---|---|

@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\E2ETests\Concertable.B2B.E2ETests.Server\Concertable.B2B.E2ETests.Server.csproj" />
+    <ProjectReference Include="..\..\..\tests\E2ETests\Concertable.B2B.E2ETests.Server\Concertable.B2B.E2ETests.Server.csproj" />
   </ItemGroup>
 
   <ItemGroup>

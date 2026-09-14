@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Application.Mappers;
@@ -132,15 +132,15 @@ public sealed class DealStrategyArchitectureTests
 
     public static TheoryData<string> KeyedProviderFiles { get; } = new()
     {
-        "src/Concertable.B2B.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
-        "src/Concertable.B2B.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
-        "src/Concertable.B2B.Infrastructure/Services/Strategies/DealUnionFactory.cs"
+        "api/src/Concertable.B2B.Infrastructure/Extensions/ServiceCollectionExtensions.cs",
+        "api/src/Concertable.B2B.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
+        "api/src/Concertable.B2B.Infrastructure/Services/Strategies/DealUnionFactory.cs"
     };
 
     public static TheoryData<string> StrategyFactoryFiles { get; } = new()
     {
-        "src/Concertable.B2B.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
-        "src/Concertable.B2B.Infrastructure/Services/Strategies/DealUnionFactory.cs"
+        "api/src/Concertable.B2B.Infrastructure/Services/Strategies/DealStrategyFactory.cs",
+        "api/src/Concertable.B2B.Infrastructure/Services/Strategies/DealUnionFactory.cs"
     };
 
     private static IEnumerable<string> EnumerateProductionFiles()
@@ -148,8 +148,8 @@ public sealed class DealStrategyArchitectureTests
         var repositoryRoot = FindRepositoryRoot();
         var moduleRoots = new[]
         {
-            Path.Combine(repositoryRoot, "src", "Modules", "Deal"),
-            Path.Combine(repositoryRoot, "src", "Modules", "Concert")
+            Path.Combine(repositoryRoot, "api", "src", "Modules", "Deal"),
+            Path.Combine(repositoryRoot, "api", "src", "Modules", "Concert")
         };
 
         return moduleRoots

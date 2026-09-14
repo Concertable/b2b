@@ -144,6 +144,6 @@ If you're not sure you've kept things on the right side of the line, these grep 
 
 - The `microservice-boundaries` skill — microservice premise.
 - The `dotnet-standards:seeding` and `dotnet:seeding` skills — the no-direct-projection-seeding rule and this system's forbidden-table roster.
-- `api/Concertable.B2B/src/Seed/Concertable.B2B.Seed.Infrastructure/` — B2B's own SeedState (consumes the catalog for venues/artists/concerts) plus the `Factories/` (`VenueFactory`/`ArtistFactory`/`ConcertFactory`).
-- `api/Concertable.B2B/src/Seed/Concertable.B2B.Seed.Contracts/` — the canonical `XSeedSpec` records and their `ToChangedEvent()` conversion.
+- `api/src/Seed/Concertable.B2B.Seed.Infrastructure/` — B2B's own SeedState (consumes the catalog for venues/artists/concerts) plus the `Factories/` (`VenueFactory`/`ArtistFactory`/`ConcertFactory`).
+- `api/src/Seed/Concertable.B2B.Seed.Contracts/` — the canonical `XSeedSpec` records and their `ToChangedEvent()` conversion.
 - `api/Concertable.Customer/Concertable.Customer.AppHost/Program.cs` — where the simulator is registered.

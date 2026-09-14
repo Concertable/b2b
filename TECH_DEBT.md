@@ -1,4 +1,4 @@
-﻿# Concertable.B2B — Technical Debt
+# Concertable.B2B — Technical Debt
 
 When an item is fixed, update both this file and [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
@@ -216,7 +216,7 @@ reach for dual-injection and a `TenantType` branch — which is exactly the debt
 `VerificationService`, re-created one module over.
 
 What exists now is the `ITenantStrategy` / `ITenantStrategyFactory<TStrategy>` spine in the Tenant module
-over the shared `KeyedStrategyBuilder<TKey>` (`src/Concertable.B2B.KeyedStrategies`), with
+over the shared `KeyedStrategyBuilder<TKey>` (`api/src/Concertable.B2B.KeyedStrategies`), with
 `ITenantContactResolver` as its only member. Only `GetContactByTenantIdAsync` is promoted to the module
 facades, and after that change nothing in production injects both `IVenueModule` and `IArtistModule`. The
 other three reads are deliberately **not** promoted — a facade adapts a use case rather than mirroring a

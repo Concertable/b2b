@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Sdk Name="Aspire.AppHost.Sdk" Version="13.3.2" />
 
@@ -28,9 +28,9 @@
     <PackageReference Include="Concertable.Testing.E2E" />
     <PackageReference Include="Concertable.E2E" />
     <PackageReference Include="Concertable.Payment.E2ETests.Helpers" />
-    <ProjectReference Include="..\..\..\src\Concertable.B2B.AppHost\Concertable.B2B.AppHost.csproj" IsAspireProjectResource="false" />
-    <ProjectReference Include="..\..\..\src\Concertable.B2B.TestKit\Concertable.B2B.TestKit.csproj" IsAspireProjectResource="false" />
-    <ProjectReference Include="..\..\..\src\Concertable.B2B.Hosting\Concertable.B2B.Hosting.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\..\local\AppHost\Concertable.B2B.AppHost.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\..\api\src\Concertable.B2B.TestKit\Concertable.B2B.TestKit.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\..\api\src\Concertable.B2B.Hosting\Concertable.B2B.Hosting.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\Concertable.B2B.E2ETests.Web\Concertable.B2B.E2ETests.Web.csproj" />
   </ItemGroup>
 
