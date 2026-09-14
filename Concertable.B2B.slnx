@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="local/AppHost/Concertable.B2B.AppHost.csproj" />
+  <Project Path="api/src/Concertable.B2B.Enums/Concertable.B2B.Enums.csproj" />
   <Project Path="api/src/Concertable.B2B.Hosting/Concertable.B2B.Hosting.csproj" />
   <Project Path="api/src/Concertable.B2B.Infrastructure/Concertable.B2B.Infrastructure.csproj" />
   <Project Path="api/src/Concertable.B2B.KeyedStrategies/Concertable.B2B.KeyedStrategies.csproj" />
