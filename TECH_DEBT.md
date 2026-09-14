@@ -296,7 +296,7 @@ handle every variant exhaustively so invalid affordance combinations are unrepre
 ### `deal.Fee`/`HireFee` are `decimal` domain fields lifted to `Money` at the payment boundary
 
 The money value-type migration (PR1 #390 → sync #393) made every
-payment-client + `ISettlementAmountResolver` signature `Money`-typed, but `FlatFeeDeal.Fee` /
+payment-client signature `Money`-typed, but `FlatFeeDeal.Fee` /
 `VenueHireDeal.HireFee` (contracts + `*DealEntity`) stayed `decimal`. Checkout and the confirm strategies
 lift them with `Money.Gbp(deal.Fee)` at the call sites — a legitimate
 boundary conversion (same pattern as Customer's `Money.Gbp(concert.Price * qty)`), but it assumes GBP and keeps

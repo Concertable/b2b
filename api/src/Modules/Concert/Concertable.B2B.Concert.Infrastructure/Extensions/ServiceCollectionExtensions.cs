@@ -140,31 +140,26 @@ public static class ServiceCollectionExtensions
         internal IServiceCollection AddConcertDealStrategies()
         {
             services.AddScoped<IDealPayeeResolver, DealPayeeResolver>();
-            services.AddScoped<ISettlementAmountResolver, SettlementAmountResolver>();
 
             return services.AddConcertDealStrategies(builder =>
             {
                 builder.For(DealType.FlatFee)
                     .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
-                    .AddSingleton<ISettlementAmountResolver, FlatFeeSettlementAmount>()
                     .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>()
                     .AddScoped<ICancelStep, RefundEscrowCancelStep>();
 
                 builder.For(DealType.DoorSplit)
                     .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
-                    .AddScoped<ISettlementAmountResolver, DoorSplitSettlementAmount>()
                     .AddScoped<ICompleteStep, PayoutCompleteStep>()
                     .AddScoped<ICancelStep, ImmediateCancelStep>();
 
                 builder.For(DealType.Versus)
                     .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
-                    .AddScoped<ISettlementAmountResolver, VersusSettlementAmount>()
                     .AddScoped<ICompleteStep, PayoutCompleteStep>()
                     .AddScoped<ICancelStep, ImmediateCancelStep>();
 
                 builder.For(DealType.VenueHire)
                     .AddSingleton<IDealPayeeResolver, ArtistPaysVenueDealPayeeResolver>()
-                    .AddSingleton<ISettlementAmountResolver, VenueHireSettlementAmount>()
                     .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>()
                     .AddScoped<ICancelStep, RefundEscrowCancelStep>();
             });

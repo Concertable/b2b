@@ -33,30 +33,6 @@ public sealed class DealStrategyFactoryTests
         Assert.IsType(expectedType, strategy);
     }
 
-    [Theory]
-    [InlineData(DealType.FlatFee, typeof(FlatFeeSettlementAmount))]
-    [InlineData(DealType.DoorSplit, typeof(DoorSplitSettlementAmount))]
-    [InlineData(DealType.Versus, typeof(VersusSettlementAmount))]
-    [InlineData(DealType.VenueHire, typeof(VenueHireSettlementAmount))]
-    public void Create_SettlementAmountType_ResolvesExpectedStrategyFromRequestScope(
-        DealType dealType,
-        Type expectedType)
-    {
-        var services = CreateServices();
-        services.AddConcertDealStrategies();
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = true
-        });
-        using var scope = provider.CreateScope();
-        var factory = scope.ServiceProvider
-            .GetRequiredService<IDealStrategyFactory<ISettlementAmountResolver>>();
-
-        var strategy = factory.Create(dealType);
-
-        Assert.IsType(expectedType, strategy);
-    }
-
     [Fact]
     public void Resolve_FactoryLifetime_IsScoped()
     {
@@ -139,7 +115,6 @@ public sealed class DealStrategyFactoryTests
     [InlineData(typeof(IKeyedServiceProvider))]
     [InlineData(typeof(IDealStrategyFactory<>))]
     [InlineData(typeof(IDealPayeeResolver))]
-    [InlineData(typeof(ISettlementAmountResolver))]
     public void AddDealStrategyFactory_ScopeCapturingServices_RegistersScoped(Type serviceType)
     {
         var services = CreateServices();

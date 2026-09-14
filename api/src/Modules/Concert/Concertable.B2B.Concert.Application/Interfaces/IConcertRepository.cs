@@ -16,5 +16,4 @@ internal interface IConcertRepository : IRepository<ConcertEntity>
     Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(CancellationToken ct = default);
     Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForVenueTenantIdAsync(Guid venueTenantId);
     Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForArtistTenantIdAsync(Guid artistTenantId);
-    Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId);
 }
