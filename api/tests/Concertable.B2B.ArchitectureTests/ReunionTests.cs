@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Concertable.B2B.ArchitectureTests;
 
-public sealed class ReunionArchitectureTests
+public sealed class ReunionTests
 {
     private static readonly string[] ReunionPackages =
         ["Reunion", "Reunion.AspNetCore", "Reunion.Errors", "Reunion.Validation"];
@@ -43,7 +43,7 @@ public sealed class ReunionArchitectureTests
                 '\n',
                 projectDirectory.EnumerateFiles("*.cs", SearchOption.AllDirectories)
                     .Where(file => !IsGeneratedPath(file))
-                    .Where(file => file.Name != nameof(ReunionArchitectureTests) + ".cs")
+                    .Where(file => file.Name != nameof(ReunionTests) + ".cs")
                     .Select(file => File.ReadAllText(file.FullName)));
             var expected = ReunionPackages
                 .Where(package => SourceUses(source, package))
@@ -77,5 +77,5 @@ public sealed class ReunionArchitectureTests
         file.Directory!.AncestorsAndSelf().Any(ancestor => ancestor.Name is "bin" or "obj");
 
     private static DirectoryInfo FindB2BRoot() =>
-        typeof(ReunionArchitectureTests).Assembly.SolutionDirectory;
+        typeof(ReunionTests).Assembly.SolutionDirectory;
 }

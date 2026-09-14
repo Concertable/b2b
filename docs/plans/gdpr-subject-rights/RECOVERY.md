@@ -54,7 +54,7 @@ now be cross-module queries and were not made.
    so it stays a published fact rather than a command); `ExportRecordsAsync` → `GetRecordsExportAsync`;
    `ExportContractsAsync` → `GetContractExportsAsync`.
 2. **Reunion packages must be owned by their actual source consumers**
-   (`ReunionArchitectureTests.ReunionPackages_AreOwnedDirectlyByTheirSourceConsumers`). The branch's
+   (`ReunionTests.ReunionPackages_AreOwnedDirectlyByTheirSourceConsumers`). The branch's
    `Reunion.Errors` references on `Privacy.Application` and `Privacy.Infrastructure` are unused — dropped.
 3. **`ServiceProviderScopeExtensions.RunScopedAsync`** was added on the branch to the in-tree shared
    `Concertable.Testing.Integration`. That is a published package from `platform-dotnet` now and is not
