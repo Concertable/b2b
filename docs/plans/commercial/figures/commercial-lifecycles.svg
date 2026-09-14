@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="790" viewBox="0 0 1360 790" role="img" aria-labelledby="title desc">
+<title id="title">B2B: two entry lifecycles, one downstream model</title><desc id="desc">Templates instantiate configurations in Application or Direct Invitation. Both converge at Booking; Show and Slot supply real shared context, not synthetic opportunities.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/></marker></defs>
+<rect width="1360" height="790" fill="#f8fafc"/>
+<style>text{font-family:Segoe UI,Arial,sans-serif;fill:#172033}.title{font-size:25px;font-weight:650}.head{font-size:20px;font-weight:650}.body{font-size:17px}.small{font-size:15px;fill:#475569}.link{fill:none;stroke:#475569;stroke-width:2;marker-end:url(#arrow)}.ref{stroke-dasharray:7 5}.box{stroke:#94a3b8;stroke-width:1.5}</style>
+<text x="40" y="38" class="title">B2B commercial execution — proposed architecture</text>
+<rect x="50" y="80" width="360" height="125" rx="12" class="box" fill="#e0f2fe"/>
+<text x="68" y="111" class="head">Template catalogue</text>
+<text x="68" y="140" class="body">Platform / private / shared</text>
+<text x="68" y="165" class="body">Same validated configuration</text>
+<rect x="495" y="80" width="355" height="125" rx="12" class="box" fill="#dcfce7"/>
+<text x="513" y="111" class="head">Show / Slot / Reservations</text>
+<text x="513" y="140" class="body">One event, several engagements</text>
+<text x="513" y="165" class="body">Shared context and exclusivity</text>
+<rect x="50" y="300" width="255" height="95" rx="12" class="box" fill="#fff"/>
+<text x="68" y="331" class="head">Opportunity</text>
+<text x="68" y="360" class="body">Advertised call for a slot</text>
+<rect x="375" y="300" width="275" height="115" rx="12" class="box" fill="#ede9fe"/>
+<text x="393" y="331" class="head">Application</text>
+<text x="393" y="360" class="body">Proposal revisions + consent</text>
+<text x="393" y="385" class="body">ApplicationWorkflow</text>
+<rect x="375" y="500" width="275" height="115" rx="12" class="box" fill="#ede9fe"/>
+<text x="393" y="531" class="head">Direct Invitation</text>
+<text x="393" y="560" class="body">Proposal revisions + consent</text>
+<text x="393" y="585" class="body">DirectInvitationWorkflow</text>
+<rect x="730" y="395" width="260" height="120" rx="12" class="box" fill="#e0f2fe"/>
+<text x="748" y="426" class="head">Accepted agreement</text>
+<text x="748" y="455" class="body">Typed origin + frozen terms</text>
+<text x="748" y="480" class="body">Same input for both routes</text>
+<rect x="1060" y="395" width="255" height="120" rx="12" class="box" fill="#fef3c7"/>
+<text x="1078" y="426" class="head">Booking</text>
+<text x="1078" y="455" class="body">Contract + confirmation</text>
+<text x="1078" y="480" class="body">BookingWorkflow</text>
+<rect x="1060" y="610" width="255" height="120" rx="12" class="box" fill="#fef3c7"/>
+<text x="1078" y="641" class="head">Concert</text>
+<text x="1078" y="670" class="body">Engagement execution</text>
+<text x="1078" y="695" class="body">ConcertWorkflow</text>
+<path d="M305 352 H375" class="link"/>
+<path d="M650 352 H690 V425 H730" class="link"/>
+<path d="M650 552 H690 V485 H730" class="link"/>
+<path d="M990 455 H1060" class="link"/>
+<path d="M1187 515 V610" class="link"/>
+<text x="1200" y="570" class="small">confirmed</text>
+<path d="M230 205 V240 H465 V300" class="link"/>
+<text x="247" y="234" class="small">instantiate</text>
+<path d="M50 175 H20 V557 H375" class="link"/>
+<text x="140" y="541" class="small">same model</text>
+<path d="M672 205 V260 H860 V395" class="link ref"/>
+<text x="876" y="282" class="small">claim + accepted context</text>
+<text x="50" y="688" class="head">No Opportunity or Application is created for a direct invitation.</text>
+<text x="50" y="722" class="body">Show groups the event; Concert remains the execution of one confirmed booking.</text>
+<text x="50" y="755" class="small">Payment operations remain in Payment. Native ticketing and search remain external consumers.</text>
+</svg>
