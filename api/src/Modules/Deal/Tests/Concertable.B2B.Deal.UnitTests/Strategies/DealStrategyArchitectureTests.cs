@@ -148,8 +148,8 @@ public sealed class DealStrategyArchitectureTests
         var repositoryRoot = FindRepositoryRoot();
         var moduleRoots = new[]
         {
-            Path.Combine(repositoryRoot, "src", "Modules", "Deal"),
-            Path.Combine(repositoryRoot, "src", "Modules", "Concert")
+            Path.Combine(repositoryRoot, "api", "src", "Modules", "Deal"),
+            Path.Combine(repositoryRoot, "api", "src", "Modules", "Concert")
         };
 
         return moduleRoots
