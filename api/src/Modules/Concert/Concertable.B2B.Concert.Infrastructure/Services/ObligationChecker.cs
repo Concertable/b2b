@@ -26,19 +26,18 @@ internal sealed class ObligationChecker : IObligationChecker
         this.timeProvider = timeProvider;
     }
 
-    public async Task<int> CountLiveAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
+    public async Task<bool> HasLiveAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
     {
         if (tenantIds.Count == 0)
-            return 0;
+            return false;
 
-        var unsettledConcerts = await context.Concerts
+        if (await context.Concerts
             .Where(c => tenantIds.Contains(c.VenueTenantId) || tenantIds.Contains(c.ArtistTenantId))
-            .CountAsync(c => !SettledStates.Contains(c.State), ct);
+            .AnyAsync(c => !SettledStates.Contains(c.State), ct))
+            return true;
 
         var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
-        var currentAgreements = await context.SelfBillingAgreements
-            .CountAsync(s => tenantIds.Contains(s.TenantId) && s.ExpiresAtUtc > nowUtc, ct);
-
-        return unsettledConcerts + currentAgreements;
+        return await context.SelfBillingAgreements
+            .AnyAsync(s => tenantIds.Contains(s.TenantId) && s.ExpiresAtUtc > nowUtc, ct);
     }
 }

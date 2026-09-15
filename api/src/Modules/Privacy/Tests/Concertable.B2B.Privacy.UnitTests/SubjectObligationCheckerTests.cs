@@ -36,13 +36,13 @@ public sealed class SubjectObligationCheckerTests
 
         Assert.False(result);
         applicationModule.Verify(
-            m => m.GetLiveObligationCountAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()),
+            m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()),
             Times.Never);
         bookingModule.Verify(
-            m => m.GetLiveObligationCountAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()),
+            m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()),
             Times.Never);
         concertModule.Verify(
-            m => m.GetLiveObligationCountAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()),
+            m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -78,11 +78,11 @@ public sealed class SubjectObligationCheckerTests
 
     private void SetupObligations(bool application, bool booking, bool concert)
     {
-        applicationModule.Setup(m => m.GetLiveObligationCountAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(application ? 1 : 0);
-        bookingModule.Setup(m => m.GetLiveObligationCountAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(booking ? 1 : 0);
-        concertModule.Setup(m => m.GetLiveObligationCountAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(concert ? 1 : 0);
+        applicationModule.Setup(m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application);
+        bookingModule.Setup(m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(booking);
+        concertModule.Setup(m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(concert);
     }
 }

@@ -116,12 +116,21 @@ public sealed class ModuleBoundaryTests
     [Fact]
     public void LifecycleModuleFacades_ExposeQueryMembersOnly()
     {
-        foreach (var (_, contract) in LifecycleStages)
-            MethodMembers().That().AreDeclaredIn(contract)
-                .Should().HaveNameStartingWith("Get")
-                .Because($"{contract.Name} is a lifecycle-stage facade: it may publish facts for a later " +
-                          "stage to read, never accept a command (MM_BOUNDARY_HARDENING_PROMPT.md Part A3).")
-                .Check(Graph);
+        // Get/Has/Is are all fact queries; a command would be named for its verb. ITenantModule and
+        // IAdminModule already publish boolean facts as Is*, so a lifecycle facade may too.
+        string[] queryPrefixes = ["Get", "Has", "Is"];
+
+        var violations = LifecycleStages
+            .SelectMany(stage => stage.Contract.GetMethods(), (stage, method) => new { stage.Contract, method })
+            .Where(pair => !queryPrefixes.Any(prefix => pair.method.Name.StartsWith(prefix, StringComparison.Ordinal)))
+            .Select(pair => $"{pair.Contract.Name}.{pair.method.Name}")
+            .Order()
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "A lifecycle-stage facade may publish facts for a later stage to read, never accept a command " +
+            $"(MM_BOUNDARY_HARDENING_PROMPT.md Part A3):{Environment.NewLine}{string.Join(Environment.NewLine, violations)}");
     }
 
     [Fact]

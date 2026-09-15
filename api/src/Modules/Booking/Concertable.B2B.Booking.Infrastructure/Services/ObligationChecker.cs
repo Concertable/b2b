@@ -19,13 +19,13 @@ internal sealed class ObligationChecker : IObligationChecker
         this.context = context;
     }
 
-    public async Task<int> CountLiveAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
+    public async Task<bool> HasLiveAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
     {
         if (tenantIds.Count == 0)
-            return 0;
+            return false;
 
         return await context.Bookings
             .Where(b => tenantIds.Contains(b.VenueTenantId) || tenantIds.Contains(b.ArtistTenantId))
-            .CountAsync(b => !SettledStates.Contains(b.State), ct);
+            .AnyAsync(b => !SettledStates.Contains(b.State), ct);
     }
 }

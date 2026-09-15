@@ -34,8 +34,8 @@ internal sealed class ConcertModule : IConcertModule
         CancellationToken ct = default) =>
         dashboardService.GetSettlementContextsAsync(concertIds, ct);
 
-    public Task<int> GetLiveObligationCountAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default) =>
-        obligationChecker.CountLiveAsync(tenantIds, ct);
+    public Task<bool> HasLiveObligationsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default) =>
+        obligationChecker.HasLiveAsync(tenantIds, ct);
 
     public Task<ConcertExport> GetConcertExportAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default) =>
         concertExportReader.GetConcertExportAsync(tenantIds, ct);
