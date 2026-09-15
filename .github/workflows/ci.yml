@@ -191,3 +191,17 @@ jobs:
 
       - name: Typecheck and export mobile app
         run: npm run build:mobile
+
+  ci-complete:
+    # Renaming this is a merge-blocking change: it is the exact context the shared ruleset requires.
+    name: ci-complete
+    if: ${{ always() }}
+    needs:
+      - backend
+      - frontend
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - uses: Concertable/pipeline/.github/actions/require-jobs-green@13e26afd6f35855a78d3c554e097522e8476c04e
+        with:
+          results: ${{ join(needs.*.result, ' ') }}
