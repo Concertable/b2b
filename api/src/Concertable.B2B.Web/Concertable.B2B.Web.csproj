@@ -39,6 +39,7 @@
     <ProjectReference Include="..\Modules\Tenant\Concertable.B2B.Tenant.Api\Concertable.B2B.Tenant.Api.csproj" />
     <ProjectReference Include="..\Modules\Admin\Concertable.B2B.Admin.Api\Concertable.B2B.Admin.Api.csproj" />
     <ProjectReference Include="..\Modules\User\Concertable.B2B.User.Api\Concertable.B2B.User.Api.csproj" />
+    <ProjectReference Include="..\Modules\Privacy\Concertable.B2B.Privacy.Api\Concertable.B2B.Privacy.Api.csproj" />
     <ProjectReference Include="..\Modules\Artist\Concertable.B2B.Artist.Api\Concertable.B2B.Artist.Api.csproj" />
     <ProjectReference Include="..\Modules\Application\Concertable.B2B.Application.Api\Concertable.B2B.Application.Api.csproj" />
     <ProjectReference Include="..\Modules\Booking\Concertable.B2B.Booking.Api\Concertable.B2B.Booking.Api.csproj" />

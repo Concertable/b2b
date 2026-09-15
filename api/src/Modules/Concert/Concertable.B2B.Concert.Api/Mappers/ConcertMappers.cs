@@ -81,14 +81,14 @@ internal static class ConcertMappers
             DoorRevenue = dto.DoorRevenue,
             Actions = new ConcertActions(
                 Cancel: dto.CanCancel
-                    ? new ActionLink($"/api/concert/{dto.Id}/cancel", HttpMethods.Post)
+                    ? ActionLink.Post($"/api/concert/{dto.Id}/cancel")
                     : null,
-                Contract: new ActionLink($"/api/concert/{dto.Id}/contract/pdf", HttpMethods.Get),
+                Contract: ActionLink.Get($"/api/concert/{dto.Id}/contract/pdf"),
                 DeclareDoorRevenue: dto.CanDeclareDoorRevenue
-                    ? new ActionLink($"/api/concert/{dto.Id}/door-revenue", HttpMethods.Post)
+                    ? ActionLink.Post($"/api/concert/{dto.Id}/door-revenue")
                     : null,
                 Invoice: dto.InvoiceId is not null
-                    ? new ActionLink($"/api/concert/{dto.Id}/invoice/pdf", HttpMethods.Get)
+                    ? ActionLink.Get($"/api/concert/{dto.Id}/invoice/pdf")
                     : null)
         };
     }

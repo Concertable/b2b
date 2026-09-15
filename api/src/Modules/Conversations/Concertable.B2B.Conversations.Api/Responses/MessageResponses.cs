@@ -1,6 +1,8 @@
 using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.B2B.Conversations.Contracts.Enums;
 
+using Concertable.Shared.Api.Http;
+
 namespace Concertable.B2B.Conversations.Api.Responses;
 
 internal sealed record MessageResponse

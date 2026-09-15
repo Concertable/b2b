@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Concertable.B2B.Privacy.Domain\Concertable.B2B.Privacy.Domain.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Privacy.Application\Concertable.B2B.Privacy.Application.csproj" />
+    <ProjectReference Include="..\..\Concertable.B2B.Privacy.Infrastructure\Concertable.B2B.Privacy.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\User\Concertable.B2B.User.Contracts\Concertable.B2B.User.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Tenant\Concertable.B2B.Tenant.Contracts\Concertable.B2B.Tenant.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Conversations\Concertable.B2B.Conversations.Contracts\Concertable.B2B.Conversations.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Concert\Concertable.B2B.Concert.Contracts\Concertable.B2B.Concert.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Application\Concertable.B2B.Application.Contracts\Concertable.B2B.Application.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Booking\Concertable.B2B.Booking.Contracts\Concertable.B2B.Booking.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

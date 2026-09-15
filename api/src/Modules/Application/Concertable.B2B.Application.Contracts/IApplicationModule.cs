@@ -14,4 +14,9 @@ public interface IApplicationModule
     Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
+
+    /// <summary>GDPR erasure gate: whether any of the subject's tenants has an application that has committed money
+    /// but not yet reached a booking, so erasure defers rather than corrupting settlement. Fail-closed and answered
+    /// tenant-less by explicit ids.</summary>
+    Task<int> GetLiveObligationCountAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
 }

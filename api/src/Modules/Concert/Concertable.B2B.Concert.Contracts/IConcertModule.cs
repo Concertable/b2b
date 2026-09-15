@@ -13,4 +13,13 @@ public interface IConcertModule
     Task<IReadOnlyList<SettlementContext>> GetSettlementContextsAsync(
         IReadOnlyCollection<int> concertIds,
         CancellationToken ct = default);
+
+    /// <summary>GDPR erasure gate: whether any of the subject's tenants has a live financial obligation this module
+    /// can see — a concert still in settlement, or a current self-billing agreement — so erasure defers rather than
+    /// corrupting settlement. Fail-closed and answered tenant-less by explicit ids.</summary>
+    Task<int> GetLiveObligationCountAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
+
+    /// <summary>The subject's portable Concert records fragment (GDPR arts. 15/20): the RETAINED invoices and
+    /// self-billing agreements their tenants are party to — read-only, never mutated by erasure.</summary>
+    Task<ConcertExport> GetConcertExportAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
 }

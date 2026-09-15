@@ -14,3 +14,4 @@ global using Concertable.B2B.Concert.Application.Requests;
 global using Concertable.B2B.Concert.Application.Responses;
 global using Concertable.B2B.Tenant.Contracts.Enums;
 global using Concertable.B2B.Concert.Domain.ValueObjects;
+global using Concertable.Shared.Api.Http;

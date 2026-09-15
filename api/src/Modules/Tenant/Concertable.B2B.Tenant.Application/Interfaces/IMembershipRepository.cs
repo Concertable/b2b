@@ -26,4 +26,10 @@ internal interface IMembershipRepository : IRepository<TenantMembershipEntity, G
 
     /// <summary>Whether the user already belongs to the tenant — guards duplicate invitation-accept.</summary>
     Task<bool> IsMemberAsync(Guid tenantId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>Every membership row of a user across all tenants — GDPR erasure severs them all.</summary>
+    Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByUserAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Members currently in the tenant — erasure reads this after a sever to detect a wound-down (member-less) tenant.</summary>
+    Task<int> CountMembersAsync(Guid tenantId, CancellationToken ct = default);
 }

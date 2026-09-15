@@ -31,19 +31,19 @@ internal static class ApplicationMappers
                 status,
                 new VenueApplicationActions(
                     Accept: isPending
-                        ? new ActionLink($"/api/application/{dto.Id}/accept", HttpMethods.Post)
+                        ? ActionLink.Post($"/api/application/{dto.Id}/accept")
                         : null,
                     Checkout: isPending && dto.Opportunity.Deal.DealType.RequiresAcceptCheckout()
-                        ? new ActionLink($"/api/application/{dto.Id}/checkout", HttpMethods.Post)
+                        ? ActionLink.Post($"/api/application/{dto.Id}/checkout")
                         : null,
                     Decline: isPending
-                        ? new ActionLink($"/api/application/{dto.Id}/reject", HttpMethods.Post)
+                        ? ActionLink.Post($"/api/application/{dto.Id}/reject")
                         : null,
                     Cancel: isPending && booking is null
-                        ? new ActionLink($"/api/application/{dto.Id}/cancel", HttpMethods.Post)
+                        ? ActionLink.Post($"/api/application/{dto.Id}/cancel")
                         : null,
                     Contract: booking is not null
-                        ? new ActionLink($"/api/application/{dto.Id}/contract/pdf", HttpMethods.Get)
+                        ? ActionLink.Get($"/api/application/{dto.Id}/contract/pdf")
                         : null));
         }
 
@@ -65,10 +65,10 @@ internal static class ApplicationMappers
                 status,
                 new ArtistApplicationActions(
                     Withdraw: dto.State == ApplicationState.Applied
-                        ? new ActionLink($"/api/application/{dto.Id}/withdraw", HttpMethods.Post)
+                        ? ActionLink.Post($"/api/application/{dto.Id}/withdraw")
                         : null,
                     Contract: booking is not null
-                        ? new ActionLink($"/api/application/{dto.Id}/contract/pdf", HttpMethods.Get)
+                        ? ActionLink.Get($"/api/application/{dto.Id}/contract/pdf")
                         : null));
         }
     }

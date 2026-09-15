@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="1070" viewBox="0 0 1360 1070" role="img" aria-labelledby="title desc">
+<title id="title">Proposed B2B entity groups and relationships</title><desc id="desc">Module boxes show owned tables. Cross-module dashed arrows are IDs and contracts, not cross-context ORM navigation. Show has many spaces and slots; entries converge to Booking and Concert.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/></marker></defs>
+<rect width="1360" height="1070" fill="#f8fafc"/>
+<style>text{font-family:Segoe UI,Arial,sans-serif;fill:#172033}.title{font-size:25px;font-weight:650}.head{font-size:20px;font-weight:650}.body{font-size:17px}.small{font-size:15px;fill:#475569}.link{fill:none;stroke:#475569;stroke-width:2;marker-end:url(#arrow)}.ref{stroke-dasharray:7 5}.box{stroke:#94a3b8;stroke-width:1.5}</style>
+<text x="40" y="40" class="title">Proposed entity structure — one B2B database, module-owned tables</text>
+<rect x="35" y="95" width="320" height="225" rx="12" class="box" fill="#e0f2fe"/>
+<text x="53" y="126" class="head">Tenant / Artist owners</text>
+<text x="53" y="155" class="body">Tenant 1 — N Membership</text>
+<text x="53" y="180" class="body">Tenant 1 — N BusinessCapability</text>
+<text x="53" y="205" class="body">RepresentationGrant</text>
+<text x="53" y="230" class="body">Artist profile / resource ID</text>
+<text x="53" y="255" class="body">Legal party != acting user</text>
+<rect x="35" y="380" width="320" height="225" rx="12" class="box" fill="#e0f2fe"/>
+<text x="53" y="411" class="head">Venue owner</text>
+<text x="53" y="440" class="body">Venue business profile</text>
+<text x="53" y="465" class="body">  1 — N Premises</text>
+<text x="53" y="490" class="body">        1 — N Room</text>
+<text x="53" y="515" class="body">RoomId is a stable resource</text>
+<text x="53" y="540" class="body">Not one room per tenant</text>
+<rect x="425" y="95" width="410" height="510" rx="12" class="box" fill="#dcfce7"/>
+<text x="443" y="126" class="head">Show owner</text>
+<text x="443" y="155" class="body">Show</text>
+<text x="443" y="180" class="body">  1 — N ShowSpace → RoomId</text>
+<text x="443" y="205" class="body">  1 — N BookingSlot</text>
+<text x="443" y="230" class="body">             1 — N SlotClaim history</text>
+<text x="443" y="255" class="body">  1 — N ResourceReservation</text>
+<text x="443" y="280" class="body">  1 — N EvidenceRevision</text>
+<text x="443" y="305" class="body">             1 — N EvidenceLine</text>
+<text x="443" y="330" class="body">  1 — N ExternalTicketingChannel</text>
+<text x="443" y="355" class="body"></text>
+<text x="443" y="380" class="body">One active claim per slot</text>
+<text x="443" y="405" class="body">No overlapping active resource use</text>
+<text x="443" y="430" class="body">Room reserved once per ShowSpace</text>
+<text x="443" y="455" class="body">Performer reserved per slot</text>
+<rect x="905" y="95" width="415" height="260" rx="12" class="box" fill="#ede9fe"/>
+<text x="923" y="126" class="head">Entry owners</text>
+<text x="923" y="155" class="body">Opportunity → SlotId</text>
+<text x="923" y="180" class="body">  1 — N Application</text>
+<text x="923" y="205" class="body">DirectInvitation → SlotId</text>
+<text x="923" y="230" class="body"></text>
+<text x="923" y="255" class="body">Each entry owns:</text>
+<text x="923" y="280" class="body">  ProposalRevision 1 — N Consent</text>
+<text x="923" y="305" class="body">No shared Application table</text>
+<rect x="905" y="415" width="415" height="190" rx="12" class="box" fill="#e0f2fe"/>
+<text x="923" y="446" class="head">Deal owner</text>
+<text x="923" y="475" class="body">Template 1 — N TemplateRevision</text>
+<text x="923" y="500" class="body">Template 1 — N Grant / Tag</text>
+<text x="923" y="525" class="body">Capability requirement metadata</text>
+<text x="923" y="550" class="body">JSONB definition; relational access</text>
+<rect x="425" y="725" width="410" height="235" rx="12" class="box" fill="#fef3c7"/>
+<text x="443" y="756" class="head">Booking owner</text>
+<text x="443" y="785" class="body">Booking → SlotClaimId + typed origin</text>
+<text x="443" y="810" class="body">  1 — N ContractRevision</text>
+<text x="443" y="835" class="body">             1 — N Party / Consent</text>
+<text x="443" y="860" class="body">  1 — N BookingAction / Attempt</text>
+<text x="443" y="885" class="body">Accepted history is immutable</text>
+<text x="443" y="910" class="body">No mandatory application for invites</text>
+<rect x="905" y="725" width="415" height="235" rx="12" class="box" fill="#fef3c7"/>
+<text x="923" y="756" class="head">Concert owner</text>
+<text x="923" y="785" class="body">Concert → BookingId / ShowId / SlotId</text>
+<text x="923" y="810" class="body">  1 — N SettlementStatement</text>
+<text x="923" y="835" class="body">  1 — N EvidenceApproval</text>
+<text x="923" y="860" class="body">  1 — N Obligation</text>
+<text x="923" y="885" class="body">             1 — N Action / Attempt</text>
+<text x="923" y="910" class="body">One execution per confirmed booking</text>
+<path d="M355 493 H425" class="link ref"/>
+<text x="365" y="480" class="small">RoomId</text>
+<path d="M905 215 H835" class="link ref"/>
+<text x="848" y="201" class="small">SlotId</text>
+<path d="M1112 355 V415" class="link ref"/>
+<text x="1125" y="390" class="small">definitions</text>
+<path d="M630 605 V725" class="link ref"/>
+<text x="647" y="667" class="small">claim/context</text>
+<path d="M905 292 H868 V680 H780 V725" class="link ref"/>
+<text x="920" y="670" class="small">accepted input</text>
+<path d="M835 837 H905" class="link ref"/>
+<text x="843" y="823" class="small">confirmed</text>
+<text x="40" y="1012" class="body">Inside a module: local foreign keys. Across modules: primitive IDs, snapshots and facade/event contracts.</text>
+<text x="40" y="1042" class="small">Payment owns financial operations/ledger. B2B owns agreements, obligations and their execution intent.</text>
+</svg>

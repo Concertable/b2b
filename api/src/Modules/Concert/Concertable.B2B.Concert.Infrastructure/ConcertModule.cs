@@ -6,10 +6,17 @@ namespace Concertable.B2B.Concert.Infrastructure;
 internal sealed class ConcertModule : IConcertModule
 {
     private readonly IConcertDashboardService dashboardService;
+    private readonly IObligationChecker obligationChecker;
+    private readonly IConcertExportReader concertExportReader;
 
-    public ConcertModule(IConcertDashboardService dashboardService)
+    public ConcertModule(
+        IConcertDashboardService dashboardService,
+        IObligationChecker obligationChecker,
+        IConcertExportReader concertExportReader)
     {
         this.dashboardService = dashboardService;
+        this.obligationChecker = obligationChecker;
+        this.concertExportReader = concertExportReader;
     }
 
     public Task<Option<VenueDashboardCounts>> GetVenueDashboardCountsAsync(
@@ -26,4 +33,10 @@ internal sealed class ConcertModule : IConcertModule
         IReadOnlyCollection<int> concertIds,
         CancellationToken ct = default) =>
         dashboardService.GetSettlementContextsAsync(concertIds, ct);
+
+    public Task<int> GetLiveObligationCountAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default) =>
+        obligationChecker.CountLiveAsync(tenantIds, ct);
+
+    public Task<ConcertExport> GetConcertExportAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default) =>
+        concertExportReader.GetConcertExportAsync(tenantIds, ct);
 }
