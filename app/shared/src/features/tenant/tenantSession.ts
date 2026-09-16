@@ -7,7 +7,7 @@ import {
 import type {
   TenantSessionConfiguration,
   TenantStorage,
-  TenantType,
+  TenantBusinessProfile,
 } from "./types";
 
 function requireConfiguration(
@@ -103,7 +103,7 @@ export function createTenantSession(store: StoreApi<TenantStoreState>) {
         ]);
       });
     },
-    resolve: async (tenantType?: TenantType) => {
+    resolve: async (businessProfile?: TenantBusinessProfile) => {
       const current = requireConfiguration(configuration);
       const memberships = current.memberships();
       const selection = latestSelection;
@@ -113,12 +113,12 @@ export function createTenantSession(store: StoreApi<TenantStoreState>) {
         const previousTenantId = store.getState().activeTenantId;
         const nextTenantId = store
           .getState()
-          .synchronizeTenant(memberships, tenantType);
+          .synchronizeTenant(memberships, businessProfile);
         if (nextTenantId !== previousTenantId)
           await persistSelection(current.storage, nextTenantId);
         return nextTenantId;
       });
-      return resolveTenant(memberships, tenantType, activeTenantId);
+      return resolveTenant(memberships, businessProfile, activeTenantId);
     },
   };
 }

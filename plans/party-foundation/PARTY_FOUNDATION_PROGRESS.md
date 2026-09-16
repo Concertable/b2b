@@ -8,7 +8,7 @@
 - Base: cached origin/main `2b5264b4`
 - PR: none; local planning work only.
 - Dependency/package gates: vocabulary/claim owner before overlapping delivery; P2 Concert/Seed/Hosting publication and Customer/Search bumps; Postgres only gates configuration persistence.
-- Last reconciled: 2026-09-16 after P1's first implementation slice `958c53b5`; live PR #14/#15 heads checked 2026-09-15.
+- Last reconciled: 2026-09-16 after P1's access slice `bc7f0759`; live PR #14/#15 heads checked 2026-09-15.
 
 ## Current state
 
@@ -21,26 +21,43 @@ The branch was then restarted. The two rejected implementation/remediation commi
 brief were dropped; nothing had been pushed. `LegacyFinancialParties` does not exist and main's
 `IDealPayeeResolver` keyed family is still live.
 
-P1 is under way. Its first slice `958c53b5` replaced tenant-type authority: a new
-`Concertable.B2B.Authorization` module owns role/permission/request-authority with Tenant implementing
-its `IMembershipFacts` port; `TenantType` is deleted in favour of zero-or-more `TenantBusinessProfile`
-rows and a `[RequiresBusinessProfile]` eligibility filter; the permission catalog is role-only and adds
-`RestrictedParticipant`; `IsHost` now requires an explicitly entered execution scope; Tenant gained
-`ContactEmail`, `AuthorityVersion` and `Membership.AuthorizationVersion`, and `BusinessFacts` replaced
-the `ITenantContactResolver` profile dispatch. Tenant `InitialCreate` was regenerated.
+P1 is under way, in three delivered slices:
 
-P1 is NOT complete: the pair-scoped access mechanism, the nine entities' typed grants, Thread and
-per-member read state, the shared transaction fence, the financial-direction replacement, the
-web/mobile consumers and the touched guidance are all still outstanding.
+- `958c53b5` replaced tenant-type authority. A new `Concertable.B2B.Authorization` module owns
+  role/permission/request-authority with Tenant implementing its `IMembershipFacts` port; `TenantType` is
+  deleted in favour of zero-or-more `TenantBusinessProfile` rows and a `[RequiresBusinessProfile]`
+  eligibility filter; the permission catalog is role-only and adds `RestrictedParticipant`; `IsHost` now
+  requires an explicitly entered execution scope, established once per host and re-established as
+  interactive per request; Tenant gained `ContactEmail`, `AuthorityVersion` and
+  `Membership.AuthorizationVersion`, and `BusinessFacts` replaced the `ITenantContactResolver` dispatch.
+- `0a59a876` replaced pair-scoped access with typed resource grants. `ResourceAccessGrant<TFacet>` plus six
+  module-owned families (Application, Booking, Contract, Concert, Invoice, Thread), issued to both
+  principals at resource creation as children of their aggregate; `AccessScopedDbContext` with per-entity
+  filters that also re-check the caller's membership at the resolved authority revision through a
+  borrowed read-only `MembershipAuthorityFact`; a real `ThreadEntity` replacing the implicit venue/artist
+  tuple, with per-(thread, tenant, member) read state and a participant-set `IConversationsModule`.
+  `IVenueArtistTenantScoped`, its repositories, `VenueArtistTenantSpecification`, `TenantPair`,
+  `ApplyVenueArtist` and the pair interceptor are deleted, as is the `IDealPayeeResolver` family.
+- `bc7f0759` corrected `CODE_PATTERNS.md`, `Concert/AGENTS.md`, `Deal/ARCHITECTURE.md`,
+  `Deal/LEGAL_REQUIREMENTS.md` and one `TECH_DEBT.md` entry that still rostered the deleted machinery.
+
+All five `InitialCreate` migrations regenerated (Tenant, Application, Booking, Concert, Conversations).
+
+P1 is NOT complete. Outstanding: the shared transaction/fence coordinator across contexts; share and
+revoke commands with their HTTP surface; server-returned permissions and actions replacing the client's
+`permissionsForRole` mirror; the web and mobile consumers (in progress, uncommitted); integration
+coverage for the access predicate, revocation races and the member watermark; and every browser and
+native qualification the phase requires.
 
 ## Next Steps
 
-Continue P1 from `958c53b5`. Do not restart the replan, recover the dropped commits, redo the
-authority slice, or execute the rejected adapter-first sequence.
+Continue P1 from `bc7f0759`. Do not restart the replan, recover the dropped commits, redo the authority,
+access or documentation slices, or execute the rejected adapter-first sequence.
 
 Scope: whole plan through all remaining phases and terminal delivery.
 Current slice: P1 — replace pair access and enable restricted third-business participation.
-Its authority sub-slice is delivered; resource access, the fence, financial direction and the clients remain.
+Authority, resource access, financial direction and the touched guidance are delivered. The clients, the
+transaction fence, sharing commands and the phase's verification remain.
 Remaining scope: P2 accepted participants/Show/payment correlation and consumer closure; P3 representation; P4 direct invitation; P5 enforced evidence approval and terminal qualification.
 Done when: P1–P5 consumption/verification gates pass, all required producer/consumer delivery legs and handoffs close, and the plan's terminal closeout is complete.
 
@@ -48,18 +65,16 @@ Done when: P1–P5 consumption/verification gates pass, all required producer/co
    OperationClaim and AttemptVerdict source from `Refactor/DealVocabularyAndMapperCollapse`;
    it already implements the claim/mapping debt. Resolve overlaps locally without editing its dirty
    TECH_DEBT.md or the backlog owner's generated files. Coordinate delivery order with the owner.
-2. Implement the P1 grant/permission/system-scope contract across Application, Booking, Contract,
-   Concert, Invoice, availability, Message, ThreadReadState and ContentReport. Replace normal/read/
-   privileged query, projection, download, notification and mutation paths together. Delete
-   `IVenueArtistTenantScoped`, its repository interfaces/bases/specification, `TenantPair`,
-   `ApplyVenueArtist` and the interceptor, with their registrations and generic constraints. Add the
-   shared transaction/receipt/outbound-intent boundary for current writes; the membership and tenant
-   authority versions already exist.
-3. Add neutral shared/web/mobile membership and operations flows over the delivered profile model,
-   typed resource sharing/revocation, Thread grants and per-member watermarks. The web and mobile
-   clients still read a tenant `type` the API no longer returns, so they are broken until this lands.
-   Prove a distinct business can read an explicitly shared
-   concert summary and cannot see fees, contracts, invoices, private messages or financial actions.
+2. Finish the clients. `app/shared`, `app/web/*` and `app/mobile` have uncommitted work replacing the
+   tenant `type` the API no longer returns with the activated business profiles, and replacing mobile's
+   fall-through to `ArtistTabs` with profile-selected tabs plus a neutral `BusinessTabs`. `npm run
+   build:web` and `npm run build:mobile` have not yet run against it. Then replace the client-side
+   `permissionsForRole` mirror with server-returned permissions and actions.
+3. Add the shared DataAccess transaction coordinator so Tenant, the resource modules and the outbox
+   enlist in one connection and DbTransaction, and integrate the current acceptance/Booking path with it.
+   Add typed resource sharing and revocation commands with their HTTP surface and the sharing-policy
+   check. Prove a distinct business can read an explicitly shared concert summary and cannot see fees,
+   contracts, invoices, private messages or financial actions.
 4. Replace the pair-derived financial direction where its live consumers actually read it — main's
    `IDealPayeeResolver`/`DealPayeeResolver` family in Concert.Application and its two directional
    strategies. Do not reintroduce a `LegacyFinancialParties`-style value. Update Concert/AGENTS.md,
@@ -85,16 +100,26 @@ Done when: P1–P5 consumption/verification gates pass, all required producer/co
   value anyway. Their only trace is this checkout's reflog; treat them as gone.
 - P1 authority slice `958c53b5`: the Authorization module, business profiles, execution scopes,
   authority/authorization versions, Tenant-owned business facts and the regenerated Tenant
-  `InitialCreate`. Solution builds; 519 unit and 22 architecture tests pass. No integration, migration,
-  browser or native evidence is claimed for it.
+  `InitialCreate`.
+- P1 access slice `0a59a876`: the grant families, `AccessScopedDbContext`, the Thread aggregate, the
+  deleted pair mechanism and payee-resolver family, and four regenerated `InitialCreate` migrations.
+- `ResourceAccessGuardTests` replaced `TenantWriteGuardTests`: it fails a grant family whose EF
+  configuration is unregistered, and a grant-scoped context that declares no filter.
+- Naming kept deliberately narrow: no `Participant` type was introduced here. Grant vocabulary is
+  `ResourceAccessGrant` and per-resource facets, so P2 can introduce `Participant` for the relationship
+  the plan reserves it for.
 
 ## Verification
 
 - Planning graph: zero errors/warnings. Local file/heading links and git diff --check pass.
 - Packaged repository-state provider validates this plan, ledger, branch/worktree and P1 next action.
 - The earlier 533 unit/architecture passes belonged to the discarded runtime commits and are evidence
-  for nothing here. The current figure is the 519 unit and 22 architecture tests passing at `958c53b5`,
-  with a green solution build. No integration, Docker, browser or deployment evidence is claimed.
+  for nothing here. The current figure is 489 unit and 24 architecture tests passing at `bc7f0759`, with
+  a green solution build. The unit count fell because the pair interceptor, the payee-resolver family and
+  their tests were deleted, and the authority tests moved to the new Authorization suite.
+- No integration, Docker, browser, native or deployment evidence is claimed for any slice. The access
+  predicate, revocation races and the member watermark are not proven against a real provider yet; that
+  is a required P1 gate, not an optional one.
 - Actual CI inventory: ci.yml runs Unit/Integration/Architecture/Startup and migration/package checks;
   e2e.yml runs separately on schedule/manual dispatch.
 

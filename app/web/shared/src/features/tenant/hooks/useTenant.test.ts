@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
       {
         tenantId: "existing-tenant",
         legalName: "Existing Venue",
-        type: "venue" as const,
+        businessProfiles: ["venueOperator"] as const,
         role: "staff" as const,
       },
     ],
@@ -68,7 +68,7 @@ describe("web tenant selection", () => {
       order.push("queries");
     });
 
-    const { selectTenant } = useTenant("venue");
+    const { selectTenant } = useTenant("venueOperator");
     await selectTenant("accepted-tenant");
 
     expect(mocks.fetchQuery).toHaveBeenCalledWith({

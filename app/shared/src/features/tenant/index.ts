@@ -14,5 +14,5 @@ export type {
   TenantRole,
   TenantSessionConfiguration,
   TenantStorage,
-  TenantType,
+  TenantBusinessProfile,
 } from "./types";

@@ -27,12 +27,12 @@ const profileItems: ProfileMenuItem[] = [
 function ArtistLayout() {
   useArtistNotifications();
   const { selectionRequired } = useTenant("artist");
-  if (selectionRequired) return <TenantChooser tenantType="artist" />;
+  if (selectionRequired) return <TenantChooser businessProfile="artist" />;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher tenantType="artist" />}
+      headerSlot={<TenantSwitcher businessProfile="artist" />}
       messagingSlot={<Mailbox />}
     />
   );

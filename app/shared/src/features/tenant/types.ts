@@ -1,7 +1,8 @@
 import type { User } from "@concertable/shared/features/auth/types";
-import type { TENANT_ROLES } from "./constants";
+import type { TENANT_BUSINESS_PROFILES, TENANT_ROLES } from "./constants";
 
-export type TenantType = "venue" | "artist";
+/** A kind of marketplace work a business has activated. A business holds zero or more. */
+export type TenantBusinessProfile = (typeof TENANT_BUSINESS_PROFILES)[number];
 export type TenantRole = (typeof TENANT_ROLES)[number];
 
 export type TenantPermission =
@@ -17,13 +18,19 @@ export type TenantPermission =
   | "MembersManageRoles"
   | "MessagesRead"
   | "MessagesSend"
-  | "ConcertsOpsEdit";
+  | "ConcertsOpsEdit"
+  | "ConcertsCheckIn"
+  | "OpportunitiesManage"
+  | "ApplicationsDecide"
+  | "ApplicationsSubmit"
+  | "ConcertsManage"
+  | "ResourcesShare";
 
 export interface Membership {
   readonly tenantId: string;
   readonly legalName: string;
-  readonly type: TenantType;
   readonly role: TenantRole;
+  readonly businessProfiles: ReadonlyArray<TenantBusinessProfile>;
 }
 
 export interface B2bIdentity extends User {

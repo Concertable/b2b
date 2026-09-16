@@ -8,17 +8,17 @@ import {
   useB2bIdentityQuery,
   useTenant as useCoreTenant,
 } from "@concertable/b2b/features/tenant";
-import type { TenantType } from "@concertable/b2b/features/tenant/types";
+import type { TenantBusinessProfile } from "@concertable/b2b/features/tenant/types";
 
 export function useTenantIdentity() {
   return useB2bIdentityQuery();
 }
 
-export function useTenant(tenantType: TenantType) {
+export function useTenant(businessProfile: TenantBusinessProfile) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: identity } = useTenantIdentity();
-  const tenant = useCoreTenant(identity?.memberships ?? [], tenantType);
+  const tenant = useCoreTenant(identity?.memberships ?? [], businessProfile);
 
   const selectTenant = useCallback(
     async (tenantId: string) => {

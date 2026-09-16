@@ -1,6 +1,6 @@
 import { Button } from "@concertable/web/components/ui/button";
 import { useAcceptInvitation } from "../hooks/useAcceptInvitation";
-import type { TenantType } from "@b2b/features/tenant";
+import type { TenantBusinessProfile } from "@b2b/features/tenant";
 
 const Spinner = () => (
   <div className="text-muted-foreground size-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -8,9 +8,9 @@ const Spinner = () => (
 
 export function AcceptInvitationPage({
   invitationId,
-  tenantType,
-}: Readonly<{ invitationId: string; tenantType: TenantType }>) {
-  const { isError } = useAcceptInvitation(invitationId, tenantType);
+  businessProfile,
+}: Readonly<{ invitationId: string; businessProfile: TenantBusinessProfile }>) {
+  const { isError } = useAcceptInvitation(invitationId, businessProfile);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">

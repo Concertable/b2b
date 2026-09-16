@@ -7,13 +7,13 @@ const venueMemberships: ReadonlyArray<Membership> = [
   {
     tenantId: "venue-one",
     legalName: "Venue One",
-    type: "venue",
+    businessProfiles: ["venueOperator"],
     role: "owner",
   },
   {
     tenantId: "venue-two",
     legalName: "Venue Two",
-    type: "venue",
+    businessProfiles: ["venueOperator"],
     role: "staff",
   },
 ];
@@ -173,7 +173,7 @@ describe("tenant session", () => {
       venueMemberships.slice(0, 1),
     );
 
-    const resolution = await session.resolve("venue");
+    const resolution = await session.resolve("venueOperator");
 
     expect(resolution.activeMembership).toEqual(venueMemberships[0]);
     expect(storage.saveActiveTenantId).toHaveBeenCalledWith("venue-one");
@@ -185,7 +185,7 @@ describe("tenant session", () => {
       {
         tenantId: "artist-one",
         legalName: "Artist One",
-        type: "artist",
+        businessProfiles: ["artist"],
         role: "manager",
       },
     ];
