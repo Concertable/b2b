@@ -11,13 +11,14 @@ namespace Concertable.B2B.Conversations.UnitTests.Services;
 
 public sealed class ContentReportServiceTests
 {
+    private const int ThreadId = 3;
+
     private static readonly Guid VenueTenantId = Guid.NewGuid();
     private static readonly Guid ArtistTenantId = Guid.NewGuid();
     private static readonly Guid ReportingUserId = Guid.NewGuid();
 
     private static MessageEntity Message() =>
-        MessageEntity.Create(VenueTenantId, ArtistTenantId, senderTenantId: ArtistTenantId,
-            sentByUserId: Guid.NewGuid(), "reported content", new DateTime(2026, 1, 1));
+        MessageEntity.Create(ThreadId, ArtistTenantId, sentByUserId: Guid.NewGuid(), "reported content", new DateTime(2026, 1, 1));
 
     private static ContentReportService Service(
         Mock<IMessageRepository> messages,
@@ -65,8 +66,7 @@ public sealed class ContentReportServiceTests
     [Fact]
     public async Task Submit_OwnTenantsOutboundMessage_IsNotFound_AndRecordsNothing()
     {
-        var outbound = MessageEntity.Create(VenueTenantId, ArtistTenantId, senderTenantId: VenueTenantId,
-            sentByUserId: ReportingUserId, "our own message", new DateTime(2026, 1, 1));
+        var outbound = MessageEntity.Create(ThreadId, VenueTenantId, sentByUserId: ReportingUserId, "our own message", new DateTime(2026, 1, 1));
 
         var messages = new Mock<IMessageRepository>();
         messages.Setup(r => r.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(outbound);

@@ -2,19 +2,19 @@ namespace Concertable.B2B.Conversations.UnitTests.Domain;
 
 public sealed class MessageEntityTests
 {
+    private const int ThreadId = 3;
+
     [Fact]
-    public void Create_StampsThePairSenderAndAuthor()
+    public void Create_StampsTheThreadSenderAndAuthor()
     {
-        var venueTenantId = Guid.NewGuid();
-        var artistTenantId = Guid.NewGuid();
+        var senderTenantId = Guid.NewGuid();
         var sentByUserId = Guid.NewGuid();
 
-        var message = MessageEntity.Create(venueTenantId, artistTenantId, senderTenantId: venueTenantId, sentByUserId,
+        var message = MessageEntity.Create(ThreadId, senderTenantId, sentByUserId,
             "content", new DateTime(2026, 1, 1), MessageAction.ApplicationAccepted);
 
-        Assert.Equal(venueTenantId, message.VenueTenantId);
-        Assert.Equal(artistTenantId, message.ArtistTenantId);
-        Assert.Equal(venueTenantId, message.SenderTenantId);
+        Assert.Equal(ThreadId, message.ThreadId);
+        Assert.Equal(senderTenantId, message.SenderTenantId);
         Assert.Equal(sentByUserId, message.SentByUserId);
         Assert.Equal(MessageAction.ApplicationAccepted, message.Action);
     }
@@ -22,7 +22,7 @@ public sealed class MessageEntityTests
     [Fact]
     public void Hide_StampsTheModeratorAndTime_AndRestoreClearsThem()
     {
-        var message = MessageEntity.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+        var message = MessageEntity.Create(ThreadId, Guid.NewGuid(), Guid.NewGuid(),
             "content", new DateTime(2026, 1, 1));
         var hiddenByUserId = Guid.NewGuid();
         var hiddenAt = new DateTime(2026, 8, 15, 12, 0, 0);
@@ -45,7 +45,7 @@ public sealed class MessageEntityTests
     [Fact]
     public void Restore_KeepsTheHideStamps_SoAReversedDecisionIsStillEvidenced()
     {
-        var message = MessageEntity.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+        var message = MessageEntity.Create(ThreadId, Guid.NewGuid(), Guid.NewGuid(),
             "content", new DateTime(2026, 1, 1));
         var hiddenByUserId = Guid.NewGuid();
         var hiddenAt = new DateTime(2026, 8, 15, 12, 0, 0);
@@ -60,7 +60,7 @@ public sealed class MessageEntityTests
     [Fact]
     public void Hide_AfterARestore_HidesAgain()
     {
-        var message = MessageEntity.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+        var message = MessageEntity.Create(ThreadId, Guid.NewGuid(), Guid.NewGuid(),
             "content", new DateTime(2026, 1, 1));
         var first = new DateTime(2026, 8, 15, 12, 0, 0);
 
@@ -74,7 +74,7 @@ public sealed class MessageEntityTests
     [Fact]
     public void Hide_KeepsTheContent()
     {
-        var message = MessageEntity.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+        var message = MessageEntity.Create(ThreadId, Guid.NewGuid(), Guid.NewGuid(),
             "the reported content", new DateTime(2026, 1, 1));
 
         message.Hide(Guid.NewGuid(), new DateTime(2026, 8, 15));

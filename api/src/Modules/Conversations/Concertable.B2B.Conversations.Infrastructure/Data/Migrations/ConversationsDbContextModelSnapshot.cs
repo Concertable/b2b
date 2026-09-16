@@ -31,9 +31,6 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<Guid>("ArtistTenantId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -73,16 +70,14 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<DateTime>("SubmittedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("VenueTenantId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("ThreadId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ArtistTenantId");
-
                     b.HasIndex("MessageId");
 
-                    b.HasIndex("VenueTenantId");
+                    b.HasIndex("ThreadId", "ReporterTenantId");
 
                     b.ToTable("ContentReports", "conversations");
                 });
@@ -97,9 +92,6 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 
                     b.Property<int?>("Action")
                         .HasColumnType("int");
-
-                    b.Property<Guid>("ArtistTenantId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -126,16 +118,90 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<DateTime>("SentDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("VenueTenantId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("ThreadId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ArtistTenantId");
+                    b.HasIndex("SenderTenantId");
 
-                    b.HasIndex("VenueTenantId");
+                    b.HasIndex("ThreadId", "SentDate");
 
                     b.ToTable("Messages", "conversations");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ThreadAccessGrant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Facet")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("IssuedByTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("IssuedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("MemberUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Origin")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ValidFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResourceId", "TenantId", "Facet")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ThreadAccessGrants_TenantWide")
+                        .HasFilter("[RevokedAt] IS NULL AND [MemberUserId] IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Facet", "MemberUserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ThreadAccessGrants_Member")
+                        .HasFilter("[RevokedAt] IS NULL AND [MemberUserId] IS NOT NULL");
+
+                    b.HasIndex("TenantId", "Facet", "ResourceId", "MemberUserId")
+                        .HasFilter("[RevokedAt] IS NULL");
+
+                    b.ToTable("ThreadAccessGrants", "conversations");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ThreadEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Threads", "conversations");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ThreadReadStateEntity", b =>
@@ -146,21 +212,21 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<Guid>("ArtistTenantId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("LastReadAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ThreadId")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("VenueTenantId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("VenueTenantId", "ArtistTenantId", "UserId")
+                    b.HasIndex("ThreadId", "TenantId", "UserId")
                         .IsUnique();
 
                     b.ToTable("ThreadReadStates", "conversations");
@@ -178,6 +244,25 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.HasKey("TenantId");
 
                     b.ToTable("ParticipantProfiles", "conversations");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.DataAccess.Application.MembershipAuthorityFact", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("AuthorizationVersion")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("TenantId", "UserId");
+
+                    b.ToTable("Memberships", "tenant", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
@@ -249,6 +334,33 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.MessageEntity", b =>
+                {
+                    b.HasOne("Concertable.B2B.Conversations.Domain.Entities.ThreadEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ThreadId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ThreadAccessGrant", b =>
+                {
+                    b.HasOne("Concertable.B2B.Conversations.Domain.Entities.ThreadEntity", null)
+                        .WithMany("AccessGrants")
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ThreadReadStateEntity", b =>
+                {
+                    b.HasOne("Concertable.B2B.Conversations.Domain.Entities.ThreadEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ThreadId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Concertable.B2B.Conversations.Domain.ReadModels.ParticipantProfile", b =>
                 {
                     b.OwnsOne("Concertable.Kernel.ValueObjects.Address", "Address", b1 =>
@@ -276,6 +388,11 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 
                     b.Navigation("Address")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ThreadEntity", b =>
+                {
+                    b.Navigation("AccessGrants");
                 });
 #pragma warning restore 612, 618
         }

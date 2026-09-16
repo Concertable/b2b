@@ -35,10 +35,15 @@ internal sealed class ConversationsTestSeeder : ITestSeeder
             var venueTenantId = TenantSeedIds.For(venueUserId);
             var artistTenantId = TenantSeedIds.For(artistUserId);
 
+            // Saved first so the messages can reference a real thread id, exactly as sending does.
+            var thread = ThreadEntity.Create([venueTenantId, artistTenantId], now.AddDays(-1));
+            context.Threads.Add(thread);
+            await context.SaveChangesAsync(ct);
+
             context.Messages.AddRange(
-                MessageEntity.Create(venueTenantId, artistTenantId, artistTenantId, artistUserId,
+                MessageEntity.Create(thread.Id, artistTenantId, artistUserId,
                     "Test inbox message — artist to venue.", now.AddDays(-1), MessageAction.ApplicationReceived),
-                MessageEntity.Create(venueTenantId, artistTenantId, venueTenantId, venueUserId,
+                MessageEntity.Create(thread.Id, venueTenantId, venueUserId,
                     "Test inbox message — venue to artist.", now, MessageAction.ApplicationAccepted));
 
             await context.SaveChangesAsync(ct);

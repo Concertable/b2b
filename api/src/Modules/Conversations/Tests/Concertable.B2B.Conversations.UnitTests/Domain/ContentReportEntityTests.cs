@@ -8,12 +8,14 @@ public sealed class ContentReportEntityTests
     private static readonly Guid VenueTenantId = Guid.NewGuid();
     private static readonly Guid ArtistTenantId = Guid.NewGuid();
 
+    private const int ThreadId = 3;
+
     private static MessageEntity Message(string content = "reported content") =>
-        MessageEntity.Create(VenueTenantId, ArtistTenantId, senderTenantId: ArtistTenantId,
+        MessageEntity.Create(ThreadId, senderTenantId: ArtistTenantId,
             sentByUserId: Guid.NewGuid(), content, new DateTime(2026, 1, 1));
 
     [Fact]
-    public void Create_SnapshotsThePairReporterAndReportedParty()
+    public void Create_SnapshotsTheThreadReporterAndReportedParty()
     {
         var reportedByUserId = Guid.NewGuid();
         var submittedAt = new DateTime(2026, 8, 14, 10, 30, 0);
@@ -21,8 +23,7 @@ public sealed class ContentReportEntityTests
         var report = ContentReportEntity.Create(Message(), VenueTenantId, reportedByUserId,
             ReportCategory.IllegalContent, "please review", submittedAt);
 
-        Assert.Equal(VenueTenantId, report.VenueTenantId);
-        Assert.Equal(ArtistTenantId, report.ArtistTenantId);
+        Assert.Equal(ThreadId, report.ThreadId);
         Assert.Equal(VenueTenantId, report.ReporterTenantId);
         Assert.Equal(ArtistTenantId, report.ReportedTenantId);
         Assert.Equal(reportedByUserId, report.ReportedByUserId);

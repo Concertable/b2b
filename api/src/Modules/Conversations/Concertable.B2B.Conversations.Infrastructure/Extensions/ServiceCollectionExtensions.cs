@@ -30,7 +30,6 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
-                    sp.GetRequiredService<VenueArtistTenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
@@ -49,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.Configure<SafetySettings>(configuration.GetSection(SafetySettings.SectionName));
 
         services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddScoped<IThreadRepository, ThreadRepository>();
         services.AddScoped<IContentReportRepository, ContentReportRepository>();
         services.AddScoped<IMessagePrivilegedRepository, MessagePrivilegedRepository>();
         services.AddScoped<IContentReportPrivilegedRepository, ContentReportPrivilegedRepository>();

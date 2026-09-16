@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts;
 using Concertable.Kernel;
@@ -12,7 +13,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// both the supplier and the customer can read it, and no one else.
 /// </summary>
 [DisplayName(DisplayNames.Invoice)]
-public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
+public sealed class InvoiceEntity : IIdEntity
 {
     public int Id { get; private set; }
     public Guid VenueTenantId { get; private set; }
@@ -37,6 +38,9 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
     public string? PdfBlobName { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
+    private readonly List<InvoiceAccessGrant> accessGrants = [];
+    public IReadOnlyList<InvoiceAccessGrant> AccessGrants => accessGrants;
+
     private InvoiceEntity() { }
 
     public static InvoiceEntity Create(
@@ -53,7 +57,7 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
         if (concert.VenueTenantId == Guid.Empty || concert.ArtistTenantId == Guid.Empty)
             throw new InvalidOperationException("An invoice cannot inherit unresolved concert tenants.");
 
-        return new()
+        var invoice = new InvoiceEntity
         {
             BookingId = concert.BookingId,
             VenueTenantId = concert.VenueTenantId,
@@ -68,5 +72,20 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
             CreatedAtUtc = createdAtUtc,
             PdfBlobName = $"invoices/{concert.BookingId}-{Guid.NewGuid():N}.pdf"
         };
+
+        foreach (var tenantId in new[] { concert.VenueTenantId, concert.ArtistTenantId })
+        {
+            invoice.accessGrants.Add(InvoiceAccessGrant.Issue(
+                invoice.Id,
+                tenantId,
+                memberUserId: null,
+                InvoiceAccessFacet.Invoice,
+                issuedByTenantId: concert.VenueTenantId,
+                issuedByUserId: null,
+                GrantOrigin.ResourceCreation,
+                createdAtUtc));
+        }
+
+        return invoice;
     }
 }

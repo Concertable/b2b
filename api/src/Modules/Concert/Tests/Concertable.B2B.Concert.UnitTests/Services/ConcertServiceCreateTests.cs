@@ -94,7 +94,7 @@ public sealed class ConcertServiceCreateTests
     {
         repository
             .Setup(value => value.GetByBookingIdAsync(booking.BookingId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ConcertEntity.CreateDraft(booking, new ConcertDraft("Existing", "About", [Genre.Rock])));
+            .ReturnsAsync(ConcertEntity.CreateDraft(booking, new ConcertDraft("Existing", "About", [Genre.Rock]), DateTime.UnixEpoch));
 
         await service.CreateAsync(booking);
 

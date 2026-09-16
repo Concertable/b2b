@@ -1,4 +1,5 @@
 using Concertable.Contracts;
+using Concertable.B2B.Conversations.Contracts.Enums;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -11,21 +12,37 @@ internal sealed class MessageRepository : Repository<MessageEntity>, IMessageRep
         m => m.HiddenAt == null || (m.RestoredAt != null && m.RestoredAt > m.HiddenAt);
     private readonly ConversationsDbContext context;
 
-    public MessageRepository(ConversationsDbContext context) : base(context)
+    public MessageRepository(ConversationsDbContext context)
+        : base(context)
     {
         this.context = context;
     }
 
+    /* Stated rather than inherited from the ambient filter: these queries are named for the tenant they
+       serve, and a reader should see which threads that means without knowing the context's stance. The
+       filter still applies underneath, so the two have to agree. */
+    private IQueryable<int> ThreadIdsOf(Guid tenantId) =>
+        context.ThreadAccessGrants
+            .Where(grant =>
+                grant.TenantId == tenantId
+                && grant.Facet == ThreadAccessFacet.Read
+                && grant.RevokedAt == null)
+            .Select(grant => grant.ResourceId);
+
     public Task<IPagination<MessageEntity>> GetByTenantIdAsync(Guid tenantId, IPageParams pageParams) =>
         context.Messages
             .Where(NotHidden)
+            .Where(m => ThreadIdsOf(tenantId).Contains(m.ThreadId))
             .OrderByDescending(m => m.SentDate)
             .ToPaginationAsync(pageParams);
 
     public Task<int> GetUnreadCountByTenantIdAsync(Guid tenantId, Guid userId) =>
-        (from m in context.Messages.Where(m => m.SenderTenantId != tenantId).Where(NotHidden)
-         join p in context.ThreadReadStates.Where(p => p.UserId == userId)
-             on new { m.VenueTenantId, m.ArtistTenantId } equals new { p.VenueTenantId, p.ArtistTenantId } into pointers
+        (from m in context.Messages
+             .Where(m => m.SenderTenantId != tenantId)
+             .Where(NotHidden)
+             .Where(m => ThreadIdsOf(tenantId).Contains(m.ThreadId))
+         join p in context.ThreadReadStates.Where(p => p.UserId == userId && p.TenantId == tenantId)
+             on m.ThreadId equals p.ThreadId into pointers
          from p in pointers.DefaultIfEmpty()
          where p == null || m.SentDate > p.LastReadAt
          select m.Id)
@@ -35,9 +52,10 @@ internal sealed class MessageRepository : Repository<MessageEntity>, IMessageRep
     {
         var tenantMessages = context.Messages
             .Where(NotHidden)
-            .Where(m => m.VenueTenantId == tenantId || m.ArtistTenantId == tenantId);
+            .Where(m => ThreadIdsOf(tenantId).Contains(m.ThreadId));
+
         var latestMessageIds = tenantMessages
-            .GroupBy(m => new { m.VenueTenantId, m.ArtistTenantId })
+            .GroupBy(m => m.ThreadId)
             .Select(group => group
                 .OrderByDescending(m => m.SentDate)
                 .ThenByDescending(m => m.Id)
@@ -52,18 +70,24 @@ internal sealed class MessageRepository : Repository<MessageEntity>, IMessageRep
             .Take(5)
             .Select(m => new MessagePreview(
                 m.Id,
-                m.VenueTenantId == tenantId ? m.ArtistTenantId : m.VenueTenantId,
-                m.VenueTenantId != tenantId,
+                m.ThreadId,
+                context.ThreadAccessGrants
+                    .Where(grant =>
+                        grant.ResourceId == m.ThreadId
+                        && grant.Facet == ThreadAccessFacet.Participate
+                        && grant.TenantId != tenantId
+                        && grant.RevokedAt == null)
+                    .Select(grant => (Guid?)grant.TenantId)
+                    .FirstOrDefault(),
                 m.Content,
                 m.SentDate,
                 context.Messages.Where(NotHidden).Any(candidate =>
-                    candidate.VenueTenantId == m.VenueTenantId
-                    && candidate.ArtistTenantId == m.ArtistTenantId
+                    candidate.ThreadId == m.ThreadId
                     && candidate.SenderTenantId != tenantId
                     && !context.ThreadReadStates.Any(pointer =>
                         pointer.UserId == userId
-                        && pointer.VenueTenantId == candidate.VenueTenantId
-                        && pointer.ArtistTenantId == candidate.ArtistTenantId
+                        && pointer.TenantId == tenantId
+                        && pointer.ThreadId == candidate.ThreadId
                         && pointer.LastReadAt >= candidate.SentDate))))
             .ToListAsync();
     }
@@ -75,22 +99,19 @@ internal sealed class MessageRepository : Repository<MessageEntity>, IMessageRep
 
     public async Task AdvanceReadPointersAsync(Guid tenantId, Guid userId, DateTime readAt)
     {
-        var pairs = await context.Messages
-            .Select(m => new { m.VenueTenantId, m.ArtistTenantId })
-            .Distinct()
-            .ToListAsync();
+        var threadIds = await ThreadIdsOf(tenantId).Distinct().ToListAsync();
 
         var pointers = await context.ThreadReadStates
-            .Where(p => p.UserId == userId)
-            .ToDictionaryAsync(p => (p.VenueTenantId, p.ArtistTenantId));
+            .Where(p => p.UserId == userId && p.TenantId == tenantId)
+            .ToDictionaryAsync(p => p.ThreadId);
 
-        foreach (var pair in pairs)
+        foreach (var threadId in threadIds)
         {
-            if (pointers.TryGetValue((pair.VenueTenantId, pair.ArtistTenantId), out var pointer))
+            if (pointers.TryGetValue(threadId, out var pointer))
                 pointer.Advance(readAt);
             else
                 await context.ThreadReadStates.AddAsync(
-                    ThreadReadStateEntity.Create(pair.VenueTenantId, pair.ArtistTenantId, userId, readAt));
+                    ThreadReadStateEntity.Create(threadId, tenantId, userId, readAt));
         }
 
         await context.SaveChangesAsync();

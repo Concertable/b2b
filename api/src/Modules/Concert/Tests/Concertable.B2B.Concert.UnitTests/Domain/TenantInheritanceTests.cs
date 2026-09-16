@@ -10,10 +10,10 @@ public sealed class TenantInheritanceTests
     private readonly Guid artistTenantId = Guid.NewGuid();
 
     [Fact]
-    public void Create_ConfirmedBooking_PropagatesTenantPairToConcertAndInvoice()
+    public void Create_ConfirmedBooking_PropagatesTheEconomicTenantsToConcertAndInvoice()
     {
         var booking = CreateBooking(venueTenantId, artistTenantId);
-        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         var party = new InvoiceParty(Guid.NewGuid(), "Party", null, "Line 1", null, "City", "AB1 2CD", "GB");
         var invoice = InvoiceEntity.Create(
             concert,
@@ -25,8 +25,10 @@ public sealed class TenantInheritanceTests
             booking.EndDate,
             DateTime.UtcNow);
 
-        AssertScope(concert, venueTenantId, artistTenantId);
-        AssertScope(invoice, venueTenantId, artistTenantId);
+        Assert.Equal(venueTenantId, concert.VenueTenantId);
+        Assert.Equal(artistTenantId, concert.ArtistTenantId);
+        Assert.Equal(venueTenantId, invoice.VenueTenantId);
+        Assert.Equal(artistTenantId, invoice.ArtistTenantId);
         Assert.Equal(booking.BookingId, concert.BookingId);
         Assert.Equal(booking.BookingId, invoice.BookingId);
         Assert.Equal(DealType.FlatFee, invoice.DealType);
@@ -42,18 +44,10 @@ public sealed class TenantInheritanceTests
         var booking = CreateBooking(venue, artist);
 
         Assert.Throws<InvalidOperationException>(
-            () => ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", [])));
+            () => ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch));
     }
 
     private static ConfirmedBookingSnapshot CreateBooking(Guid venueTenantId, Guid artistTenantId) =>
         ConfirmedBookings.FlatFee(100m) with { VenueTenantId = venueTenantId, ArtistTenantId = artistTenantId };
 
-    private static void AssertScope(
-        Concertable.B2B.DataAccess.Application.IVenueArtistTenantScoped entity,
-        Guid expectedVenueTenantId,
-        Guid expectedArtistTenantId)
-    {
-        Assert.Equal(expectedVenueTenantId, entity.VenueTenantId);
-        Assert.Equal(expectedArtistTenantId, entity.ArtistTenantId);
-    }
 }

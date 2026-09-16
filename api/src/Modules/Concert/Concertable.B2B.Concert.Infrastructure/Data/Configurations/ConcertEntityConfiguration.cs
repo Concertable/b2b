@@ -11,6 +11,10 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
     public void Configure(EntityTypeBuilder<ConcertEntity> builder)
     {
         builder.ToTable(Schema.Tables.Concerts, Schema.Name);
+        builder.HasMany(concert => concert.AccessGrants)
+            .WithOne()
+            .HasForeignKey(grant => grant.ResourceId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasConcurrencyVersion();
         builder.Property(e => e.State).IsRequired().IsConcurrencyToken();
         builder.Property(e => e.SettlementGrossAmount).HasPrecision(18, 2);

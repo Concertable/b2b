@@ -24,6 +24,64 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.BookingAccessGrant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Facet")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("IssuedByTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("IssuedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("MemberUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Origin")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ValidFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResourceId", "TenantId", "Facet")
+                        .IsUnique()
+                        .HasDatabaseName("UX_BookingAccessGrants_TenantWide")
+                        .HasFilter("[RevokedAt] IS NULL AND [MemberUserId] IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Facet", "MemberUserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_BookingAccessGrants_Member")
+                        .HasFilter("[RevokedAt] IS NULL AND [MemberUserId] IS NOT NULL");
+
+                    b.HasIndex("TenantId", "Facet", "ResourceId", "MemberUserId")
+                        .HasFilter("[RevokedAt] IS NULL");
+
+                    b.ToTable("BookingAccessGrants", "booking");
+                });
+
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.BookingEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -110,6 +168,64 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Bookings", "booking");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractAccessGrant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Facet")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("IssuedByTenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("IssuedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("MemberUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Origin")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ValidFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResourceId", "TenantId", "Facet")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ContractAccessGrants_TenantWide")
+                        .HasFilter("[RevokedAt] IS NULL AND [MemberUserId] IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Facet", "MemberUserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ContractAccessGrants_Member")
+                        .HasFilter("[RevokedAt] IS NULL AND [MemberUserId] IS NOT NULL");
+
+                    b.HasIndex("TenantId", "Facet", "ResourceId", "MemberUserId")
+                        .HasFilter("[RevokedAt] IS NULL");
+
+                    b.ToTable("ContractAccessGrants", "booking");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractEntity", b =>
@@ -256,6 +372,25 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.UseTphMappingStrategy();
                 });
 
+            modelBuilder.Entity("Concertable.B2B.DataAccess.Application.MembershipAuthorityFact", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("AuthorizationVersion")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("TenantId", "UserId");
+
+                    b.ToTable("Memberships", "tenant", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
                 {
                     b.Property<Guid>("MessageId")
@@ -371,6 +506,24 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.HasDiscriminator().HasValue(2);
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.BookingAccessGrant", b =>
+                {
+                    b.HasOne("Concertable.B2B.Booking.Domain.Entities.BookingEntity", null)
+                        .WithMany("AccessGrants")
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractAccessGrant", b =>
+                {
+                    b.HasOne("Concertable.B2B.Booking.Domain.Entities.ContractEntity", null)
+                        .WithMany("AccessGrants")
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractEntity", b =>
                 {
                     b.HasOne("Concertable.B2B.Booking.Domain.Entities.BookingEntity", null)
@@ -382,8 +535,15 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.BookingEntity", b =>
                 {
+                    b.Navigation("AccessGrants");
+
                     b.Navigation("Contract")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractEntity", b =>
+                {
+                    b.Navigation("AccessGrants");
                 });
 #pragma warning restore 612, 618
         }

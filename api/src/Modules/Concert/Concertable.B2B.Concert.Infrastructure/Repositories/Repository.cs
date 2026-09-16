@@ -15,6 +15,4 @@ internal abstract class TenantScopedRepository<TEntity>(ConcertDbContext context
     : TenantScopedRepository<TEntity, int>(context, tenant)
     where TEntity : class, IIdEntity, ITenantScoped;
 
-internal abstract class VenueArtistTenantScopedRepository<TEntity>(ConcertDbContext context)
-    : VenueArtistTenantScopedRepository<TEntity, int>(context)
-    where TEntity : class, IIdEntity, IVenueArtistTenantScoped;
+

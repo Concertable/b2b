@@ -1,3 +1,4 @@
+using Concertable.B2B.Application.Infrastructure.Specifications;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Infrastructure.Data;
@@ -58,7 +59,7 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
 
         var venueTenantId = await applicationRepository.GetByIdAsync(
             applicationId,
-            VenueArtistTenantSpecification<ApplicationEntity>.CreateVenueTenantId(),
+            ApplicationSpecification.CreateVenueTenantId(),
             ct);
         var owned = false;
         if (venueTenantId is not null)

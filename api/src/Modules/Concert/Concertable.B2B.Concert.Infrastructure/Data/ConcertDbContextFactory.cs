@@ -7,7 +7,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Data;
 internal sealed class ConcertDbContextFactory : B2BDesignTimeDbContextFactory<ConcertDbContext>
 {
     protected override ConcertDbContext Create(DbContextOptions<ConcertDbContext> options) =>
-        new(options, new ConcertConfigurationProvider(), DesignTimeTenantContext.Instance);
+        new(
+            options,
+            new ConcertConfigurationProvider(),
+            DesignTimeTenantContext.Instance,
+            DesignTimeAccessContext.Instance);
 
     protected override void ConfigureSqlServer(SqlServerDbContextOptionsBuilder sql) =>
         sql.UseNetTopologySuite();

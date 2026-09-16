@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class InvoiceRepository : VenueArtistTenantScopedRepository<InvoiceEntity>, IInvoiceRepository
+internal sealed class InvoiceRepository : Repository<InvoiceEntity>, IInvoiceRepository
 {
     private readonly ConcertDbContext context;
 

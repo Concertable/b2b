@@ -205,7 +205,8 @@ public sealed class ConcertWorkflowTests
 
     private static ConcertEntity CreateBooking() => ConcertEntity.CreateDraft(
         ConfirmedBookings.FlatFee(100m),
-        new ConcertDraft("Concert", "About", []));
+        new ConcertDraft("Concert", "About", []),
+        DateTime.UnixEpoch);
 
     private sealed class ImmediateBehavior : IUnitOfWorkBehavior, IOutboxUnitOfWorkBehavior
     {

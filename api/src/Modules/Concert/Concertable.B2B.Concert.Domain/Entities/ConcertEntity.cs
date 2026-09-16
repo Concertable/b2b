@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Domain.Events;
@@ -6,6 +6,7 @@ using Concertable.B2B.Concert.Domain.Errors;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ValueObjects;
+using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts;
 using Concertable.Kernel;
@@ -20,7 +21,7 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// so the Concert module can satisfy queries in a single DB context without crossing module boundaries.
 /// </summary>
 [DisplayName(DisplayNames.Concert)]
-public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurrencyVersioned, IEventRaiser, IVenueArtistTenantScoped
+public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcurrencyVersioned, IEventRaiser
 {
     private static readonly ConcertStateMachine stateMachine = new();
 
@@ -54,6 +55,9 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     public EfSet<Genre> Genres { get; private set; } = [];
     public ICollection<ConcertImageEntity> Images { get; private set; } = [];
 
+    private readonly List<ConcertAccessGrant> accessGrants = [];
+    public IReadOnlyList<ConcertAccessGrant> AccessGrants => accessGrants;
+
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
     public void ClearDomainEvents() => events.Clear();
@@ -61,6 +65,38 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     protected ConcertEntity() { }
 
     public static ConcertEntity CreateDraft(
+        ConfirmedBookingSnapshot booking,
+        ConcertDraft draft,
+        DateTime createdAtUtc)
+    {
+        var concert = FromTerms(booking, draft);
+        concert.IssuePrincipalGrants(createdAtUtc);
+        return concert;
+    }
+
+    /* Both principals reach their own concert through grants like anyone else, issued with the concert so
+       none can exist that its own parties cannot see. A confirmation creates it, so there is no human the
+       issue can be attributed to. */
+    private void IssuePrincipalGrants(DateTime at)
+    {
+        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId })
+        {
+            foreach (var facet in Enum.GetValues<ConcertAccessFacet>())
+            {
+                accessGrants.Add(ConcertAccessGrant.Issue(
+                    Id,
+                    tenantId,
+                    memberUserId: null,
+                    facet,
+                    issuedByTenantId: VenueTenantId,
+                    issuedByUserId: null,
+                    GrantOrigin.ResourceCreation,
+                    at));
+            }
+        }
+    }
+
+    private static ConcertEntity FromTerms(
         ConfirmedBookingSnapshot booking,
         ConcertDraft draft) =>
         booking.Terms switch

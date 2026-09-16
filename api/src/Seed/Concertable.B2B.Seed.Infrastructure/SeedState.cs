@@ -595,15 +595,17 @@ public sealed class SeedState
 
         Concerts = catalog.Concerts
             .Where(spec => spec.ConcertId != AwaitingPaymentBooking.Id)
-            .Select(spec => ConcertFactory.Create(spec, Bookings[spec.ConcertId - 1], Contracts[spec.ConcertId - 1]))
+            .Select(spec => ConcertFactory.Create(
+                spec,
+                Bookings[spec.ConcertId - 1],
+                Contracts[spec.ConcertId - 1],
+                now))
             .ToList();
         ConcertAvailabilities = Concerts.Select(concert => ConcertAvailabilityEntity.Create(
             concert.Id,
             concert.OpportunityId,
             concert.ArtistId,
             concert.VenueId,
-            concert.VenueTenantId,
-            concert.ArtistTenantId,
             concert.Period.Start)).ToList();
     }
 

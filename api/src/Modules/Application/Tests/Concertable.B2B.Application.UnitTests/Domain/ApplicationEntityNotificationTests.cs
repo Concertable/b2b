@@ -41,5 +41,5 @@ public sealed class ApplicationEntityNotificationTests
     }
 
     private static ApplicationEntity CreateApplication() =>
-        ApplicationEntity.Create(1, 1, DealType.FlatFee, VenueTenantId, ArtistTenantId);
+        ApplicationEntity.Create(1, 1, DealType.FlatFee, VenueTenantId, ArtistTenantId, DateTime.UnixEpoch);
 }

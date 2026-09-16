@@ -97,7 +97,8 @@ internal sealed class ConcertService : IConcertService
             new ConcertDraft(
                 $"{artist.Name} performing at {venue.Name}",
                 venue.About,
-                matchingGenres));
+                matchingGenres),
+            timeProvider.GetUtcNow().UtcDateTime);
         await concertRepository.AddAsync(concert, ct);
         await concertRepository.SaveChangesAsync(ct);
 

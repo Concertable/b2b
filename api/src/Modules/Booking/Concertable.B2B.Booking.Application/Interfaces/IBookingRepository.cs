@@ -1,10 +1,10 @@
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Lifecycle;
-using Concertable.B2B.DataAccess.Application;
+using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Booking.Application.Interfaces;
 
-internal interface IBookingRepository : IVenueArtistTenantScopedRepository<BookingEntity>
+internal interface IBookingRepository : IRepository<BookingEntity, int>
 {
     Task<BookingEntity?> GetByApplicationIdAsync(
         int applicationId,

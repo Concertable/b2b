@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Repositories;
 
-internal sealed class ApplicationRepository : VenueArtistTenantScopedRepository<ApplicationEntity>, IApplicationRepository
+internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IApplicationRepository
 {
     private readonly ApplicationDbContext context;
 

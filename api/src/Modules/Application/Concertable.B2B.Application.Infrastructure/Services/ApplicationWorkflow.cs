@@ -124,6 +124,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             deal.DealType,
             opportunity.VenueTenantId,
             artistTenantId,
+            timeProvider.GetUtcNow().UtcDateTime,
             ct);
         if (applied.TryGetError(out var applyError))
             return applyError;

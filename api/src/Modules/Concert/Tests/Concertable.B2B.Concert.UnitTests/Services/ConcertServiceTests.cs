@@ -46,7 +46,7 @@ public sealed class ConcertServiceTests
     public async Task UpdateAsync_SaveRaceLost_ReturnsSuperseded()
     {
         var now = new DateTimeOffset(ConfirmedBookings.EndsAtUtc.AddHours(1), TimeSpan.Zero);
-        var concert = ConcertEntity.CreateDraft(CreateBooking(now), new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(CreateBooking(now), new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository.Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(concert);
@@ -71,8 +71,8 @@ public sealed class ConcertServiceTests
     {
         var now = new DateTimeOffset(ConfirmedBookings.EndsAtUtc.AddHours(1), TimeSpan.Zero);
         var booking = CreateBooking(now);
-        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
-        var persisted = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
+        var persisted = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository
@@ -99,7 +99,7 @@ public sealed class ConcertServiceTests
     public async Task DeclareDoorRevenueAsync_SaveRaceLost_ReturnsSuperseded()
     {
         var now = new DateTimeOffset(ConfirmedBookings.EndsAtUtc.AddHours(1), TimeSpan.Zero);
-        var concert = ConcertEntity.CreateDraft(CreateBooking(now), new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(CreateBooking(now), new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository.Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(concert);
@@ -136,7 +136,7 @@ public sealed class ConcertServiceTests
     {
         var now = new DateTimeOffset(ConfirmedBookings.EndsAtUtc.AddHours(1), TimeSpan.Zero);
         var booking = ConfirmedBookings.DoorSplit(50m);
-        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository

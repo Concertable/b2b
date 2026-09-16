@@ -1,11 +1,11 @@
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Application.Models;
-using Concertable.B2B.DataAccess.Application;
+using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Application.Application.Interfaces;
 
-internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<ApplicationEntity>
+internal interface IApplicationRepository : IRepository<ApplicationEntity, int>
 {
     Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
         int opportunityId,

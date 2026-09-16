@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Domain.ValueObjects;
@@ -11,7 +12,7 @@ using Reunion;
 namespace Concertable.B2B.Application.Domain.Entities;
 
 [DisplayName(DisplayNames.Application)]
-public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
+public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEventRaiser
 {
     private static readonly ApplicationStateMachine stateMachine = new();
 
@@ -27,6 +28,9 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
     public DealType DealType { get; private set; }
     public Guid? AcceptanceOperationId { get; private set; }
 
+    private readonly List<ApplicationAccessGrant> accessGrants = [];
+    public IReadOnlyList<ApplicationAccessGrant> AccessGrants => accessGrants;
+
     internal ContractSignature ArtistESignature { get; private set; } = null!;
     public string TermsFingerprint { get; private set; } = null!;
 
@@ -37,7 +41,8 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         int opportunityId,
         DealType dealType,
         Guid venueTenantId,
-        Guid artistTenantId)
+        Guid artistTenantId,
+        DateTime createdAtUtc)
     {
         if (venueTenantId == Guid.Empty || artistTenantId == Guid.Empty)
             throw new InvalidOperationException("An application requires resolved venue and artist tenants.");
@@ -47,6 +52,24 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         DealType = dealType;
         VenueTenantId = venueTenantId;
         ArtistTenantId = artistTenantId;
+
+        /* The applicant and the tenant it applied to reach the application through grants like anyone else,
+           issued with it so neither party can be shut out of its own application. The applicant issues it. */
+        foreach (var tenantId in new[] { venueTenantId, artistTenantId })
+        {
+            foreach (var facet in Enum.GetValues<ApplicationAccessFacet>())
+            {
+                accessGrants.Add(ApplicationAccessGrant.Issue(
+                    Id,
+                    tenantId,
+                    memberUserId: null,
+                    facet,
+                    issuedByTenantId: artistTenantId,
+                    issuedByUserId: null,
+                    GrantOrigin.ResourceCreation,
+                    createdAtUtc));
+            }
+        }
     }
 
     public Guid BeginAcceptance() => BeginAcceptance(Guid.NewGuid());
@@ -161,6 +184,7 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         int opportunityId,
         DealType dealType,
         Guid venueTenantId,
-        Guid artistTenantId) =>
-        new(artistId, opportunityId, dealType, venueTenantId, artistTenantId);
+        Guid artistTenantId,
+        DateTime createdAtUtc) =>
+        new(artistId, opportunityId, dealType, venueTenantId, artistTenantId, createdAtUtc);
 }
