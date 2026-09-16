@@ -1,6 +1,6 @@
 export type {
   B2bIdentity,
   Membership,
+  TenantBusinessProfile,
   TenantRole,
-  TenantType,
 } from "@concertable/b2b/features/tenant/types";
