@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
@@ -25,7 +26,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddDealModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<DealDbContext>((sp, opt) =>
-            opt.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opt.UseSqlServer(sp.GetRequiredService<DbConnection>())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),

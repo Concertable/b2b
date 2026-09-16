@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess;
 using Concertable.Seed.Shared;
@@ -26,7 +27,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddConversationsModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<ConversationsDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseSqlServer(sp.GetRequiredService<DbConnection>())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
@@ -34,7 +35,7 @@ public static class ServiceCollectionExtensions
                 .UseSeedingSupport(sp));
 
         services.AddDbContext<ConversationsPrivilegedDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseSqlServer(sp.GetRequiredService<DbConnection>())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),

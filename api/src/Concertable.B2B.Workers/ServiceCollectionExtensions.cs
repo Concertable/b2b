@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.Authorization.Infrastructure.Extensions;
 using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.Application.Infrastructure.Extensions;
@@ -28,6 +29,7 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Concertable.Seed.Shared.Extensions;
 
 namespace Concertable.B2B.Workers;
@@ -40,6 +42,7 @@ internal static class ServiceCollectionExtensions
         {
         services.AddSeedingInfrastructure();
         services.AddSharedInfrastructure(configuration);
+        services.AddSharedDbConnection(configuration);
         services.AddUris(configuration);
         services.AddSharedBlob(configuration);
         services.AddSharedEmail(configuration);
@@ -48,6 +51,10 @@ internal static class ServiceCollectionExtensions
         services.AddSharedPdf();
         services.AddInMemoryTransport();
         services.AddDirectBusKeyed("webhook");
+        /* The outbox still opens its own connection: AddOutbox takes only Action<DbContextOptionsBuilder>,
+           with no service provider to resolve the shared one from. Until Concertable.Messaging offers a
+           provider-aware overload, an outbox write and a business write are two connections and cannot share
+           a local transaction. */
         services.AddOutbox(
             opt => opt.UseSqlServer(configuration.GetConnectionString(B2BDb.Name)),
             runDispatcher: false);

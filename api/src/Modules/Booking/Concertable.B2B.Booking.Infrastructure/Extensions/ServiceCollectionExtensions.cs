@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Booking.Contracts;
@@ -34,15 +35,15 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddBookingModule(IConfiguration configuration)
         {
             services.AddDbContext<BookingDbContext>((provider, options) =>
-                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                options.UseSqlServer(provider.GetRequiredService<DbConnection>())
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
                         provider.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(provider));
 
-            services.AddDbContext<BookingReadDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            services.AddDbContext<BookingReadDbContext>((provider, options) =>
+                options.UseSqlServer(provider.GetRequiredService<DbConnection>())
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IBookingReadDbContext>(provider =>
                 provider.GetRequiredService<BookingReadDbContext>());

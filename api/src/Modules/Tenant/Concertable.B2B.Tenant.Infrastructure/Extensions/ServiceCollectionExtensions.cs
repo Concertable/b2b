@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Tenant.Contracts;
@@ -30,7 +31,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddTenantModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<TenantDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseSqlServer(sp.GetRequiredService<DbConnection>())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>()));

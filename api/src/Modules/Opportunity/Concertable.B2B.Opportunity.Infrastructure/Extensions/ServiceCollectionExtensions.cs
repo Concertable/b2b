@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Opportunity.Application.Mappers;
 using Concertable.B2B.Opportunity.Application.Validators;
@@ -31,16 +32,16 @@ public static class ServiceCollectionExtensions
         {
             services.AddDbContext<OpportunityDbContext>((sp, options) =>
                 options.UseSqlServer(
-                        configuration.GetConnectionString(B2BDb.Name),
+                        sp.GetRequiredService<DbConnection>(),
                         sql => sql.UseNetTopologySuite())
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
                         sp.GetRequiredService<TenantInterceptor>())
                     .UseSeedingSupport(sp));
 
-            services.AddDbContext<OpportunityReadDbContext>(options =>
+            services.AddDbContext<OpportunityReadDbContext>((provider, options) =>
                 options.UseSqlServer(
-                        configuration.GetConnectionString(B2BDb.Name),
+                        provider.GetRequiredService<DbConnection>(),
                         sql => sql.UseNetTopologySuite())
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IOpportunityReadDbContext>(

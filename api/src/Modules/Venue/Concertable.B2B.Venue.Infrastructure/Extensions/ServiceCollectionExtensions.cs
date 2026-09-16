@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
@@ -27,7 +28,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<VenueDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    configuration.GetConnectionString(B2BDb.Name),
+                    sp.GetRequiredService<DbConnection>(),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
@@ -37,7 +38,7 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<VenueReadDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    configuration.GetConnectionString(B2BDb.Name),
+                    sp.GetRequiredService<DbConnection>(),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
         services.AddScoped<IVenueReadDbContext>(sp => sp.GetRequiredService<VenueReadDbContext>());

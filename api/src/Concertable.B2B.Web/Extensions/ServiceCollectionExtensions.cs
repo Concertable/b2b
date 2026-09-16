@@ -13,6 +13,7 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Authorization.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Extensions;
 
@@ -89,6 +90,7 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSharedInfrastructure(configuration);
+        services.AddSharedDbConnection(configuration);
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
         services.AddScoped<IAccessContext, AccessContext>();
@@ -96,8 +98,7 @@ public static class ServiceCollectionExtensions
 
         services.AddDataAccessSpecifications();
 
-        services.AddScoped<IDbConnection>(_ =>
-            new SqlConnection(configuration.GetConnectionString(B2BDb.Name)));
+
 
         return services;
     }

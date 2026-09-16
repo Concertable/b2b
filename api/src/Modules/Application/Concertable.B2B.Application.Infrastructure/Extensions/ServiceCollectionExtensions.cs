@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Application.Application.Interfaces;
@@ -39,15 +40,15 @@ public static class ServiceCollectionExtensions
         {
             services.Configure<LegalSettings>(configuration.GetSection(LegalSettings.SectionName));
             services.AddDbContext<ApplicationDbContext>((provider, options) =>
-                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                options.UseSqlServer(provider.GetRequiredService<DbConnection>())
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
                         provider.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(provider));
 
-            services.AddDbContext<ApplicationReadDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            services.AddDbContext<ApplicationReadDbContext>((provider, options) =>
+                options.UseSqlServer(provider.GetRequiredService<DbConnection>())
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IApplicationReadDbContext>(provider =>
                 provider.GetRequiredService<ApplicationReadDbContext>());

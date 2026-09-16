@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -50,7 +51,7 @@ public static class ServiceCollectionExtensions
         {
             services.AddDbContextFactory<ConcertDbContext>((sp, opts) =>
                 opts.UseSqlServer(
-                        configuration.GetConnectionString(B2BDb.Name),
+                        sp.GetRequiredService<DbConnection>(),
                         sql => sql.UseNetTopologySuite())
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
@@ -60,7 +61,7 @@ public static class ServiceCollectionExtensions
 
             services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
                 opts.UseSqlServer(
-                        configuration.GetConnectionString(B2BDb.Name),
+                        sp.GetRequiredService<DbConnection>(),
                         sql => sql.UseNetTopologySuite())
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IConcertReadDbContext>(sp => sp.GetRequiredService<ConcertReadDbContext>());
