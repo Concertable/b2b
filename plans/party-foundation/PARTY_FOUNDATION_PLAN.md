@@ -275,6 +275,20 @@ POST   /concerts/{id}/shares            { toTenantId, toMemberUserId?, scope, va
 DELETE /concerts/{id}/shares/{grantId}                                                      -> 204
 ```
 
+Which scopes each family will disclose, so the rule is one table rather than six inventions:
+
+| Family | ShareableScopes | Why |
+|---|---|---|
+| ConcertAccessGrant | Summary, Operations | Finance is withheld: an operational participant runs the show without seeing what anyone is paid |
+| BookingAccessGrant | Summary, Operations | The same engagement one stage earlier |
+| ApplicationAccessGrant | Summary | Proposal is the applicant's own pitch; disclosing it is the applicant's act, not a recipient's |
+| ContractAccessGrant | none | The frozen agreement between two parties. "A show manager cannot widen another agreement's disclosure policy. P2 records the principals and consents required for such a widening" |
+| InvoiceAccessGrant | none | Financial, for the same reason Finance is not in the concert's set |
+| ThreadAccessGrant | none | `ThreadEntity.AddParticipant` already owns admitting a tenant to a conversation; a second path would be a second policy |
+
+A family with no shareable scope gets no share route: nothing in P1 can widen it, and P2 owns the
+consented widening.
+
 A read grant grants no signing, approval, debit or settlement authority. Mutations also validate the
 resource's owner or accepted operation assignment, expected version and allowed lifecycle state.
 Insert/update/delete and raw/bulk paths must use that same command boundary. An interceptor can enforce

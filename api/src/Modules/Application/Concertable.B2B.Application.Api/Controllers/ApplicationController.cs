@@ -1,3 +1,5 @@
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Api.Mappers;
 using Concertable.B2B.Application.Api.Requests;
 using Concertable.B2B.Application.Api.Responses;
@@ -149,4 +151,20 @@ internal sealed class ApplicationController : ControllerBase
     {
         return (await applicationService.CancelAsync(applicationId, ct)).ToNoContentOrProblem();
     }
+
+    [HasPermission(TenantPermission.ResourcesShare)]
+    [HttpPost("{applicationId:int}/shares")]
+    public async Task<ActionResult<ApplicationShareResponse>> Share(
+        int applicationId,
+        [FromBody] ShareApplicationRequest request,
+        CancellationToken ct) =>
+        (await applicationService.ShareAsync(applicationId, request, ct)).ToOkOrProblem();
+
+    [HasPermission(TenantPermission.ResourcesShare)]
+    [HttpDelete("{applicationId:int}/shares/{grantId:guid}")]
+    public async Task<IActionResult> RevokeShare(
+        int applicationId,
+        Guid grantId,
+        CancellationToken ct) =>
+        (await applicationService.RevokeShareAsync(applicationId, grantId, ct)).ToNoContentOrProblem();
 }

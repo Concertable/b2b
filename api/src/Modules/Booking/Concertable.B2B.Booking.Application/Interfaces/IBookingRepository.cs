@@ -6,6 +6,7 @@ namespace Concertable.B2B.Booking.Application.Interfaces;
 
 internal interface IBookingRepository : IRepository<BookingEntity, int>
 {
+    Task<BookingEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default);
     Task<BookingEntity?> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);

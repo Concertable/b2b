@@ -152,4 +152,8 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
             .ToListAsync(ct))
         .ToHashSet();
 
+    public Task<ApplicationEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default) =>
+        context.Applications
+            .Include(application => application.AccessGrants)
+            .FirstOrDefaultAsync(application => application.Id == id, ct);
 }

@@ -1,3 +1,5 @@
+using Concertable.B2B.Booking.Application.Errors;
+using Concertable.B2B.Booking.Domain.Errors;
 using Concertable.B2B.Booking.Application.DTOs;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Domain.Entities;
@@ -35,6 +37,39 @@ internal static class BookingMappers
             BookingState.CancellationFailed => BookingStatus.CancellationFailed,
             BookingState.Cancelled => BookingStatus.Cancelled,
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
+        };
+    }
+
+    extension(BookingShareError error)
+    {
+        public ShareBookingError ToShareBookingError() => error switch
+        {
+            BookingShareError.ScopeNotShareable(var scope) => new ShareBookingError.ScopeNotShareable(scope),
+            BookingShareError.NotAPrincipal => new ShareBookingError.NotAPrincipal(),
+            BookingShareError.AlreadyShared => new ShareBookingError.AlreadyShared()
+        };
+    }
+
+    extension(BookingShareRevocationError error)
+    {
+        public RevokeBookingShareError ToRevokeBookingShareError() => error switch
+        {
+            BookingShareRevocationError.GrantNotFound => new RevokeBookingShareError.GrantNotFound(),
+            BookingShareRevocationError.NotAShare => new RevokeBookingShareError.NotAShare(),
+            BookingShareRevocationError.NotTheIssuer => new RevokeBookingShareError.NotTheIssuer()
+        };
+    }
+
+    extension(BookingAccessGrant grant)
+    {
+        public BookingShareResponse ToShareResponse() => new()
+        {
+            GrantId = grant.Id,
+            ToTenantId = grant.TenantId,
+            ToMemberUserId = grant.MemberUserId,
+            Scope = grant.Scope,
+            ValidFrom = grant.ValidFrom,
+            ValidUntil = grant.ValidUntil
         };
     }
 }

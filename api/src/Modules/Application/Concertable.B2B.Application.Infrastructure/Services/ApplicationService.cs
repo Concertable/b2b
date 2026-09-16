@@ -1,3 +1,5 @@
+using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Domain.Entities;
@@ -20,6 +22,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
     private readonly ITenantContext tenantContext;
+    private readonly IAccessContext accessContext;
     private readonly IApplicationCheckoutService checkoutService;
     private readonly IApplicationMapper mapper;
     private readonly TimeProvider timeProvider;
@@ -35,6 +38,7 @@ internal sealed class ApplicationService : IApplicationService
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
         ITenantContext tenantContext,
+        IAccessContext accessContext,
         IApplicationCheckoutService checkoutService,
         IApplicationMapper mapper,
         TimeProvider timeProvider,
@@ -49,6 +53,7 @@ internal sealed class ApplicationService : IApplicationService
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
         this.tenantContext = tenantContext;
+        this.accessContext = accessContext;
         this.checkoutService = checkoutService;
         this.mapper = mapper;
         this.timeProvider = timeProvider;
@@ -311,5 +316,59 @@ internal sealed class ApplicationService : IApplicationService
     {
         var result = await eligibility.CanAcceptAsync(application, ct);
         return result.TryGetError(out var error) ? error : new Success();
+    }
+
+    public async Task<Result<ApplicationShareResponse, ShareApplicationError>> ShareAsync(
+        int applicationId,
+        ShareApplicationRequest request,
+        CancellationToken ct = default)
+    {
+        if (tenantContext.TenantId is not { } actingTenantId)
+            return new ShareApplicationError.NoActiveTenant();
+
+        var application = await applicationRepository.GetWithGrantsByIdAsync(applicationId, ct);
+        if (application is null)
+            return new ShareApplicationError.ApplicationNotFound(applicationId);
+
+        var share = application.Share(
+            request.ToTenantId,
+            request.ToMemberUserId,
+            request.Scope,
+            actingTenantId,
+            accessContext.UserId,
+            timeProvider.GetUtcNow().UtcDateTime,
+            request.ValidUntil)
+            .MapError(static error => error.ToShareApplicationError());
+
+        if (share.TryGetError(out var shareError))
+            return shareError;
+
+        if (!await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException))
+            return new ShareApplicationError.Superseded(applicationId);
+
+        return share.Map(static grant => grant.ToShareResponse());
+    }
+
+    public async Task<UnitResult<RevokeApplicationShareError>> RevokeShareAsync(
+        int applicationId,
+        Guid grantId,
+        CancellationToken ct = default)
+    {
+        if (tenantContext.TenantId is not { } actingTenantId)
+            return new RevokeApplicationShareError.NoActiveTenant();
+
+        var application = await applicationRepository.GetWithGrantsByIdAsync(applicationId, ct);
+        if (application is null)
+            return new RevokeApplicationShareError.ApplicationNotFound(applicationId);
+
+        if (application.RevokeShare(grantId, actingTenantId, timeProvider.GetUtcNow().UtcDateTime)
+            .TryGetError(out var revocationError))
+            return revocationError.ToRevokeApplicationShareError();
+
+        return await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException)
+            ? new Success()
+            : new RevokeApplicationShareError.Superseded(applicationId);
     }
 }

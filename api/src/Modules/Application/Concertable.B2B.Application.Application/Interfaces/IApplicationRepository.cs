@@ -7,6 +7,7 @@ namespace Concertable.B2B.Application.Application.Interfaces;
 
 internal interface IApplicationRepository : IRepository<ApplicationEntity, int>
 {
+    Task<ApplicationEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
         int opportunityId,
         CancellationToken ct = default);
