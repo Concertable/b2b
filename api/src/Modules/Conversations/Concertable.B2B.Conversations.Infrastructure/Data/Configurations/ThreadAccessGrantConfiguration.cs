@@ -4,7 +4,7 @@ using Concertable.B2B.DataAccess.Infrastructure;
 namespace Concertable.B2B.Conversations.Infrastructure.Data.Configurations;
 
 internal sealed class ThreadAccessGrantConfiguration
-    : ResourceAccessGrantConfiguration<ThreadAccessGrant, ThreadAccessFacet>
+    : ResourceAccessGrantConfiguration<ThreadAccessGrant, ThreadAccessScope>
 {
     protected override string TableName => Schema.Tables.ThreadAccessGrants;
 

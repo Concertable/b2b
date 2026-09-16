@@ -36,13 +36,13 @@ public sealed class ThreadEntity : IIdEntity
     /// <summary>Admits a tenant to the conversation, able both to read it and to speak in it.</summary>
     public void AddParticipant(Guid tenantId, Guid issuedByTenantId, GrantOrigin origin, DateTime at)
     {
-        foreach (var facet in Enum.GetValues<ThreadAccessFacet>())
+        foreach (var scope in Enum.GetValues<ThreadAccessScope>())
         {
             accessGrants.Add(ThreadAccessGrant.Issue(
                 Id,
                 tenantId,
                 memberUserId: null,
-                facet,
+                scope,
                 issuedByTenantId,
                 issuedByUserId: null,
                 origin,
@@ -50,7 +50,7 @@ public sealed class ThreadEntity : IIdEntity
         }
     }
 
-    public bool Admits(Guid tenantId, ThreadAccessFacet facet, DateTime at) =>
+    public bool Admits(Guid tenantId, ThreadAccessScope scope, DateTime at) =>
         accessGrants.Exists(grant =>
-            grant.TenantId == tenantId && grant.Facet == facet && grant.IsLiveAt(at));
+            grant.TenantId == tenantId && grant.Scope == scope && grant.IsLiveAt(at));
 }

@@ -5,7 +5,7 @@ using Concertable.B2B.DataAccess.Infrastructure;
 namespace Concertable.B2B.Booking.Infrastructure.Data.Configurations;
 
 internal sealed class ContractAccessGrantConfiguration
-    : ResourceAccessGrantConfiguration<ContractAccessGrant, ContractAccessFacet>
+    : ResourceAccessGrantConfiguration<ContractAccessGrant, ContractAccessScope>
 {
     protected override string TableName => Schema.Tables.ContractAccessGrants;
 

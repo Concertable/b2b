@@ -28,7 +28,7 @@ like redundant synonyms; they aren't, and you **cannot** collapse them — a *fi
     settlement payer.
 
 **Neither axis is visibility.** Who may read a concert, its invoice or its booking is a
-`ConcertAccessGrant` / `InvoiceAccessGrant` / `BookingAccessGrant` at a named facet — the roster is in
+`ConcertAccessGrant` / `InvoiceAccessGrant` / `BookingAccessGrant` at a named scope — the roster is in
 [`CODE_PATTERNS.md`](../../../CODE_PATTERNS.md). A promoter or a production member reaches an engagement
 through a grant while being neither the venue nor the act, which is exactly what the old
 `venue == me || artist == me` filter could not express.

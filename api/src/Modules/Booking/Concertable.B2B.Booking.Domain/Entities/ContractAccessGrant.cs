@@ -3,7 +3,7 @@ using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Booking.Domain.Entities;
 
-public sealed class ContractAccessGrant : ResourceAccessGrant<ContractAccessFacet>
+public sealed class ContractAccessGrant : ResourceAccessGrant<ContractAccessScope>
 {
     private ContractAccessGrant() { }
 
@@ -11,7 +11,7 @@ public sealed class ContractAccessGrant : ResourceAccessGrant<ContractAccessFace
         int contractId,
         Guid tenantId,
         Guid? memberUserId,
-        ContractAccessFacet facet,
+        ContractAccessScope scope,
         Guid issuedByTenantId,
         Guid? issuedByUserId,
         GrantOrigin origin,
@@ -23,7 +23,7 @@ public sealed class ContractAccessGrant : ResourceAccessGrant<ContractAccessFace
             contractId,
             tenantId,
             memberUserId,
-            facet,
+            scope,
             issuedByTenantId,
             issuedByUserId,
             origin,

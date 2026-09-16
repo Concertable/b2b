@@ -3,7 +3,7 @@ using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Application.Domain.Entities;
 
-public sealed class ApplicationAccessGrant : ResourceAccessGrant<ApplicationAccessFacet>
+public sealed class ApplicationAccessGrant : ResourceAccessGrant<ApplicationAccessScope>
 {
     private ApplicationAccessGrant() { }
 
@@ -11,7 +11,7 @@ public sealed class ApplicationAccessGrant : ResourceAccessGrant<ApplicationAcce
         int applicationId,
         Guid tenantId,
         Guid? memberUserId,
-        ApplicationAccessFacet facet,
+        ApplicationAccessScope scope,
         Guid issuedByTenantId,
         Guid? issuedByUserId,
         GrantOrigin origin,
@@ -23,7 +23,7 @@ public sealed class ApplicationAccessGrant : ResourceAccessGrant<ApplicationAcce
             applicationId,
             tenantId,
             memberUserId,
-            facet,
+            scope,
             issuedByTenantId,
             issuedByUserId,
             origin,

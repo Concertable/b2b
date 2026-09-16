@@ -57,13 +57,13 @@ public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEvent
            issued with it so neither party can be shut out of its own application. The applicant issues it. */
         foreach (var tenantId in new[] { venueTenantId, artistTenantId })
         {
-            foreach (var facet in Enum.GetValues<ApplicationAccessFacet>())
+            foreach (var scope in Enum.GetValues<ApplicationAccessScope>())
             {
                 accessGrants.Add(ApplicationAccessGrant.Issue(
                     Id,
                     tenantId,
                     memberUserId: null,
-                    facet,
+                    scope,
                     issuedByTenantId: artistTenantId,
                     issuedByUserId: null,
                     GrantOrigin.ResourceCreation,

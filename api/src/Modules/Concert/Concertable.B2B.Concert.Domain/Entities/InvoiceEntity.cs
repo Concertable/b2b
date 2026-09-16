@@ -79,7 +79,7 @@ public sealed class InvoiceEntity : IIdEntity
                 invoice.Id,
                 tenantId,
                 memberUserId: null,
-                InvoiceAccessFacet.Invoice,
+                InvoiceAccessScope.Invoice,
                 issuedByTenantId: concert.VenueTenantId,
                 issuedByUserId: null,
                 GrantOrigin.ResourceCreation,

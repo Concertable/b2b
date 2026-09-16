@@ -80,13 +80,13 @@ public sealed class BookingEntity : IIdEntity, IConcurrencyVersioned, IEventRais
         var acceptance = snapshot.Contract.VenueSignature;
         foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId })
         {
-            foreach (var facet in new[] { BookingAccessFacet.Summary, BookingAccessFacet.Operations })
+            foreach (var scope in new[] { BookingAccessScope.Summary, BookingAccessScope.Operations })
             {
                 accessGrants.Add(BookingAccessGrant.Issue(
                     Id,
                     tenantId,
                     memberUserId: null,
-                    facet,
+                    scope,
                     issuedByTenantId: VenueTenantId,
                     issuedByUserId: acceptance.UserId,
                     GrantOrigin.ResourceCreation,

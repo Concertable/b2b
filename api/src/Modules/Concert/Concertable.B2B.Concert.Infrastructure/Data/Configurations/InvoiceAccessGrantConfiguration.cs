@@ -5,7 +5,7 @@ using Concertable.B2B.DataAccess.Infrastructure;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Configurations;
 
 internal sealed class InvoiceAccessGrantConfiguration
-    : ResourceAccessGrantConfiguration<InvoiceAccessGrant, InvoiceAccessFacet>
+    : ResourceAccessGrantConfiguration<InvoiceAccessGrant, InvoiceAccessScope>
 {
     protected override string TableName => Schema.Tables.InvoiceAccessGrants;
 

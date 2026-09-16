@@ -19,7 +19,7 @@ internal sealed class ThreadRepository : Repository<ThreadEntity>, IThreadReposi
     {
         // Exactly these participants, not merely these among others: a wider conversation is a different one.
         var threadId = await context.ThreadAccessGrants
-            .Where(grant => grant.Facet == ThreadAccessFacet.Participate && grant.RevokedAt == null)
+            .Where(grant => grant.Scope == ThreadAccessScope.Participate && grant.RevokedAt == null)
             .GroupBy(grant => grant.ResourceId)
             .Where(grants =>
                 grants.Select(grant => grant.TenantId).Distinct().Count() == participantTenantIds.Count
@@ -36,7 +36,7 @@ internal sealed class ThreadRepository : Repository<ThreadEntity>, IThreadReposi
         await context.ThreadAccessGrants
             .Where(grant =>
                 grant.ResourceId == threadId
-                && grant.Facet == ThreadAccessFacet.Participate
+                && grant.Scope == ThreadAccessScope.Participate
                 && grant.RevokedAt == null)
             .Select(grant => grant.TenantId)
             .Distinct()

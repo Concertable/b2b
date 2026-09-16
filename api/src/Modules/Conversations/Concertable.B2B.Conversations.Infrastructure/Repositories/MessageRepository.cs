@@ -25,7 +25,7 @@ internal sealed class MessageRepository : Repository<MessageEntity>, IMessageRep
         context.ThreadAccessGrants
             .Where(grant =>
                 grant.TenantId == tenantId
-                && grant.Facet == ThreadAccessFacet.Read
+                && grant.Scope == ThreadAccessScope.Read
                 && grant.RevokedAt == null)
             .Select(grant => grant.ResourceId);
 
@@ -74,7 +74,7 @@ internal sealed class MessageRepository : Repository<MessageEntity>, IMessageRep
                 context.ThreadAccessGrants
                     .Where(grant =>
                         grant.ResourceId == m.ThreadId
-                        && grant.Facet == ThreadAccessFacet.Participate
+                        && grant.Scope == ThreadAccessScope.Participate
                         && grant.TenantId != tenantId
                         && grant.RevokedAt == null)
                     .Select(grant => (Guid?)grant.TenantId)

@@ -3,7 +3,7 @@ using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Conversations.Domain.Entities;
 
-public sealed class ThreadAccessGrant : ResourceAccessGrant<ThreadAccessFacet>
+public sealed class ThreadAccessGrant : ResourceAccessGrant<ThreadAccessScope>
 {
     private ThreadAccessGrant() { }
 
@@ -11,7 +11,7 @@ public sealed class ThreadAccessGrant : ResourceAccessGrant<ThreadAccessFacet>
         int threadId,
         Guid tenantId,
         Guid? memberUserId,
-        ThreadAccessFacet facet,
+        ThreadAccessScope scope,
         Guid issuedByTenantId,
         Guid? issuedByUserId,
         GrantOrigin origin,
@@ -23,7 +23,7 @@ public sealed class ThreadAccessGrant : ResourceAccessGrant<ThreadAccessFacet>
             threadId,
             tenantId,
             memberUserId,
-            facet,
+            scope,
             issuedByTenantId,
             issuedByUserId,
             origin,

@@ -81,13 +81,13 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     {
         foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId })
         {
-            foreach (var facet in Enum.GetValues<ConcertAccessFacet>())
+            foreach (var scope in Enum.GetValues<ConcertAccessScope>())
             {
                 accessGrants.Add(ConcertAccessGrant.Issue(
                     Id,
                     tenantId,
                     memberUserId: null,
-                    facet,
+                    scope,
                     issuedByTenantId: VenueTenantId,
                     issuedByUserId: null,
                     GrantOrigin.ResourceCreation,

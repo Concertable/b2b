@@ -3,8 +3,8 @@ using Concertable.Kernel;
 namespace Concertable.B2B.DataAccess.Application;
 
 /// <summary>
-/// One tenant's access to one resource, at one facet. Each owning module declares its own grant entity over
-/// its own facet vocabulary, because the resource foreign key is real and module-local; this base carries only
+/// One tenant's access to one resource, at one scope. Each owning module declares its own grant entity over
+/// its own scope vocabulary, because the resource foreign key is real and module-local; this base carries only
 /// the audience, validity and provenance every grant family shares.
 /// <para>
 /// A row with a <see cref="MemberUserId"/> narrows the tenant audience to that member, and still requires that
@@ -12,8 +12,8 @@ namespace Concertable.B2B.DataAccess.Application;
 /// would disclose the same resource to every other member.
 /// </para>
 /// </summary>
-public abstract class ResourceAccessGrant<TFacet> : IGuidEntity
-    where TFacet : struct, Enum
+public abstract class ResourceAccessGrant<TScope> : IGuidEntity
+    where TScope : struct, Enum
 {
     protected ResourceAccessGrant() { }
 
@@ -28,7 +28,7 @@ public abstract class ResourceAccessGrant<TFacet> : IGuidEntity
     /// <summary>When set, only this member of <see cref="TenantId"/> may read the resource.</summary>
     public Guid? MemberUserId { get; protected set; }
 
-    public TFacet Facet { get; protected set; }
+    public TScope Scope { get; protected set; }
     public DateTime ValidFrom { get; protected set; }
     public DateTime? ValidUntil { get; protected set; }
     public DateTime? RevokedAt { get; protected set; }
@@ -46,7 +46,7 @@ public abstract class ResourceAccessGrant<TFacet> : IGuidEntity
         int resourceId,
         Guid tenantId,
         Guid? memberUserId,
-        TFacet facet,
+        TScope scope,
         Guid issuedByTenantId,
         Guid? issuedByUserId,
         GrantOrigin origin,
@@ -60,7 +60,7 @@ public abstract class ResourceAccessGrant<TFacet> : IGuidEntity
         ResourceId = resourceId;
         TenantId = tenantId;
         MemberUserId = memberUserId;
-        Facet = facet;
+        Scope = scope;
         ValidFrom = at;
         ValidUntil = validUntil;
         IssuedByTenantId = issuedByTenantId;

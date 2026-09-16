@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -67,7 +67,7 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                     ResourceId = table.Column<int>(type: "int", nullable: false),
                     TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     MemberUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Facet = table.Column<int>(type: "int", nullable: false),
+                    Scope = table.Column<int>(type: "int", nullable: false),
                     ValidFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ValidUntil = table.Column<DateTime>(type: "datetime2", nullable: true),
                     RevokedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -113,17 +113,17 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ApplicationAccessGrants_TenantId_Facet_ResourceId_MemberUserId",
+                name: "IX_ApplicationAccessGrants_TenantId_Scope_ResourceId_MemberUserId",
                 schema: "application",
                 table: "ApplicationAccessGrants",
-                columns: new[] { "TenantId", "Facet", "ResourceId", "MemberUserId" },
+                columns: new[] { "TenantId", "Scope", "ResourceId", "MemberUserId" },
                 filter: "[RevokedAt] IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "UX_ApplicationAccessGrants_Member",
                 schema: "application",
                 table: "ApplicationAccessGrants",
-                columns: new[] { "ResourceId", "TenantId", "Facet", "MemberUserId" },
+                columns: new[] { "ResourceId", "TenantId", "Scope", "MemberUserId" },
                 unique: true,
                 filter: "[RevokedAt] IS NULL AND [MemberUserId] IS NOT NULL");
 
@@ -131,7 +131,7 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 name: "UX_ApplicationAccessGrants_TenantWide",
                 schema: "application",
                 table: "ApplicationAccessGrants",
-                columns: new[] { "ResourceId", "TenantId", "Facet" },
+                columns: new[] { "ResourceId", "TenantId", "Scope" },
                 unique: true,
                 filter: "[RevokedAt] IS NULL AND [MemberUserId] IS NULL");
 

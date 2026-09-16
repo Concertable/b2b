@@ -4,7 +4,7 @@ namespace Concertable.B2B.Concert.Contracts.Enums;
 /// What a grant on a concert lets a tenant read. Finance is always granted separately: an operational
 /// participant runs the show without seeing what anyone is paid.
 /// </summary>
-public enum ConcertAccessFacet
+public enum ConcertAccessScope
 {
     /// <summary>When and where, who is on, and the concert's own state. No money.</summary>
     Summary = 1,
