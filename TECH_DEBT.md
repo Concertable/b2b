@@ -413,9 +413,9 @@ attaches to **user-generated content**, and this platform has more of it: venue 
 concert descriptions, uploaded images, and customer reviews. The Customer/marketplace OSA scope is
 explicitly deferred with the marketplace, which is when those become in-scope.
 
-The entity will not stretch to cover them. It carries a typed `MessageId` and is
-`IVenueArtistTenantScoped` — it holds a **thread pair**. A report against a venue profile has no thread
-pair, so neither the foreign key nor the tenancy shape fits.
+The entity will not stretch to cover them. It carries a typed `MessageId` and a `ThreadId`, and is
+reached through the thread's access grants. A report against a venue profile belongs to no thread, so
+neither the foreign key nor the access shape fits.
 
 **Resolves when:** a second reportable content type is actually required, at which point choose
 deliberately between a polymorphic `(ContentType, ContentId)` report with per-type tenancy resolution,

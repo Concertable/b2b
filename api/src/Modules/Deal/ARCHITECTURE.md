@@ -234,12 +234,15 @@ provided by the inbox.
 
 ### 2.8 Ticket payee vs settlement payee
 
-`DealPayeeResolver` implements the cohesive `IDealPayeeResolver` facade. Its generic strategy factory
-selects one directional leaf per `DealType`: FlatFee/DoorSplit/Versus use
-`VenuePaysArtistDealPayeeResolver` (the venue keeps ticket revenue and the artist receives settlement);
-VenueHire uses `ArtistPaysVenueDealPayeeResolver` (the artist keeps ticket revenue and the venue
-receives settlement). The facade returns the ticket user, ticket tenant, or settlement tenant directly,
-so consumers never branch on deal type or invert one role to infer another.
+The concert type states the direction: `FlatFeeConcert`, `DoorSplitConcert` and `VersusConcert` expose
+`SettlementPayerTenantId` as the venue and `SettlementPayeeTenantId` as the artist; `VenueHireConcert`
+reverses both. Whoever pays the performer is whoever kept the ticket revenue, so the ticket seller is the
+settlement payer and needs no second expression.
+
+There is no keyed payee-resolver family: a question the type already answers does not earn one. The one
+live consumer, `ConcertChangedDomainEventHandler`, reads those properties directly. P2 of the party
+foundation plan replaces them with the accepted settlement binding, where a direction that is agreed
+rather than derived belongs.
 
 ---
 
