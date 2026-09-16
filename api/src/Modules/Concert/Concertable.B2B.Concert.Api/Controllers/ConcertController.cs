@@ -1,3 +1,6 @@
+using Concertable.B2B.Concert.Application.Responses;
+using Concertable.B2B.Concert.Application.Requests;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Api.Mappers;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Application.DTOs;
@@ -29,6 +32,22 @@ internal sealed class ConcertController : ControllerBase
         return (await concertService.GetDetailsByIdAsync(id))
             .ToOkOrProblem(concert => concert.ToDetailsResponse());
     }
+
+    [HasPermission(TenantPermission.ResourcesShare)]
+    [HttpPost("{id:int}/shares")]
+    public async Task<ActionResult<ConcertShareResponse>> Share(
+        int id,
+        [FromBody] ShareConcertRequest request,
+        CancellationToken ct) =>
+        (await concertService.ShareAsync(id, request, ct)).ToOkOrProblem();
+
+    [HasPermission(TenantPermission.ResourcesShare)]
+    [HttpDelete("{id:int}/shares/{grantId:guid}")]
+    public async Task<IActionResult> RevokeShare(
+        int id,
+        Guid grantId,
+        CancellationToken ct) =>
+        (await concertService.RevokeShareAsync(id, grantId, ct)).ToNoContentOrProblem();
 
     [HasPermission(TenantPermission.OperationsView)]
     [HttpGet("/api/organization/concert/{concertId:int}")]

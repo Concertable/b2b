@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Application.Errors;
@@ -40,6 +41,7 @@ public sealed class ConcertServiceTests
             unitOfWork.Object,
             new FakeTimeProvider(now),
             Mock.Of<ITenantContext>(),
+            Mock.Of<IAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());
 
     [Fact]
@@ -122,6 +124,7 @@ public sealed class ConcertServiceTests
             unitOfWork.Object,
             new FakeTimeProvider(now),
             tenantContext.Object,
+            Mock.Of<IAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());
 
         var result = await service.DeclareDoorRevenueAsync(42, 100m);
@@ -158,6 +161,7 @@ public sealed class ConcertServiceTests
             unitOfWork.Object,
             new FakeTimeProvider(now),
             tenantContext.Object,
+            Mock.Of<IAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());
 
         var result = await service.DeclareDoorRevenueAsync(42, -0.01m);

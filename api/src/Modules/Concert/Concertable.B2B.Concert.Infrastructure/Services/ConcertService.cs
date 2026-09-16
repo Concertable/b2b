@@ -1,3 +1,7 @@
+using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Concert.Application.Mappers;
+using Concertable.B2B.Concert.Application.Responses;
+using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Application.Errors;
@@ -30,6 +34,7 @@ internal sealed class ConcertService : IConcertService
     private readonly IUnitOfWork unitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly ITenantContext tenantContext;
+    private readonly IAccessContext accessContext;
     private readonly ILogger<ConcertService> logger;
 
     public ConcertService(
@@ -46,6 +51,7 @@ internal sealed class ConcertService : IConcertService
         IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         ITenantContext tenantContext,
+        IAccessContext accessContext,
         ILogger<ConcertService> logger)
     {
         this.concertRepository = concertRepository;
@@ -61,6 +67,7 @@ internal sealed class ConcertService : IConcertService
         this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
         this.tenantContext = tenantContext;
+        this.accessContext = accessContext;
         this.logger = logger;
     }
 
@@ -269,6 +276,60 @@ internal sealed class ConcertService : IConcertService
                 static exception => exception is DbUpdateConcurrencyException)
             ? new Success()
             : new DeclareDoorRevenueError.Superseded(id);
+    }
+
+    public async Task<Result<ConcertShareResponse, ShareConcertError>> ShareAsync(
+        int id,
+        ShareConcertRequest request,
+        CancellationToken ct = default)
+    {
+        if (tenantContext.TenantId is not { } actingTenantId)
+            return new ShareConcertError.NoActiveTenant();
+
+        var concert = await concertRepository.GetWithGrantsByIdAsync(id, ct);
+        if (concert is null)
+            return new ShareConcertError.ConcertNotFound(id);
+
+        var share = concert.Share(
+            request.ToTenantId,
+            request.ToMemberUserId,
+            request.Scope,
+            actingTenantId,
+            accessContext.UserId,
+            timeProvider.GetUtcNow().UtcDateTime,
+            request.ValidUntil)
+            .MapError(static error => error.ToShareConcertError());
+
+        if (share.TryGetError(out var shareError))
+            return shareError;
+
+        if (!await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException))
+            return new ShareConcertError.Superseded(id);
+
+        return share.Map(static grant => grant.ToShareResponse());
+    }
+
+    public async Task<UnitResult<RevokeConcertShareError>> RevokeShareAsync(
+        int id,
+        Guid grantId,
+        CancellationToken ct = default)
+    {
+        if (tenantContext.TenantId is not { } actingTenantId)
+            return new RevokeConcertShareError.NoActiveTenant();
+
+        var concert = await concertRepository.GetWithGrantsByIdAsync(id, ct);
+        if (concert is null)
+            return new RevokeConcertShareError.ConcertNotFound(id);
+
+        if (concert.RevokeShare(grantId, actingTenantId, timeProvider.GetUtcNow().UtcDateTime)
+            .TryGetError(out var revocationError))
+            return revocationError.ToRevokeConcertShareError();
+
+        return await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException)
+            ? new Success()
+            : new RevokeConcertShareError.Superseded(id);
     }
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByArtistIdAsync(int id) =>

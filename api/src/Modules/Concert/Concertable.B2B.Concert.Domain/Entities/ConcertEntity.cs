@@ -96,6 +96,61 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         }
     }
 
+    private static readonly ConcertAccessScope[] ShareableScopes =
+        [ConcertAccessScope.Summary, ConcertAccessScope.Operations];
+
+    public Result<ConcertAccessGrant, ConcertShareError> Share(
+        Guid toTenantId,
+        Guid? toMemberUserId,
+        ConcertAccessScope scope,
+        Guid byTenantId,
+        Guid? byUserId,
+        DateTime at,
+        DateTime? validUntil = null)
+    {
+        if (!ShareableScopes.Contains(scope))
+            return new ConcertShareError.ScopeNotShareable(scope);
+
+        if (byTenantId != VenueTenantId && byTenantId != ArtistTenantId)
+            return new ConcertShareError.NotAPrincipal();
+
+        if (accessGrants.Any(grant =>
+                grant.TenantId == toTenantId
+                && grant.MemberUserId == toMemberUserId
+                && grant.Scope == scope
+                && grant.IsLiveAt(at)))
+            return new ConcertShareError.AlreadyShared();
+
+        var issued = ConcertAccessGrant.Issue(
+            Id,
+            toTenantId,
+            toMemberUserId,
+            scope,
+            issuedByTenantId: byTenantId,
+            issuedByUserId: byUserId,
+            GrantOrigin.ExplicitShare,
+            at,
+            validUntil);
+
+        accessGrants.Add(issued);
+        return issued;
+    }
+
+    public UnitResult<ShareRevocationError> RevokeShare(Guid grantId, Guid byTenantId, DateTime at)
+    {
+        if (accessGrants.SingleOrDefault(grant => grant.Id == grantId) is not { } grant)
+            return new ShareRevocationError.GrantNotFound();
+
+        if (grant.Origin is not GrantOrigin.ExplicitShare)
+            return new ShareRevocationError.NotAShare();
+
+        if (grant.IssuedByTenantId != byTenantId)
+            return new ShareRevocationError.NotTheIssuer();
+
+        grant.Revoke(at);
+        return new Success();
+    }
+
     private static ConcertEntity FromTerms(
         ConfirmedBookingSnapshot booking,
         ConcertDraft draft) =>

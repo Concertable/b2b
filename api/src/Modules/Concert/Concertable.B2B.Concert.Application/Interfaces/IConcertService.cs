@@ -24,6 +24,14 @@ internal interface IConcertService
     Task<Result<ConcertUpdateResponse, UpdateConcertError>> UpdateAsync(int id, UpdateConcertRequest request);
     Task<UnitResult<PostConcertError>> PostAsync(int id, UpdateConcertRequest request);
     Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueAsync(int id, decimal doorRevenue);
+    Task<Result<ConcertShareResponse, ShareConcertError>> ShareAsync(
+        int id,
+        ShareConcertRequest request,
+        CancellationToken ct = default);
+    Task<UnitResult<RevokeConcertShareError>> RevokeShareAsync(
+        int id,
+        Guid grantId,
+        CancellationToken ct = default);
     Task<UnitResult<CancelConcertError>> CancelAsync(
         int concertId,
         CancellationToken ct = default);

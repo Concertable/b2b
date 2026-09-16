@@ -28,6 +28,11 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
         this.timeProvider = timeProvider;
     }
 
+    public Task<ConcertEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default) =>
+        context.Concerts
+            .Include(concert => concert.AccessGrants)
+            .FirstOrDefaultAsync(concert => concert.Id == id, ct);
+
     public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForVenueTenantIdAsync(Guid venueTenantId)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
