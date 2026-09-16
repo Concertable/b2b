@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
@@ -35,7 +36,8 @@ public sealed class InvitationServiceTests
             this.tenantContext.Object,
             this.currentUser.Object,
             this.userModule.Object,
-            TimeProvider.System);
+            TimeProvider.System,
+            Mock.Of<IPermissionCatalog>());
     }
 
     [Fact]

@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { resolveTenant } from "../memberships";
-import { permissionsForRole } from "../permissions";
 import { useTenantStore } from "../store/useTenantStore";
 import { tenantSession } from "../tenantSession";
 import type { Membership, TenantBusinessProfile } from "../types";
@@ -21,7 +20,7 @@ export function useTenant(
 
   return {
     ...resolution,
-    permissions: permissionsForRole(resolution.activeMembership?.role),
+    permissions: new Set(resolution.activeMembership?.permissions ?? []),
     isSelectionPending,
     selectTenant: tenantSession.select,
   };

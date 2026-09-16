@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Tax;
 using Concertable.B2B.Tenant.Application.Requests;
@@ -13,19 +14,22 @@ internal sealed class TenantService : ITenantService
     private readonly IInvitationRepository invitationRepository;
     private readonly ITenantContext tenantContext;
     private readonly IVatPolicy vatPolicy;
+    private readonly IPermissionCatalog permissionCatalog;
 
     public TenantService(
         ITenantRepository repository,
         IMembershipRepository membershipRepository,
         IInvitationRepository invitationRepository,
         ITenantContext tenantContext,
-        IVatPolicy vatPolicy)
+        IVatPolicy vatPolicy,
+        IPermissionCatalog permissionCatalog)
     {
         this.repository = repository;
         this.membershipRepository = membershipRepository;
         this.invitationRepository = invitationRepository;
         this.tenantContext = tenantContext;
         this.vatPolicy = vatPolicy;
+        this.permissionCatalog = permissionCatalog;
     }
 
     public async Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default) =>
@@ -35,7 +39,12 @@ internal sealed class TenantService : ITenantService
     {
         var memberships = await membershipRepository.GetMembershipsAsync(userId, ct);
         return memberships
-            .Select(m => new MembershipDto(m.TenantId, m.LegalName, m.Role, m.BusinessProfiles))
+            .Select(m => new MembershipDto(
+                m.TenantId,
+                m.LegalName,
+                m.Role,
+                m.BusinessProfiles,
+                [.. permissionCatalog.For(m.Role)]))
             .ToList();
     }
 

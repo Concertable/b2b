@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Domain.Errors;
 using Concertable.B2B.User.Contracts;
@@ -16,6 +17,7 @@ internal sealed class InvitationService : IInvitationService
     private readonly ICurrentUser currentUser;
     private readonly IUserModule userModule;
     private readonly TimeProvider timeProvider;
+    private readonly IPermissionCatalog permissionCatalog;
 
     public InvitationService(
         ITenantRepository tenantRepository,
@@ -24,7 +26,8 @@ internal sealed class InvitationService : IInvitationService
         ITenantContext tenantContext,
         ICurrentUser currentUser,
         IUserModule userModule,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IPermissionCatalog permissionCatalog)
     {
         this.tenantRepository = tenantRepository;
         this.membershipRepository = membershipRepository;
@@ -33,6 +36,7 @@ internal sealed class InvitationService : IInvitationService
         this.currentUser = currentUser;
         this.userModule = userModule;
         this.timeProvider = timeProvider;
+        this.permissionCatalog = permissionCatalog;
     }
 
     public async Task<IReadOnlyList<InvitationDto>> ListPendingInvitationsAsync(CancellationToken ct = default)
@@ -137,7 +141,8 @@ internal sealed class InvitationService : IInvitationService
                         tenant.Id,
                         tenant.LegalName,
                         invitation.Role,
-                        [.. tenant.BusinessProfiles.Where(p => p.IsActive).Select(p => p.Kind)]));
+                        [.. tenant.BusinessProfiles.Where(p => p.IsActive).Select(p => p.Kind)],
+                        [.. permissionCatalog.For(invitation.Role)]));
             }, error => error.ToAcceptInvitationError());
     }
 }

@@ -6,31 +6,32 @@ export type TenantBusinessProfile = (typeof TENANT_BUSINESS_PROFILES)[number];
 export type TenantRole = (typeof TENANT_ROLES)[number];
 
 export type TenantPermission =
-  | "OperationsView"
-  | "ProfileEdit"
-  | "PayoutsManage"
-  | "SettlementView"
-  | "SettlementTrigger"
-  | "TenantSettingsEdit"
-  | "TenantDelete"
-  | "MembersInvite"
-  | "MembersRemove"
-  | "MembersManageRoles"
-  | "MessagesRead"
-  | "MessagesSend"
-  | "ConcertsOpsEdit"
-  | "ConcertsCheckIn"
-  | "OpportunitiesManage"
-  | "ApplicationsDecide"
-  | "ApplicationsSubmit"
-  | "ConcertsManage"
-  | "ResourcesShare";
+  | "operations.view"
+  | "profile.edit"
+  | "payouts.manage"
+  | "settlement.view"
+  | "settlement.trigger"
+  | "tenant.settings.edit"
+  | "tenant.delete"
+  | "members.invite"
+  | "members.remove"
+  | "members.manage_roles"
+  | "messages.read"
+  | "messages.send"
+  | "concerts.ops_edit"
+  | "concerts.check_in"
+  | "opportunities.manage"
+  | "applications.decide"
+  | "applications.submit"
+  | "concerts.manage"
+  | "resources.share";
 
 export interface Membership {
   readonly tenantId: string;
   readonly legalName: string;
   readonly role: TenantRole;
   readonly businessProfiles: ReadonlyArray<TenantBusinessProfile>;
+  readonly permissions: ReadonlyArray<TenantPermission>;
 }
 
 export interface B2bIdentity extends User {

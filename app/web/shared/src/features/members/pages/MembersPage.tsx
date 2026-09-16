@@ -12,9 +12,9 @@ interface MembersPageProps {
 
 export function MembersPage({ businessProfile, title, description }: MembersPageProps) {
   const { permissions } = useTenant(businessProfile);
-  const canInvite = permissions.has("MembersInvite");
-  const canManageRoles = permissions.has("MembersManageRoles");
-  const canRemove = permissions.has("MembersRemove");
+  const canInvite = permissions.has("members.invite");
+  const canManageRoles = permissions.has("members.manage_roles");
+  const canRemove = permissions.has("members.remove");
 
   return (
     <div className="max-w-2xl space-y-8">

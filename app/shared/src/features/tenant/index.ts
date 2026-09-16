@@ -1,6 +1,5 @@
 export { default as identityApi } from "./api/identityApi";
 export { TENANT_HEADER, TENANT_ROLES } from "./constants";
-export { permissionsForRole } from "./permissions";
 export {
   b2bIdentityKeys,
   useB2bIdentityQuery,

@@ -65,6 +65,9 @@ internal sealed class PermissionCatalog : IPermissionCatalog
             }.ToFrozenSet(),
         }.ToFrozenDictionary();
 
+    public IReadOnlySet<string> For(TenantRole role) =>
+        ByRole.TryGetValue(role, out var permissions) ? permissions : FrozenSet<string>.Empty;
+
     public bool Grants(TenantRole role, string permission) =>
         ByRole.TryGetValue(role, out var permissions) && permissions.Contains(permission);
 

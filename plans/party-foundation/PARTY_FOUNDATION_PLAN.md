@@ -330,6 +330,45 @@ Carry existing noncommercial role permissions deliberately into the new catalog.
 not give every role organiser powers. Replace the Membership type and local permission derivation in
 app/shared, including membership resolution, useTenant and tenantSession. Server-returned permissions
 and actions drive app/web/shared and the actual app/web/business, artist, venue and admin consumers.
+
+The permissions ride on the membership the client already fetches from `/auth/me`, as the catalog's own
+strings, so there is no second vocabulary to keep in step:
+
+```csharp
+// Authorization.Contracts — the catalog can only answer one permission at a time today
+public interface IPermissionCatalog
+{
+    bool Grants(TenantRole role, string permission);
+    IReadOnlySet<string> For(TenantRole role);
+}
+
+// Tenant.Contracts
+public sealed record MembershipDto(
+    Guid TenantId,
+    string LegalName,
+    TenantRole Role,
+    IReadOnlyList<TenantBusinessProfileKind> BusinessProfiles,
+    IReadOnlyList<string> Permissions);
+```
+
+```ts
+// app/shared — the union becomes the wire values, not a PascalCase mirror of them
+export type TenantPermission = "operations.view" | "profile.edit" | /* … */ "resources.share";
+
+export interface Membership {
+  readonly tenantId: string;
+  readonly legalName: string;
+  readonly role: TenantRole;
+  readonly businessProfiles: ReadonlyArray<TenantBusinessProfile>;
+  readonly permissions: ReadonlyArray<TenantPermission>;
+}
+
+// useTenant reads what the server sent instead of deriving it
+permissions: new Set(resolution.activeMembership?.permissions ?? []),
+```
+
+`app/shared/src/features/tenant/permissions.ts` and its test are deleted with the export; a consumer
+asks `permissions.has("members.invite")`.
 Business hosts the neutral operational screen; artist/venue surfaces require the relevant active
 profile as well as permission, not an exclusive tenant type.
 
