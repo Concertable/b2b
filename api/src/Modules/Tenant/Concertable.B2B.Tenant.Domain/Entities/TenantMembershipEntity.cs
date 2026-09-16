@@ -20,6 +20,13 @@ public sealed class TenantMembershipEntity : IGuidEntity
     public Guid UserId { get; private set; }
     public TenantRole Role { get; private set; }
 
+    /// <summary>
+    /// Bumped by every change to what this membership may do. A resolved request carries the revision it read,
+    /// and every authorised query re-checks the membership at that revision, so a role change or removal
+    /// between resolution and query denies rather than serves.
+    /// </summary>
+    public long AuthorizationVersion { get; private set; }
+
     /// <summary><see langword="null"/> for the founding Owner; otherwise the inviter who created the invitation.</summary>
     public Guid? InvitedByUserId { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -31,10 +38,15 @@ public sealed class TenantMembershipEntity : IGuidEntity
             TenantId = tenantId,
             UserId = userId,
             Role = role,
+            AuthorizationVersion = 1,
             InvitedByUserId = invitedBy,
             CreatedAt = at,
         };
 
     /// <summary>The last-Owner invariant is enforced by the service layer, not here — a membership can't see its peers.</summary>
-    public void ChangeRole(TenantRole role) => Role = role;
+    public void ChangeRole(TenantRole role)
+    {
+        Role = role;
+        AuthorizationVersion++;
+    }
 }

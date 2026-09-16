@@ -22,9 +22,11 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Theory]
-    [InlineData(InteractiveClient.VenueBrowser, TenantType.Venue)]
-    [InlineData(InteractiveClient.ArtistBrowser, TenantType.Artist)]
-    public async Task Registration_NewManager_ProvisionsTenantWithTypeAndFoundingOwner(InteractiveClient client, TenantType expected)
+    [InlineData(InteractiveClient.VenueBrowser, TenantBusinessProfileKind.VenueOperator)]
+    [InlineData(InteractiveClient.ArtistBrowser, TenantBusinessProfileKind.Artist)]
+    public async Task Registration_NewManager_ProvisionsTenantWithProfileAndFoundingOwner(
+        InteractiveClient client,
+        TenantBusinessProfileKind expected)
     {
         var userId = Guid.NewGuid();
         await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, $"{Guid.NewGuid():N}@test.com", InteractiveClientInfo.Get(client).Id));
@@ -36,8 +38,13 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
 
         var tenant = await fixture.Tenants.SingleOrDefaultAsync(t => t.Id == membership.TenantId);
         Assert.NotNull(tenant);
-        Assert.Equal(expected, tenant!.Type);
-        Assert.Equal(userId, tenant.CreatedByUserId);
+        Assert.Equal(userId, tenant!.CreatedByUserId);
+
+        var profile = Assert.Single(await fixture.BusinessProfiles
+            .Where(p => p.TenantId == membership.TenantId)
+            .ToListAsync());
+        Assert.Equal(expected, profile.Kind);
+        Assert.Null(profile.RetiredAt);
     }
 
     [Fact]

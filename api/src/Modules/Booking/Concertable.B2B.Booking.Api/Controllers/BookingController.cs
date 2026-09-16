@@ -13,7 +13,7 @@ internal sealed class BookingController : ControllerBase
 
     public BookingController(IBookingService bookingService) => this.bookingService = bookingService;
 
-    [HasPermission(SharedPermissions.OperationsView)]
+    [HasPermission(TenantPermission.OperationsView)]
     [HttpGet("application/{applicationId}")]
     public async Task<ActionResult<BookingSummary>> GetByApplicationId(
         int applicationId,
@@ -25,7 +25,7 @@ internal sealed class BookingController : ControllerBase
             : Ok(booking.ToSummary());
     }
 
-    [HasPermission(VenuePermissions.ApplicationsDecide)]
+    [HasPermission(TenantPermission.ApplicationsDecide)]
     [HttpPost("{bookingId}/cancel")]
     public async Task<IActionResult> Cancel(int bookingId, CancellationToken ct) =>
         (await bookingService.CancelAsync(bookingId, ct)).ToNoContentOrProblem();

@@ -1,4 +1,3 @@
-﻿using Concertable.B2B.KeyedStrategies;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Tenant.Contracts;
@@ -8,23 +7,19 @@ using Concertable.B2B.Tenant.Application.Tax;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Validators;
 using FluentValidation;
-using Microsoft.AspNetCore.Authorization;
 using Concertable.B2B.Tenant.Domain.Events;
 using Concertable.B2B.Tenant.Infrastructure.Authorization;
 using Concertable.B2B.Tenant.Infrastructure.Data;
+using Microsoft.AspNetCore.Mvc;
 using Concertable.B2B.Tenant.Infrastructure.Data.Seeders;
 using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.B2B.Tenant.Infrastructure.Repositories;
-using Concertable.B2B.Tenant.Application.Strategies;
 using Concertable.B2B.Tenant.Infrastructure.Services;
-using Concertable.B2B.Tenant.Infrastructure.Services.Resolvers;
-using Concertable.B2B.Tenant.Infrastructure.Services.Strategies;
 using Concertable.Messaging.Contracts;
 using Concertable.Seed.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel.Identity;
 
@@ -64,25 +59,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVerificationNotifier, VerificationNotifier>();
         services.AddScoped<ITenantModule, TenantModule>();
 
-        services.AddTenantStrategies();
+        // Tenant owns membership rows; the Authorization module owns request authority and reads them through this port.
+        services.AddScoped<IMembershipFacts, MembershipFacts>();
 
-        services.AddSingleton<ITenantContextAccessor, TenantContextAccessor>();
-        services.AddScoped<TenantContext>();
-        services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
-        services.AddScoped<ITenantResolver>(sp => sp.GetRequiredService<TenantContext>());
-        services.AddScoped<IMembershipContext>(sp => sp.GetRequiredService<TenantContext>());
-
-        services.AddSingleton<SharedPermissions>();
-        services.AddSingleton<VenuePermissions>();
-        services.AddSingleton<ArtistPermissions>();
-        services.AddSingleton<IPermissionCatalog, PermissionCatalog>();
-
-        /* String-permission authorization: a single on-demand policy provider (singleton) builds every
-           perm:<name> policy and delegates Admin/[Authorize] to the default provider; the scoped handler
-           reads the membership context. No startup policy loop. */
-        services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
-        services.AddSingleton<IEndpointTenantTypeAccessor, EndpointTenantTypeAccessor>();
-        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.Configure<MvcOptions>(options => options.Filters.Add<BusinessProfileAuthorizationFilter>());
 
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, TenantProvisioningHandler>();
         services.AddScoped<IIntegrationEventHandler<TenantActivityRecordedEvent>, TenantActivityRecordedHandler>();
@@ -92,34 +72,6 @@ public static class ServiceCollectionExtensions
         // includeInternalTypes: the Tenant validators are internal — without it they're never registered and the VAT-format rule silently doesn't run (mirrors Concert).
         services.AddValidatorsFromAssemblyContaining<UpdateTenantRequestValidator>(includeInternalTypes: true);
 
-        return services;
-    }
-
-    internal static IServiceCollection AddTenantStrategies(this IServiceCollection services)
-    {
-        services.AddScoped<ITenantContactResolver, TenantContactResolver>();
-
-        return services.AddTenantStrategies(strategies =>
-        {
-            strategies.For(TenantType.Venue)
-                .AddScoped<ITenantContactResolver, VenueTenantContactResolver>();
-            strategies.For(TenantType.Artist)
-                .AddScoped<ITenantContactResolver, ArtistTenantContactResolver>();
-
-            strategies.RequireAll<ITenantContactResolver>();
-        });
-    }
-
-    internal static IServiceCollection AddTenantStrategies(
-        this IServiceCollection services,
-        Action<KeyedStrategyBuilder<TenantType>> configure)
-    {
-        var builder = new KeyedStrategyBuilder<TenantType>(services);
-        configure(builder);
-        builder.Build();
-
-        services.TryAddScoped<IKeyedServiceProvider>(sp => (IKeyedServiceProvider)sp);
-        services.TryAddScoped(typeof(ITenantStrategyFactory<>), typeof(TenantStrategyFactory<>));
         return services;
     }
 

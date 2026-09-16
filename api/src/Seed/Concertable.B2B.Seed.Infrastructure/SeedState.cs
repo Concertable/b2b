@@ -187,7 +187,7 @@ public sealed class SeedState
         // Tax-complete but never submitted for verification, unlike SeedUsers' bare operators below (also
         // tax-incomplete) — isolates the verification gate from the tax-compliance gate. See the property doc.
         UnverifiedTenant = TenantFactory.Create(
-            UnverifiedTenantUserId, "tenant-verification-gate@test.com", TenantType.Venue, now,
+            UnverifiedTenantUserId, "tenant-verification-gate@test.com", TenantBusinessProfileKind.VenueOperator, now,
             taxComplianceComplete: true);
 
         Users = [Admin, .. ArtistManagers, .. VenueManagers, UnverifiedVenueManager];
@@ -346,7 +346,7 @@ public sealed class SeedState
         var bareTenantUserIds = new HashSet<Guid> { VenueManagerNoVenue.Id, ArtistManagerNoArtist.Id };
         Tenants = SeedUsers.Managers
             .Select(m => TenantFactory.Create(
-                m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantType.Venue : TenantType.Artist, now,
+                m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantBusinessProfileKind.VenueOperator : TenantBusinessProfileKind.Artist, now,
                 taxComplianceComplete: !bareTenantUserIds.Contains(m.Id)))
             .ToList();
         Verifications = SeedUsers.Managers

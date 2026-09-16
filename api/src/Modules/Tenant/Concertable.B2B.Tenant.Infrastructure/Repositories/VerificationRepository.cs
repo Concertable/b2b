@@ -36,7 +36,8 @@ internal sealed class VerificationRepository(TenantDbContext context)
                 (v, t) => new PendingVerificationProjection
                 {
                     TenantId = v.TenantId,
-                    TenantType = t.Type,
+                    LegalName = t.LegalName,
+                    ContactEmail = t.ContactEmail,
                     SubmittedAt = v.SubmittedAt,
                 })
             .ToPaginationAsync(pageParams);

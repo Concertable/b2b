@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
@@ -75,7 +75,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
         var tenantId = TenantOf(owner.Id);
-        var venue = fixture.SeedState.Venues.Single(v => v.TenantId == tenantId);
+        var tenant = fixture.Tenants.Single(t => t.Id == tenantId);
         await fixture.AddPendingVerificationAsync(
             tenantId, VerificationDocumentType.Licence, fixture.SeedNow.AddDays(-1));
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
@@ -85,12 +85,12 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
         var row = page!.Data.Single(r => r.TenantId == tenantId);
-        Assert.Equal(TenantType.Venue, row.TenantType);
-        Assert.Equal(new TenantContact(venue.Name, venue.Email), row.Contact);
+        Assert.Equal(tenant.LegalName, row.LegalName);
+        Assert.Equal(tenant.ContactEmail, row.ContactEmail);
     }
 
     [Fact]
-    public async Task GetPending_ShouldReturn200_WithArtistContactEnrichment()
+    public async Task GetPending_ShouldReturn200_WithTenantContactForABusinessWithNoMarketplaceProfile()
     {
         var owner = fixture.SeedState.ArtistManagerNoArtist;
         var tenantId = TenantOf(owner.Id);
@@ -105,8 +105,9 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
         var row = page!.Data.Single(r => r.TenantId == tenantId);
-        Assert.Equal(TenantType.Artist, row.TenantType);
-        Assert.Equal(new TenantContact("New Artist", owner.Email), row.Contact);
+        var tenant = fixture.Tenants.Single(t => t.Id == tenantId);
+        Assert.Equal(tenant.LegalName, row.LegalName);
+        Assert.Equal(tenant.ContactEmail, row.ContactEmail);
     }
 
     [Fact]
@@ -121,11 +122,8 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         Assert.DoesNotContain(page!.Data, r => r.TenantId == TenantOf(fixture.SeedState.VenueManager1.Id));
     }
 
-    /// <summary>Pins that contact enrichment awaits sequentially: two pending rows sharing a
-    /// <see cref="TenantType"/> would run concurrent queries against the same scoped Venue/ArtistReadDbContext
-    /// instance if enrichment ran in parallel, which EF Core rejects.</summary>
     [Fact]
-    public async Task GetPending_ShouldReturn200_WhenTwoPendingRowsShareTenantType()
+    public async Task GetPending_ShouldReturn200_WithEveryPendingTenantOnOnePage()
     {
         var firstTenantId = TenantOf(fixture.SeedState.UnverifiedVenueManager.Id);
         var secondTenantId = TenantOf(fixture.SeedState.VenueManagerNoVenue.Id);

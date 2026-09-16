@@ -11,12 +11,12 @@ internal static class ApplicationMappers
 {
     extension(ApplicationDto dto)
     {
-        public ApplicationResponse ToResponse(TenantType membershipType, BookingSummary? booking) =>
-            membershipType switch
+        public ApplicationResponse ToResponse(ApplicationSide side, BookingSummary? booking) =>
+            side switch
             {
-                TenantType.Venue => dto.ToVenueResponse(booking),
-                TenantType.Artist => dto.ToArtistResponse(booking),
-                _ => throw new ArgumentOutOfRangeException(nameof(membershipType), membershipType, null)
+                ApplicationSide.Venue => dto.ToVenueResponse(booking),
+                ApplicationSide.Artist => dto.ToArtistResponse(booking),
+                _ => throw new ArgumentOutOfRangeException(nameof(side), side, null)
             };
 
         public ApplicationResponse<VenueApplicationActions> ToVenueResponse(BookingSummary? booking)

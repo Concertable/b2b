@@ -265,8 +265,8 @@ public sealed class InvitationTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var joined = (await response.Content.ReadAsync<MembershipDto>())!;
         Assert.Equal(tenantId, joined.TenantId);
-        Assert.Equal(TenantType.Venue, joined.Type);
         Assert.Equal(TenantRole.Manager, joined.Role);
+        Assert.Equal([TenantBusinessProfileKind.VenueOperator], joined.BusinessProfiles);
         var membership = fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == invitee.Id);
         Assert.Equal(TenantRole.Manager, membership.Role);
         Assert.Equal(owner.Id, membership.InvitedByUserId);

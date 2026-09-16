@@ -79,7 +79,7 @@ internal sealed class InvitationService : IInvitationService
         if (currentUser.Id is not { } inviterId)
             return new InviteMemberError.Unauthenticated();
 
-        var invitation = TenantInvitationEntity.Create(tenantId, tenant.Type, email, request.Role, inviterId, now, InvitationTtl);
+        var invitation = TenantInvitationEntity.Create(tenantId, email, request.Role, inviterId, now, InvitationTtl);
         await repository.InsertAsync(invitation, ct);
 
         return new InvitationDto(invitation.Id, invitation.Email, invitation.Role, invitation.CreatedAt, invitation.ExpiresAt);
@@ -133,7 +133,11 @@ internal sealed class InvitationService : IInvitationService
                     invitation.TenantId, userId, invitation.Role, invitedBy: invitation.CreatedByUserId, now), ct);
 
                 return Result.Success<MembershipDto, AcceptInvitationError>(
-                    new MembershipDto(tenant.Id, tenant.LegalName, tenant.Type, invitation.Role));
+                    new MembershipDto(
+                        tenant.Id,
+                        tenant.LegalName,
+                        invitation.Role,
+                        [.. tenant.BusinessProfiles.Where(p => p.IsActive).Select(p => p.Kind)]));
             }, error => error.ToAcceptInvitationError());
     }
 }

@@ -22,7 +22,7 @@ internal sealed class ConcertController : ControllerBase
         this.invoiceService = invoiceService;
     }
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("{id}")]
     public async Task<ActionResult<DetailsResponse>> GetDetailsById(int id)
     {
@@ -30,7 +30,7 @@ internal sealed class ConcertController : ControllerBase
             .ToOkOrProblem(concert => concert.ToDetailsResponse());
     }
 
-    [HasPermission(SharedPermissions.OperationsView)]
+    [HasPermission(TenantPermission.OperationsView)]
     [HttpGet("/api/organization/concert/{concertId:int}")]
     public async Task<ActionResult<MyDetailsResponse>> Get(
         int concertId,
@@ -38,7 +38,7 @@ internal sealed class ConcertController : ControllerBase
         (await concertService.GetDetailsAsync(concertId, ct))
             .ToOkOrProblem(concert => concert.ToMyDetailsResponse());
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("{id}/contract/pdf")]
     public async Task<ActionResult<FileDownload>> GetContractPdf(int id)
     {
@@ -47,7 +47,7 @@ internal sealed class ConcertController : ControllerBase
                 File(pdf.Content, pdf.ContentType, pdf.FileName)));
     }
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("{id}/invoice")]
     public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
     {
@@ -55,7 +55,7 @@ internal sealed class ConcertController : ControllerBase
             .ToOkOrProblem();
     }
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("{id}/invoice/pdf")]
     public async Task<ActionResult<FileDownload>> GetInvoicePdf(int id)
     {
@@ -64,7 +64,7 @@ internal sealed class ConcertController : ControllerBase
                 File(pdf.Content, pdf.ContentType, pdf.FileName)));
     }
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("application/{applicationId}")]
     public async Task<ActionResult<MyDetailsResponse>> GetDetailsByApplicationId(int applicationId)
     {
@@ -72,14 +72,14 @@ internal sealed class ConcertController : ControllerBase
             .ToOkOrProblem(concert => concert.ToMyDetailsResponse());
     }
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("upcoming/venue/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUpcomingByVenueId(int id)
     {
         return Ok((await concertService.GetUpcomingByVenueIdAsync(id)).ToSummaryResponses());
     }
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("upcoming/artist/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUpcomingByArtistId(int id)
     {
@@ -87,71 +87,71 @@ internal sealed class ConcertController : ControllerBase
     }
 
     [HttpGet("upcoming/venue/current")]
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(SharedPermissions.OperationsView)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [HasPermission(TenantPermission.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentVenue() =>
         (await concertService.GetUpcomingForCurrentVenueAsync()).ToOkOrProblem();
 
     [HttpGet("upcoming/artist/current")]
-    [RequiredTenantType(TenantType.Artist)]
-    [HasPermission(SharedPermissions.OperationsView)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
+    [HasPermission(TenantPermission.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentArtist() =>
         (await concertService.GetUpcomingForCurrentArtistAsync()).ToOkOrProblem();
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("history/venue/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetHistoryByVenueId(int id)
     {
         return Ok((await concertService.GetHistoryByVenueIdAsync(id)).ToSummaryResponses());
     }
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("history/artist/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetHistoryByArtistId(int id)
     {
         return Ok((await concertService.GetHistoryByArtistIdAsync(id)).ToSummaryResponses());
     }
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("unposted/venue/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUnpostedByVenueId(int id)
     {
         return Ok((await concertService.GetUnpostedByVenueIdAsync(id)).ToSummaryResponses());
     }
 
-    [RequiredTenantType(TenantType.Venue)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HttpGet("unposted/artist/{id}")]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUnpostedByArtistId(int id)
     {
         return Ok((await concertService.GetUnpostedByArtistIdAsync(id)).ToSummaryResponses());
     }
 
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(VenuePermissions.ConcertsManage)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [HasPermission(TenantPermission.ConcertsManage)]
     [HttpPut("{id}")]
     public async Task<ActionResult<ConcertUpdateResponse>> Update(int id, [FromBody] UpdateConcertRequest request)
     {
         return (await concertService.UpdateAsync(id, request)).ToOkOrProblem();
     }
 
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(VenuePermissions.ConcertsManage)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [HasPermission(TenantPermission.ConcertsManage)]
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
     {
         return (await concertService.PostAsync(id, request)).ToNoContentOrProblem();
     }
 
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(VenuePermissions.ApplicationsDecide)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [HasPermission(TenantPermission.ApplicationsDecide)]
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
     {
         return (await concertService.CancelAsync(id, ct)).ToNoContentOrProblem();
     }
 
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(VenuePermissions.ConcertsManage)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [HasPermission(TenantPermission.ConcertsManage)]
     [HttpPost("{id}/door-revenue")]
     public async Task<IActionResult> DeclareDoorRevenue(int id, [FromBody] DoorRevenueRequest request)
     {

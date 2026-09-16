@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Infrastructure.Extensions;
 using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
@@ -62,6 +63,7 @@ internal static class ServiceCollectionExtensions
 
         services.AddCurrentUser();
         services.AddAdminModule(configuration);
+        services.AddAuthorizationModule();
         services.AddTenantModule(configuration);
         services.AddUserModule(configuration);
         services.AddArtistModule(configuration);

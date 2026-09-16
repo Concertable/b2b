@@ -35,7 +35,7 @@ internal sealed class TenantService : ITenantService
     {
         var memberships = await membershipRepository.GetMembershipsAsync(userId, ct);
         return memberships
-            .Select(m => new MembershipDto(m.TenantId, m.LegalName, m.Type, m.Role))
+            .Select(m => new MembershipDto(m.TenantId, m.LegalName, m.Role, m.BusinessProfiles))
             .ToList();
     }
 
@@ -44,6 +44,20 @@ internal sealed class TenantService : ITenantService
         var memberships = await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct);
         return memberships.Select(m => m.UserId).ToList();
     }
+
+    public async Task<Option<BusinessFacts>> GetBusinessFactsAsync(Guid tenantId, CancellationToken ct = default) =>
+        (await repository.GetBusinessFactsByTenantIdAsync(tenantId, ct)).ToOption();
+
+    public Task<IReadOnlyList<BusinessFacts>> GetBusinessFactsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default) =>
+        repository.GetBusinessFactsByTenantIdsAsync(tenantIds, ct);
+
+    public Task<bool> HasBusinessProfileAsync(
+        Guid tenantId,
+        TenantBusinessProfileKind kind,
+        CancellationToken ct = default) =>
+        repository.HasActiveBusinessProfileAsync(tenantId, kind, ct);
 
     public async Task<Option<TenantDetails>> GetDetailsAsync(CancellationToken ct = default)
     {
@@ -125,6 +139,8 @@ internal sealed class TenantService : ITenantService
     {
         Id = tenant.Id,
         LegalName = tenant.LegalName,
+        ContactEmail = tenant.ContactEmail,
+        BusinessProfiles = [.. tenant.BusinessProfiles.Where(p => p.IsActive).Select(p => p.Kind)],
         TaxCompliance = tenant.TaxCompliance?.ToDto(),
     };
 }

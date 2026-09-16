@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Concertable.B2B.Tenant.Infrastructure.Events;
 
 /// <summary>
-/// Provisions a tenant when a venue or artist manager registers — the one-tenant-per-operator rule — and its
+/// Provisions a tenant when a business manager registers — the one-tenant-per-operator rule — and its
 /// founding Owner membership, the source of truth for who may act in the tenant. Idempotent per
 /// <see cref="CredentialRegisteredEvent"/> via the inbox. This is the single, reliable tenant-creation
 /// trigger: it fires after the ASB subscriptions exist (registration events arrive once the listener is up).
@@ -36,7 +36,7 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
 
     public async Task HandleAsync(CredentialRegisteredEvent e, MessageEnvelope envelope, CancellationToken ct = default)
     {
-        if (InteractiveClientInfo.GetOrDefault(e.ClientId) is not { } client || client.Client.ManagerTenantType is not { } type)
+        if (InteractiveClientInfo.GetOrDefault(e.ClientId) is not { } client || !client.Client.ProvisionsBusinessTenant)
             return;
 
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(TenantProvisioningHandler), ct))
@@ -71,7 +71,11 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
         var tenant = await context.Tenants.FirstOrDefaultAsync(t => t.CreatedByUserId == e.UserId, ct);
         if (tenant is null)
         {
-            tenant = TenantEntity.Create(e.Email, e.UserId, type, now);
+            tenant = TenantEntity.Create(e.Email, e.UserId, now);
+
+            if (client.Client.InitialBusinessProfile is { } kind)
+                tenant.ActivateBusinessProfile(kind, now);
+
             context.Tenants.Add(tenant);
         }
         else

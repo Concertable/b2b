@@ -43,7 +43,7 @@ internal sealed class OpportunityController : ControllerBase
             .ToOkOrProblem();
     }
 
-    [HasPermission(VenuePermissions.OpportunitiesManage)]
+    [HasPermission(TenantPermission.OpportunitiesManage)]
     [HttpPost]
     public async Task<ActionResult<OpportunityResponse>> Create(
         [FromBody] OpportunityRequest request,
@@ -53,7 +53,7 @@ internal sealed class OpportunityController : ControllerBase
             .ToCreatedOrProblem(
                 opportunity => $"/api/opportunity/{opportunity.Id}");
 
-    [HasPermission(VenuePermissions.OpportunitiesManage)]
+    [HasPermission(TenantPermission.OpportunitiesManage)]
     [HttpPost("bulk")]
     public async Task<ActionResult> CreateMultiple([FromBody] IEnumerable<OpportunityRequest> requests)
     {
@@ -70,7 +70,7 @@ internal sealed class OpportunityController : ControllerBase
         return Ok(await mapper.ToResponsesAsync(opportunities, ct));
     }
 
-    [HasPermission(VenuePermissions.OpportunitiesManage)]
+    [HasPermission(TenantPermission.OpportunitiesManage)]
     [HttpPut("/api/venue/{venueId:int}/opportunities")]
     public async Task<ActionResult<IReadOnlyList<OpportunityResponse>>> Update(
         int venueId,

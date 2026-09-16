@@ -15,16 +15,16 @@ internal sealed class OpportunityDashboardController : ControllerBase
         this.service = service;
 
     [HttpGet("venue/current")]
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(SharedPermissions.OperationsView)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [HasPermission(TenantPermission.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<OpportunityMetricsResponse>>>
         GetOpen(CancellationToken ct) =>
         (await service.GetOpenAsync(ct))
             .ToOkOrProblem(metrics => metrics.ToResponses());
 
     [HttpGet("artist/recommended")]
-    [RequiredTenantType(TenantType.Artist)]
-    [HasPermission(SharedPermissions.OperationsView)]
+    [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
+    [HasPermission(TenantPermission.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<OpportunityMatchResponse>>>
         GetRecommended(CancellationToken ct) =>
         (await service.GetRecommendedAsync(ct))

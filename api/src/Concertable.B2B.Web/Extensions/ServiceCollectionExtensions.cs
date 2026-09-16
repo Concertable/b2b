@@ -13,6 +13,7 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Authorization.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Web.Extensions;
@@ -80,6 +81,7 @@ public static class ServiceCollectionExtensions
             });
 
         services.AddAuthorization();
+        services.AddAuthorizationModule();
 
         return services;
     }

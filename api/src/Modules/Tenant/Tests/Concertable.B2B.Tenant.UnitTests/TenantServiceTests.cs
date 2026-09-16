@@ -36,7 +36,7 @@ public sealed class TenantServiceTests
     }
 
     private static TenantEntity Bare() =>
-        TenantEntity.Create("bare@test.com", Guid.NewGuid(), TenantType.Venue, DateTime.UtcNow);
+        TenantEntity.Create("bare@test.com", Guid.NewGuid(), DateTime.UtcNow);
 
     private static TenantEntity Onboarded(string? vatNumber)
     {

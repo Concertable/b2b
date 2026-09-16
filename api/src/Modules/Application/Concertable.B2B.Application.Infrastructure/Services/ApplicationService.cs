@@ -56,11 +56,15 @@ internal sealed class ApplicationService : IApplicationService
         this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
-    public Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id) =>
+    public Task<Result<ApplicationDetailsDto, ApplicationError>> GetByIdAsync(int id) =>
         applicationRepository.GetByIdAsync(id)
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
-            .MapAsync(application => mapper.ToDtoAsync(application));
+            .MapAsync(async application => new ApplicationDetailsDto(
+                await mapper.ToDtoAsync(application),
+                application.ArtistTenantId == tenantContext.TenantId
+                    ? ApplicationSide.Artist
+                    : ApplicationSide.Venue));
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id)
     {

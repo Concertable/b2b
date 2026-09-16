@@ -6,6 +6,10 @@ internal sealed record TenantDetails
 {
     public required Guid Id { get; init; }
     public required string LegalName { get; init; }
+    public required string ContactEmail { get; init; }
+
+    /// <summary>The marketplace work this business has activated, empty for a business that has activated none.</summary>
+    public required IReadOnlyList<TenantBusinessProfileKind> BusinessProfiles { get; init; }
 
     /// <summary>The tenant's tax data — absent until organization setup. Its presence IS completeness: the write
     /// path enforces the required fields + VAT-number format, so anything stored is already complete. Omitted from

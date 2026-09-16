@@ -9,6 +9,6 @@ internal interface IApplicationMapper
     Task<ApplicationResponse<ArtistApplicationActions>> ToArtistResponseAsync(ApplicationDto dto);
     Task<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>> ToArtistResponsesAsync(IReadOnlyList<ApplicationDto> dtos);
 
-    /// <summary>Maps an application to the response shape owed to the caller's membership type.</summary>
-    Task<ApplicationResponse> ToResponseAsync(ApplicationDto dto, TenantType membershipType);
+    /// <summary>Maps an application to the response shape owed to the side the caller reads it from.</summary>
+    Task<ApplicationResponse> ToResponseAsync(ApplicationDetailsDto details);
 }
