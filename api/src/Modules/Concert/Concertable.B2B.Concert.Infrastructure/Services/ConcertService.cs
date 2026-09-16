@@ -231,7 +231,7 @@ internal sealed class ConcertService : IConcertService
         if (result.TryGetErrors(out var errors))
             return new PostConcertError.Invalid(new ValidationErrors(errors.ToDictionary()));
 
-        if (concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().DateTime)
+        if (concertEntity.Post(request.Name, request.About, request.Price, request.TotalTickets, timeProvider.GetUtcNow().UtcDateTime)
             .TryGetError(out var transitionError))
             return new PostConcertError.InvalidTransition(transitionError);
 
