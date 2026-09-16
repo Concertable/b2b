@@ -217,6 +217,64 @@ Current direct principals receive explicit grants at resource creation. They ret
 executed record through current membership after leaving a show. A show manager cannot widen another
 agreement's disclosure policy. P2 records the principals and consents required for such a widening.
 
+The sharing policy is a rule on the owning aggregate, not a sharing service. Grant `Issue` stays
+`internal`, so the aggregate remains the only issuer; `Share`/`RevokeShare` sit beside the existing
+private `IssuePrincipalGrants` and carry `GrantOrigin.ExplicitShare`:
+
+```csharp
+// Concert.Domain/Entities/ConcertEntity.cs — the policy, as code
+private static readonly FrozenSet<ConcertAccessScope> ShareableScopes =
+    FrozenSet.ToFrozenSet([ConcertAccessScope.Summary, ConcertAccessScope.Operations]);
+
+public Result<ConcertAccessGrant, ShareConcertError> Share(
+    Guid toTenantId, Guid? toMemberUserId, ConcertAccessScope scope,
+    Guid byTenantId, Guid byUserId, DateTime at, DateTime? validUntil = null)
+{
+    if (!ShareableScopes.Contains(scope))
+        return new ShareConcertError.ScopeNotShareable(scope);      // Finance is never disclosed by share
+    if (byTenantId != VenueTenantId && byTenantId != ArtistTenantId)
+        return new ShareConcertError.NotAPrincipal(byTenantId);     // a shared-to tenant cannot re-share
+    if (accessGrants.Any(g => g.TenantId == toTenantId && g.MemberUserId == toMemberUserId
+                              && g.Scope == scope && g.IsLiveAt(at)))
+        return new ShareConcertError.AlreadyShared(toTenantId, scope);
+
+    var grant = ConcertAccessGrant.Issue(Id, toTenantId, toMemberUserId, scope,
+        byTenantId, byUserId, GrantOrigin.ExplicitShare, at, validUntil);
+    accessGrants.Add(grant);
+    return grant;
+}
+
+public Result<Unit, RevokeShareError> RevokeShare(Guid grantId, Guid byTenantId, DateTime at)
+{
+    if (accessGrants.SingleOrDefault(g => g.Id == grantId) is not { } grant)
+        return new RevokeShareError.GrantNotFound(grantId);
+    if (grant.Origin != GrantOrigin.ExplicitShare)
+        return new RevokeShareError.NotAShare(grantId);             // a principal's own access is not revocable here
+    if (grant.IssuedByTenantId != byTenantId)
+        return new RevokeShareError.NotTheIssuer(byTenantId);
+
+    grant.Revoke(at);
+    return Unit.Value;
+}
+```
+
+The member's sharing permission is the existing `TenantPermission.ResourcesShare`, checked in the
+application layer before the aggregate is loaded — the aggregate owns disclosure policy, the catalog owns
+who may act:
+
+```csharp
+// Concert.Application — the command, not a ConcertSharingService
+if (!membership.HasPermission(TenantPermission.ResourcesShare))
+    return new ShareConcertError.NotPermitted();
+```
+
+HTTP surface, per resource module that has a grant family:
+
+```
+POST   /concerts/{id}/shares            { toTenantId, toMemberUserId?, scope, validUntil? } -> 201 grant
+DELETE /concerts/{id}/shares/{grantId}                                                      -> 204
+```
+
 A read grant grants no signing, approval, debit or settlement authority. Mutations also validate the
 resource's owner or accepted operation assignment, expected version and allowed lifecycle state.
 Insert/update/delete and raw/bulk paths must use that same command boundary. An interceptor can enforce
