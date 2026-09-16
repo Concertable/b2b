@@ -33,6 +33,7 @@ public sealed class TenantApiFixture : ApiFixture
 
     public async Task AddMembershipAsync(Guid tenantId, Guid userId, TenantRole role)
     {
+        using var seeding = EnterSeedingScope();
         dbContext.Memberships.Add(
             TenantMembershipEntity.Create(tenantId, userId, role, invitedBy: null, DateTime.UtcNow));
         await dbContext.SaveChangesAsync();

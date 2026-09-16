@@ -1,3 +1,5 @@
+using Concertable.B2B.Authorization.Contracts.Enums;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.Kernel.Notifications;
 using Concertable.Kernel.DependencyInjection;
 using Concertable.Payment.Contracts;
@@ -178,10 +180,13 @@ public class ApiFixture : IAsyncLifetime
 
         scope?.Dispose();
         scope = factory.Services.CreateScope();
-        var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
-        await initializer.InitializeAsync();
-        SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
-        OnReset(scope);
+        using (scope.ServiceProvider.GetRequiredService<IExecutionScopeActivator>().Enter(ExecutionPurpose.Seeding))
+        {
+            var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+            await initializer.InitializeAsync();
+            SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
+            OnReset(scope);
+        }
 
         await StartBackgroundDispatchAsync();
     }
@@ -209,6 +214,13 @@ public class ApiFixture : IAsyncLifetime
 
     private static IEnumerable<BackgroundService> BackgroundServices(IServiceProvider services) =>
         services.GetServices<IHostedService>().OfType<BackgroundService>();
+
+    /// <summary>
+    /// Direct database setup happens outside a request, where nothing has established authority. A test
+    /// writing through the API does not need this; one reaching past it to arrange state does.
+    /// </summary>
+    public IDisposable EnterSeedingScope() =>
+        factory.Services.GetRequiredService<IExecutionScopeActivator>().Enter(ExecutionPurpose.Seeding);
 
     protected virtual void OnReset(IServiceScope scope) { }
 
