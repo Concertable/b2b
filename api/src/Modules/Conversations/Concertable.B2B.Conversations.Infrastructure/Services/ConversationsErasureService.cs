@@ -1,5 +1,3 @@
-using Concertable.B2B.Conversations.Infrastructure.Mappers;
-
 namespace Concertable.B2B.Conversations.Infrastructure.Services;
 
 internal sealed class ConversationsErasureService : IConversationsErasureService
