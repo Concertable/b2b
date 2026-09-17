@@ -19,11 +19,9 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                 nullable: true);
 
             migrationBuilder.Sql("""
-                UPDATE b
-                SET b.HandedOffAtUtc = SYSUTCDATETIME()
-                FROM [booking].[Bookings] b
-                WHERE b.HandedOffAtUtc IS NULL
-                  AND EXISTS (SELECT 1 FROM [concert].[Concerts] c WHERE c.ApplicationId = b.ApplicationId);
+                UPDATE [booking].[Bookings]
+                SET [HandedOffAtUtc] = SYSUTCDATETIME()
+                WHERE [HandedOffAtUtc] IS NULL AND [State] = 2;
                 """);
         }
 
