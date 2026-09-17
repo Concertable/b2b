@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Infrastructure;
+﻿using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Customer.Ticket.Contracts.Events;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -12,16 +12,16 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class TicketSaleProcessor : IIntegrationEventHandler<TicketPurchasedEvent>
 {
-    private readonly ConcertDbContext context;
+    private readonly ConcertPrivilegedDbContext context;
     private readonly ILogger<TicketSaleProcessor> logger;
     private readonly IBus bus;
-    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior outboxBehavior;
 
     public TicketSaleProcessor(
-        ConcertDbContext context,
+        ConcertPrivilegedDbContext context,
         ILogger<TicketSaleProcessor> logger,
         IBus bus,
-        IOutboxUnitOfWorkBehavior outboxBehavior)
+        IPrivilegedOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.context = context;
         this.logger = logger;

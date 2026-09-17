@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.DTOs;
+﻿using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.DataAccess.Application;
@@ -14,7 +14,6 @@ internal interface IConcertRepository : IRepository<ConcertEntity>
     Task<ConcertDetails?> GetDetailsByApplicationIdAsync(int applicationId);
     Task<IEnumerable<ConcertSummary>> GetUnpostedByArtistIdAsync(int id);
     Task<IEnumerable<ConcertSummary>> GetUnpostedByVenueIdAsync(int id);
-    Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(CancellationToken ct = default);
     Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForVenueTenantIdAsync(Guid venueTenantId);
     Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForArtistTenantIdAsync(Guid artistTenantId);
     Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId);

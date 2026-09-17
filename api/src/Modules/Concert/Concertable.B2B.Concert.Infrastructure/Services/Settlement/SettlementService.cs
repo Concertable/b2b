@@ -1,4 +1,4 @@
-using Concertable.B2B.Booking.Contracts;
+﻿using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Models;
@@ -98,7 +98,7 @@ internal sealed class SettlementService : ISettlementService
             ct);
 
     private async Task<Result<SettlementPreparation, FinishConcertError>> ReserveAsync(
-        ConcertDbContext context,
+        ConcertPrivilegedDbContext context,
         int concertId,
         CancellationToken ct)
     {
@@ -158,7 +158,7 @@ internal sealed class SettlementService : ISettlementService
     }
 
     private async Task<Result<SettlementOutcome, FinishConcertError>> CompleteAsync(
-        ConcertDbContext context,
+        ConcertPrivilegedDbContext context,
         int concertId,
         Guid operationId,
         CancellationToken ct)
@@ -177,7 +177,7 @@ internal sealed class SettlementService : ISettlementService
     }
 
     private async Task RecordFailureAsync(
-        ConcertDbContext context,
+        ConcertPrivilegedDbContext context,
         int concertId,
         Guid operationId,
         string code,

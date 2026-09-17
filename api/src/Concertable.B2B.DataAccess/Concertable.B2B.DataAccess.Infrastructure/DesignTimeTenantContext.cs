@@ -1,4 +1,4 @@
-using Concertable.Kernel.Identity;
+﻿using Concertable.Kernel.Identity;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
@@ -9,5 +9,5 @@ public sealed class DesignTimeTenantContext : ITenantContext
 
     public Guid? TenantId => null;
 
-    public bool IsHost => true;
+    public bool IsHost => false;
 }

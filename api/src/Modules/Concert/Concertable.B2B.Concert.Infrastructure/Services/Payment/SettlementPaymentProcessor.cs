@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.Interfaces;
+﻿using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
@@ -14,20 +14,23 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
-    private readonly ConcertDbContext context;
+    private readonly ConcertPrivilegedDbContext context;
+    private readonly IConcertPrivilegedRepository concertRepository;
     private readonly ISettlementService settlementService;
-    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior outboxBehavior;
     private readonly ILogger<SettlementPaymentProcessor> logger;
     private readonly IBus bus;
 
     public SettlementPaymentProcessor(
-        ConcertDbContext context,
+        ConcertPrivilegedDbContext context,
+        IConcertPrivilegedRepository concertRepository,
         ISettlementService settlementService,
-        IOutboxUnitOfWorkBehavior outboxBehavior,
+        IPrivilegedOutboxUnitOfWorkBehavior outboxBehavior,
         ILogger<SettlementPaymentProcessor> logger,
         IBus bus)
     {
         this.context = context;
+        this.concertRepository = concertRepository;
         this.settlementService = settlementService;
         this.outboxBehavior = outboxBehavior;
         this.logger = logger;
@@ -41,14 +44,19 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
             || !@event.Metadata.TryGetOperationId(out var operationId))
             return;
         logger.SettlementWebhookReceived(@event.Reference.ClientReference, concertId);
-        var concert = await context.Concerts
-            .AsNoTracking()
-            .SingleOrDefaultAsync(value => value.Id == concertId, ct);
+        var concert = await concertRepository.GetByIdForUpdateAsync(concertId, ct);
         if (concert is null)
         {
             logger.SettlementOutcomeForUnknownConcert(concertId);
-            await RecordInboxAsync(envelope, ct);
-            return;
+            throw new InvalidOperationException(
+                $"Settlement outcome names concert {concertId}, which does not exist.");
+        }
+
+        if (concert.SettlementOperationId != operationId)
+        {
+            logger.SettlementOutcomeForUnknownConcert(concertId);
+            throw new InvalidOperationException(
+                $"Settlement outcome names operation {operationId}, which concert {concertId} is not running.");
         }
 
         var completion = await settlementService.CompleteAsync(concert.Id, operationId, ct);

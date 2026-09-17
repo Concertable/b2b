@@ -1,4 +1,4 @@
-using Concertable.B2B.Seed.Infrastructure;
+﻿using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -9,16 +9,18 @@ internal sealed class BookingTestSeeder : ITestSeeder
 {
     public int Order => 6;
 
-    private readonly BookingDbContext context;
+    private readonly BookingPrivilegedDbContext context;
+    private readonly BookingDbContext migrations;
     private readonly SeedState seed;
 
-    public BookingTestSeeder(BookingDbContext context, SeedState seed)
+    public BookingTestSeeder(BookingPrivilegedDbContext context, BookingDbContext migrations, SeedState seed)
     {
         this.context = context;
+        this.migrations = migrations;
         this.seed = seed;
     }
 
-    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+    public Task MigrateAsync(CancellationToken ct = default) => migrations.Database.MigrateAsync(ct);
 
     public async Task SeedAsync(CancellationToken ct = default) =>
         await context.Bookings.SeedIfEmptyAsync(async () =>

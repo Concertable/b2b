@@ -1,4 +1,4 @@
-using Concertable.B2B.Authorization.Infrastructure.Authorization;
+﻿using Concertable.B2B.Authorization.Infrastructure.Authorization;
 using Concertable.B2B.Authorization.Infrastructure.Services;
 using Concertable.Kernel.Identity;
 using Microsoft.AspNetCore.Authorization;
@@ -14,10 +14,6 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddAuthorizationModule(this IServiceCollection services)
     {
-        services.AddSingleton<ExecutionScope>();
-        services.AddSingleton<IExecutionScope>(sp => sp.GetRequiredService<ExecutionScope>());
-        services.AddSingleton<IExecutionScopeActivator>(sp => sp.GetRequiredService<ExecutionScope>());
-
         services.AddSingleton<IMembershipContextAccessor, MembershipContextAccessor>();
         services.AddSingleton<IPermissionCatalog, PermissionCatalog>();
 

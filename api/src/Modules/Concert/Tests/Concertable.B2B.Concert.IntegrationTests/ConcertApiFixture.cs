@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Models;
@@ -18,7 +18,7 @@ namespace Concertable.B2B.Concert.IntegrationTests;
 public sealed class ConcertApiFixture : ApiFixture
 {
     private IConcertReadDbContext readDbContext = null!;
-    private ConcertDbContext dbContext = null!;
+    private ConcertPrivilegedDbContext dbContext = null!;
     private IScoped<IConcertWorkflow> workflow = null!;
     private ICompletionRunner completionRunner = null!;
     private IConcertService concertService = null!;
@@ -101,7 +101,6 @@ public sealed class ConcertApiFixture : ApiFixture
         Guid? artistTenantId = null,
         Guid? venueTenantId = null)
     {
-        using var seeding = EnterSeedingScope();
         if (artistTenantId is { } artist)
             await dbContext.Concerts.Where(concert => concert.Id == concertId)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(
@@ -117,7 +116,6 @@ public sealed class ConcertApiFixture : ApiFixture
     internal async Task AddSelfBillingAgreementsAsync(
         params SelfBillingAgreementEntity[] agreements)
     {
-        using var seeding = EnterSeedingScope();
         dbContext.SelfBillingAgreements.AddRange(agreements);
         await dbContext.SaveChangesAsync();
     }
@@ -135,7 +133,7 @@ public sealed class ConcertApiFixture : ApiFixture
     protected override void OnReset(IServiceScope scope)
     {
         readDbContext = scope.ServiceProvider.GetRequiredService<IConcertReadDbContext>();
-        dbContext = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
+        dbContext = scope.ServiceProvider.GetRequiredService<ConcertPrivilegedDbContext>();
         workflow = scope.ServiceProvider.GetRequiredService<IScoped<IConcertWorkflow>>();
         completionRunner = scope.ServiceProvider.GetRequiredService<ICompletionRunner>();
         concertService = scope.ServiceProvider.GetRequiredService<IConcertService>();

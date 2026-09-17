@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Domain.Entities;
+﻿using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +19,7 @@ internal sealed class InvoiceIssuer
     }
 
     public async Task IssueAsync(
-        ConcertDbContext context,
+        ConcertPrivilegedDbContext context,
         ConcertEntity concert,
         CancellationToken ct = default)
     {

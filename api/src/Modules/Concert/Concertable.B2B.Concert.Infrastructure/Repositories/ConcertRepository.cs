@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Domain.Entities;
+﻿using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
@@ -131,18 +131,6 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
             .ToListAsync();
     }
-
-    public async Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(
-        CancellationToken ct = default) =>
-        await context.Concerts
-            .Where(concert =>
-                concert.State == ConcertState.Draft ||
-                concert.State == ConcertState.Posted ||
-                concert.State == ConcertState.SettlementFailed ||
-                concert.State == ConcertState.AwaitingSettlement)
-            .Where(endedSpecification.And(doorRevenueOutstanding.Not()).ToExpression())
-            .Select(c => c.Id)
-            .ToListAsync(ct);
 
     public Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId) =>
         context.Concerts.OfType<DoorRevenueConcert>()

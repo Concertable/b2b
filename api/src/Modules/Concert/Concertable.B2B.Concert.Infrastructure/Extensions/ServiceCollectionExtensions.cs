@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -59,6 +59,15 @@ public static class ServiceCollectionExtensions
                         sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(sp), ServiceLifetime.Scoped);
 
+            services.AddDbContextFactory<ConcertPrivilegedDbContext>((sp, opts) =>
+                opts.UseSqlServer(
+                        sp.GetRequiredService<DbConnection>(),
+                        sql => sql.UseNetTopologySuite())
+                    .AddInterceptors(
+                        sp.GetRequiredService<AuditInterceptor>(),
+                        sp.GetRequiredService<TenantInterceptor>(),
+                        sp.GetRequiredService<IDomainEventDispatchInterceptor>()), ServiceLifetime.Scoped);
+
             services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
                 opts.UseSqlServer(
                         sp.GetRequiredService<DbConnection>(),
@@ -70,6 +79,10 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IUnitOfWorkBoundary, FactoryUnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
+            services.AddScoped<IConcertPrivilegedRepository, ConcertPrivilegedRepository>();
+            services.AddScoped<IInvoicePrivilegedRepository, InvoicePrivilegedRepository>();
+            services.AddScoped<IInvoiceSequenceRepository, InvoiceSequenceRepository>();
 
             // Services
             services.AddScoped<IConcertService, ConcertService>();

@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Domain.Entities;
+﻿using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
@@ -11,12 +11,12 @@ internal sealed class FinancialOperationOutcomeProcessor :
     IIntegrationEventHandler<RefundEscrowDeferredEvent>,
     IIntegrationEventHandler<RefundEscrowRejectedEvent>
 {
-    private readonly ConcertDbContext context;
-    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
+    private readonly ConcertPrivilegedDbContext context;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
 
     public FinancialOperationOutcomeProcessor(
-        ConcertDbContext context,
-        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior)
+        ConcertPrivilegedDbContext context,
+        IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior)
     {
         this.context = context;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;

@@ -1,4 +1,4 @@
-using Concertable.B2B.Conversations.Contracts;
+﻿using Concertable.B2B.Conversations.Contracts;
 using Concertable.Seed.Identity;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
@@ -11,18 +11,20 @@ internal sealed class ConversationsDevSeeder : IDevSeeder
 {
     public int Order => 6;
 
-    private readonly ConversationsDbContext context;
+    private readonly ConversationsPrivilegedDbContext context;
+    private readonly ConversationsDbContext migrations;
     private readonly SeedState seedData;
     private readonly TimeProvider timeProvider;
 
-    public ConversationsDevSeeder(ConversationsDbContext context, SeedState seedData, TimeProvider timeProvider)
+    public ConversationsDevSeeder(ConversationsPrivilegedDbContext context, ConversationsDbContext migrations, SeedState seedData, TimeProvider timeProvider)
     {
         this.context = context;
+        this.migrations = migrations;
         this.seedData = seedData;
         this.timeProvider = timeProvider;
     }
 
-    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+    public Task MigrateAsync(CancellationToken ct = default) => migrations.Database.MigrateAsync(ct);
 
     public async Task SeedAsync(CancellationToken ct = default) =>
         await context.Messages.SeedIfEmptyAsync(async () =>

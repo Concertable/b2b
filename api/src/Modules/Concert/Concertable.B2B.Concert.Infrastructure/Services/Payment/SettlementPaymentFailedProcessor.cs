@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.Interfaces;
+﻿using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Infrastructure.Payments;
@@ -11,15 +11,15 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
-    private readonly ConcertDbContext context;
+    private readonly ConcertPrivilegedDbContext context;
     private readonly ISettlementService settlementService;
-    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
     private readonly ILogger<SettlementPaymentFailedProcessor> logger;
 
     public SettlementPaymentFailedProcessor(
-        ConcertDbContext context,
+        ConcertPrivilegedDbContext context,
         ISettlementService settlementService,
-        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
+        IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
         ILogger<SettlementPaymentFailedProcessor> logger)
     {
         this.context = context;

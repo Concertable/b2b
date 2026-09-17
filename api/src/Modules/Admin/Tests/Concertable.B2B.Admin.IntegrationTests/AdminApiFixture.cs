@@ -1,4 +1,4 @@
-using Concertable.B2B.Admin.Domain.Entities;
+﻿using Concertable.B2B.Admin.Domain.Entities;
 using Concertable.B2B.Admin.Infrastructure.Data;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +24,6 @@ public sealed class AdminApiFixture : ApiFixture
 
     public async Task ClearAdminsAsync()
     {
-        using var seeding = EnterSeedingScope();
         dbContext.AdminProfiles.RemoveRange(dbContext.AdminProfiles);
         await dbContext.SaveChangesAsync();
     }

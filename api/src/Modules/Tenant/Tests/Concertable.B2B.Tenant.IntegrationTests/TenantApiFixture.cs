@@ -1,4 +1,4 @@
-using Concertable.Auth.Contracts.Events;
+﻿using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Entities;
@@ -33,7 +33,6 @@ public sealed class TenantApiFixture : ApiFixture
 
     public async Task AddMembershipAsync(Guid tenantId, Guid userId, TenantRole role)
     {
-        using var seeding = EnterSeedingScope();
         dbContext.Memberships.Add(
             TenantMembershipEntity.Create(tenantId, userId, role, invitedBy: null, DateTime.UtcNow));
         await dbContext.SaveChangesAsync();

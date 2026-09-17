@@ -1,4 +1,4 @@
-using Concertable.Kernel.Identity;
+﻿using Concertable.Kernel.Identity;
 using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Authorization.Infrastructure.Services;
@@ -9,7 +9,6 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
     private readonly IHttpContextAccessor httpContextAccessor;
     private readonly IMembershipReadRepository memberships;
     private readonly IPermissionCatalog permissionCatalog;
-    private readonly IExecutionScope executionScope;
     private readonly IMembershipContextAccessor accessor;
 
     public MembershipContext(
@@ -17,14 +16,12 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
         IHttpContextAccessor httpContextAccessor,
         IMembershipReadRepository memberships,
         IPermissionCatalog permissionCatalog,
-        IExecutionScope executionScope,
         IMembershipContextAccessor accessor)
     {
         this.currentUser = currentUser;
         this.httpContextAccessor = httpContextAccessor;
         this.memberships = memberships;
         this.permissionCatalog = permissionCatalog;
-        this.executionScope = executionScope;
         this.accessor = accessor;
     }
 
@@ -33,11 +30,10 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
     public Guid? TenantId => Membership?.TenantId;
 
     /// <summary>
-    /// Only an explicitly entered execution scope reaches the unfiltered stance. A request-free caller that
-    /// established nothing, and an anonymous HTTP request, both leave this <see langword="false"/>, so each
-    /// fails closed (sees nothing) instead of open. A header can select no part of it.
+    /// Always false. Nothing about this process makes a caller trusted: work with no human behind it uses a
+    /// privileged context of its own rather than a wider reading of the request's.
     /// </summary>
-    public bool IsHost => executionScope.Purpose is not null;
+    public bool IsHost => false;
 
     public bool HasPermission(string permission) =>
         Membership is { } active && permissionCatalog.Grants(active.Role, permission);

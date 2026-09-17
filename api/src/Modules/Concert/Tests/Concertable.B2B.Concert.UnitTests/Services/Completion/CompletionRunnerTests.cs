@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.Errors;
+﻿using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Infrastructure.Services.Completion;
@@ -11,7 +11,7 @@ namespace Concertable.B2B.Concert.UnitTests.Services.Completion;
 
 public sealed class CompletionRunnerTests
 {
-    private readonly Mock<IConcertRepository> repository = new();
+    private readonly Mock<IConcertReadRepository> repository = new();
     private readonly Mock<IConcertWorkflow> workflow = new();
     private readonly Mock<IScoped<IConcertWorkflow>> scopedWorkflow = new();
     private readonly CompletionRunner sut;
@@ -21,6 +21,7 @@ public sealed class CompletionRunnerTests
         sut = new CompletionRunner(
             repository.Object,
             scopedWorkflow.Object,
+            TimeProvider.System,
             Mock.Of<ILogger<CompletionRunner>>());
         this.workflow.Setup(workflow => workflow.CompleteAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<SettlementOutcome, FinishConcertError>(SettlementOutcome.Settled));
@@ -34,7 +35,7 @@ public sealed class CompletionRunnerTests
     public async Task RunAsync_CompletesEveryEndedConcert()
     {
         this.repository
-            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([1, 2, 3]);
 
         await sut.RunAsync();
@@ -48,7 +49,7 @@ public sealed class CompletionRunnerTests
     public async Task RunAsync_ContinuesWhenCompletionIsRefused()
     {
         this.repository
-            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([1, 2, 3]);
         this.workflow
             .Setup(workflow => workflow.CompleteAsync(2, It.IsAny<CancellationToken>()))
@@ -66,7 +67,7 @@ public sealed class CompletionRunnerTests
     public async Task RunAsync_PropagatesInfrastructureFailure()
     {
         this.repository
-            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([1, 2, 3]);
         this.workflow
             .Setup(workflow => workflow.CompleteAsync(2, It.IsAny<CancellationToken>()))
@@ -83,7 +84,7 @@ public sealed class CompletionRunnerTests
     public async Task RunAsync_DoesNothingWhenNoConcertHasEnded()
     {
         this.repository
-            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         await sut.RunAsync();

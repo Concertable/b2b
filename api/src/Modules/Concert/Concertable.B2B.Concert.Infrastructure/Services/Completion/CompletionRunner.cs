@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.Models;
+﻿using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.DataAccess.Application;
@@ -8,23 +8,29 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Completion;
 
 internal sealed class CompletionRunner : ICompletionRunner
 {
-    private readonly IConcertRepository concertRepository;
+    private const int BatchSize = 200;
+
+    private readonly IConcertReadRepository readRepository;
     private readonly IScoped<IConcertWorkflow> workflow;
+    private readonly TimeProvider timeProvider;
     private readonly ILogger<CompletionRunner> logger;
 
     public CompletionRunner(
-        IConcertRepository concertRepository,
+        IConcertReadRepository readRepository,
         IScoped<IConcertWorkflow> workflow,
+        TimeProvider timeProvider,
         ILogger<CompletionRunner> logger)
     {
-        this.concertRepository = concertRepository;
+        this.readRepository = readRepository;
         this.workflow = workflow;
+        this.timeProvider = timeProvider;
         this.logger = logger;
     }
 
     public async Task RunAsync(CancellationToken ct = default)
     {
-        var concertIds = await concertRepository.GetEndedPendingCompletionIdsAsync(ct);
+        var concertIds = await readRepository.GetEndedPendingCompletionIdsAsync(
+            timeProvider.GetUtcNow().UtcDateTime, BatchSize, ct);
 
         logger.FoundConcertsToSettle(concertIds.Count);
 

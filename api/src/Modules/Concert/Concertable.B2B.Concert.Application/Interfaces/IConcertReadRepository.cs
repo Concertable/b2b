@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.DTOs;
+﻿using Concertable.B2B.Concert.Application.DTOs;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
@@ -12,6 +12,14 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 internal interface IConcertReadRepository
 {
     Task<ConcertDetails?> GetDetailsByIdAsync(int id);
+
+    /// <summary>The public listing's own shape. Publication is the predicate, so an unpublished draft cannot
+    /// be reached by guessing its id, and nothing private is in the projection to leak if it were.</summary>
+    Task<PublishedConcert?> GetPublishedByIdAsync(int id, CancellationToken ct = default);
+
+    /// <summary>Concerts whose engagement has ended and whose settlement has not yet run, oldest first.</summary>
+    Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(
+        DateTime endedBeforeUtc, int take, CancellationToken ct = default);
     Task<ConcertSummary?> GetSummaryAsync(int id);
     Task<IEnumerable<ConcertSummary>> GetUpcomingByVenueIdAsync(int venueId);
     Task<IEnumerable<ConcertSummary>> GetUpcomingByArtistIdAsync(int artistId);
