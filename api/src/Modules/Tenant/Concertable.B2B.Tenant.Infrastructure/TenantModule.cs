@@ -49,7 +49,7 @@ internal sealed class TenantModule : ITenantModule
         CancellationToken ct = default) =>
         activityService.GetRecentAsync(tenantId, take, ct);
 
-    public Task<IReadOnlyList<Guid>> SeverMembershipsAsync(Guid userId, CancellationToken ct = default) =>
+    public Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, CancellationToken ct = default) =>
         erasureService.SeverMembershipsAsync(userId, ct);
 
     public Task PurgePendingInvitationsAsync(string email, CancellationToken ct = default) =>

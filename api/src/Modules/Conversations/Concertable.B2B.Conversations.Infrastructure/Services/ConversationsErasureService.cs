@@ -28,7 +28,7 @@ internal sealed class ConversationsErasureService : IConversationsErasureService
         await messages.SaveChangesAsync(ct);
     }
 
-    public async Task ScrubParticipantProfilesAsync(IReadOnlyList<Guid> tenantIds, CancellationToken ct = default)
+    public async Task ScrubParticipantProfilesAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default)
     {
         if (tenantIds.Count == 0)
             return;
@@ -40,11 +40,5 @@ internal sealed class ConversationsErasureService : IConversationsErasureService
         foreach (var profile in profiles)
             profile.Update(ErasedPlaceholder, ErasedPlaceholder, ErasedPlaceholder);
         await participantProfiles.SaveChangesAsync(ct);
-    }
-
-    public async Task<IReadOnlyList<SubjectMessageDto>> GetSubjectMessagesAsync(Guid userId, CancellationToken ct = default)
-    {
-        var authored = await messages.ListBySenderUserAsync(userId, ct);
-        return authored.Select(m => m.ToSubjectMessageDto()).ToList();
     }
 }

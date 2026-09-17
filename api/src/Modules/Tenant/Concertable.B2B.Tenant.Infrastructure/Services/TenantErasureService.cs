@@ -11,18 +11,18 @@ internal sealed class TenantErasureService : ITenantErasureService
         this.invitationRepository = invitationRepository;
     }
 
-    public async Task<IReadOnlyList<Guid>> SeverMembershipsAsync(Guid userId, CancellationToken ct = default)
+    public async Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, CancellationToken ct = default)
     {
         var memberships = await membershipRepository.ListMembershipsByUserAsync(userId, ct);
         if (memberships.Count == 0)
-            return [];
+            return new HashSet<Guid>();
 
-        var tenantIds = memberships.Select(m => m.TenantId).Distinct().ToList();
+        var tenantIds = memberships.Select(m => m.TenantId).ToHashSet();
         foreach (var membership in memberships)
             membershipRepository.Remove(membership);
         await membershipRepository.SaveChangesAsync(ct);
 
-        var woundDown = new List<Guid>();
+        var woundDown = new HashSet<Guid>();
         foreach (var tenantId in tenantIds)
         {
             if (await membershipRepository.CountMembersAsync(tenantId, ct) == 0)

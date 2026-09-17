@@ -11,7 +11,7 @@ public interface IConversationsModule
 
     /// <summary>GDPR erasure: pseudonymises the participant-profile display identity of wound-down (member-less)
     /// tenants — a projection copy of the erased sole trader's name/address.</summary>
-    Task ScrubParticipantProfilesAsync(IReadOnlyList<Guid> tenantIds, CancellationToken ct = default);
+    Task ScrubParticipantProfilesAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 
     /// <summary>The subject's portable messages fragment (GDPR arts. 15/20): the message bodies they authored.</summary>
     Task<IReadOnlyList<SubjectMessageDto>> GetSubjectMessagesAsync(Guid userId, CancellationToken ct = default);

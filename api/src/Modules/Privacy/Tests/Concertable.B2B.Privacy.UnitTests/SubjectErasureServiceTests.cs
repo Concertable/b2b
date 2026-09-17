@@ -26,7 +26,7 @@ public sealed class SubjectErasureServiceTests
         userModule.Setup(u => u.GetByIdAsync(It.IsAny<Guid>()))
             .ReturnsAsync(new UserDto { Id = Guid.NewGuid(), Email = "subject@test.invalid" });
         tenantModule.Setup(t => t.SeverMembershipsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+            .ReturnsAsync(new HashSet<Guid>());
 
         this.service = new SubjectErasureService(
             repository.Object,

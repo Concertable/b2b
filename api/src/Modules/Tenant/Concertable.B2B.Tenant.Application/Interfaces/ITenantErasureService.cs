@@ -9,7 +9,7 @@ internal interface ITenantErasureService
     /// members (wound down). Erasure supersedes the last-owner invariant — a data subject's right to erasure is
     /// not blocked by an internal ownership rule — so a sole-Owner's membership is severed and its tenant reported
     /// as wound down for the caller to handle.</summary>
-    Task<IReadOnlyList<Guid>> SeverMembershipsAsync(Guid userId, CancellationToken ct = default);
+    Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, CancellationToken ct = default);
 
     /// <summary>Purges pending invitations addressed to the subject's email (their PII). Accepted invitations are
     /// already severed with the membership.</summary>

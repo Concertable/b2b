@@ -60,6 +60,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IContentReportService, ContentReportService>();
         services.AddScoped<IModerationService, ModerationService>();
         services.AddScoped<IConversationsErasureService, ConversationsErasureService>();
+        services.AddScoped<ISubjectMessageReader, SubjectMessageReader>();
         services.AddScoped<IConversationsModule, ConversationsModule>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistParticipantProfileProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueParticipantProfileProjectionHandler>();

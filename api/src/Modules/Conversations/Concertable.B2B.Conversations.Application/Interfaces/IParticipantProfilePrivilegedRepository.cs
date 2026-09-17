@@ -5,7 +5,7 @@ namespace Concertable.B2B.Conversations.Application.Interfaces;
 /// to. <see cref="ParticipantProfile"/> is keyed by tenant id, not an entity id, so it has no generic repository.</summary>
 internal interface IParticipantProfilePrivilegedRepository
 {
-    Task<IReadOnlyList<ParticipantProfile>> ListByTenantIdsAsync(IReadOnlyList<Guid> tenantIds, CancellationToken ct = default);
+    Task<IReadOnlyList<ParticipantProfile>> ListByTenantIdsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 
     Task SaveChangesAsync(CancellationToken ct = default);
 }
