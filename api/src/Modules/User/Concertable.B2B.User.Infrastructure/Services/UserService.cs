@@ -102,12 +102,12 @@ internal sealed class UserService : IUserService
         await userRepository.SaveChangesAsync(ct);
     }
 
-    public async Task<Option<UserExport>> GetUserExportAsync(Guid subjectId, CancellationToken ct = default)
+    public async Task<Option<SubjectProfileDto>> GetSubjectProfileAsync(Guid subjectId, CancellationToken ct = default)
     {
         var user = await userRepository.GetByIdAsync(subjectId, ct);
         if (user is null)
             return null;
 
-        return user.ToUserExport();
+        return user.ToSubjectProfileDto();
     }
 }

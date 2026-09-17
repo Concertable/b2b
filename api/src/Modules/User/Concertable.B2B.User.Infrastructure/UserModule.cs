@@ -29,6 +29,6 @@ internal sealed class UserModule : IUserModule
     public Task EraseAsync(Guid subjectId, CancellationToken ct = default) =>
         userService.EraseAsync(subjectId, ct);
 
-    public Task<Option<UserExport>> GetUserExportAsync(Guid subjectId, CancellationToken ct = default) =>
-        userService.GetUserExportAsync(subjectId, ct);
+    public Task<Option<SubjectProfileDto>> GetSubjectProfileAsync(Guid subjectId, CancellationToken ct = default) =>
+        userService.GetSubjectProfileAsync(subjectId, ct);
 }

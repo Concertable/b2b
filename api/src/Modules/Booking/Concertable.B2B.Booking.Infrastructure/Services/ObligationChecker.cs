@@ -7,9 +7,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 
 internal sealed class ObligationChecker : IObligationChecker
 {
-    // Booking states committing no money — erasing a subject while a booking sits in any of these breaks no
-    // settlement. Every other state is a blocking obligation, so a future lifecycle state defaults to "blocking"
-    // until it is deliberately classified here.
     private static readonly BookingState[] SettledStates = [BookingState.Cancelled];
 
     private readonly IBookingReadDbContext context;

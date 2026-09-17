@@ -7,9 +7,6 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ObligationChecker : IObligationChecker
 {
-    // Application states committing no money — an application still awaiting a decision, or one already refused or
-    // withdrawn. Every other state is a blocking obligation, so a future lifecycle state defaults to "blocking"
-    // until it is deliberately classified here.
     private static readonly ApplicationState[] SettledStates =
     [
         ApplicationState.Applied,

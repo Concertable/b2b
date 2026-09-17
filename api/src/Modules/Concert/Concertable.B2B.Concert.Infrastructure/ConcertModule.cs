@@ -7,16 +7,16 @@ internal sealed class ConcertModule : IConcertModule
 {
     private readonly IConcertDashboardService dashboardService;
     private readonly IObligationChecker obligationChecker;
-    private readonly IConcertExportReader concertExportReader;
+    private readonly ISubjectRecordReader subjectRecordReader;
 
     public ConcertModule(
         IConcertDashboardService dashboardService,
         IObligationChecker obligationChecker,
-        IConcertExportReader concertExportReader)
+        ISubjectRecordReader subjectRecordReader)
     {
         this.dashboardService = dashboardService;
         this.obligationChecker = obligationChecker;
-        this.concertExportReader = concertExportReader;
+        this.subjectRecordReader = subjectRecordReader;
     }
 
     public Task<Option<VenueDashboardCounts>> GetVenueDashboardCountsAsync(
@@ -37,6 +37,6 @@ internal sealed class ConcertModule : IConcertModule
     public Task<bool> HasLiveObligationsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
         obligationChecker.HasLiveAsync(tenantIds, ct);
 
-    public Task<ConcertExport> GetConcertExportAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
-        concertExportReader.GetConcertExportAsync(tenantIds, ct);
+    public Task<SubjectConcertRecordsDto> GetSubjectRecordsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
+        subjectRecordReader.GetSubjectRecordsAsync(tenantIds, ct);
 }

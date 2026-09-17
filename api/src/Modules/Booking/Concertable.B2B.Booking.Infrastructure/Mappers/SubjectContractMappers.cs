@@ -3,15 +3,15 @@ using Concertable.B2B.Booking.Domain.Entities;
 
 namespace Concertable.B2B.Booking.Infrastructure.Mappers;
 
-internal static class ContractExportMappers
+internal static class SubjectContractMappers
 {
     extension(ContractEntity contract)
     {
-        public ContractExport ToContractExport() => new()
+        public SubjectContractDto ToSubjectContractDto() => new()
         {
             VenueName = contract.VenueName,
             ArtistName = contract.ArtistName,
-            DealType = contract.DealType.ToString(),
+            DealType = contract.DealType,
             CreatedAtUtc = contract.CreatedAtUtc,
         };
     }

@@ -6,19 +6,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class ConcertExportReader : IConcertExportReader
+internal sealed class SubjectRecordReader : ISubjectRecordReader
 {
     private readonly IConcertReadDbContext context;
 
-    public ConcertExportReader(IConcertReadDbContext context)
+    public SubjectRecordReader(IConcertReadDbContext context)
     {
         this.context = context;
     }
 
-    public async Task<ConcertExport> GetConcertExportAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default)
+    public async Task<SubjectConcertRecordsDto> GetSubjectRecordsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default)
     {
         if (tenantIds.Count == 0)
-            return new ConcertExport();
+            return new SubjectConcertRecordsDto();
 
         var invoices = await context.Invoices
             .Where(i => tenantIds.Contains(i.VenueTenantId) || tenantIds.Contains(i.ArtistTenantId))
@@ -27,10 +27,10 @@ internal sealed class ConcertExportReader : IConcertExportReader
             .Where(s => tenantIds.Contains(s.TenantId))
             .ToListAsync(ct);
 
-        return new ConcertExport
+        return new SubjectConcertRecordsDto
         {
-            Invoices = invoices.Select(i => i.ToInvoiceExport()).ToList(),
-            SelfBillingAgreements = agreements.Select(s => s.ToSelfBillingAgreementExport()).ToList(),
+            Invoices = invoices.Select(i => i.ToSubjectInvoiceDto()).ToList(),
+            SelfBillingAgreements = agreements.Select(s => s.ToSubjectSelfBillingAgreementDto()).ToList(),
         };
     }
 }

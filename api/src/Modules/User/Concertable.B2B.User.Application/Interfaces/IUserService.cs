@@ -13,5 +13,5 @@ internal interface IUserService
     Task<Option<ManagerDto>> GetManagerByIdAsync(Guid userId);
     Task<Option<Guid>> GetIdByEmailAsync(string email);
     Task EraseAsync(Guid subjectId, CancellationToken ct = default);
-    Task<Option<UserExport>> GetUserExportAsync(Guid subjectId, CancellationToken ct = default);
+    Task<Option<SubjectProfileDto>> GetSubjectProfileAsync(Guid subjectId, CancellationToken ct = default);
 }

@@ -6,16 +6,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Services;
 
-internal sealed class ContractExportReader : IContractExportReader
+internal sealed class SubjectContractReader : ISubjectContractReader
 {
     private readonly IBookingReadDbContext context;
 
-    public ContractExportReader(IBookingReadDbContext context)
+    public SubjectContractReader(IBookingReadDbContext context)
     {
         this.context = context;
     }
 
-    public async Task<IReadOnlyList<ContractExport>> GetContractExportsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default)
+    public async Task<IReadOnlyList<SubjectContractDto>> GetSubjectContractsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default)
     {
         if (tenantIds.Count == 0)
             return [];
@@ -24,6 +24,6 @@ internal sealed class ContractExportReader : IContractExportReader
             .Where(c => tenantIds.Contains(c.VenueTenantId) || tenantIds.Contains(c.ArtistTenantId))
             .ToListAsync(ct);
 
-        return contracts.Select(c => c.ToContractExport()).ToList();
+        return contracts.Select(c => c.ToSubjectContractDto()).ToList();
     }
 }

@@ -7,9 +7,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class ObligationChecker : IObligationChecker
 {
-    // Concert states carrying no in-flight settlement — erasing a subject while a concert sits in any of these
-    // breaks no settlement. Every other state is a blocking obligation, so a future lifecycle state defaults to
-    // "blocking" until it is deliberately classified here.
     private static readonly ConcertState[] SettledStates =
     [
         ConcertState.Draft,

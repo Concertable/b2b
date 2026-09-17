@@ -3,11 +3,11 @@ using Concertable.B2B.User.Domain.Entities;
 
 namespace Concertable.B2B.User.Infrastructure.Mappers;
 
-internal static class UserExportMappers
+internal static class SubjectProfileMappers
 {
     extension(UserEntity user)
     {
-        public UserExport ToUserExport() => new()
+        public SubjectProfileDto ToSubjectProfileDto() => new()
         {
             Email = user.Email,
             Latitude = user.Location?.Y,

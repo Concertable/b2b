@@ -30,12 +30,12 @@ internal sealed class SubjectExporter : ISubjectExporter
 
     public async Task<FileDownload> ExportAsync(Guid subjectId, CancellationToken ct = default)
     {
-        var user = await userModule.GetUserExportAsync(subjectId, ct);
+        var user = await userModule.GetSubjectProfileAsync(subjectId, ct);
         var memberships = await tenantModule.GetMembershipsAsync(subjectId, ct);
         var tenantIds = memberships.Select(m => m.TenantId).ToHashSet();
-        var messages = await conversationsModule.GetMessageExportsAsync(subjectId, ct);
-        var contracts = await bookingModule.GetContractExportsAsync(tenantIds, ct);
-        var concertRecords = await concertModule.GetConcertExportAsync(tenantIds, ct);
+        var messages = await conversationsModule.GetSubjectMessagesAsync(subjectId, ct);
+        var contracts = await bookingModule.GetSubjectContractsAsync(tenantIds, ct);
+        var concertRecords = await concertModule.GetSubjectRecordsAsync(tenantIds, ct);
 
         var payload = new
         {

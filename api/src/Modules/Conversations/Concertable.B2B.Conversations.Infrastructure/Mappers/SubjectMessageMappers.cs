@@ -1,10 +1,10 @@
 namespace Concertable.B2B.Conversations.Infrastructure.Mappers;
 
-internal static class MessageExportMappers
+internal static class SubjectMessageMappers
 {
     extension(MessageEntity message)
     {
-        public MessageExport ToMessageExport() => new()
+        public SubjectMessageDto ToSubjectMessageDto() => new()
         {
             Content = message.Content,
             SenderTenantId = message.SenderTenantId,

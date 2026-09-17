@@ -44,7 +44,7 @@ public sealed class SubjectRightsApiTests : IAsyncLifetime
         Assert.Empty(memberships);
 
         var user = await fixture.Services.RunScopedAsync(sp =>
-            sp.GetRequiredService<IUserModule>().GetUserExportAsync(subject.Id));
+            sp.GetRequiredService<IUserModule>().GetSubjectProfileAsync(subject.Id));
         Assert.True(user.TryGetValue(out var fragment));
         Assert.Contains("erased", fragment.Email);
     }
@@ -67,7 +67,7 @@ public sealed class SubjectRightsApiTests : IAsyncLifetime
         Assert.NotEmpty(memberships);
 
         var user = await fixture.Services.RunScopedAsync(sp =>
-            sp.GetRequiredService<IUserModule>().GetUserExportAsync(subject.Id));
+            sp.GetRequiredService<IUserModule>().GetSubjectProfileAsync(subject.Id));
         Assert.True(user.TryGetValue(out var fragment));
         Assert.DoesNotContain("erased", fragment.Email);
     }
