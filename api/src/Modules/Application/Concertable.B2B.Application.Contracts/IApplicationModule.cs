@@ -15,8 +15,9 @@ public interface IApplicationModule
         Guid artistTenantId,
         CancellationToken ct = default);
 
-    /// <summary>GDPR erasure gate: whether any of the subject's tenants has an application that has committed money
-    /// but not yet reached a booking, so erasure defers rather than corrupting settlement. Fail-closed and answered
-    /// tenant-less by explicit ids.</summary>
+    /// <summary>GDPR erasure gate: whether any of the subject's tenants has an application still in flight
+    /// in this stage, so erasure defers rather than corrupting settlement. Accepted hands off to a Booking row in the
+    /// same transaction, so it is settled here and Booking's gate owns it. Fail-closed: an unclassified future state
+    /// blocks. Answered tenant-less by explicit ids.</summary>
     Task<bool> HasLiveObligationsByTenantIdsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 }

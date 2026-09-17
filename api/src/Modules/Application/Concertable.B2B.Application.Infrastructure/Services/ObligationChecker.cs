@@ -7,14 +7,6 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ObligationChecker : IObligationChecker
 {
-    private static readonly ApplicationState[] SettledStates =
-    [
-        ApplicationState.Applied,
-        ApplicationState.Rejected,
-        ApplicationState.Withdrawn,
-        ApplicationState.Cancelled,
-    ];
-
     private readonly IApplicationReadDbContext context;
 
     public ObligationChecker(IApplicationReadDbContext context)
@@ -29,6 +21,6 @@ internal sealed class ObligationChecker : IObligationChecker
 
         return await context.Applications
             .Where(a => tenantIds.Contains(a.VenueTenantId) || tenantIds.Contains(a.ArtistTenantId))
-            .AnyAsync(a => !SettledStates.Contains(a.State), ct);
+            .AnyAsync(a => !ApplicationObligation.SettledStates.Contains(a.State), ct);
     }
 }
