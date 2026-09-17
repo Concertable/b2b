@@ -51,6 +51,8 @@ public sealed class SubjectErasureServiceTests
         userModule.Verify(u => u.EraseAsync(subjectId, It.IsAny<CancellationToken>()), Times.Once);
         tenantModule.Verify(t => t.SeverMembershipsAsync(subjectId, It.IsAny<CancellationToken>()), Times.Once);
         conversationsModule.Verify(c => c.SeverAuthoredMessagesAsync(subjectId, It.IsAny<CancellationToken>()), Times.Once);
+        conversationsModule.Verify(c => c.ScrubParticipantProfilesAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()), Times.Once);
+        tenantModule.Verify(t => t.PurgePendingInvitationsAsync("subject@test.invalid", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
