@@ -29,8 +29,9 @@ by the replacement model are immutable business records; today's fixed-pair shap
 
 The branch contains a partial P1 implementation. This source review replaces its incomplete mechanism
 specification; P1 requires the repairs and qualification below before it is complete. P2–P5 remain
-future work. The current request is to update and locally commit this plan and
-[the companion ledger](PARTY_FOUNDATION_PROGRESS.md), without implementing or pushing.
+future work. On 17 September 2026 the user authorized a Claude Opus handoff to apply the P1 feedback
+and agreed replacement mechanisms, including the naming corrections. The current execution scope
+and remaining delivery gate are recorded in [the companion ledger](PARTY_FOUNDATION_PROGRESS.md).
 
 ### Product authority and corrections to older prose
 
@@ -1880,9 +1881,9 @@ financial entitlement, signing or cancellation authority; P2 supplies the accept
 
 **Done when:** all section 4.10 cases are proven, current lifecycle/economic tests remain green,
 browser/native journeys work and a review of the committed replacement closes every F01–F28 finding.
-Follow the existing repository's delivery gates only when implementation/delivery is authorized.
-This re-specification request authorizes the two plan documents and a local commit only: no runtime
-implementation, push or merge.
+The user has authorized P1 implementation and qualification in the existing worktree. The companion
+ledger records the current scope and the retained user restriction on push and merge; this handoff
+does not authorize P2–P5 execution.
 
 ### P2 — explicit accepted participants and promoter-led application bookings
 

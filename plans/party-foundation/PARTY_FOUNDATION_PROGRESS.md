@@ -8,9 +8,11 @@
 - Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
 - Reviewed implementation head: `189f745d8233b511273624d768bcc39b5508723b`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18).
-- Last reconciled: 2026-09-17, source review and P1 replacement specification.
-- Current authorization: review/re-specification only; edit the plan and this ledger, commit locally,
-  then stop. No implementation, push or merge.
+- Last reconciled: 2026-09-17, user-requested Claude Opus implementation handoff.
+- Current authorization: implement, verify and locally commit the P1 feedback and agreed replacement
+  mechanisms, including naming corrections, in an independent Claude Opus session.
+- Delivery gate: the user's original no-push/no-merge restriction remains; the new request authorizes
+  P1 implementation, not PR #18 delivery or P2–P5 execution.
 - Future dependency/package gates: recheck overlapping OperationClaim/vocabulary owners; P2
   Concert/Seed/Hosting publication plus Customer/Search consumption; configuration persistence's
   provider choice remains with its owner.
@@ -41,19 +43,28 @@ The 15 September restart is history; do not recover discarded LegacyFinancialPar
 
 ## Next Steps
 
+Transfer: Apply the P1 feedback and accepted replacement mechanisms in the existing branch.
+Transfer to: Independent Claude Code session using Opus in the declared worktree.
+Resume stage: P1 implementation repairs and qualification, starting with plan section 4.1.
+Resume when: Claude has loaded this ledger and the full plan in the declared worktree.
+
 Scope: current slice only; full plan remains incomplete.
-Current slice: P1 source review and replacement specification; local documentation commit only.
-Remaining scope: P1 implementation repairs/qualification, then P2–P5 and their delivery gates.
-Done when: the reviewed plan and ledger are validated and locally committed; no runtime edits or push.
+Current slice: P1 review repairs, agreed naming corrections and qualification.
+Remaining scope: PR #18 delivery, then P2–P5 and their delivery gates.
+Done when: F01–F28 are repaired, verified against section 4.10 and reviewed; changes are locally committed
+and this ledger records the actual results and remaining delivery gate.
 
-This checkpoint is the requested source review and replacement specification. Its delivery is a
-local commit of these two documents, then stop; it does not authorize P1–P5 execution or PR #18 delivery.
+Apply the P1 replacement specification and close the review findings. The user explicitly requested
+Claude Opus to address this feedback and apply these changes; the earlier review-only limit is
+superseded for P1 implementation. Preserve the agreed design and use section 4 as the implementation
+contract, including its naming inventory; recheck source where required and resolve concrete conflicts
+without restarting the plan. The specification and naming correction are committed as 2ae4faa6 and aa4a3f2e.
 
-On a subsequent explicit implementation request, continue from the existing branch and use the
-replacement section 4, not the superseded prose-only instructions:
+Continue from the existing branch:
 
 1. Recheck actual branch/worktree state and overlapping owners. Preserve unrelated dirty
-   CODE_PATTERNS.md and .codex content; the planning commit includes only the plan and this ledger.
+   CODE_PATTERNS.md and .codex content. Read repository conventions before editing and retain the
+   useful P1 foundation identified in section 2.
 2. Repair membership incarnation, audience-aware permissions, same-row exact-scope read predicates,
    keyless membership authority and missing Contract principal issuance (4.1–4.2).
 3. Add actor policies, the command-scoped local transaction and membership/resource fence; remove
@@ -71,10 +82,11 @@ replacement section 4, not the superseded prose-only instructions:
    Record source head, commands/results and browser/native evidence; review the committed candidate.
    Do not call P1 complete merely because existing unit tests/builds pass.
 
-Future implementation completion: every F01–F28 finding closes through its named mechanism and test;
+P1 completion: every F01–F28 finding closes through its named mechanism and test;
 a zero-profile third business reads only the shared summary; all principal/assigned-member workflows
 retain their correct permissions; workers and outbox are reliable without bypassing interactive
-tests. Only then advance to P2's accepted participants/Show and published consumer closure.
+tests. Stop at the retained delivery gate after P1 qualification; P2's accepted participants/Show
+and published consumer closure remain outside this handoff.
 
 ## Decisions and findings
 
@@ -126,6 +138,10 @@ remain mandatory. PR CI does not automatically supply the separate Api/Ui E2E ev
 Current review: source review and P1 re-specification, with a bounded authority sanity check. F01–F28 remain implementation findings owned by the plan's section 4; no runtime approval is granted. The [existing review artifact](../../reviews/Refactor-PartyFoundationLegacyBindings.md) records earlier candidates and is not a completed canonical review of this checkpoint.
 
 ## External owners and deferred work
+
+Automatic standards refresh for Codex/Claude and generic naming publication are owned by the separate
+Codex tab `Standards refresh and naming`. This Claude handoff owns the P1 application changes;
+follow the plan's agreed naming inventory without taking over that tooling work.
 
 The dependency/debt tables in plan sections 10–11 remain the owning map for future delivery.
 Their sibling PR/head observations are dated 15 September and must be refreshed before implementation;
