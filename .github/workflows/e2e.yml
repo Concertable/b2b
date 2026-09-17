@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 90
 
     env:
-      GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ || secrets.GITHUB_TOKEN }}
+      GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ }}
       GoogleApiKey: ${{ secrets.GOOGLE_API_KEY }}
       Stripe__SecretKey: ${{ secrets.STRIPE_SECRET_KEY }}
       VITE_STRIPE_PUBLISHABLE_KEY: ${{ vars.STRIPE_PUBLISHABLE_KEY }}
