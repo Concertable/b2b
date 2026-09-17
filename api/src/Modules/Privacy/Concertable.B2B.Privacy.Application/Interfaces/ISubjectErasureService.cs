@@ -6,8 +6,5 @@ namespace Concertable.B2B.Privacy.Application.Interfaces;
 internal interface ISubjectErasureService
 {
     /// <summary>Raises — or re-drives — the subject's erasure. Completed is terminal and returned untouched.</summary>
-    Task<SubjectErasureRequestDto> RequestErasureAsync(Guid subjectId, CancellationToken ct = default);
-
-    /// <summary>Re-drives an already-loaded request. The deferral sweep's entry point.</summary>
-    Task<SubjectErasureRequestDto> ResumeAsync(SubjectErasureRequestEntity request, CancellationToken ct = default);
+    Task<Result<SubjectErasureRequestDto, ErasureTransitionError>> RequestErasureAsync(Guid subjectId, CancellationToken ct = default);
 }

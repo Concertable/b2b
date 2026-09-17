@@ -31,7 +31,6 @@ public sealed class SubjectErasureServiceTests
         this.service = new SubjectErasureService(
             repository.Object,
             obligationChecker.Object,
-            new ErasureStateMachine(),
             userModule.Object,
             tenantModule.Object,
             conversationsModule.Object,
@@ -45,7 +44,7 @@ public sealed class SubjectErasureServiceTests
         var subjectId = Guid.NewGuid();
         obligationChecker.Setup(g => g.HasLiveObligationsAsync(subjectId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var result = await service.RequestErasureAsync(subjectId);
+        Assert.True((await service.RequestErasureAsync(subjectId)).TryGetValue(out var result));
 
         Assert.Equal(ErasureState.Completed, result.State);
         Assert.NotNull(result.CompletedAtUtc);
@@ -60,7 +59,7 @@ public sealed class SubjectErasureServiceTests
         var subjectId = Guid.NewGuid();
         obligationChecker.Setup(g => g.HasLiveObligationsAsync(subjectId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var result = await service.RequestErasureAsync(subjectId);
+        Assert.True((await service.RequestErasureAsync(subjectId)).TryGetValue(out var result));
 
         Assert.Equal(ErasureState.Deferred, result.State);
         Assert.NotNull(result.DeferralReason);
@@ -98,7 +97,7 @@ public sealed class SubjectErasureServiceTests
         obligationChecker.Setup(o => o.HasLiveObligationsAsync(subjectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var result = await service.RequestErasureAsync(subjectId);
+        Assert.True((await service.RequestErasureAsync(subjectId)).TryGetValue(out var result));
 
         Assert.Equal(ErasureState.Completed, result.State);
         repository.Verify(
@@ -117,10 +116,10 @@ public sealed class SubjectErasureServiceTests
             .ReturnsAsync(true)
             .ReturnsAsync(false);
 
-        var deferred = await service.RequestErasureAsync(subjectId);
+        Assert.True((await service.RequestErasureAsync(subjectId)).TryGetValue(out var deferred));
         Assert.Equal(ErasureState.Deferred, deferred.State);
 
-        var completed = await service.RequestErasureAsync(subjectId);
+        Assert.True((await service.RequestErasureAsync(subjectId)).TryGetValue(out var completed));
         Assert.Equal(ErasureState.Completed, completed.State);
         userModule.Verify(u => u.EraseAsync(subjectId, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -136,7 +135,7 @@ public sealed class SubjectErasureServiceTests
             .ReturnsAsync(true);
 
         await service.RequestErasureAsync(subjectId);
-        var again = await service.RequestErasureAsync(subjectId);
+        Assert.True((await service.RequestErasureAsync(subjectId)).TryGetValue(out var again));
 
         Assert.Equal(ErasureState.Deferred, again.State);
         userModule.Verify(u => u.EraseAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -153,7 +152,7 @@ public sealed class SubjectErasureServiceTests
             .ReturnsAsync(false);
 
         await service.RequestErasureAsync(subjectId);
-        var again = await service.RequestErasureAsync(subjectId);
+        Assert.True((await service.RequestErasureAsync(subjectId)).TryGetValue(out var again));
 
         Assert.Equal(ErasureState.Completed, again.State);
         userModule.Verify(u => u.EraseAsync(subjectId, It.IsAny<CancellationToken>()), Times.Once);

@@ -11,7 +11,7 @@ public sealed class MessageEntity : IIdEntity, IVenueArtistTenantScoped
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public Guid SenderTenantId { get; private set; }
-    public Guid SentByUserId { get; private set; }
+    public Guid? SentByUserId { get; private set; }
     public MessageAction? Action { get; private set; }
     public DateTime SentDate { get; private set; }
     public DateTime? HiddenAt { get; private set; }
@@ -59,5 +59,5 @@ public sealed class MessageEntity : IIdEntity, IVenueArtistTenantScoped
     /// <summary>GDPR erasure (SEVER): drops the personal author link while keeping the message body and the
     /// sender's tenant (a legal entity, not a person). The body is retained for the limitation/OSA window and
     /// purged later by the sweep.</summary>
-    public void SeverAuthor() => SentByUserId = Guid.Empty;
+    public void SeverAuthor() => SentByUserId = null;
 }

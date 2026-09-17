@@ -12,6 +12,6 @@ internal abstract partial record ErasureTransitionError : IError
                 $"Cannot {trigger} a subject-erasure request from {current}.")
     };
 
-    [ErrorCode("privacy.erasure.invalid_transition")]
+    [ErrorCode("privacy.erasure.invalid_state")]
     public partial record InvalidTransition(ErasureState Current, ErasureTrigger Trigger);
 }

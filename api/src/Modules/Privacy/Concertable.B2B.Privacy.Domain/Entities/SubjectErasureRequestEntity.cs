@@ -9,6 +9,8 @@ namespace Concertable.B2B.Privacy.Domain.Entities;
 /// </summary>
 public sealed class SubjectErasureRequestEntity : IGuidEntity
 {
+    private static readonly ErasureStateMachine stateMachine = new();
+
     private SubjectErasureRequestEntity() { }
 
     public Guid Id { get; private set; }
@@ -19,6 +21,12 @@ public sealed class SubjectErasureRequestEntity : IGuidEntity
     public string? DeferralReason { get; private set; }
     public string? FailureReason { get; private set; }
 
+    /// <summary>Captured on the first pass, before the User row is tombstoned and the memberships are severed:
+    /// a resumed pass can no longer derive either, so without them it would silently skip the profile scrub and
+    /// the invitation purge.</summary>
+    public string? SubjectEmail { get; private set; }
+    public string? WoundDownTenantIds { get; private set; }
+
     public static SubjectErasureRequestEntity Create(Guid subjectId, DateTime nowUtc) => new()
     {
         Id = Guid.NewGuid(),
@@ -27,7 +35,14 @@ public sealed class SubjectErasureRequestEntity : IGuidEntity
         RequestedAtUtc = nowUtc,
     };
 
-    internal void Transition(ErasureState next) => State = next;
+    internal UnitResult<ErasureTransitionError> Fire(ErasureTrigger trigger)
+    {
+        if (!stateMachine.Transition(State, trigger).TryGetValue(out var next))
+            return new ErasureTransitionError.InvalidTransition(State, trigger);
+
+        State = next;
+        return new Success();
+    }
 
     internal void RecordDeferral(string reason) => DeferralReason = reason;
 
@@ -38,4 +53,15 @@ public sealed class SubjectErasureRequestEntity : IGuidEntity
     }
 
     internal void RecordFailure(string reason) => FailureReason = reason;
+
+    internal void CaptureFanOutState(string? email, IReadOnlySet<Guid> woundDownTenantIds)
+    {
+        SubjectEmail ??= email;
+        WoundDownTenantIds ??= string.Join(",", woundDownTenantIds);
+    }
+
+    internal IReadOnlySet<Guid> CapturedWoundDownTenantIds =>
+        string.IsNullOrEmpty(WoundDownTenantIds)
+            ? new HashSet<Guid>()
+            : WoundDownTenantIds.Split(",").Select(Guid.Parse).ToHashSet();
 }

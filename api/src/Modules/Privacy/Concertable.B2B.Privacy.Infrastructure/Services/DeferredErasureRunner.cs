@@ -1,16 +1,19 @@
+using Concertable.DataAccess.Application;
 using Microsoft.Extensions.Logging;
 
 namespace Concertable.B2B.Privacy.Infrastructure.Services;
 
 internal sealed class DeferredErasureRunner : IDeferredErasureRunner
 {
+    private const int SweepBatchSize = 100;
+
     private readonly ISubjectErasureRepository repository;
-    private readonly ISubjectErasureService erasureService;
+    private readonly IScoped<ISubjectErasureService> erasureService;
     private readonly ILogger<DeferredErasureRunner> logger;
 
     public DeferredErasureRunner(
         ISubjectErasureRepository repository,
-        ISubjectErasureService erasureService,
+        IScoped<ISubjectErasureService> erasureService,
         ILogger<DeferredErasureRunner> logger)
     {
         this.repository = repository;
@@ -20,23 +23,21 @@ internal sealed class DeferredErasureRunner : IDeferredErasureRunner
 
     public async Task RunAsync(CancellationToken ct = default)
     {
-        var deferred = await repository.ListDeferredAsync(ct);
-        if (deferred.Count == 0)
+        var subjectIds = await repository.ListResumableSubjectIdsAsync(SweepBatchSize, ct);
+        if (subjectIds.Count == 0)
             return;
 
-        logger.DeferredErasureSweepStarted(deferred.Count);
+        logger.DeferredErasureSweepStarted(subjectIds.Count);
 
-        foreach (var request in deferred)
+        foreach (var subjectId in subjectIds)
         {
-            // One subject's failure must not strand the rest of the queue: every remaining request still gets
-            // its pass, and the failed one stays Deferred for the next sweep rather than being lost.
             try
             {
-                await erasureService.ResumeAsync(request, ct);
+                await erasureService.RunAsync(service => service.RequestErasureAsync(subjectId, ct));
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
-                logger.DeferredErasureFailed(exception, request.SubjectId, request.Id);
+                logger.DeferredErasureFailed(exception, subjectId, Guid.Empty);
             }
         }
     }

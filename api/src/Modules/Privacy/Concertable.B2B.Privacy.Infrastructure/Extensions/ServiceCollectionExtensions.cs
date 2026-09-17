@@ -25,7 +25,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<PrivacyConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<PrivacyConfigurationProvider>());
 
-        services.AddSingleton<ErasureStateMachine>();
         services.AddScoped<ISubjectErasureRepository, SubjectErasureRepository>();
         services.AddScoped<ISubjectObligationChecker, SubjectObligationChecker>();
         services.AddScoped<ISubjectErasureService, SubjectErasureService>();

@@ -9,7 +9,6 @@ internal sealed class SubjectErasureService : ISubjectErasureService
 
     private readonly ISubjectErasureRepository repository;
     private readonly ISubjectObligationChecker obligationChecker;
-    private readonly ErasureStateMachine stateMachine;
     private readonly IUserModule userModule;
     private readonly ITenantModule tenantModule;
     private readonly IConversationsModule conversationsModule;
@@ -19,7 +18,6 @@ internal sealed class SubjectErasureService : ISubjectErasureService
     public SubjectErasureService(
         ISubjectErasureRepository repository,
         ISubjectObligationChecker obligationChecker,
-        ErasureStateMachine stateMachine,
         IUserModule userModule,
         ITenantModule tenantModule,
         IConversationsModule conversationsModule,
@@ -28,7 +26,6 @@ internal sealed class SubjectErasureService : ISubjectErasureService
     {
         this.repository = repository;
         this.obligationChecker = obligationChecker;
-        this.stateMachine = stateMachine;
         this.userModule = userModule;
         this.tenantModule = tenantModule;
         this.conversationsModule = conversationsModule;
@@ -36,7 +33,7 @@ internal sealed class SubjectErasureService : ISubjectErasureService
         this.logger = logger;
     }
 
-    public async Task<SubjectErasureRequestDto> RequestErasureAsync(Guid subjectId, CancellationToken ct = default)
+    public async Task<Result<SubjectErasureRequestDto, ErasureTransitionError>> RequestErasureAsync(Guid subjectId, CancellationToken ct = default)
     {
         var request = await repository.GetBySubjectIdAsync(subjectId, ct);
         if (request is null)
@@ -53,60 +50,67 @@ internal sealed class SubjectErasureService : ISubjectErasureService
         return await DriveAsync(request, ct);
     }
 
-    public async Task<SubjectErasureRequestDto> ResumeAsync(
-        SubjectErasureRequestEntity request,
-        CancellationToken ct = default) =>
-        request.State == ErasureState.Completed ? request.ToDto() : await DriveAsync(request, ct);
-
-    private async Task<SubjectErasureRequestDto> DriveAsync(
+    private async Task<Result<SubjectErasureRequestDto, ErasureTransitionError>> DriveAsync(
         SubjectErasureRequestEntity request,
         CancellationToken ct)
     {
         if (await obligationChecker.HasLiveObligationsAsync(request.SubjectId, ct))
         {
-            Advance(request, ErasureTrigger.Defer);
+            if (request.Fire(ErasureTrigger.Defer).TryGetError(out var deferError))
+                return deferError;
+
             request.RecordDeferral(PendingFinancialObligations);
             await repository.SaveChangesAsync(ct);
             logger.SubjectErasureDeferred(request.SubjectId, request.Id);
             return request.ToDto();
         }
 
-        Advance(request, ErasureTrigger.Begin);
+        if (request.Fire(ErasureTrigger.Begin).TryGetError(out var beginError))
+            return beginError;
+
         await repository.SaveChangesAsync(ct);
 
-        await AnonymiseAsync(request.SubjectId, ct);
+        try
+        {
+            await AnonymiseAsync(request, ct);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            if (request.Fire(ErasureTrigger.Fail).TryGetError(out _))
+                throw;
 
-        Advance(request, ErasureTrigger.Complete);
+            request.RecordFailure(exception.Message);
+            await repository.SaveChangesAsync(ct);
+            logger.DeferredErasureFailed(exception, request.SubjectId, request.Id);
+            throw;
+        }
+
+        if (request.Fire(ErasureTrigger.Complete).TryGetError(out var completeError))
+            return completeError;
+
         request.RecordCompletion(timeProvider.GetUtcNow().UtcDateTime);
         await repository.SaveChangesAsync(ct);
         logger.SubjectErasureCompleted(request.SubjectId, request.Id);
         return request.ToDto();
     }
 
-    // Resolve the subject's email BEFORE the User row is anonymised (which tombstones it), so pending
-    // invitations addressed to them can still be matched and purged.
-    private async Task AnonymiseAsync(Guid subjectId, CancellationToken ct)
+    private async Task AnonymiseAsync(SubjectErasureRequestEntity request, CancellationToken ct)
     {
-        var user = await userModule.GetByIdAsync(subjectId);
-        var email = user.Match<string?>(u => u.Email, () => null);
+        var subjectId = request.SubjectId;
+        if (request.SubjectEmail is null && request.WoundDownTenantIds is null)
+        {
+            var user = await userModule.GetByIdAsync(subjectId);
+            var woundDown = await tenantModule.SeverMembershipsAsync(subjectId, ct);
+            request.CaptureFanOutState(user.Match<string?>(u => u.Email, () => null), woundDown);
+            await repository.SaveChangesAsync(ct);
+        }
 
-        var woundDownTenantIds = await tenantModule.SeverMembershipsAsync(subjectId, ct);
-        if (email is not null)
-            await tenantModule.PurgePendingInvitationsAsync(email, ct);
+        if (request.SubjectEmail is not null)
+            await tenantModule.PurgePendingInvitationsAsync(request.SubjectEmail, ct);
 
         await conversationsModule.SeverAuthoredMessagesAsync(subjectId, ct);
-        await conversationsModule.ScrubParticipantProfilesAsync(woundDownTenantIds, ct);
+        await conversationsModule.ScrubParticipantProfilesAsync(request.CapturedWoundDownTenantIds, ct);
 
         await userModule.EraseAsync(subjectId, ct);
-    }
-
-    private void Advance(SubjectErasureRequestEntity request, ErasureTrigger trigger)
-    {
-        var transition = stateMachine.Next(request.State, trigger);
-        if (transition.TryGetError(out var error))
-            throw new InvalidOperationException(error.Definition.Message);
-
-        transition.TryGetValue(out var next);
-        request.Transition(next);
     }
 }

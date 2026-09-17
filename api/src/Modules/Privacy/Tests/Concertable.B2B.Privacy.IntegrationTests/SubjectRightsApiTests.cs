@@ -34,8 +34,9 @@ public sealed class SubjectRightsApiTests : IAsyncLifetime
         // concerts, so no live obligation — the check clears and erasure runs to completion.
         var subject = fixture.SeedState.ArtistManagerNoArtist;
 
-        var result = await fixture.Services.RunScopedAsync(sp =>
+        var outcome = await fixture.Services.RunScopedAsync(sp =>
             sp.GetRequiredService<ISubjectErasureService>().RequestErasureAsync(subject.Id));
+        Assert.True(outcome.TryGetValue(out var result));
 
         Assert.Equal(ErasureState.Completed, result.State);
 
@@ -56,8 +57,9 @@ public sealed class SubjectRightsApiTests : IAsyncLifetime
         // financial obligation — so erasure must fail closed to Deferred and leave every row intact.
         var subject = fixture.SeedState.VenueManager1;
 
-        var result = await fixture.Services.RunScopedAsync(sp =>
+        var outcome = await fixture.Services.RunScopedAsync(sp =>
             sp.GetRequiredService<ISubjectErasureService>().RequestErasureAsync(subject.Id));
+        Assert.True(outcome.TryGetValue(out var result));
 
         Assert.Equal(ErasureState.Deferred, result.State);
         Assert.NotNull(result.DeferralReason);

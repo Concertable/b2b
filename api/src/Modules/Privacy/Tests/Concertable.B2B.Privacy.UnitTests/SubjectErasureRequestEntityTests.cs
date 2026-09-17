@@ -33,12 +33,22 @@ public sealed class SubjectErasureRequestEntityTests
     }
 
     [Fact]
-    public void Transition_SetsState()
+    public void Fire_LegalTrigger_AdvancesState()
     {
         var request = SubjectErasureRequestEntity.Create(Guid.NewGuid(), DateTime.UtcNow);
 
-        request.Transition(ErasureState.InProgress);
+        Assert.False(request.Fire(ErasureTrigger.Begin).TryGetError(out _));
 
         Assert.Equal(ErasureState.InProgress, request.State);
+    }
+
+    [Fact]
+    public void Fire_IllegalTrigger_LeavesStateUntouched()
+    {
+        var request = SubjectErasureRequestEntity.Create(Guid.NewGuid(), DateTime.UtcNow);
+
+        Assert.True(request.Fire(ErasureTrigger.Complete).TryGetError(out _));
+
+        Assert.Equal(ErasureState.Requested, request.State);
     }
 }

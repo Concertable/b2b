@@ -10,5 +10,5 @@ internal interface ISubjectErasureRepository : IRepository<SubjectErasureRequest
     Task<SubjectErasureRequestEntity?> GetBySubjectIdAsync(Guid subjectId, CancellationToken ct = default);
 
     /// <summary>Every deferred request, oldest first — the hourly sweep's work list.</summary>
-    Task<IReadOnlyList<SubjectErasureRequestEntity>> ListDeferredAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<Guid>> ListResumableSubjectIdsAsync(int take, CancellationToken ct = default);
 }

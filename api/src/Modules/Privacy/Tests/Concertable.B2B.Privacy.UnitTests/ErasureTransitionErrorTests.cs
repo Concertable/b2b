@@ -1,3 +1,4 @@
+using Reunion.Errors;
 using Concertable.B2B.Privacy.Domain.Lifecycle;
 
 namespace Concertable.B2B.Privacy.UnitTests;
@@ -5,14 +6,18 @@ namespace Concertable.B2B.Privacy.UnitTests;
 public sealed class ErasureTransitionErrorTests
 {
     [Fact]
-    public void InvalidTransition_Definition_HasStableCodeAndDescribesTheEdge()
+    public void InvalidTransition_Definition_PinsCodeMessageAndKind()
     {
-        ErasureTransitionError error = new ErasureTransitionError.InvalidTransition(ErasureState.Completed, ErasureTrigger.Begin);
+        // Arrange
+        ErasureTransitionError error =
+            new ErasureTransitionError.InvalidTransition(ErasureState.Completed, ErasureTrigger.Begin);
 
+        // Act
         var definition = error.Definition;
 
-        Assert.Equal("privacy.erasure.invalid_transition", definition.Code);
-        Assert.Contains("Completed", definition.Message);
-        Assert.Contains("Begin", definition.Message);
+        // Assert
+        Assert.Equal("privacy.erasure.invalid_state", definition.Code);
+        Assert.Equal("Cannot Begin a subject-erasure request from Completed.", definition.Message);
+        Assert.Equal(ErrorKind.Conflict, definition.Kind);
     }
 }
