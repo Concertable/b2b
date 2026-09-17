@@ -8,16 +8,16 @@
     <Description>Concertable B2B Concert contracts: the cross-service concert contract surface — integration events (ConcertChangedEvent, ConcertPostedEvent, ConcertRatingUpdatedEvent, …) and view DTOs consumed by services downstream of B2B (Search, Customer).</Description>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
-  </ItemGroup>
-
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
   <ItemGroup>
     <PackageReference Include="Concertable.Contracts" />
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Messaging.Contracts" />
     <PackageReference Include="Reunion" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Deal\Concertable.B2B.Deal.Contracts\Concertable.B2B.Deal.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

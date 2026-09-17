@@ -5,9 +5,6 @@ namespace Concertable.B2B.Privacy.Infrastructure.Services;
 
 internal sealed class SubjectExporter : ISubjectExporter
 {
-    private static readonly JsonSerializerOptions SerializerOptions =
-        new(JsonSerializerDefaults.Web) { WriteIndented = true };
-
     private readonly IUserModule userModule;
     private readonly ITenantModule tenantModule;
     private readonly IConversationsModule conversationsModule;
@@ -47,7 +44,7 @@ internal sealed class SubjectExporter : ISubjectExporter
             concertRecords,
         };
 
-        var content = JsonSerializer.SerializeToUtf8Bytes(payload, SerializerOptions);
+        var content = JsonSerializer.SerializeToUtf8Bytes(payload, SubjectExportSerializerOptions.Value);
         return new FileDownload(content, $"subject-export-{subjectId:N}.json", MediaTypeNames.Application.Json);
     }
 }
