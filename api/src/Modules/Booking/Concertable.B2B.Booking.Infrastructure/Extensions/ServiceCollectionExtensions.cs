@@ -2,6 +2,7 @@ using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Booking.Application.Interfaces;
 using Concertable.B2B.Booking.Application.Strategies;
 using Concertable.B2B.Booking.Infrastructure.Events;
@@ -72,6 +73,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IDomainEventHandler<BookingConfirmedDomainEvent>,
                 BookingConfirmedDomainEventHandler>();
             services.AddScoped<AcceptanceFinancialOperationOutcomeProcessor>();
+            services.AddScoped<IIntegrationEventHandler<ConcertCreatedEvent>, ConcertCreatedIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<CaptureEscrowSucceededEvent>>(provider =>
                 provider.GetRequiredService<AcceptanceFinancialOperationOutcomeProcessor>());
             services.AddScoped<IIntegrationEventHandler<CaptureEscrowRejectedEvent>>(provider =>

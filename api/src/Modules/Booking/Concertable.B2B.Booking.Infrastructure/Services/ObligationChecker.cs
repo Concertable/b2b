@@ -7,8 +7,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 
 internal sealed class ObligationChecker : IObligationChecker
 {
-    private static readonly BookingState[] SettledStates = [BookingState.Cancelled];
-
     private readonly IBookingReadDbContext context;
 
     public ObligationChecker(IBookingReadDbContext context)
@@ -23,6 +21,9 @@ internal sealed class ObligationChecker : IObligationChecker
 
         return await context.Bookings
             .Where(b => tenantIds.Contains(b.VenueTenantId) || tenantIds.Contains(b.ArtistTenantId))
-            .AnyAsync(b => !SettledStates.Contains(b.State), ct);
+            .AnyAsync(
+                b => !BookingObligation.SettledStates.Contains(b.State)
+                    && !(BookingObligation.SettledOnceHandedOff.Contains(b.State) && b.HandedOffAtUtc != null),
+                ct);
     }
 }
