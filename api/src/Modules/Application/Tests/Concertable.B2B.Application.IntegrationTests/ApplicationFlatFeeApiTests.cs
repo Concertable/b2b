@@ -42,6 +42,22 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AcceptCheckout_ShouldPersistStableAcceptanceOperationId_AcrossRepeatedCalls()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+
+        await (await client.PostAsync($"/api/application/{applicationId}/checkout")).ShouldBe(HttpStatusCode.OK);
+        var afterFirstCheckout = await fixture.Applications.SingleAsync(item => item.Id == applicationId);
+        Assert.NotNull(afterFirstCheckout.AcceptanceOperationId);
+
+        await (await client.PostAsync($"/api/application/{applicationId}/checkout")).ShouldBe(HttpStatusCode.OK);
+        var afterSecondCheckout = await fixture.Applications.SingleAsync(item => item.Id == applicationId);
+
+        Assert.Equal(afterFirstCheckout.AcceptanceOperationId, afterSecondCheckout.AcceptanceOperationId);
+    }
+
+    [Fact]
     public async Task ApplyCheckout_ShouldReturn400_WhenContractDoesNotSupportApplyTimeCheckout()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
