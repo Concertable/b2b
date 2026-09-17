@@ -141,7 +141,7 @@ Findings F22–F24 were raised and fixed inside this pass (`514894d6`) and are r
 - [x] **F26 — HIGH — test coverage** — `api/src/Modules/Conversations/Tests/`, `api/src/Modules/{Booking,Application,User,Venue}/Tests/*.UnitTests`, `api/src/Concertable.B2B.DataAccess/Tests/`
   Six test projects carry no `[assembly: AssemblyTrait("Category", …)]`, and `.github/workflows/ci.yml:73-74` filters on `Category=Unit|Integration|Architecture|Startup`. A test added to any of them compiles and is then skipped by the gate. Both Conversations projects are in that set, which is why the reader split could not be covered where it belongs. Fix: add an `AssemblyInfo.cs` to each, copying `Booking.IntegrationTests/AssemblyInfo.cs:3`.
 
-- [~] **F27 — MEDIUM — test coverage** — `api/src/Modules/Booking/Tests/Concertable.B2B.Booking.IntegrationTests/`
+- [x] **F27 — MEDIUM — test coverage (closed by CI 35255490459)** — `api/src/Modules/Booking/Tests/Concertable.B2B.Booking.IntegrationTests/`
   Nothing has ever executed `IReadOnlySet<Guid>.Contains` inside an EF query against the real provider. `IReadOnlySet<T>.Contains` is a different expression-tree method from `ICollection<T>.Contains`; whether it emits `IN` is decided at runtime by SQL Server. The one in-tree precedent (`MessageRepository.cs:71`) ships but sits behind the same never-executed suite, and the only EF unit test in Conversations uses `UseInMemoryDatabase`, which evaluates client-side and would not expose a translation failure. Six queries share the construct, so they fail together or not at all. Fix: one real-provider call to `IBookingModule.GetSubjectContractsAsync(new HashSet<Guid> { … })` in `TenantScopingTests`.
 
 - [x] **F28 — MEDIUM — test coverage** — `api/src/Modules/Privacy/Tests/Concertable.B2B.Privacy.IntegrationTests/SubjectRightsApiTests.cs`
@@ -205,7 +205,7 @@ on) and records `HandedOffAtUtc`; `BookingObligation` treats `Confirmed` as sett
 exists. The migration backfills from the concert schema, without which every historical `Confirmed` booking
 would have read as live and the fix would have reintroduced the bug.
 
-- [~] **F27 — written, not closeable here.** `TenantScopingTests` now carries two real-provider assertions
+- [x] **F27 — closed by CI run 35255490459.** `TenantScopingTests` now carries two real-provider assertions
   that `IReadOnlySet<Guid>.Contains` translates to SQL. They cannot run on this workstation — Docker plus the
   integration tier — so the merge queue closes this, not a local run. Resolution condition unchanged: a green
   `Category=Integration` pass over `GetSubjectContractsAsync` and `HasLiveObligationsByTenantIdsAsync`.
@@ -213,3 +213,12 @@ would have read as live and the fix would have reintroduced the bug.
 - [ ] **F13 — still the owner's.** Whether `SubjectContractDto.ArtistName` — a named individual when the
   counterparty is a sole trader — belongs in another tenant's export under UK GDPR art. 15(4). This is a
   product and legal judgement, not an engineering one, and no loaded doc rules either way. **Owner: Tommy.**
+
+### F27 closed — CI run 35255490459 on `e635fc19`
+
+`Concertable.B2B.Booking.IntegrationTests` 26/26 against real SQL Server, covering both set-translation
+assertions: `IReadOnlySet<Guid>.Contains` does emit `IN`, so all six queries retyped on this branch are safe.
+`Concertable.B2B.Privacy.IntegrationTests` 5/5 — the first execution of that suite anywhere, which the repo's
+own progress ledger had recorded as never having run.
+
+That leaves **F13** as the single open finding, and it is a product/legal judgement rather than a defect.
