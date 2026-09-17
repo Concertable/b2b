@@ -28,7 +28,7 @@ public sealed class DbContextStanceTests
             CreateOptions<ConcertDbContext>(),
             provider,
             Mock.Of<ITenantContext>(),
-            DesignTimeAccessContext.Instance);
+            DesignTimeResourceAccessContext.Instance);
 
         Assert.IsAssignableFrom<IReadDbContext>(readContext);
         Assert.False(typeof(IDbContext).IsAssignableFrom(readContext.GetType()));

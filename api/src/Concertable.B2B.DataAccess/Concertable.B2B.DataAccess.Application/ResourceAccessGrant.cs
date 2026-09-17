@@ -7,9 +7,9 @@ namespace Concertable.B2B.DataAccess.Application;
 /// its own scope vocabulary, because the resource foreign key is real and module-local; this base carries only
 /// the audience, validity and provenance every grant family shares.
 /// <para>
-/// A row with a <see cref="MemberUserId"/> narrows the tenant audience to that member, and still requires that
-/// member's current membership in the tenant. It is not an addition to a tenant-wide grant: pairing the two
-/// would disclose the same resource to every other member.
+/// A row with a <see cref="MembershipId"/> narrows the tenant audience to that one membership incarnation, and
+/// still requires it to be current. It is sufficient on its own: pairing it with a tenant-wide row would
+/// disclose the same resource to every other member.
 /// </para>
 /// </summary>
 public abstract class ResourceAccessGrant<TScope> : IGuidEntity
@@ -25,18 +25,20 @@ public abstract class ResourceAccessGrant<TScope> : IGuidEntity
     /// <summary>The tenant the resource is disclosed to.</summary>
     public Guid TenantId { get; protected set; }
 
-    /// <summary>When set, only this member of <see cref="TenantId"/> may read the resource.</summary>
-    public Guid? MemberUserId { get; protected set; }
+    /// <summary>When set, only this membership of <see cref="TenantId"/> may read the resource.</summary>
+    public Guid? MembershipId { get; protected set; }
 
     public TScope Scope { get; protected set; }
     public DateTime ValidFrom { get; protected set; }
     public DateTime? ValidUntil { get; protected set; }
     public DateTime? RevokedAt { get; protected set; }
     public Guid IssuedByTenantId { get; protected set; }
+
     /// <summary>The human who issued it, or null where the act had none — a resource created by a payment
     /// confirmation grants its principals access with no person to attribute it to.</summary>
     public Guid? IssuedByUserId { get; protected set; }
-    public GrantOrigin Origin { get; protected set; }
+
+    public ResourceGrantKind Kind { get; protected set; }
     public long Version { get; protected set; }
 
     public bool IsLiveAt(DateTime at) =>
@@ -45,11 +47,11 @@ public abstract class ResourceAccessGrant<TScope> : IGuidEntity
     protected void Initialize(
         int resourceId,
         Guid tenantId,
-        Guid? memberUserId,
+        Guid? membershipId,
         TScope scope,
         Guid issuedByTenantId,
         Guid? issuedByUserId,
-        GrantOrigin origin,
+        ResourceGrantKind kind,
         DateTime at,
         DateTime? validUntil)
     {
@@ -59,17 +61,17 @@ public abstract class ResourceAccessGrant<TScope> : IGuidEntity
         Id = Guid.NewGuid();
         ResourceId = resourceId;
         TenantId = tenantId;
-        MemberUserId = memberUserId;
+        MembershipId = membershipId;
         Scope = scope;
         ValidFrom = at;
         ValidUntil = validUntil;
         IssuedByTenantId = issuedByTenantId;
         IssuedByUserId = issuedByUserId;
-        Origin = origin;
+        Kind = kind;
         Version = 1;
     }
 
-    public void Revoke(DateTime at)
+    protected void RevokeCore(DateTime at)
     {
         if (RevokedAt is not null)
             return;

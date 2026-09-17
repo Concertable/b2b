@@ -1,3 +1,5 @@
+﻿using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Concert.Application.Mappers;
 using Concertable.B2B.Concert.Application.Responses;
@@ -33,8 +35,11 @@ internal sealed class ConcertService : IConcertService
     private readonly IBookingModule bookingModule;
     private readonly IUnitOfWork unitOfWork;
     private readonly TimeProvider timeProvider;
+    private readonly IConcertCommandReceiptRepository receiptRepository;
+    private readonly ITenantModule tenantModule;
     private readonly ITenantContext tenantContext;
-    private readonly IAccessContext accessContext;
+    private readonly IMembershipContext membership;
+    private readonly IResourceAccessContext resourceAccess;
     private readonly ILogger<ConcertService> logger;
 
     public ConcertService(
@@ -50,8 +55,11 @@ internal sealed class ConcertService : IConcertService
         IBookingModule bookingModule,
         IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
+        IConcertCommandReceiptRepository receiptRepository,
+        ITenantModule tenantModule,
         ITenantContext tenantContext,
-        IAccessContext accessContext,
+        IMembershipContext membership,
+        IResourceAccessContext resourceAccess,
         ILogger<ConcertService> logger)
     {
         this.concertRepository = concertRepository;
@@ -66,8 +74,11 @@ internal sealed class ConcertService : IConcertService
         this.bookingModule = bookingModule;
         this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
+        this.receiptRepository = receiptRepository;
+        this.tenantModule = tenantModule;
         this.tenantContext = tenantContext;
-        this.accessContext = accessContext;
+        this.membership = membership;
+        this.resourceAccess = resourceAccess;
         this.logger = logger;
     }
 
@@ -278,58 +289,167 @@ internal sealed class ConcertService : IConcertService
             : new DeclareDoorRevenueError.Superseded(id);
     }
 
-    public async Task<Result<ConcertShareResponse, ShareConcertError>> ShareAsync(
+    public async Task<Result<ConcertSummaryShare, ShareConcertSummaryError>> ShareSummaryAsync(
         int id,
-        ShareConcertRequest request,
+        ShareConcertSummaryRequest request,
         CancellationToken ct = default)
     {
-        if (tenantContext.TenantId is not { } actingTenantId)
-            return new ShareConcertError.NoActiveTenant();
+        if (membership.Membership is not { } actor)
+            return new ShareConcertSummaryError.NotPermitted();
+
+        if (request.RequestId == Guid.Empty || request.RecipientTenantId == Guid.Empty)
+            return new ShareConcertSummaryError.InvalidRecipient();
+
+        var payloadHash = ResourceCommandReceipt.HashPayload(
+            id, request.RecipientTenantId, request.RecipientMembershipId, request.ValidUntil);
+
+        var receipt = await receiptRepository.GetByTenantIdAndOperationAndRequestIdAsync(
+            actor.TenantId, ConcertCommandReceipt.ShareSummaryOperation, request.RequestId, ct);
+        if (receipt is not null)
+            return receipt.Matches(payloadHash)
+                ? await ReplaySummaryShareAsync(id, receipt, ct)
+                : new ShareConcertSummaryError.RequestConflict();
+
+        if (!(await tenantModule.GetByIdAsync(request.RecipientTenantId, ct)).TryGetValue(out _))
+            return new ShareConcertSummaryError.InvalidRecipient();
+
+        if (request.RecipientMembershipId is { } recipientMembershipId
+            && !await tenantModule.IsCurrentMembershipAsync(request.RecipientTenantId, recipientMembershipId, ct))
+            return new ShareConcertSummaryError.InvalidRecipient();
 
         var concert = await concertRepository.GetWithGrantsByIdAsync(id, ct);
         if (concert is null)
-            return new ShareConcertError.ConcertNotFound(id);
+            return new ShareConcertSummaryError.ConcertNotFound(id);
 
-        var share = concert.Share(
-            request.ToTenantId,
-            request.ToMemberUserId,
-            request.Scope,
-            actingTenantId,
-            accessContext.UserId,
-            timeProvider.GetUtcNow().UtcDateTime,
+        if (concert.AccessVersion != request.ExpectedAccessVersion)
+            return new ShareConcertSummaryError.Superseded(id);
+
+        var decidedAt = resourceAccess.UtcNow;
+
+        /* An expired issuance still occupies the unique active row, so it is retired and flushed before its
+           replacement is inserted, both inside this one transaction. */
+        concert.RevokeExpiredSummaryShares(
+            actor.TenantId, request.RecipientTenantId, request.RecipientMembershipId, decidedAt);
+        await unitOfWork.SaveChangesAsync(ct);
+
+        var share = concert.ShareSummary(
+            actor.TenantId,
+            actor.UserId,
+            request.RecipientTenantId,
+            request.RecipientMembershipId,
+            decidedAt,
             request.ValidUntil)
-            .MapError(static error => error.ToShareConcertError());
+            .MapError(static error => error.ToShareConcertSummaryError());
 
         if (share.TryGetError(out var shareError))
             return shareError;
 
-        if (!await unitOfWork.TrySaveChangesAsync(
-                static exception => exception is DbUpdateConcurrencyException))
-            return new ShareConcertError.Superseded(id);
+        if (!share.TryGetValue(out var grant))
+            return new ShareConcertSummaryError.NotPermitted();
 
-        return share.Map(static grant => grant.ToShareResponse());
+        await receiptRepository.InsertAsync(
+            ConcertCommandReceipt.Record(
+                actor.TenantId,
+                ConcertCommandReceipt.ShareSummaryOperation,
+                request.RequestId,
+                payloadHash,
+                grant.Id.ToString(),
+                decidedAt),
+            ct);
+
+        return await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException)
+            ? grant.ToSummaryShare(concert.AccessVersion)
+            : new ShareConcertSummaryError.Superseded(id);
     }
 
-    public async Task<UnitResult<RevokeConcertShareError>> RevokeShareAsync(
+    private async Task<Result<ConcertSummaryShare, ShareConcertSummaryError>> ReplaySummaryShareAsync(
+        int id, ConcertCommandReceipt receipt, CancellationToken ct)
+    {
+        var concert = await concertRepository.GetWithGrantsByIdAsync(id, ct);
+        if (concert is null)
+            return new ShareConcertSummaryError.ConcertNotFound(id);
+
+        return Guid.TryParse(receipt.Outcome, out var grantId)
+            && concert.AccessGrants.SingleOrDefault(grant => grant.Id == grantId) is { } issued
+            ? issued.ToSummaryShare(concert.AccessVersion)
+            : new ShareConcertSummaryError.ConcertNotFound(id);
+    }
+
+    public async Task<UnitResult<RevokeConcertSummaryShareError>> RevokeSummaryShareAsync(
         int id,
         Guid grantId,
+        long expectedAccessVersion,
         CancellationToken ct = default)
     {
-        if (tenantContext.TenantId is not { } actingTenantId)
-            return new RevokeConcertShareError.NoActiveTenant();
+        if (membership.Membership is not { } actor)
+            return new RevokeConcertSummaryShareError.NotPermitted();
 
         var concert = await concertRepository.GetWithGrantsByIdAsync(id, ct);
         if (concert is null)
-            return new RevokeConcertShareError.ConcertNotFound(id);
+            return new RevokeConcertSummaryShareError.ConcertNotFound(id);
 
-        if (concert.RevokeShare(grantId, actingTenantId, timeProvider.GetUtcNow().UtcDateTime)
+        if (concert.AccessVersion != expectedAccessVersion)
+            return new RevokeConcertSummaryShareError.Superseded(id);
+
+        if (concert.RevokeSummaryShare(grantId, actor.TenantId, resourceAccess.UtcNow)
             .TryGetError(out var revocationError))
-            return revocationError.ToRevokeConcertShareError();
+            return revocationError.ToRevokeConcertSummaryShareError();
 
         return await unitOfWork.TrySaveChangesAsync(
                 static exception => exception is DbUpdateConcurrencyException)
             ? new Success()
-            : new RevokeConcertShareError.Superseded(id);
+            : new RevokeConcertSummaryShareError.Superseded(id);
+    }
+
+    public async Task<UnitResult<AssignConcertMemberError>> AssignMemberAsync(
+        int id,
+        AssignConcertMemberRequest request,
+        CancellationToken ct = default)
+    {
+        if (membership.Membership is not { } actor)
+            return new AssignConcertMemberError.NotPermitted();
+
+        if (!await tenantModule.IsCurrentMembershipAsync(actor.TenantId, request.MembershipId, ct))
+            return new AssignConcertMemberError.InvalidMembership();
+
+        var concert = await concertRepository.GetWithGrantsByIdAsync(id, ct);
+        if (concert is null)
+            return new AssignConcertMemberError.ConcertNotFound(id);
+
+        if (concert.AccessVersion != request.ExpectedAccessVersion)
+            return new AssignConcertMemberError.Superseded(id);
+
+        if (concert.AssignMember(actor.TenantId, request.MembershipId, actor.TenantId, resourceAccess.UtcNow)
+            .TryGetError(out var assignmentError))
+            return assignmentError.ToAssignConcertMemberError();
+
+        return await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException)
+            ? new Success()
+            : new AssignConcertMemberError.Superseded(id);
+    }
+
+    public async Task<UnitResult<AssignConcertMemberError>> RemoveMemberAssignmentAsync(
+        int id,
+        Guid membershipId,
+        CancellationToken ct = default)
+    {
+        if (membership.Membership is not { } actor)
+            return new AssignConcertMemberError.NotPermitted();
+
+        var concert = await concertRepository.GetWithGrantsByIdAsync(id, ct);
+        if (concert is null)
+            return new AssignConcertMemberError.ConcertNotFound(id);
+
+        if (concert.RemoveMemberAssignment(actor.TenantId, membershipId, resourceAccess.UtcNow)
+            .TryGetError(out var assignmentError))
+            return assignmentError.ToAssignConcertMemberError();
+
+        return await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException)
+            ? new Success()
+            : new AssignConcertMemberError.Superseded(id);
     }
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByArtistIdAsync(int id) =>

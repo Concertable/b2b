@@ -10,7 +10,7 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Registers request authority. The module owns no storage: the host must also bind
-    /// <see cref="IMembershipFacts"/> to the module that owns membership rows.
+    /// <see cref="IMembershipReadRepository"/> to the module that owns membership rows.
     /// </summary>
     public static IServiceCollection AddAuthorizationModule(this IServiceCollection services)
     {

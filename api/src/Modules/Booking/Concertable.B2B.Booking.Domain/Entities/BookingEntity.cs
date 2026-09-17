@@ -1,5 +1,4 @@
-using Concertable.B2B.Booking.Domain.Errors;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Contracts.Enums;
@@ -79,18 +78,18 @@ public sealed class BookingEntity : IIdEntity, IConcurrencyVersioned, IEventRais
         /* Both principals reach their own booking through grants like anyone else, issued here so no booking
            can exist that its own parties cannot see. The issuer is the acceptance that created it. */
         var acceptance = snapshot.Contract.VenueSignature;
-        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId })
+        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
         {
             foreach (var scope in new[] { BookingAccessScope.Summary, BookingAccessScope.Operations })
             {
                 accessGrants.Add(BookingAccessGrant.Issue(
                     Id,
                     tenantId,
-                    memberUserId: null,
+                    membershipId: null,
                     scope,
                     issuedByTenantId: VenueTenantId,
                     issuedByUserId: acceptance.UserId,
-                    GrantOrigin.ResourceCreation,
+                    ResourceGrantKind.Principal,
                     acceptance.AtUtc));
             }
         }
@@ -178,60 +177,5 @@ public sealed class BookingEntity : IIdEntity, IConcurrencyVersioned, IEventRais
         if (transition.TryGetValue(out var next))
             State = next;
         return transition;
-    }
-
-    private static readonly BookingAccessScope[] ShareableScopes =
-        [BookingAccessScope.Summary, BookingAccessScope.Operations];
-
-    public Result<BookingAccessGrant, BookingShareError> Share(
-        Guid toTenantId,
-        Guid? toMemberUserId,
-        BookingAccessScope scope,
-        Guid byTenantId,
-        Guid? byUserId,
-        DateTime at,
-        DateTime? validUntil = null)
-    {
-        if (!ShareableScopes.Contains(scope))
-            return new BookingShareError.ScopeNotShareable(scope);
-
-        if (byTenantId != VenueTenantId && byTenantId != ArtistTenantId)
-            return new BookingShareError.NotAPrincipal();
-
-        if (accessGrants.Any(grant =>
-                grant.TenantId == toTenantId
-                && grant.MemberUserId == toMemberUserId
-                && grant.Scope == scope
-                && grant.IsLiveAt(at)))
-            return new BookingShareError.AlreadyShared();
-
-        var issued = BookingAccessGrant.Issue(
-            Id,
-            toTenantId,
-            toMemberUserId,
-            scope,
-            issuedByTenantId: byTenantId,
-            issuedByUserId: byUserId,
-            GrantOrigin.ExplicitShare,
-            at,
-            validUntil);
-
-        accessGrants.Add(issued);
-        return issued;
-    }
-
-    public UnitResult<BookingShareRevocationError> RevokeShare(Guid grantId, Guid byTenantId, DateTime at)
-    {
-        if (accessGrants.SingleOrDefault(grant => grant.Id == grantId) is not { } grant)
-            return new BookingShareRevocationError.GrantNotFound();
-
-        if (grant.Origin is not GrantOrigin.ExplicitShare)
-            return new BookingShareRevocationError.NotAShare();
-
-        if (grant.IssuedByTenantId != byTenantId)
-            return new BookingShareRevocationError.NotTheIssuer();
-
-        grant.Revoke(at);
-        return new Success();
     }
 }

@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.DTOs;
+﻿using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Application.Responses;
@@ -24,13 +24,22 @@ internal interface IConcertService
     Task<Result<ConcertUpdateResponse, UpdateConcertError>> UpdateAsync(int id, UpdateConcertRequest request);
     Task<UnitResult<PostConcertError>> PostAsync(int id, UpdateConcertRequest request);
     Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueAsync(int id, decimal doorRevenue);
-    Task<Result<ConcertShareResponse, ShareConcertError>> ShareAsync(
+    Task<Result<ConcertSummaryShare, ShareConcertSummaryError>> ShareSummaryAsync(
         int id,
-        ShareConcertRequest request,
+        ShareConcertSummaryRequest request,
         CancellationToken ct = default);
-    Task<UnitResult<RevokeConcertShareError>> RevokeShareAsync(
+    Task<UnitResult<RevokeConcertSummaryShareError>> RevokeSummaryShareAsync(
         int id,
         Guid grantId,
+        long expectedAccessVersion,
+        CancellationToken ct = default);
+    Task<UnitResult<AssignConcertMemberError>> AssignMemberAsync(
+        int id,
+        AssignConcertMemberRequest request,
+        CancellationToken ct = default);
+    Task<UnitResult<AssignConcertMemberError>> RemoveMemberAssignmentAsync(
+        int id,
+        Guid membershipId,
         CancellationToken ct = default);
     Task<UnitResult<CancelConcertError>> CancelAsync(
         int concertId,

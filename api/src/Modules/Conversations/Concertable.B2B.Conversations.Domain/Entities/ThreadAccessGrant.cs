@@ -1,4 +1,4 @@
-using Concertable.B2B.Conversations.Contracts.Enums;
+﻿using Concertable.B2B.Conversations.Contracts.Enums;
 using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Conversations.Domain.Entities;
@@ -10,11 +10,11 @@ public sealed class ThreadAccessGrant : ResourceAccessGrant<ThreadAccessScope>
     internal static ThreadAccessGrant Issue(
         int threadId,
         Guid tenantId,
-        Guid? memberUserId,
+        Guid? membershipId,
         ThreadAccessScope scope,
         Guid issuedByTenantId,
         Guid? issuedByUserId,
-        GrantOrigin origin,
+        ResourceGrantKind kind,
         DateTime at,
         DateTime? validUntil = null)
     {
@@ -22,13 +22,15 @@ public sealed class ThreadAccessGrant : ResourceAccessGrant<ThreadAccessScope>
         grant.Initialize(
             threadId,
             tenantId,
-            memberUserId,
+            membershipId,
             scope,
             issuedByTenantId,
             issuedByUserId,
-            origin,
+            kind,
             at,
             validUntil);
         return grant;
     }
+
+    internal void Revoke(DateTime at) => RevokeCore(at);
 }

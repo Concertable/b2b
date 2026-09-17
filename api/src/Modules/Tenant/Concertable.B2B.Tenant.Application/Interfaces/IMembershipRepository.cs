@@ -1,13 +1,14 @@
-using Concertable.B2B.Tenant.Contracts;
+﻿using Concertable.B2B.Tenant.Contracts;
 using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Tenant.Application.Interfaces;
 
 internal sealed record UserMembership(
+    Guid MembershipId,
     Guid TenantId,
     string LegalName,
     TenantRole Role,
-    long AuthorizationVersion,
+    long PermissionVersion,
     IReadOnlyList<TenantBusinessProfileKind> BusinessProfiles);
 
 internal interface IMembershipRepository : IRepository<TenantMembershipEntity, Guid>

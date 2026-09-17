@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.Responses;
+﻿using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Errors;
@@ -23,40 +23,52 @@ internal static class ConcertMappers
         };
     }
 
-    extension(ConcertShareError error)
+    extension(ConcertSummaryShareError error)
     {
-        public ShareConcertError ToShareConcertError() => error switch
+        public ShareConcertSummaryError ToShareConcertSummaryError() => error switch
         {
-            ConcertShareError.ScopeNotShareable(var scope) =>
-                new ShareConcertError.ScopeNotShareable(scope),
-            ConcertShareError.NotAPrincipal =>
-                new ShareConcertError.NotAPrincipal(),
-            ConcertShareError.AlreadyShared =>
-                new ShareConcertError.AlreadyShared()
+            ConcertSummaryShareError.NotPermitted =>
+                new ShareConcertSummaryError.NotPermitted(),
+            ConcertSummaryShareError.InvalidValidity =>
+                new ShareConcertSummaryError.InvalidValidity(),
+            ConcertSummaryShareError.AlreadyShared =>
+                new ShareConcertSummaryError.AlreadyShared()
         };
     }
 
-    extension(ShareRevocationError error)
+    extension(ConcertSummaryShareRevocationError error)
     {
-        public RevokeConcertShareError ToRevokeConcertShareError() => error switch
+        public RevokeConcertSummaryShareError ToRevokeConcertSummaryShareError() => error switch
         {
-            ShareRevocationError.GrantNotFound =>
-                new RevokeConcertShareError.GrantNotFound(),
-            ShareRevocationError.NotAShare =>
-                new RevokeConcertShareError.NotAShare(),
-            ShareRevocationError.NotTheIssuer =>
-                new RevokeConcertShareError.NotTheIssuer()
+            ConcertSummaryShareRevocationError.GrantNotFound =>
+                new RevokeConcertSummaryShareError.GrantNotFound(),
+            ConcertSummaryShareRevocationError.NotAShare =>
+                new RevokeConcertSummaryShareError.NotAShare(),
+            ConcertSummaryShareRevocationError.NotTheIssuer =>
+                new RevokeConcertSummaryShareError.NotTheIssuer()
+        };
+    }
+
+    extension(ConcertMemberAssignmentError error)
+    {
+        public AssignConcertMemberError ToAssignConcertMemberError() => error switch
+        {
+            ConcertMemberAssignmentError.NotPermitted =>
+                new AssignConcertMemberError.NotPermitted(),
+            ConcertMemberAssignmentError.AlreadyAssigned =>
+                new AssignConcertMemberError.AlreadyAssigned()
         };
     }
 
     extension(ConcertAccessGrant grant)
     {
-        public ConcertShareResponse ToShareResponse() => new()
+        public ConcertSummaryShare ToSummaryShare(long accessVersion) => new()
         {
             GrantId = grant.Id,
-            ToTenantId = grant.TenantId,
-            ToMemberUserId = grant.MemberUserId,
-            Scope = grant.Scope,
+            GrantVersion = grant.Version,
+            AccessVersion = accessVersion,
+            RecipientTenantId = grant.TenantId,
+            RecipientMembershipId = grant.MembershipId,
             ValidFrom = grant.ValidFrom,
             ValidUntil = grant.ValidUntil
         };

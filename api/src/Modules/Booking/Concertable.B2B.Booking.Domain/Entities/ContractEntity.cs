@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Contracts.Enums;
@@ -67,6 +67,25 @@ public abstract class ContractEntity : IIdEntity
         VenueSignature = Sign(contract.VenueSignature);
         CreatedAtUtc = createdAtUtc;
         PdfBlobName = $"contracts/{bookingId}-{Guid.NewGuid():N}.pdf";
+        IssuePrincipalGrants(createdAtUtc);
+    }
+
+    /* Attached through the navigation, so EF supplies the generated ResourceId: at construction the contract
+       has no key to write into the grant. */
+    private void IssuePrincipalGrants(DateTime at)
+    {
+        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
+        {
+            accessGrants.Add(ContractAccessGrant.Issue(
+                Id,
+                tenantId,
+                membershipId: null,
+                ContractAccessScope.Read,
+                issuedByTenantId: VenueTenantId,
+                issuedByUserId: VenueSignature.UserId,
+                ResourceGrantKind.Principal,
+                at));
+        }
     }
 
     private static Signature Sign(ContractSignature signature) =>

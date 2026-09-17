@@ -1,4 +1,4 @@
-using Concertable.B2B.Booking.Application.DTOs;
+﻿using Concertable.B2B.Booking.Application.DTOs;
 using Concertable.B2B.Booking.Application.Errors;
 using Concertable.B2B.Booking.Application.Models;
 
@@ -21,16 +21,6 @@ internal interface IBookingService
     Task<int> GetArtistAwaitingCheckoutCountAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
-    Task<Result<BookingShareResponse, ShareBookingError>> ShareAsync(
-        int bookingId,
-        ShareBookingRequest request,
-        CancellationToken ct = default);
-
-    Task<UnitResult<RevokeBookingShareError>> RevokeShareAsync(
-        int bookingId,
-        Guid grantId,
-        CancellationToken ct = default);
-
     Task<UnitResult<CancelBookingError>> CancelAsync(
         int bookingId,
         CancellationToken ct = default);

@@ -1,10 +1,11 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 
-internal sealed class MembershipRepository : Repository<TenantMembershipEntity>, IMembershipRepository
+internal sealed class MembershipRepository : Repository<TenantMembershipEntity>, IMembershipRepository, IMembershipReadRepository
 {
     private readonly TenantDbContext context;
 
@@ -12,6 +13,20 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
     {
         this.context = context;
     }
+
+    public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
+        Guid userId, Guid tenantId, CancellationToken cancellationToken = default) =>
+        context.Memberships
+            .Where(m => m.UserId == userId && m.TenantId == tenantId)
+            .Select(m => new MembershipSnapshot(m.Id, m.TenantId, m.UserId, m.Role, m.PermissionVersion))
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByUserIdAsync(
+        Guid userId, CancellationToken cancellationToken = default) =>
+        await context.Memberships
+            .Where(m => m.UserId == userId)
+            .Select(m => new MembershipSnapshot(m.Id, m.TenantId, m.UserId, m.Role, m.PermissionVersion))
+            .ToListAsync(cancellationToken);
 
     public Task<UserMembership?> GetMembershipAsync(Guid userId, Guid tenantId, CancellationToken ct = default) =>
         context.Memberships

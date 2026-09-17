@@ -1,4 +1,6 @@
-using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Tenant.Contracts;
+﻿using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Application.Interfaces;
@@ -71,8 +73,11 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<IBookingModule>(),
             Mock.Of<IUnitOfWork>(),
             TimeProvider.System,
+            Mock.Of<IConcertCommandReceiptRepository>(),
+            Mock.Of<ITenantModule>(),
             Mock.Of<ITenantContext>(),
-            Mock.Of<IAccessContext>(),
+            Mock.Of<IMembershipContext>(),
+            Mock.Of<IResourceAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());
     }
 

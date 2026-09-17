@@ -1,4 +1,4 @@
-using Concertable.Contracts;
+﻿using Concertable.Contracts;
 using Concertable.B2B.Conversations.Contracts.Enums;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -74,7 +74,7 @@ internal sealed class MessageRepository : Repository<MessageEntity>, IMessageRep
                 context.ThreadAccessGrants
                     .Where(grant =>
                         grant.ResourceId == m.ThreadId
-                        && grant.Scope == ThreadAccessScope.Participate
+                        && grant.Scope == ThreadAccessScope.SendMessages
                         && grant.TenantId != tenantId
                         && grant.RevokedAt == null)
                     .Select(grant => (Guid?)grant.TenantId)

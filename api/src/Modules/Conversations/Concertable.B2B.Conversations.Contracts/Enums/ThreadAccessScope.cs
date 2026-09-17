@@ -7,5 +7,5 @@ namespace Concertable.B2B.Conversations.Contracts.Enums;
 public enum ThreadAccessScope
 {
     Read = 1,
-    Participate = 2,
+    SendMessages = 2,
 }

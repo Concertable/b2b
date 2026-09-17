@@ -1,4 +1,4 @@
-namespace Concertable.B2B.Tenant.Infrastructure;
+﻿namespace Concertable.B2B.Tenant.Infrastructure;
 
 internal sealed class TenantModule : ITenantModule
 {
@@ -24,6 +24,9 @@ internal sealed class TenantModule : ITenantModule
 
     public Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default) =>
         service.GetMemberUserIdsAsync(tenantId, ct);
+
+    public Task<bool> IsCurrentMembershipAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default) =>
+        service.IsCurrentMembershipAsync(tenantId, membershipId, ct);
 
     public Task<Option<BusinessFacts>> GetBusinessFactsAsync(Guid tenantId, CancellationToken ct = default) =>
         service.GetBusinessFactsAsync(tenantId, ct);

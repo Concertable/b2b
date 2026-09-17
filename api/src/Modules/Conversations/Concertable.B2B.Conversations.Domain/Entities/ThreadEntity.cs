@@ -1,4 +1,4 @@
-using Concertable.B2B.Conversations.Contracts.Enums;
+﻿using Concertable.B2B.Conversations.Contracts.Enums;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Kernel;
 
@@ -28,24 +28,23 @@ public sealed class ThreadEntity : IIdEntity
 
         var thread = new ThreadEntity { CreatedAt = at };
         foreach (var tenantId in participantTenantIds.Distinct())
-            thread.AddParticipant(tenantId, issuedByTenantId: tenantId, GrantOrigin.ResourceCreation, at);
+            thread.AdmitPrincipal(tenantId, at);
 
         return thread;
     }
 
-    /// <summary>Admits a tenant to the conversation, able both to read it and to speak in it.</summary>
-    public void AddParticipant(Guid tenantId, Guid issuedByTenantId, GrantOrigin origin, DateTime at)
+    private void AdmitPrincipal(Guid tenantId, DateTime at)
     {
-        foreach (var scope in Enum.GetValues<ThreadAccessScope>())
+        foreach (var scope in new[] { ThreadAccessScope.Read, ThreadAccessScope.SendMessages })
         {
             accessGrants.Add(ThreadAccessGrant.Issue(
                 Id,
                 tenantId,
-                memberUserId: null,
+                membershipId: null,
                 scope,
-                issuedByTenantId,
+                issuedByTenantId: tenantId,
                 issuedByUserId: null,
-                origin,
+                ResourceGrantKind.Principal,
                 at));
         }
     }

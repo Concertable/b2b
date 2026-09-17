@@ -97,6 +97,7 @@ public static class ServiceCollectionExtensions
 
             // Repositories
             services.AddScoped<IConcertRepository, ConcertRepository>();
+            services.AddScoped<IConcertCommandReceiptRepository, ConcertCommandReceiptRepository>();
             services.AddScoped<IConcertReadRepository, ConcertReadRepository>();
             services.AddScoped<IArtistReadModelRepository, ArtistReadModelRepository>();
             services.AddScoped<IVenueReadModelRepository, VenueReadModelRepository>();

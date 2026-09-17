@@ -1,4 +1,4 @@
-using Concertable.B2B.Authorization.Contracts;
+﻿using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Tax;
 using Concertable.B2B.Tenant.Application.Requests;
@@ -52,6 +52,12 @@ internal sealed class TenantService : ITenantService
     {
         var memberships = await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct);
         return memberships.Select(m => m.UserId).ToList();
+    }
+
+    public async Task<bool> IsCurrentMembershipAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default)
+    {
+        var memberships = await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct);
+        return memberships.Any(m => m.Id == membershipId);
     }
 
     public async Task<Option<BusinessFacts>> GetBusinessFactsAsync(Guid tenantId, CancellationToken ct = default) =>

@@ -7,7 +7,7 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
 {
     private readonly ICurrentUser currentUser;
     private readonly IHttpContextAccessor httpContextAccessor;
-    private readonly IMembershipFacts facts;
+    private readonly IMembershipReadRepository memberships;
     private readonly IPermissionCatalog permissionCatalog;
     private readonly IExecutionScope executionScope;
     private readonly IMembershipContextAccessor accessor;
@@ -15,28 +15,22 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
     public MembershipContext(
         ICurrentUser currentUser,
         IHttpContextAccessor httpContextAccessor,
-        IMembershipFacts facts,
+        IMembershipReadRepository memberships,
         IPermissionCatalog permissionCatalog,
         IExecutionScope executionScope,
         IMembershipContextAccessor accessor)
     {
         this.currentUser = currentUser;
         this.httpContextAccessor = httpContextAccessor;
-        this.facts = facts;
+        this.memberships = memberships;
         this.permissionCatalog = permissionCatalog;
         this.executionScope = executionScope;
         this.accessor = accessor;
     }
 
-    private ActiveMembership? Active => accessor.Resolution?.Membership;
+    public MembershipSnapshot? Membership => accessor.Resolution?.Membership;
 
-    public Guid? TenantId => Active?.TenantId;
-
-    public TenantRole? Role => Active?.Role;
-
-    public Guid? UserId => Active?.UserId;
-
-    public long? AuthorizationVersion => Active?.AuthorizationVersion;
+    public Guid? TenantId => Membership?.TenantId;
 
     /// <summary>
     /// Only an explicitly entered execution scope reaches the unfiltered stance. A request-free caller that
@@ -46,7 +40,12 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
     public bool IsHost => executionScope.Purpose is not null;
 
     public bool HasPermission(string permission) =>
-        Active is { } active && permissionCatalog.Grants(active.Role, permission);
+        Membership is { } active && permissionCatalog.Grants(active.Role, permission);
+
+    public ResourceAudience AudienceFor(string permission) =>
+        Membership is { } active
+            ? permissionCatalog.AudienceFor(active.Role, permission)
+            : ResourceAudience.None;
 
     public async Task ResolveAsync(CancellationToken cancellationToken = default)
     {
@@ -59,15 +58,7 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
             return;
         }
 
-        var membership = await ResolveMembershipAsync(userId, cancellationToken);
-        accessor.Resolution = new MembershipResolution(
-            membership is null
-                ? null
-                : new ActiveMembership(
-                    membership.TenantId,
-                    membership.UserId,
-                    membership.Role,
-                    membership.AuthorizationVersion));
+        accessor.Resolution = new MembershipResolution(await ResolveMembershipAsync(userId, cancellationToken));
     }
 
     /// <summary>
@@ -76,19 +67,26 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
     /// a sole membership is the default; a user with several must name one, so the request fails closed rather
     /// than guess.
     /// </summary>
-    private async Task<MembershipFact?> ResolveMembershipAsync(Guid userId, CancellationToken cancellationToken)
+    private async Task<MembershipSnapshot?> ResolveMembershipAsync(Guid userId, CancellationToken cancellationToken)
     {
         if (TryGetHeaderTenantId(out var headerTenantId))
-            return await facts.GetAsync(userId, headerTenantId, cancellationToken);
+            return await memberships.GetSnapshotByUserIdAndTenantIdAsync(userId, headerTenantId, cancellationToken);
 
-        var memberships = await facts.GetAllAsync(userId, cancellationToken);
-        return memberships is [var sole] ? sole : null;
+        if (HasTenantHeader())
+            throw new MalformedTenantHeaderException();
+
+        var all = await memberships.GetSnapshotsByUserIdAsync(userId, cancellationToken);
+        return all is [var sole] ? sole : null;
     }
+
+    private bool HasTenantHeader() =>
+        httpContextAccessor.HttpContext?.Request.Headers.ContainsKey(TenantHeaders.TenantId) is true;
 
     private bool TryGetHeaderTenantId(out Guid tenantId)
     {
         tenantId = default;
         return httpContextAccessor.HttpContext?.Request.Headers.TryGetValue(TenantHeaders.TenantId, out var values) is true
-            && Guid.TryParse(values.ToString(), out tenantId);
+            && Guid.TryParse(values.ToString(), out tenantId)
+            && tenantId != Guid.Empty;
     }
 }

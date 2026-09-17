@@ -10,5 +10,5 @@ internal sealed class ConversationsDbContextFactory : B2BDesignTimeDbContextFact
             options,
             new ConversationsConfigurationProvider(),
             DesignTimeTenantContext.Instance,
-            DesignTimeAccessContext.Instance);
+            DesignTimeResourceAccessContext.Instance);
 }

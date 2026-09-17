@@ -8,18 +8,10 @@ namespace Concertable.B2B.Authorization.Contracts;
 /// </summary>
 public interface IMembershipContext
 {
-    /// <summary>The active membership's role; <see langword="null"/> when the caller has no membership in the active tenant.</summary>
-    TenantRole? Role { get; }
-
-    /// <summary>The authenticated human acting in the tenant; <see langword="null"/> outside an authenticated request.</summary>
-    Guid? UserId { get; }
-
-    /// <summary>
-    /// The membership's authority revision at resolution time. A resource read re-checks the membership at
-    /// this revision inside its own authorisation query, so a removal or downgrade between resolution and
-    /// query denies rather than serves.
-    /// </summary>
-    long? AuthorizationVersion { get; }
+    /// <summary>The resolved membership; <see langword="null"/> when the caller has none in the active tenant.</summary>
+    MembershipSnapshot? Membership { get; }
 
     bool HasPermission(string permission);
+
+    ResourceAudience AudienceFor(string permission);
 }

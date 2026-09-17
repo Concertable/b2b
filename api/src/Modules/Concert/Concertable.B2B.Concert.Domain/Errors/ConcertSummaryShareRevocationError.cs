@@ -1,17 +1,16 @@
-using Reunion.Errors;
 using Dunet;
 
-namespace Concertable.B2B.Booking.Domain.Errors;
+namespace Concertable.B2B.Concert.Domain.Errors;
 
 [Union(EnableImplicitConversions = false)]
-public abstract partial record BookingShareRevocationError : IError
+public abstract partial record ConcertSummaryShareRevocationError : IError
 {
     public ErrorDefinition Definition => this switch
     {
         GrantNotFound => ErrorDefinition.NotFound<GrantNotFound>(
-            "No such grant on this booking."),
+            "No such grant on this concert."),
         NotAShare => ErrorDefinition.Invalid<NotAShare>(
-            "A party's own access to its booking is not a share, and is not revoked here."),
+            "A principal's own access and a member's assignment are not shares, and are not revoked here."),
         NotTheIssuer => ErrorDefinition.Forbidden<NotTheIssuer>(
             "Only the tenant that issued a share can revoke it.")
     };

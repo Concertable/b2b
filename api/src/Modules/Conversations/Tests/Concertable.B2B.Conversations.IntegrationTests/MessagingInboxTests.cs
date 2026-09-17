@@ -1,4 +1,4 @@
-using Concertable.Seed.Identity;
+﻿using Concertable.Seed.Identity;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Conversations.IntegrationTests;
@@ -98,6 +98,27 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         Assert.True(preview.Unread);
         Assert.Equal("/_venue/?inbox=open", preview.Href);
     }
+
+    [Fact]
+    public async Task Previews_LatestMessageHidden_FallsBackToTheNewestVisibleOne()
+    {
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var admin = fixture.CreateClient(fixture.SeedState.Admin);
+        var latestId = (await GetInboxAsync(venue)).Data
+            .Single(message => message.Content == "Test inbox message — venue to artist.").Id;
+
+        await admin.PostAsync($"/api/Moderation/messages/{latestId}/hide");
+        await venue.PostAsync("/api/Message/mark-read", new { });
+
+        var previews = await GetPreviewsAsync(venue);
+
+        var preview = Assert.Single(previews);
+        Assert.Equal("Test inbox message — artist to venue.", preview.Preview);
+        Assert.False(preview.Unread);
+    }
+
+    private static async Task<List<MessagePreview>> GetPreviewsAsync(HttpClient client) =>
+        (await (await client.GetAsync("/api/Message/previews")).Content.ReadAsync<List<MessagePreview>>())!;
 
     private static async Task<InboxPage> GetInboxAsync(HttpClient client) =>
         (await (await client.GetAsync("/api/Message/user")).Content.ReadAsync<InboxPage>())!;

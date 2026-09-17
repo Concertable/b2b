@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Domain.Events;
@@ -58,6 +58,10 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     private readonly List<ConcertAccessGrant> accessGrants = [];
     public IReadOnlyList<ConcertAccessGrant> AccessGrants => accessGrants;
 
+    /// <summary>Changes whenever this concert's grants change, so a share or assignment command can state the
+    /// access state it decided against and fail rather than act on a superseded one.</summary>
+    public long AccessVersion { get; private set; }
+
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
     public void ClearDomainEvents() => events.Clear();
@@ -79,77 +83,150 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
        issue can be attributed to. */
     private void IssuePrincipalGrants(DateTime at)
     {
-        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId })
+        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
         {
-            foreach (var scope in Enum.GetValues<ConcertAccessScope>())
+            foreach (var scope in new[]
+                     {
+                         ConcertAccessScope.Summary,
+                         ConcertAccessScope.Operations,
+                         ConcertAccessScope.Finance,
+                     })
             {
                 accessGrants.Add(ConcertAccessGrant.Issue(
                     Id,
                     tenantId,
-                    memberUserId: null,
+                    membershipId: null,
                     scope,
                     issuedByTenantId: VenueTenantId,
                     issuedByUserId: null,
-                    GrantOrigin.ResourceCreation,
+                    ResourceGrantKind.Principal,
                     at));
             }
         }
     }
 
-    private static readonly ConcertAccessScope[] ShareableScopes =
-        [ConcertAccessScope.Summary, ConcertAccessScope.Operations];
-
-    public Result<ConcertAccessGrant, ConcertShareError> Share(
-        Guid toTenantId,
-        Guid? toMemberUserId,
-        ConcertAccessScope scope,
-        Guid byTenantId,
-        Guid? byUserId,
+    public Result<ConcertAccessGrant, ConcertSummaryShareError> ShareSummary(
+        Guid issuerTenantId,
+        Guid issuerUserId,
+        Guid recipientTenantId,
+        Guid? recipientMembershipId,
         DateTime at,
-        DateTime? validUntil = null)
+        DateTime? validUntil)
     {
-        if (!ShareableScopes.Contains(scope))
-            return new ConcertShareError.ScopeNotShareable(scope);
+        if (!IsPrincipal(issuerTenantId))
+            return new ConcertSummaryShareError.NotPermitted();
 
-        if (byTenantId != VenueTenantId && byTenantId != ArtistTenantId)
-            return new ConcertShareError.NotAPrincipal();
+        if (validUntil is { } until && until <= at)
+            return new ConcertSummaryShareError.InvalidValidity();
 
         if (accessGrants.Any(grant =>
-                grant.TenantId == toTenantId
-                && grant.MemberUserId == toMemberUserId
-                && grant.Scope == scope
-                && grant.IsLiveAt(at)))
-            return new ConcertShareError.AlreadyShared();
+                grant.Kind == ResourceGrantKind.SharedSummary
+                && grant.IssuedByTenantId == issuerTenantId
+                && grant.TenantId == recipientTenantId
+                && grant.MembershipId == recipientMembershipId
+                && grant.RevokedAt == null))
+            return new ConcertSummaryShareError.AlreadyShared();
 
-        var issued = ConcertAccessGrant.Issue(
+        var grant = ConcertAccessGrant.Issue(
             Id,
-            toTenantId,
-            toMemberUserId,
-            scope,
-            issuedByTenantId: byTenantId,
-            issuedByUserId: byUserId,
-            GrantOrigin.ExplicitShare,
+            recipientTenantId,
+            recipientMembershipId,
+            ConcertAccessScope.Summary,
+            issuedByTenantId: issuerTenantId,
+            issuedByUserId: issuerUserId,
+            ResourceGrantKind.SharedSummary,
             at,
             validUntil);
 
-        accessGrants.Add(issued);
-        return issued;
+        accessGrants.Add(grant);
+        AccessVersion++;
+        return grant;
     }
 
-    public UnitResult<ShareRevocationError> RevokeShare(Guid grantId, Guid byTenantId, DateTime at)
+    /* Expiry cannot live in the unique index's filter, so a reissue retires the expired row first. The caller
+       flushes between the two, inside the one transaction, or the insert collides with the row it replaces. */
+    public void RevokeExpiredSummaryShares(
+        Guid issuerTenantId, Guid recipientTenantId, Guid? recipientMembershipId, DateTime at)
+    {
+        foreach (var grant in accessGrants.Where(grant =>
+                     grant.Kind == ResourceGrantKind.SharedSummary
+                     && grant.IssuedByTenantId == issuerTenantId
+                     && grant.TenantId == recipientTenantId
+                     && grant.MembershipId == recipientMembershipId
+                     && grant.RevokedAt == null
+                     && !grant.IsLiveAt(at)))
+        {
+            grant.Revoke(at);
+            AccessVersion++;
+        }
+    }
+
+    public UnitResult<ConcertSummaryShareRevocationError> RevokeSummaryShare(
+        Guid grantId, Guid byTenantId, DateTime at)
     {
         if (accessGrants.SingleOrDefault(grant => grant.Id == grantId) is not { } grant)
-            return new ShareRevocationError.GrantNotFound();
+            return new ConcertSummaryShareRevocationError.GrantNotFound();
 
-        if (grant.Origin is not GrantOrigin.ExplicitShare)
-            return new ShareRevocationError.NotAShare();
+        if (grant.Kind is not ResourceGrantKind.SharedSummary)
+            return new ConcertSummaryShareRevocationError.NotAShare();
 
         if (grant.IssuedByTenantId != byTenantId)
-            return new ShareRevocationError.NotTheIssuer();
+            return new ConcertSummaryShareRevocationError.NotTheIssuer();
 
         grant.Revoke(at);
+        AccessVersion++;
         return new Success();
     }
+
+    public UnitResult<ConcertMemberAssignmentError> AssignMember(
+        Guid actorTenantId, Guid membershipId, Guid membershipTenantId, DateTime at)
+    {
+        if (!IsPrincipal(actorTenantId) || membershipTenantId != actorTenantId)
+            return new ConcertMemberAssignmentError.NotPermitted();
+
+        if (accessGrants.Any(grant =>
+                grant.Kind == ResourceGrantKind.MemberAssignment
+                && grant.MembershipId == membershipId
+                && grant.RevokedAt == null))
+            return new ConcertMemberAssignmentError.AlreadyAssigned();
+
+        foreach (var scope in new[] { ConcertAccessScope.Summary, ConcertAccessScope.Operations })
+        {
+            accessGrants.Add(ConcertAccessGrant.Issue(
+                Id,
+                actorTenantId,
+                membershipId,
+                scope,
+                issuedByTenantId: actorTenantId,
+                issuedByUserId: null,
+                ResourceGrantKind.MemberAssignment,
+                at));
+        }
+
+        AccessVersion++;
+        return new Success();
+    }
+
+    public UnitResult<ConcertMemberAssignmentError> RemoveMemberAssignment(
+        Guid actorTenantId, Guid membershipId, DateTime at)
+    {
+        if (!IsPrincipal(actorTenantId))
+            return new ConcertMemberAssignmentError.NotPermitted();
+
+        foreach (var grant in accessGrants.Where(grant =>
+                     grant.Kind == ResourceGrantKind.MemberAssignment
+                     && grant.IssuedByTenantId == actorTenantId
+                     && grant.MembershipId == membershipId
+                     && grant.RevokedAt == null))
+        {
+            grant.Revoke(at);
+        }
+
+        AccessVersion++;
+        return new Success();
+    }
+
+    private bool IsPrincipal(Guid tenantId) => tenantId == VenueTenantId || tenantId == ArtistTenantId;
 
     private static ConcertEntity FromTerms(
         ConfirmedBookingSnapshot booking,

@@ -394,7 +394,7 @@ public sealed class TenantServiceTests
         var userId = Guid.NewGuid();
         membershipRepository
             .Setup(repository => repository.GetMembershipsAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new UserMembership(tenantId, "Bare Ltd", TenantRole.Door, 1, [])]);
+            .ReturnsAsync([new UserMembership(Guid.NewGuid(), tenantId, "Bare Ltd", TenantRole.Door, 1, [])]);
         permissionCatalog
             .Setup(catalog => catalog.For(TenantRole.Door))
             .Returns(new HashSet<string> { TenantPermission.OperationsView, TenantPermission.ConcertsCheckIn });

@@ -10,5 +10,5 @@ internal sealed class ApplicationDbContextFactory : B2BDesignTimeDbContextFactor
             options,
             new ApplicationConfigurationProvider(),
             DesignTimeTenantContext.Instance,
-            DesignTimeAccessContext.Instance);
+            DesignTimeResourceAccessContext.Instance);
 }

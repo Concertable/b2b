@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts;
@@ -73,16 +73,16 @@ public sealed class InvoiceEntity : IIdEntity
             PdfBlobName = $"invoices/{concert.BookingId}-{Guid.NewGuid():N}.pdf"
         };
 
-        foreach (var tenantId in new[] { concert.VenueTenantId, concert.ArtistTenantId })
+        foreach (var tenantId in new[] { concert.VenueTenantId, concert.ArtistTenantId }.Distinct())
         {
             invoice.accessGrants.Add(InvoiceAccessGrant.Issue(
                 invoice.Id,
                 tenantId,
-                memberUserId: null,
-                InvoiceAccessScope.Invoice,
+                membershipId: null,
+                InvoiceAccessScope.Read,
                 issuedByTenantId: concert.VenueTenantId,
                 issuedByUserId: null,
-                GrantOrigin.ResourceCreation,
+                ResourceGrantKind.Principal,
                 createdAtUtc));
         }
 

@@ -1,4 +1,6 @@
-using Concertable.B2B.Artist.Domain.ReadModels;
+﻿using Concertable.B2B.Artist.Domain.ReadModels;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -12,8 +14,8 @@ internal sealed class ConcertDbContext(
     DbContextOptions<ConcertDbContext> options,
     ConcertConfigurationProvider provider,
     ITenantContext tenantContext,
-    IAccessContext accessContext)
-    : AccessScopedDbContext(options, provider, tenantContext, accessContext, Schema.Name)
+    IResourceAccessContext resourceAccess)
+    : ResourceScopedDbContext(options, provider, tenantContext, resourceAccess, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
     public DbSet<InvoiceEntity> Invoices => Set<InvoiceEntity>();
@@ -27,41 +29,43 @@ internal sealed class ConcertDbContext(
     public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
     public DbSet<ConcertAccessGrant> ConcertAccessGrants => Set<ConcertAccessGrant>();
     public DbSet<InvoiceAccessGrant> InvoiceAccessGrants => Set<InvoiceAccessGrant>();
+    public DbSet<ConcertCommandReceipt> ConcertCommandReceipts => Set<ConcertCommandReceipt>();
 
-    /* Each filter is written out against its own grant set rather than derived from a marker: the predicate
-       has to name the grant family it reads. Every reference is to the context instance, which EF re-binds
-       per query. */
+    public ResourceAudience OperationsAudience => AudienceFor(TenantPermission.OperationsView);
+    public ResourceAudience FinanceAudience => AudienceFor(TenantPermission.SettlementView);
+
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ConcertAccessGrant>().HasQueryFilter(TenantFilters.Key,
+            ResourceAccessExpressions.LiveForCurrentMember<ConcertAccessGrant, ConcertAccessScope>(this)
+                .And(grant =>
+                    (grant.Scope == ConcertAccessScope.Summary || grant.Scope == ConcertAccessScope.Operations)
+                        && (OperationsAudience == ResourceAudience.TenantResources
+                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
+                            || OperationsAudience == ResourceAudience.AssignedResources
+                                && grant.MembershipId == ActiveMembershipId)
+                    || grant.Scope == ConcertAccessScope.Finance
+                        && (FinanceAudience == ResourceAudience.TenantResources
+                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
+                            || FinanceAudience == ResourceAudience.AssignedResources
+                                && grant.MembershipId == ActiveMembershipId)));
+
+        modelBuilder.Entity<InvoiceAccessGrant>().HasQueryFilter(TenantFilters.Key,
+            ResourceAccessExpressions.LiveForCurrentMember<InvoiceAccessGrant, InvoiceAccessScope>(this)
+                .And(grant =>
+                    grant.Scope == InvoiceAccessScope.Read
+                        && (FinanceAudience == ResourceAudience.TenantResources
+                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
+                            || FinanceAudience == ResourceAudience.AssignedResources
+                                && grant.MembershipId == ActiveMembershipId)));
+
         modelBuilder.Entity<ConcertEntity>().HasQueryFilter(TenantFilters.Key, concert =>
-            AccessContext.IsHost
-            || (AccessContext.UserId != null
-                && MembershipAuthority.Any(membership =>
-                    membership.TenantId == AccessContext.TenantId
-                    && membership.UserId == AccessContext.UserId
-                    && membership.AuthorizationVersion == AccessContext.AuthorizationVersion)
-                && ConcertAccessGrants.Any(grant =>
-                    grant.ResourceId == concert.Id
-                    && grant.TenantId == AccessContext.TenantId
-                    && (grant.MemberUserId == null || grant.MemberUserId == AccessContext.UserId)
-                    && grant.RevokedAt == null
-                    && grant.ValidFrom <= AccessContext.UtcNow
-                    && (grant.ValidUntil == null || grant.ValidUntil > AccessContext.UtcNow))));
+            ConcertAccessGrants.Any(grant =>
+                grant.ResourceId == concert.Id && grant.Scope == ConcertAccessScope.Summary));
 
         modelBuilder.Entity<InvoiceEntity>().HasQueryFilter(TenantFilters.Key, invoice =>
-            AccessContext.IsHost
-            || (AccessContext.UserId != null
-                && MembershipAuthority.Any(membership =>
-                    membership.TenantId == AccessContext.TenantId
-                    && membership.UserId == AccessContext.UserId
-                    && membership.AuthorizationVersion == AccessContext.AuthorizationVersion)
-                && InvoiceAccessGrants.Any(grant =>
-                    grant.ResourceId == invoice.Id
-                    && grant.TenantId == AccessContext.TenantId
-                    && (grant.MemberUserId == null || grant.MemberUserId == AccessContext.UserId)
-                    && grant.RevokedAt == null
-                    && grant.ValidFrom <= AccessContext.UtcNow
-                    && (grant.ValidUntil == null || grant.ValidUntil > AccessContext.UtcNow))));
+            InvoiceAccessGrants.Any(grant =>
+                grant.ResourceId == invoice.Id && grant.Scope == InvoiceAccessScope.Read));
 
         modelBuilder.ApplySingleOwner<SelfBillingAgreementEntity>(this);
     }

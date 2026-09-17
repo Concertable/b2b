@@ -12,5 +12,4 @@ public enum TenantRole
     Staff = 4,
     Door = 5,
     Sound = 6,
-    RestrictedParticipant = 7,
 }

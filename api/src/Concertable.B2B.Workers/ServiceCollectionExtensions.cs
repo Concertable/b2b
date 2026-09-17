@@ -60,7 +60,7 @@ internal static class ServiceCollectionExtensions
             runDispatcher: false);
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
-        services.AddScoped<IAccessContext, AccessContext>();
+        services.AddScoped<IResourceAccessContext, ResourceAccessContext>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddDataAccessSpecifications();

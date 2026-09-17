@@ -11,7 +11,7 @@ internal sealed class ConcertDbContextFactory : B2BDesignTimeDbContextFactory<Co
             options,
             new ConcertConfigurationProvider(),
             DesignTimeTenantContext.Instance,
-            DesignTimeAccessContext.Instance);
+            DesignTimeResourceAccessContext.Instance);
 
     protected override void ConfigureSqlServer(SqlServerDbContextOptionsBuilder sql) =>
         sql.UseNetTopologySuite();

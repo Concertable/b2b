@@ -1,13 +1,22 @@
-using Concertable.B2B.Concert.Contracts.Enums;
+﻿namespace Concertable.B2B.Concert.Application.Requests;
 
-namespace Concertable.B2B.Concert.Application.Requests;
-
-internal sealed record ShareConcertRequest
+/// <summary>
+/// The scope is not a parameter: a summary share discloses the summary and nothing else. Widening it is a
+/// consent design, not another value on this request.
+/// </summary>
+internal sealed record ShareConcertSummaryRequest
 {
-    public Guid ToTenantId { get; init; }
-    public Guid? ToMemberUserId { get; init; }
-    public ConcertAccessScope Scope { get; init; }
+    public Guid RequestId { get; init; }
+    public Guid RecipientTenantId { get; init; }
+    public Guid? RecipientMembershipId { get; init; }
+    public long ExpectedAccessVersion { get; init; }
     public DateTime? ValidUntil { get; init; }
+}
+
+internal sealed record AssignConcertMemberRequest
+{
+    public Guid MembershipId { get; init; }
+    public long ExpectedAccessVersion { get; init; }
 }
 
 internal sealed record UpdateConcertRequest

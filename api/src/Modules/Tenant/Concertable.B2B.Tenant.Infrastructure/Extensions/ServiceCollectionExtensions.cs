@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Tenant.Contracts;
@@ -48,7 +48,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IVatPolicy, VatPolicy>();
 
         services.AddScoped<ITenantRepository, TenantRepository>();
-        services.AddScoped<IMembershipRepository, MembershipRepository>();
+        services.AddScoped<MembershipRepository>();
+        services.AddScoped<IMembershipRepository>(sp => sp.GetRequiredService<MembershipRepository>());
         services.AddScoped<IInvitationRepository, InvitationRepository>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IMembershipService, MembershipService>();
@@ -61,7 +62,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITenantModule, TenantModule>();
 
         // Tenant owns membership rows; the Authorization module owns request authority and reads them through this port.
-        services.AddScoped<IMembershipFacts, MembershipFacts>();
+        services.AddScoped<IMembershipReadRepository>(sp => sp.GetRequiredService<MembershipRepository>());
 
         services.Configure<MvcOptions>(options => options.Filters.Add<BusinessProfileAuthorizationFilter>());
 

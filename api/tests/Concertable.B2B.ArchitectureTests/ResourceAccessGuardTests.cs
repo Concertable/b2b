@@ -58,7 +58,7 @@ public sealed class ResourceAccessGuardTests
         ModuleSourceFiles()
             .Where(file => file.Name.EndsWith("DbContext.cs", StringComparison.Ordinal))
             .Where(file => File.ReadAllText(file.FullName)
-                .Contains(": AccessScopedDbContext(", StringComparison.Ordinal))
+                .Contains(": ResourceScopedDbContext(", StringComparison.Ordinal))
             .ToArray();
 
     private static string ConfigurationProviderOf(DirectoryInfo module) =>

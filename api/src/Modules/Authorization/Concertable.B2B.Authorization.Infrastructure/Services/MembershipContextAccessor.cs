@@ -2,14 +2,12 @@ using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Authorization.Infrastructure.Services;
 
-internal sealed record ActiveMembership(Guid TenantId, Guid UserId, TenantRole Role, long AuthorizationVersion);
-
 /// <summary>
 /// A resolution that has already happened. <see cref="Membership"/> is <see langword="null"/> when the caller
 /// has no usable membership — resolved, and deliberately nothing, so the request fails closed without
 /// re-querying.
 /// </summary>
-internal sealed record MembershipResolution(ActiveMembership? Membership);
+internal sealed record MembershipResolution(MembershipSnapshot? Membership);
 
 /// <summary>
 /// Carries the resolved membership for the current request. It belongs to the request, not to a

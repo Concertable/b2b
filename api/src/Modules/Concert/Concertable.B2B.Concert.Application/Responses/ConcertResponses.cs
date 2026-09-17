@@ -1,13 +1,12 @@
-using Concertable.B2B.Concert.Contracts.Enums;
+﻿namespace Concertable.B2B.Concert.Application.Responses;
 
-namespace Concertable.B2B.Concert.Application.Responses;
-
-internal sealed record ConcertShareResponse
+internal sealed record ConcertSummaryShare
 {
     public Guid GrantId { get; init; }
-    public Guid ToTenantId { get; init; }
-    public Guid? ToMemberUserId { get; init; }
-    public ConcertAccessScope Scope { get; init; }
+    public long GrantVersion { get; init; }
+    public long AccessVersion { get; init; }
+    public Guid RecipientTenantId { get; init; }
+    public Guid? RecipientMembershipId { get; init; }
     public DateTime ValidFrom { get; init; }
     public DateTime? ValidUntil { get; init; }
 }

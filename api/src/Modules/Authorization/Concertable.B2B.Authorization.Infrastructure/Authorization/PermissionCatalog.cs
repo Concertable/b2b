@@ -5,7 +5,7 @@ namespace Concertable.B2B.Authorization.Infrastructure.Authorization;
 /// <summary>
 /// Role to permissions, with no tenant type in the lookup. What a business is — a venue operator, an artist,
 /// a promoter, or none of those — is eligibility for particular work, decided by the owning operation against
-/// the tenant's active business profiles; it is not a second authority axis over the role bundle.
+/// the tenant's active business activities; it is not a second authority axis over the role bundle.
 /// </summary>
 internal sealed class PermissionCatalog : IPermissionCatalog
 {
@@ -20,8 +20,10 @@ internal sealed class PermissionCatalog : IPermissionCatalog
                 TenantPermission.MembersInvite, TenantPermission.MembersRemove, TenantPermission.MembersManageRoles,
                 TenantPermission.MessagesRead, TenantPermission.MessagesSend,
                 TenantPermission.ConcertsOpsEdit, TenantPermission.ConcertsCheckIn,
+                TenantPermission.ConcertsDeclareDoorRevenue,
                 TenantPermission.OpportunitiesManage, TenantPermission.ApplicationsDecide,
                 TenantPermission.ApplicationsSubmit, TenantPermission.ConcertsManage,
+                TenantPermission.BookingsCancel, TenantPermission.TermsRead,
                 TenantPermission.ResourcesShare,
             }.ToFrozenSet(),
 
@@ -31,8 +33,10 @@ internal sealed class PermissionCatalog : IPermissionCatalog
                 TenantPermission.SettlementView, TenantPermission.MembersInvite,
                 TenantPermission.MessagesRead, TenantPermission.MessagesSend,
                 TenantPermission.ConcertsOpsEdit, TenantPermission.ConcertsCheckIn,
+                TenantPermission.ConcertsDeclareDoorRevenue,
                 TenantPermission.OpportunitiesManage, TenantPermission.ApplicationsDecide,
                 TenantPermission.ApplicationsSubmit, TenantPermission.ConcertsManage,
+                TenantPermission.BookingsCancel, TenantPermission.TermsRead,
                 TenantPermission.ResourcesShare,
             }.ToFrozenSet(),
 
@@ -40,7 +44,7 @@ internal sealed class PermissionCatalog : IPermissionCatalog
             {
                 TenantPermission.OperationsView, TenantPermission.PayoutsManage,
                 TenantPermission.SettlementView, TenantPermission.SettlementTrigger,
-                TenantPermission.MessagesRead,
+                TenantPermission.TermsRead, TenantPermission.MessagesRead,
             }.ToFrozenSet(),
 
             [TenantRole.Staff] = new[]
@@ -58,11 +62,6 @@ internal sealed class PermissionCatalog : IPermissionCatalog
             {
                 TenantPermission.OperationsView, TenantPermission.ConcertsOpsEdit,
             }.ToFrozenSet(),
-
-            [TenantRole.RestrictedParticipant] = new[]
-            {
-                TenantPermission.OperationsView,
-            }.ToFrozenSet(),
         }.ToFrozenDictionary();
 
     public IReadOnlySet<string> For(TenantRole role) =>
@@ -70,6 +69,19 @@ internal sealed class PermissionCatalog : IPermissionCatalog
 
     public bool Grants(TenantRole role, string permission) =>
         ByRole.TryGetValue(role, out var permissions) && permissions.Contains(permission);
+
+    public ResourceAudience AudienceFor(TenantRole role, string permission)
+    {
+        if (!Grants(role, permission))
+            return ResourceAudience.None;
+
+        return role switch
+        {
+            TenantRole.Owner or TenantRole.Manager or TenantRole.Finance => ResourceAudience.TenantResources,
+            TenantRole.Staff or TenantRole.Door or TenantRole.Sound => ResourceAudience.AssignedResources,
+            _ => ResourceAudience.None,
+        };
+    }
 
     /// <summary>Every permission granted to at least one role — the catalog-coverage test checks this against the declared constants.</summary>
     internal static IReadOnlySet<string> All { get; } = ByRole.Values.SelectMany(p => p).ToFrozenSet();

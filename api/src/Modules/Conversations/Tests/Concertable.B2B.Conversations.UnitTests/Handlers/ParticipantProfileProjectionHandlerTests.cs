@@ -76,7 +76,7 @@ public sealed class ParticipantProfileProjectionHandlerTests
             new DbContextOptionsBuilder<ConversationsDbContext>().UseInMemoryDatabase(databaseName).Options,
             new ConversationsConfigurationProvider(),
             new StubTenantContext(Guid.NewGuid()),
-            DesignTimeAccessContext.Instance);
+            DesignTimeResourceAccessContext.Instance);
 
     private sealed class StubTenantContext(Guid tenantId) : ITenantContext
     {

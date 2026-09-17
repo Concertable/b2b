@@ -1,5 +1,4 @@
-using Concertable.B2B.Application.Domain.Errors;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Application.Domain.Events;
@@ -56,18 +55,18 @@ public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEvent
 
         /* The applicant and the tenant it applied to reach the application through grants like anyone else,
            issued with it so neither party can be shut out of its own application. The applicant issues it. */
-        foreach (var tenantId in new[] { venueTenantId, artistTenantId })
+        foreach (var tenantId in new[] { venueTenantId, artistTenantId }.Distinct())
         {
-            foreach (var scope in Enum.GetValues<ApplicationAccessScope>())
+            foreach (var scope in new[] { ApplicationAccessScope.Summary, ApplicationAccessScope.Proposal })
             {
                 accessGrants.Add(ApplicationAccessGrant.Issue(
                     Id,
                     tenantId,
-                    memberUserId: null,
+                    membershipId: null,
                     scope,
                     issuedByTenantId: artistTenantId,
                     issuedByUserId: null,
-                    GrantOrigin.ResourceCreation,
+                    ResourceGrantKind.Principal,
                     createdAtUtc));
             }
         }
@@ -188,59 +187,4 @@ public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEvent
         Guid artistTenantId,
         DateTime createdAtUtc) =>
         new(artistId, opportunityId, dealType, venueTenantId, artistTenantId, createdAtUtc);
-
-    private static readonly ApplicationAccessScope[] ShareableScopes =
-        [ApplicationAccessScope.Summary];
-
-    public Result<ApplicationAccessGrant, ApplicationShareError> Share(
-        Guid toTenantId,
-        Guid? toMemberUserId,
-        ApplicationAccessScope scope,
-        Guid byTenantId,
-        Guid? byUserId,
-        DateTime at,
-        DateTime? validUntil = null)
-    {
-        if (!ShareableScopes.Contains(scope))
-            return new ApplicationShareError.ScopeNotShareable(scope);
-
-        if (byTenantId != VenueTenantId && byTenantId != ArtistTenantId)
-            return new ApplicationShareError.NotAPrincipal();
-
-        if (accessGrants.Any(grant =>
-                grant.TenantId == toTenantId
-                && grant.MemberUserId == toMemberUserId
-                && grant.Scope == scope
-                && grant.IsLiveAt(at)))
-            return new ApplicationShareError.AlreadyShared();
-
-        var issued = ApplicationAccessGrant.Issue(
-            Id,
-            toTenantId,
-            toMemberUserId,
-            scope,
-            issuedByTenantId: byTenantId,
-            issuedByUserId: byUserId,
-            GrantOrigin.ExplicitShare,
-            at,
-            validUntil);
-
-        accessGrants.Add(issued);
-        return issued;
-    }
-
-    public UnitResult<ApplicationShareRevocationError> RevokeShare(Guid grantId, Guid byTenantId, DateTime at)
-    {
-        if (accessGrants.SingleOrDefault(grant => grant.Id == grantId) is not { } grant)
-            return new ApplicationShareRevocationError.GrantNotFound();
-
-        if (grant.Origin is not GrantOrigin.ExplicitShare)
-            return new ApplicationShareRevocationError.NotAShare();
-
-        if (grant.IssuedByTenantId != byTenantId)
-            return new ApplicationShareRevocationError.NotTheIssuer();
-
-        grant.Revoke(at);
-        return new Success();
-    }
 }

@@ -7,5 +7,5 @@ namespace Concertable.B2B.Booking.Contracts.Enums;
 public enum ContractAccessScope
 {
     /// <summary>The agreed terms and their document.</summary>
-    Terms = 1,
+    Read = 1,
 }

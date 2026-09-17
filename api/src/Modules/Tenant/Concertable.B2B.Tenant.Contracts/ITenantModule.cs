@@ -1,10 +1,14 @@
-namespace Concertable.B2B.Tenant.Contracts;
+﻿namespace Concertable.B2B.Tenant.Contracts;
 
 public interface ITenantModule
 {
     Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default);
     Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
+
+    /// <summary>Whether that exact membership incarnation is currently a member of that tenant — what a
+    /// resource module needs before addressing a grant to one member, and all it is told.</summary>
+    Task<bool> IsCurrentMembershipAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default);
     Task<Option<BusinessFacts>> GetBusinessFactsAsync(Guid tenantId, CancellationToken ct = default);
     Task<IReadOnlyList<BusinessFacts>> GetBusinessFactsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
     Task<bool> HasBusinessProfileAsync(Guid tenantId, TenantBusinessProfileKind kind, CancellationToken ct = default);

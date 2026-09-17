@@ -1,4 +1,4 @@
-namespace Concertable.B2B.Tenant.Infrastructure.Mappers;
+﻿namespace Concertable.B2B.Tenant.Infrastructure.Mappers;
 
 internal static class QueryableMembershipMappers
 {
@@ -14,10 +14,11 @@ internal static class QueryableMembershipMappers
                 m => m.TenantId,
                 t => t.Id,
                 (m, t) => new UserMembership(
+                    m.Id,
                     m.TenantId,
                     t.LegalName,
                     m.Role,
-                    m.AuthorizationVersion,
+                    m.PermissionVersion,
                     businessProfiles
                         .Where(p => p.TenantId == m.TenantId && p.RetiredAt == null)
                         .Select(p => p.Kind)

@@ -1,4 +1,4 @@
-using Concertable.B2B.Tenant.Contracts;
+﻿using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Tenant.Domain.Entities;
@@ -25,7 +25,7 @@ public sealed class TenantMembershipEntity : IGuidEntity
     /// and every authorised query re-checks the membership at that revision, so a role change or removal
     /// between resolution and query denies rather than serves.
     /// </summary>
-    public long AuthorizationVersion { get; private set; }
+    public long PermissionVersion { get; private set; }
 
     /// <summary><see langword="null"/> for the founding Owner; otherwise the inviter who created the invitation.</summary>
     public Guid? InvitedByUserId { get; private set; }
@@ -38,7 +38,7 @@ public sealed class TenantMembershipEntity : IGuidEntity
             TenantId = tenantId,
             UserId = userId,
             Role = role,
-            AuthorizationVersion = 1,
+            PermissionVersion = 1,
             InvitedByUserId = invitedBy,
             CreatedAt = at,
         };
@@ -47,6 +47,6 @@ public sealed class TenantMembershipEntity : IGuidEntity
     public void ChangeRole(TenantRole role)
     {
         Role = role;
-        AuthorizationVersion++;
+        PermissionVersion++;
     }
 }

@@ -1,3 +1,6 @@
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Booking.Contracts.Enums;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Data;
@@ -6,47 +9,43 @@ internal sealed class BookingDbContext(
     DbContextOptions<BookingDbContext> options,
     BookingConfigurationProvider provider,
     ITenantContext tenantContext,
-    IAccessContext accessContext)
-    : AccessScopedDbContext(options, provider, tenantContext, accessContext, Schema.Name)
+    IResourceAccessContext resourceAccess)
+    : ResourceScopedDbContext(options, provider, tenantContext, resourceAccess, Schema.Name)
 {
     public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
     public DbSet<ContractEntity> Contracts => Set<ContractEntity>();
     public DbSet<BookingAccessGrant> BookingAccessGrants => Set<BookingAccessGrant>();
     public DbSet<ContractAccessGrant> ContractAccessGrants => Set<ContractAccessGrant>();
 
-    /* Each filter is written out against its own grant set rather than derived from a marker: the predicate
-       has to name the grant family it reads, and which resources are reached by grant at all is a per-entity
-       product decision. Every reference is to the context instance, which EF re-binds per query. */
+    public ResourceAudience OperationsAudience => AudienceFor(TenantPermission.OperationsView);
+    public ResourceAudience TermsAudience => AudienceFor(TenantPermission.TermsRead);
+
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<BookingAccessGrant>().HasQueryFilter(TenantFilters.Key,
+            ResourceAccessExpressions.LiveForCurrentMember<BookingAccessGrant, BookingAccessScope>(this)
+                .And(grant =>
+                    (grant.Scope == BookingAccessScope.Summary || grant.Scope == BookingAccessScope.Operations)
+                        && (OperationsAudience == ResourceAudience.TenantResources
+                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
+                            || OperationsAudience == ResourceAudience.AssignedResources
+                                && grant.MembershipId == ActiveMembershipId)));
+
+        modelBuilder.Entity<ContractAccessGrant>().HasQueryFilter(TenantFilters.Key,
+            ResourceAccessExpressions.LiveForCurrentMember<ContractAccessGrant, ContractAccessScope>(this)
+                .And(grant =>
+                    grant.Scope == ContractAccessScope.Read
+                        && (TermsAudience == ResourceAudience.TenantResources
+                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
+                            || TermsAudience == ResourceAudience.AssignedResources
+                                && grant.MembershipId == ActiveMembershipId)));
+
         modelBuilder.Entity<BookingEntity>().HasQueryFilter(TenantFilters.Key, booking =>
-            AccessContext.IsHost
-            || (AccessContext.UserId != null
-                && MembershipAuthority.Any(membership =>
-                    membership.TenantId == AccessContext.TenantId
-                    && membership.UserId == AccessContext.UserId
-                    && membership.AuthorizationVersion == AccessContext.AuthorizationVersion)
-                && BookingAccessGrants.Any(grant =>
-                    grant.ResourceId == booking.Id
-                    && grant.TenantId == AccessContext.TenantId
-                    && (grant.MemberUserId == null || grant.MemberUserId == AccessContext.UserId)
-                    && grant.RevokedAt == null
-                    && grant.ValidFrom <= AccessContext.UtcNow
-                    && (grant.ValidUntil == null || grant.ValidUntil > AccessContext.UtcNow))));
+            BookingAccessGrants.Any(grant =>
+                grant.ResourceId == booking.Id && grant.Scope == BookingAccessScope.Summary));
 
         modelBuilder.Entity<ContractEntity>().HasQueryFilter(TenantFilters.Key, contract =>
-            AccessContext.IsHost
-            || (AccessContext.UserId != null
-                && MembershipAuthority.Any(membership =>
-                    membership.TenantId == AccessContext.TenantId
-                    && membership.UserId == AccessContext.UserId
-                    && membership.AuthorizationVersion == AccessContext.AuthorizationVersion)
-                && ContractAccessGrants.Any(grant =>
-                    grant.ResourceId == contract.Id
-                    && grant.TenantId == AccessContext.TenantId
-                    && (grant.MemberUserId == null || grant.MemberUserId == AccessContext.UserId)
-                    && grant.RevokedAt == null
-                    && grant.ValidFrom <= AccessContext.UtcNow
-                    && (grant.ValidUntil == null || grant.ValidUntil > AccessContext.UtcNow))));
+            ContractAccessGrants.Any(grant =>
+                grant.ResourceId == contract.Id && grant.Scope == ContractAccessScope.Read));
     }
 }

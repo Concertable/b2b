@@ -1,4 +1,4 @@
-using Concertable.B2B.Booking.Contracts.Enums;
+﻿using Concertable.B2B.Booking.Contracts.Enums;
 using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Booking.Domain.Entities;
@@ -10,11 +10,11 @@ public sealed class ContractAccessGrant : ResourceAccessGrant<ContractAccessScop
     internal static ContractAccessGrant Issue(
         int contractId,
         Guid tenantId,
-        Guid? memberUserId,
+        Guid? membershipId,
         ContractAccessScope scope,
         Guid issuedByTenantId,
         Guid? issuedByUserId,
-        GrantOrigin origin,
+        ResourceGrantKind kind,
         DateTime at,
         DateTime? validUntil = null)
     {
@@ -22,13 +22,15 @@ public sealed class ContractAccessGrant : ResourceAccessGrant<ContractAccessScop
         grant.Initialize(
             contractId,
             tenantId,
-            memberUserId,
+            membershipId,
             scope,
             issuedByTenantId,
             issuedByUserId,
-            origin,
+            kind,
             at,
             validUntil);
         return grant;
     }
+
+    internal void Revoke(DateTime at) => RevokeCore(at);
 }

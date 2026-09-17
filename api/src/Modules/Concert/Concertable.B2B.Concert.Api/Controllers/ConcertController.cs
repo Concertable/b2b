@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.Responses;
+﻿using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Api.Mappers;
@@ -34,20 +34,37 @@ internal sealed class ConcertController : ControllerBase
     }
 
     [HasPermission(TenantPermission.ResourcesShare)]
-    [HttpPost("{id:int}/shares")]
-    public async Task<ActionResult<ConcertShareResponse>> Share(
+    [HttpPost("{id:int}/summary-shares")]
+    public async Task<ActionResult<ConcertSummaryShare>> ShareSummary(
         int id,
-        [FromBody] ShareConcertRequest request,
+        [FromBody] ShareConcertSummaryRequest request,
         CancellationToken ct) =>
-        (await concertService.ShareAsync(id, request, ct)).ToOkOrProblem();
+        (await concertService.ShareSummaryAsync(id, request, ct)).ToOkOrProblem();
 
     [HasPermission(TenantPermission.ResourcesShare)]
-    [HttpDelete("{id:int}/shares/{grantId:guid}")]
-    public async Task<IActionResult> RevokeShare(
+    [HttpDelete("{id:int}/summary-shares/{grantId:guid}")]
+    public async Task<IActionResult> RevokeSummaryShare(
         int id,
         Guid grantId,
+        [FromQuery] long expectedVersion,
         CancellationToken ct) =>
-        (await concertService.RevokeShareAsync(id, grantId, ct)).ToNoContentOrProblem();
+        (await concertService.RevokeSummaryShareAsync(id, grantId, expectedVersion, ct)).ToNoContentOrProblem();
+
+    [HasPermission(TenantPermission.ResourcesShare)]
+    [HttpPost("{id:int}/member-assignments")]
+    public async Task<IActionResult> AssignMember(
+        int id,
+        [FromBody] AssignConcertMemberRequest request,
+        CancellationToken ct) =>
+        (await concertService.AssignMemberAsync(id, request, ct)).ToNoContentOrProblem();
+
+    [HasPermission(TenantPermission.ResourcesShare)]
+    [HttpDelete("{id:int}/member-assignments/{membershipId:guid}")]
+    public async Task<IActionResult> RemoveMemberAssignment(
+        int id,
+        Guid membershipId,
+        CancellationToken ct) =>
+        (await concertService.RemoveMemberAssignmentAsync(id, membershipId, ct)).ToNoContentOrProblem();
 
     [HasPermission(TenantPermission.OperationsView)]
     [HttpGet("/api/organization/concert/{concertId:int}")]

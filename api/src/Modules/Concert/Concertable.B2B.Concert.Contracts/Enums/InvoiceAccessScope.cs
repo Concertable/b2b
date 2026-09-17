@@ -6,5 +6,5 @@ namespace Concertable.B2B.Concert.Contracts.Enums;
 /// </summary>
 public enum InvoiceAccessScope
 {
-    Invoice = 1,
+    Read = 1,
 }
