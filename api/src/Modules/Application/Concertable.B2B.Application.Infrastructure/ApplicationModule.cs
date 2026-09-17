@@ -34,6 +34,6 @@ internal sealed class ApplicationModule : IApplicationModule
         CancellationToken ct = default) =>
         dashboardService.GetOpportunityIdsForArtistTenantAsync(artistTenantId, ct);
 
-    public Task<bool> HasLiveObligationsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
+    public Task<bool> HasLiveObligationsByTenantIdsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
         obligationChecker.HasLiveAsync(tenantIds, ct);
 }

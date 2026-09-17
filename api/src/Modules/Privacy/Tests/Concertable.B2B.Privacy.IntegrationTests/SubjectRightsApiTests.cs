@@ -110,5 +110,23 @@ public sealed class SubjectRightsApiTests : IAsyncLifetime
         Assert.NotEqual(0, root.GetProperty("memberships").GetArrayLength());
     }
 
+    [Fact]
+    public async Task ExportAsync_UnknownSubject_EmitsANullUserFragment()
+    {
+        // Arrange
+        var unknownSubjectId = Guid.NewGuid();
+
+        // Act
+        var download = await fixture.Services.RunScopedAsync(sp =>
+            sp.GetRequiredService<ISubjectExporter>().ExportAsync(unknownSubjectId));
+
+        // Assert
+        using var document = JsonDocument.Parse(download.Content);
+        var root = document.RootElement;
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("user").ValueKind);
+        Assert.Empty(root.GetProperty("memberships").EnumerateArray());
+        Assert.Empty(root.GetProperty("contracts").EnumerateArray());
+    }
+
     #endregion
 }

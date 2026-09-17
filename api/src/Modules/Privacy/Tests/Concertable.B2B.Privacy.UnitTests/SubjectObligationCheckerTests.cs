@@ -36,13 +36,13 @@ public sealed class SubjectObligationCheckerTests
 
         Assert.False(result);
         applicationModule.Verify(
-            m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()),
+            m => m.HasLiveObligationsByTenantIdsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()),
             Times.Never);
         bookingModule.Verify(
-            m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()),
+            m => m.HasLiveObligationsByTenantIdsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()),
             Times.Never);
         concertModule.Verify(
-            m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()),
+            m => m.HasLiveObligationsByTenantIdsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -78,11 +78,11 @@ public sealed class SubjectObligationCheckerTests
 
     private void SetupObligations(bool application, bool booking, bool concert)
     {
-        applicationModule.Setup(m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()))
+        applicationModule.Setup(m => m.HasLiveObligationsByTenantIdsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(application);
-        bookingModule.Setup(m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()))
+        bookingModule.Setup(m => m.HasLiveObligationsByTenantIdsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(booking);
-        concertModule.Setup(m => m.HasLiveObligationsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()))
+        concertModule.Setup(m => m.HasLiveObligationsByTenantIdsAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(concert);
     }
 }

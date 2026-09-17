@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Contracts;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -233,6 +234,29 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var promote = await PutRole(fixture.CreateClient(owner), member.Id, TenantRole.Manager);
         await promote.ShouldBe(HttpStatusCode.NoContent);
         Assert.Equal(TenantRole.Manager, fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == member.Id).Role);
+    }
+
+    #endregion
+
+    #region Erasure
+
+    [Fact]
+    public async Task SeverMembershipsAsync_ReturnsOnlyTheTenantsLeftWithNoMembers()
+    {
+        // Arrange
+        var soleOwner = fixture.SeedState.VenueManagerNoVenue;
+        var soleOwnedTenantId = TenantOf(soleOwner.Id);
+        var sharedTenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
+        await fixture.AddMembershipAsync(sharedTenantId, soleOwner.Id, TenantRole.Staff);
+
+        // Act
+        var woundDown = await fixture.Services.RunScopedAsync(sp =>
+            sp.GetRequiredService<ITenantModule>().SeverMembershipsAsync(soleOwner.Id));
+
+        // Assert
+        Assert.Contains(soleOwnedTenantId, woundDown);
+        Assert.DoesNotContain(sharedTenantId, woundDown);
+        Assert.DoesNotContain(fixture.Memberships, m => m.UserId == soleOwner.Id);
     }
 
     #endregion

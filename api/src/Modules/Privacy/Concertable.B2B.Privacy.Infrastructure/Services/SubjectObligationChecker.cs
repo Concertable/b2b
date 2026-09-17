@@ -26,8 +26,8 @@ internal sealed class SubjectObligationChecker : ISubjectObligationChecker
         if (tenantIds.Count == 0)
             return false;
 
-        return await applicationModule.HasLiveObligationsAsync(tenantIds, ct)
-            || await bookingModule.HasLiveObligationsAsync(tenantIds, ct)
-            || await concertModule.HasLiveObligationsAsync(tenantIds, ct);
+        return await applicationModule.HasLiveObligationsByTenantIdsAsync(tenantIds, ct)
+            || await bookingModule.HasLiveObligationsByTenantIdsAsync(tenantIds, ct)
+            || await concertModule.HasLiveObligationsByTenantIdsAsync(tenantIds, ct);
     }
 }

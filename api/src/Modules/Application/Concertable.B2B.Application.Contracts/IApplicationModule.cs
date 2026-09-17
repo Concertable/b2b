@@ -18,5 +18,5 @@ public interface IApplicationModule
     /// <summary>GDPR erasure gate: whether any of the subject's tenants has an application that has committed money
     /// but not yet reached a booking, so erasure defers rather than corrupting settlement. Fail-closed and answered
     /// tenant-less by explicit ids.</summary>
-    Task<bool> HasLiveObligationsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
+    Task<bool> HasLiveObligationsByTenantIdsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 }
