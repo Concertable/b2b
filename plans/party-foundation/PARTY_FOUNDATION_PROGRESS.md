@@ -7,8 +7,9 @@
 - Branch: `Refactor/PartyFoundationLegacyBindings`
 - Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
 - Reviewed implementation head: `189f745d8233b511273624d768bcc39b5508723b`
+- Implementation head: `b2001b2f` (P1 repair slices 1-2)
 - PR: [#18](https://github.com/Concertable/b2b/pull/18).
-- Last reconciled: 2026-09-17, user-requested Claude Opus implementation handoff.
+- Last reconciled: 2026-09-17, Claude Opus P1 implementation, slices 1-2 committed.
 - Current authorization: implement, verify and locally commit the P1 feedback and agreed replacement
   mechanisms, including naming corrections, in an independent Claude Opus session.
 - Delivery gate: the user's original no-push/no-merge restriction remains; the new request authorizes
@@ -19,74 +20,87 @@
 
 ## Current state
 
-Keep this branch; substantially rework P1. The reviewed 16 commits change 411 files. The plan's
-section 2 records 28 confirmed source findings and area-by-area keep/replace/remove decisions.
-Section 4 supplies the replacement mechanisms, code, naming inventory and required verification.
-P1 is not complete. P2–P5 remain unimplemented targets.
+P1 implementation is in progress on this branch. Two slices are committed and green at the unit and
+architecture tiers; the remaining slices are listed under `## Next Steps`. P2–P5 remain unimplemented targets.
 
-Already present in source, without implying qualification:
+Plan section 4 remains the implementation contract. Nothing below claims a finding is closed against the
+4.10 matrix: no integration, provider-race, browser or native evidence has been produced yet. The working
+tree also carries unrelated dirty `CODE_PATTERNS.md` and untracked `.codex/` content, which must be preserved.
 
-- Neutral Authorization and Tenant membership/profile separation; Tenant contact/version fields.
-- Six module-owned grant families replacing pair-scoped visibility and the deleted payee resolver.
-- Thread-based conversations, client business-profile changes and server-returned permissions.
-- Request-wide shared connection, Concert/Application/Booking sharing and fixture seeding changes.
+## Completed work
 
-Those are implementation facts, not accepted designs. The replacement preserves the useful ownership
-boundaries, replaces ambient privilege and transaction wiring, repairs scope/command authorization,
-renames/reworks Conversation, and finishes the actual client journeys. Application/Booking sharing
-and RestrictedParticipant are removed from P1. Configurable multi-role RBAC has a separately scoped
-follow-on contract in plan section 4.1.
+**Slice 1 — `5ab4356b` "Compose membership, audience and resource access once" (4.1, 4.2, parts of 4.3/4.4)**
 
-The old ledger's claims that no PR exists, clients/shares remain uncommitted, Contract grants are
-issued, the authority view is read-only, or all authority/access slices are delivered are superseded.
-The 15 September restart is history; do not recover discarded LegacyFinancialParties commits.
+- `MembershipFact` → `MembershipSnapshot(MembershipId, TenantId, UserId, Role, PermissionVersion)`;
+  `IMembershipFacts`/`MembershipFacts` → `Authorization.Contracts.IMembershipReadRepository` implemented by
+  Tenant's existing `MembershipRepository`, bound to the same scoped instance at Tenant's composition root.
+- `ResourceAudience` and `IPermissionCatalog.AudienceFor` added; `RestrictedParticipant` deleted;
+  `terms.read`, `bookings.cancel` and `concerts.declare_door_revenue` added as separate operations.
+- `AuthorizationVersion` → `PermissionVersion` through entity, configuration, mappers and DTOs.
+- `MembershipAuthorityFact` → keyless `MembershipAuthority` mapped `ToView("MembershipAuthority", "tenant")`.
+  **The view itself does not exist yet — its migration is the first item of slice 6.**
+- `IAccessContext`/`AccessContext`/`IHasAccessContext`/`AccessScopedDbContext`/`DesignTimeAccessContext` →
+  the `ResourceAccess*` names; `GrantOrigin` → `ResourceGrantKind` (Principal/SharedSummary/MemberAssignment);
+  grant `MemberUserId` → `MembershipId`; base `Revoke` protected, concrete `Revoke` internal.
+- `ResourceAccessExpressions` owns the shared membership/validity/time predicate and the body-splicing `And`;
+  each of the four resource contexts composes it with its own scope/audience policy. Parent filters now
+  reference only the scope that discloses them.
+- `ContractEntity` issues its principals' grants in its constructor (F01).
+- Concert summary sharing replaces the generic share route: `ShareConcertSummaryRequest`/`ConcertSummaryShare`,
+  the four `summary-shares`/`member-assignments` routes, `ConcertEntity.ShareSummary` /
+  `RevokeExpiredSummaryShares` / `RevokeSummaryShare` / `AssignMember` / `RemoveMemberAssignment`,
+  `AccessVersion`, per-issuer unique indexes, and a `ConcertCommandReceipt` for replay.
+  Application and Booking share surfaces are deleted.
+- `MessageRepositoryTests` moved to the integration tier (it read through the host stance);
+  `Previews_LatestMessageHidden_FallsBackToTheNewestVisibleOne` added there for the one assertion the
+  existing integration tests did not already prove.
+
+**Slice 2 — `b2001b2f` "Give system work a named capability instead of an ambient bypass" (4.6)**
+
+- `IExecutionScope`, `IExecutionScopeActivator`, `ExecutionScope`, `ExecutionPurpose` and every host,
+  middleware and fixture entry point deleted. `MembershipContext.IsHost` is constantly false.
+- `ConcertPrivilegedDbContext`, `ApplicationPrivilegedDbContext`, `BookingPrivilegedDbContext` added beside
+  the existing `ConversationsPrivilegedDbContext`; `IConcertPrivilegedRepository`,
+  `IInvoicePrivilegedRepository`, `IInvoiceSequenceRepository` and the `PrivilegedRepository<T>` alias.
+- Settlement's unit-of-work boundary, `InvoiceIssuer`, all four payment processors and all nine seeders bind
+  the privileged stance; seeders keep `MigrateAsync` on the context that owns the migrations.
+- The settlement outcome for an unknown target or a mismatched operation now fails durably instead of
+  recording a success inbox receipt (F11).
+- `GetEndedPendingCompletionIdsAsync` moved to `IConcertReadRepository` with a due-time cutoff and batch;
+  `CompletionRunner` consumes it.
+- `PublishedConcert` projection with publication in its predicate (F10).
 
 ## Next Steps
 
-Transfer: Apply the P1 feedback and accepted replacement mechanisms in the existing branch.
-Transfer to: Independent Claude Code session using Opus in the declared worktree.
-Resume stage: P1 implementation repairs and qualification, starting with plan section 4.1.
-Resume when: Claude has loaded this ledger and the full plan in the declared worktree.
+Scope: whole plan through all remaining P1 phases; delivery stays gated.
+Current slice: 4.5 — one local transaction per command.
+Remaining scope: slices 2-6 below, then the retained PR #18 delivery gate, then P2–P5.
+Done when: F01–F28 are repaired, verified against plan section 4.10 and reviewed; changes are locally
+committed and this ledger records the actual results and the remaining delivery gate.
 
-Scope: current slice only; full plan remains incomplete.
-Current slice: P1 review repairs, agreed naming corrections and qualification.
-Remaining scope: PR #18 delivery, then P2–P5 and their delivery gates.
-Done when: F01–F28 are repaired, verified against section 4.10 and reviewed; changes are locally committed
-and this ledger records the actual results and remaining delivery gate.
+Continue on this branch, in this order. Each item is a slice: implement, build, run the unit and architecture
+tiers, commit.
 
-Apply the P1 replacement specification and close the review findings. The user explicitly requested
-Claude Opus to address this feedback and apply these changes; the earlier review-only limit is
-superseded for P1 implementation. Preserve the agreed design and use section 4 as the implementation
-contract, including its naming inventory; recheck source where required and resolve concrete conflicts
-without restarting the plan. The specification and naming correction are committed as 2ae4faa6 and aa4a3f2e.
-
-Continue from the existing branch:
-
-1. Recheck actual branch/worktree state and overlapping owners. Preserve unrelated dirty
-   CODE_PATTERNS.md and .codex content. Read repository conventions before editing and retain the
-   useful P1 foundation identified in section 2.
-2. Repair membership incarnation, audience-aware permissions, same-row exact-scope read predicates,
-   keyless membership authority and missing Contract principal issuance (4.1–4.2).
-3. Add actor policies, the command-scoped local transaction and membership/resource fence; remove
-   Application/Booking shares; implement only Concert Summary sharing plus own-member operational
-   assignment, with replay, expiry and version behavior (4.3–4.5).
-4. Replace ambient execution scope with explicit privileged repositories and fenced services; wire
-   CompletionRunner, SettlementService, InvoiceIssuer, payment outcome processors and the fixture. Keep
-   outbox insertion on the enlisted business context; do not treat the sibling AddOutbox overload
-   as the atomicity fix (4.6).
-5. Cut Thread over to ConversationId-addressed flows, immutable initial audience, message sequence,
-   monotonic member read position, tenant display and safe delivery (4.7).
-6. Finish neutral onboarding, activity/contact administration, invitation role policy and real
-   Business web/mobile journeys; fix financial/admin DTOs and tenant-switch isolation (4.8–4.9).
-7. Regenerate InitialCreate/fixtures and qualify the actual replacement with the full 4.10 matrix.
-   Record source head, commands/results and browser/native evidence; review the committed candidate.
-   Do not call P1 complete merely because existing unit tests/builds pass.
-
-P1 completion: every F01–F28 finding closes through its named mechanism and test;
-a zero-profile third business reads only the shared summary; all principal/assigned-member workflows
-retain their correct permissions; workers and outbox are reliable without bypassing interactive
-tests. Stop at the retained delivery gate after P1 qualification; P2's accepted participants/Show
-and published consumer closure remain outside this handoff.
+1. **4.5 — one local transaction per command.** `CommandTransaction`/`CommandTransactionAccessor`, enlistment
+   of every participating context, `FlushAsync`/`ValidateAuthorityAsync`/`CommitAsync`, the execution-strategy
+   loop and the lock order. Delete `SharedConnectionExtensions` and give ordinary and parallel dashboard reads
+   their own connections. Move `InvoiceIssuer` onto its repositories once the enlisted context exists.
+2. **4.3 — command policy on every mutation.** The fenced actor, the exact grant/audience check per command,
+   the command table's business actor per operation, `ApplicationSide` deleted, actions computed per
+   operation, and the share/assignment commands moved onto the fence and lock order from slice 1.
+3. **4.2 completion — exact-scope reads.** `ConcertSummary` without financial fields, `ApplicationSummary`
+   without proposal text, separate Summary/Operations/Terms/Finance routes and their permission checks,
+   removal of generic private-detail endpoints, and the financial dashboard split (F20).
+4. **4.7 — Conversation.** The whole `Thread` → `Conversation` rename to the grep gate, `ConversationId`-addressed
+   creation and send with request receipts, immutable initial audience, message sequence, monotonic member
+   read position, the Tenant-owned display projection, and safe delivery.
+5. **4.8/4.9 — neutral business lifecycle and clients.** `TenantBusinessActivity`, neutral onboarding,
+   contact/activity administration, invitation role policy, tenant deletion, the admin verification contract,
+   and the real Business web and mobile journeys with tenant-switch isolation.
+6. **4.10 — migrations and qualification.** Create the `tenant.MembershipAuthority` view, regenerate the five
+   `InitialCreate` migrations and the synthetic fixtures, replace `ResourceAccessGuardTests`'s textual check
+   with model and provider coverage, and run the full 4.10 matrix including the integration, provider-race,
+   worker, browser and native evidence. Then review the candidate.
 
 ## Decisions and findings
 
@@ -105,37 +119,47 @@ and published consumer closure remain outside this handoff.
   many-tenant scope/permission/fence policy. A future adoption needs an independent measured benefit.
 - Do not inflate P1 with configurable roles/hierarchy. The separately owned follow-on must preserve
   the P1 permission/audience contract and prove administration/revocation across all consumers.
-- New naming and exact before/after mechanisms are in section 4; do not re-invent them from this ledger.
+- New naming and exact before/after mechanisms are in plan section 4; do not re-invent them from this ledger.
 - Membership snapshot queries belong to the existing MembershipRepository through Authorization's narrow
-  IMembershipReadRepository contract. The proposed MembershipLookup abstraction is removed; membership
-  resolution and administration keep their respective owners.
+  IMembershipReadRepository contract.
 - No production compatibility layer, old schema reader, adapter or synthetic-data backfill is needed.
-
-## Completed work
-
-- This checkpoint: reviewed the frozen P1 candidate, recorded F01–F28, and specified replacement mechanisms with code. No runtime phase is declared delivered.
+- **From implementation:** the authority relation is exposed as a `DbSet<MembershipAuthority>`, not an
+  `IQueryable`. Only a DbSet is a query root; an IQueryable member is parameterised whole and its `Any` then
+  fails to translate. Its keylessness, not its member type, is what makes it unwritable.
+- **From implementation:** `ContractAccessScope.Terms` and `InvoiceAccessScope.Invoice` are renamed to
+  `Read`, matching the scope names plan section 4.2's table and mandated code use.
+- **From implementation:** `InvoiceSequenceEntity` is keyed by its issuing tenant and implements no id-entity
+  contract, so `IInvoiceSequenceRepository` takes no generic CRUD base.
+- **From implementation:** a seeder keeps `MigrateAsync` on the filtered context, which owns the module's
+  migrations, while its reads and writes use the privileged one. Pointing both at the privileged context
+  would leave it applying migrations it does not own.
 
 ## Verification
 
-This checkpoint is source analysis and specification. No runtime behavior was changed or runtime
-tests executed as part of it. Historical counts reported by earlier agents concern older candidates
-and do not qualify this re-specification or resolve the reported Concert integration failures.
+Both committed slices build clean and pass the unit and architecture tiers
+(`dotnet test --filter "FullyQualifiedName!~IntegrationTests&FullyQualifiedName!~E2ETests&FullyQualifiedName!~StartupTests"`:
+0 failed across 14 assemblies). That is the floor, not the acceptance: **P1 is not qualified.**
 
-Planning validation passed on 2026-09-17: the installed plan-graph validator reported zero errors and
-warnings; the Workflow v2 repository provider validated this plan, ledger, worktree, branch and limited
-next action. Document checks passed for section/finding coverage, closed code fences, local links and
-ledger size. The naming audit uses the installed C# naming, persistence and multitenancy standards:
-settlement remains a service; entity persistence uses the existing repository stances and aliases.
-Git diff --check passed. No canonical isolated review is claimed; source evidence and the bounded
-authority sanity check are distinct from that workflow.
+Not yet run or produced, and required by plan section 4.10 before any completion claim:
 
-Implementation acceptance is the plan's section 4.10. Real-provider authority/transaction races,
-workers, contract/invoice reads, external-summary denial boundaries and real browser/native journeys
-remain mandatory. PR CI does not automatically supply the separate Api/Ui E2E evidence.
+- The integration tier. It cannot pass yet: the `tenant.MembershipAuthority` view does not exist, so every
+  resource filter denies. The migration is the first item of slice 6.
+- `StartupTests.ResourceGraphTests.ProductionGraphAndStrictValidation_AreValid` fails in this environment
+  waiting on the Stripe CLI resource (`Concertable.Payment.Hosting.AppHostExtensions.AddStripeCli` times
+  out). That failure is environmental and unrelated to these changes; it is evidence of nothing and must be
+  re-checked where the CLI is available.
+- Provider-level race, revocation-ordering, worker, contract/invoice read, external-summary denial,
+  browser and native evidence. None has been produced.
+
+Planning validation passed on 2026-09-17 against the pre-implementation tree. The naming audit uses the
+installed C# naming, persistence and multitenancy standards.
 
 ## Reviews
 
-Current review: source review and P1 re-specification, with a bounded authority sanity check. F01–F28 remain implementation findings owned by the plan's section 4; no runtime approval is granted. The [existing review artifact](../../reviews/Refactor-PartyFoundationLegacyBindings.md) records earlier candidates and is not a completed canonical review of this checkpoint.
+Current review: source review and P1 re-specification, with a bounded authority sanity check. F01–F28 remain
+implementation findings owned by plan section 4; no runtime approval is granted. **The two committed slices
+have not been reviewed.** The [existing review artifact](../../reviews/Refactor-PartyFoundationLegacyBindings.md)
+records earlier candidates and is not a completed canonical review of this checkpoint.
 
 ## External owners and deferred work
 
@@ -150,7 +174,7 @@ do not treat them as live merge-state assertions.
 Central docs remains the owner of configurable-workflow product authority, configuration expressiveness,
 nightclub benchmark and launch roadmaps. At the next authorized implementation/documentation boundary,
 send its owner the actual qualified P1–P5 artifact and remove stale adapter/backfill/old-worktree claims.
-No sibling checkout was edited by this planning task.
+No sibling checkout was edited by this task.
 
 Tenant retirement/account teardown, authoritative sales evidence, payment quote disclosure,
 transport qualification, richer admin roles and configurable RBAC retain their explicit owners and
