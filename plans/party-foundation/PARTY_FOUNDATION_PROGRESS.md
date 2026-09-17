@@ -5,158 +5,134 @@
 - Roadmap item: `party-foundation/core`
 - Worktree: `C:/Users/TommySeery/source/repos/Concertable/b2b/.worktrees/Refactor-PartyFoundationLegacyBindings`
 - Branch: `Refactor/PartyFoundationLegacyBindings`
-- Base: cached origin/main `2b5264b4`
-- PR: none; local planning work only.
-- Dependency/package gates: vocabulary/claim owner before overlapping delivery; P2 Concert/Seed/Hosting publication and Customer/Search bumps; Postgres only gates configuration persistence.
-- Last reconciled: 2026-09-16 after P1's access slice `bc7f0759`; live PR #14/#15 heads checked 2026-09-15.
+- Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
+- Reviewed implementation head: `189f745d8233b511273624d768bcc39b5508723b`
+- PR: [#18](https://github.com/Concertable/b2b/pull/18).
+- Last reconciled: 2026-09-17, source review and P1 replacement specification.
+- Current authorization: review/re-specification only; edit the plan and this ledger, commit locally,
+  then stop. No implementation, push or merge.
+- Future dependency/package gates: recheck overlapping OperationClaim/vocabulary owners; P2
+  Concert/Seed/Hosting publication plus Customer/Search consumption; configuration persistence's
+  provider choice remains with its owner.
 
 ## Current state
 
-The rejected plan has been replaced end to end. The new plan starts with resource access across all
-nine pair-scoped entities, then accepted participants/Show, signing representation, direct invitation
-and an evidence approval that actually gates publication. It contains the model, contracts, schema,
-transaction/revocation rules, consumer chain and dispositions for all 32 root debt entries.
+Keep this branch; substantially rework P1. The reviewed 16 commits change 411 files. The plan's
+section 2 records 28 confirmed source findings and area-by-area keep/replace/remove decisions.
+Section 4 supplies the replacement mechanisms, code, naming inventory and required verification.
+P1 is not complete. P2–P5 remain unimplemented targets.
 
-The branch was then restarted. The two rejected implementation/remediation commits and the rejection
-brief were dropped; nothing had been pushed. `LegacyFinancialParties` does not exist and main's
-`IDealPayeeResolver` keyed family is still live.
+Already present in source, without implying qualification:
 
-P1 is under way, in three delivered slices:
+- Neutral Authorization and Tenant membership/profile separation; Tenant contact/version fields.
+- Six module-owned grant families replacing pair-scoped visibility and the deleted payee resolver.
+- Thread-based conversations, client business-profile changes and server-returned permissions.
+- Request-wide shared connection, Concert/Application/Booking sharing and fixture seeding changes.
 
-- `958c53b5` replaced tenant-type authority. A new `Concertable.B2B.Authorization` module owns
-  role/permission/request-authority with Tenant implementing its `IMembershipFacts` port; `TenantType` is
-  deleted in favour of zero-or-more `TenantBusinessProfile` rows and a `[RequiresBusinessProfile]`
-  eligibility filter; the permission catalog is role-only and adds `RestrictedParticipant`; `IsHost` now
-  requires an explicitly entered execution scope, established once per host and re-established as
-  interactive per request; Tenant gained `ContactEmail`, `AuthorityVersion` and
-  `Membership.AuthorizationVersion`, and `BusinessFacts` replaced the `ITenantContactResolver` dispatch.
-- `0a59a876` replaced pair-scoped access with typed resource grants. `ResourceAccessGrant<TFacet>` plus six
-  module-owned families (Application, Booking, Contract, Concert, Invoice, Thread), issued to both
-  principals at resource creation as children of their aggregate; `AccessScopedDbContext` with per-entity
-  filters that also re-check the caller's membership at the resolved authority revision through a
-  borrowed read-only `MembershipAuthorityFact`; a real `ThreadEntity` replacing the implicit venue/artist
-  tuple, with per-(thread, tenant, member) read state and a participant-set `IConversationsModule`.
-  `IVenueArtistTenantScoped`, its repositories, `VenueArtistTenantSpecification`, `TenantPair`,
-  `ApplyVenueArtist` and the pair interceptor are deleted, as is the `IDealPayeeResolver` family.
-- `bc7f0759` corrected `CODE_PATTERNS.md`, `Concert/AGENTS.md`, `Deal/ARCHITECTURE.md`,
-  `Deal/LEGAL_REQUIREMENTS.md` and one `TECH_DEBT.md` entry that still rostered the deleted machinery.
+Those are implementation facts, not accepted designs. The replacement preserves the useful ownership
+boundaries, replaces ambient privilege and transaction wiring, repairs scope/command authorization,
+renames/reworks Conversation, and finishes the actual client journeys. Application/Booking sharing
+and RestrictedParticipant are removed from P1. Configurable multi-role RBAC has a separately scoped
+follow-on contract in plan section 4.1.
 
-All five `InitialCreate` migrations regenerated (Tenant, Application, Booking, Concert, Conversations).
-
-P1 is NOT complete. Outstanding: the shared transaction/fence coordinator across contexts; share and
-revoke commands with their HTTP surface; server-returned permissions and actions replacing the client's
-`permissionsForRole` mirror; the web and mobile consumers (in progress, uncommitted); integration
-coverage for the access predicate, revocation races and the member watermark; and every browser and
-native qualification the phase requires.
+The old ledger's claims that no PR exists, clients/shares remain uncommitted, Contract grants are
+issued, the authority view is read-only, or all authority/access slices are delivered are superseded.
+The 15 September restart is history; do not recover discarded LegacyFinancialParties commits.
 
 ## Next Steps
 
-Continue P1 from `bc7f0759`. Do not restart the replan, recover the dropped commits, redo the authority,
-access or documentation slices, or execute the rejected adapter-first sequence.
+Scope: current slice only; full plan remains incomplete.
+Current slice: P1 source review and replacement specification; local documentation commit only.
+Remaining scope: P1 implementation repairs/qualification, then P2–P5 and their delivery gates.
+Done when: the reviewed plan and ledger are validated and locally committed; no runtime edits or push.
 
-Scope: whole plan through all remaining phases and terminal delivery.
-Current slice: P1 — replace pair access and enable restricted third-business participation.
-Authority, resource access, financial direction and the touched guidance are delivered. The clients, the
-transaction fence, sharing commands and the phase's verification remain.
-Remaining scope: P2 accepted participants/Show/payment correlation and consumer closure; P3 representation; P4 direct invitation; P5 enforced evidence approval and terminal qualification.
-Done when: P1–P5 consumption/verification gates pass, all required producer/consumer delivery legs and handoffs close, and the plan's terminal closeout is complete.
+This checkpoint is the requested source review and replacement specification. Its delivery is a
+local commit of these two documents, then stop; it does not authorize P1–P5 execution or PR #18 delivery.
 
-1. Recheck this checkout and the live sibling owners before edits. Consume the exact vocabulary,
-   OperationClaim and AttemptVerdict source from `Refactor/DealVocabularyAndMapperCollapse`;
-   it already implements the claim/mapping debt. Resolve overlaps locally without editing its dirty
-   TECH_DEBT.md or the backlog owner's generated files. Coordinate delivery order with the owner.
-2. Finish the clients. `app/shared`, `app/web/*` and `app/mobile` have uncommitted work replacing the
-   tenant `type` the API no longer returns with the activated business profiles, and replacing mobile's
-   fall-through to `ArtistTabs` with profile-selected tabs plus a neutral `BusinessTabs`. `npm run
-   build:web` and `npm run build:mobile` have not yet run against it. Then replace the client-side
-   `permissionsForRole` mirror with server-returned permissions and actions.
-3. Add the shared DataAccess transaction coordinator so Tenant, the resource modules and the outbox
-   enlist in one connection and DbTransaction, and integrate the current acceptance/Booking path with it.
-   Add typed resource sharing and revocation commands with their HTTP surface and the sharing-policy
-   check. Prove a distinct business can read an explicitly shared concert summary and cannot see fees,
-   contracts, invoices, private messages or financial actions.
-4. Replace the pair-derived financial direction where its live consumers actually read it — main's
-   `IDealPayeeResolver`/`DealPayeeResolver` family in Concert.Application and its two directional
-   strategies. Do not reintroduce a `LegacyFinancialParties`-style value. Update Concert/AGENTS.md,
-   Deal/ARCHITECTURE.md and Deal/LEGAL_REQUIREMENTS.md, which currently describe that family
-   correctly, to match what P1 implements. Keep InvoiceParty's reservation; new domain types use
-   Participant.
-5. Regenerate affected InitialCreate/snapshots and synthetic fixtures; run focused builds/tests and
-   real-provider access/fence checks. Review a committed candidate. Current PR CI does not run Api/Ui
-   E2E: obtain exact-commit evidence through e2e.yml for changed browser journeys; run existing web/mobile
-   builds and qualify native tenant navigation/switching separately.
-6. Deliver the qualified P1 candidate, checkpoint the actual state, and continue into P2. P2 must replace
-   fixed accepted financial identities and close the Concert/Seed/Hosting producer → Customer/Search
-   published-package chain; no adapters, old schema readers or invented backfills.
+On a subsequent explicit implementation request, continue from the existing branch and use the
+replacement section 4, not the superseded prose-only instructions:
+
+1. Recheck actual branch/worktree state and overlapping owners. Preserve unrelated dirty
+   CODE_PATTERNS.md and .codex content; the planning commit includes only the plan and this ledger.
+2. Repair membership incarnation, audience-aware permissions, same-row exact-scope read predicates,
+   keyless membership authority and missing Contract principal issuance (4.1–4.2).
+3. Add actor policies, the command-scoped local transaction and membership/resource fence; remove
+   Application/Booking shares; implement only Concert Summary sharing plus own-member operational
+   assignment, with replay, expiry and version behavior (4.3–4.5).
+4. Replace ambient execution scope with explicit privileged repositories and fenced services; wire
+   CompletionRunner, SettlementService, InvoiceIssuer, payment outcome processors and the fixture. Keep
+   outbox insertion on the enlisted business context; do not treat the sibling AddOutbox overload
+   as the atomicity fix (4.6).
+5. Cut Thread over to ConversationId-addressed flows, immutable initial audience, message sequence,
+   monotonic member read position, tenant display and safe delivery (4.7).
+6. Finish neutral onboarding, activity/contact administration, invitation role policy and real
+   Business web/mobile journeys; fix financial/admin DTOs and tenant-switch isolation (4.8–4.9).
+7. Regenerate InitialCreate/fixtures and qualify the actual replacement with the full 4.10 matrix.
+   Record source head, commands/results and browser/native evidence; review the committed candidate.
+   Do not call P1 complete merely because existing unit tests/builds pass.
+
+Future implementation completion: every F01–F28 finding closes through its named mechanism and test;
+a zero-profile third business reads only the shared summary; all principal/assigned-member workflows
+retain their correct permissions; workers and outbox are reliable without bypassing interactive
+tests. Only then advance to P2's accepted participants/Show and published consumer closure.
+
+## Decisions and findings
+
+- Keep Tenant as business/legal/membership/settlement identity and tokens as sub/email only.
+- Keep multiple business activities, module-local resource grants and server-returned permissions;
+  eligibility, permission and resource audience have separate, explicit jobs.
+- Reject ambient ExecutionPurpose/IsHost bypass, any-scope private details and unchecked load/save.
+- P1 external disclosure is Concert Summary only. Operational member assignments stay inside a
+  current principal business; accepted external responsibilities wait for P2.
+- Keep one local database transaction for a command; give ordinary/parallel reads separate connections.
+- Corrected handoff premise: platform 0.2.0-alpha.0.5 / source 3136a4ee writes outbox through the active
+  business DbContext. Its dispatcher connection is not a second ordinary business write.
+- Keep the branch's economic direction properties. P2 replaces their fixed principal inputs with
+  accepted payer/payee bindings; InvoiceParty remains reserved for the invoice snapshot.
+- Do not adopt Finbuckle as a P1 repair: its single-owner tenancy mechanism does not replace the
+  many-tenant scope/permission/fence policy. A future adoption needs an independent measured benefit.
+- Do not inflate P1 with configurable roles/hierarchy. The separately owned follow-on must preserve
+  the P1 permission/audience contract and prove administration/revocation across all consumers.
+- New naming and exact before/after mechanisms are in section 4; do not re-invent them from this ledger.
+- No production compatibility layer, old schema reader, adapter or synthetic-data backfill is needed.
 
 ## Completed work
 
-- This planning change: full replacement design, five implementation phases, exhaustive debt
-  disposition, current sibling/consumer evidence and concrete first implementation slice.
-- Review corrections: P1 fences/contact/all clients; intermediate consent with separate content seals;
-  authoritative Opportunity slots and performer/location handoffs; durable financial-record contracts.
-- Branch restart: the rejected implementation/remediation commits and the rejection brief were dropped
-  rather than superseded inside P1, because P1's scope bears no resemblance to them and deleted their
-  value anyway. Their only trace is this checkout's reflog; treat them as gone.
-- P1 authority slice `958c53b5`: the Authorization module, business profiles, execution scopes,
-  authority/authorization versions, Tenant-owned business facts and the regenerated Tenant
-  `InitialCreate`.
-- P1 access slice `0a59a876`: the grant families, `AccessScopedDbContext`, the Thread aggregate, the
-  deleted pair mechanism and payee-resolver family, and four regenerated `InitialCreate` migrations.
-- `ResourceAccessGuardTests` replaced `TenantWriteGuardTests`: it fails a grant family whose EF
-  configuration is unregistered, and a grant-scoped context that declares no filter.
-- Naming kept deliberately narrow: no `Participant` type was introduced here. Grant vocabulary is
-  `ResourceAccessGrant` and per-resource facets, so P2 can introduce `Participant` for the relationship
-  the plan reserves it for.
+- This checkpoint: reviewed the frozen P1 candidate, recorded F01–F28, and specified replacement mechanisms with code. No runtime phase is declared delivered.
 
 ## Verification
 
-- Planning graph: zero errors/warnings. Local file/heading links and git diff --check pass.
-- Packaged repository-state provider validates this plan, ledger, branch/worktree and P1 next action.
-- The earlier 533 unit/architecture passes belonged to the discarded runtime commits and are evidence
-  for nothing here. The current figure is 489 unit and 24 architecture tests passing at `bc7f0759`, with
-  a green solution build. The unit count fell because the pair interceptor, the payee-resolver family and
-  their tests were deleted, and the authority tests moved to the new Authorization suite.
-- No integration, Docker, browser, native or deployment evidence is claimed for any slice. The access
-  predicate, revocation races and the member watermark are not proven against a real provider yet; that
-  is a required P1 gate, not an optional one.
-- Actual CI inventory: ci.yml runs Unit/Integration/Architecture/Startup and migration/package checks;
-  e2e.yml runs separately on schedule/manual dispatch.
+This checkpoint is source analysis and specification. No runtime behavior was changed or runtime
+tests executed as part of it. Historical counts reported by earlier agents concern older candidates
+and do not qualify this re-specification or resolve the reported Concert integration failures.
+
+Planning validation passed on 2026-09-17: the installed plan-graph validator reported zero errors and
+warnings; the Workflow v2 repository provider validated this plan, ledger, worktree, branch and limited
+next action. Document checks passed for section/finding coverage, closed code fences, local links and
+ledger size. The naming audit uses the installed C# naming, persistence and multitenancy standards:
+settlement remains a service; entity persistence uses the existing repository stances and aliases.
+Git diff --check passed. No canonical isolated review is claimed; source evidence and the bounded
+authority sanity check are distinct from that workflow.
+
+Implementation acceptance is the plan's section 4.10. Real-provider authority/transaction races,
+workers, contract/invoice reads, external-summary denial boundaries and real browser/native journeys
+remain mandatory. PR CI does not automatically supply the separate Api/Ui E2E evidence.
 
 ## Reviews
 
-- Rewritten plan: independent native/general and contract/followability review, with parent validation
-  and remediation. Findings, dispositions and the current committed watermark are in the canonical artifact
-  `reviews/Refactor-PartyFoundationLegacyBindings.md` ([work order](../../reviews/Refactor-PartyFoundationLegacyBindings.md)).
-- The prior runtime review pass is void: the branch restart discarded its candidate. Its F10 supplied
-  the Participant decision recorded below; this documentation review grants no runtime approval.
+Current review: source review and P1 re-specification, with a bounded authority sanity check. F01–F28 remain implementation findings owned by the plan's section 4; no runtime approval is granted. The [existing review artifact](../../reviews/Refactor-PartyFoundationLegacyBindings.md) records earlier candidates and is not a completed canonical review of this checkpoint.
 
-## Decisions, discoveries, blockers, and deviations
+## External owners and deferred work
 
-- Nothing is live. Replace model/DTO/message shapes and regenerate synthetic data; no compatibility,
-  backfill or retained-data delivery phase.
-- New relationship vocabulary is Participant. Initial settlement binds only payer/payee; agency receipt,
-  extra financial legs and paid amendments remain separate capabilities.
-- `acd4a6ed` contains real OperationClaim and in-process attempt classification, not a persisted attempt
-  journal. Its old progress ledgers still carry archived PR/path and “unimplemented” claims.
-- PR [#14](https://github.com/Concertable/b2b/pull/14): local `d2613b7d`, remote `c4e1e88e`;
-  human erasure/HasLiveObligationsAsync and shared ActionLink overlap foundation paths.
-- PR [#15](https://github.com/Concertable/b2b/pull/15): `c5993e49`, required ci-complete context repair.
-- Customer/Search actual semantic publication dependency is ConcertChangedEvent; Seed/Hosting closure
-  also compiles against it. Search's Tenant.Contracts use is PayoutOwnerRegisteredEvent, which has no
-  TenantType. Remove profile-derived ticket PayeeUserId; map TicketSellerTenantId to Payment PayeeOwnerId.
+The dependency/debt tables in plan sections 10–11 remain the owning map for future delivery.
+Their sibling PR/head observations are dated 15 September and must be refreshed before implementation;
+do not treat them as live merge-state assertions.
 
-### Outgoing central-owner corrections
+Central docs remains the owner of configurable-workflow product authority, configuration expressiveness,
+nightclub benchmark and launch roadmaps. At the next authorized implementation/documentation boundary,
+send its owner the actual qualified P1–P5 artifact and remove stale adapter/backfill/old-worktree claims.
+No sibling checkout was edited by this planning task.
 
-Central docs is owned by `C:/Users/TommySeery/source/repos/Concertable/docs`,
-branch `Docs/PartyModelPromptEvidence`, inspected head `59a16f6d`. No sibling files were edited here.
-
-| Owning artifact | Required correction / return condition |
-|---|---|
-| product/CONFIGURATION_EXPRESSIVENESS.md and CONFIGURABLE_DEAL_WORKFLOWS.md | Replace rejected adapter/backfill/phase references with this active plan and Participant vocabulary; keep product authority/disclosure invariants |
-| plans/launch/DEAL_CONFIGURATION_PROGRESS.md | Replace old Docs/PartyFoundation worktree and legacy fixtures/phase gates. Consume P1 access, P2 accepted bindings, P3 representation, P4 both routes and P5 enforced approval when their exact artifacts arrive |
-| plans/launch/POSTGRES_MIGRATION_PROGRESS.md and plan | Remove stale “P1 uncommitted” observation; second schema owner rebases/regenerates and reruns token/index/seal/authority-race tests against the first |
-| Recovered commercial RECOVERY / central Deal Configuration | Explicitly reconcile D29 relational TPH/no mandatory template revision with the selected hybrid graph/revision chain before configuration persistence. Foundation adopts AgreementSnapshot/typed origins and does not silently settle that economic-storage conflict |
-
-These are owner handoffs, not missing design inputs blocking P1. Track their delivery at the next
-substantive central-owner checkpoint; do not treat stale copies in other worktrees as this ledger.
+Tenant retirement/account teardown, authoritative sales evidence, payment quote disclosure,
+transport qualification, richer admin roles and configurable RBAC retain their explicit owners and
+completion gates. None is silently declared fixed by this resource-access foundation.
