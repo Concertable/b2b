@@ -5,7 +5,7 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `514894d6fc3190be4fab933183543a6a0705a2b7`  `(2026-09-17)`
+**Reviewed up to commit:** `bc51d670844e2668586acabb94ebad2cfdb19009`  `(2026-09-17)`
 **Judgment:** `changes-requested`
 
 ## Review pass — 2026-09-15 — full
@@ -32,7 +32,7 @@ tree before being kept.
 
 ### Findings
 
-- [ ] **F1 — CRITICAL — correctness** — `api/src/Modules/Booking/Concertable.B2B.Booking.Infrastructure/Services/ObligationChecker.cs:13`, `api/src/Modules/Application/Concertable.B2B.Application.Infrastructure/Services/ObligationChecker.cs:13`
+- [x] **F1 — CRITICAL — correctness** — `api/src/Modules/Booking/Concertable.B2B.Booking.Infrastructure/Services/ObligationChecker.cs:13`, `api/src/Modules/Application/Concertable.B2B.Application.Infrastructure/Services/ObligationChecker.cs:13`
   Erasure can never complete for any subject with booking history. `SettledStates` omits `BookingState.Confirmed` and `ApplicationState.Accepted`, but `BookingStateMachine.cs` gives `Confirmed` no outgoing edge and `ApplicationStateMachine.cs` gives `Accepted` none — both are terminal, so both count as a live obligation forever. A booking confirmed in 2024 whose concert completed and invoiced still defers the DSAR, and the hourly sweep re-defers it every hour indefinitely. Two of the three gates can never open. Fix: count only genuinely in-flight states, and let the Concert checker — which has a real terminal `Complete` — own post-confirmation settlement.
 
 - [x] **F2 — CRITICAL — security** — `api/src/Modules/Conversations/Concertable.B2B.Conversations.Domain/Entities/MessageEntity.cs:62`
@@ -83,7 +83,7 @@ tree before being kept.
 - [x] **F17 — MEDIUM — test coverage** — `api/src/Modules/Privacy/Tests/Concertable.B2B.Privacy.UnitTests/ErasureTransitionErrorTests.cs:14`
   Asserts `Contains` on the message and never asserts the error kind, so the 409 could silently become a 422. `ErrorDefinitionContractTests.cs:180-193` pins code, exact message and kind for all 24 Concert cases.
 
-- [~] **F18 — MEDIUM — test coverage** — `api/src/Modules/Privacy/Tests/`
+- [x] **F18 — MEDIUM — test coverage** — `api/src/Modules/Privacy/Tests/`
   Ranked gaps: no `DeferredErasureRunnerTests` at all; nothing anywhere exercises a real `SettledStates` list, which is exactly why F1 shipped with a green suite; no `SubjectExporterTests`; `ScrubParticipantProfilesAsync` and `PurgePendingInvitationsAsync` are asserted nowhere in the tree; `SubjectRightsApiTests` has never executed and no seeded subject has exactly one class of obligation, so it cannot isolate a regressed checker.
 
 - [x] **F19 — LOW — docs** — `api/src/Modules/Concert/Concertable.B2B.Concert.Application/Interfaces/ISubjectRecordReader.cs:5`
@@ -141,7 +141,7 @@ Findings F22–F24 were raised and fixed inside this pass (`514894d6`) and are r
 - [x] **F26 — HIGH — test coverage** — `api/src/Modules/Conversations/Tests/`, `api/src/Modules/{Booking,Application,User,Venue}/Tests/*.UnitTests`, `api/src/Concertable.B2B.DataAccess/Tests/`
   Six test projects carry no `[assembly: AssemblyTrait("Category", …)]`, and `.github/workflows/ci.yml:73-74` filters on `Category=Unit|Integration|Architecture|Startup`. A test added to any of them compiles and is then skipped by the gate. Both Conversations projects are in that set, which is why the reader split could not be covered where it belongs. Fix: add an `AssemblyInfo.cs` to each, copying `Booking.IntegrationTests/AssemblyInfo.cs:3`.
 
-- [ ] **F27 — MEDIUM — test coverage** — `api/src/Modules/Booking/Tests/Concertable.B2B.Booking.IntegrationTests/`
+- [~] **F27 — MEDIUM — test coverage** — `api/src/Modules/Booking/Tests/Concertable.B2B.Booking.IntegrationTests/`
   Nothing has ever executed `IReadOnlySet<Guid>.Contains` inside an EF query against the real provider. `IReadOnlySet<T>.Contains` is a different expression-tree method from `ICollection<T>.Contains`; whether it emits `IN` is decided at runtime by SQL Server. The one in-tree precedent (`MessageRepository.cs:71`) ships but sits behind the same never-executed suite, and the only EF unit test in Conversations uses `UseInMemoryDatabase`, which evaluates client-side and would not expose a translation failure. Six queries share the construct, so they fail together or not at all. Fix: one real-provider call to `IBookingModule.GetSubjectContractsAsync(new HashSet<Guid> { … })` in `TenantScopingTests`.
 
 - [x] **F28 — MEDIUM — test coverage** — `api/src/Modules/Privacy/Tests/Concertable.B2B.Privacy.IntegrationTests/SubjectRightsApiTests.cs`
@@ -192,3 +192,24 @@ which fails identically before these commits.
   repository gates in the merge queue rather than on the workstation. Closing it from a local run would be a
   claim the evidence does not support. Resolution condition: a green `Category=Integration` run covering
   `GetSubjectContractsAsync`.
+
+### Remediation closeout — 2026-09-17
+
+Twenty-three of twenty-four findings closed. `19a9040a` closed F1's remaining Booking half and `bc51d670`
+closed F18 and wrote F27's tests.
+
+**F1 is fully closed.** The Booking half needed a mechanism rather than a decision, and the safe option was
+the only correct one: a `Confirmed` booking now settles when — and only when — Concert acknowledges the
+handoff. Booking subscribes to `ConcertCreatedEvent` (which already carries the `ApplicationId` Booking keys
+on) and records `HandedOffAtUtc`; `BookingObligation` treats `Confirmed` as settled only once that timestamp
+exists. The migration backfills from the concert schema, without which every historical `Confirmed` booking
+would have read as live and the fix would have reintroduced the bug.
+
+- [~] **F27 — written, not closeable here.** `TenantScopingTests` now carries two real-provider assertions
+  that `IReadOnlySet<Guid>.Contains` translates to SQL. They cannot run on this workstation — Docker plus the
+  integration tier — so the merge queue closes this, not a local run. Resolution condition unchanged: a green
+  `Category=Integration` pass over `GetSubjectContractsAsync` and `HasLiveObligationsByTenantIdsAsync`.
+
+- [ ] **F13 — still the owner's.** Whether `SubjectContractDto.ArtistName` — a named individual when the
+  counterparty is a sole trader — belongs in another tenant's export under UK GDPR art. 15(4). This is a
+  product and legal judgement, not an engineering one, and no loaded doc rules either way. **Owner: Tommy.**
