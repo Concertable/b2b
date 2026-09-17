@@ -5,7 +5,7 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `c4e1e88e3d2c181410c4b695e09deb141465f8aa`  `(2026-09-15)`
+**Reviewed up to commit:** `514894d6fc3190be4fab933183543a6a0705a2b7`  `(2026-09-17)`
 **Judgment:** `changes-requested`
 
 ## Review pass — 2026-09-15 — full
@@ -69,7 +69,7 @@ tree before being kept.
   `public` where sibling Application DTOs are `internal`, and `FileDownload.cs:3` beside it is internal. The `InternalsVisibleTo` chain already covers its only consumer. Privacy has no Contracts project, so this is the whole public surface of an Application assembly that Workers also references.
 
 - [ ] **F13 — MEDIUM — product decision** — `api/src/Modules/Booking/Concertable.B2B.Booking.Contracts/IBookingModule.cs:29`
-  The export returns tenant-level records for every tenant the subject belongs to, including `ContractExport.ArtistName` — a named individual when the counterparty is a sole trader. UK GDPR art. 15(4) says access must not adversely affect others' rights, and these are the tenant's records rather than the subject's personal data. No loaded doc rules either way; this needs an owner decision, not a silent default.
+  The export returns tenant-level records for every tenant the subject belongs to, including `SubjectContractDto.ArtistName` — a named individual when the counterparty is a sole trader. UK GDPR art. 15(4) says access must not adversely affect others' rights, and these are the tenant's records rather than the subject's personal data. No loaded doc rules either way; this needs an owner decision, not a silent default.
 
 - [x] **F14 — MEDIUM — efficiency** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Services/SubjectObligationChecker.cs:29`
   `GetLiveObligationCountAsync` returns a count no caller reads as a number — it is only compared against zero. Three counting scans per check where an existence check short-circuits on the first row.
@@ -86,7 +86,7 @@ tree before being kept.
 - [ ] **F18 — MEDIUM — test coverage** — `api/src/Modules/Privacy/Tests/`
   Ranked gaps: no `DeferredErasureRunnerTests` at all; nothing anywhere exercises a real `SettledStates` list, which is exactly why F1 shipped with a green suite; no `SubjectExporterTests`; `ScrubParticipantProfilesAsync` and `PurgePendingInvitationsAsync` are asserted nowhere in the tree; `SubjectRightsApiTests` has never executed and no seeded subject has exactly one class of obligation, so it cannot isolate a regressed checker.
 
-- [ ] **F19 — LOW — docs** — `api/src/Modules/Concert/Concertable.B2B.Concert.Application/Interfaces/IConcertExportReader.cs:5`
+- [x] **F19 — LOW — docs** — `api/src/Modules/Concert/Concertable.B2B.Concert.Application/Interfaces/ISubjectRecordReader.cs:5`
   Doc claims it returns contracts; those come from Booking.
 
 - [ ] **F20 — LOW — correctness** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Services/SubjectErasureService.cs:109`
@@ -107,3 +107,52 @@ F1 alone means the feature does not work: it builds, and all 28 Privacy unit tes
 touching the obligation gate mocks it. F2 is a disclosure defect on the very endpoint meant to honour
 erasure. F3, F4 and F5 are regressions introduced by the re-drive change in `c4e1e88e` itself — the fix for
 the original one-shot bug brought its own.
+
+## Review pass — 2026-09-17 — incremental
+
+**Candidate base:** `c4e1e88e3d2c181410c4b695e09deb141465f8aa`
+**Candidate head:** `514894d6` *(see top-level watermark)*
+**Candidate branch:** `Feature/MonorepoBacklogPort`
+**Candidate scope:** `all` `(51 paths)`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+Covers `d2613b7d`, `9a129bb5`, `ca4b8bc6`, `b4fc79c1`, `d17013db` — the checker verb change, the
+`IReadOnlySet` retyping, the `*Export` → `Subject*Dto` rename, the `DealType` enum switch and the
+Conversations reader split. Lenses: native/general, module-boundaries + conventions, changed-behaviour
+test impact. Rules resolved manually again — the frozen tree still carries no `.agents/hooks/skill_router.py`.
+
+Findings F22–F24 were raised and fixed inside this pass (`514894d6`) and are recorded for history.
+
+### Findings
+
+- [x] **F22 — HIGH — correctness** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Services/SubjectExporter.cs`
+  The `DealType` `string`→enum switch silently changed the GDPR portability artifact. `JsonSerializerDefaults.Web` supplies camelCase naming and case-insensitive reads but **no** `JsonStringEnumConverter`, and `DealType` carries no `[JsonConverter]`, so `"dealType": "FlatFee"` became `"dealType": 0`. Enum members are implicitly ordinal, so inserting a `DealType` value would re-map the meaning of every previously issued export. Fixed: options extracted to `SubjectExportSerializerOptions` with the converter, pinned by `SubjectExportWireFormatTests`.
+
+- [x] **F23 — MEDIUM — correctness** — `api/tests/Concertable.B2B.ArchitectureTests/ModuleBoundaryTests.cs`
+  Two defects in the guard `d2613b7d` widened. Bare `StartsWith` meant `IssueInvoiceAsync` — an unambiguous command — satisfied the `Is` prefix, so the test that exists to reject commands admitted them. And the sibling `LaterLifecycleStages_DoNotCommandAnEarlierStage` still classified by `"Get"` alone, so `HasLiveObligationsAsync` was a query to one guard and a command to the other; it passed only because Privacy, not a lifecycle stage, is its sole caller. Fixed: word-boundary match, both guards driven from one `QueryPrefixes`.
+
+- [x] **F24 — LOW — docs** — `api/src/Modules/Concert/Concertable.B2B.Concert.Application/Interfaces/ISubjectRecordReader.cs:5`
+  Doc claimed invoices, **contracts** and self-billing agreements; the reader queries only invoices and agreements, and contracts come from Booking's `SubjectContractReader`. This is F19's underlying defect, carried through the rename. Fixed; F19 ticked.
+
+- [ ] **F25 — HIGH — module boundaries** — `api/src/Modules/Conversations/Concertable.B2B.Conversations.Infrastructure/Services/SubjectMessageReader.cs:7`
+  The extracted read-only reader is bound to `IMessagePrivilegedRepository`, the **writable** cross-tenant privileged context. `CODE_PATTERNS.md:29-31` allows `XPrivilegedRepository` "only where a cross-tenant write flow exists", and this reader has none — its two siblings created in the same commit use their module's read stance (`IBookingReadDbContext`, `IConcertReadDbContext`). Conversations has no read stance to use: only `ConversationsDbContext` and `ConversationsPrivilegedDbContext` exist, and `CODE_PATTERNS.md:15` omits Conversations from the read-context roster. Inherited from `ConversationsErasureService` rather than introduced, but the extraction was the moment to move the stance. Fix: add `IConversationsReadDbContext` (unfiltered read-only — the subject's messages genuinely cross tenants) plus an `IMessageReadRepository`, bind the reader to it, and add Conversations to the roster.
+
+- [ ] **F26 — HIGH — test coverage** — `api/src/Modules/Conversations/Tests/`, `api/src/Modules/{Booking,Application,User,Venue}/Tests/*.UnitTests`, `api/src/Concertable.B2B.DataAccess/Tests/`
+  Six test projects carry no `[assembly: AssemblyTrait("Category", …)]`, and `.github/workflows/ci.yml:73-74` filters on `Category=Unit|Integration|Architecture|Startup`. A test added to any of them compiles and is then skipped by the gate. Both Conversations projects are in that set, which is why the reader split could not be covered where it belongs. Fix: add an `AssemblyInfo.cs` to each, copying `Booking.IntegrationTests/AssemblyInfo.cs:3`.
+
+- [ ] **F27 — MEDIUM — test coverage** — `api/src/Modules/Booking/Tests/Concertable.B2B.Booking.IntegrationTests/`
+  Nothing has ever executed `IReadOnlySet<Guid>.Contains` inside an EF query against the real provider. `IReadOnlySet<T>.Contains` is a different expression-tree method from `ICollection<T>.Contains`; whether it emits `IN` is decided at runtime by SQL Server. The one in-tree precedent (`MessageRepository.cs:71`) ships but sits behind the same never-executed suite, and the only EF unit test in Conversations uses `UseInMemoryDatabase`, which evaluates client-side and would not expose a translation failure. Six queries share the construct, so they fail together or not at all. Fix: one real-provider call to `IBookingModule.GetSubjectContractsAsync(new HashSet<Guid> { … })` in `TenantScopingTests`.
+
+- [ ] **F28 — MEDIUM — test coverage** — `api/src/Modules/Privacy/Tests/Concertable.B2B.Privacy.IntegrationTests/SubjectRightsApiTests.cs`
+  `ToNullable()`'s `None` branch is asserted nowhere; if it yielded anything but `null` the export would emit a phantom user fragment unnoticed. One test exporting an unknown subject id asserts `JsonValueKind.Null` for `user` and simultaneously becomes the only coverage of every empty-set early return this pass added. Highest value per test in the set.
+
+- [ ] **F29 — MEDIUM — correctness** — `api/src/Modules/Tenant/Concertable.B2B.Tenant.IntegrationTests/`
+  `SeverMembershipsAsync`'s return is asserted nowhere, and no test subject belongs to two tenants, so the wound-down set — the value that drives `ScrubParticipantProfilesAsync` — is unexercised. `SubjectRightsApiTests` asserts only the severing side effect.
+
+### Notes carried, not raised as findings
+
+- `Concert.Contracts` → `Deal.Contracts` **is not** a boundary violation: `Directory.Build.targets:41-48` flags only paths escaping the service root, `Booking.Contracts` already carries the identical reference, `Deal.Contracts` is `IsPackable` and listed in `.github/b2b-promotion-candidates.json`, and `MODULES.md:20` permits Contracts→Contracts for shared base types. Conclusive.
+- `ToNullable` is Reunion-provided (`Reunion.OptionReferenceNullableExtensions`), so `CARRIERS.md:238`'s ban on *local* nullable helpers does not apply.
+- `StartupTests.ResourceGraphTests.ProductionGraphAndStrictValidation_AreValid` fails locally with a `TimeoutException` inside `Concertable.Payment.Hosting.AppHostExtensions.AddStripeCli`. No path in this range touches AppHost/hosting/Aspire and the suite predates the branch, so it is not attributed to this candidate — but it is unverified, not green.
+- Removing the `SettledStates` comments was requested and is compliant with the zero-comment default; the invariant they stated belongs in the test F18 already asks for.
