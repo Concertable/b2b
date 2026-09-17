@@ -22,4 +22,9 @@ internal sealed class InvitationRepository : Repository<TenantInvitationEntity>,
 
     public Task<TenantInvitationEntity?> GetPendingInvitationByEmailAsync(Guid tenantId, string email, CancellationToken ct = default) =>
         context.Invitations.FirstOrDefaultAsync(i => i.TenantId == tenantId && i.Email == email && i.Status == InvitationStatus.Pending, ct);
+
+    public async Task<IReadOnlyList<TenantInvitationEntity>> ListPendingInvitationsByEmailAsync(string email, CancellationToken ct = default) =>
+        await context.Invitations
+            .Where(i => i.Email == email && i.Status == InvitationStatus.Pending)
+            .ToListAsync(ct);
 }

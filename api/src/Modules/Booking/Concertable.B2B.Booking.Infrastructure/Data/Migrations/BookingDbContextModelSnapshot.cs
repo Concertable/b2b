@@ -57,6 +57,9 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("HandedOffAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("OperationId")
                         .HasColumnType("uniqueidentifier");
 

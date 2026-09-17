@@ -5,3 +5,4 @@ global using Concertable.B2B.Opportunity.Application.Interfaces;
 global using Concertable.B2B.Opportunity.Application.Requests;
 global using Reunion;
 global using Reunion.AspNetCore.Mvc;
+global using Concertable.Shared.Api.Http;

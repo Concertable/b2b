@@ -36,4 +36,10 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
 
     public Task<bool> IsMemberAsync(Guid tenantId, Guid userId, CancellationToken ct = default) =>
         context.Memberships.AnyAsync(m => m.TenantId == tenantId && m.UserId == userId, ct);
+
+    public async Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByUserAsync(Guid userId, CancellationToken ct = default) =>
+        await context.Memberships.Where(m => m.UserId == userId).ToListAsync(ct);
+
+    public Task<int> CountMembersAsync(Guid tenantId, CancellationToken ct = default) =>
+        context.Memberships.CountAsync(m => m.TenantId == tenantId, ct);
 }

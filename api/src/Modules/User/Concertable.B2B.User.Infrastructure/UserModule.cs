@@ -25,4 +25,10 @@ internal sealed class UserModule : IUserModule
 
     public Task<Option<Guid>> GetIdByEmailAsync(string email) =>
         userService.GetIdByEmailAsync(email);
+
+    public Task EraseAsync(Guid subjectId, CancellationToken ct = default) =>
+        userService.EraseAsync(subjectId, ct);
+
+    public Task<Option<SubjectProfileDto>> GetSubjectProfileAsync(Guid subjectId, CancellationToken ct = default) =>
+        userService.GetSubjectProfileAsync(subjectId, ct);
 }

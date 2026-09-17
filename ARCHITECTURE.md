@@ -23,7 +23,8 @@ B2B owns the venue/artist side of Concertable: opportunities, applications, book
 
 **Database:** `B2BDb` (SQL Server). Artist, Venue, and Concert each use a tenant-bound tracked/write
 `<Module>DbContext` plus a tenant-independent read-only `<Module>ReadDbContext`. Conversations also has
-`ConversationsPrivilegedDbContext` for tenant-independent administrative (moderation) writes.
+`ConversationsPrivilegedDbContext` for tenant-independent administrative writes — moderation and GDPR erasure —
+and `ConversationsReadDbContext` for the unfiltered subject-access read. Privacy owns the untenanted `PrivacyDbContext`.
 
 ---
 

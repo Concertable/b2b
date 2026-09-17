@@ -120,7 +120,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<Guid>("SenderTenantId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("SentByUserId")
+                    b.Property<Guid?>("SentByUserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("SentDate")

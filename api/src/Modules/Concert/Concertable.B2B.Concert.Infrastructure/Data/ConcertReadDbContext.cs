@@ -13,6 +13,7 @@ internal sealed class ConcertReadDbContext(
     : ReadDbContext(options, provider, Schema.Name), IConcertReadDbContext
 {
     IQueryable<ConcertEntity> IConcertReadDbContext.Concerts => Query<ConcertEntity>();
+    IQueryable<InvoiceEntity> IConcertReadDbContext.Invoices => Query<InvoiceEntity>();
     IQueryable<SelfBillingAgreementEntity> IConcertReadDbContext.SelfBillingAgreements =>
         Query<SelfBillingAgreementEntity>();
     IQueryable<ConcertRatingProjection> IConcertReadDbContext.ConcertRatingProjections =>

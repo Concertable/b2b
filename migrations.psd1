@@ -6,6 +6,7 @@
         @{ Context = 'UserDbContext'; Project = 'api/src/Modules/User/Concertable.B2B.User.Infrastructure'; StartupProject = 'api/src/Concertable.B2B.Web'; OutputDir = 'Data/Migrations' }
         @{ Context = 'TenantDbContext'; Project = 'api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure'; StartupProject = 'api/src/Concertable.B2B.Web'; OutputDir = 'Data/Migrations' }
         @{ Context = 'AdminDbContext'; Project = 'api/src/Modules/Admin/Concertable.B2B.Admin.Infrastructure'; StartupProject = 'api/src/Concertable.B2B.Web'; OutputDir = 'Data/Migrations' }
+        @{ Context = 'PrivacyDbContext'; Project = 'api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure'; StartupProject = 'api/src/Concertable.B2B.Web'; OutputDir = 'Data/Migrations' }
         @{ Context = 'ArtistDbContext'; Project = 'api/src/Modules/Artist/Concertable.B2B.Artist.Infrastructure'; StartupProject = 'api/src/Concertable.B2B.Web'; OutputDir = 'Data/Migrations' }
         @{ Context = 'VenueDbContext'; Project = 'api/src/Modules/Venue/Concertable.B2B.Venue.Infrastructure'; StartupProject = 'api/src/Concertable.B2B.Web'; OutputDir = 'Data/Migrations' }
         @{ Context = 'OpportunityDbContext'; Project = 'api/src/Modules/Opportunity/Concertable.B2B.Opportunity.Infrastructure'; StartupProject = 'api/src/Concertable.B2B.Web'; OutputDir = 'Data/Migrations' }

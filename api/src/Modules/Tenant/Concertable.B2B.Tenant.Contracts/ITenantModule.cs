@@ -16,4 +16,12 @@ public interface ITenantModule
         Guid tenantId,
         int take,
         CancellationToken ct = default);
+
+    /// <summary>GDPR erasure: removes the subject's tenant memberships across all tenants; returns the tenants left
+    /// with no members (wound down), for the caller to drive sole-trader wind-down handling. Erasure supersedes the
+    /// last-owner invariant.</summary>
+    Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>GDPR erasure: purges pending invitations addressed to the subject's email (their PII).</summary>
+    Task PurgePendingInvitationsAsync(string email, CancellationToken ct = default);
 }

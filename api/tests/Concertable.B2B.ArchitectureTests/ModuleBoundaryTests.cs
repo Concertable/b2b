@@ -105,6 +105,8 @@ public sealed class ModuleBoundaryTests
     // read an earlier stage's published facts, but never command an earlier stage. See
     // plans/launch/DEAL_LIFECYCLE_OWNERSHIP_PLAN.md.
 
+    private static readonly string[] QueryPrefixes = ["Get", "Has", "Is"];
+
     private static readonly (string Module, System.Type Contract)[] LifecycleStages =
         [
             ("Opportunity", typeof(IOpportunityModule)),
@@ -116,12 +118,20 @@ public sealed class ModuleBoundaryTests
     [Fact]
     public void LifecycleModuleFacades_ExposeQueryMembersOnly()
     {
-        foreach (var (_, contract) in LifecycleStages)
-            MethodMembers().That().AreDeclaredIn(contract)
-                .Should().HaveNameStartingWith("Get")
-                .Because($"{contract.Name} is a lifecycle-stage facade: it may publish facts for a later " +
-                          "stage to read, never accept a command (MM_BOUNDARY_HARDENING_PROMPT.md Part A3).")
-                .Check(Graph);
+        var violations = LifecycleStages
+            .SelectMany(stage => stage.Contract.GetMethods(), (stage, method) => new { stage.Contract, method })
+            .Where(pair => !QueryPrefixes.Any(prefix =>
+                pair.method.Name.StartsWith(prefix, StringComparison.Ordinal)
+                && pair.method.Name.Length > prefix.Length
+                && char.IsUpper(pair.method.Name[prefix.Length])))
+            .Select(pair => $"{pair.Contract.Name}.{pair.method.Name}")
+            .Order()
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "A lifecycle-stage facade may publish facts for a later stage to read, never accept a command " +
+            $"(MM_BOUNDARY_HARDENING_PROMPT.md Part A3):{Environment.NewLine}{string.Join(Environment.NewLine, violations)}");
     }
 
     [Fact]
@@ -135,7 +145,9 @@ public sealed class ModuleBoundaryTests
 
             MethodMembers().That()
                 .AreDeclaredIn(earlierContract).And()
-                .DoNotHaveNameStartingWith("Get")
+                .DoNotHaveNameStartingWith(QueryPrefixes[0]).And()
+                .DoNotHaveNameStartingWith(QueryPrefixes[1]).And()
+                .DoNotHaveNameStartingWith(QueryPrefixes[2])
                 .Should().NotBeCalledBy(Topology.NamespacePattern(laterModule), useRegularExpressions: true)
                 .Because($"{laterModule} is downstream of {earlierContract.Name} in the deal lifecycle; a " +
                           "downstream stage may read an upstream stage's contract but never command it.")

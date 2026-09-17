@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
+  <ItemGroup>
+    <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Dunet" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
+  </ItemGroup>
+
+</Project>

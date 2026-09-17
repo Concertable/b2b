@@ -123,7 +123,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var before = await beforeResponse.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
         Assert.Equal(ApplicationStatus.Pending, before!.Status);
         Assert.NotNull(before.Actions.Cancel);
-        Assert.Equal($"/api/application/{appId}/cancel", before.Actions.Cancel.Href);
+        Assert.Equal($"/api/application/{appId}/cancel", before.Actions.Cancel.Href.Value);
 
         var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel");
 

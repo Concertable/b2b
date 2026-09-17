@@ -324,7 +324,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
 
         // After settlement: the minted invoice surfaces its download link.
         var after = await (await party.GetAsync($"/api/organization/concert/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
-        Assert.Equal($"/api/concert/{concert.Id}/invoice/pdf", after!.Actions!.Invoice!.Href);
+        Assert.Equal($"/api/concert/{concert.Id}/invoice/pdf", after!.Actions!.Invoice!.Href.Value);
     }
 
     private HttpClient ClientOfTenant(Guid tenantId) =>

@@ -8,3 +8,4 @@ global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
 global using Reunion;
 global using Reunion.AspNetCore.Mvc;
+global using Concertable.Shared.Api.Http;
