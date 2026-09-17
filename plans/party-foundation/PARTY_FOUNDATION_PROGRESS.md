@@ -94,6 +94,9 @@ tests. Only then advance to P2's accepted participants/Show and published consum
 - Do not inflate P1 with configurable roles/hierarchy. The separately owned follow-on must preserve
   the P1 permission/audience contract and prove administration/revocation across all consumers.
 - New naming and exact before/after mechanisms are in section 4; do not re-invent them from this ledger.
+- Membership snapshot queries belong to the existing MembershipRepository through Authorization's narrow
+  IMembershipReadRepository contract. The proposed MembershipLookup abstraction is removed; membership
+  resolution and administration keep their respective owners.
 - No production compatibility layer, old schema reader, adapter or synthetic-data backfill is needed.
 
 ## Completed work

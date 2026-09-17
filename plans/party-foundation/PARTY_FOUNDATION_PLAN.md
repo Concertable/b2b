@@ -187,7 +187,7 @@ authority, transaction or storage model.
 
 ### 4.1 Membership, permission and resource access compose once
 
-Keep the dependency inversion: Tenant implements Authorization's membership lookup. Business activity
+Keep the dependency inversion: Tenant implements Authorization's narrow membership repository contract. Business activity
 is eligibility for creating/operating a particular marketplace profile; it never gives a user a
 permission or access to another resource. Resource grants identify accessible resources and disclosure
 scopes. Membership permission identifies the human's allowed operations and whether a resource must
@@ -215,6 +215,14 @@ public sealed record MembershipSnapshot(
     Guid UserId,
     TenantRole Role,
     long PermissionVersion);
+
+public interface IMembershipReadRepository
+{
+    Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
+        Guid userId, Guid tenantId, CancellationToken ct = default);
+    Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByUserIdAsync(
+        Guid userId, CancellationToken ct = default);
+}
 
 public enum ResourceAudience
 {
@@ -244,6 +252,46 @@ invalid tenant header, absent membership and unresolved identity all deny privat
 explicit tenant header is an error, never a fallback to a different tenant. Keep request resolution
 shared through HttpContext.Items so nested command scopes do not accidentally invent a second identity.
 The platform ITenantContext adapter returns IsHost = false; design-time adapters supply no authority.
+
+The new public IMembershipReadRepository belongs to Authorization.Contracts and exposes only these two
+snapshot queries. Tenant's existing Infrastructure.Repositories.MembershipRepository implements it
+alongside its existing, internal Tenant.Application.Interfaces.IMembershipRepository. Keep the neutral
+contract free of Tenant entities, EF types and inherited CRUD; Authorization depends only on its own
+contract. Delete Services.MembershipFacts and put its queries on that existing repository:
+
+~~~csharp
+public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
+    Guid userId, Guid tenantId, CancellationToken ct = default) =>
+    context.Memberships
+        .Where(member => member.UserId == userId && member.TenantId == tenantId)
+        .Select(member => new MembershipSnapshot(
+            member.Id, member.TenantId, member.UserId, member.Role, member.PermissionVersion))
+        .SingleOrDefaultAsync(ct);
+
+public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByUserIdAsync(
+    Guid userId, CancellationToken ct = default) =>
+    await context.Memberships
+        .Where(member => member.UserId == userId)
+        .Select(member => new MembershipSnapshot(
+            member.Id, member.TenantId, member.UserId, member.Role, member.PermissionVersion))
+        .ToListAsync(ct);
+~~~
+
+At Tenant's composition root, bind both interfaces to the same scoped repository instance.
+Add IMembershipReadRepository to the existing repository's implemented interfaces:
+
+~~~csharp
+services.AddScoped<MembershipRepository>();
+services.AddScoped<IMembershipRepository>(provider => provider.GetRequiredService<MembershipRepository>());
+services.AddScoped<IMembershipReadRepository>(provider => provider.GetRequiredService<MembershipRepository>());
+~~~
+
+The Read qualifier names the narrower interface's mutability; it does not introduce another repository
+implementation or a different tenancy stance. MembershipContext consumes IMembershipReadRepository
+and uses the first query for an explicit
+tenant and the second for the sole-membership default. Its existing resolution logic selects the active
+membership; the repository only retrieves data. MembershipService retains membership administration.
+No additional Lookup, Provider or service wrapper is introduced for these database queries.
 
 P1 keeps six fixed business roles: Owner, Manager, Finance, Staff, Door, Sound. Delete
 RestrictedParticipant and its seed/client cases; do not rename it into another outsider role.
@@ -1190,8 +1238,8 @@ row does not fabricate a Venue/Artist aggregate. Render every applicable tab tog
 
 TenantService.UpdateAsync calls both UpdateLegalDetails and UpdateContactEmail, with server-side email
 validation and the expected tenant version. Contact, legal name and verification status are Tenant
-facts; rename BusinessFacts to TenantBusinessDetails and IMembershipFacts/MembershipFacts to
-IMembershipLookup/TenantMembershipLookup. Rename Tenant.AuthorityVersion to EligibilityVersion
+data; rename BusinessFacts to TenantBusinessDetails. The membership repository contract and query
+ownership are specified in 4.1. Rename Tenant.AuthorityVersion to EligibilityVersion
 and Membership.AuthorizationVersion to PermissionVersion; changes increment the version whose
 meaning they actually affect.
 
@@ -1301,7 +1349,8 @@ existing Entity/Repository/Configuration conventions; there is no parallel old s
 | ThreadAccessScope.Participate | ConversationAccessScope.SendMessages |
 | GetByParticipantsAsync, CounterpartTenantId | Delete; explicit ConversationId and Participants |
 | TenantBusinessProfileEntity/Kind, BusinessProfiles, RequiresBusinessProfile, BusinessProfileAuthorizationFilter | TenantBusinessActivityEntity/Kind, BusinessActivities, RequiresBusinessActivity, BusinessActivityAuthorizationFilter |
-| MembershipFact, IMembershipFacts, MembershipFacts | MembershipSnapshot, IMembershipLookup, TenantMembershipLookup |
+| MembershipFact | MembershipSnapshot |
+| IMembershipFacts / MembershipFacts | Authorization.Contracts.IMembershipReadRepository implemented by Tenant's existing MembershipRepository; move the queries there and delete MembershipFacts (4.1) |
 | ActiveMembership / MembershipResolution | Keep a single MembershipSnapshot plus MembershipResolution; no duplicate snapshot record |
 | MembershipAuthorityFact / ConfigureBorrowedRelations | MembershipAuthority / ConfigureMembershipAuthority |
 | AuthorizationVersion / AuthorityVersion | PermissionVersion / EligibilityVersion |
