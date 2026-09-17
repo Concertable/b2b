@@ -5,5 +5,5 @@ namespace Concertable.B2B.Booking.Application.Interfaces;
 /// from the admin erasure flow. A precondition the GDPR erasure flow turns into a deferral; it does not throw.</summary>
 internal interface IObligationChecker
 {
-    Task<bool> HasLiveAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
+    Task<bool> HasLiveAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 }

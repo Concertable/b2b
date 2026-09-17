@@ -60,9 +60,9 @@ internal sealed class BookingModule : IBookingModule
         CancellationToken ct = default) =>
         bookingService.GetArtistAwaitingCheckoutCountAsync(artistTenantId, ct);
 
-    public Task<bool> HasLiveObligationsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default) =>
+    public Task<bool> HasLiveObligationsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
         obligationChecker.HasLiveAsync(tenantIds, ct);
 
-    public Task<IReadOnlyList<ContractExport>> GetContractExportsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default) =>
+    public Task<IReadOnlyList<ContractExport>> GetContractExportsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
         contractExportReader.GetContractExportsAsync(tenantIds, ct);
 }

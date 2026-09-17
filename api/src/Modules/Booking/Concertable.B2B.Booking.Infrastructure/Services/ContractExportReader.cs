@@ -15,7 +15,7 @@ internal sealed class ContractExportReader : IContractExportReader
         this.context = context;
     }
 
-    public async Task<IReadOnlyList<ContractExport>> GetContractExportsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ContractExport>> GetContractExportsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default)
     {
         if (tenantIds.Count == 0)
             return [];

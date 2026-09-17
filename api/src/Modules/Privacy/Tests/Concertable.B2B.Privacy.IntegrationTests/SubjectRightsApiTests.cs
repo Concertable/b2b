@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Mime;
 using System.Text.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Privacy.Application.Interfaces;
@@ -97,7 +98,7 @@ public sealed class SubjectRightsApiTests : IAsyncLifetime
         var download = await fixture.Services.RunScopedAsync(sp =>
             sp.GetRequiredService<ISubjectExporter>().ExportAsync(subject.Id));
 
-        Assert.Equal("application/json", download.ContentType);
+        Assert.Equal(MediaTypeNames.Application.Json, download.ContentType);
         Assert.Contains(subject.Id.ToString("N"), download.FileName);
 
         using var doc = JsonDocument.Parse(download.Content);

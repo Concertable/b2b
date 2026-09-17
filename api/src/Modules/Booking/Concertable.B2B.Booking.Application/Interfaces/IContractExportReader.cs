@@ -6,5 +6,5 @@ namespace Concertable.B2B.Booking.Application.Interfaces;
 /// to — for a GDPR access/portability export. Read-only.</summary>
 internal interface IContractExportReader
 {
-    Task<IReadOnlyList<ContractExport>> GetContractExportsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
+    Task<IReadOnlyList<ContractExport>> GetContractExportsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 }

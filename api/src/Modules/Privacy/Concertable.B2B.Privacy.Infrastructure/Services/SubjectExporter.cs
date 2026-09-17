@@ -1,3 +1,4 @@
+using System.Net.Mime;
 using System.Text.Json;
 
 namespace Concertable.B2B.Privacy.Infrastructure.Services;
@@ -31,7 +32,7 @@ internal sealed class SubjectExporter : ISubjectExporter
     {
         var user = await userModule.GetUserExportAsync(subjectId, ct);
         var memberships = await tenantModule.GetMembershipsAsync(subjectId, ct);
-        var tenantIds = memberships.Select(m => m.TenantId).Distinct().ToArray();
+        var tenantIds = memberships.Select(m => m.TenantId).ToHashSet();
         var messages = await conversationsModule.GetMessageExportsAsync(subjectId, ct);
         var contracts = await bookingModule.GetContractExportsAsync(tenantIds, ct);
         var concertRecords = await concertModule.GetConcertExportAsync(tenantIds, ct);
@@ -39,7 +40,7 @@ internal sealed class SubjectExporter : ISubjectExporter
         var payload = new
         {
             subjectId,
-            user = user.Match<UserExport?>(u => u, () => null),
+            user = user.ToNullable(),
             memberships,
             messages,
             contracts,
@@ -47,6 +48,6 @@ internal sealed class SubjectExporter : ISubjectExporter
         };
 
         var content = JsonSerializer.SerializeToUtf8Bytes(payload, SerializerOptions);
-        return new FileDownload(content, $"subject-export-{subjectId:N}.json", "application/json");
+        return new FileDownload(content, $"subject-export-{subjectId:N}.json", MediaTypeNames.Application.Json);
     }
 }

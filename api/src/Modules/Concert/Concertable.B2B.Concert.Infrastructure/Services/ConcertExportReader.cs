@@ -15,7 +15,7 @@ internal sealed class ConcertExportReader : IConcertExportReader
         this.context = context;
     }
 
-    public async Task<ConcertExport> GetConcertExportAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
+    public async Task<ConcertExport> GetConcertExportAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default)
     {
         if (tenantIds.Count == 0)
             return new ConcertExport();

@@ -6,5 +6,5 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 /// self-billing agreements their tenants are party to — for a GDPR access/portability export. Read-only.</summary>
 internal interface IConcertExportReader
 {
-    Task<ConcertExport> GetConcertExportAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
+    Task<ConcertExport> GetConcertExportAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 }
