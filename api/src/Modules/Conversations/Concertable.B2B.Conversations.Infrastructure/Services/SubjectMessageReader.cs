@@ -4,9 +4,9 @@ namespace Concertable.B2B.Conversations.Infrastructure.Services;
 
 internal sealed class SubjectMessageReader : ISubjectMessageReader
 {
-    private readonly IMessagePrivilegedRepository messages;
+    private readonly IMessageReadRepository messages;
 
-    public SubjectMessageReader(IMessagePrivilegedRepository messages)
+    public SubjectMessageReader(IMessageReadRepository messages)
     {
         this.messages = messages;
     }
