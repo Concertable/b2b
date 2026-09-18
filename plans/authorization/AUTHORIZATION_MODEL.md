@@ -4,6 +4,8 @@
 
 This is an implementation decision, not a claim of delivered behavior or an instruction to change production code in this research commit. The delivery dependencies below belong to the existing foundation work. This reference creates no separate phase ledger. Research date: **18 September 2026**.
 
+Sections 3–5 select the design and delivery dependencies. [Section 7](#7-implementation-examples) fixes the corresponding storage, expression-building, registration and call-site shapes with current/proposed code. Its examples are design excerpts, not compiled implementation or evidence that a runtime gate has passed.
+
 ## 1. Evidence and corrections
 
 ### Inspected baseline
@@ -190,7 +192,7 @@ The new resolved membership carries MembershipId, TenantId, UserId, PermissionVe
 
 ### 3.3 Resource relationships and storage
 
-Keep module-owned `ResourceAccessGrant<TScope>` families and the existing issuer/kind/validity fields. A direct grant is an authoritative disclosure record. Add only real, consumed relationship data:
+Keep module-owned grant families and the existing issuer/kind/validity fields. Generalize the shared base from `ResourceAccessGrant<TScope>` to `ResourceAccessGrant<TKey, TScope>` during the shared infrastructure replacement: the six existing families retain integer resource keys, while proposed Guid-keyed resources use their real key. Section 7.5 shows the type replacement. A direct grant is an authoritative disclosure record. Add only real, consumed relationship data:
 
 - P2 stores the Show/participant/revision/binding relationships specified by the foundation. A participant label does not synthesize an ACL. Accepted principals receive the explicitly agreed scopes through their resource owner's creation command.
 - P3 adds Tenant's AuthorityGrant and immutable AuthorityGrantVersion, with principal/acting tenant, supported act, agreement-or-show bounds, constraints, evidence and validity. A derived resource grant records SourceAuthorityGrantId and SourceAuthorityVersion. Each read/check joins the live Tenant-owned status view and requires the exact version to remain current, in scope, unrevoked and in time. Replacing a mandate does not revive old derived rows. No transitive delegation is admitted.
@@ -339,13 +341,13 @@ The comparison assumes publication's endpoint/service already exist, as they do 
 | Behavioral allow/deny/revocation coverage | One existing publication integration test file: 1 | One equivalent integration test file: 1 |
 | **Total hand-authored files** | **6** | **4** |
 
-The endpoint currently uses `ConcertsManage` at [ConcertController.cs:173–178][C24]; `PostAsync` does not yet have the target command check. This table is a concrete design comparison, not a claim that today's endpoint is already safely fenced. No DbContext, grant enum, role enum, mapper or policy-provider edit is needed merely to add this permission over an existing policy/scope. Generated C#/TypeScript/metadata changes still appear in the resulting diff where generated artifacts are checked in; the reduction is in independent authoring sites, not concealed output.
+The endpoint currently uses `ConcertsManage` at [ConcertController.cs:173–178][C24]; `PostAsync` does not yet have the target command check. [Section 7.4](#74-permission-registration-and-its-consumers) shows both call-site replacements. This table is a concrete design comparison, not a claim that today's endpoint is already safely fenced. No DbContext, grant enum, role enum, mapper or policy-provider edit is needed merely to add this permission over an existing policy/scope. Generated C#/TypeScript/metadata changes still appear in the resulting diff where generated artifacts are checked in; the reduction is in independent authoring sites, not concealed output.
 
 For an existing operation's customer-specific bundle, the target requires **zero source-file changes**: Owner creates/edits a role through Tenant, assigns it to a membership, and the new policy version takes effect. This is the larger improvement over today's code-only six-role table.
 
 ### Worked relationship: a named requirement reviewer
 
-Add `ApprovalAssignment` linking a requirement's bound approver participant to a particular current membership. This is a new relationship type with its own lifecycle, not another global job title. Use the existing EvidenceApproval resource, evidence read scope and `requirements.decide` permission. The member must belong to the bound approver tenant; the relation carries version/validity/revocation; the reviewer can decide only the current evidence revision. Reassignment revokes the prior assignment, invalidates current satisfaction and leaves previous decisions immutable.
+Add `ApprovalAssignment` linking a requirement's bound approver participant to a particular current membership. This is a new relationship type with its own lifecycle, not another global job title. Use the existing EvidenceApproval resource, evidence read scope and `requirements.decide` permission. The member must belong to the bound approver tenant; the relation carries version/validity/revocation; the reviewer can decide only the current evidence revision. Reassignment revokes the prior assignment, invalidates current satisfaction and leaves previous decisions immutable. [Section 7.5](#75-a-new-reviewer-relationship-and-a-derived-mandate) supplies the proposed row, predicate and decision request.
 
 The following file budget fixes its boundary: Requirement/EvidenceRevision, their read/decision endpoints and the decision permission already exist; this slice adds **named reviewer assignment/revocation**. Paths below are proposed under the Concert module, not claims that P5 is implemented now.
 
@@ -420,6 +422,587 @@ Measure the point-check, page/count and commit-fence SQL separately. Start with 
 
 An external graph engine becomes worth a new decision if authoritative relationships must span independently deployed services/datastores, customer cases require recursive usersets/delegation, or measured indexed SQL fails agreed budgets. Those are observable changes to the present evidence. They do not postpone the selected in-process implementation, custom roles or any current revocation requirement.
 
+## 7. Implementation examples
+
+The **current** excerpts below come from the pinned B2B baseline. The **proposed** excerpts select the replacement mechanism; they are not additional production files in this commit. Namespaces, imports, unrelated aggregate fields and ordinary EF column configuration are omitted where they do not determine the design. Statements shown outside a type are excerpts from the named method/configuration. New ports and their transaction obligations are specified beside their call sites. Do not substitute a differently scoped repository or independently resolved actor behind the same signature.
+
+| Mechanism selected above | Concrete example |
+|---|---|
+| Single role replaced by assignments, composite tenant keys, permission union and policy version | §7.1 |
+| Shared audience predicate, SQL expression substitution, independent read projections | §7.2 |
+| Real SQL fences, complete ACL command, final validation and rollback | §7.3 |
+| Neutral evaluator wiring, generated permission and endpoint/service consumers | §7.4 |
+| Reviewer relationship, exact revision request and live source-mandate join | §7.5 |
+
+### 7.1 Role storage and resolved authority
+
+**Current — Tenant domain and Authorization contracts/services.** The membership stores one enum and the request looks that role up in the compiled catalog. [Membership][C4], [resolution][C1], [catalog][C6]
+
+```csharp
+public TenantRole Role { get; private set; }
+
+public void ChangeRole(TenantRole role)
+{
+    Role = role;
+    PermissionVersion++;
+}
+```
+
+```csharp
+public sealed record MembershipSnapshot(
+    Guid MembershipId,
+    Guid TenantId,
+    Guid UserId,
+    TenantRole Role,
+    long PermissionVersion);
+
+public bool HasPermission(string permission) =>
+    Membership is { } active && permissionCatalog.Grants(active.Role, permission);
+```
+
+**Proposed — Tenant owns these row shapes.** Delete `TenantMembershipEntity.Role`, its EF property mapping, `ChangeRole`, and the authority-bearing `TenantRole` enum. Keep membership identity, user, creation/audit fields and PermissionVersion. `SystemPresetKey` is catalog metadata, never an input to `HasPermission`. The setters below are private; Owner-checked domain operations create/edit these rows and enforce §3.2.
+
+```csharp
+public sealed class TenantRoleDefinition
+{
+    public Guid Id { get; private set; }
+    public Guid TenantId { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string? SystemPresetKey { get; private set; }
+    public bool IsProtectedOwner { get; private set; }
+    public long Version { get; private set; }
+    public DateTime? RetiredAt { get; private set; }
+}
+
+public sealed class TenantRolePermission
+{
+    public Guid TenantId { get; private set; }
+    public Guid RoleId { get; private set; }
+    public string PermissionKey { get; private set; } = string.Empty;
+    public ResourceAudience Audience { get; private set; }
+}
+
+public sealed class MembershipRoleAssignment
+{
+    public Guid TenantId { get; private set; }
+    public Guid MembershipId { get; private set; }
+    public Guid RoleId { get; private set; }
+    public Guid? IssuedByMembershipId { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+}
+```
+
+`IssuedByMembershipId` is null only for the trusted founding-owner bootstrap; other assignment paths record the issuing incarnation. It is historical provenance, not a cascading FK to a membership that may later be removed. The target membership and role are current relational dependencies. In the respective Tenant EF configurations, `memberships`, `roles`, `permissions` and `assignments` are their `EntityTypeBuilder<T>` instances:
+
+```csharp
+memberships.HasAlternateKey(member => new { member.TenantId, member.Id });
+roles.HasAlternateKey(role => new { role.TenantId, role.Id });
+roles.HasIndex(role => new { role.TenantId, role.Name }).IsUnique();
+roles.Property(role => role.Version).IsConcurrencyToken();
+
+permissions.HasKey(row => new { row.TenantId, row.RoleId, row.PermissionKey });
+permissions.HasOne<TenantRoleDefinition>().WithMany()
+    .HasForeignKey(row => new { row.TenantId, row.RoleId })
+    .HasPrincipalKey(role => new { role.TenantId, role.Id })
+    .OnDelete(DeleteBehavior.Cascade);
+
+assignments.HasKey(row => new { row.TenantId, row.MembershipId, row.RoleId });
+assignments.HasOne<TenantMembershipEntity>().WithMany()
+    .HasForeignKey(row => new { row.TenantId, row.MembershipId })
+    .HasPrincipalKey(member => new { member.TenantId, member.Id })
+    .OnDelete(DeleteBehavior.Cascade);
+assignments.HasOne<TenantRoleDefinition>().WithMany()
+    .HasForeignKey(row => new { row.TenantId, row.RoleId })
+    .HasPrincipalKey(role => new { role.TenantId, role.Id })
+    .OnDelete(DeleteBehavior.Restrict);
+```
+
+Preserve the existing unique `(TenantId, UserId)` membership index. Add Tenant.RolePolicyVersion as a concurrency token. Assignment replacement bumps the target membership's PermissionVersion; role definition/permission edits bump that role's Version and Tenant.RolePolicyVersion. Perform the replacement and version increments under the locks in §7.3. Those are domain mutations, never bulk updates that bypass the command boundary. Retiring a role in use replaces its assignments in the same transaction.
+
+**Proposed — Authorization.Contracts and MembershipContext.** The immutable snapshot carries the computed authority, not a mutable role collection or a primary-role approximation:
+
+```csharp
+public sealed record MembershipSnapshot(
+    Guid MembershipId,
+    Guid TenantId,
+    Guid UserId,
+    long PermissionVersion,
+    long RolePolicyVersion,
+    ImmutableDictionary<string, ResourceAudience> Permissions);
+```
+
+Tenant's implementation of `IMembershipReadRepository` loads the active membership, its tenant version and the permissions of its assigned, non-retired roles. For standalone resolution, use a short read transaction with retained tenant-then-membership locks while assembling that snapshot; inside a command, use its enlisted authority reader. Never combine grants read before a role edit with versions read after it. Missing memberships remain missing, including memberships with no matching roles; a current membership with zero grants has an empty permission dictionary. After the rows and versions have been read consistently, the materialization is:
+
+```csharp
+var permissions = rows
+    .GroupBy(row => row.PermissionKey, StringComparer.Ordinal)
+    .ToImmutableDictionary(
+        group => group.Key,
+        group => (ResourceAudience)group.Max(row => (int)row.Audience),
+        StringComparer.Ordinal);
+
+return new MembershipSnapshot(
+    member.Id,
+    member.TenantId,
+    member.UserId,
+    member.PermissionVersion,
+    tenant.RolePolicyVersion,
+    permissions);
+```
+
+`rows` contains only the validated role-permission records for that membership. Unknown keys and invalid audiences fail catalog validation; they are never interpreted as a wildcard. The request context becomes:
+
+```csharp
+public ResourceAudience AudienceFor(string permission) =>
+    Membership is { } active
+        && active.Permissions.TryGetValue(permission, out var audience)
+            ? audience
+            : ResourceAudience.None;
+
+public bool HasPermission(string permission) =>
+    AudienceFor(permission) != ResourceAudience.None;
+```
+
+Keep the existing tenant-header resolution behavior. Replace `IPermissionCatalog.For/Grants/AudienceFor(TenantRole, ...)` with generated descriptor/preset metadata; it no longer resolves a member's authority. Tenant membership/invitation HTTP contracts expose role IDs/names and effective permissions. They do not accept a permission snapshot supplied by the client.
+
+**Proposed — extend the Tenant-owned live view**, created by the regenerated InitialCreate, and its keyless DataAccess mapping:
+
+```sql
+CREATE VIEW tenant.MembershipAuthority AS
+SELECT m.Id AS MembershipId,
+       m.TenantId,
+       m.UserId,
+       m.PermissionVersion,
+       t.RolePolicyVersion
+FROM tenant.Memberships AS m
+JOIN tenant.Tenants AS t ON t.Id = m.TenantId;
+```
+
+The source remains the existing membership table; a deleted incarnation contributes no row. Add `RolePolicyVersion` to the mapped `MembershipAuthority` type and `ActiveRolePolicyVersion` to the resource context interface/base class. Each read compares it as shown next. The existing view and membership EF mapping are at [Tenant InitialCreate][C25] and [membership configuration][C26].
+
+### 7.2 One translated predicate and separate facet roots
+
+**Current — ConcertDbContext.** Each resource context supplies its own audience branches; even the outer Summary filter depends on the previously filtered grant set. [Complete filter][C11]
+
+```csharp
+modelBuilder.Entity<ConcertEntity>().HasQueryFilter(TenantFilters.Key, concert =>
+    ConcertAccessGrants.Any(grant =>
+        grant.ResourceId == concert.Id && grant.Scope == ConcertAccessScope.Summary));
+```
+
+For example, that grant filter includes this Finance branch:
+
+```csharp
+grant.Scope == ConcertAccessScope.Finance
+    && (FinanceAudience == ResourceAudience.TenantResources
+            && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
+        || FinanceAudience == ResourceAudience.AssignedResources
+            && grant.MembershipId == ActiveMembershipId)
+```
+
+**Proposed — DataAccess.Infrastructure owns the following shared builder.** This is the direct-grant predicate for the P1/role-composition boundary. The authority-source extension is installed when P3 introduces derived grants, as specified in §7.5. Audience is an expression accessing the current DbContext, never a width evaluated once during model construction.
+
+```csharp
+public static Expression<Func<TGrant, bool>> ForCurrentMember<TGrant, TKey, TScope>(
+    IHasResourceAccessContext context,
+    Expression<Func<ResourceAudience>> audience)
+    where TGrant : ResourceAccessGrant<TKey, TScope>
+    where TKey : notnull
+    where TScope : struct, Enum
+{
+    Expression<Func<TGrant, bool>> live = grant =>
+        context.ActiveMembershipId != null
+        && context.MembershipAuthority.Any(member =>
+            member.MembershipId == context.ActiveMembershipId
+            && member.TenantId == context.ActiveTenantId
+            && member.UserId == context.ActiveUserId
+            && member.PermissionVersion == context.ActivePermissionVersion
+            && member.RolePolicyVersion == context.ActiveRolePolicyVersion)
+        && grant.TenantId == context.ActiveTenantId
+        && grant.RevokedAt == null
+        && grant.ValidFrom <= context.ResourceAccess.UtcNow
+        && (grant.ValidUntil == null || context.ResourceAccess.UtcNow < grant.ValidUntil);
+
+    Expression<Func<TGrant, ResourceAudience, bool>> recipient = (grant, width) =>
+        width == ResourceAudience.TenantResources
+            && (grant.MembershipId == null || grant.MembershipId == context.ActiveMembershipId)
+        || width == ResourceAudience.AssignedResources
+            && grant.MembershipId == context.ActiveMembershipId;
+
+    var body = new ReplaceExpression(recipient.Parameters[1], audience.Body)
+        .Visit(recipient.Body)!;
+
+    return live.And(Expression.Lambda<Func<TGrant, bool>>(body, recipient.Parameters[0]));
+}
+```
+
+Keep the existing body-splicing `And` extension. Add one reusable `Exists` composer; it embeds a typed grant predicate into a resource predicate without `Compile`, `Invoke` or per-row authorization calls:
+
+```csharp
+public static Expression<Func<TResource, bool>> Exists<TResource, TGrant>(
+    Expression<Func<IQueryable<TGrant>>> grants,
+    Expression<Func<TResource, TGrant, bool>> matchesResource,
+    Expression<Func<TGrant, bool>> allowsGrant)
+{
+    var grant = matchesResource.Parameters[1];
+    var allowed = new ReplaceExpression(allowsGrant.Parameters[0], grant)
+        .Visit(allowsGrant.Body)!;
+    var predicate = Expression.Lambda<Func<TGrant, bool>>(
+        Expression.AndAlso(matchesResource.Body, allowed), grant);
+    var any = Expression.Call(
+        typeof(Queryable), nameof(Queryable.Any), [typeof(TGrant)],
+        grants.Body, Expression.Quote(predicate));
+
+    return Expression.Lambda<Func<TResource, bool>>(any, matchesResource.Parameters[0]);
+}
+
+private sealed class ReplaceExpression(Expression source, Expression replacement)
+    : ExpressionVisitor
+{
+    public override Expression? Visit(Expression? node) =>
+        node == source ? replacement : base.Visit(node);
+}
+```
+
+**Proposed — Concert's registration method** supplies typed scopes and keys only. `ConcertAccessGrants` is the internal raw fact set with no recipient global filter. `ConcertFinance` is the separate read model described in §3.5, with its approved finance columns mapped to the module's view. The two calls belong in `ApplyTenantFilters`; unrelated Invoice and single-owner registrations remain in that method.
+
+```csharp
+var summaryGrants = ResourceAccessExpressions
+    .ForCurrentMember<ConcertAccessGrant, int, ConcertAccessScope>(this, () => OperationsAudience)
+    .And(grant => grant.Scope == ConcertAccessScope.Summary);
+
+var financeGrants = ResourceAccessExpressions
+    .ForCurrentMember<ConcertAccessGrant, int, ConcertAccessScope>(this, () => FinanceAudience)
+    .And(grant => grant.Scope == ConcertAccessScope.Finance);
+
+modelBuilder.Entity<ConcertEntity>().HasQueryFilter(TenantFilters.Key,
+    ResourceAccessExpressions.Exists<ConcertEntity, ConcertAccessGrant>(
+        () => ConcertAccessGrants,
+        (concert, grant) => grant.ResourceId == concert.Id,
+        summaryGrants));
+
+modelBuilder.Entity<ConcertFinance>().HasNoKey().ToView("ConcertFinance", "concert");
+modelBuilder.Entity<ConcertFinance>().HasQueryFilter(TenantFilters.Key,
+    ResourceAccessExpressions.Exists<ConcertFinance, ConcertAccessGrant>(
+        () => ConcertAccessGrants,
+        (concert, grant) => grant.ResourceId == concert.Id,
+        financeGrants));
+```
+
+Extract each registration's predicate into the module's typed policy factory so the evaluator uses that same factory in `Where(predicate).AnyAsync(...)`. Generated descriptors select those factories for the supported permission/scope/policy combination. The Finance repository starts from `context.Set<ConcertFinance>()`; it never starts from `context.Concerts` or joins through a Summary-filtered navigation. Apply the identical factory before count/page/export. The descriptor compiler must reject a private projection without a binding.
+
+EF model caching is a mandatory runtime qualification here: the stored expression retains DbContext member access, while the active membership, versions, audience and clock are parameters for the executing context/query. Run two actors and advancing time against the same cached model, inspect translated SQL and prove the unrelated member's identity/width never persists. These excerpts have not been used to claim that provider translation already passes.
+
+### 7.3 Fenced ACL mutation and transaction completion
+
+**Current — RevokeSummaryShareAsync** reads through the ordinary recipient-filtered repository and saves through the unit of work. The before-excerpt preserves the critical statements from the existing method; its other guards are shown in [the source][C22].
+
+```csharp
+var concert = await concertRepository.GetWithGrantsByIdAsync(id, ct);
+
+if (concert.RevokeSummaryShare(grantId, actor.TenantId, resourceAccess.UtcNow)
+    .TryGetError(out var revocationError))
+    return revocationError.ToRevokeConcertSummaryShareError();
+
+return await unitOfWork.TrySaveChangesAsync(
+        static exception => exception is DbUpdateConcurrencyException)
+    ? new Success()
+    : new RevokeConcertSummaryShareError.Superseded(id);
+```
+
+**Proposed — authorization acquires actual SQL Server locks.** These parameterized statements illustrate a command acting on one tenant, one membership and one concert. Tenant's authority port owns the first two; Concert's internal fence repository owns the third. They execute sequentially on the coordinator's existing connection/transaction. A multi-party command discovers every required key first and uses §3.6's total ordering; it must not acquire a new tenant lock after its resource lock.
+
+```sql
+SELECT Id, RolePolicyVersion
+FROM tenant.Tenants WITH (HOLDLOCK)
+WHERE Id = @TenantId;
+
+SELECT Id, TenantId, UserId, PermissionVersion
+FROM tenant.Memberships WITH (HOLDLOCK)
+WHERE TenantId = @TenantId AND Id = @MembershipId;
+
+SELECT Id, VenueTenantId, ArtistTenantId, AccessVersion
+FROM concert.Concerts WITH (UPDLOCK, HOLDLOCK)
+WHERE Id = @ConcertId;
+```
+
+Compare the returned membership/user/version tuple with the request snapshot and check the principal policy on the locked minimal concert identity. Read authority locks persist to transaction end. A role-policy change uses `UPDLOCK, HOLDLOCK` on the tenant row from first acquisition; a membership change does so on the relevant membership row. Avoid taking a shared lock and later upgrading it for a known authority edit. These query fragments do not claim that the currently named `GetIdentityByIdForUpdateAsync` already locks; [it does not][C16].
+
+**Proposed — the command body uses `RequireForCommandAsync` before the complete ACL load.** This body executes within the coordinator, including when an application caller bypasses HTTP. `resourceAuthorization`, `membership`, `privilegedRepository` and `resourceAccess` are resolved in that command's scope. A public application service dispatches into that scope; it must not invoke this body and then save outside it.
+
+```csharp
+var resource = ResourceAddresses.Concert(id);
+var decision = await resourceAuthorization.RequireForCommandAsync(
+    new AuthorizationRequest(TenantPermission.ResourcesShare, resource), ct);
+
+if (decision == AuthorizationDecision.AuthorityChanged)
+    return new RevokeConcertSummaryShareError.Superseded(id);
+
+if (decision != AuthorizationDecision.Allowed)
+{
+    var visible = await resourceAuthorization.CheckAsync(
+        new AuthorizationRequest(TenantPermission.OperationsView, resource), ct);
+    return visible == AuthorizationDecision.Allowed
+        ? new RevokeConcertSummaryShareError.NotPermitted()
+        : new RevokeConcertSummaryShareError.ConcertNotFound(id);
+}
+
+var actor = membership.Membership!;
+var concert = await privilegedRepository.GetWithGrantsByIdAsync(id, ct);
+if (concert is null)
+    return new RevokeConcertSummaryShareError.ConcertNotFound(id);
+
+if (concert.AccessVersion != expectedAccessVersion)
+    return new RevokeConcertSummaryShareError.Superseded(id);
+
+if (concert.RevokeSummaryShare(grantId, actor.TenantId, resourceAccess.UtcNow)
+    .TryGetError(out var error))
+    return error.ToRevokeConcertSummaryShareError();
+
+return new Success();
+```
+
+`resources.share` on Concert binds to principal administration, with no Summary-grant prerequisite. Revocation additionally checks the selected grant's issuer inside `ConcertEntity.RevokeSummaryShare` after loading the complete ACL. A recipient's read permission never selects this privileged path. The same structure surrounds share, assignment/removal and receipt replay; target memberships and mandates join the declared fence set before any complete aggregate load. Receipt lookup/replay occurs after live authorization, and replay exposes only the currently permitted response.
+
+**Proposed — the shared command coordinator owns completion.** The following is its callback body inside the EF execution strategy. `request` and its operation identity are allocated before entering that strategy. `THandler` is resolved only after installing the command, and `mapAuthorityFailure` maps the shared decision to this operation's error union. `ValidateAuthorityAsync` returns `Task<AuthorizationDecision>` and returns a failure if any nested requirement poisoned the command, even when a handler ignored its result.
+
+```csharp
+await using var scope = scopeFactory.CreateAsyncScope();
+await using var command = await CommandTransaction.BeginAsync(
+    connectionString, IsolationLevel.ReadCommitted, ct);
+scope.ServiceProvider.GetRequiredService<CommandTransactionAccessor>().Set(command);
+
+var handler = scope.ServiceProvider.GetRequiredService<THandler>();
+var result = await handler.ExecuteAsync(request, ct);
+if (result.TryGetError(out _))
+{
+    await command.RollbackAsync(ct);
+    return result;
+}
+
+await command.FlushAsync(ct);
+var finalDecision = await command.ValidateAuthorityAsync(ct);
+if (finalDecision != AuthorizationDecision.Allowed)
+{
+    await command.RollbackAsync(ct);
+    return mapAuthorityFailure(finalDecision);
+}
+
+await command.CommitAsync(ct);
+return result;
+```
+
+`FlushAsync` runs the domain-event/outbox pipeline to completion across every enlisted context. Any exception or unsuccessful result disposes/rolls back the transaction; only this success path commits. All contexts share its connection and `UseTransaction`, following the existing [foundation enlistment contract][P1]. Receipt and outbox writes therefore roll back with denied effects, including an intermediate flush needed to retire an expired unique grant before reissue. Retries create an entirely new scope/transaction/context set.
+
+The authorization proof separates **authority dependencies** from the resource's ordinary domain concurrency token. Updating `Concert.AccessVersion` while revoking a share is an expected command effect, not a reason to reject the command's own final check. Conversely, a signing command depends on the exact source mandate and cannot substitute a new one at commit. Authority edits register their declared transition before mutation:
+
+```csharp
+public sealed record AuthorityVersionTransition(
+    ResourceAddress Authority,
+    long ExpectedVersion,
+    long? ResultVersion);
+
+public interface IAuthorityTransitionRecorder
+{
+    void Register(AuthorityVersionTransition transition);
+}
+```
+
+Tenant's internal role/membership handlers alone receive this recorder, implemented by the current command. `ResultVersion = null` means the authorized removal of that exact incarnation; role edits record the tenant policy transition and assignment edits the affected membership transitions. The recorder requires a successful locked pre-change administration proof, rejects duplicate/unfenced/unexpected transitions, and cannot be called by ordinary resource handlers. Final validation permits precisely those recorded changes and rechecks timed prerequisites. Subsequent requirements in the transaction use the pre-change actor authority, so newly granted permissions cannot authorize another effect. Qualification includes owner self-removal with another Owner retained, concurrent last-owner removal and role edits affecting the editor.
+
+### 7.4 Permission registration and its consumers
+
+**Current — the existing publication endpoint** selects the broad permission, and `PostAsync` begins with an ordinary filtered read. [Controller][C24], [service][C27]
+
+```csharp
+[HasPermission(TenantPermission.ConcertsManage)]
+[HttpPut("post/{id}")]
+public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
+{
+    return (await concertService.PostAsync(id, request)).ToNoContentOrProblem();
+}
+```
+
+```csharp
+var concertEntity = await concertRepository.GetByIdAsync(id);
+```
+
+**Proposed — the manifest in §4 generates the constant** into Concert.Contracts and adds the matching descriptor and client permission literal. Handwritten consumers use that symbol:
+
+```csharp
+public static partial class ConcertPermission
+{
+    public const string Publish = "concerts.publish";
+}
+```
+
+```csharp
+[HasPermission(ConcertPermission.Publish)]
+[HttpPut("post/{id}")]
+public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
+{
+    return (await concertService.PostAsync(id, request)).ToNoContentOrProblem();
+}
+```
+
+The endpoint also retains its existing business-profile requirement. The coordinator-wrapped `PostAsync` command body obtains the operation's proof before its privileged load:
+
+```csharp
+var decision = await resourceAuthorization.RequireForCommandAsync(
+    new AuthorizationRequest(ConcertPermission.Publish, ResourceAddresses.Concert(id)), ct);
+
+if (decision != AuthorizationDecision.Allowed)
+    return await publicationErrors.FromAuthorizationAsync(id, decision, ct);
+
+var concertEntity = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+```
+
+`publicationErrors` is Concert's operation-error mapper: AuthorityChanged becomes a conflict requiring fresh resolution; a fresh Summary check selects hidden 404 versus visible 403, exactly as in §7.3. After this excerpt, run the existing publication validator/state transition and P5's pinned requirement checks, then let the coordinator flush, validate and commit. `GetByIdForUpdateAsync` uses the already held resource fence. The service must not retain the old independently committing `TrySaveChangesAsync` tail. Calling Check from HTTP alone is insufficient.
+
+**Proposed — the neutral evaluator port and composition.** Authorization.Contracts contains the following port. Module evaluators receive the already resolved actor; their constructors consume module policy/fact readers and shared command infrastructure. The request-facing `IResourceAuthorization` remains the contract in §3.4, which has no caller-supplied actor.
+
+```csharp
+public interface IResourceAuthorizationEvaluator
+{
+    Task<AuthorizationDecision> CheckAsync(
+        AuthorizationRequest request,
+        MembershipSnapshot actor,
+        CancellationToken cancellationToken);
+
+    Task<AuthorizationDecision> RequireForCommandAsync(
+        AuthorizationRequest request,
+        MembershipSnapshot actor,
+        CancellationToken cancellationToken);
+}
+```
+
+```csharp
+services.AddScoped<IResourceAuthorization, ResourceAuthorization>();
+services.AddKeyedScoped<IResourceAuthorizationEvaluator, ConcertAuthorizationEvaluator>("concert");
+```
+
+The first registration belongs to Authorization's composition; the second belongs to Concert's. Only Authorization dispatches the evaluator port. It resolves/matches the current membership, rejects unknown permission/resource combinations through generated descriptors and dispatches by `request.Resource.Kind`. `CheckAsync` never acquires a reusable permit. `RequireForCommandAsync` uses the shared coordinator's discover/order/lock/revalidate/proof-registration pipeline; the owning evaluator supplies typed fact readers and policy expressions rather than its own transaction loop. Missing membership, denied/unknown operation or a rejected module evaluation also marks the active command unsuccessful. Calling Require without that command is an error. Composition rejects missing/duplicate keyed evaluators and missing typed policy factories.
+
+Adding `concerts.publish` therefore edits the manifest, endpoint, service permission reference and behavior tests from §4. It does not add another evaluator or duplicate the `operating_principal` expression. The one-time infrastructure work supplies the dispatcher, registry validation, generator and coordinator; those are prerequisites already excluded from the marginal four-file count.
+
+### 7.5 A new reviewer relationship and a derived mandate
+
+**Before — no current implementation to quote.** ApprovalAssignment and requirement decision are P5 targets, not types in the inspected baseline. The §4 file comparison assumes that requirement/evidence persistence and the decision permission have been delivered. It must not be mistaken for an existing fixed-role reviewer check. Here is the proposed addition at that boundary.
+
+**Proposed — Concert's assignment entity** records the bound participant and a nullable named incarnation. ApproverTenantId is resolved from the immutable participant binding when issued, never copied from an unverified client field. Requirement holds CurrentApprovalAssignmentId; replacing it revokes the prior row under the requirement fence and invalidates current satisfaction.
+
+```csharp
+public sealed class ApprovalAssignment
+{
+    public Guid Id { get; private set; }
+    public Guid RequirementId { get; private set; }
+    public Guid ApproverParticipantId { get; private set; }
+    public Guid ApproverTenantId { get; private set; }
+    public Guid? ReviewerMembershipId { get; private set; }
+    public long Version { get; private set; }
+    public DateTime ValidFrom { get; private set; }
+    public DateTime? ValidUntil { get; private set; }
+    public DateTime? RevokedAt { get; private set; }
+}
+```
+
+The assignment has a module-local Requirement FK and a concurrency token on Version. Its issuer/time provenance follows the grant audit pattern. The assignment service validates current target membership and evidence disclosure through owner contracts inside the same command before issuing it; it cannot create evidence access implicitly. A removed/rejoined reviewer has a different ID and cannot satisfy the predicate below.
+
+**Proposed — one typed policy in `RequirementAuthorizationPolicy.cs`.** The EvidenceApproval resource introduced by the owning capability has `RequirementAccessGrant` and finite `RequirementAccessScope.Evidence`. This is the granted input scope for deciding; it does not grant Operations or Finance on the containing concert. `DecisionAudience` is the context-instance audience for generated `RequirementPermission.Decide`. SubjectRevisionId is required for this operation and identifies the evidence revision; PrincipalParticipantId is required and identifies the pinned approver. Requirement's participant binding is already pinned to its agreed configuration revision.
+
+```csharp
+var evidence = ResourceAccessExpressions
+    .ForCurrentMember<RequirementAccessGrant, Guid, RequirementAccessScope>(
+        context, () => context.DecisionAudience)
+    .And(grant => grant.Scope == RequirementAccessScope.Evidence);
+
+var canDecide = ResourceAccessExpressions
+    .Exists<RequirementEntity, RequirementAccessGrant>(
+        () => context.RequirementAccessGrants,
+        (requirement, grant) => grant.ResourceId == requirement.Id,
+        evidence)
+    .And(requirement =>
+        requirement.CurrentEvidenceRevisionId == request.SubjectRevisionId
+        && requirement.ApproverParticipantId == request.PrincipalParticipantId
+        && context.ApprovalAssignments.Any(assignment =>
+            assignment.Id == requirement.CurrentApprovalAssignmentId
+            && assignment.RequirementId == requirement.Id
+            && assignment.ApproverParticipantId == requirement.ApproverParticipantId
+            && assignment.ApproverTenantId == context.ActiveTenantId
+            && (assignment.ReviewerMembershipId == context.ActiveMembershipId
+                || assignment.ReviewerMembershipId == null
+                    && context.DecisionAudience == ResourceAudience.TenantResources)
+            && assignment.RevokedAt == null
+            && assignment.ValidFrom <= context.ResourceAccess.UtcNow
+            && (assignment.ValidUntil == null
+                || context.ResourceAccess.UtcNow < assignment.ValidUntil)));
+```
+
+Requirement's proposed public key is a Guid (§3.4), whereas today's shared grant base hardcodes an int ResourceId. The shared infrastructure replacement generalizes that base. Its key declaration changes from the current shape below to the proposed shape following it; all other grant fields and invariants from §3.3 remain on that same base.
+
+```csharp
+public abstract class ResourceAccessGrant<TScope> : IGuidEntity
+    where TScope : struct, Enum
+{
+    public int ResourceId { get; protected set; }
+}
+```
+
+```csharp
+public abstract class ResourceAccessGrant<TKey, TScope> : IGuidEntity
+    where TKey : notnull
+    where TScope : struct, Enum
+{
+    public TKey ResourceId { get; protected set; } = default!;
+}
+```
+
+The six existing concrete families bind `TKey = int`; RequirementAccessGrant binds `TKey = Guid`. Section 7.2 supplies the complete generalized builder signature/body and its integer/Guid call sites. Generalize `Initialize` and `ResourceAccessGrantConfiguration`'s key selectors in the same replacement; scope and grant IDs remain unchanged. Update every existing invocation to pass its key type and delete the one-key implementation. Do not add a second numeric identity to Requirement. This change belongs to the one-time shared infrastructure work excluded from the named-reviewer file budget, not a hidden thirteenth reviewer file.
+
+The point evaluator applies this expression before `AnyAsync`. The command evaluator fences the selected assignment and records its exact ID/version plus evidence revision in the proof. Decision has this request shape and uses the common boundary:
+
+```csharp
+public sealed record DecideRequirementRequest(
+    Guid EvidenceRevisionId,
+    Guid AssignmentId,
+    long ExpectedAssignmentVersion,
+    Guid ApproverParticipantId,
+    ApprovalOutcome Outcome);
+```
+
+```csharp
+var decision = await resourceAuthorization.RequireForCommandAsync(
+    new AuthorizationRequest(
+        RequirementPermission.Decide,
+        ResourceAddresses.Requirement(requirementId),
+        request.EvidenceRevisionId,
+        request.ApproverParticipantId), ct);
+```
+
+On Allowed, the command checks AssignmentId/ExpectedAssignmentVersion against the locked assignment, applies the domain decision and records the successful proof with the evidence hash. On denial it returns the operation's hidden/forbidden/conflict error and creates no decision. Final validation repeats authority, exact assignment and current evidence checks; it does not require the old Pending domain state after the command intentionally approved it. The operation's descriptor binds `requirements.decide` to this factory. Role definitions and unrelated contexts do not change when the named-reviewer relationship is added.
+
+**Proposed — P3's source-mandate predicate** also needs executable shape. Introduce nullable SourceAuthorityGrantId and SourceAuthorityVersion together on derived-capable grant rows, with a database check requiring either both null or both non-null. A module-local `GrantAuthorityBinding` read projection joins such a grant to its resource's pinned principal, act and show/agreement bounds. Its fields are owner-derived; no request supplies those facts. Tenant exposes a keyless CurrentAuthorityGrant view carrying only the current version and immutable version's bounds. The shared predicate includes:
+
+```csharp
+Expression<Func<GrantAuthorityBinding, bool>> sourceIsCurrent = binding =>
+    binding.SourceAuthorityGrantId == null && binding.SourceAuthorityVersion == null
+    || context.CurrentAuthorityGrants.Any(authority =>
+        authority.Id == binding.SourceAuthorityGrantId
+        && authority.Version == binding.SourceAuthorityVersion
+        && authority.PrincipalTenantId == binding.PrincipalTenantId
+        && authority.ActingTenantId == binding.RecipientTenantId
+        && authority.Act == binding.RequiredAct
+        && (authority.AgreementId != null && authority.AgreementId == binding.AgreementId
+            || authority.ShowId != null && authority.ShowId == binding.ShowId)
+        && authority.RevokedAt == null
+        && authority.ValidFrom <= context.ResourceAccess.UtcNow
+        && (authority.ValidUntil == null || context.ResourceAccess.UtcNow < authority.ValidUntil));
+```
+
+Tenant validates exactly one supported bound and the version's additional constraints at issuance. If further constraints are introduced, their typed owner predicate is required in the same policy registration; unknown constraints deny. Compose `sourceIsCurrent` **inside** the matching resource-grant EXISTS, joined by the grant's ID, along with live membership, audience and scope. A direct grant satisfies the null-pair branch; a derived grant has no fallback. The P3 generator/composition check must reject a derived-capable grant policy without this source binding. That deployment adds the binding and all consuming read/command predicates together, so no derived row can be served by the earlier direct-only model.
+
+For signatures, the command additionally fences the selected Tenant mandate, validates the represented principal and records this exact authority version in consent/acceptance evidence. Mandate replacement therefore invalidates the old proof even if another currently valid mandate could independently allow a new request. This implements the one-hop, signing-only boundary; it introduces no implicit approval, collection or transitive authority.
+
 ## Source register
 
 Local evidence links are immutable source snapshots with file/line anchors. Product references are pinned to the fetched docs revision; vendor references were checked on 18 September 2026. Proposed types, file budgets and architecture choices are recommendations in this document, not assertions that they already exist.
@@ -448,6 +1031,9 @@ Local evidence links are immutable source snapshots with file/line anchors. Prod
 [C22]: https://github.com/Concertable/b2b/blob/e5263bb44f7b81fb145869ba85d3ff92372b0c8e/api/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/ConcertService.cs#L292-L451
 [C23]: https://github.com/Concertable/b2b/blob/e5263bb44f7b81fb145869ba85d3ff92372b0c8e/api/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Repositories/ConcertRepository.cs#L31-L34
 [C24]: https://github.com/Concertable/b2b/blob/e5263bb44f7b81fb145869ba85d3ff92372b0c8e/api/src/Modules/Concert/Concertable.B2B.Concert.Api/Controllers/ConcertController.cs#L173-L178
+[C25]: https://github.com/Concertable/b2b/blob/e5263bb44f7b81fb145869ba85d3ff92372b0c8e/api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Data/Migrations/20260917224110_InitialCreate.cs#L226-L232
+[C26]: https://github.com/Concertable/b2b/blob/e5263bb44f7b81fb145869ba85d3ff92372b0c8e/api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Data/Configurations/TenantMembershipEntityConfiguration.cs#L8-L22
+[C27]: https://github.com/Concertable/b2b/blob/e5263bb44f7b81fb145869ba85d3ff92372b0c8e/api/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/ConcertService.cs#L243-L264
 [R1]: https://github.com/Concertable/b2b/blob/e5263bb44f7b81fb145869ba85d3ff92372b0c8e/reviews/Refactor-PartyFoundationLegacyBindings.md#L295-L592
 [P1]: https://github.com/Concertable/b2b/blob/e5263bb44f7b81fb145869ba85d3ff92372b0c8e/plans/party-foundation/PARTY_FOUNDATION_PLAN.md#L746-L917
 [P2]: https://github.com/Concertable/b2b/blob/e5263bb44f7b81fb145869ba85d3ff92372b0c8e/plans/party-foundation/PARTY_FOUNDATION_PLAN.md#L297-L357
