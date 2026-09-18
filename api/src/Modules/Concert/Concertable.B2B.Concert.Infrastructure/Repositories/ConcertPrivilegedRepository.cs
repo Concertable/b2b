@@ -22,6 +22,9 @@ internal sealed class ConcertPrivilegedRepository : PrivilegedRepository<Concert
         return await context.Concerts.SingleOrDefaultAsync(concert => concert.Id == concertId, ct);
     }
 
+    public Task<ConcertEntity?> GetByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
+        context.Concerts.SingleOrDefaultAsync(concert => concert.BookingId == bookingId, ct);
+
     public Task<ConcertEntity?> GetWithGrantsByIdAsync(int concertId, CancellationToken ct = default) =>
         context.Concerts
             .Include(concert => concert.AccessGrants)

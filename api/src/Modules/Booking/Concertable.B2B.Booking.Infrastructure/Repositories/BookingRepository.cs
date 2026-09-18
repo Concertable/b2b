@@ -20,6 +20,9 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
             .Include(booking => booking.AccessGrants)
             .FirstOrDefaultAsync(booking => booking.Id == id, ct);
 
+    public async ValueTask AddContractAsync(ContractEntity contract, CancellationToken ct = default) =>
+        await context.Contracts.AddAsync(contract, ct);
+
     public Task<BookingEntity?> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>

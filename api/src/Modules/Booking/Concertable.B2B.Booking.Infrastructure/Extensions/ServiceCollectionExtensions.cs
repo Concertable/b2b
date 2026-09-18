@@ -58,7 +58,10 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
             services.AddScoped<IBookingRepository, BookingRepository>();
+            services.AddScoped<IBookingPrivilegedRepository, BookingPrivilegedRepository>();
             services.AddScoped<IContractRepository, ContractRepository>();
             services.AddScoped<IBookingWorkflow, BookingWorkflow>();
             services.AddScoped<IBookingService, BookingService>();

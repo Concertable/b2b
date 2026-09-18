@@ -1,17 +1,67 @@
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Mappers;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 
-internal sealed class MembershipRepository : Repository<TenantMembershipEntity>, IMembershipRepository, IMembershipReadRepository
+internal sealed class MembershipRepository : Repository<TenantMembershipEntity>, IMembershipRepository,
+    IMembershipReadRepository, IMembershipAuthorityFence
 {
     private readonly TenantDbContext context;
+    private readonly CommandTransactionAccessor transactions;
 
-    public MembershipRepository(TenantDbContext context) : base(context)
+    public MembershipRepository(
+        TenantDbContext context,
+        CommandTransactionAccessor transactions) : base(context)
     {
         this.context = context;
+        this.transactions = transactions;
+    }
+
+    public async Task<MembershipSnapshot?> RequireCurrentAsync(
+        MembershipSnapshot expected,
+        CancellationToken ct = default)
+    {
+        var transaction = transactions.Current
+            ?? throw new InvalidOperationException("Membership authority requires an active command transaction.");
+        await transaction.EnlistAsync(context, ct);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+             SELECT 1
+             FROM tenant.Tenants WITH (HOLDLOCK)
+             WHERE Id = {expected.TenantId}
+             """,
+            ct);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+             SELECT 1
+             FROM tenant.Memberships WITH (HOLDLOCK)
+             WHERE Id = {expected.MembershipId}
+               AND TenantId = {expected.TenantId}
+               AND UserId = {expected.UserId}
+             """,
+            ct);
+
+        var current = await context.Memberships
+            .Where(membership =>
+                membership.Id == expected.MembershipId
+                && membership.TenantId == expected.TenantId
+                && membership.UserId == expected.UserId)
+            .Select(membership => new MembershipSnapshot(
+                membership.Id,
+                membership.TenantId,
+                membership.UserId,
+                membership.Role,
+                membership.PermissionVersion))
+            .SingleOrDefaultAsync(ct);
+
+        return current is { } authority
+            && authority.Role == expected.Role
+            && authority.PermissionVersion == expected.PermissionVersion
+                ? authority
+                : null;
     }
 
     public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(

@@ -6,16 +6,18 @@ using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Application.Requests;
 using Concertable.B2B.Application.Application.Strategies;
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Application.Domain;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Contracts;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
-using Concertable.Kernel.DependencyInjection;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -26,6 +28,7 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 internal sealed class ApplicationWorkflow : IApplicationWorkflow
 {
     private readonly IApplicationRepository applicationRepository;
+    private readonly IApplicationPrivilegedRepository privilegedRepository;
     private readonly IApplicationValidator validator;
     private readonly IApplicationNotifier notifier;
     private readonly IApplicationEligibility eligibility;
@@ -42,11 +45,15 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
     private readonly IUnitOfWork unitOfWork;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
-    private readonly IScoped<ApplicationWorkflow> acceptance;
+    private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
+    private readonly IMembershipContext membership;
+    private readonly IMembershipAuthorityFence authorityFence;
+    private readonly IPermissionCatalog permissionCatalog;
+    private readonly ICommandExecutor commandExecutor;
 
     public ApplicationWorkflow(
         IApplicationRepository applicationRepository,
+        IApplicationPrivilegedRepository privilegedRepository,
         IApplicationValidator validator,
         IApplicationNotifier notifier,
         IApplicationEligibility eligibility,
@@ -63,10 +70,14 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IOptions<LegalSettings> legal,
         TimeProvider timeProvider,
         IUnitOfWork unitOfWork,
-        IUnitOfWorkBehavior unitOfWorkBehavior,
-        IScoped<ApplicationWorkflow> acceptance)
+        IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
+        IMembershipContext membership,
+        IMembershipAuthorityFence authorityFence,
+        IPermissionCatalog permissionCatalog,
+        ICommandExecutor commandExecutor)
     {
         this.applicationRepository = applicationRepository;
+        this.privilegedRepository = privilegedRepository;
         this.validator = validator;
         this.notifier = notifier;
         this.eligibility = eligibility;
@@ -83,8 +94,11 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.legal = legal.Value;
         this.timeProvider = timeProvider;
         this.unitOfWork = unitOfWork;
-        this.unitOfWorkBehavior = unitOfWorkBehavior;
-        this.acceptance = acceptance;
+        this.privilegedUnitOfWork = privilegedUnitOfWork;
+        this.membership = membership;
+        this.authorityFence = authorityFence;
+        this.permissionCatalog = permissionCatalog;
+        this.commandExecutor = commandExecutor;
     }
 
     public async Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
@@ -153,55 +167,80 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         return await mapper.ToDtoAsync(application, ct);
     }
 
-    public Task<UnitResult<AcceptApplicationError>> AcceptAsync(
+    public async Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,
         ESignatureRequest eSignature,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => AcceptCoreAsync(applicationId, eSignature, ct),
-            exception => exception.IsApplicationAcceptanceConflict(applicationId),
-            _ => ClassifyAcceptConflictAsync(applicationId, eSignature, ct),
-            ct);
-
-    internal Task<UnitResult<AcceptApplicationError>> AcceptOnceAsync(
-        int applicationId,
-        ESignatureRequest eSignature,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(
-            () => AcceptCoreAsync(applicationId, eSignature, ct),
-            ct);
-
-    private async Task<UnitResult<AcceptApplicationError>> ClassifyAcceptConflictAsync(
-        int applicationId,
-        ESignatureRequest eSignature,
-        CancellationToken ct)
+        CancellationToken ct = default)
     {
-        var opportunityId = await applicationRepository.GetByIdAsync(
-            applicationId,
-            ApplicationSpecification.CreateOpportunityId(),
-            ct);
-        if (opportunityId is { } opportunity &&
-            await applicationRepository.AnyAcceptedByOpportunityIdAsync(opportunity, ct))
-            return new AcceptApplicationError.AlreadyAccepted();
-        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) is not ApplicationState.Applied)
-            return new AcceptApplicationError.Superseded(applicationId);
+        if (membership.Membership is not { } actor)
+            return new AcceptApplicationError.NotPermitted();
 
-        // Nothing about the application forbids the acceptance, so the loss was to a change the acceptance
-        // reads -- a payment verification landing mid-flight -- and rerunning in a FRESH scope decides on the
-        // recorded outcome. The rerun does not rerun again, so a second loss is reported.
-        return await acceptance.RunAsync(fresh =>
-            fresh.AcceptOnceAsync(applicationId, eSignature, ct));
+        try
+        {
+            return await ExecuteAcceptAsync(applicationId, eSignature, actor, ct);
+        }
+        catch (DbUpdateException exception)
+            when (exception.IsApplicationAcceptanceConflict(applicationId))
+        {
+            try
+            {
+                return await ExecuteAcceptAsync(applicationId, eSignature, actor, ct);
+            }
+            catch (DbUpdateException retryException)
+                when (retryException.IsApplicationAcceptanceConflict(applicationId))
+            {
+                return new AcceptApplicationError.Superseded(applicationId);
+            }
+        }
     }
+
+    private Task<UnitResult<AcceptApplicationError>> ExecuteAcceptAsync(
+        int applicationId,
+        ESignatureRequest eSignature,
+        MembershipSnapshot actor,
+        CancellationToken ct) =>
+        commandExecutor.ExecuteAsync<ApplicationWorkflow, UnitResult<AcceptApplicationError>>(
+            (workflow, token) => workflow.AcceptCommandAsync(
+                applicationId,
+                eSignature,
+                actor,
+                token),
+            ct);
+
+    private Task<UnitResult<AcceptApplicationError>> AcceptCommandAsync(
+        int applicationId,
+        ESignatureRequest eSignature,
+        MembershipSnapshot actor,
+        CancellationToken ct) =>
+        privilegedUnitOfWork.ExecuteAsync(
+            () => AcceptCoreAsync(applicationId, eSignature, actor, ct),
+            ct);
 
     private async Task<UnitResult<AcceptApplicationError>> AcceptCoreAsync(
         int applicationId,
         ESignatureRequest eSignature,
+        MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            return new AcceptApplicationError.NotPermitted();
+
+        var application = await privilegedRepository.GetDecisionByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
+
+        var audience = permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide);
+        if (application.VenueTenantId != actor.TenantId
+            || !ResourceGrantPolicy.Allows(
+                application.AccessGrants,
+                ApplicationAccessScope.Proposal,
+                actor,
+                audience,
+                timeProvider.GetUtcNow().UtcDateTime))
+            return new AcceptApplicationError.NotPermitted();
 
         // The application's own state gates first. Once it has left Applied the opportunity is
         // legitimately no longer open, and reporting that as an eligibility problem answers a lifecycle
@@ -212,9 +251,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         var eligibilityResult = await eligibility.CanAcceptAsync(application, ct)
             .MapError(error => (AcceptApplicationError)new AcceptApplicationError.Ineligible(error));
         if (eligibilityResult.TryGetError(out var eligibilityError))
-            return await applicationRepository.AnyAcceptedByOpportunityIdAsync(application.OpportunityId, ct)
-                // A rival acceptance closes the opportunity, and reporting that as an eligibility problem
-                // answers a lifecycle conflict with a 404 about someone else's resource.
+            return await privilegedRepository.AnyAcceptedByOpportunityIdAsync(application.OpportunityId, ct)
                 ? new AcceptApplicationError.AlreadyAccepted()
                 : eligibilityError;
         if (!eligibilityResult.TryGetValue(out var opportunity))
@@ -236,13 +273,12 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (application.TermsFingerprint != CalculateTermsFingerprint(deal, opportunity))
             return new AcceptApplicationError.TermsChanged();
 
-        if (currentUser.Id is not { } userId)
-            return new AcceptApplicationError.Ineligible(
-                new ApplicationEligibilityError.ApplicationNotFound());
-
         var operationId = application.AcceptanceOperationId ?? Guid.NewGuid();
         var venueSignature = eSignature.ToSignature(
-            userId, timeProvider.GetUtcNow().UtcDateTime, clientContext.IpAddress, clientContext.UserAgent);
+            actor.UserId,
+            timeProvider.GetUtcNow().UtcDateTime,
+            clientContext.IpAddress,
+            clientContext.UserAgent);
         var snapshot = new ApplicationAcceptanceSnapshot(
             operationId,
             new ApplicationSnapshot(
@@ -275,9 +311,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (application.Accept(acceptedApplication).TryGetError(out var transitionError))
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
-        await unitOfWork.SaveChangesAsync(ct);
-
-        var rejectedApplicationIds = await applicationRepository.RejectAllExceptAsync(
+        var rejectedApplicationIds = await privilegedRepository.RejectAllExceptAsync(
             application.OpportunityId, application.Id, ct);
         foreach (var rejectedApplicationId in rejectedApplicationIds)
             await notifier.RejectedAsync(rejectedApplicationId);

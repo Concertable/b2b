@@ -53,9 +53,15 @@ public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEvent
         VenueTenantId = venueTenantId;
         ArtistTenantId = artistTenantId;
 
-        /* The applicant and the tenant it applied to reach the application through grants like anyone else,
-           issued with it so neither party can be shut out of its own application. The applicant issues it. */
-        foreach (var tenantId in new[] { venueTenantId, artistTenantId }.Distinct())
+        InitializePrincipalAccess(createdAtUtc);
+    }
+
+    internal void InitializePrincipalAccess(DateTime createdAtUtc)
+    {
+        if (accessGrants.Count != 0)
+            throw new InvalidOperationException("Application access has already been initialized.");
+
+        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
         {
             foreach (var scope in new[] { ApplicationAccessScope.Summary, ApplicationAccessScope.Proposal })
             {
@@ -64,7 +70,7 @@ public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEvent
                     tenantId,
                     membershipId: null,
                     scope,
-                    issuedByTenantId: artistTenantId,
+                    issuedByTenantId: ArtistTenantId,
                     issuedByUserId: null,
                     ResourceGrantKind.Principal,
                     createdAtUtc));

@@ -24,6 +24,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class ConcertService : IConcertService
 {
     private readonly IConcertRepository concertRepository;
+    private readonly IConcertPrivilegedRepository privilegedRepository;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
     private readonly IConcertReadRepository readRepository;
     private readonly IInvoiceRepository invoiceRepository;
     private readonly IConcertValidator concertValidator;
@@ -44,6 +46,8 @@ internal sealed class ConcertService : IConcertService
 
     public ConcertService(
         IConcertRepository concertRepository,
+        IConcertPrivilegedRepository privilegedRepository,
+        IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
         IConcertReadRepository readRepository,
         IInvoiceRepository invoiceRepository,
         IConcertValidator concertValidator,
@@ -63,6 +67,8 @@ internal sealed class ConcertService : IConcertService
         ILogger<ConcertService> logger)
     {
         this.concertRepository = concertRepository;
+        this.privilegedRepository = privilegedRepository;
+        this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
         this.readRepository = readRepository;
         this.invoiceRepository = invoiceRepository;
         this.concertValidator = concertValidator;
@@ -82,11 +88,14 @@ internal sealed class ConcertService : IConcertService
         this.logger = logger;
     }
 
-    public async Task CreateAsync(ConfirmedBookingSnapshot booking, CancellationToken ct = default)
+    public Task CreateAsync(ConfirmedBookingSnapshot booking, CancellationToken ct = default) =>
+        privilegedOutboxUnitOfWorkBehavior.ExecuteAsync(() => CreateCoreAsync(booking, ct), ct);
+
+    private async Task CreateCoreAsync(ConfirmedBookingSnapshot booking, CancellationToken ct)
     {
         logger.CreatingConcertDraft(booking.BookingId);
 
-        if (await concertRepository.GetByBookingIdAsync(booking.BookingId, ct) is not null)
+        if (await privilegedRepository.GetByBookingIdAsync(booking.BookingId, ct) is not null)
             return;
 
         var artist = await artistReadModelRepository.GetByTenantIdAsync(booking.ArtistTenantId, ct)
@@ -117,8 +126,8 @@ internal sealed class ConcertService : IConcertService
                 venue.About,
                 matchingGenres),
             timeProvider.GetUtcNow().UtcDateTime);
-        await concertRepository.AddAsync(concert, ct);
-        await concertRepository.SaveChangesAsync(ct);
+        await privilegedRepository.AddAsync(concert, ct);
+        await privilegedRepository.SaveChangesAsync(ct);
 
         await bus.PublishAsync(new ConcertCreatedEvent(
             concert.Id,

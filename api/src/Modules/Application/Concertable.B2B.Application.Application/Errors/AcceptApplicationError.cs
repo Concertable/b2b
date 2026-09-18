@@ -18,6 +18,8 @@ internal abstract partial record AcceptApplicationError : IError
             "Another application for this opportunity has already been accepted."),
         Superseded(var applicationId) => ErrorDefinition.Conflict<Superseded>(
             $"Application {applicationId} changed while this acceptance was in flight."),
+        NotPermitted => ErrorDefinition.Forbidden<NotPermitted>(
+            "You are not permitted to accept this application."),
         PaymentMethodRequired => ErrorDefinition.Invalid<PaymentMethodRequired>(
             "This deal requires a payment method at acceptance.")
     };
@@ -35,6 +37,9 @@ internal abstract partial record AcceptApplicationError : IError
 
     [ErrorCode("application.accept.superseded")]
     public partial record Superseded(int ApplicationId);
+
+    [ErrorCode("application.accept.not_permitted")]
+    public partial record NotPermitted;
 
     [ErrorCode("application.accept.payment_method_required")]
     public partial record PaymentMethodRequired;

@@ -25,9 +25,11 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 internal sealed class BookingWorkflow : IBookingWorkflow
 {
     private readonly IBookingRepository bookingRepository;
+    private readonly IBookingPrivilegedRepository privilegedRepository;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
+    private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWorkBehavior;
     private readonly IBus bus;
     private readonly IDealStrategyFactory<IConfirmStep> confirmFactory;
     private readonly IDealStrategyFactory<ICancelStep> cancelFactory;
@@ -37,9 +39,11 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
     public BookingWorkflow(
         IBookingRepository bookingRepository,
+        IBookingPrivilegedRepository privilegedRepository,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior,
         IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
+        IPrivilegedUnitOfWorkBehavior privilegedUnitOfWorkBehavior,
         IBus bus,
         IDealStrategyFactory<IConfirmStep> confirmFactory,
         IDealStrategyFactory<ICancelStep> cancelFactory,
@@ -48,9 +52,11 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         ILogger<BookingWorkflow> logger)
     {
         this.bookingRepository = bookingRepository;
+        this.privilegedRepository = privilegedRepository;
         this.unitOfWork = unitOfWork;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
+        this.privilegedUnitOfWorkBehavior = privilegedUnitOfWorkBehavior;
         this.bus = bus;
         this.confirmFactory = confirmFactory;
         this.cancelFactory = cancelFactory;
@@ -77,13 +83,17 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         int bookingId,
         FinancialOperationSucceeded operation,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(() => RecordSucceededCoreAsync(bookingId, operation, ct), ct);
+        privilegedUnitOfWorkBehavior.ExecuteAsync(
+            () => RecordSucceededCoreAsync(bookingId, operation, ct),
+            ct);
 
     public Task RecordFailedAsync(
         int bookingId,
         FinancialOperationFailed operation,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(() => RecordFailedCoreAsync(bookingId, operation, ct), ct);
+        privilegedUnitOfWorkBehavior.ExecuteAsync(
+            () => RecordFailedCoreAsync(bookingId, operation, ct),
+            ct);
 
     private async Task<UnitResult<CancelBookingError>> ClassifyCancelConflictAsync(
         int bookingId,
@@ -153,7 +163,9 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         await bookingRepository.AddAsync(booking, ct);
         await bookingRepository.SaveChangesAsync(ct);
 
-        booking.MintContract(mintContract(booking.Id, timeProvider.GetUtcNow().UtcDateTime));
+        var contract = mintContract(booking.Id, timeProvider.GetUtcNow().UtcDateTime);
+        booking.MintContract(contract);
+        await bookingRepository.AddContractAsync(contract, ct);
         await bookingRepository.SaveChangesAsync(ct);
         return booking;
     }
@@ -163,7 +175,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationSucceeded operation,
         CancellationToken ct)
     {
-        var booking = await bookingRepository.GetByIdAsync(bookingId, BookingSpecification.CreateWithContract(), ct);
+        var booking = await privilegedRepository.GetWithContractByIdAsync(bookingId, ct);
         if (booking is null || !Matches(bookingId, booking, operation))
         {
             logger.FinancialOutcomeSkipped(operation.Operation, bookingId);
@@ -185,7 +197,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
         if (booking.RecordFinancialConfirmation().TryGetError(out var transitionError))
             throw new InvalidOperationException($"Booking cannot confirm from {transitionError.Current}.");
-        await bookingRepository.SaveChangesAsync(ct);
+        await privilegedRepository.SaveChangesAsync(ct);
     }
 
     private async Task RecordFailedCoreAsync(
@@ -193,7 +205,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationFailed operation,
         CancellationToken ct)
     {
-        var booking = await bookingRepository.GetByIdAsync(bookingId, ct);
+        var booking = await privilegedRepository.GetByIdAsync(bookingId, ct);
         if (booking is null || !Matches(bookingId, booking, operation))
         {
             logger.FinancialOutcomeSkipped(operation.Operation, bookingId);
@@ -208,7 +220,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         {
             if (booking.Cancel().TryGetError(out var transitionError))
                 throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
-            await bookingRepository.SaveChangesAsync(ct);
+            await privilegedRepository.SaveChangesAsync(ct);
             return;
         }
         if (IsDuplicateFailure(booking, operation))
@@ -217,7 +229,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         if (booking.RecordFinancialFailure(operation.Error.Code, operation.Error.Message)
             .TryGetError(out var failureError))
             throw new InvalidOperationException($"Booking cannot record confirmation failure from {failureError.Current}.");
-        await bookingRepository.SaveChangesAsync(ct);
+        await privilegedRepository.SaveChangesAsync(ct);
     }
 
     private static bool Matches(

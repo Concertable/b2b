@@ -63,6 +63,7 @@ public static class ServiceCollectionExtensions
 
         // Tenant owns membership rows; the Authorization module owns request authority and reads them through this port.
         services.AddScoped<IMembershipReadRepository>(sp => sp.GetRequiredService<MembershipRepository>());
+        services.AddScoped<IMembershipAuthorityFence>(sp => sp.GetRequiredService<MembershipRepository>());
 
         services.Configure<MvcOptions>(options => options.Filters.Add<BusinessProfileAuthorizationFilter>());
 

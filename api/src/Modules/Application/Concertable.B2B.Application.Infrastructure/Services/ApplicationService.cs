@@ -2,6 +2,8 @@
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Mappers;
+using Concertable.B2B.Application.Contracts.Enums;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
@@ -15,6 +17,7 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 internal sealed class ApplicationService : IApplicationService
 {
     private readonly IApplicationRepository applicationRepository;
+    private readonly IApplicationPrivilegedRepository privilegedRepository;
     private readonly IApplicationValidator validator;
     private readonly IApplicationNotifier notifier;
     private readonly IApplicationWorkflow workflow;
@@ -25,11 +28,15 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IApplicationCheckoutService checkoutService;
     private readonly IApplicationMapper mapper;
     private readonly TimeProvider timeProvider;
-    private readonly IUnitOfWork unitOfWork;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
+    private readonly IMembershipContext membership;
+    private readonly IMembershipAuthorityFence authorityFence;
+    private readonly IPermissionCatalog permissionCatalog;
+    private readonly ICommandExecutor commandExecutor;
 
     public ApplicationService(
         IApplicationRepository applicationRepository,
+        IApplicationPrivilegedRepository privilegedRepository,
         IApplicationValidator validator,
         IApplicationNotifier notifier,
         IApplicationWorkflow workflow,
@@ -40,10 +47,14 @@ internal sealed class ApplicationService : IApplicationService
         IApplicationCheckoutService checkoutService,
         IApplicationMapper mapper,
         TimeProvider timeProvider,
-        IUnitOfWork unitOfWork,
-        IUnitOfWorkBehavior unitOfWorkBehavior)
+        IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
+        IMembershipContext membership,
+        IMembershipAuthorityFence authorityFence,
+        IPermissionCatalog permissionCatalog,
+        ICommandExecutor commandExecutor)
     {
         this.applicationRepository = applicationRepository;
+        this.privilegedRepository = privilegedRepository;
         this.validator = validator;
         this.notifier = notifier;
         this.workflow = workflow;
@@ -54,8 +65,11 @@ internal sealed class ApplicationService : IApplicationService
         this.checkoutService = checkoutService;
         this.mapper = mapper;
         this.timeProvider = timeProvider;
-        this.unitOfWork = unitOfWork;
-        this.unitOfWorkBehavior = unitOfWorkBehavior;
+        this.privilegedUnitOfWork = privilegedUnitOfWork;
+        this.membership = membership;
+        this.authorityFence = authorityFence;
+        this.permissionCatalog = permissionCatalog;
+        this.commandExecutor = commandExecutor;
     }
 
     public Task<Result<ApplicationDetailsDto, ApplicationError>> GetByIdAsync(int id) =>
@@ -180,38 +194,95 @@ internal sealed class ApplicationService : IApplicationService
         CancellationToken ct = default) =>
         workflow.AcceptAsync(applicationId, eSignature, ct);
 
-    public Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(
+    public async Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(
         int applicationId,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => WithdrawCoreAsync(applicationId, ct),
-            exception => exception.IsApplicationConcurrencyConflict(applicationId),
-            _ => ClassifyWithdrawConflictAsync(applicationId, ct),
-            ct);
+        CancellationToken ct = default)
+    {
+        if (membership.Membership is not { } actor)
+            return new WithdrawApplicationError.NotPermitted();
 
-    public Task<UnitResult<RejectApplicationError>> RejectAsync(
-        int applicationId,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => RejectCoreAsync(applicationId, ct),
-            exception => exception.IsApplicationConcurrencyConflict(applicationId),
-            _ => ClassifyRejectConflictAsync(applicationId, ct),
-            ct);
+        try
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
+                (service, token) => service.WithdrawCommandAsync(applicationId, actor, token),
+                ct);
+        }
+        catch (DbUpdateException exception)
+            when (exception.IsApplicationConcurrencyConflict(applicationId))
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
+                (service, token) => service.ClassifyWithdrawConflictAsync(applicationId, token),
+                ct);
+        }
+    }
 
-    public Task<UnitResult<CancelApplicationError>> CancelAsync(
+    public async Task<UnitResult<RejectApplicationError>> RejectAsync(
         int applicationId,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => CancelCoreAsync(applicationId, ct),
-            exception => exception.IsApplicationConcurrencyConflict(applicationId),
-            _ => ClassifyCancelConflictAsync(applicationId, ct),
-            ct);
+        CancellationToken ct = default)
+    {
+        if (membership.Membership is not { } actor)
+            return new RejectApplicationError.NotPermitted();
+
+        try
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
+                (service, token) => service.RejectCommandAsync(applicationId, actor, token),
+                ct);
+        }
+        catch (DbUpdateException exception)
+            when (exception.IsApplicationConcurrencyConflict(applicationId))
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
+                (service, token) => service.ClassifyRejectConflictAsync(applicationId, token),
+                ct);
+        }
+    }
+
+    public async Task<UnitResult<CancelApplicationError>> CancelAsync(
+        int applicationId,
+        CancellationToken ct = default)
+    {
+        if (membership.Membership is not { } actor)
+            return new CancelApplicationError.NotPermitted();
+
+        try
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
+                (service, token) => service.CancelCommandAsync(applicationId, actor, token),
+                ct);
+        }
+        catch (DbUpdateException exception)
+            when (exception.IsApplicationConcurrencyConflict(applicationId))
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
+                (service, token) => service.ClassifyCancelConflictAsync(applicationId, token),
+                ct);
+        }
+    }
+
+    private Task<UnitResult<WithdrawApplicationError>> WithdrawCommandAsync(
+        int applicationId,
+        MembershipSnapshot actor,
+        CancellationToken ct) =>
+        privilegedUnitOfWork.ExecuteAsync(() => WithdrawCoreAsync(applicationId, actor, ct), ct);
+
+    private Task<UnitResult<RejectApplicationError>> RejectCommandAsync(
+        int applicationId,
+        MembershipSnapshot actor,
+        CancellationToken ct) =>
+        privilegedUnitOfWork.ExecuteAsync(() => RejectCoreAsync(applicationId, actor, ct), ct);
+
+    private Task<UnitResult<CancelApplicationError>> CancelCommandAsync(
+        int applicationId,
+        MembershipSnapshot actor,
+        CancellationToken ct) =>
+        privilegedUnitOfWork.ExecuteAsync(() => CancelCoreAsync(applicationId, actor, ct), ct);
 
     private async Task<UnitResult<WithdrawApplicationError>> ClassifyWithdrawConflictAsync(
         int applicationId,
         CancellationToken ct)
     {
-        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Withdrawn)
+        if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Withdrawn)
             return new Success();
 
         return new WithdrawApplicationError.Superseded(applicationId);
@@ -219,15 +290,28 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<WithdrawApplicationError>> WithdrawCoreAsync(
         int applicationId,
+        MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+            return new WithdrawApplicationError.NotPermitted();
+
+        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
+        if (application.ArtistTenantId != actor.TenantId
+            || !ResourceGrantPolicy.Allows(
+                application.AccessGrants,
+                ApplicationAccessScope.Proposal,
+                actor,
+                permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsSubmit),
+                timeProvider.GetUtcNow().UtcDateTime))
+            return new WithdrawApplicationError.NotPermitted();
         if (application.Withdraw().TryGetError(out var transitionError))
             return new WithdrawApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Withdrawn);
-        await unitOfWork.SaveChangesAsync(ct);
         await notifier.WithdrawnAsync(applicationId);
         return new Success();
     }
@@ -236,7 +320,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Rejected)
+        if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Rejected)
             return new Success();
 
         return new RejectApplicationError.Superseded(applicationId);
@@ -244,15 +328,28 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<RejectApplicationError>> RejectCoreAsync(
         int applicationId,
+        MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            return new RejectApplicationError.NotPermitted();
+
+        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
+        if (application.VenueTenantId != actor.TenantId
+            || !ResourceGrantPolicy.Allows(
+                application.AccessGrants,
+                ApplicationAccessScope.Proposal,
+                actor,
+                permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+                timeProvider.GetUtcNow().UtcDateTime))
+            return new RejectApplicationError.NotPermitted();
         if (application.Reject().TryGetError(out var transitionError))
             return new RejectApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Rejected);
-        await unitOfWork.SaveChangesAsync(ct);
         await notifier.RejectedAsync(applicationId);
         return new Success();
     }
@@ -261,7 +358,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Cancelled)
+        if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Cancelled)
             return new Success();
 
         return new CancelApplicationError.Superseded(applicationId);
@@ -269,15 +366,28 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<CancelApplicationError>> CancelCoreAsync(
         int applicationId,
+        MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            return new CancelApplicationError.NotPermitted();
+
+        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new CancelApplicationError.ApplicationNotFound(applicationId);
+        if (application.VenueTenantId != actor.TenantId
+            || !ResourceGrantPolicy.Allows(
+                application.AccessGrants,
+                ApplicationAccessScope.Proposal,
+                actor,
+                permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+                timeProvider.GetUtcNow().UtcDateTime))
+            return new CancelApplicationError.NotPermitted();
         if (application.Cancel().TryGetError(out var transitionError))
             return new CancelApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.ApplicationCancelled);
-        await unitOfWork.SaveChangesAsync(ct);
         await notifier.CancelledAsync(applicationId);
         return new Success();
     }

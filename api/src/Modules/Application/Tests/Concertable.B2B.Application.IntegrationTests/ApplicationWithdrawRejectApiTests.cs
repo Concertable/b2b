@@ -61,7 +61,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Withdraw_ShouldReturn404_WhenCallerIsDifferentArtistTenant()
+    public async Task Withdraw_ShouldReturn403_WhenCallerIsDifferentArtistTenant()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
@@ -71,7 +71,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var response = await client.PostAsync($"/api/application/{appId}/withdraw");
 
         // Assert
-        await response.ShouldBe(HttpStatusCode.NotFound);
+        await response.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Reject_ShouldReturn404_WhenCallerIsDifferentVenueManager()
+    public async Task Reject_ShouldReturn403_WhenCallerIsDifferentVenueManager()
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
@@ -173,7 +173,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var response = await client.PostAsync($"/api/application/{appId}/reject");
 
         // Assert
-        await response.ShouldBe(HttpStatusCode.NotFound);
+        await response.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]

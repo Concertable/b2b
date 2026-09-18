@@ -57,14 +57,14 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Cancel_ShouldReturn404_WhenCallerIsDifferentVenueManager()
+    public async Task Cancel_ShouldReturn403_WhenCallerIsDifferentVenueManager()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
         var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
-        await response.ShouldBe(HttpStatusCode.NotFound);
+        await response.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
