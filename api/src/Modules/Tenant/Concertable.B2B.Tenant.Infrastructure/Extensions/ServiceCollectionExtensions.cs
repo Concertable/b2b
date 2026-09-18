@@ -31,7 +31,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddTenantModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<TenantDbContext>((sp, opts) =>
-            opts.UseSqlServer(sp.GetRequiredService<DbConnection>())
+            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>()));

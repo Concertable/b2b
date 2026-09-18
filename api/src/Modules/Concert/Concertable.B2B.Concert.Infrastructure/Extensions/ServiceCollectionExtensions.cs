@@ -51,7 +51,7 @@ public static class ServiceCollectionExtensions
         {
             services.AddDbContextFactory<ConcertDbContext>((sp, opts) =>
                 opts.UseSqlServer(
-                        sp.GetRequiredService<DbConnection>(),
+                        configuration.GetConnectionString(B2BDb.Name),
                         sql => sql.UseNetTopologySuite())
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
@@ -61,7 +61,7 @@ public static class ServiceCollectionExtensions
 
             services.AddDbContextFactory<ConcertPrivilegedDbContext>((sp, opts) =>
                 opts.UseSqlServer(
-                        sp.GetRequiredService<DbConnection>(),
+                        configuration.GetConnectionString(B2BDb.Name),
                         sql => sql.UseNetTopologySuite())
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
@@ -70,14 +70,14 @@ public static class ServiceCollectionExtensions
 
             services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
                 opts.UseSqlServer(
-                        sp.GetRequiredService<DbConnection>(),
+                        configuration.GetConnectionString(B2BDb.Name),
                         sql => sql.UseNetTopologySuite())
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IConcertReadDbContext>(sp => sp.GetRequiredService<ConcertReadDbContext>());
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped<IUnitOfWorkBoundary, FactoryUnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
             services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
             services.AddScoped<IConcertPrivilegedRepository, ConcertPrivilegedRepository>();

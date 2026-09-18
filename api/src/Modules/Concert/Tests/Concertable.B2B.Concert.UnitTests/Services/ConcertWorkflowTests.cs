@@ -8,6 +8,7 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Services;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Kernel;
 using Concertable.Kernel.ValueObjects;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +32,7 @@ public sealed class ConcertWorkflowTests
         immediateBehavior = new ImmediateBehavior();
         workflow = new ConcertWorkflow(
             concertRepository.Object,
-            settlementService.Object,
+            new ImmediateCommandExecutor(settlementService.Object),
             cancelFactory.Object,
             completeFactory.Object,
             unitOfWork.Object,
@@ -237,5 +238,14 @@ public sealed class ConcertWorkflowTests
                 return await onExpectedFailure(exception);
             }
         }
+    }
+
+    private sealed class ImmediateCommandExecutor(ISettlementService settlementService) : ICommandExecutor
+    {
+        public Task<TResult> ExecuteAsync<TService, TResult>(
+            Func<TService, CancellationToken, Task<TResult>> command,
+            CancellationToken ct = default)
+            where TService : notnull =>
+            command((TService)(object)settlementService, ct);
     }
 }

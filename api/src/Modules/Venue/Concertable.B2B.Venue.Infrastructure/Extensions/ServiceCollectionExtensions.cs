@@ -28,7 +28,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<VenuePrivilegedDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    sp.GetRequiredService<DbConnection>(),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<VenueDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    sp.GetRequiredService<DbConnection>(),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
@@ -47,7 +47,7 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<VenueReadDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    sp.GetRequiredService<DbConnection>(),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
         services.AddScoped<IVenueReadDbContext>(sp => sp.GetRequiredService<VenueReadDbContext>());

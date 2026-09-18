@@ -32,14 +32,14 @@ public static class ServiceCollectionExtensions
         {
             services.AddDbContext<OpportunityPrivilegedDbContext>((sp, options) =>
                 options.UseSqlServer(
-                        sp.GetRequiredService<DbConnection>(),
+                        configuration.GetConnectionString(B2BDb.Name),
                         sql => sql.UseNetTopologySuite())
                     .AddInterceptors(sp.GetRequiredService<AuditInterceptor>())
                     .UseSeedingSupport(sp));
 
             services.AddDbContext<OpportunityDbContext>((sp, options) =>
                 options.UseSqlServer(
-                        sp.GetRequiredService<DbConnection>(),
+                        configuration.GetConnectionString(B2BDb.Name),
                         sql => sql.UseNetTopologySuite())
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
@@ -48,7 +48,7 @@ public static class ServiceCollectionExtensions
 
             services.AddDbContext<OpportunityReadDbContext>((provider, options) =>
                 options.UseSqlServer(
-                        provider.GetRequiredService<DbConnection>(),
+                        configuration.GetConnectionString(B2BDb.Name),
                         sql => sql.UseNetTopologySuite())
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IOpportunityReadDbContext>(

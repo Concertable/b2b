@@ -21,7 +21,6 @@ public sealed class ConcertApiFixture : ApiFixture
     private ConcertPrivilegedDbContext dbContext = null!;
     private IScoped<IConcertWorkflow> workflow = null!;
     private ICompletionRunner completionRunner = null!;
-    private IConcertService concertService = null!;
     private ISelfBillingAgreementRepository selfBillingAgreementRepository = null!;
 
     internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
@@ -61,8 +60,22 @@ public sealed class ConcertApiFixture : ApiFixture
     internal Task<Result<SettlementOutcome, FinishConcertError>> CompleteConcertAsync(int concertId) =>
         workflow.RunAsync(workflow => workflow.CompleteAsync(concertId));
 
-    internal Task DeclareDoorRevenueAsync(int concertId, decimal doorRevenue) =>
-        concertService.DeclareDoorRevenueAsync(concertId, doorRevenue);
+    internal async Task DeclareDoorRevenueAsync(
+        int concertId,
+        decimal doorRevenue)
+    {
+        var entity = await dbContext.Concerts
+            .SingleOrDefaultAsync(concert => concert.Id == concertId);
+
+        if (entity is not DoorRevenueConcert concert)
+            throw new InvalidOperationException($"Concert {concertId} was not a door-revenue concert.");
+
+        var result = concert.DeclareDoorRevenue(doorRevenue);
+        if (result.TryGetError(out var error))
+            throw new InvalidOperationException(error.ToString());
+
+        await dbContext.SaveChangesAsync();
+    }
 
     /// <summary>
     /// Commits <paramref name="competingChange"/> between the next concert transition's read and its
@@ -136,7 +149,6 @@ public sealed class ConcertApiFixture : ApiFixture
         dbContext = scope.ServiceProvider.GetRequiredService<ConcertPrivilegedDbContext>();
         workflow = scope.ServiceProvider.GetRequiredService<IScoped<IConcertWorkflow>>();
         completionRunner = scope.ServiceProvider.GetRequiredService<ICompletionRunner>();
-        concertService = scope.ServiceProvider.GetRequiredService<IConcertService>();
         selfBillingAgreementRepository = scope.ServiceProvider
             .GetRequiredService<ISelfBillingAgreementRepository>();
     }

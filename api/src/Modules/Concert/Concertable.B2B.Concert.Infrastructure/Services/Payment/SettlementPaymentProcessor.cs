@@ -44,45 +44,39 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
             || !@event.Metadata.TryGetOperationId(out var operationId))
             return;
         logger.SettlementWebhookReceived(@event.Reference.ClientReference, concertId);
-        var concert = await concertRepository.GetByIdForUpdateAsync(concertId, ct);
-        if (concert is null)
-        {
-            logger.SettlementOutcomeForUnknownConcert(concertId);
-            throw new InvalidOperationException(
-                $"Settlement outcome names concert {concertId}, which does not exist.");
-        }
-
-        if (concert.SettlementOperationId != operationId)
-        {
-            logger.SettlementOutcomeForUnknownConcert(concertId);
-            throw new InvalidOperationException(
-                $"Settlement outcome names operation {operationId}, which concert {concertId} is not running.");
-        }
-
-        var completion = await settlementService.CompleteAsync(concert.Id, operationId, ct);
-        if (completion.TryGetError(out var error))
-            throw new InvalidOperationException(
-                $"Concert {concert.Id} could not converge settlement: {error.Definition.Message}");
-
-        await RecordInboxAsync(envelope, ct, async () =>
-        {
-            await PublishActivityAsync(concert.VenueTenantId, "venue", concert, envelope, ct);
-            await PublishActivityAsync(concert.ArtistTenantId, "artist", concert, envelope, ct);
-        });
-    }
-
-    private async Task RecordInboxAsync(MessageEnvelope envelope, CancellationToken ct, Func<Task>? onRecorded = null)
-    {
         try
         {
             await outboxBehavior.ExecuteAsync(async () =>
             {
-                if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(SettlementPaymentProcessor), ct))
+                if (await context.IsInboxMessageProcessedAsync(
+                        envelope.MessageId,
+                        nameof(SettlementPaymentProcessor),
+                        ct))
                     return;
 
+                var concert = await concertRepository.GetByIdForUpdateAsync(concertId, ct);
+                if (concert is null)
+                {
+                    logger.SettlementOutcomeForUnknownConcert(concertId);
+                    throw new InvalidOperationException(
+                        $"Settlement outcome names concert {concertId}, which does not exist.");
+                }
+
+                if (concert.SettlementOperationId != operationId)
+                {
+                    logger.SettlementOutcomeForUnknownConcert(concertId);
+                    throw new InvalidOperationException(
+                        $"Settlement outcome names operation {operationId}, which concert {concertId} is not running.");
+                }
+
+                var completion = await settlementService.CompleteAsync(concert.Id, operationId, ct);
+                if (completion.TryGetError(out var error))
+                    throw new InvalidOperationException(
+                        $"Concert {concert.Id} could not converge settlement: {error.Definition.Message}");
+
                 context.AddInboxMessage(envelope, nameof(SettlementPaymentProcessor));
-                if (onRecorded is not null)
-                    await onRecorded();
+                await PublishActivityAsync(concert.VenueTenantId, "venue", concert, envelope, ct);
+                await PublishActivityAsync(concert.ArtistTenantId, "artist", concert, envelope, ct);
             }, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())

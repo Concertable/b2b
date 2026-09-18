@@ -26,14 +26,14 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddDealModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<DealPrivilegedDbContext>((sp, opt) =>
-            opt.UseSqlServer(sp.GetRequiredService<DbConnection>())
+            opt.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(sp));
 
         services.AddDbContext<DealDbContext>((sp, opt) =>
-            opt.UseSqlServer(sp.GetRequiredService<DbConnection>())
+            opt.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),

@@ -27,7 +27,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddConversationsModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<ConversationsDbContext>((sp, opts) =>
-            opts.UseSqlServer(sp.GetRequiredService<DbConnection>())
+            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
@@ -35,7 +35,7 @@ public static class ServiceCollectionExtensions
                 .UseSeedingSupport(sp));
 
         services.AddDbContext<ConversationsPrivilegedDbContext>((sp, opts) =>
-            opts.UseSqlServer(sp.GetRequiredService<DbConnection>())
+            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())

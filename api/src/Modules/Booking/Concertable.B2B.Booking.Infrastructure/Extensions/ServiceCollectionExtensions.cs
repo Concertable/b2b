@@ -35,7 +35,7 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddBookingModule(IConfiguration configuration)
         {
             services.AddDbContext<BookingDbContext>((provider, options) =>
-                options.UseSqlServer(provider.GetRequiredService<DbConnection>())
+                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
@@ -43,14 +43,14 @@ public static class ServiceCollectionExtensions
                     .UseSeedingSupport(provider));
 
             services.AddDbContext<BookingPrivilegedDbContext>((provider, options) =>
-                options.UseSqlServer(provider.GetRequiredService<DbConnection>())
+                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(provider));
 
             services.AddDbContext<BookingReadDbContext>((provider, options) =>
-                options.UseSqlServer(provider.GetRequiredService<DbConnection>())
+                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IBookingReadDbContext>(provider =>
                 provider.GetRequiredService<BookingReadDbContext>());

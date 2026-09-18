@@ -26,7 +26,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<UserDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    sp.GetRequiredService<DbConnection>(),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),

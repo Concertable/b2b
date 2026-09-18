@@ -4,10 +4,8 @@ using Concertable.DataAccess.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Data;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -90,16 +88,13 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSharedInfrastructure(configuration);
-        services.AddSharedDbConnection(configuration);
+        services.AddCommandTransactions();
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
         services.AddScoped<IResourceAccessContext, ResourceAccessContext>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddDataAccessSpecifications();
-
-
-
         return services;
     }
 }

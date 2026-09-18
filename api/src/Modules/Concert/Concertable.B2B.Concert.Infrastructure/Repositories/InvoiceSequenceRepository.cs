@@ -13,8 +13,19 @@ internal sealed class InvoiceSequenceRepository : IInvoiceSequenceRepository
         this.context = context;
     }
 
-    public Task<InvoiceSequenceEntity?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
-        context.InvoiceSequences.SingleOrDefaultAsync(sequence => sequence.TenantId == tenantId, ct);
+    public async Task<InvoiceSequenceEntity?> GetByTenantIdForUpdateAsync(
+        Guid tenantId,
+        CancellationToken ct = default)
+    {
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            SELECT 1
+            FROM concert.InvoiceSequences WITH (UPDLOCK, HOLDLOCK)
+            WHERE TenantId = {tenantId}
+            """, ct);
+        return await context.InvoiceSequences.SingleOrDefaultAsync(
+            sequence => sequence.TenantId == tenantId,
+            ct);
+    }
 
     public async Task InsertAsync(InvoiceSequenceEntity sequence, CancellationToken ct = default) =>
         await context.InvoiceSequences.AddAsync(sequence, ct);

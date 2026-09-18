@@ -3,6 +3,7 @@ using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class ConcertWorkflow : IConcertWorkflow
 {
     private readonly IConcertRepository concertRepository;
-    private readonly ISettlementService settlementService;
+    private readonly ICommandExecutor commandExecutor;
     private readonly IDealStrategyFactory<ICancelStep> cancelFactory;
     private readonly IDealStrategyFactory<ICompleteStep> completeFactory;
     private readonly IUnitOfWork unitOfWork;
@@ -21,7 +22,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
 
     public ConcertWorkflow(
         IConcertRepository concertRepository,
-        ISettlementService settlementService,
+        ICommandExecutor commandExecutor,
         IDealStrategyFactory<ICancelStep> cancelFactory,
         IDealStrategyFactory<ICompleteStep> completeFactory,
         IUnitOfWork unitOfWork,
@@ -29,7 +30,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior)
     {
         this.concertRepository = concertRepository;
-        this.settlementService = settlementService;
+        this.commandExecutor = commandExecutor;
         this.cancelFactory = cancelFactory;
         this.completeFactory = completeFactory;
         this.unitOfWork = unitOfWork;
@@ -50,7 +51,9 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         int concertId,
         CancellationToken ct = default)
     {
-        var prepared = await settlementService.ReserveAsync(concertId, ct);
+        var prepared = await commandExecutor.ExecuteAsync<ISettlementService, Result<SettlementPreparation, FinishConcertError>>(
+            (service, token) => service.ReserveAsync(concertId, token),
+            ct);
         if (prepared.TryGetError(out var error))
             return error;
         if (!prepared.TryGetValue(out var preparation))
@@ -66,7 +69,9 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         if (executed.TryGetError(out var executionError))
             return executionError;
 
-        return await settlementService.CompleteAsync(ready.ConcertId, ready.OperationId, ct);
+        return await commandExecutor.ExecuteAsync<ISettlementService, Result<SettlementOutcome, FinishConcertError>>(
+            (service, token) => service.CompleteAsync(ready.ConcertId, ready.OperationId, token),
+            ct);
     }
 
     private async Task<UnitResult<CancelConcertError>> ClassifyCancelConflictAsync(

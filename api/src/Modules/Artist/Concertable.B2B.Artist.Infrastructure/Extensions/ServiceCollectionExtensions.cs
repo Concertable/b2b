@@ -29,7 +29,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<ArtistPrivilegedDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    sp.GetRequiredService<DbConnection>(),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
@@ -38,7 +38,7 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<ArtistDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    sp.GetRequiredService<DbConnection>(),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
@@ -48,7 +48,7 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<ArtistReadDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    sp.GetRequiredService<DbConnection>(),
+                    configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
         services.AddScoped<IArtistReadDbContext>(sp => sp.GetRequiredService<ArtistReadDbContext>());
