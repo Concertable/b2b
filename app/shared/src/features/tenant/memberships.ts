@@ -1,4 +1,4 @@
-import type { Membership, TenantType } from "./types";
+import type { Membership, TenantBusinessProfile } from "./types";
 
 export interface TenantResolution {
   readonly memberships: ReadonlyArray<Membership>;
@@ -6,23 +6,30 @@ export interface TenantResolution {
   readonly selectionRequired: boolean;
 }
 
-export function filterMembershipsByTenantType(
+/**
+ * The memberships eligible for a surface. A profile surface admits any business that has activated that
+ * profile; the neutral business surface passes no profile and admits every membership, including a
+ * business that has activated none.
+ */
+export function filterMembershipsByProfile(
   memberships: ReadonlyArray<Membership>,
-  tenantType?: TenantType,
+  businessProfile?: TenantBusinessProfile,
 ): ReadonlyArray<Membership> {
-  return tenantType === undefined
+  return businessProfile === undefined
     ? memberships
-    : memberships.filter((membership) => membership.type === tenantType);
+    : memberships.filter((membership) =>
+        membership.businessProfiles.includes(businessProfile),
+      );
 }
 
 export function resolveActiveMembership(
   memberships: ReadonlyArray<Membership>,
-  tenantType: TenantType | undefined,
+  businessProfile: TenantBusinessProfile | undefined,
   activeTenantId: string | undefined,
 ): Membership | undefined {
-  const matchingMemberships = filterMembershipsByTenantType(
+  const matchingMemberships = filterMembershipsByProfile(
     memberships,
-    tenantType,
+    businessProfile,
   );
   return (
     matchingMemberships.find(
@@ -33,12 +40,12 @@ export function resolveActiveMembership(
 
 export function hasPendingTenantChoice(
   memberships: ReadonlyArray<Membership>,
-  tenantType: TenantType | undefined,
+  businessProfile: TenantBusinessProfile | undefined,
   activeTenantId: string | undefined,
 ): boolean {
-  const matchingMemberships = filterMembershipsByTenantType(
+  const matchingMemberships = filterMembershipsByProfile(
     memberships,
-    tenantType,
+    businessProfile,
   );
   return (
     matchingMemberships.length > 1 &&
@@ -50,19 +57,19 @@ export function hasPendingTenantChoice(
 
 export function resolveTenant(
   memberships: ReadonlyArray<Membership>,
-  tenantType: TenantType | undefined,
+  businessProfile: TenantBusinessProfile | undefined,
   activeTenantId: string | undefined,
 ): TenantResolution {
   return {
-    memberships: filterMembershipsByTenantType(memberships, tenantType),
+    memberships: filterMembershipsByProfile(memberships, businessProfile),
     activeMembership: resolveActiveMembership(
       memberships,
-      tenantType,
+      businessProfile,
       activeTenantId,
     ),
     selectionRequired: hasPendingTenantChoice(
       memberships,
-      tenantType,
+      businessProfile,
       activeTenantId,
     ),
   };

@@ -38,7 +38,7 @@ public sealed class TenantInvitationEntity : IGuidEntity, IEventRaiser
     /// not "live". Mirrors the Auth token entities' <c>IsActive</c>.</summary>
     public bool IsActive(DateTime utcNow) => Status == InvitationStatus.Pending && utcNow < ExpiresAt;
 
-    public static TenantInvitationEntity Create(Guid tenantId, TenantType tenantType, string email, TenantRole role, Guid createdBy, DateTime at, TimeSpan ttl)
+    public static TenantInvitationEntity Create(Guid tenantId, string email, TenantRole role, Guid createdBy, DateTime at, TimeSpan ttl)
     {
         var invitation = new TenantInvitationEntity
         {
@@ -51,7 +51,7 @@ public sealed class TenantInvitationEntity : IGuidEntity, IEventRaiser
             CreatedAt = at,
             ExpiresAt = at + ttl,
         };
-        invitation.events.Raise(new TenantInvitationCreatedDomainEvent(invitation.Id, email, role, tenantType));
+        invitation.events.Raise(new TenantInvitationCreatedDomainEvent(invitation.Id, email, role));
         return invitation;
     }
 

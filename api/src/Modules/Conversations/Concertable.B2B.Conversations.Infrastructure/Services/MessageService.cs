@@ -10,7 +10,12 @@ internal sealed class MessageService : IMessageService
 {
     private const string UnknownSender = "Unknown";
 
+    /* The neutral business surface hosts the inbox. It used to be one of two persona apps chosen from which
+       side of the pair the recipient was on, which a business that is neither cannot answer. */
+    private const string InboxHref = "/?inbox=open";
+
     private readonly IMessageRepository repository;
+    private readonly IThreadRepository threadRepository;
     private readonly IConversationsNotifier notifier;
     private readonly IBus bus;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
@@ -22,6 +27,7 @@ internal sealed class MessageService : IMessageService
 
     public MessageService(
         IMessageRepository repository,
+        IThreadRepository threadRepository,
         IConversationsNotifier notifier,
         IBus bus,
         IOutboxUnitOfWorkBehavior outboxBehavior,
@@ -32,6 +38,7 @@ internal sealed class MessageService : IMessageService
         TimeProvider timeProvider)
     {
         this.repository = repository;
+        this.threadRepository = threadRepository;
         this.notifier = notifier;
         this.bus = bus;
         this.outboxBehavior = outboxBehavior;
@@ -42,53 +49,78 @@ internal sealed class MessageService : IMessageService
         this.timeProvider = timeProvider;
     }
 
-    public async Task SendAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null)
-    {
-        var at = timeProvider.GetUtcNow();
-        var message = MessageEntity.Create(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, at.UtcDateTime, action);
-        await outboxBehavior.ExecuteAsync(async () =>
-        {
-            await repository.AddAsync(message);
-            await bus.PublishAsync(CreateActivityEvent(venueTenantId, artistTenantId, senderTenantId, content, action, at));
-        });
-    }
+    public async Task SendAsync(
+        IReadOnlyCollection<Guid> participantTenantIds,
+        Guid senderTenantId,
+        Guid sentByUserId,
+        string content,
+        MessageAction? action = null) =>
+        await SendCoreAsync(participantTenantIds, senderTenantId, sentByUserId, content, action);
 
-    public async Task SendAndNotifyAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null)
+    public async Task SendAndNotifyAsync(
+        IReadOnlyCollection<Guid> participantTenantIds,
+        Guid senderTenantId,
+        Guid sentByUserId,
+        string content,
+        MessageAction? action = null)
     {
-        var at = timeProvider.GetUtcNow();
-        var message = MessageEntity.Create(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, at.UtcDateTime, action);
-        await outboxBehavior.ExecuteAsync(async () =>
-        {
-            await repository.AddAsync(message);
-            await bus.PublishAsync(CreateActivityEvent(venueTenantId, artistTenantId, senderTenantId, content, action, at));
-        });
-
-        var recipientTenantId = senderTenantId == venueTenantId ? artistTenantId : venueTenantId;
+        var message = await SendCoreAsync(participantTenantIds, senderTenantId, sentByUserId, content, action);
         var payload = message.ToDto(await ResolveParticipantAsync(senderTenantId), senderTenantId);
 
-        foreach (var memberId in await tenantModule.GetMemberUserIdsAsync(recipientTenantId))
-            await notifier.MessageReceivedAsync(memberId.ToString(), payload);
+        foreach (var recipientTenantId in await RecipientsOfAsync(message.ThreadId, senderTenantId))
+        {
+            foreach (var memberId in await tenantModule.GetMemberUserIdsAsync(recipientTenantId))
+                await notifier.MessageReceivedAsync(memberId.ToString(), payload);
+        }
     }
 
-    private static TenantActivityRecordedEvent CreateActivityEvent(
-        Guid venueTenantId,
-        Guid artistTenantId,
+    private async Task<MessageEntity> SendCoreAsync(
+        IReadOnlyCollection<Guid> participantTenantIds,
         Guid senderTenantId,
+        Guid sentByUserId,
+        string content,
+        MessageAction? action)
+    {
+        var at = timeProvider.GetUtcNow();
+        var existing = await threadRepository.GetByParticipantsAsync(participantTenantIds);
+        MessageEntity? message = null;
+
+        await outboxBehavior.ExecuteAsync(async () =>
+        {
+            var thread = existing;
+            if (thread is null)
+            {
+                // Saved before the message so the generated thread id, and its grants, are real.
+                thread = ThreadEntity.Create(participantTenantIds, at.UtcDateTime);
+                await threadRepository.InsertAsync(thread);
+            }
+
+            message = MessageEntity.Create(thread.Id, senderTenantId, sentByUserId, content, at.UtcDateTime, action);
+            await repository.AddAsync(message);
+
+            foreach (var recipientTenantId in participantTenantIds.Where(id => id != senderTenantId))
+                await bus.PublishAsync(CreateActivityEvent(recipientTenantId, content, action, at));
+        });
+
+        return message ?? throw new InvalidOperationException("The send completed without producing a message.");
+    }
+
+    private async Task<IReadOnlyList<Guid>> RecipientsOfAsync(int threadId, Guid senderTenantId) =>
+        [.. (await threadRepository.GetParticipantTenantIdsAsync(threadId)).Where(id => id != senderTenantId)];
+
+    private static TenantActivityRecordedEvent CreateActivityEvent(
+        Guid recipientTenantId,
         string content,
         MessageAction? action,
-        DateTimeOffset at)
-    {
-        var recipientTenantId = senderTenantId == venueTenantId ? artistTenantId : venueTenantId;
-        var recipientSurface = recipientTenantId == venueTenantId ? "venue" : "artist";
-        return new TenantActivityRecordedEvent(new ActivityRecord(
+        DateTimeOffset at) =>
+        new(new ActivityRecord(
             $"message:{Guid.CreateVersion7(at)}",
             recipientTenantId,
             ToActivityType(action),
             at,
             content,
             null,
-            $"/_{recipientSurface}/?inbox=open"));
-    }
+            InboxHref));
 
     private static ActivityType ToActivityType(MessageAction? action) =>
         action switch
@@ -118,15 +150,16 @@ internal sealed class MessageService : IMessageService
 
         foreach (var preview in previews)
         {
-            var sender = await ResolveParticipantAsync(preview.CounterpartTenantId);
-            var persona = preview.CounterpartIsVenue ? "artist" : "venue";
+            var sender = preview.CounterpartTenantId is { } counterpartTenantId
+                ? await ResolveParticipantAsync(counterpartTenantId)
+                : MissingParticipant();
             responses.Add(new MessagePreviewDto(
                 preview.Id,
                 sender.DisplayName,
                 preview.Preview,
                 preview.At,
                 preview.Unread,
-                $"/_{persona}/?inbox=open"));
+                InboxHref));
         }
 
         return responses;
@@ -139,11 +172,26 @@ internal sealed class MessageService : IMessageService
     {
         var activeTenantId = tenantContext.GetTenantId();
         var senders = await ResolveSendersAsync(messages.Data, activeTenantId);
-        return messages.Map(m => m.ToDto(senders[m.Id], CounterpartOf(m, activeTenantId)));
+        var counterparts = await ResolveCounterpartsAsync(messages.Data, activeTenantId);
+        return messages.Map(m => m.ToDto(senders[m.Id], counterparts.GetValueOrDefault(m.ThreadId)));
     }
 
-    private static Guid CounterpartOf(MessageEntity message, Guid activeTenantId) =>
-        activeTenantId == message.VenueTenantId ? message.ArtistTenantId : message.VenueTenantId;
+    private async Task<Dictionary<int, Guid>> ResolveCounterpartsAsync(
+        IReadOnlyList<MessageEntity> messages,
+        Guid activeTenantId)
+    {
+        var counterparts = new Dictionary<int, Guid>();
+        foreach (var threadId in messages.Select(m => m.ThreadId).Distinct())
+        {
+            var others = (await threadRepository.GetParticipantTenantIdsAsync(threadId))
+                .Where(id => id != activeTenantId)
+                .ToList();
+            if (others is [var sole, ..])
+                counterparts[threadId] = sole;
+        }
+
+        return counterparts;
+    }
 
     private async Task<Dictionary<int, MessageSender>> ResolveSendersAsync(IReadOnlyList<MessageEntity> messages, Guid activeTenantId)
     {

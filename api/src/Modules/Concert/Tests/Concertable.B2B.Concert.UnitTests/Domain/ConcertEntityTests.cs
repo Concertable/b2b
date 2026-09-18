@@ -14,7 +14,8 @@ public sealed class ConcertEntityTests
 
         var concert = ConcertEntity.CreateDraft(
             booking,
-            new ConcertDraft("Concert", "About", [Genre.Rock, Genre.Rock, Genre.Jazz]));
+            new ConcertDraft("Concert", "About", [Genre.Rock, Genre.Rock, Genre.Jazz]),
+            DateTime.UnixEpoch);
 
         Assert.Equal([Genre.Rock, Genre.Jazz], concert.Genres);
     }

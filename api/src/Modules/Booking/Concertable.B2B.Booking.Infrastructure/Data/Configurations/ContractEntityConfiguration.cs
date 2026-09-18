@@ -34,6 +34,10 @@ internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<Con
         });
         builder.ComplexProperty(contract => contract.ArtistSignature, ConfigureSignature);
         builder.ComplexProperty(contract => contract.VenueSignature, ConfigureSignature);
+        builder.HasMany(contract => contract.AccessGrants)
+            .WithOne()
+            .HasForeignKey(grant => grant.ResourceId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasDiscriminator(contract => contract.DealType)
             .HasValue<FlatFeeContract>(DealType.FlatFee)
             .HasValue<VenueHireContract>(DealType.VenueHire)

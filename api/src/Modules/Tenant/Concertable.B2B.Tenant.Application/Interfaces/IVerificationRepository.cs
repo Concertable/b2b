@@ -21,6 +21,6 @@ internal interface IVerificationRepository : IRepository<TenantVerificationEntit
     Task<bool> IsApprovedByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 
     /// <summary>The admin review queue: every <see cref="Domain.Enums.TenantVerificationStatus.Pending"/> row,
-    /// oldest first, joined with its tenant's type.</summary>
+    /// oldest first, joined with its tenant's own legal name and contact.</summary>
     Task<IPagination<PendingVerificationProjection>> GetPendingAsync(IPageParams pageParams);
 }

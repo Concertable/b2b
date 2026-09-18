@@ -13,25 +13,21 @@ public sealed class TenantEntityTests
         var userId = Guid.NewGuid();
         var now = DateTime.UtcNow;
 
-        var tenant = TenantEntity.Create("Acme Ltd", userId, TenantType.Venue, now);
+        var tenant = TenantEntity.Create("Acme Ltd", userId, now);
 
         Assert.NotEqual(Guid.Empty, tenant.Id);
         Assert.Equal("Acme Ltd", tenant.LegalName);
-        Assert.Equal(TenantType.Venue, tenant.Type);
+        Assert.Equal("Acme Ltd", tenant.ContactEmail);
         Assert.Equal(userId, tenant.CreatedByUserId);
         Assert.Equal(now, tenant.CreatedAt);
     }
 
     [Fact]
-    public void Create_PersistsTheTenantType()
+    public void Create_ActivatesNoBusinessProfile()
     {
-        var artistTenant = TenantEntity.Create(
-            "manager@acme.com",
-            Guid.NewGuid(),
-            TenantType.Artist,
-            DateTime.UtcNow);
+        var tenant = TenantEntity.Create("manager@acme.com", Guid.NewGuid(), DateTime.UtcNow);
 
-        Assert.Equal(TenantType.Artist, artistTenant.Type);
+        Assert.Empty(tenant.BusinessProfiles);
     }
 
     [Fact]
@@ -42,7 +38,6 @@ public sealed class TenantEntityTests
         var tenant = TenantEntity.Create(
             "manager@acme.com",
             userId,
-            TenantType.Venue,
             DateTime.UtcNow);
 
         var raised = Assert.IsType<TenantCreatedDomainEvent>(Assert.Single(tenant.DomainEvents));
@@ -58,7 +53,6 @@ public sealed class TenantEntityTests
         var tenant = TenantEntity.Create(
             "manager@acme.com",
             userId,
-            TenantType.Artist,
             DateTime.UtcNow);
         tenant.ClearDomainEvents();
 
@@ -76,7 +70,6 @@ public sealed class TenantEntityTests
         var tenant = TenantEntity.Create(
             "Acme Ltd",
             Guid.NewGuid(),
-            TenantType.Venue,
             DateTime.UtcNow);
 
         Assert.Null(tenant.TaxCompliance);
@@ -88,7 +81,6 @@ public sealed class TenantEntityTests
         var tenant = TenantEntity.Create(
             "manager@acme.com",
             Guid.NewGuid(),
-            TenantType.Venue,
             DateTime.UtcNow);
         var taxCompliance = TaxComplianceValue();
 
@@ -105,7 +97,6 @@ public sealed class TenantEntityTests
         var tenant = TenantEntity.Create(
             "manager@acme.com",
             Guid.NewGuid(),
-            TenantType.Venue,
             DateTime.UtcNow);
 
         var result = tenant.UpdateLegalDetails(" ", null!);

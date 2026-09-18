@@ -24,6 +24,7 @@ public sealed class AdminApiFixture : ApiFixture
 
     public async Task ClearAdminsAsync()
     {
+        using var seeding = EnterSeedingScope();
         dbContext.AdminProfiles.RemoveRange(dbContext.AdminProfiles);
         await dbContext.SaveChangesAsync();
     }

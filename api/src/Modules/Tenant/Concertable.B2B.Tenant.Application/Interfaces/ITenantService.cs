@@ -12,6 +12,17 @@ internal interface ITenantService
 
     Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
 
+    Task<Option<BusinessFacts>> GetBusinessFactsAsync(Guid tenantId, CancellationToken ct = default);
+
+    Task<IReadOnlyList<BusinessFacts>> GetBusinessFactsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default);
+
+    Task<bool> HasBusinessProfileAsync(
+        Guid tenantId,
+        TenantBusinessProfileKind kind,
+        CancellationToken ct = default);
+
     Task<Option<TenantDetails>> GetDetailsAsync(CancellationToken ct = default);
 
     Task<Result<TenantDetails, UpdateTenantError>> UpdateAsync(UpdateTenantRequest request, CancellationToken ct = default);

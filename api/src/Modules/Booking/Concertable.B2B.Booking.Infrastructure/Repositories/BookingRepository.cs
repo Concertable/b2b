@@ -8,12 +8,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Repositories;
 
-internal sealed class BookingRepository : VenueArtistTenantScopedRepository<BookingEntity>, IBookingRepository
+internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRepository
 {
     private readonly BookingDbContext context;
 
     public BookingRepository(BookingDbContext context) : base(context) =>
         this.context = context;
+
+    public Task<BookingEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default) =>
+        context.Bookings
+            .Include(booking => booking.AccessGrants)
+            .FirstOrDefaultAsync(booking => booking.Id == id, ct);
 
     public Task<BookingEntity?> GetByApplicationIdAsync(
         int applicationId,

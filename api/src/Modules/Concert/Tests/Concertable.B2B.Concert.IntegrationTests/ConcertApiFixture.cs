@@ -101,6 +101,7 @@ public sealed class ConcertApiFixture : ApiFixture
         Guid? artistTenantId = null,
         Guid? venueTenantId = null)
     {
+        using var seeding = EnterSeedingScope();
         if (artistTenantId is { } artist)
             await dbContext.Concerts.Where(concert => concert.Id == concertId)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(
@@ -116,6 +117,7 @@ public sealed class ConcertApiFixture : ApiFixture
     internal async Task AddSelfBillingAgreementsAsync(
         params SelfBillingAgreementEntity[] agreements)
     {
+        using var seeding = EnterSeedingScope();
         dbContext.SelfBillingAgreements.AddRange(agreements);
         await dbContext.SaveChangesAsync();
     }

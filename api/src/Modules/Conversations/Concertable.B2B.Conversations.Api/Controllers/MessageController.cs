@@ -13,7 +13,7 @@ namespace Concertable.B2B.Conversations.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[HasPermission(SharedPermissions.MessagesRead)]
+[HasPermission(TenantPermission.MessagesRead)]
 internal sealed class MessageController : ControllerBase
 {
     private readonly IMessageService messageService;

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Repositories;
 
-internal sealed class ContractRepository : VenueArtistTenantScopedRepository<ContractEntity>, IContractRepository
+internal sealed class ContractRepository : Repository<ContractEntity>, IContractRepository
 {
     private readonly BookingDbContext context;
 

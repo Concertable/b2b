@@ -5,7 +5,7 @@ public sealed class ThreadReadStateEntityTests
     [Fact]
     public void Advance_MovesThePointerForward()
     {
-        var pointer = ThreadReadStateEntity.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), new DateTime(2026, 1, 1));
+        var pointer = ThreadReadStateEntity.Create(3, Guid.NewGuid(), Guid.NewGuid(), new DateTime(2026, 1, 1));
 
         pointer.Advance(new DateTime(2026, 2, 1));
 
@@ -15,7 +15,7 @@ public sealed class ThreadReadStateEntityTests
     [Fact]
     public void Advance_NeverMovesThePointerBackwards()
     {
-        var pointer = ThreadReadStateEntity.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), new DateTime(2026, 2, 1));
+        var pointer = ThreadReadStateEntity.Create(3, Guid.NewGuid(), Guid.NewGuid(), new DateTime(2026, 2, 1));
 
         pointer.Advance(new DateTime(2026, 1, 1));
 

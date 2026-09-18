@@ -40,8 +40,6 @@ internal sealed class ConcertAvailabilityIntegrationEventHandler :
                     @event.OpportunityId,
                     @event.ArtistId,
                     @event.VenueId,
-                    @event.VenueTenantId,
-                    @event.ArtistTenantId,
                     @event.StartDate));
         }, ct);
 

@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
@@ -35,7 +36,8 @@ public sealed class InvitationServiceTests
             this.tenantContext.Object,
             this.currentUser.Object,
             this.userModule.Object,
-            TimeProvider.System);
+            TimeProvider.System,
+            Mock.Of<IPermissionCatalog>());
     }
 
     [Fact]
@@ -45,7 +47,6 @@ public sealed class InvitationServiceTests
         var tenantId = Guid.NewGuid();
         var invitation = TenantInvitationEntity.Create(
             tenantId,
-            TenantType.Venue,
             "member@example.com",
             TenantRole.Staff,
             Guid.NewGuid(),
@@ -54,7 +55,6 @@ public sealed class InvitationServiceTests
         var tenant = TenantEntity.Create(
             "Acme Ltd",
             Guid.NewGuid(),
-            TenantType.Venue,
             DateTime.UtcNow);
         currentUser.SetupGet(user => user.Id).Returns(userId);
         currentUser.SetupGet(user => user.Email).Returns(invitation.Email);
@@ -83,7 +83,6 @@ public sealed class InvitationServiceTests
         var tenantId = Guid.NewGuid();
         var invitation = TenantInvitationEntity.Create(
             tenantId,
-            TenantType.Venue,
             "member@example.com",
             TenantRole.Staff,
             Guid.NewGuid(),
@@ -108,7 +107,7 @@ public sealed class InvitationServiceTests
     public async Task InviteAsync_UnauthenticatedUser_ReturnsForbiddenWithoutCreatingInvitation()
     {
         var tenantId = Guid.NewGuid();
-        var tenant = TenantEntity.Create("Acme Ltd", Guid.NewGuid(), TenantType.Venue, DateTime.UtcNow);
+        var tenant = TenantEntity.Create("Acme Ltd", Guid.NewGuid(), DateTime.UtcNow);
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         tenantRepository.Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
         membershipRepository.Setup(value => value.ListMembershipsByTenantAsync(tenantId, It.IsAny<CancellationToken>()))

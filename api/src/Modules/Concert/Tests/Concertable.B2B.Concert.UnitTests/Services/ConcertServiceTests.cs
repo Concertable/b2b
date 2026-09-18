@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Application.Errors;
@@ -40,13 +41,14 @@ public sealed class ConcertServiceTests
             unitOfWork.Object,
             new FakeTimeProvider(now),
             Mock.Of<ITenantContext>(),
+            Mock.Of<IAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());
 
     [Fact]
     public async Task UpdateAsync_SaveRaceLost_ReturnsSuperseded()
     {
         var now = new DateTimeOffset(ConfirmedBookings.EndsAtUtc.AddHours(1), TimeSpan.Zero);
-        var concert = ConcertEntity.CreateDraft(CreateBooking(now), new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(CreateBooking(now), new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository.Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(concert);
@@ -71,8 +73,8 @@ public sealed class ConcertServiceTests
     {
         var now = new DateTimeOffset(ConfirmedBookings.EndsAtUtc.AddHours(1), TimeSpan.Zero);
         var booking = CreateBooking(now);
-        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
-        var persisted = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
+        var persisted = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository
@@ -99,7 +101,7 @@ public sealed class ConcertServiceTests
     public async Task DeclareDoorRevenueAsync_SaveRaceLost_ReturnsSuperseded()
     {
         var now = new DateTimeOffset(ConfirmedBookings.EndsAtUtc.AddHours(1), TimeSpan.Zero);
-        var concert = ConcertEntity.CreateDraft(CreateBooking(now), new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(CreateBooking(now), new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository.Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(concert);
@@ -122,6 +124,7 @@ public sealed class ConcertServiceTests
             unitOfWork.Object,
             new FakeTimeProvider(now),
             tenantContext.Object,
+            Mock.Of<IAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());
 
         var result = await service.DeclareDoorRevenueAsync(42, 100m);
@@ -136,7 +139,7 @@ public sealed class ConcertServiceTests
     {
         var now = new DateTimeOffset(ConfirmedBookings.EndsAtUtc.AddHours(1), TimeSpan.Zero);
         var booking = ConfirmedBookings.DoorSplit(50m);
-        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         var repository = new Mock<IConcertRepository>();
         var unitOfWork = new Mock<IUnitOfWork>();
         repository
@@ -158,6 +161,7 @@ public sealed class ConcertServiceTests
             unitOfWork.Object,
             new FakeTimeProvider(now),
             tenantContext.Object,
+            Mock.Of<IAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());
 
         var result = await service.DeclareDoorRevenueAsync(42, -0.01m);

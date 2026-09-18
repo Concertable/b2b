@@ -1,7 +1,7 @@
-export type VerificationTenantType = "venue" | "artist";
+export type VerificationTenantBusinessProfile = "venue" | "artist";
 
 export const VERIFICATION_TENANT_TYPE_LABELS: Record<
-  VerificationTenantType,
+  VerificationTenantBusinessProfile,
   string
 > = {
   venue: "Venue",
@@ -10,7 +10,7 @@ export const VERIFICATION_TENANT_TYPE_LABELS: Record<
 
 export interface PendingVerification {
   tenantId: string;
-  tenantType: VerificationTenantType;
+  businessProfile: VerificationTenantBusinessProfile;
   name?: string;
   email?: string;
   submittedAt: string;

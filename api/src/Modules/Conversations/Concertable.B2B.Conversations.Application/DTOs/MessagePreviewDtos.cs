@@ -2,8 +2,8 @@ namespace Concertable.B2B.Conversations.Application.DTOs;
 
 internal sealed record MessagePreview(
     int Id,
-    Guid CounterpartTenantId,
-    bool CounterpartIsVenue,
+    int ThreadId,
+    Guid? CounterpartTenantId,
     string Preview,
     DateTime At,
     bool Unread);

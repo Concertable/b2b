@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Artist.Application.Validators;
 using Concertable.B2B.Artist.Contracts;
@@ -28,7 +29,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<ArtistDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    configuration.GetConnectionString(B2BDb.Name),
+                    sp.GetRequiredService<DbConnection>(),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
@@ -38,7 +39,7 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<ArtistReadDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    configuration.GetConnectionString(B2BDb.Name),
+                    sp.GetRequiredService<DbConnection>(),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
         services.AddScoped<IArtistReadDbContext>(sp => sp.GetRequiredService<ArtistReadDbContext>());

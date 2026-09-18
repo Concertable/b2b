@@ -7,7 +7,7 @@ describe("invitation acceptance", () => {
     const membership: Membership = {
       tenantId: "accepted-tenant",
       legalName: "Accepted Venue",
-      type: "venue",
+      businessProfiles: ["venueOperator"],
       role: "staff",
     };
     let completeSelection: (() => void) | undefined;

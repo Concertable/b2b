@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Errors;
@@ -19,6 +20,45 @@ internal static class ConcertMappers
             County = concert.Venue.Address.County,
             Town = concert.Venue.Address.Town,
             DatePosted = concert.DatePosted
+        };
+    }
+
+    extension(ConcertShareError error)
+    {
+        public ShareConcertError ToShareConcertError() => error switch
+        {
+            ConcertShareError.ScopeNotShareable(var scope) =>
+                new ShareConcertError.ScopeNotShareable(scope),
+            ConcertShareError.NotAPrincipal =>
+                new ShareConcertError.NotAPrincipal(),
+            ConcertShareError.AlreadyShared =>
+                new ShareConcertError.AlreadyShared()
+        };
+    }
+
+    extension(ShareRevocationError error)
+    {
+        public RevokeConcertShareError ToRevokeConcertShareError() => error switch
+        {
+            ShareRevocationError.GrantNotFound =>
+                new RevokeConcertShareError.GrantNotFound(),
+            ShareRevocationError.NotAShare =>
+                new RevokeConcertShareError.NotAShare(),
+            ShareRevocationError.NotTheIssuer =>
+                new RevokeConcertShareError.NotTheIssuer()
+        };
+    }
+
+    extension(ConcertAccessGrant grant)
+    {
+        public ConcertShareResponse ToShareResponse() => new()
+        {
+            GrantId = grant.Id,
+            ToTenantId = grant.TenantId,
+            ToMemberUserId = grant.MemberUserId,
+            Scope = grant.Scope,
+            ValidFrom = grant.ValidFrom,
+            ValidUntil = grant.ValidUntil
         };
     }
 

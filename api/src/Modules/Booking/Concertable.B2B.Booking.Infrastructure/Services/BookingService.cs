@@ -1,3 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+using Concertable.DataAccess.Application;
+using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Application.DTOs;
 using Concertable.B2B.Booking.Application.Errors;
 using Concertable.B2B.Booking.Application.Mappers;
@@ -10,15 +15,24 @@ internal sealed class BookingService : IBookingService
     private readonly IBookingRepository bookingRepository;
     private readonly IBookingWorkflow workflow;
     private readonly TimeProvider timeProvider;
+    private readonly IUnitOfWork unitOfWork;
+    private readonly ITenantContext tenantContext;
+    private readonly IAccessContext accessContext;
 
     public BookingService(
         IBookingRepository bookingRepository,
         IBookingWorkflow workflow,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IUnitOfWork unitOfWork,
+        ITenantContext tenantContext,
+        IAccessContext accessContext)
     {
         this.bookingRepository = bookingRepository;
         this.workflow = workflow;
         this.timeProvider = timeProvider;
+        this.unitOfWork = unitOfWork;
+        this.tenantContext = tenantContext;
+        this.accessContext = accessContext;
     }
 
     public async Task<BookingDto?> GetByApplicationIdAsync(
@@ -84,4 +98,58 @@ internal sealed class BookingService : IBookingService
         FinancialOperationFailed operation,
         CancellationToken ct = default) =>
         workflow.RecordFailedAsync(bookingId, operation, ct);
+
+    public async Task<Result<BookingShareResponse, ShareBookingError>> ShareAsync(
+        int bookingId,
+        ShareBookingRequest request,
+        CancellationToken ct = default)
+    {
+        if (tenantContext.TenantId is not { } actingTenantId)
+            return new ShareBookingError.NoActiveTenant();
+
+        var booking = await bookingRepository.GetWithGrantsByIdAsync(bookingId, ct);
+        if (booking is null)
+            return new ShareBookingError.BookingNotFound(bookingId);
+
+        var share = booking.Share(
+            request.ToTenantId,
+            request.ToMemberUserId,
+            request.Scope,
+            actingTenantId,
+            accessContext.UserId,
+            timeProvider.GetUtcNow().UtcDateTime,
+            request.ValidUntil)
+            .MapError(static error => error.ToShareBookingError());
+
+        if (share.TryGetError(out var shareError))
+            return shareError;
+
+        if (!await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException))
+            return new ShareBookingError.Superseded(bookingId);
+
+        return share.Map(static grant => grant.ToShareResponse());
+    }
+
+    public async Task<UnitResult<RevokeBookingShareError>> RevokeShareAsync(
+        int bookingId,
+        Guid grantId,
+        CancellationToken ct = default)
+    {
+        if (tenantContext.TenantId is not { } actingTenantId)
+            return new RevokeBookingShareError.NoActiveTenant();
+
+        var booking = await bookingRepository.GetWithGrantsByIdAsync(bookingId, ct);
+        if (booking is null)
+            return new RevokeBookingShareError.BookingNotFound(bookingId);
+
+        if (booking.RevokeShare(grantId, actingTenantId, timeProvider.GetUtcNow().UtcDateTime)
+            .TryGetError(out var revocationError))
+            return revocationError.ToRevokeBookingShareError();
+
+        return await unitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException)
+            ? new Success()
+            : new RevokeBookingShareError.Superseded(bookingId);
+    }
 }

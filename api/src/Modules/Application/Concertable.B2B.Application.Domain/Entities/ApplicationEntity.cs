@@ -1,5 +1,7 @@
+using Concertable.B2B.Application.Domain.Errors;
 using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Domain.ValueObjects;
@@ -11,7 +13,7 @@ using Reunion;
 namespace Concertable.B2B.Application.Domain.Entities;
 
 [DisplayName(DisplayNames.Application)]
-public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
+public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEventRaiser
 {
     private static readonly ApplicationStateMachine stateMachine = new();
 
@@ -27,6 +29,9 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
     public DealType DealType { get; private set; }
     public Guid? AcceptanceOperationId { get; private set; }
 
+    private readonly List<ApplicationAccessGrant> accessGrants = [];
+    public IReadOnlyList<ApplicationAccessGrant> AccessGrants => accessGrants;
+
     internal ContractSignature ArtistESignature { get; private set; } = null!;
     public string TermsFingerprint { get; private set; } = null!;
 
@@ -37,7 +42,8 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         int opportunityId,
         DealType dealType,
         Guid venueTenantId,
-        Guid artistTenantId)
+        Guid artistTenantId,
+        DateTime createdAtUtc)
     {
         if (venueTenantId == Guid.Empty || artistTenantId == Guid.Empty)
             throw new InvalidOperationException("An application requires resolved venue and artist tenants.");
@@ -47,6 +53,24 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         DealType = dealType;
         VenueTenantId = venueTenantId;
         ArtistTenantId = artistTenantId;
+
+        /* The applicant and the tenant it applied to reach the application through grants like anyone else,
+           issued with it so neither party can be shut out of its own application. The applicant issues it. */
+        foreach (var tenantId in new[] { venueTenantId, artistTenantId })
+        {
+            foreach (var scope in Enum.GetValues<ApplicationAccessScope>())
+            {
+                accessGrants.Add(ApplicationAccessGrant.Issue(
+                    Id,
+                    tenantId,
+                    memberUserId: null,
+                    scope,
+                    issuedByTenantId: artistTenantId,
+                    issuedByUserId: null,
+                    GrantOrigin.ResourceCreation,
+                    createdAtUtc));
+            }
+        }
     }
 
     public Guid BeginAcceptance() => AcceptanceOperationId ??= Guid.NewGuid();
@@ -161,6 +185,62 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         int opportunityId,
         DealType dealType,
         Guid venueTenantId,
-        Guid artistTenantId) =>
-        new(artistId, opportunityId, dealType, venueTenantId, artistTenantId);
+        Guid artistTenantId,
+        DateTime createdAtUtc) =>
+        new(artistId, opportunityId, dealType, venueTenantId, artistTenantId, createdAtUtc);
+
+    private static readonly ApplicationAccessScope[] ShareableScopes =
+        [ApplicationAccessScope.Summary];
+
+    public Result<ApplicationAccessGrant, ApplicationShareError> Share(
+        Guid toTenantId,
+        Guid? toMemberUserId,
+        ApplicationAccessScope scope,
+        Guid byTenantId,
+        Guid? byUserId,
+        DateTime at,
+        DateTime? validUntil = null)
+    {
+        if (!ShareableScopes.Contains(scope))
+            return new ApplicationShareError.ScopeNotShareable(scope);
+
+        if (byTenantId != VenueTenantId && byTenantId != ArtistTenantId)
+            return new ApplicationShareError.NotAPrincipal();
+
+        if (accessGrants.Any(grant =>
+                grant.TenantId == toTenantId
+                && grant.MemberUserId == toMemberUserId
+                && grant.Scope == scope
+                && grant.IsLiveAt(at)))
+            return new ApplicationShareError.AlreadyShared();
+
+        var issued = ApplicationAccessGrant.Issue(
+            Id,
+            toTenantId,
+            toMemberUserId,
+            scope,
+            issuedByTenantId: byTenantId,
+            issuedByUserId: byUserId,
+            GrantOrigin.ExplicitShare,
+            at,
+            validUntil);
+
+        accessGrants.Add(issued);
+        return issued;
+    }
+
+    public UnitResult<ApplicationShareRevocationError> RevokeShare(Guid grantId, Guid byTenantId, DateTime at)
+    {
+        if (accessGrants.SingleOrDefault(grant => grant.Id == grantId) is not { } grant)
+            return new ApplicationShareRevocationError.GrantNotFound();
+
+        if (grant.Origin is not GrantOrigin.ExplicitShare)
+            return new ApplicationShareRevocationError.NotAShare();
+
+        if (grant.IssuedByTenantId != byTenantId)
+            return new ApplicationShareRevocationError.NotTheIssuer();
+
+        grant.Revoke(at);
+        return new Success();
+    }
 }

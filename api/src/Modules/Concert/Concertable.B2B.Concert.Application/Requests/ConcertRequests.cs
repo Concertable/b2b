@@ -1,4 +1,14 @@
+using Concertable.B2B.Concert.Contracts.Enums;
+
 namespace Concertable.B2B.Concert.Application.Requests;
+
+internal sealed record ShareConcertRequest
+{
+    public Guid ToTenantId { get; init; }
+    public Guid? ToMemberUserId { get; init; }
+    public ConcertAccessScope Scope { get; init; }
+    public DateTime? ValidUntil { get; init; }
+}
 
 internal sealed record UpdateConcertRequest
 {

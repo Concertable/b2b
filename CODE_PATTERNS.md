@@ -11,20 +11,21 @@ The bases live in `B2B.DataAccess.Infrastructure`; each concrete context lives i
 
 | Stance | Base | Concrete examples |
 |---|---|---|
-| Tenant-filtered (both venue↔artist pair and single owner) | `TenantScopedDbContext` | `ConcertDbContext`, `BookingDbContext` (pair); `VenueDbContext` (filters `Venue`/`VenueImage`), `ArtistDbContext` (single owner) |
+| Grant-reached — a tenant holding a live grant on the row | `AccessScopedDbContext` | `ApplicationDbContext`, `BookingDbContext`, `ConcertDbContext`, `ConversationsDbContext` |
+| Single-owner filtered — the row names its one owning tenant | `TenantScopedDbContext` | `VenueDbContext` (filters `Venue`/`VenueImage`), `ArtistDbContext` |
 | Tenant-independent read, `SaveChanges` throws | `ReadDbContext` (shared DataAccess) | `Application`, `Artist`, `Booking`, `Concert`, `Opportunity`, `Venue` |
 | Unscoped but writable | `PrivilegedDbContext` | `ConversationsPrivilegedDbContext` (moderation) |
 | Untenanted module | `DbContextBase` + own `OnModelCreating` | `Admin`, `Deal`, `Tenant`, `User` — no base owns their `OnModelCreating`; `api/TECH_DEBT.md` holds the repo-wide entry |
 
-One base covers both tenant-filtered stances: the pair/single-owner distinction is carried entirely by which
-helper the context's `ApplyTenantFilters` calls, so a separate `VenueArtistTenantScopedDbContext` base bought
-nothing and no longer exists. The **repository** pair is a real distinction and does survive —
-`VenueArtistTenantScopedRepository` adds `GetTenantPairAsync` / `GetVenueTenantIdAsync` /
-`GetArtistTenantIdAsync`, which need both columns.
+`AccessScopedDbContext` derives from `TenantScopedDbContext`, so a context can declare both stances: Concert
+filters its concerts and invoices by grant and its self-billing agreements by single owner.
 
-Filters are declared per entity through the abstract `ApplyTenantFilters` hook —
-`modelBuilder.ApplyVenueArtist<TEntity>(this)` or `modelBuilder.ApplySingleOwner<TEntity>(this)` — never
-auto-derived from the `IVenueArtistTenantScoped` / `ITenantScoped` marker.
+Filters are declared per entity in the owning context's `ApplyTenantFilters`, never auto-derived from a
+marker. A single-owner entity uses `modelBuilder.ApplySingleOwner<TEntity>(this)`. A grant-reached entity
+writes its predicate out against that context's own grant set, because the predicate has to name the grant
+family it reads; the same predicate re-checks `MembershipAuthority` at the revision the request resolved.
+`ResourceAccessGuardTests` fails a grant family whose configuration is unregistered, and a grant-scoped
+context that declares no filter at all.
 
 Query classes split by stance: `XRepository` (tenant-bound), `XReadRepository` (`XReadDbContext`),
 `XPrivilegedRepository` (writable `PrivilegedDbContext`, only where a cross-tenant write flow exists, e.g.
@@ -44,8 +45,20 @@ independently of its owner, that need earns it a real repository — do not pre-
 ## Which entities are filtered
 
 - **Unfiltered by design:** `Opportunity` (the applying artist reads the venue's opportunity to stamp the
-  deal), `Deal` (the applying artist reads the venue's terms), `Concert` (public listing).
-- **Filtered:** `Venue`, `Artist` — owner-private reads, with public browse split off to the read stance.
+  deal), `Deal` (the applying artist reads the venue's terms), `ConcertAvailability` (it answers only that a
+  date is taken).
+- **Grant-reached:** `Application`, `Booking`, `Contract`, `Concert`, `Invoice`, `Thread`, `Message`,
+  `ThreadReadState`, `ContentReport`. Public concert browse is served by the read stance.
+- **Single-owner filtered:** `Venue`, `Artist` — owner-private reads, with public browse split off to the
+  read stance.
+
+## The resource access grant families
+
+One per resource, each over its own facet vocabulary, all deriving from `ResourceAccessGrant<TFacet>`:
+`ApplicationAccessGrant` (Summary/Proposal), `BookingAccessGrant` (Summary/Operations),
+`ContractAccessGrant` (Terms), `ConcertAccessGrant` (Summary/Operations/Finance), `InvoiceAccessGrant`
+(Invoice), `ThreadAccessGrant` (Read/Participate). Each is a child collection of its own aggregate, so a
+resource and its principals' access commit together.
 
 ## The `DealType` strategy families
 

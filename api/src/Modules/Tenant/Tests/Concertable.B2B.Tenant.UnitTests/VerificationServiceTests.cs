@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Tenant.Application.Errors;
+using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Domain.Entities;
@@ -18,7 +18,6 @@ public sealed class VerificationServiceTests
     private readonly Mock<ITenantRepository> tenantRepository;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly Mock<IBlobStorageService> blobStorage;
-    private readonly Mock<ITenantContactResolver> contactResolver;
     private readonly Mock<IVerificationNotifier> notifier;
     private readonly Mock<ICurrentUser> currentUser;
     private readonly Mock<ILogger<VerificationService>> logger;
@@ -30,7 +29,6 @@ public sealed class VerificationServiceTests
         this.tenantRepository = new Mock<ITenantRepository>();
         this.tenantContext = new Mock<ITenantContext>();
         this.blobStorage = new Mock<IBlobStorageService>();
-        this.contactResolver = new Mock<ITenantContactResolver>();
         this.notifier = new Mock<IVerificationNotifier>();
         this.currentUser = new Mock<ICurrentUser>();
         this.logger = new Mock<ILogger<VerificationService>>();
@@ -39,7 +37,6 @@ public sealed class VerificationServiceTests
             tenantRepository.Object,
             tenantContext.Object,
             blobStorage.Object,
-            contactResolver.Object,
             notifier.Object,
             currentUser.Object,
             TimeProvider.System,

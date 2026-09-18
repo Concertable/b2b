@@ -16,13 +16,13 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
     public Task<UserMembership?> GetMembershipAsync(Guid userId, Guid tenantId, CancellationToken ct = default) =>
         context.Memberships
             .Where(m => m.UserId == userId && m.TenantId == tenantId)
-            .ToUserMemberships(context.Tenants)
+            .ToUserMemberships(context.Tenants, context.BusinessProfiles)
             .FirstOrDefaultAsync(ct);
 
     public async Task<IReadOnlyList<UserMembership>> GetMembershipsAsync(Guid userId, CancellationToken ct = default) =>
         await context.Memberships
             .Where(m => m.UserId == userId)
-            .ToUserMemberships(context.Tenants)
+            .ToUserMemberships(context.Tenants, context.BusinessProfiles)
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>

@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Application.Requests;
@@ -19,6 +20,7 @@ public sealed class TenantServiceTests
     private readonly Mock<IMembershipRepository> membershipRepository;
     private readonly Mock<IInvitationRepository> invitationRepository;
     private readonly Mock<ITenantContext> tenantContext;
+    private readonly Mock<IPermissionCatalog> permissionCatalog;
     private readonly TenantService service;
 
     public TenantServiceTests()
@@ -27,16 +29,18 @@ public sealed class TenantServiceTests
         this.membershipRepository = new Mock<IMembershipRepository>();
         this.invitationRepository = new Mock<IInvitationRepository>();
         this.tenantContext = new Mock<ITenantContext>();
+        this.permissionCatalog = new Mock<IPermissionCatalog>();
         this.service = new TenantService(
             repository.Object,
             membershipRepository.Object,
             invitationRepository.Object,
             tenantContext.Object,
-            new VatPolicy(new UkVatCalculator()));
+            new VatPolicy(new UkVatCalculator()),
+            permissionCatalog.Object);
     }
 
     private static TenantEntity Bare() =>
-        TenantEntity.Create("bare@test.com", Guid.NewGuid(), TenantType.Venue, DateTime.UtcNow);
+        TenantEntity.Create("bare@test.com", Guid.NewGuid(), DateTime.UtcNow);
 
     private static TenantEntity Onboarded(string? vatNumber)
     {
@@ -382,4 +386,23 @@ public sealed class TenantServiceTests
             Country = "United Kingdom"
         }
     };
+
+    [Fact]
+    public async Task GetMembershipsAsync_CarriesTheRolesPermissions()
+    {
+        var tenantId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        membershipRepository
+            .Setup(repository => repository.GetMembershipsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new UserMembership(tenantId, "Bare Ltd", TenantRole.Door, 1, [])]);
+        permissionCatalog
+            .Setup(catalog => catalog.For(TenantRole.Door))
+            .Returns(new HashSet<string> { TenantPermission.OperationsView, TenantPermission.ConcertsCheckIn });
+
+        var memberships = await service.GetMembershipsAsync(userId);
+
+        Assert.Equal(
+            [TenantPermission.ConcertsCheckIn, TenantPermission.OperationsView],
+            memberships.Single().Permissions.Order());
+    }
 }

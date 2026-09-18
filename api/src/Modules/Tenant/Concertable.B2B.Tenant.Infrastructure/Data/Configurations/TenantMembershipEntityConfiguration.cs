@@ -12,6 +12,7 @@ internal sealed class TenantMembershipEntityConfiguration : IEntityTypeConfigura
         builder.Property(m => m.TenantId).IsRequired();
         builder.Property(m => m.UserId).IsRequired();
         builder.Property(m => m.Role).IsRequired();
+        builder.Property(m => m.AuthorizationVersion).IsRequired().IsConcurrencyToken();
         builder.Property(m => m.CreatedAt).IsRequired();
 
         // One role per (tenant, user); UserId alone is the per-request membership lookup.

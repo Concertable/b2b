@@ -6,6 +6,7 @@ import {
   useB2bIdentityQuery,
   useTenant,
 } from "@concertable/b2b/features/tenant";
+import type { TenantBusinessProfile } from "@concertable/b2b/features/tenant/types";
 import { useAuthInit } from "@concertable/mobile/auth/useAuthInit";
 import { useCurrentUser } from "@concertable/mobile/auth/useCurrentUser";
 import { Text } from "@concertable/mobile/components/ui/text";
@@ -16,6 +17,7 @@ import { TenantChooser } from "../features/tenant/components/TenantChooser";
 import { TenantSwitcher } from "../features/tenant/components/TenantSwitcher";
 import { initializeTenantSession } from "../lib/b2bClient";
 import { ArtistTabs } from "./ArtistTabs";
+import { BusinessTabs } from "./BusinessTabs";
 import { VenueTabs } from "./VenueTabs";
 
 function LoadingScreen() {
@@ -24,6 +26,21 @@ function LoadingScreen() {
       <ActivityIndicator size="large" />
     </View>
   );
+}
+
+/**
+ * Tabs follow what the business has activated, and a business that has activated nothing still gets the
+ * neutral surface. A business holding both profiles sees the venue tabs; choosing between them per session
+ * is its own piece of work.
+ */
+function TabsForProfiles({
+  businessProfiles,
+}: {
+  businessProfiles: ReadonlyArray<TenantBusinessProfile>;
+}) {
+  if (businessProfiles.includes("venueOperator")) return <VenueTabs />;
+  if (businessProfiles.includes("artist")) return <ArtistTabs />;
+  return <BusinessTabs />;
 }
 
 function AuthenticatedNavigator() {
@@ -90,11 +107,9 @@ function AuthenticatedNavigator() {
       ) : null}
       <ActiveTenantProvider tenantId={tenant.activeMembership.tenantId}>
         <NavigationContainer key={tenant.activeMembership.tenantId}>
-          {tenant.activeMembership.type === "venue" ? (
-            <VenueTabs />
-          ) : (
-            <ArtistTabs />
-          )}
+          <TabsForProfiles
+            businessProfiles={tenant.activeMembership.businessProfiles}
+          />
         </NavigationContainer>
       </ActiveTenantProvider>
     </View>

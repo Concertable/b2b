@@ -1,4 +1,4 @@
-import type { TenantType } from "@concertable/b2b/features/tenant/types";
+import type { TenantBusinessProfile } from "@concertable/b2b/features/tenant/types";
 import {
   Select,
   SelectContent,
@@ -8,13 +8,13 @@ import {
 } from "@concertable/web/components/ui/select";
 import { useTenant } from "../hooks/useTenant";
 
-export function TenantSwitcher({ tenantType }: Readonly<{ tenantType: TenantType }>) {
+export function TenantSwitcher({ businessProfile }: Readonly<{ businessProfile: TenantBusinessProfile }>) {
   const {
     memberships,
     activeMembership,
     isSelectionPending,
     selectTenant,
-  } = useTenant(tenantType);
+  } = useTenant(businessProfile);
 
   if (memberships.length <= 1) return null;
 

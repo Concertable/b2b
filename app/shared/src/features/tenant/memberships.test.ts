@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  filterMembershipsByTenantType,
+  filterMembershipsByProfile,
   hasPendingTenantChoice,
   resolveActiveMembership,
   resolveTenant,
@@ -11,33 +11,33 @@ const memberships: ReadonlyArray<Membership> = [
   {
     tenantId: "venue-one",
     legalName: "Venue One",
-    type: "venue",
+    businessProfiles: ["venueOperator"],
     role: "owner",
   },
   {
     tenantId: "venue-two",
     legalName: "Venue Two",
-    type: "venue",
+    businessProfiles: ["venueOperator"],
     role: "manager",
   },
   {
     tenantId: "artist-one",
     legalName: "Artist One",
-    type: "artist",
+    businessProfiles: ["artist"],
     role: "staff",
   },
 ];
 
 describe("tenant membership resolution", () => {
   it("filters memberships by tenant type", () => {
-    expect(filterMembershipsByTenantType(memberships, "venue")).toEqual(
+    expect(filterMembershipsByProfile(memberships, "venueOperator")).toEqual(
       memberships.slice(0, 2),
     );
   });
 
   it("resolves the selected membership", () => {
     expect(
-      resolveActiveMembership(memberships, "venue", "venue-two"),
+      resolveActiveMembership(memberships, "venueOperator", "venue-two"),
     ).toEqual(memberships[1]);
   });
 
@@ -48,8 +48,8 @@ describe("tenant membership resolution", () => {
   });
 
   it("requires selection when multiple memberships have no valid choice", () => {
-    expect(hasPendingTenantChoice(memberships, "venue", "stale")).toBe(true);
-    expect(resolveTenant(memberships, "venue", "stale")).toMatchObject({
+    expect(hasPendingTenantChoice(memberships, "venueOperator", "stale")).toBe(true);
+    expect(resolveTenant(memberships, "venueOperator", "stale")).toMatchObject({
       activeMembership: undefined,
       selectionRequired: true,
     });

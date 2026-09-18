@@ -62,7 +62,7 @@ export function PendingVerificationsList() {
             >
               <TableCell>{verification.name ?? "—"}</TableCell>
               <TableCell>
-                {VERIFICATION_TENANT_TYPE_LABELS[verification.tenantType]}
+                {VERIFICATION_TENANT_TYPE_LABELS[verification.businessProfile]}
               </TableCell>
               <TableCell>{verification.email ?? "—"}</TableCell>
               <TableCell>

@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Concertable.B2B.Conversations.Infrastructure.Handlers;
@@ -74,7 +75,8 @@ public sealed class ParticipantProfileProjectionHandlerTests
         new(
             new DbContextOptionsBuilder<ConversationsDbContext>().UseInMemoryDatabase(databaseName).Options,
             new ConversationsConfigurationProvider(),
-            new StubTenantContext(Guid.NewGuid()));
+            new StubTenantContext(Guid.NewGuid()),
+            DesignTimeAccessContext.Instance);
 
     private sealed class StubTenantContext(Guid tenantId) : ITenantContext
     {

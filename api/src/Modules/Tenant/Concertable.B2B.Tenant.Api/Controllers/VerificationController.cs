@@ -37,7 +37,7 @@ internal sealed class VerificationController : ControllerBase
         (await verificationService.GetStatusAsync(ct)).ToOkOrNoContent();
 
     [Authorize]
-    [HasPermission(SharedPermissions.TenantSettingsEdit)]
+    [HasPermission(TenantPermission.TenantSettingsEdit)]
     [EnableRateLimiting(RateLimitPolicies.Upload)]
     [HttpPost($"/api/organization/{RouteSegment}/documents")]
     public async Task<ActionResult<VerificationStatusDto>> SubmitDocuments(

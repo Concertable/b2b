@@ -14,6 +14,8 @@ internal static class Schema
         public const string Invoices = "Invoices";
         public const string InvoiceSequences = "InvoiceSequences";
         public const string SelfBillingAgreements = "SelfBillingAgreements";
+        public const string ConcertAccessGrants = "ConcertAccessGrants";
+        public const string InvoiceAccessGrants = "InvoiceAccessGrants";
         public const string Opportunities = "Opportunities";
         public const string Applications = "Applications";
         public const string ArtistReadModels = "ArtistReadModels";

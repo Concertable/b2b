@@ -26,13 +26,13 @@ const profileItems: ProfileMenuItem[] = [
 
 function VenueLayout() {
   useVenueNotifications();
-  const { selectionRequired } = useTenant("venue");
-  if (selectionRequired) return <TenantChooser tenantType="venue" />;
+  const { selectionRequired } = useTenant("venueOperator");
+  if (selectionRequired) return <TenantChooser businessProfile="venueOperator" />;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher tenantType="venue" />}
+      headerSlot={<TenantSwitcher businessProfile="venueOperator" />}
       messagingSlot={<Mailbox />}
     />
   );
@@ -44,7 +44,7 @@ export const Route = createFileRoute("/_venue")({
       await requireLocalB2bAuth({ location });
       return;
     }
-    const { selectionRequired } = await resolveTenantRoute("venue");
+    const { selectionRequired } = await resolveTenantRoute("venueOperator");
     if (selectionRequired) return;
     await requireVenue({ pathname: location.pathname });
   },

@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Admin.Application.Validators;
 using Concertable.B2B.Admin.Domain.Events;
@@ -25,7 +26,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAdminModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<AdminDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseSqlServer(sp.GetRequiredService<DbConnection>())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>()));

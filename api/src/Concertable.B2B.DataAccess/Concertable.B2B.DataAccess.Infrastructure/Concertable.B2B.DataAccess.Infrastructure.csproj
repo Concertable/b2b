@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Authorization\Concertable.B2B.Authorization.Contracts\Concertable.B2B.Authorization.Contracts.csproj" />
     <ProjectReference Include="..\Concertable.B2B.DataAccess.Application\Concertable.B2B.DataAccess.Application.csproj" />
     <ProjectReference Include="..\..\Modules\User\Concertable.B2B.User.Domain\Concertable.B2B.User.Domain.csproj" />
     <ProjectReference Include="..\..\Modules\Artist\Concertable.B2B.Artist.Domain\Concertable.B2B.Artist.Domain.csproj" />

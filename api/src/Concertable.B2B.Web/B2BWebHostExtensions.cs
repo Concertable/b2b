@@ -1,3 +1,5 @@
+using Concertable.B2B.Authorization.Contracts.Enums;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Admin.Api.Extensions;
 using Concertable.B2B.Admin.Infrastructure.Extensions;
@@ -285,6 +287,9 @@ public static class B2BWebHostExtensions
             if (!app.Environment.IsProduction())
             {
                 await using var scope = app.Services.CreateAsyncScope();
+                using var seeding = scope.ServiceProvider
+                    .GetRequiredService<IExecutionScopeActivator>()
+                    .Enter(ExecutionPurpose.Seeding);
                 var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
                 await initializer.InitializeAsync();
             }

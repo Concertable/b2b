@@ -1,3 +1,4 @@
+using Concertable.B2B.Application.Infrastructure.Specifications;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Conversations.Contracts;
@@ -88,12 +89,11 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         MessageAction action)
     {
         var (venueTenantId, artistTenantId) = await repository
-            .GetByIdAsync(applicationId, VenueArtistTenantSpecification<ApplicationEntity>.CreatePair())
+            .GetByIdAsync(applicationId, ApplicationSpecification.CreateTenants())
             .OrNotFound(DisplayNames.Application);
 
         await conversationsModule.SendAsync(
-            venueTenantId,
-            artistTenantId,
+            [venueTenantId, artistTenantId],
             artistTenantId,
             currentUser.GetId(),
             content,
@@ -106,12 +106,11 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         MessageAction action)
     {
         var (venueTenantId, artistTenantId) = await repository
-            .GetByIdAsync(applicationId, VenueArtistTenantSpecification<ApplicationEntity>.CreatePair())
+            .GetByIdAsync(applicationId, ApplicationSpecification.CreateTenants())
             .OrNotFound(DisplayNames.Application);
 
         await conversationsModule.SendAndNotifyAsync(
-            venueTenantId,
-            artistTenantId,
+            [venueTenantId, artistTenantId],
             venueTenantId,
             currentUser.GetId(),
             content,

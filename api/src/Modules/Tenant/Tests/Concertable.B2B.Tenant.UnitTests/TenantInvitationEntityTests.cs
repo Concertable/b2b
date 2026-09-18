@@ -88,7 +88,6 @@ public sealed class TenantInvitationEntityTests
 
     private static TenantInvitationEntity Create() => TenantInvitationEntity.Create(
         Guid.NewGuid(),
-        TenantType.Venue,
         "member@example.com",
         TenantRole.Staff,
         Guid.NewGuid(),
@@ -103,7 +102,7 @@ public sealed class TenantInvitationEntityTests
         var at = DateTime.UtcNow;
 
         var invitation = TenantInvitationEntity.Create(
-            tenantId, TenantType.Venue, "invitee@example.com", TenantRole.Manager, inviter, at, TimeSpan.FromDays(7));
+            tenantId, "invitee@example.com", TenantRole.Manager, inviter, at, TimeSpan.FromDays(7));
 
         Assert.NotEqual(Guid.Empty, invitation.Id);
         Assert.Equal(tenantId, invitation.TenantId);
@@ -116,23 +115,22 @@ public sealed class TenantInvitationEntityTests
     }
 
     [Fact]
-    public void Create_RaisesInvitationCreatedDomainEvent_CarryingInviteeAndPortalType()
+    public void Create_RaisesInvitationCreatedDomainEvent_CarryingInviteeAndRole()
     {
         var invitation = TenantInvitationEntity.Create(
-            Guid.NewGuid(), TenantType.Artist, "invitee@example.com", TenantRole.Staff, Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
+            Guid.NewGuid(), "invitee@example.com", TenantRole.Staff, Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
 
         var raised = Assert.IsType<TenantInvitationCreatedDomainEvent>(Assert.Single(invitation.DomainEvents));
         Assert.Equal(invitation.Id, raised.InvitationId);
         Assert.Equal("invitee@example.com", raised.Email);
         Assert.Equal(TenantRole.Staff, raised.Role);
-        Assert.Equal(TenantType.Artist, raised.TenantType);
     }
 
     [Fact]
     public void ClearDomainEvents_RemovesTheRaisedEvent()
     {
         var invitation = TenantInvitationEntity.Create(
-            Guid.NewGuid(), TenantType.Venue, "invitee@example.com", TenantRole.Manager, Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
+            Guid.NewGuid(), "invitee@example.com", TenantRole.Manager, Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
 
         invitation.ClearDomainEvents();
 

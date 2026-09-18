@@ -12,14 +12,14 @@ internal sealed class ContractController : ControllerBase
 
     public ContractController(IContractService contractService) => this.contractService = contractService;
 
-    [HasPermission(SharedPermissions.OperationsView)]
+    [HasPermission(TenantPermission.OperationsView)]
     [HttpGet("{id}/contract")]
     public async Task<ActionResult<ContractDto>> Get(int id, CancellationToken ct)
     {
         return (await contractService.GetByApplicationIdAsync(id, ct)).ToOkOrProblem();
     }
 
-    [HasPermission(SharedPermissions.OperationsView)]
+    [HasPermission(TenantPermission.OperationsView)]
     [HttpGet("{id}/contract/pdf")]
     public async Task<ActionResult<FileDownload>> GetPdf(int id, CancellationToken ct)
     {

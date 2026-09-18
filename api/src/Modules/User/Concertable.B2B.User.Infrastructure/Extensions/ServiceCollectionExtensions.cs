@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
 using Concertable.DataAccess;
@@ -25,7 +26,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<UserDbContext>((sp, opt) =>
             opt.UseSqlServer(
-                    configuration.GetConnectionString(B2BDb.Name),
+                    sp.GetRequiredService<DbConnection>(),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),

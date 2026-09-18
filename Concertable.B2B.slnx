@@ -27,6 +27,10 @@
     <Project Path="api/src/Modules/Admin/Tests/Concertable.B2B.Admin.IntegrationTests/Concertable.B2B.Admin.IntegrationTests.csproj" />
     <Project Path="api/src/Modules/Admin/Tests/Concertable.B2B.Admin.UnitTests/Concertable.B2B.Admin.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/Modules/Authorization/">
+    <Project Path="api/src/Modules/Authorization/Concertable.B2B.Authorization.Contracts/Concertable.B2B.Authorization.Contracts.csproj" />
+    <Project Path="api/src/Modules/Authorization/Concertable.B2B.Authorization.Infrastructure/Concertable.B2B.Authorization.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/Modules/Artist/">
     <Project Path="api/src/Modules/Artist/Concertable.B2B.Artist.Api/Concertable.B2B.Artist.Api.csproj" />
     <Project Path="api/src/Modules/Artist/Concertable.B2B.Artist.Application/Concertable.B2B.Artist.Application.csproj" />

@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess;
 using Concertable.Seed.Shared;
@@ -26,16 +27,15 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddConversationsModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<ConversationsDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseSqlServer(sp.GetRequiredService<DbConnection>())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
-                    sp.GetRequiredService<VenueArtistTenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
         services.AddDbContext<ConversationsPrivilegedDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseSqlServer(sp.GetRequiredService<DbConnection>())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
@@ -49,6 +49,7 @@ public static class ServiceCollectionExtensions
         services.Configure<SafetySettings>(configuration.GetSection(SafetySettings.SectionName));
 
         services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddScoped<IThreadRepository, ThreadRepository>();
         services.AddScoped<IContentReportRepository, ContentReportRepository>();
         services.AddScoped<IMessagePrivilegedRepository, MessagePrivilegedRepository>();
         services.AddScoped<IContentReportPrivilegedRepository, ContentReportPrivilegedRepository>();

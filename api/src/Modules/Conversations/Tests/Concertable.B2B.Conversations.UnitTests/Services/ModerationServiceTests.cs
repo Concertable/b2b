@@ -10,10 +10,12 @@ namespace Concertable.B2B.Conversations.UnitTests.Services;
 
 public sealed class ModerationServiceTests
 {
+    private const int ThreadId = 3;
+
     private static readonly Guid AdminUserId = Guid.NewGuid();
 
     private static MessageEntity Message() =>
-        MessageEntity.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+        MessageEntity.Create(ThreadId, Guid.NewGuid(), Guid.NewGuid(),
             "content", new DateTime(2026, 1, 1));
 
     private static ContentReportEntity Report() =>

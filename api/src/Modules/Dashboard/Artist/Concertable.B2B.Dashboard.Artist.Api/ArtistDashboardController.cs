@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Dashboard.Artist.Api;
 
 [ApiController]
-[RequiredTenantType(TenantType.Artist)]
-[HasPermission(SharedPermissions.OperationsView)]
+[RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
+[HasPermission(TenantPermission.OperationsView)]
 [Route("api/artist-dashboard")]
 internal sealed class ArtistDashboardController : ControllerBase
 {

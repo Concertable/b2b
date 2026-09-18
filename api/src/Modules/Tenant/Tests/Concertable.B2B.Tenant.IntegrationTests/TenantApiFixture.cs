@@ -18,6 +18,7 @@ public sealed class TenantApiFixture : ApiFixture
 
     public IQueryable<TenantEntity> Tenants => dbContext.Tenants.AsNoTracking();
     public IQueryable<TenantMembershipEntity> Memberships => dbContext.Memberships.AsNoTracking();
+    public IQueryable<TenantBusinessProfileEntity> BusinessProfiles => dbContext.BusinessProfiles.AsNoTracking();
     public IQueryable<TenantInvitationEntity> Invitations => dbContext.Invitations.AsNoTracking();
     public IQueryable<TenantVerificationEntity> Verifications =>
         dbContext.Verifications.Include(verification => verification.Documents).AsNoTracking();
@@ -32,6 +33,7 @@ public sealed class TenantApiFixture : ApiFixture
 
     public async Task AddMembershipAsync(Guid tenantId, Guid userId, TenantRole role)
     {
+        using var seeding = EnterSeedingScope();
         dbContext.Memberships.Add(
             TenantMembershipEntity.Create(tenantId, userId, role, invitedBy: null, DateTime.UtcNow));
         await dbContext.SaveChangesAsync();
@@ -45,11 +47,8 @@ public sealed class TenantApiFixture : ApiFixture
         DateTime expiresAt)
     {
         var now = DateTime.UtcNow;
-        var tenant = await dbContext.Tenants.AsNoTracking()
-            .FirstOrDefaultAsync(value => value.Id == tenantId);
         var invitation = TenantInvitationEntity.Create(
             tenantId,
-            tenant?.Type ?? TenantType.Venue,
             email.Trim().ToLowerInvariant(),
             role,
             createdBy,

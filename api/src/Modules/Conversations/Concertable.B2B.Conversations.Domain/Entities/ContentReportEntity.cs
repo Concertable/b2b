@@ -1,5 +1,4 @@
 using Concertable.B2B.Conversations.Domain.Enums;
-using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Conversations.Domain.Entities;
 
@@ -8,7 +7,7 @@ namespace Concertable.B2B.Conversations.Domain.Entities;
 /// recorded against it. <see cref="MessageExcerpt"/> is a snapshot taken at report time so the record
 /// still evidences what was reported after the message itself is hidden.
 /// </summary>
-public sealed class ContentReportEntity : IIdEntity, IVenueArtistTenantScoped
+public sealed class ContentReportEntity : IIdEntity
 {
     public const int MaxExcerptLength = 500;
 
@@ -16,8 +15,7 @@ public sealed class ContentReportEntity : IIdEntity, IVenueArtistTenantScoped
 
     public int Id { get; private set; }
     public int MessageId { get; private set; }
-    public Guid VenueTenantId { get; private set; }
-    public Guid ArtistTenantId { get; private set; }
+    public int ThreadId { get; private set; }
     public Guid ReporterTenantId { get; private set; }
     public Guid ReportedTenantId { get; private set; }
     public Guid ReportedByUserId { get; private set; }
@@ -42,8 +40,7 @@ public sealed class ContentReportEntity : IIdEntity, IVenueArtistTenantScoped
         DateTime submittedAt) => new()
         {
             MessageId = message.Id,
-            VenueTenantId = message.VenueTenantId,
-            ArtistTenantId = message.ArtistTenantId,
+            ThreadId = message.ThreadId,
             ReporterTenantId = reporterTenantId,
             ReportedTenantId = message.SenderTenantId,
             ReportedByUserId = reportedByUserId,
