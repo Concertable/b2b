@@ -34,7 +34,9 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddBookingModule(IConfiguration configuration)
         {
             services.AddDbContext<BookingDbContext>((provider, options) =>
-                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
@@ -43,7 +45,7 @@ public static class ServiceCollectionExtensions
                     .UseSeedingSupport(provider));
 
             services.AddDbContext<BookingReadDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                options.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IBookingReadDbContext>(provider =>
                 provider.GetRequiredService<BookingReadDbContext>());

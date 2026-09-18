@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <ConcertableDotNetPlatformVersion>0.2.0-alpha.0.5</ConcertableDotNetPlatformVersion>
+    <ConcertableDotNetPlatformVersion>0.2.0-alpha.0.12</ConcertableDotNetPlatformVersion>
     <!-- Each service publishes on its own train, so a service package cannot track the platform
          version; a shared literal here silently ships a stale client for whichever service moved. -->
     <ConcertableAuthVersion>0.2.0-alpha.0.297</ConcertableAuthVersion>
@@ -24,9 +24,10 @@
     <PackageVersion Include="Concertable.Payment.Hosting" Version="$(ConcertablePaymentVersion)" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.1.2" />
     <PackageVersion Include="Aspire.Hosting.Azure.ServiceBus" Version="13.3.2" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.3.2" />
     <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.3.2" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.3.2" />
-    <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.1.2" />
+    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
     <PackageVersion Include="Dunet" Version="1.16.2" />
     <PackageVersion Include="Dapper" Version="2.1.72" />
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
@@ -42,13 +43,13 @@
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.7" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.3" />
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.3" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.3" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="10.0.3" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.4" />
+    <PackageVersion Include="Npgsql" Version="10.0.3" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="10.0.3" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.8" />

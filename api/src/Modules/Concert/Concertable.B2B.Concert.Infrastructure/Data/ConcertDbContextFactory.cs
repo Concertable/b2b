@@ -1,14 +1,16 @@
 using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
 
 internal sealed class ConcertDbContextFactory : B2BDesignTimeDbContextFactory<ConcertDbContext>
 {
-    protected override ConcertDbContext Create(DbContextOptions<ConcertDbContext> options) =>
-        new(options, new ConcertConfigurationProvider(), DesignTimeTenantContext.Instance);
+    protected override string MigrationsSchema => Schema.Name;
 
-    protected override void ConfigureSqlServer(SqlServerDbContextOptionsBuilder sql) =>
-        sql.UseNetTopologySuite();
+    protected override ConcertDbContext Create(DbContextOptions<ConcertDbContext> options) =>
+        new(options, DefaultOutboxOptions, new ConcertConfigurationProvider(), DesignTimeTenantContext.Instance);
+
+    protected override void ConfigureNpgsql(NpgsqlDbContextOptionsBuilder npgsql) =>
+        npgsql.UseNetTopologySuite();
 }

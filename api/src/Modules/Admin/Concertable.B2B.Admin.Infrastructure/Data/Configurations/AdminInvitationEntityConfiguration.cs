@@ -18,6 +18,6 @@ internal sealed class AdminInvitationEntityConfiguration : IEntityTypeConfigurat
         // One live invite per email; filtered on Pending so a revoked/expired one doesn't block a re-invite.
         builder.HasIndex(i => i.Email)
             .IsUnique()
-            .HasFilter($"[Status] = {(int)AdminInvitationStatus.Pending}");
+            .HasFilter($"\"Status\" = {(int)AdminInvitationStatus.Pending}");
     }
 }

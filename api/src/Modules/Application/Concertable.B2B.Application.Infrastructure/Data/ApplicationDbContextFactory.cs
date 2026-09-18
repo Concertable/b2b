@@ -5,6 +5,8 @@ namespace Concertable.B2B.Application.Infrastructure.Data;
 
 internal sealed class ApplicationDbContextFactory : B2BDesignTimeDbContextFactory<ApplicationDbContext>
 {
+    protected override string MigrationsSchema => Schema.Name;
+
     protected override ApplicationDbContext Create(DbContextOptions<ApplicationDbContext> options) =>
-        new(options, new ApplicationConfigurationProvider(), DesignTimeTenantContext.Instance);
+        new(options, DefaultOutboxOptions, new ApplicationConfigurationProvider(), DesignTimeTenantContext.Instance);
 }

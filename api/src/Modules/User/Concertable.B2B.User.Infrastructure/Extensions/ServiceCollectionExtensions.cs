@@ -24,9 +24,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddUserModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<UserDbContext>((sp, opt) =>
-            opt.UseSqlServer(
+            opt.UseNpgsql(
                     configuration.GetConnectionString(B2BDb.Name),
-                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name)
+                        .UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())

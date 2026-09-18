@@ -21,7 +21,7 @@ B2B owns the venue/artist side of Concertable: opportunities, applications, book
 | `Concertable.B2B.DataAccess` | Shared csproj | Shared data-access primitives: tenant query filters, the per-stance DbContext base classes, and repositories. |
 | `Concertable.B2B.AppHost` | Aspire AppHost | Local-dev orchestrator only. |
 
-**Database:** `B2BDb` (SQL Server). Artist, Venue, and Concert each use a tenant-bound tracked/write
+**Database:** `B2BDb` (PostgreSQL). Artist, Venue, and Concert each use a tenant-bound tracked/write
 `<Module>DbContext` plus a tenant-independent read-only `<Module>ReadDbContext`. Conversations also has
 `ConversationsPrivilegedDbContext` for tenant-independent administrative (moderation) writes.
 
@@ -117,7 +117,7 @@ The bus (`AddAzureServiceBusTransport`) is for **cross-service** events only. In
 
 ## Tech stack
 
-.NET 9 · EF Core + SQL Server · Azure Service Bus (ASB emulator in dev) · `Concertable.Messaging` (Outbox/Inbox/Transport) · NetTopologySuite (geometry) · Duende IdentityServer (Auth service) · Aspire (`Concertable.ServiceDefaults`) · SignalR (real-time notifications) · `Concertable.Shared.{Blob,Email,Geocoding,Imaging,Pdf}`
+.NET 10 · EF Core + Npgsql/PostgreSQL · Azure Service Bus (ASB emulator in dev) · `Concertable.Messaging` (Outbox/Inbox/Transport) · NetTopologySuite (geometry) · Duende IdentityServer (Auth service) · Aspire (`Concertable.ServiceDefaults`) · SignalR (real-time notifications) · `Concertable.Shared.{Blob,Email,Geocoding,Imaging,Pdf}`
 
 ---
 

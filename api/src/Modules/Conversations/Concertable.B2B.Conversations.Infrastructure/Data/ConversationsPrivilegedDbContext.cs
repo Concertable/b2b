@@ -1,5 +1,7 @@
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Data;
 
@@ -10,8 +12,9 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data;
 /// </summary>
 internal sealed class ConversationsPrivilegedDbContext(
     DbContextOptions<ConversationsPrivilegedDbContext> options,
+    IOptions<OutboxOptions> outboxOptions,
     ConversationsConfigurationProvider provider)
-    : PrivilegedDbContext(options, provider, Schema.Name)
+    : PrivilegedDbContext(options, outboxOptions, provider, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();

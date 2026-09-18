@@ -30,7 +30,7 @@ public sealed class ResourceGraphTests
     [Fact]
     public async Task ProductionGraphAndStrictValidation_AreValid()
     {
-        var validBuilder = AppHost.CreateBuilder([]);
+        var validBuilder = AppHost.CreateBuilder(["--Stripe:SecretKey="]);
         AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "http");
         AssertContainerRuntimeArgs(validBuilder, AuthConstants.Resource, "--user", "root");
         AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
@@ -45,7 +45,25 @@ public sealed class ResourceGraphTests
         var paymentEnvironment = await GetRawEnvironmentAsync(payment, CancellationToken.None);
         Assert.Equal("8080;8081", paymentEnvironment["ASPNETCORE_HTTP_PORTS"]);
         Assert.Equal("8081", paymentEnvironment["PaymentTransport__GrpcPort"]);
-        foreach (var resourceName in new[] { B2BConstants.WebResource, B2BConstants.WorkersResource })
+        var migrations = Assert.IsType<ProjectResource>(validBuilder.Resources.Single(resource =>
+            resource.Name == B2BMigrations.Name));
+        Assert.NotEmpty(migrations.Annotations.OfType<EnvironmentCallbackAnnotation>());
+        AssertWaitsFor(
+            validBuilder,
+            B2BMigrations.Name,
+            B2BDatabase.Name,
+            WaitType.WaitUntilHealthy);
+        AssertWaitsFor(
+            validBuilder,
+            B2BWeb.Name,
+            B2BMigrations.Name,
+            WaitType.WaitForCompletion);
+        AssertWaitsFor(
+            validBuilder,
+            B2BWorkers.Name,
+            B2BMigrations.Name,
+            WaitType.WaitForCompletion);
+        foreach (var resourceName in new[] { B2BWeb.Name, B2BWorkers.Name })
         {
             var consumer = validBuilder.Resources.Single(resource => resource.Name == resourceName);
             var consumerEnvironment = await GetRawEnvironmentAsync(consumer, CancellationToken.None);
@@ -71,7 +89,7 @@ public sealed class ResourceGraphTests
 
         Assert.True(builder.ExecutionContext.IsPublishMode);
         Assert.Single(builder.Resources, resource => resource.Name == PaymentConstants.StripeCliResource);
-        foreach (var resourceName in new[] { B2BConstants.WebResource, B2BConstants.WorkersResource })
+        foreach (var resourceName in new[] { B2BWeb.Name, B2BWorkers.Name })
         {
             var consumer = builder.Resources.Single(resource => resource.Name == resourceName);
             var consumerEnvironment = await GetRawEnvironmentAsync(consumer, CancellationToken.None);
@@ -193,7 +211,7 @@ public sealed class ResourceGraphTests
         var auth = Assert.IsAssignableFrom<IResourceWithEnvironment>(
             builder.Resources.Single(resource => resource.Name == AuthConstants.Resource));
         var b2b = Assert.IsAssignableFrom<IResourceWithEnvironment>(
-            builder.Resources.Single(resource => resource.Name == B2BConstants.WebResource));
+            builder.Resources.Single(resource => resource.Name == B2BWeb.Name));
         var executionContext = new DistributedApplicationExecutionContext(DistributedApplicationOperation.Publish);
         var authConfiguration = await ExecutionConfigurationBuilder.Create(auth)
             .WithEnvironmentVariablesConfig()
@@ -379,5 +397,21 @@ public sealed class ResourceGraphTests
         Assert.Equal(endpointName, endpoint.Name);
         Assert.Equal(scheme, endpoint.UriScheme);
         Assert.Equal(targetPort, endpoint.TargetPort);
+    }
+
+    private static void AssertWaitsFor(
+        IDistributedApplicationBuilder builder,
+        string resourceName,
+        string dependencyName,
+        WaitType waitType)
+    {
+        var resource = builder.Resources.Single(candidate => candidate.Name == resourceName);
+        var wait = Assert.Single(
+            resource.Annotations.OfType<WaitAnnotation>(),
+            annotation => annotation.Resource.Name == dependencyName);
+
+        Assert.Equal(waitType, wait.WaitType);
+        if (waitType == WaitType.WaitForCompletion)
+            Assert.Equal(0, wait.ExitCode);
     }
 }

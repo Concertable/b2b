@@ -48,7 +48,9 @@ internal static class ServiceCollectionExtensions
         services.AddInMemoryTransport();
         services.AddDirectBusKeyed("webhook");
         services.AddOutbox(
-            opt => opt.UseSqlServer(configuration.GetConnectionString(B2BDb.Name)),
+            opt => opt.UseNpgsql(
+                configuration.GetConnectionString(B2BDb.Name),
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory_Outbox", "messaging")),
             runDispatcher: false);
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();

@@ -28,10 +28,6 @@ public sealed class BookingApiFixture : ApiFixture
     internal void ArmBookingConflict(Func<Task> competingChange) =>
         Conflicts.ArmOnce<BookingEntity>(competingChange);
 
-    // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause, and SQL
-    // Server rejects OUTPUT against a table that has an enabled trigger. It must name a column every booking
-    // update writes -- SQL Server skips constraints whose columns the UPDATE leaves alone -- and NOCHECK
-    // keeps the rows already seeded valid.
     internal Task FailBookingUpdatesAsync()
     {
         var state = dbContext.Database.DelimitIdentifier("State");
@@ -50,9 +46,9 @@ public sealed class BookingApiFixture : ApiFixture
 
     internal Task<int> GetConcertCountAsync(int bookingId) =>
         dbContext.Database.SqlQuery<int>($"""
-                SELECT COUNT(*) AS [Value]
-                FROM [concert].[Concerts]
-                WHERE [BookingId] = {bookingId}
+                SELECT COUNT(*)::int AS "Value"
+                FROM concert."Concerts"
+                WHERE "BookingId" = {bookingId}
                 """)
             .SingleAsync();
 

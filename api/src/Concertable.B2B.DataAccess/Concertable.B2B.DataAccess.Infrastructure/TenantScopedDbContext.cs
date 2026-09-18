@@ -1,7 +1,9 @@
 using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
@@ -24,10 +26,11 @@ public abstract class TenantScopedDbContext : DbContextBase, IHasTenantContext
 
     protected TenantScopedDbContext(
         DbContextOptions options,
+        IOptions<OutboxOptions> outboxOptions,
         IEntityTypeConfigurationProvider provider,
         ITenantContext tenantContext,
         string defaultSchema)
-        : base(options)
+        : base(options, outboxOptions)
     {
         this.provider = provider;
         this.defaultSchema = defaultSchema;

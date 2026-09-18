@@ -19,14 +19,14 @@ namespace Concertable.B2B.Admin.Infrastructure.Data.Migrations
                 schema: "admin",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    AcceptedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    AcceptedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    AcceptedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AcceptedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -38,7 +38,7 @@ namespace Concertable.B2B.Admin.Infrastructure.Data.Migrations
                 schema: "admin",
                 columns: table => new
                 {
-                    Sub = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    Sub = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -51,7 +51,7 @@ namespace Concertable.B2B.Admin.Infrastructure.Data.Migrations
                 table: "AdminInvitations",
                 column: "Email",
                 unique: true,
-                filter: "[Status] = 1");
+                filter: "\"Status\" = 1");
         }
 
         /// <inheritdoc />

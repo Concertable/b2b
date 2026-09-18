@@ -5,7 +5,9 @@ using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel.Identity;
 using Concertable.Messaging.Contracts;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Conversations.UnitTests.Handlers;
 
@@ -73,6 +75,7 @@ public sealed class ParticipantProfileProjectionHandlerTests
     private static ConversationsDbContext NewContext(string databaseName) =>
         new(
             new DbContextOptionsBuilder<ConversationsDbContext>().UseInMemoryDatabase(databaseName).Options,
+            Options.Create(new OutboxOptions()),
             new ConversationsConfigurationProvider(),
             new StubTenantContext(Guid.NewGuid()));
 

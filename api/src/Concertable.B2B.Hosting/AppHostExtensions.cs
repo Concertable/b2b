@@ -10,10 +10,25 @@ public static class AppHostExtensions
 {
     extension(IDistributedApplicationBuilder builder)
     {
+        public IResourceBuilder<ServiceContainerResource> AddB2BMigrations(
+            string image,
+            string digest,
+            IResourceBuilder<PostgresDatabaseResource> database) =>
+            builder.AddContainerImage(B2BMigrations.Name, image, digest)
+                .WithReference(database)
+                .WaitFor(database);
+
+        public IResourceBuilder<ProjectResource> AddB2BMigrations<TProject>(
+            IResourceBuilder<PostgresDatabaseResource> database)
+            where TProject : IProjectMetadata, new() =>
+            builder.AddProject<TProject>(B2BMigrations.Name)
+                .WithReference(database)
+                .WaitFor(database);
+
         public IResourceBuilder<ServiceContainerResource> AddB2BWeb(
             string image,
             string digest,
-            IResourceBuilder<SqlServerDatabaseResource> sql,
+            IResourceBuilder<PostgresDatabaseResource> sql,
             IResourceBuilder<IResourceWithServiceDiscovery> auth,
             IResourceBuilder<AzureStorageResource> storage,
             IResourceBuilder<AzureBlobStorageResource> blobs,
@@ -21,8 +36,8 @@ public static class AppHostExtensions
             IResourceBuilder<IResourceWithServiceDiscovery> paymentWeb)
         {
             var b2bSecret = builder.Configuration["ServiceAuth:B2BClientSecret"];
-            return builder.AddContainerImage(B2BConstants.WebResource, image, digest)
-                          .WithHttpEndpoint(targetPort: B2BConstants.ContainerPort, name: "https")
+            return builder.AddContainerImage(B2BWeb.Name, image, digest)
+                          .WithHttpEndpoint(targetPort: B2BWeb.ContainerPort, name: "https")
                           .WithReference(sql)
                           .WaitFor(sql)
                           .WithReference(auth)
@@ -35,13 +50,13 @@ public static class AppHostExtensions
                           .WaitFor(paymentWeb)
                           .WithEnvironment("Auth__Authority", auth.GetEndpoint("https"))
                           .WithSpaCorsOrigins(B2BLocalSpaSurfaces.All)
-                          .WithEnvironment(AzureServiceBusOptions.ServiceNameEnvVar, B2BConstants.ServiceName)
-                          .WithEnvironment("ServiceAuth__ClientId", "concertable-b2b")
+                          .WithEnvironment(AzureServiceBusOptions.ServiceNameEnvVar, B2BService.Name)
+                          .WithEnvironment("ServiceAuth__ClientId", B2BService.Name)
                           .WithOptionalEnvironment("ServiceAuth__ClientSecret", b2bSecret);
         }
 
         public IResourceBuilder<ProjectResource> AddB2BWeb<TProject>(
-            IResourceBuilder<SqlServerDatabaseResource> sql,
+            IResourceBuilder<PostgresDatabaseResource> sql,
             IResourceBuilder<IResourceWithServiceDiscovery> auth,
             IResourceBuilder<AzureStorageResource> storage,
             IResourceBuilder<AzureBlobStorageResource> blobs,
@@ -50,7 +65,7 @@ public static class AppHostExtensions
             where TProject : IProjectMetadata, new()
         {
             var b2bSecret = builder.Configuration["ServiceAuth:B2BClientSecret"];
-            return builder.AddProject<TProject>(B2BConstants.WebResource)
+            return builder.AddProject<TProject>(B2BWeb.Name)
                           .WithReference(sql)
                           .WaitFor(sql)
                           .WithReference(auth)
@@ -63,18 +78,18 @@ public static class AppHostExtensions
                           .WaitFor(paymentWeb)
                           .WithEnvironment("Auth__Authority", auth.GetEndpoint("https"))
                           .WithSpaCorsOrigins(B2BLocalSpaSurfaces.All)
-                          .WithEnvironment(AzureServiceBusOptions.ServiceNameEnvVar, B2BConstants.ServiceName)
-                          .WithEnvironment("ServiceAuth__ClientId", "concertable-b2b")
+                          .WithEnvironment(AzureServiceBusOptions.ServiceNameEnvVar, B2BService.Name)
+                          .WithEnvironment("ServiceAuth__ClientId", B2BService.Name)
                           .WithOptionalEnvironment("ServiceAuth__ClientSecret", b2bSecret);
         }
 
         public IResourceBuilder<AzureFunctionsProjectResource> AddB2BWorkers<TProject>(
-            IResourceBuilder<SqlServerDatabaseResource> sql,
+            IResourceBuilder<PostgresDatabaseResource> sql,
             IResourceBuilder<IResourceWithServiceDiscovery>? paymentWeb = null,
             IResourceBuilder<IResourceWithServiceDiscovery>? auth = null)
             where TProject : IProjectMetadata, new()
         {
-            var workers = builder.AddAzureFunctionsProject<TProject>(B2BConstants.WorkersResource)
+            var workers = builder.AddAzureFunctionsProject<TProject>(B2BWorkers.Name)
                                  .WithReference(sql)
                                  .WaitFor(sql);
 
@@ -85,7 +100,7 @@ public static class AppHostExtensions
                 workers = workers.WithReference(auth)
                                  .WaitFor(auth)
                                  .WithEnvironment("Auth__Authority", auth.GetEndpoint("https"))
-                                 .WithEnvironment("ServiceAuth__ClientId", "concertable-b2b")
+                                 .WithEnvironment("ServiceAuth__ClientId", B2BService.Name)
                                  .WithOptionalEnvironment("ServiceAuth__ClientSecret", builder.Configuration["ServiceAuth:B2BClientSecret"]);
 
             return workers;
@@ -95,7 +110,7 @@ public static class AppHostExtensions
             IResourceBuilder<AzureServiceBusResource> asb)
             where TProject : IProjectMetadata, new()
         {
-            return builder.AddProject<TProject>(B2BConstants.SeedingSimulatorResource)
+            return builder.AddProject<TProject>(B2BSeedingSimulator.Name)
                           .WithReference(asb)
                           .WaitFor(asb);
         }
@@ -103,11 +118,11 @@ public static class AppHostExtensions
         public IResourceBuilder<ServiceContainerResource> AddB2BWorkers(
             string image,
             string digest,
-            IResourceBuilder<SqlServerDatabaseResource> sql,
+            IResourceBuilder<PostgresDatabaseResource> sql,
             IResourceBuilder<IResourceWithServiceDiscovery>? paymentWeb = null,
             IResourceBuilder<IResourceWithServiceDiscovery>? auth = null)
         {
-            var workers = builder.AddContainerImage(B2BConstants.WorkersResource, image, digest)
+            var workers = builder.AddContainerImage(B2BWorkers.Name, image, digest)
                                  .WithReference(sql)
                                  .WaitFor(sql);
 
@@ -118,7 +133,7 @@ public static class AppHostExtensions
                 workers = workers.WithReference(auth)
                                  .WaitFor(auth)
                                  .WithEnvironment("Auth__Authority", auth.GetEndpoint("https"))
-                                 .WithEnvironment("ServiceAuth__ClientId", "concertable-b2b")
+                                 .WithEnvironment("ServiceAuth__ClientId", B2BService.Name)
                                  .WithOptionalEnvironment("ServiceAuth__ClientSecret", builder.Configuration["ServiceAuth:B2BClientSecret"]);
 
             return workers;
@@ -129,7 +144,7 @@ public static class AppHostExtensions
             string digest,
             IResourceBuilder<AzureServiceBusResource> asb)
         {
-            return builder.AddContainerImage(B2BConstants.SeedingSimulatorResource, image, digest)
+            return builder.AddContainerImage(B2BSeedingSimulator.Name, image, digest)
                           .WithReference(asb)
                           .WaitFor(asb);
         }
