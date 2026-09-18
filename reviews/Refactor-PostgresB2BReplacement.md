@@ -47,3 +47,17 @@ migration job twice against a clean PostgreSQL database with thirteen history ta
 NuGet candidates and clean consumer restore/build; four OCI archives; promotion-config validation;
 Syft/Trivy/hash/secret integrity checks; startup graph 16/16; generated Reqnroll output clean; and
 `git diff --check`.
+
+## Review pass  2026-09-18  incremental
+
+**Candidate head:** `9bf9d59f`
+**Pass judgment:** `approved`
+
+### Findings
+
+No findings. The three base commits add a stable persisted acceptance-operation id and document the
+owned-child repository exception. The merge preserved the PostgreSQL xmin mapping and the CI-discovery debt
+entry; the behavior change does not alter the mapped Application model.
+
+Verification: Application integration 77/77, including the repeated-checkout regression, and all eleven
+PostgreSQL migration snapshots report no pending model changes.
