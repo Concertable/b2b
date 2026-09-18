@@ -1,6 +1,7 @@
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.DataAccess.Application;
@@ -35,8 +36,8 @@ public static class E2EAdminExtensions
 
             services.AddSingleton(new E2EAdminOptions(
                 adminKey,
-                configuration.GetConnectionString("B2BDb")
-                    ?? throw new InvalidOperationException("Connection string 'B2BDb' is required by the B2B E2E host.")));
+                configuration.GetConnectionString(B2BDb.Name)
+                    ?? throw new InvalidOperationException($"Connection string '{B2BDb.Name}' is required by the B2B E2E host.")));
             services.AddHttpContextAccessor();
             services.AddScoped<B2BDatabaseResetter>();
             services.AddScoped<B2BHostInitializer>();
@@ -189,7 +190,8 @@ public static class E2EAdminExtensions
                 PaymentOperationReferences.MethodVerification(applicationId),
                 PaymentSessionKind.PaymentMethodVerification,
                 venueTenantId,
-                configuration["Legal:MandateTermsVersion"]));
+                configuration["Legal:MandateTermsVersion"]
+                    ?? throw new InvalidOperationException("Legal:MandateTermsVersion is required by the B2B E2E host.")));
 
         if (!setup.TryGetValue(out var session))
         {

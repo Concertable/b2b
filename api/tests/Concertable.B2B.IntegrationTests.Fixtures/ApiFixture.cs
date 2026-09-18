@@ -93,7 +93,7 @@ public class ApiFixture : IAsyncLifetime
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:B2BDb"] = postgresFixture.ConnectionString,
+                    [$"ConnectionStrings:{B2BDb.Name}"] = postgresFixture.ConnectionString,
                     ["ExternalServices:UseRealStripe"] = "false",
                     ["ExternalServices:UseRealBlob"] = "false",
                     ["ExternalServices:UseRealEmail"] = "false",

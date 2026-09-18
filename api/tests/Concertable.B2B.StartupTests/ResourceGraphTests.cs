@@ -5,6 +5,7 @@ using Concertable.B2B.Admin.Contracts;
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Hosting;
 using Concertable.B2B.Hosting.Frontend;
 using Concertable.B2B.Seed.Simulator;
@@ -46,24 +47,24 @@ public sealed class ResourceGraphTests
         Assert.Equal("8080;8081", paymentEnvironment["ASPNETCORE_HTTP_PORTS"]);
         Assert.Equal("8081", paymentEnvironment["PaymentTransport__GrpcPort"]);
         var migrations = Assert.IsType<ProjectResource>(validBuilder.Resources.Single(resource =>
-            resource.Name == B2BConstants.MigrationsResource));
+            resource.Name == B2BMigrations.Name));
         Assert.NotEmpty(migrations.Annotations.OfType<EnvironmentCallbackAnnotation>());
         AssertWaitsFor(
             validBuilder,
-            B2BConstants.MigrationsResource,
-            B2BConstants.Database,
+            B2BMigrations.Name,
+            B2BDb.Name,
             WaitType.WaitUntilHealthy);
         AssertWaitsFor(
             validBuilder,
-            B2BConstants.WebResource,
-            B2BConstants.MigrationsResource,
+            B2BWeb.Name,
+            B2BMigrations.Name,
             WaitType.WaitForCompletion);
         AssertWaitsFor(
             validBuilder,
-            B2BConstants.WorkersResource,
-            B2BConstants.MigrationsResource,
+            B2BWorkers.Name,
+            B2BMigrations.Name,
             WaitType.WaitForCompletion);
-        foreach (var resourceName in new[] { B2BConstants.WebResource, B2BConstants.WorkersResource })
+        foreach (var resourceName in new[] { B2BWeb.Name, B2BWorkers.Name })
         {
             var consumer = validBuilder.Resources.Single(resource => resource.Name == resourceName);
             var consumerEnvironment = await GetRawEnvironmentAsync(consumer, CancellationToken.None);
@@ -89,7 +90,7 @@ public sealed class ResourceGraphTests
 
         Assert.True(builder.ExecutionContext.IsPublishMode);
         Assert.Single(builder.Resources, resource => resource.Name == PaymentConstants.StripeCliResource);
-        foreach (var resourceName in new[] { B2BConstants.WebResource, B2BConstants.WorkersResource })
+        foreach (var resourceName in new[] { B2BWeb.Name, B2BWorkers.Name })
         {
             var consumer = builder.Resources.Single(resource => resource.Name == resourceName);
             var consumerEnvironment = await GetRawEnvironmentAsync(consumer, CancellationToken.None);
@@ -211,7 +212,7 @@ public sealed class ResourceGraphTests
         var auth = Assert.IsAssignableFrom<IResourceWithEnvironment>(
             builder.Resources.Single(resource => resource.Name == AuthConstants.Resource));
         var b2b = Assert.IsAssignableFrom<IResourceWithEnvironment>(
-            builder.Resources.Single(resource => resource.Name == B2BConstants.WebResource));
+            builder.Resources.Single(resource => resource.Name == B2BWeb.Name));
         var executionContext = new DistributedApplicationExecutionContext(DistributedApplicationOperation.Publish);
         var authConfiguration = await ExecutionConfigurationBuilder.Create(auth)
             .WithEnvironmentVariablesConfig()

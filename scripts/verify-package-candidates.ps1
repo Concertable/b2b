@@ -117,7 +117,7 @@ var boundTypes = new[]
     typeof(Concertable.B2B.Venue.Contracts.IVenueModule),
 };
 
-Console.WriteLine($"{Concertable.B2B.Hosting.B2BConstants.ServiceName}:{boundTypes.Length}");
+Console.WriteLine($"{Concertable.B2B.Hosting.B2BService.Name}:{boundTypes.Length}");
 '@)
 
     [System.IO.File]::WriteAllText($configPath, @"
