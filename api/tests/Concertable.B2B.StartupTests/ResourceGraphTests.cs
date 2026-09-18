@@ -5,7 +5,6 @@ using Concertable.B2B.Admin.Contracts;
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
-using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Hosting;
 using Concertable.B2B.Hosting.Frontend;
 using Concertable.B2B.Seed.Simulator;
@@ -52,7 +51,7 @@ public sealed class ResourceGraphTests
         AssertWaitsFor(
             validBuilder,
             B2BMigrations.Name,
-            B2BDb.Name,
+            B2BDatabase.Name,
             WaitType.WaitUntilHealthy);
         AssertWaitsFor(
             validBuilder,

@@ -1,7 +1,6 @@
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Concertable.Auth.Hosting;
-using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Hosting;
 using Concertable.Payment.Hosting;
 using Xunit;
@@ -37,7 +36,7 @@ public sealed class ImageCompositionTests
         var web = builder.AddB2BWeb(
             "ghcr.io/concertable/b2b-web",
             Digest,
-            postgres.AddDatabase(B2BDb.Name),
+            postgres.AddDatabase(B2BDatabase.Name),
             auth,
             storage,
             blobs,
@@ -56,7 +55,7 @@ public sealed class ImageCompositionTests
     public void AddB2BMigrations_ByImage_ReferencesAndWaitsForPostgres()
     {
         var builder = DistributedApplication.CreateBuilder();
-        var database = builder.AddPostgres("postgres").AddDatabase(B2BDb.Name);
+        var database = builder.AddPostgres("postgres").AddDatabase(B2BDatabase.Name);
 
         var migrations = builder.AddB2BMigrations(
             "ghcr.io/concertable/b2b-migrations",

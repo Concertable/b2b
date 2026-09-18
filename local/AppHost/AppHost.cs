@@ -1,7 +1,6 @@
 using Concertable.B2B.Hosting.Frontend;
 using Aspire.Hosting;
 using Concertable.Auth.Hosting;
-using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Hosting;
 using Concertable.Payment.Hosting;
 using Concertable.Search.Hosting;
@@ -33,7 +32,7 @@ public static class AppHost
         var postgres = builder.AddPostgresContainer("concertable-b2b-postgres-data")
             .WithPostGis()
             .WithArgs("-c", "max_prepared_transactions=100");
-        var b2bDb = postgres.AddDatabase(B2BDb.Name);
+        var b2bDb = postgres.AddDatabase(B2BDatabase.Name);
         var sql = builder.AddSqlServer("sql").WithDataVolume("concertable-b2b-sql-data");
         var authDb = sql.AddDatabase(AuthConstants.Database);
         var paymentDb = sql.AddDatabase(PaymentConstants.Database);

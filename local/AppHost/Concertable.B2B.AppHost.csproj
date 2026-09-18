@@ -16,7 +16,6 @@
     <PackageReference Include="Aspire.Hosting.SqlServer" />
     <PackageReference Include="Concertable.AppHost.Shared" />
     <PackageReference Include="Concertable.Auth.Hosting" />
-    <ProjectReference Include="..\..\api\src\Concertable.B2B.DataAccess\Concertable.B2B.DataAccess.Infrastructure\Concertable.B2B.DataAccess.Infrastructure.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\..\api\src\Concertable.B2B.Hosting\Concertable.B2B.Hosting.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\..\api\src\Concertable.B2B.Migrations\Concertable.B2B.Migrations.csproj" />
     <PackageReference Include="Concertable.Frontend.Hosting" />
