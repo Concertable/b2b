@@ -6,17 +6,19 @@
 - Branch: `Refactor/PartyFoundationLegacyBindings`
 - Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
 - Prior implementation head: `f6ecc9bf` (P1 slices 1-3)
-- Current checkpoint: P1 4.3 Application command policy implemented and locally verified
+- Current checkpoint: P1 4.3 Application and Booking command policy implemented and locally verified
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Delivery gate: do not push or merge; the user authorized local P1 implementation and commits only.
 
 ## Current state
 
-P1 implementation is active on this branch. Slices 1-4 and the Application portion of 4.3 are implemented.
+P1 implementation is active on this branch. Slices 1-4 and the Application and Booking portions of 4.3 are implemented.
 Application apply, accept, reject, cancel and withdraw now execute through the root command transaction with
 locked current-membership authority, exact Proposal grants, privileged mutation repositories and a final
 post-flush authority check. Payment verification and its Booking handlers join the same root transaction,
 and module-owned artist, opportunity, deal and venue command facts enlist their privileged contexts.
+Booking cancellation now admits either accepted principal under `bookings.cancel` and the exact Operations
+grant, using the same locked membership/resource/final-validation sequence.
 
 Provider-real Application transition races now serialize to one successful transition and one conflict. The
 cross-module rollback probe reaches the Booking failure and proves that Application, Booking, Concert and
@@ -74,13 +76,19 @@ Tenant deletion removes owned activity rows first.
 - Payment verification uses the privileged Application stance, while Booking verification handlers resolve
   and mutate through their privileged repository and workflow in the same command transaction.
 - Save-interceptor race simulations were replaced with concurrent HTTP requests against the real provider.
+- Booking cancellation uses the exact `bookings.cancel` API permission, admits either accepted principal,
+  locks Booking and Operations grants, and revalidates authority after flush.
+- Booking payment verification uses the same resource lock as cancellation, so confirmation and cancellation
+  serialize without optimistic-concurrency leakage.
+- Booking save-interceptor races were replaced with provider-real concurrent cancellations and confirmation
+  outcomes.
 
 ## Next steps
 
 Continue in this order. Each slice ends with a solution build, unit/architecture gate and local commit.
 
-1. **4.3 — finish command policy on every mutation.** Migrate Booking cancellation, Concert
-   edit/post/door revenue/check-in/cancel, Concert summary sharing and member assignment. Delete
+1. **4.3 — finish command policy on every mutation.** Migrate Concert edit/post/door
+   revenue/check-in/cancel, Concert summary sharing and member assignment. Delete
    `ApplicationSide`; compute actions per exact operation.
 2. **4.2 completion — exact-scope reads.** Remove financial/proposal fields from summaries, split Summary,
    Operations, Terms and Finance routes and permission checks, delete generic private-detail endpoints, and
@@ -106,6 +114,8 @@ Continue in this order. Each slice ends with a solution build, unit/architecture
   operation reuse, persistence interruption, duplicate outcomes and invoice completion.
 - Application integration tier: 74 passed, including provider-real accept/reject, accept/cancel,
   accept/withdraw and competing-acceptance races.
+- Booking integration tier: 24 passed, including both-principal cancellation, outsider denial, duplicate
+  cancellation, capture/cancellation and payment-verification/cancellation races.
 - Cross-module rollback probe
   `CaptureSuccess_WhenBookingSaveFails_RollsBackBookingConcertAndOutboundMessages`: passed.
 

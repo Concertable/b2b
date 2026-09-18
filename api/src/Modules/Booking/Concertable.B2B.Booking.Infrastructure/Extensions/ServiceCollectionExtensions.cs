@@ -63,7 +63,9 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IBookingRepository, BookingRepository>();
             services.AddScoped<IBookingPrivilegedRepository, BookingPrivilegedRepository>();
             services.AddScoped<IContractRepository, ContractRepository>();
-            services.AddScoped<IBookingWorkflow, BookingWorkflow>();
+            services.AddScoped<BookingWorkflow>();
+            services.AddScoped<IBookingWorkflow>(provider =>
+                provider.GetRequiredService<BookingWorkflow>());
             services.AddScoped<IBookingService, BookingService>();
             services.AddScoped<IContractService, ContractService>();
             services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();

@@ -15,7 +15,9 @@ internal abstract partial record CancelBookingError : IError
         InvalidTransition(var error) => ErrorDefinition.Conflict<InvalidTransition>(
             $"A booking in {error.Current} cannot be cancelled."),
         Superseded(var bookingId) => ErrorDefinition.Conflict<Superseded>(
-            $"Booking {bookingId} changed while this cancellation was in flight.")
+            $"Booking {bookingId} changed while this cancellation was in flight."),
+        NotPermitted => ErrorDefinition.Forbidden<NotPermitted>(
+            "You are not permitted to cancel this booking.")
     };
 
     [ErrorCode("booking.cancel.not_found")]
@@ -26,4 +28,7 @@ internal abstract partial record CancelBookingError : IError
 
     [ErrorCode("booking.cancel.superseded")]
     public partial record Superseded(int BookingId);
+
+    [ErrorCode("booking.cancel.not_permitted")]
+    public partial record NotPermitted;
 }

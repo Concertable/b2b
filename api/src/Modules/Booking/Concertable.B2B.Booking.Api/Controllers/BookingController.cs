@@ -27,7 +27,7 @@ internal sealed class BookingController : ControllerBase
             : Ok(booking.ToSummary());
     }
 
-    [HasPermission(TenantPermission.ApplicationsDecide)]
+    [HasPermission(TenantPermission.BookingsCancel)]
     [HttpPost("{bookingId}/cancel")]
     public async Task<IActionResult> Cancel(int bookingId, CancellationToken ct) =>
         (await bookingService.CancelAsync(bookingId, ct)).ToNoContentOrProblem();

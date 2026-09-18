@@ -192,21 +192,17 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     #region Cancel under concurrency
 
     [Fact]
-    public async Task Cancel_WhenAnotherCancellationWinsTheRace_QueuesExactlyOneRefund()
+    public async Task ConcurrentCancellation_QueuesExactlyOneRefund()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var bookingId = await AcceptFlatFeeAsync(client);
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmBookingConflict(async () =>
-        {
-            var winner = await competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
+        var responses = await RaceAsync(
+            () => client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null),
+            () => competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null));
 
-        var loser = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
-
-        await loser.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        foreach (var response in responses)
+            await response.ShouldBe(HttpStatusCode.NoContent);
         Assert.Equal(BookingState.CancellationPending, await StateOfAsync(bookingId));
         var refund = Assert.Single(
             await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(1));
@@ -218,102 +214,97 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Cancel_WhenAnotherCancellationWinsTheRace_PublishesOneCancellationEvent()
+    public async Task ConcurrentCancellation_PublishesOneCancellationEvent()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var bookingId = await AcceptDoorSplitAsync(client);
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmBookingConflict(async () =>
-        {
-            var winner = await competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
+        var responses = await RaceAsync(
+            () => client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null),
+            () => competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null));
 
-        var loser = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
-
-        await loser.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
+        foreach (var response in responses)
+            await response.ShouldBe(HttpStatusCode.NoContent);
         Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
         Assert.Equal(1, await fixture.GetOutboxMessageCountAsync<BookingCancelledEvent>());
     }
 
     [Fact]
-    public async Task Cancel_WhenConfirmationWinsTheRace_ReturnsConflictAndKeepsTheConfirmedBooking()
+    public async Task CancellationAndConfirmation_WhenConcurrent_SerializeToOneTransition()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var bookingId = await AcceptFlatFeeAsync(client);
         var capture = await fixture.PaymentTransport.SingleCommandAsync<CaptureEscrowCommand>();
-        fixture.ArmBookingConflict(() => fixture.DispatchIntegrationEventAsync(
-            new CaptureEscrowSucceededEvent(capture.OperationId, capture.Reference),
-            MessageEnvelope.Create<CaptureEscrowSucceededEvent>(fixture.SeedNow)));
-
-        var cancellation = await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
-
-        await cancellation.ShouldBe(HttpStatusCode.Conflict);
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
-        var booking = await fixture.Bookings.SingleAsync(value => value.Id == bookingId);
-        Assert.Equal(BookingState.Confirmed, booking.State);
-        Assert.Null(booking.CancellationOperationId);
-        Assert.Equal(1, await fixture.GetConcertCountAsync(bookingId));
-        Assert.DoesNotContain(
-            fixture.PaymentTransport.Commands,
-            command => command is RefundEscrowCommand refund
-                && refund.Reference == PaymentOperationReferences.Escrow(bookingId));
-    }
-
-    [Fact]
-    public async Task Confirmation_WhenCancellationWinsTheRace_RefundsTheCapturedEscrow()
-    {
-        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var bookingId = await AcceptFlatFeeAsync(client);
-        var capture = await fixture.PaymentTransport.SingleCommandAsync<CaptureEscrowCommand>();
-        var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmBookingConflict(async () =>
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancellationTask = Task.Run(async () =>
         {
-            var winner = await competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
-            await winner.ShouldBe(HttpStatusCode.NoContent);
+            await start.Task;
+            return await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
         });
+        var confirmationTask = Task.Run(async () =>
+        {
+            await start.Task;
+            await fixture.DispatchIntegrationEventAsync(
+                new CaptureEscrowSucceededEvent(capture.OperationId, capture.Reference),
+                MessageEnvelope.Create<CaptureEscrowSucceededEvent>(fixture.SeedNow));
+        });
+        start.SetResult();
+        await confirmationTask;
+        var cancellation = await cancellationTask;
 
-        await fixture.DispatchIntegrationEventAsync(
-            new CaptureEscrowSucceededEvent(capture.OperationId, capture.Reference),
-            MessageEnvelope.Create<CaptureEscrowSucceededEvent>(fixture.SeedNow));
-
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
-        Assert.Equal(BookingState.CancellationPending, await StateOfAsync(bookingId));
-        Assert.Equal(0, await fixture.GetConcertCountAsync(bookingId));
-        Assert.Equal(
-            2,
-            (await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(2))
-                .Count(command => command.Reference == PaymentOperationReferences.Escrow(bookingId)));
+        var booking = await fixture.Bookings.SingleAsync(value => value.Id == bookingId);
+        if (booking.State == BookingState.Confirmed)
+        {
+            await cancellation.ShouldBe(HttpStatusCode.Conflict);
+            Assert.Null(booking.CancellationOperationId);
+            Assert.Equal(1, await fixture.GetConcertCountAsync(bookingId));
+        }
+        else
+        {
+            await cancellation.ShouldBe(HttpStatusCode.NoContent);
+            Assert.Equal(BookingState.CancellationPending, booking.State);
+            Assert.Equal(0, await fixture.GetConcertCountAsync(bookingId));
+            Assert.Contains(
+                await fixture.PaymentTransport.WaitForCommandsAsync<RefundEscrowCommand>(1),
+                refund => refund.Reference == PaymentOperationReferences.Escrow(bookingId));
+        }
     }
 
-    /// <summary>
-    /// A pre-commit handler runs inside the verification's own transaction and does not own it, so a lost race
-    /// rolls the verification back and surfaces: convergence is the redelivery, which reads the cancellation
-    /// that won and confirms nothing.
-    /// </summary>
     [Fact]
-    public async Task Cancel_WhenVerifyPaymentConfirmationLosesTheRace_ConvergesOnRedelivery()
+    public async Task CancellationAndPaymentVerification_WhenConcurrent_SerializeToOneTransition()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var applicationId = fixture.SeedState.DoorSplitApp.Id;
         var bookingId = await AcceptDoorSplitAsync(client);
-        var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmBookingConflict(async () =>
-        {
-            var winner = await competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
         var verified = new VerifyPaymentSucceededDomainEvent(
             new VerifyPaymentSucceeded(applicationId));
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancellationTask = Task.Run(async () =>
+        {
+            await start.Task;
+            return await client.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
+        });
+        var verificationTask = Task.Run(async () =>
+        {
+            await start.Task;
+            await fixture.DispatchPreCommitDomainEventAsync(verified);
+        });
+        start.SetResult();
+        await verificationTask;
+        var cancellation = await cancellationTask;
 
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(
-            () => fixture.DispatchPreCommitDomainEventAsync(verified));
-        await fixture.DispatchPreCommitDomainEventAsync(verified);
-
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
-        Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
-        Assert.Equal(0, await fixture.GetConcertCountAsync(bookingId));
+        var state = await StateOfAsync(bookingId);
+        if (state == BookingState.Confirmed)
+        {
+            await cancellation.ShouldBe(HttpStatusCode.Conflict);
+            Assert.Equal(1, await fixture.GetConcertCountAsync(bookingId));
+        }
+        else
+        {
+            await cancellation.ShouldBe(HttpStatusCode.NoContent);
+            Assert.Equal(BookingState.Cancelled, state);
+            Assert.Equal(0, await fixture.GetConcertCountAsync(bookingId));
+        }
     }
 
     [Fact]
@@ -359,13 +350,26 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
 
 
     [Fact]
-    public async Task Cancel_ShouldReturn403_WhenCallerIsArtist()
+    public async Task Cancel_ShouldSucceed_WhenCallerIsArtistPrincipal()
     {
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var bookingId = await AcceptFlatFeeAsync(venueClient);
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         var response = await artistClient.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
+
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        Assert.Equal(BookingState.CancellationPending, await StateOfAsync(bookingId));
+    }
+
+    [Fact]
+    public async Task Cancel_ShouldReturn403_WhenCallerIsNotAPrincipal()
+    {
+        var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var bookingId = await AcceptFlatFeeAsync(venueClient);
+        var unrelatedClient = fixture.CreateClient(fixture.SeedState.VenueManager2);
+
+        var response = await unrelatedClient.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
         Assert.Equal(BookingState.AwaitingConfirmation, await StateOfAsync(bookingId));
@@ -420,6 +424,24 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
 
     private async Task<BookingState> StateOfAsync(int bookingId) =>
         (await fixture.Bookings.SingleAsync(value => value.Id == bookingId)).State;
+
+    private static async Task<HttpResponseMessage[]> RaceAsync(
+        Func<Task<HttpResponseMessage>> first,
+        Func<Task<HttpResponseMessage>> second)
+    {
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<HttpResponseMessage> RunAsync(Func<Task<HttpResponseMessage>> request)
+        {
+            await start.Task;
+            return await request();
+        }
+
+        var firstTask = RunAsync(first);
+        var secondTask = RunAsync(second);
+        start.SetResult();
+        return await Task.WhenAll(firstTask, secondTask);
+    }
 
     private sealed record ApplicationBoundaryResponse(ApplicationActionsBoundaryResponse Actions);
     private sealed record ApplicationActionsBoundaryResponse(ActionBoundaryResponse? Cancel);
