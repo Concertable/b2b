@@ -1,5 +1,7 @@
 ﻿using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
@@ -13,4 +15,15 @@ internal interface IConcertPrivilegedRepository : IRepository<ConcertEntity>
     Task<ConcertEntity?> GetWithGrantsByIdAsync(int concertId, CancellationToken ct = default);
 
     Task<ConcertAccessIdentity?> GetIdentityByIdForUpdateAsync(int concertId, CancellationToken ct = default);
+
+    Task<ConcertState?> GetStateByIdAsync(
+        int concertId,
+        CancellationToken ct = default);
+
+    Task<bool> CanManageAsync(
+        int concertId,
+        MembershipSnapshot actor,
+        ResourceAudience audience,
+        DateTime at,
+        CancellationToken ct = default);
 }

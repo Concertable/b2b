@@ -6,19 +6,21 @@
 - Branch: `Refactor/PartyFoundationLegacyBindings`
 - Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
 - Prior implementation head: `f6ecc9bf` (P1 slices 1-3)
-- Current checkpoint: P1 4.3 Application and Booking command policy implemented and locally verified
+- Current checkpoint: P1 4.3 Application, Booking and Concert cancellation policy implemented and locally verified
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Delivery gate: do not push or merge; the user authorized local P1 implementation and commits only.
 
 ## Current state
 
-P1 implementation is active on this branch. Slices 1-4 and the Application and Booking portions of 4.3 are implemented.
+P1 implementation is active on this branch. Slices 1-4 and the Application, Booking and Concert cancellation portions of 4.3 are implemented.
 Application apply, accept, reject, cancel and withdraw now execute through the root command transaction with
 locked current-membership authority, exact Proposal grants, privileged mutation repositories and a final
 post-flush authority check. Payment verification and its Booking handlers join the same root transaction,
 and module-owned artist, opportunity, deal and venue command facts enlist their privileged contexts.
 Booking cancellation now admits either accepted principal under `bookings.cancel` and the exact Operations
 grant, using the same locked membership/resource/final-validation sequence.
+Concert cancellation now admits either current principal under `concerts.manage` and the exact Operations
+grant, using the privileged Concert stance, locked Concert/grant rows and final post-flush validation.
 
 Provider-real Application transition races now serialize to one successful transition and one conflict. The
 cross-module rollback probe reaches the Booking failure and proves that Application, Booking, Concert and
@@ -82,13 +84,17 @@ Tenant deletion removes owned activity rows first.
   serialize without optimistic-concurrency leakage.
 - Booking save-interceptor races were replaced with provider-real concurrent cancellations and confirmation
   outcomes.
+- Concert cancellation uses the exact `concerts.manage` API permission, admits either current principal,
+  locks Concert and Operations grants, and revalidates authority after flush.
+- Concert cancellation races now run as concurrent provider-backed requests for duplicate cancellation and
+  against settlement reservation.
 
 ## Next steps
 
 Continue in this order. Each slice ends with a solution build, unit/architecture gate and local commit.
 
 1. **4.3 — finish command policy on every mutation.** Migrate Concert edit/post/door
-   revenue/check-in/cancel, Concert summary sharing and member assignment. Delete
+   revenue/check-in, Concert summary sharing and member assignment. Delete
    `ApplicationSide`; compute actions per exact operation.
 2. **4.2 completion — exact-scope reads.** Remove financial/proposal fields from summaries, split Summary,
    Operations, Terms and Finance routes and permission checks, delete generic private-detail endpoints, and
@@ -109,7 +115,10 @@ Continue in this order. Each slice ends with a solution build, unit/architecture
 - DataAccess Unit tier: 5 passed.
 - Architecture tier: 24 passed. The new DataAccess tests now carry the Unit assembly trait and a direct
   Reunion reference, satisfying CI ownership checks.
-- Concert unit tier: 96 passed.
+- Concert unit tier: 94 passed after replacing two synthetic cancellation-conflict cases with provider-real
+  integration races.
+- Concert cancellation integration tier: 9 passed, including both-principal authority, outsider denial,
+  duplicate cancellation and cancellation/settlement serialization.
 - `ConcertDoorSplitApiTests`: 8 passed through fresh reserve/complete command scopes, covering provider
   operation reuse, persistence interruption, duplicate outcomes and invoice completion.
 - Application integration tier: 74 passed, including provider-real accept/reject, accept/cancel,
@@ -123,6 +132,10 @@ Still required before a P1 completion claim: every module integration tier, prov
 ordering coverage, workers, contract/invoice reads, external-summary denial, real browser/native evidence and
 canonical review. The Startup resource-graph case previously timed out waiting for the Stripe CLI and must be
 rechecked where that resource is available.
+
+The full Concert integration tier currently also exposes an unrelated existing test-harness failure:
+`GetUpcomingForManagers_IncludesConcertAlreadyInProgress` resolves an interactive filtered context without an
+active tenant and fails in isolation before reaching the cancellation changes.
 
 ## Stable decisions
 

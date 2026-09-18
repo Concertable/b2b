@@ -1,5 +1,8 @@
 ﻿using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Concert.Contracts.Enums;
+using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,10 +45,47 @@ internal sealed class ConcertPrivilegedRepository : PrivilegedRepository<Concert
             .SingleOrDefaultAsync(ct);
     }
 
-    private async Task AcquireUpdateLockAsync(int concertId, CancellationToken ct) =>
+    public Task<ConcertState?> GetStateByIdAsync(
+        int concertId,
+        CancellationToken ct = default) =>
+        context.Concerts
+            .Where(concert => concert.Id == concertId)
+            .Select(concert => (ConcertState?)concert.State)
+            .SingleOrDefaultAsync(ct);
+
+    public Task<bool> CanManageAsync(
+        int concertId,
+        MembershipSnapshot actor,
+        ResourceAudience audience,
+        DateTime at,
+        CancellationToken ct = default) =>
+        context.Concerts.AsNoTracking().AnyAsync(concert =>
+            concert.Id == concertId
+            && (concert.VenueTenantId == actor.TenantId || concert.ArtistTenantId == actor.TenantId)
+            && context.ConcertAccessGrants.Any(grant =>
+                grant.ResourceId == concert.Id
+                && grant.Scope == ConcertAccessScope.Operations
+                && grant.TenantId == actor.TenantId
+                && grant.RevokedAt == null
+                && grant.ValidFrom <= at
+                && (grant.ValidUntil == null || at < grant.ValidUntil)
+                && (audience == ResourceAudience.TenantResources
+                        && (grant.MembershipId == null || grant.MembershipId == actor.MembershipId)
+                    || audience == ResourceAudience.AssignedResources
+                        && grant.MembershipId == actor.MembershipId)),
+            ct);
+
+    private async Task AcquireUpdateLockAsync(int concertId, CancellationToken ct)
+    {
         await context.Database.ExecuteSqlInterpolatedAsync($"""
             SELECT 1
             FROM concert.Concerts WITH (UPDLOCK, HOLDLOCK)
             WHERE Id = {concertId}
             """, ct);
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            SELECT 1
+            FROM concert.ConcertAccessGrants WITH (UPDLOCK, HOLDLOCK)
+            WHERE ResourceId = {concertId}
+            """, ct);
+    }
 }

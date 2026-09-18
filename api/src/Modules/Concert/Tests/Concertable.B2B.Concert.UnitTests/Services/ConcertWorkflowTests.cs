@@ -1,4 +1,6 @@
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Concert.Application.Errors;
@@ -19,25 +21,55 @@ namespace Concertable.B2B.Concert.UnitTests.Services;
 
 public sealed class ConcertWorkflowTests
 {
-    private readonly Mock<IConcertRepository> concertRepository = new();
+    private readonly Mock<IConcertPrivilegedRepository> concertRepository = new();
     private readonly Mock<ISettlementService> settlementService = new();
     private readonly Mock<IDealStrategyFactory<ICancelStep>> cancelFactory = new();
     private readonly Mock<IDealStrategyFactory<ICompleteStep>> completeFactory = new();
-    private readonly Mock<IUnitOfWork> unitOfWork = new();
     private readonly ImmediateBehavior immediateBehavior;
     private readonly ConcertWorkflow workflow;
+    private readonly MembershipSnapshot actor = new(
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        TenantRole.Owner,
+        1);
 
     public ConcertWorkflowTests()
     {
         immediateBehavior = new ImmediateBehavior();
+        var membership = new Mock<IMembershipContext>();
+        membership.SetupGet(context => context.Membership).Returns(actor);
+        var authorityFence = new Mock<IMembershipAuthorityFence>();
+        authorityFence
+            .Setup(fence => fence.RequireCurrentAsync(actor, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(actor);
+        var permissionCatalog = new Mock<IPermissionCatalog>();
+        permissionCatalog
+            .Setup(catalog => catalog.Grants(actor.Role, TenantPermission.ConcertsManage))
+            .Returns(true);
+        permissionCatalog
+            .Setup(catalog => catalog.AudienceFor(actor.Role, TenantPermission.ConcertsManage))
+            .Returns(ResourceAudience.TenantResources);
+        concertRepository
+            .Setup(repository => repository.CanManageAsync(
+                It.IsAny<int>(),
+                actor,
+                ResourceAudience.TenantResources,
+                It.IsAny<DateTime>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        var commandExecutor = new ImmediateCommandExecutor(settlementService.Object);
         workflow = new ConcertWorkflow(
             concertRepository.Object,
-            new ImmediateCommandExecutor(settlementService.Object),
+            commandExecutor,
             cancelFactory.Object,
             completeFactory.Object,
-            unitOfWork.Object,
             immediateBehavior,
-            immediateBehavior);
+            membership.Object,
+            authorityFence.Object,
+            permissionCatalog.Object,
+            TimeProvider.System);
+        commandExecutor.Workflow = workflow;
     }
 
     [Fact]
@@ -47,7 +79,7 @@ public sealed class ConcertWorkflowTests
         await cancellationSource.CancelAsync();
         var cancellationToken = cancellationSource.Token;
         concertRepository
-            .Setup(repository => repository.GetByIdAsync(It.IsAny<int>(), cancellationToken))
+            .Setup(repository => repository.GetByIdForUpdateAsync(It.IsAny<int>(), cancellationToken))
             .Returns(Task.FromCanceled<ConcertEntity?>(cancellationToken));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
@@ -58,7 +90,7 @@ public sealed class ConcertWorkflowTests
     public async Task CancelAsync_ConcertNotFound_ReturnsTypedError()
     {
         concertRepository
-            .Setup(repository => repository.GetByIdAsync(42, default))
+            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
             .ReturnsAsync((ConcertEntity?)null);
 
         var result = await workflow.CancelAsync(42);
@@ -74,7 +106,7 @@ public sealed class ConcertWorkflowTests
         var concert = CreateBooking();
         Assert.True(concert.BeginSettlement().TryGetValue(out _));
         concertRepository
-            .Setup(repository => repository.GetByIdAsync(42, default))
+            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
             .ReturnsAsync(concert);
 
         var result = await workflow.CancelAsync(42);
@@ -94,61 +126,13 @@ public sealed class ConcertWorkflowTests
             .Setup(factory => factory.Create(DealType.FlatFee))
             .Returns(strategy.Object);
         concertRepository
-            .Setup(repository => repository.GetByIdAsync(42, default))
+            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
             .ReturnsAsync(concert);
         var result = await workflow.CancelAsync(42);
 
         Assert.False(result.TryGetError(out _));
         strategy.Verify(value => value.CancelAsync(concert, default));
-        this.unitOfWork.Verify(unitOfWork => unitOfWork.SaveChangesAsync(default));
-    }
-
-    [Fact]
-    public async Task CancelAsync_SaveRaceLost_ReturnsSuperseded()
-    {
-        immediateBehavior.ClassifiesSaveFailureAsConflict = true;
-        var strategy = new Mock<ICancelStep>();
-        cancelFactory
-            .Setup(factory => factory.Create(DealType.FlatFee))
-            .Returns(strategy.Object);
-        concertRepository
-            .Setup(repository => repository.GetByIdAsync(42, default))
-            .ReturnsAsync(CreateBooking());
-        this.unitOfWork
-            .Setup(unitOfWork => unitOfWork.SaveChangesAsync(default))
-            .ThrowsAsync(new DbUpdateConcurrencyException());
-        concertRepository
-            .Setup(repository => repository.GetStateByIdAsync(42, default))
-            .ReturnsAsync(ConcertState.Posted);
-
-        var result = await workflow.CancelAsync(42);
-
-        Assert.True(result.TryGetError(out var error));
-        var superseded = Assert.IsType<CancelConcertError.Superseded>(error);
-        Assert.Equal(42, superseded.ConcertId);
-    }
-
-    [Fact]
-    public async Task CancelAsync_SaveRaceLostToAnotherCancellation_ReturnsSuccess()
-    {
-        immediateBehavior.ClassifiesSaveFailureAsConflict = true;
-        var strategy = new Mock<ICancelStep>();
-        cancelFactory
-            .Setup(factory => factory.Create(DealType.FlatFee))
-            .Returns(strategy.Object);
-        concertRepository
-            .Setup(repository => repository.GetByIdAsync(42, default))
-            .ReturnsAsync(CreateBooking());
-        this.unitOfWork
-            .Setup(unitOfWork => unitOfWork.SaveChangesAsync(default))
-            .ThrowsAsync(new DbUpdateConcurrencyException());
-        concertRepository
-            .Setup(repository => repository.GetStateByIdAsync(42, default))
-            .ReturnsAsync(ConcertState.CancellationPending);
-
-        var result = await workflow.CancelAsync(42);
-
-        Assert.False(result.TryGetError(out _));
+        concertRepository.Verify(repository => repository.SaveChangesAsync(default));
     }
 
     [Fact]
@@ -209,15 +193,8 @@ public sealed class ConcertWorkflowTests
         new ConcertDraft("Concert", "About", []),
         DateTime.UnixEpoch);
 
-    private sealed class ImmediateBehavior : IUnitOfWorkBehavior, IOutboxUnitOfWorkBehavior
+    private sealed class ImmediateBehavior : IPrivilegedOutboxUnitOfWorkBehavior
     {
-        /// <summary>
-        /// Stands in for the real behaviour's predicate. Fabricating a <see cref="DbUpdateException"/> with
-        /// populated <c>Entries</c> needs a live EF context, so the predicate itself is covered by the
-        /// integration race tests; this flag supplies its verdict.
-        /// </summary>
-        public bool ClassifiesSaveFailureAsConflict { get; set; }
-
         public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default) => action();
 
         public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken = default) => action();
@@ -232,8 +209,7 @@ public sealed class ConcertWorkflowTests
             {
                 return await action();
             }
-            catch (DbUpdateException exception)
-                when (ClassifiesSaveFailureAsConflict || isExpected(exception))
+            catch (DbUpdateException exception) when (isExpected(exception))
             {
                 return await onExpectedFailure(exception);
             }
@@ -242,11 +218,13 @@ public sealed class ConcertWorkflowTests
 
     private sealed class ImmediateCommandExecutor(ISettlementService settlementService) : ICommandExecutor
     {
+        public ConcertWorkflow Workflow { get; set; } = null!;
+
         public Task<TResult> ExecuteAsync<TService, TResult>(
             Func<TService, CancellationToken, Task<TResult>> command,
             CancellationToken ct = default)
             where TService : notnull =>
-            command((TService)(object)settlementService, ct);
+            command(Resolve<TService>(), ct);
 
         public async Task<TResult> ExecuteAsync<TService, TResult>(
             Func<TService, CancellationToken, Task<TResult>> command,
@@ -255,9 +233,14 @@ public sealed class ConcertWorkflowTests
             CancellationToken ct = default)
             where TService : notnull
         {
-            var service = (TService)(object)settlementService;
+            var service = Resolve<TService>();
             var result = await command(service, ct);
             return await validateAuthority(service, result, ct) ? result : authorityFailure();
         }
+
+        private TService Resolve<TService>() where TService : notnull =>
+            typeof(TService) == typeof(ConcertWorkflow)
+                ? (TService)(object)Workflow
+                : (TService)(object)settlementService;
     }
 }

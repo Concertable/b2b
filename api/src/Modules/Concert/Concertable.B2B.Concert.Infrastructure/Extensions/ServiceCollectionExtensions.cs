@@ -86,7 +86,9 @@ public static class ServiceCollectionExtensions
 
             // Services
             services.AddScoped<IConcertService, ConcertService>();
-            services.AddScoped<IConcertWorkflow, ConcertWorkflow>();
+            services.AddScoped<ConcertWorkflow>();
+            services.AddScoped<IConcertWorkflow>(provider =>
+                provider.GetRequiredService<ConcertWorkflow>());
             services.AddScoped<ISettlementService, SettlementService>();
             services.AddScoped<IConcertNotifier, ConcertNotifier>();
             services.AddScoped<IBookingConfirmationEmailSender, BookingConfirmationEmailSender>();

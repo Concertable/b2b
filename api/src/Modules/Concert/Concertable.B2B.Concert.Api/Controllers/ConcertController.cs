@@ -178,8 +178,7 @@ internal sealed class ConcertController : ControllerBase
         return (await concertService.PostAsync(id, request)).ToNoContentOrProblem();
     }
 
-    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
-    [HasPermission(TenantPermission.ApplicationsDecide)]
+    [HasPermission(TenantPermission.ConcertsManage)]
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
     {
