@@ -1,4 +1,4 @@
-# Party foundation progress
+﻿# Party foundation progress
 
 - Plan: `plans/party-foundation/PARTY_FOUNDATION_PLAN.md`
 - Roadmap: `plans/party-foundation/PARTY_FOUNDATION_ROADMAP.md`
@@ -7,9 +7,9 @@
 - Branch: `Refactor/PartyFoundationLegacyBindings`
 - Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
 - Reviewed implementation head: `189f745d8233b511273624d768bcc39b5508723b`
-- Implementation head: `b2001b2f` (P1 repair slices 1-2)
+- Implementation head: `f6ecc9bf` (P1 repair slices 1-3)
 - PR: [#18](https://github.com/Concertable/b2b/pull/18).
-- Last reconciled: 2026-09-17, Claude Opus P1 implementation, slices 1-2 committed.
+- Last reconciled: 2026-09-18, Claude Opus P1 implementation, slices 1-3 committed.
 - Current authorization: implement, verify and locally commit the P1 feedback and agreed replacement
   mechanisms, including naming corrections, in an independent Claude Opus session.
 - Delivery gate: the user's original no-push/no-merge restriction remains; the new request authorizes
@@ -20,11 +20,13 @@
 
 ## Current state
 
-P1 implementation is in progress on this branch. Two slices are committed and green at the unit and
-architecture tiers; the remaining slices are listed under `## Next Steps`. P2–P5 remain unimplemented targets.
+P1 implementation is in progress on this branch. Three slices are committed. The unit and architecture tiers
+are green, and the Tenant integration tier now runs and passes 80 of 83 — it could not run at all before
+slice 3, because the schema did not match the access model. The remaining slices are listed under
+`## Next Steps`. P2–P5 remain unimplemented targets.
 
 Plan section 4 remains the implementation contract. Nothing below claims a finding is closed against the
-4.10 matrix: no integration, provider-race, browser or native evidence has been produced yet. The working
+4.10 matrix; the Verification section records exactly what has and has not been run. The working
 tree also carries unrelated dirty `CODE_PATTERNS.md` and untracked `.codex/` content, which must be preserved.
 
 ## Completed work
@@ -38,7 +40,7 @@ tree also carries unrelated dirty `CODE_PATTERNS.md` and untracked `.codex/` con
   `terms.read`, `bookings.cancel` and `concerts.declare_door_revenue` added as separate operations.
 - `AuthorizationVersion` → `PermissionVersion` through entity, configuration, mappers and DTOs.
 - `MembershipAuthorityFact` → keyless `MembershipAuthority` mapped `ToView("MembershipAuthority", "tenant")`.
-  **The view itself does not exist yet — its migration is the first item of slice 6.**
+  The view itself is created by slice 3's regenerated Tenant migration.
 - `IAccessContext`/`AccessContext`/`IHasAccessContext`/`AccessScopedDbContext`/`DesignTimeAccessContext` →
   the `ResourceAccess*` names; `GrantOrigin` → `ResourceGrantKind` (Principal/SharedSummary/MemberAssignment);
   grant `MemberUserId` → `MembershipId`; base `Revoke` protected, concrete `Revoke` internal.
@@ -70,11 +72,30 @@ tree also carries unrelated dirty `CODE_PATTERNS.md` and untracked `.codex/` con
   `CompletionRunner` consumes it.
 - `PublishedConcert` projection with publication in its predicate (F10).
 
+**Slice 3 — `f6ecc9bf` "Make the schema and the seeding path match the access model" (4.10 migrations, 4.6 completion, F16)**
+
+- The five `InitialCreate` migrations are regenerated against the new model: `PermissionVersion`, grant
+  `MembershipId` and `Kind`, the per-issuer unique indexes, Concert's `AccessVersion` and its command
+  receipts. Tenant's migration creates the `tenant.MembershipAuthority` view the resource filters read
+  through; without it every resource read denied and the integration tier could not start.
+- Deleting the ambient host stance also disarmed nothing for the *tenant write fence*, which keyed on the
+  same flag: every seeder writing a tenant-scoped row for a tenant it is not acting as began to fail.
+  Artist, Venue, Opportunity and Deal therefore get the same privileged stance the grant-reached modules
+  have. No privileged registration carries `TenantInterceptor` — that stance exists to write across tenants —
+  and all of them keep `UseSeedingSupport`, which is a capability a seed explicitly activates.
+- `ApplicationPrivilegedDbContext` and `BookingPrivilegedDbContext` were never registered in slice 2; the
+  host's strict service-provider validation caught it.
+- The three Concert pre-commit domain-event handlers re-read their own aggregate to build an integration
+  event, which returned nothing with no human acting; they take the privileged repository.
+- `TenantService.DeleteAsync` removes its own business-activity rows before the tenant (F16).
+- The tax-compliance round-trip tests read through the suite's JSON options rather than the framework
+  default, which cannot parse the business-activity enum.
+
 ## Next Steps
 
 Scope: whole plan through all remaining P1 phases; delivery stays gated.
 Current slice: 4.5 — one local transaction per command.
-Remaining scope: slices 2-6 below, then the retained PR #18 delivery gate, then P2–P5.
+Remaining scope: slices 1-6 below, then the retained PR #18 delivery gate, then P2–P5.
 Done when: F01–F28 are repaired, verified against plan section 4.10 and reviewed; changes are locally
 committed and this ledger records the actual results and the remaining delivery gate.
 
@@ -97,10 +118,10 @@ tiers, commit.
 5. **4.8/4.9 — neutral business lifecycle and clients.** `TenantBusinessActivity`, neutral onboarding,
    contact/activity administration, invitation role policy, tenant deletion, the admin verification contract,
    and the real Business web and mobile journeys with tenant-switch isolation.
-6. **4.10 — migrations and qualification.** Create the `tenant.MembershipAuthority` view, regenerate the five
-   `InitialCreate` migrations and the synthetic fixtures, replace `ResourceAccessGuardTests`'s textual check
-   with model and provider coverage, and run the full 4.10 matrix including the integration, provider-race,
-   worker, browser and native evidence. Then review the candidate.
+6. **4.10 — qualification.** Replace `ResourceAccessGuardTests`'s textual filter check with model and
+   provider coverage, and run the full 4.10 matrix: every module's integration tier, the provider-level race
+   and revocation-ordering cases, workers, contract/invoice reads, external-summary denial, and real browser
+   and native evidence. Then review the candidate. The migrations and the authority view are already done.
 
 ## Decisions and findings
 
@@ -133,31 +154,46 @@ tiers, commit.
 - **From implementation:** a seeder keeps `MigrateAsync` on the filtered context, which owns the module's
   migrations, while its reads and writes use the privileged one. Pointing both at the privileged context
   would leave it applying migrations it does not own.
+- **From implementation:** the platform's `TenantInterceptor` is the single-owner *write* fence and keys on
+  the same `IsHost` the read filters did. Deleting the ambient stance therefore breaks every cross-tenant
+  write, not just cross-tenant reads — which is why Artist, Venue, Opportunity and Deal needed a privileged
+  stance even though they own no resource grants. A privileged registration must omit that interceptor and
+  keep `UseSeedingSupport`.
+- **From implementation:** a pre-commit domain-event handler that re-reads its own aggregate is system work
+  and must use the privileged repository. Reading through the shared request connection works: the seeding
+  dispatcher runs pre-commit handlers after the save.
 
 ## Verification
 
-Both committed slices build clean and pass the unit and architecture tiers
-(`dotnet test --filter "FullyQualifiedName!~IntegrationTests&FullyQualifiedName!~E2ETests&FullyQualifiedName!~StartupTests"`:
-0 failed across 14 assemblies). That is the floor, not the acceptance: **P1 is not qualified.**
+At `f6ecc9bf`:
+
+- Solution build: clean (2 pre-existing `CS8632` warnings in the UI E2E project).
+- Unit and architecture tiers: **0 failed** across 14 assemblies.
+- Tenant integration tier: **80 passed, 3 failed**. The three are
+  `InvitationTests.Invite_AsOwner_CreatesPendingInvitationAndSendsEmail`,
+  `InvitationTests.Invite_AsArtistOwner_SendsEmailWithArtistPortalAcceptLink` and
+  `VerificationAdminApiTests.Approve_ShouldReturn204_AndSendNothing_WhenTenantOwnsNoProfile`. Both causes are
+  named P1 findings owned by the business-lifecycle slice: the invitation email's neutral acceptance route
+  (F19) and the verification notice for a tenant holding no marketplace profile (F14). Neither handler is
+  touched by any of these three slices — confirmed with `git diff --name-only` against the pre-implementation
+  head — so they are pre-existing branch behaviour that this tier simply could not reach before.
 
 Not yet run or produced, and required by plan section 4.10 before any completion claim:
 
-- The integration tier. It cannot pass yet: the `tenant.MembershipAuthority` view does not exist, so every
-  resource filter denies. The migration is the first item of slice 6.
+- Every other module's integration tier (Application, Booking, Concert, Conversations, Venue, Artist, Admin,
+  Lifecycle, Process). Only Tenant's has been run.
 - `StartupTests.ResourceGraphTests.ProductionGraphAndStrictValidation_AreValid` fails in this environment
   waiting on the Stripe CLI resource (`Concertable.Payment.Hosting.AppHostExtensions.AddStripeCli` times
-  out). That failure is environmental and unrelated to these changes; it is evidence of nothing and must be
-  re-checked where the CLI is available.
-- Provider-level race, revocation-ordering, worker, contract/invoice read, external-summary denial,
-  browser and native evidence. None has been produced.
+  out). Environmental and unrelated to these changes; re-check where the CLI is available.
+- Provider-level race, revocation-ordering, worker, contract/invoice read, external-summary denial, browser
+  and native evidence. None has been produced.
 
-Planning validation passed on 2026-09-17 against the pre-implementation tree. The naming audit uses the
-installed C# naming, persistence and multitenancy standards.
+The naming audit uses the installed C# naming, persistence and multitenancy standards.
 
 ## Reviews
 
 Current review: source review and P1 re-specification, with a bounded authority sanity check. F01–F28 remain
-implementation findings owned by plan section 4; no runtime approval is granted. **The two committed slices
+implementation findings owned by plan section 4; no runtime approval is granted. **The three committed slices
 have not been reviewed.** The [existing review artifact](../../reviews/Refactor-PartyFoundationLegacyBindings.md)
 records earlier candidates and is not a completed canonical review of this checkpoint.
 
