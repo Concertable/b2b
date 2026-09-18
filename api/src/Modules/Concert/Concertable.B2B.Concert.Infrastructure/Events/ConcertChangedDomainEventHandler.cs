@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Contracts.Events;
+﻿using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.Events;
 using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
@@ -9,10 +9,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Events;
 
 internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHandler<ConcertChangedDomainEvent>
 {
-    private readonly IConcertRepository concertRepository;
+    private readonly IConcertPrivilegedRepository concertRepository;
     private readonly IBus bus;
 
-    public ConcertChangedDomainEventHandler(IConcertRepository concertRepository, IBus bus)
+    public ConcertChangedDomainEventHandler(IConcertPrivilegedRepository concertRepository, IBus bus)
     {
         this.concertRepository = concertRepository;
         this.bus = bus;

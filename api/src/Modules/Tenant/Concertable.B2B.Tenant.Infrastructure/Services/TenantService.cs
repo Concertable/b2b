@@ -114,6 +114,8 @@ internal sealed class TenantService : ITenantService
         foreach (var invitation in await invitationRepository.ListInvitationsByTenantAsync(tenantId, ct))
             invitationRepository.Remove(invitation);
 
+        await repository.RemoveBusinessProfilesByTenantIdAsync(tenantId, ct);
+
         repository.Remove(tenant);
         await repository.SaveChangesAsync(ct);
         return new Success();

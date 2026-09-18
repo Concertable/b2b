@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Artist.Application.Validators;
 using Concertable.B2B.Artist.Contracts;
@@ -27,6 +27,15 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddArtistModule(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddDbContext<ArtistPrivilegedDbContext>((sp, opt) =>
+            opt.UseSqlServer(
+                    sp.GetRequiredService<DbConnection>(),
+                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
+                    .UseSeedingSupport(sp));
+
         services.AddDbContext<ArtistDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     sp.GetRequiredService<DbConnection>(),

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using NetTopologySuite.Geometries;
 
@@ -33,6 +33,24 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ArtistReadModels", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ConcertCommandReceipts",
+                schema: "concert",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IssuedByTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Operation = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RequestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PayloadHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Outcome = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RecordedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ConcertCommandReceipts", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -186,14 +204,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ResourceId = table.Column<int>(type: "int", nullable: false),
                     TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    MemberUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    MembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Scope = table.Column<int>(type: "int", nullable: false),
                     ValidFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ValidUntil = table.Column<DateTime>(type: "datetime2", nullable: true),
                     RevokedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IssuedByTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     IssuedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Origin = table.Column<int>(type: "int", nullable: false),
+                    Kind = table.Column<int>(type: "int", nullable: false),
                     Version = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
@@ -237,6 +255,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     TicketsSold = table.Column<int>(type: "int", nullable: false),
                     DatePosted = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Genres = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AccessVersion = table.Column<long>(type: "bigint", nullable: false),
                     FinancialFailureCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     FinancialFailureMessage = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -274,14 +293,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ResourceId = table.Column<int>(type: "int", nullable: false),
                     TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    MemberUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    MembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Scope = table.Column<int>(type: "int", nullable: false),
                     ValidFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ValidUntil = table.Column<DateTime>(type: "datetime2", nullable: true),
                     RevokedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IssuedByTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     IssuedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Origin = table.Column<int>(type: "int", nullable: false),
+                    Kind = table.Column<int>(type: "int", nullable: false),
                     Version = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
@@ -327,27 +346,34 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ConcertAccessGrants_TenantId_Scope_ResourceId_MemberUserId",
+                name: "IX_ConcertAccessGrants_ResourceId_TenantId_Scope_MembershipId",
                 schema: "concert",
                 table: "ConcertAccessGrants",
-                columns: new[] { "TenantId", "Scope", "ResourceId", "MemberUserId" },
+                columns: new[] { "ResourceId", "TenantId", "Scope", "MembershipId" },
                 filter: "[RevokedAt] IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "UX_ConcertAccessGrants_Member",
+                name: "IX_ConcertAccessGrants_TenantId_Scope_ResourceId_MembershipId",
                 schema: "concert",
                 table: "ConcertAccessGrants",
-                columns: new[] { "ResourceId", "TenantId", "Scope", "MemberUserId" },
-                unique: true,
-                filter: "[RevokedAt] IS NULL AND [MemberUserId] IS NOT NULL");
+                columns: new[] { "TenantId", "Scope", "ResourceId", "MembershipId" },
+                filter: "[RevokedAt] IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "UX_ConcertAccessGrants_TenantWide",
+                name: "UX_ConcertAccessGrants_Membership",
                 schema: "concert",
                 table: "ConcertAccessGrants",
-                columns: new[] { "ResourceId", "TenantId", "Scope" },
+                columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId" },
                 unique: true,
-                filter: "[RevokedAt] IS NULL AND [MemberUserId] IS NULL");
+                filter: "[RevokedAt] IS NULL AND [MembershipId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "UX_ConcertAccessGrants_Tenant",
+                schema: "concert",
+                table: "ConcertAccessGrants",
+                columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId" },
+                unique: true,
+                filter: "[RevokedAt] IS NULL AND [MembershipId] IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ConcertImages_ConcertId",
@@ -391,27 +417,34 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 column: "VenueId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_InvoiceAccessGrants_TenantId_Scope_ResourceId_MemberUserId",
+                name: "IX_InvoiceAccessGrants_ResourceId_TenantId_Scope_MembershipId",
                 schema: "concert",
                 table: "InvoiceAccessGrants",
-                columns: new[] { "TenantId", "Scope", "ResourceId", "MemberUserId" },
+                columns: new[] { "ResourceId", "TenantId", "Scope", "MembershipId" },
                 filter: "[RevokedAt] IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "UX_InvoiceAccessGrants_Member",
+                name: "IX_InvoiceAccessGrants_TenantId_Scope_ResourceId_MembershipId",
                 schema: "concert",
                 table: "InvoiceAccessGrants",
-                columns: new[] { "ResourceId", "TenantId", "Scope", "MemberUserId" },
-                unique: true,
-                filter: "[RevokedAt] IS NULL AND [MemberUserId] IS NOT NULL");
+                columns: new[] { "TenantId", "Scope", "ResourceId", "MembershipId" },
+                filter: "[RevokedAt] IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "UX_InvoiceAccessGrants_TenantWide",
+                name: "UX_InvoiceAccessGrants_Membership",
                 schema: "concert",
                 table: "InvoiceAccessGrants",
-                columns: new[] { "ResourceId", "TenantId", "Scope" },
+                columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId" },
                 unique: true,
-                filter: "[RevokedAt] IS NULL AND [MemberUserId] IS NULL");
+                filter: "[RevokedAt] IS NULL AND [MembershipId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "UX_InvoiceAccessGrants_Tenant",
+                schema: "concert",
+                table: "InvoiceAccessGrants",
+                columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId" },
+                unique: true,
+                filter: "[RevokedAt] IS NULL AND [MembershipId] IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Invoices_BookingId",
@@ -437,6 +470,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "ConcertAccessGrants",
+                schema: "concert");
+
+            migrationBuilder.DropTable(
+                name: "ConcertCommandReceipts",
                 schema: "concert");
 
             migrationBuilder.DropTable(

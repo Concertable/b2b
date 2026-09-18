@@ -7,10 +7,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Events;
 
 internal sealed class ConcertCancelledDomainEventHandler : IPreCommitDomainEventHandler<ConcertCancelledDomainEvent>
 {
-    private readonly IConcertRepository concertRepository;
+    private readonly IConcertPrivilegedRepository concertRepository;
     private readonly IBus bus;
 
-    public ConcertCancelledDomainEventHandler(IConcertRepository concertRepository, IBus bus)
+    public ConcertCancelledDomainEventHandler(IConcertPrivilegedRepository concertRepository, IBus bus)
     {
         this.concertRepository = concertRepository;
         this.bus = bus;

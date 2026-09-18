@@ -1,4 +1,4 @@
-using Concertable.B2B.Tenant.Infrastructure.Data;
+﻿using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,4 +33,13 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         CancellationToken ct = default) =>
         context.BusinessProfiles
             .AnyAsync(p => p.TenantId == tenantId && p.Kind == kind && p.RetiredAt == null, ct);
+
+    public async Task RemoveBusinessProfilesByTenantIdAsync(Guid tenantId, CancellationToken ct = default)
+    {
+        var profiles = await context.BusinessProfiles
+            .Where(profile => profile.TenantId == tenantId)
+            .ToListAsync(ct);
+
+        context.BusinessProfiles.RemoveRange(profiles);
+    }
 }

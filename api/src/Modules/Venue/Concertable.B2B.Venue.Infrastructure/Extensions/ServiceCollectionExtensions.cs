@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
@@ -26,6 +26,15 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddVenueModule(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddDbContext<VenuePrivilegedDbContext>((sp, opt) =>
+            opt.UseSqlServer(
+                    sp.GetRequiredService<DbConnection>(),
+                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
+                    .UseSeedingSupport(sp));
+
         services.AddDbContext<VenueDbContext>((sp, opt) =>
             opt.UseSqlServer(
                     sp.GetRequiredService<DbConnection>(),

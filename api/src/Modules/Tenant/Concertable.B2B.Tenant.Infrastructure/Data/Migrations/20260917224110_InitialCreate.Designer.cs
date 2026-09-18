@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(TenantDbContext))]
-    [Migration("20260916094629_InitialCreate")]
+    [Migration("20260917224110_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -178,15 +178,15 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<long>("AuthorizationVersion")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid?>("InvitedByUserId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("PermissionVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Role")
                         .HasColumnType("int");

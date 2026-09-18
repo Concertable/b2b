@@ -65,8 +65,8 @@ public static class ServiceCollectionExtensions
                         sql => sql.UseNetTopologySuite())
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
-                        sp.GetRequiredService<TenantInterceptor>(),
-                        sp.GetRequiredService<IDomainEventDispatchInterceptor>()), ServiceLifetime.Scoped);
+                        sp.GetRequiredService<IDomainEventDispatchInterceptor>())
+                    .UseSeedingSupport(sp), ServiceLifetime.Scoped);
 
             services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
                 opts.UseSqlServer(

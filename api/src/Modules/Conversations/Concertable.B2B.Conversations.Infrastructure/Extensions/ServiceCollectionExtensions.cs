@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess;
 using Concertable.Seed.Shared;
@@ -38,8 +38,8 @@ public static class ServiceCollectionExtensions
             opts.UseSqlServer(sp.GetRequiredService<DbConnection>())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<TenantInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
+                    .UseSeedingSupport(sp));
 
         services.AddSingleton<ConversationsConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConversationsConfigurationProvider>());

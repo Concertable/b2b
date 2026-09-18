@@ -63,7 +63,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Role = table.Column<int>(type: "int", nullable: false),
-                    AuthorizationVersion = table.Column<long>(type: "bigint", nullable: false),
+                    PermissionVersion = table.Column<long>(type: "bigint", nullable: false),
                     InvitedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -222,11 +222,22 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 table: "Verifications",
                 column: "TenantId",
                 unique: true);
+
+            /* Tenant owns membership rows; a resource module re-checks the acting membership incarnation
+               inside the same statement that reads its resource, and reads it through this view so no module
+               maps a writable table it does not own. */
+            migrationBuilder.Sql("""
+                CREATE VIEW tenant.MembershipAuthority AS
+                SELECT Id AS MembershipId, TenantId, UserId, PermissionVersion
+                FROM tenant.Memberships;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("DROP VIEW IF EXISTS tenant.MembershipAuthority;");
+
             migrationBuilder.DropTable(
                 name: "Activities",
                 schema: "tenant");

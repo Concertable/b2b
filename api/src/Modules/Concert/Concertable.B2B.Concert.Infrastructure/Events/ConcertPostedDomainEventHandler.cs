@@ -9,10 +9,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Events;
 
 internal sealed class ConcertPostedDomainEventHandler : IPreCommitDomainEventHandler<ConcertPostedDomainEvent>
 {
-    private readonly IConcertRepository concertRepository;
+    private readonly IConcertPrivilegedRepository concertRepository;
     private readonly IBus bus;
 
-    public ConcertPostedDomainEventHandler(IConcertRepository concertRepository, IBus bus)
+    public ConcertPostedDomainEventHandler(IConcertPrivilegedRepository concertRepository, IBus bus)
     {
         this.concertRepository = concertRepository;
         this.bus = bus;

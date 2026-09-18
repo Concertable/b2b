@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Opportunity.Application.Mappers;
 using Concertable.B2B.Opportunity.Application.Validators;
@@ -30,6 +30,13 @@ public static class ServiceCollectionExtensions
     {
         public IServiceCollection AddOpportunityModule(IConfiguration configuration)
         {
+            services.AddDbContext<OpportunityPrivilegedDbContext>((sp, options) =>
+                options.UseSqlServer(
+                        sp.GetRequiredService<DbConnection>(),
+                        sql => sql.UseNetTopologySuite())
+                    .AddInterceptors(sp.GetRequiredService<AuditInterceptor>())
+                    .UseSeedingSupport(sp));
+
             services.AddDbContext<OpportunityDbContext>((sp, options) =>
                 options.UseSqlServer(
                         sp.GetRequiredService<DbConnection>(),

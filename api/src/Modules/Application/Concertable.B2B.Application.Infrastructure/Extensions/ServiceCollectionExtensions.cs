@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Application.Application.Interfaces;
@@ -44,6 +44,13 @@ public static class ServiceCollectionExtensions
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>())
+                    .UseSeedingSupport(provider));
+
+            services.AddDbContext<ApplicationPrivilegedDbContext>((provider, options) =>
+                options.UseSqlServer(provider.GetRequiredService<DbConnection>())
+                    .AddInterceptors(
+                        provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(provider));
 

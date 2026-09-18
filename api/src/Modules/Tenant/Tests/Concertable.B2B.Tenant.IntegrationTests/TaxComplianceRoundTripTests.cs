@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
@@ -78,7 +78,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
         var response = await client.PutAsJsonAsync("/api/organization", request);
         await response.ShouldBe(HttpStatusCode.OK);
 
-        var read = await client.GetFromJsonAsync<TenantDetails>("/api/organization");
+        var read = await (await client.GetAsync("/api/organization")).Content.ReadAsync<TenantDetails>();
         Assert.NotNull(read);
         Assert.Equal(request.LegalName, read!.LegalName);
         // Same DTO shape for read and write, so it round-trips by value; presence == complete.
@@ -130,7 +130,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
         };
         await (await client.PutAsJsonAsync("/api/organization", replacement)).ShouldBe(HttpStatusCode.OK);
 
-        var read = await client.GetFromJsonAsync<TenantDetails>("/api/organization");
+        var read = await (await client.GetAsync("/api/organization")).Content.ReadAsync<TenantDetails>();
         Assert.NotNull(read);
         Assert.Equal(replacement.LegalName, read!.LegalName);
         Assert.Equal(replacement.TaxCompliance, read.TaxCompliance);
