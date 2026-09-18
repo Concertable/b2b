@@ -1,12 +1,13 @@
-# Code review — Refactor/PartyFoundationLegacyBindings
+﻿# Code review — Refactor/PartyFoundationLegacyBindings
 
 > **This file is a work order, not a discussion.** If you're handed this file, fix the open `[ ]`
 > findings directly and report what changed. Tick each `[x]` as you land it. Pause only for a genuinely
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** the restarted branch's single documentation commit  `(2026-09-15)`
-**Judgment:** `approved`
+**Reviewed up to commit:** `735eae64af97d8431ed93b2270234ac39bfb4b94`  `(2026-09-18)`
+**Security-reviewed up to commit:** `735eae64af97d8431ed93b2270234ac39bfb4b94`  `(2026-09-18)`
+**Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
 dropped, so the first pass below reviews code that no longer exists on any branch. Its F1–F10 are
@@ -290,3 +291,302 @@ ledger and roadmap are committed; only this final review watermark is local work
 runtime implementation, new runtime validation, publication or deployment occurred. Approval covers
 the rewritten documentation and its remediation; rejected runtime work still requires P1 replacement
 and the implementation phases' own review/delivery gates.
+
+## Review pass — 2026-09-18 — full (P1 repair slices 1–3)
+
+**Candidate base:** `3272bbad0843005a1a915c2b60bce02f1a1266cd`
+**Candidate head:** `735eae64af97d8431ed93b2270234ac39bfb4b94`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:90626a16b378865aff490c78db1aa4c1761577448d774152616232278050ba7f` `(221 paths)`
+**Candidate bundle:** `C:/Users/TommySeery/source/repos/Concertable/b2b/.git/worktrees/Refactor-PartyFoundationLegacyBindings/agent-workflow/runs/review-p1-foundation-20260918/review`
+**Candidate bundle identity:** `sha256:df3c68de5dfeceea3bce9ad81d6c495cfafbc51a9515b2e080618a27c100e61c`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+First review of runtime implementation on this branch. The candidate is the three P1 repair slices
+(`5ab4356b`, `b2001b2f`, `f6ecc9bf`) plus their two ledger commits. 195 of the 221 paths are
+hand-written; 26 are regenerated migrations and Reqnroll-generated feature code.
+
+Layers run: native/general (correctness, reuse, efficiency, error handling); an access-predicate lens; a
+persistence/DI-composition lens; a domain-events/seeding lens; a changed-behaviour test-impact lens; and the
+security layer — 17 changed paths matched the authorization inventory, so the security marker is owed.
+
+Three lenses independently reached finding R1 from different starting points. Where the security lens and the
+persistence lens disagreed on privileged-stance reachability, the parent re-traced the call graph and the
+persistence lens is correct: the security lens traced `POST /api/concert/{id}/cancel` and the bus processors
+but missed `DevController` (R2).
+
+### Findings
+
+- [ ] **R1 — critical — every Concert ACL command decides against the caller-visible grant subset, not the ACL.**
+  `ConcertService.cs:320, 369, 388, 416, 441` all load through `IConcertRepository.GetWithGrantsByIdAsync`
+  (`ConcertRepository.cs:31-34`), whose `Include(c => c.AccessGrants)` runs on the filtered `ConcertDbContext`.
+  The grant filter (`ConcertDbContext.cs:39-51` via `ResourceAccessExpressions.cs:21-31`) admits only
+  `grant.TenantId == ActiveTenantId` and `MembershipId == null || == ActiveMembershipId`, so a grant issued
+  *to another tenant* or *to another member* is structurally absent. Consequences, all reachable:
+  `AlreadyShared` (`ConcertEntity.cs:122-128`) can never fire, so a duplicate share falls through to a
+  unique-index `DbUpdateException` that `TrySaveChangesAsync` does not absorb; `RevokeExpiredSummaryShares`
+  (`:151-157`) retires nothing, breaking the expiry-then-reissue the comment at `:146-147` describes;
+  `RevokeSummaryShare` (`:167`) returns `GrantNotFound` for the issuer's own share, making disclosure
+  irrevocable through the API; `ReplaySummaryShareAsync` (`ConcertService.cs:369-376`) cannot find its grant;
+  `AssignMember`/`RemoveMemberAssignment` (`:187-190`, `:216-220`) cannot see another member's assignment.
+  Plan §4.5 names this exact trap. The correct mechanism was written and never wired:
+  `IConcertPrivilegedRepository.GetWithGrantsByIdAsync` and `GetIdentityByIdForUpdateAsync`
+  (`IConcertPrivilegedRepository.cs:15,19`) have no caller.
+  **Fix:** inject `IConcertPrivilegedRepository` into `ConcertService` and route those five paths through it,
+  using `GetIdentityByIdForUpdateAsync` for the pre-load authority check; the domain already fences the write
+  (`IsPrincipal`, `IssuedByTenantId`). The receipt repository and unit of work must move to the same context.
+
+- [ ] **R2 — critical — an authenticated caller can trigger settlement on any concert.**
+  `DevController.Complete` (`DevController.cs:19-27`) is `[Authorize]`-only, takes `concertId` from the query
+  string, and has no environment gate — the host's only environment conditionals are Swagger and seeding
+  (`B2BWebHostExtensions.cs:281,287`). It calls `IConcertWorkflow.CompleteAsync`
+  (`ConcertWorkflow.cs:49-70`) → `SettlementService.ReserveAsync` → `IUnitOfWorkBoundary`, which this
+  candidate rebound from `ConcertDbContext` to `ConcertPrivilegedDbContext`
+  (`FactoryUnitOfWork.cs:7-11`). At base the grant filter bounded that endpoint to concerts the caller could
+  see; it no longer does. The `[Authorize]`-only trigger predates this candidate, the removal of its
+  containment does not.
+  **Fix:** register the endpoint only when `!IsProduction`, or delete it. Do not rely on the doc comment.
+
+- [ ] **R3 — high — `RemoveMemberAssignment` reports success when it revokes nothing.**
+  `ConcertEntity.cs:210-227`: zero matches is indistinguishable from a revocation, the controller returns 204
+  (`ConcertController.cs:61-67`), and `AccessVersion++` sits outside the loop so it bumps on a no-op —
+  invalidating every other caller's expected version for a change that did not happen. Contrast
+  `RevokeExpiredSummaryShares` (`:160`), which bumps correctly inside the loop. It is also the only one of the
+  four ACL commands with no `ExpectedAccessVersion` (`ConcertService.cs:433-453`). With R1 this fires on every
+  call: an operator removing a member's access is told it worked while the grants stay live.
+  **Fix:** add an explicit `NotAssigned` arm, bump `AccessVersion` only when a row was revoked, and take and
+  check `ExpectedAccessVersion` as the other three commands do.
+
+- [ ] **R4 — high — `Concertable.B2B.Authorization.UnitTests` is not in the solution and does not compile.**
+  The project is absent from `Concertable.B2B.slnx` (only `.Contracts` and `.Infrastructure` are listed) and
+  `git log -S` shows it was never listed. CI builds and tests through that solution
+  (`.github/workflows/ci.yml:59,62,73`), so nothing has ever compiled or run it. It holds the only coverage of
+  `MembershipContext` resolution and `PermissionCatalog` — the authority source this work rewrites, including
+  `IsHost_IsNeverTrue` and the header-selection cases. It carries five references to symbols this candidate
+  deletes: `PermissionCatalogTests.cs:66-68` and `MembershipContextTests.cs:181-182`
+  (`TenantRole.RestrictedParticipant`), and `MembershipContextTests.cs:100` (`MembershipFact`).
+  `MembershipContextTests.cs:107-121` also still asserts that a malformed header falls back to the sole
+  membership, which `MembershipContext.cs:71-72` now rejects.
+  **Fix:** add the project to `Concertable.B2B.slnx`, delete the five stale rows, and rewrite the
+  malformed-header test to assert the throw. This invalidates the earlier "0 failed across 14 assemblies"
+  claim, which silently excluded this assembly.
+
+- [ ] **R5 — high — F10 is not fixed: the published projection has no caller.**
+  `IConcertReadRepository.GetPublishedByIdAsync` (`ConcertReadRepository.cs:29-41`) is referenced only by its
+  own interface and implementation. `ConcertController.GetDetailsById` (`ConcertController.cs:29-34`) still
+  calls `GetDetailsByIdAsync`, which carries no `DatePosted` predicate. An unpublished draft remains reachable
+  by direct id. The slice-2 commit message and the ledger both claim F10 closed.
+  **Fix:** route the public read to the published projection, and correct the ledger.
+
+- [ ] **R6 — medium — the mid-command flush throws where every sibling returns a typed error, and commits a
+  revocation before the command's guards run.** `ConcertService.cs:333` is the one bare `SaveChangesAsync` among
+  the command paths; it carries the concert rowversion mutated by `RevokeExpiredSummaryShares`, so a lost race
+  escapes as `DbUpdateConcurrencyException` (500) instead of `Superseded`. It also commits the revocation
+  before `ShareSummary` (`:335`) has checked `IsPrincipal` and `validUntil` (`ConcertEntity.cs:116-120`), so a
+  `NotPermitted`/`InvalidValidity` rejection leaves a committed revocation behind.
+  **Fix:** use `TrySaveChangesAsync(... => e is DbUpdateConcurrencyException, ct)` → `Superseded`, and run the
+  pure guards before the revocation.
+
+- [ ] **R7 — medium — a duplicate-key violation escapes as a 500 on the very path the receipt exists to make
+  idempotent.** `ConcertService.cs:360` tolerates only `DbUpdateConcurrencyException`. Two concurrent copies of
+  the same `RequestId` both pass the receipt check at `:306` and the loser gets a duplicate-key
+  `DbUpdateException`. An `IsDuplicateKey()` helper already exists and is used for exactly this at
+  `AdminService.cs:149,160` and `WriteRepositoryExtensions.cs:21`.
+  **Fix:** widen the predicate, and on a duplicate receipt re-read it and return the replay; a duplicate grant
+  maps to `AlreadyShared`.
+
+- [ ] **R8 — medium — `ResourceCommandReceipt.HashPayload` is not injective and is not `DateTimeKind`- or
+  culture-stable.** `ResourceCommandReceipt.cs:42-54`: the `U+001F` separator is neither escaped nor
+  length-prefixed, so `("aU+001Fb","c")` and `("a","bU+001Fc")` collide; the `null` sentinel `"U+0000"`
+  collides with a literal `"U+0000"`; `part.ToString()` uses the current culture; and `DateTime.ToString("O")`
+  encodes `Kind`, so the same instant sent as `…Z` and `…+01:00` hashes differently and a genuine retry gets
+  `RequestConflict`. The last case is reachable today through `request.ValidUntil`.
+  **Fix:** length-prefix each part, normalise `DateTime` with `ToUniversalTime()`, and format every
+  `IFormattable` with `CultureInfo.InvariantCulture`.
+
+- [ ] **R9 — medium — replay maps a server-side inconsistency to `ConcertNotFound` for a concert it just
+  loaded, permanently.** `ConcertService.cs:369-376` returns `ConcertNotFound` (404) after the concert loaded
+  successfully, when the receipt's recorded grant cannot be resolved. Because the receipt is durable, every
+  later retry of that `RequestId` takes the same branch.
+  **Fix:** treat an unresolvable recorded outcome as an invariant violation (throw, as
+  `SettlementPaymentProcessor.cs:51-59` does) or give it its own error arm. Decide separately what a replay
+  should report when the grant was since revoked.
+
+- [ ] **R10 — medium — cross-tenant existence probes run before the caller's authority over the concert is
+  established.** `ConcertService.cs:313-318` calls `tenantModule.GetByIdAsync` and `IsCurrentMembershipAsync`
+  on caller-supplied GUIDs before loading the concert at `:320`. Any holder of `resources.share` gets a
+  distinguishable `InvalidRecipient` for a concert id they hold no grant on. Bounded by v4 GUID space, so an
+  ordering defect rather than a usable oracle.
+  **Fix:** load the concert and run its `NotFound`/`Superseded` checks first.
+
+- [ ] **R11 — medium — `MalformedTenantHeaderException` is mapped nowhere.**
+  `MembershipContext.cs:71-72` throws it from `TenantResolutionMiddleware`, which runs for the whole pipeline
+  (`B2BWebHostExtensions.cs:256`). The only two references in the tree are the throw and the declaration — no
+  handler, no `ProblemDetails` arm — so it conventionally surfaces as 500 for what is a client error. It also
+  fires for *duplicate* `X-Tenant-Id` headers, because `TryGetHeaderTenantId` parses `values.ToString()`
+  (`MembershipContext.cs:84-86`), which comma-joins. Not reachable pre-authentication:
+  `MembershipContext.cs:51-55` returns for an anonymous caller before any header parsing.
+  **Fix:** map it to 400 at the Web host, or short-circuit in the middleware.
+
+- [ ] **R12 — medium — `IsCurrentMembershipAsync` materialises every membership of a tenant to answer one
+  boolean, on a request path.** `TenantService.cs:57-61` calls `ListMembershipsByTenantAsync` (tracked entities,
+  `MembershipRepository.cs:43-44`) then filters in memory. It runs before every share and every member
+  assignment (`ConcertService.cs:317,413`). The same repository already shows the right shape at `:52-53`.
+  **Fix:** add `ExistsByTenantIdAndIdAsync` as an `AnyAsync` and call it.
+
+- [ ] **R13 — medium — `IInvoiceSequenceRepository.InsertAsync` has `AddAsync` semantics.**
+  `InvoiceSequenceRepository.cs:19-20` stages without saving, while the persistence standard fixes
+  `InsertAsync` as stage-and-save and every inherited implementation in the codebase saves.
+  **Fix:** rename to `AddAsync` on interface and implementation.
+
+- [ ] **R14 — medium — two registered services have no consumer and the code they replace is unchanged.**
+  `IInvoicePrivilegedRepository` and `IInvoiceSequenceRepository` are registered
+  (`ServiceCollectionExtensions.cs:84-85`) with no injection site, while `InvoiceIssuer` still does all three
+  jobs against the context directly (`InvoiceIssuer.cs:26,50-51,55,70`). Plan §4.6 requires `InvoiceIssuer` to
+  take those repositories and drop its `DbContext` parameter; this candidate created them and stopped.
+  **Fix:** wire `InvoiceIssuer` to them (this is 4.5/4.6 work and may be deferred to that slice, but the
+  registrations should not sit dead in the meantime).
+
+- [ ] **R15 — medium — the `IsHost` bypass shape survives on two live predicates.**
+  `TenantFilters.cs:24` still ORs `context.TenantContext.IsHost` into every single-owner filter, and
+  `ConcertService.cs:273` still ANDs `!tenantContext.IsHost`. Both are inert only because both implementations
+  hard-code `false` (`MembershipContext.cs:36`, `DesignTimeTenantContext.cs:12`). `ITenantContext` is a
+  platform package type, so the member cannot be removed here — but the disjuncts can, and two unit tests
+  already mock it `true` (`ConcertServiceTests.cs:117,157`), asserting through a bypass production cannot
+  reach.
+  **Fix:** drop both local disjuncts and the two `true` mocks.
+
+- [ ] **R16 — low — `AssignMember`'s tenant guard is vacuous.** `ConcertEntity.cs:181-185` compares
+  `membershipTenantId != actorTenantId`, and the sole caller passes `actor.TenantId` for both
+  (`ConcertService.cs:423`). The real check is `IsCurrentMembershipAsync` at `:413`; the domain guard looks
+  like a second barrier and is not.
+  **Fix:** drop the parameter and the comparison, or pass the membership's actual owning tenant.
+
+- [ ] **R17 — low — the shared audience predicate is copy-pasted ten times across four contexts.**
+  `ConcertDbContext.cs:43-46,48-51,57-60`; `BookingDbContext.cs:29-32,38-41`;
+  `ApplicationDbContext.cs:31-34,36-39`; `ConversationsDbContext.cs:36-39,41-44`. Plan §4.2 requires the
+  shared membership/audience/time expression to be expressed once in DataAccess's expression builder;
+  `ResourceAccessExpressions` factored out the membership/validity half and stopped, leaving the
+  security-critical `MembershipId == null || == ActiveMembershipId` rule with ten edit sites.
+  **Fix:** add an `Or` combinator and a `ReachableAtAudience<TGrant, TScope>(context, permission)` expression;
+  each context then supplies only its scope test.
+
+- [ ] **R18 — low — dangling doc references to the deleted `AccessScopedDbContext`.**
+  `TenantScopedDbContext.cs:13,53`, `TenantFilters.cs:10` and `CODE_PATTERNS.md:14,20` still name the type this
+  candidate deletes. The two source files are outside the changed-path set, so the candidate broke references
+  in unchanged files — the rename's grep gate was not run.
+  **Fix:** rename all five to `ResourceScopedDbContext` and run `grep -rniE "accessscopeddbcontext|accesscontext"`
+  to zero.
+
+- [ ] **R19 — low — stray U+FEFF mid-file.** `ConcertServiceTests.cs:3` and `ConcertServiceCreateTests.cs:3`
+  (byte offset 87 in both) carry a BOM in the middle of the file, from prepending `using` lines above a
+  BOM-bearing first line. Compiles, but is junk.
+  **Fix:** strip both.
+
+- [ ] **R20 — critical — posting a concert returns 500. Proven by test, not predicted.**
+  Slice 3 rebound three Concert pre-commit domain-event handlers to `IConcertPrivilegedRepository`, so they
+  now re-read the aggregate through a *different* `DbContext` instance than the one mid-save.
+  `ConcertEntity.Post` (`ConcertEntity.cs:289-302`) sets `DatePosted` in memory and raises the event;
+  `DomainEventDispatchInterceptor` dispatches pre-commit handlers *before* the UPDATE reaches SQL; so
+  `ConcertPostedDomainEventHandler.cs:25,31` materialises the pre-write row where `DatePosted` is NULL and
+  `!.Value` throws. `TrySaveChangesAsync` catches only `DbUpdateException`, so it escapes as a 500 and the
+  concert never leaves `Draft`.
+  **Verified:** `dotnet test api/tests/Concertable.B2B.Lifecycle.IntegrationTests --filter ConcertPostingLifecycleTests`
+  → 2 failed, `PUT /api/concert/post/1` → `500 "Nullable object must have a value."` at
+  `ConcertPostedDomainEventHandler.cs:31`.
+  `ConcertChangedDomainEventHandler.cs:34-51` has the same defect *silently*: on the update path it publishes
+  the pre-update `Name`, `About`, `TotalTickets` and `Genres` to every downstream projection, so an edit never
+  reaches the listing and no test fails. `ConcertCancelledDomainEventHandler` is safe only by accident — it
+  reads three immutable fields.
+  Reverting is not the fix: the filtered binding returned nothing in membership-less flows, which is why it
+  was changed.
+  **Fix:** stop re-reading in a pre-commit handler. Either resolve the read from the saving context via
+  `IDbContextAccessor.Context` (both interceptors set it for the duration of dispatch), or carry the
+  projection on the domain event — `ConcertChangedDomainEvent` already does this for `Price`, `Period` and
+  `DatePosted` — and delete the re-read. The second also removes the latent explicit-transaction hazard.
+
+- [ ] **R21 — high — unsettled — adding a filter to the grant *entity* may have emptied three Conversations
+  participant queries.** Before this candidate `ThreadAccessGrant` had no filter of its own; the conditions were
+  inlined into each parent's `Any(...)` (patch 7254-7269). The candidate moves them onto the grant entity
+  (`ConversationsDbContext.cs:32-44`), which restricts grants to `grant.TenantId == ActiveTenantId`. Three
+  queries deliberately read *other* participants' grants and were changed only for the `Participate` →
+  `SendMessages` rename: `ThreadRepository.cs:21-28` (`Distinct().Count() == participantTenantIds.Count` can
+  now only ever be 1, so `MessageService.cs:85-96` would create a duplicate thread on every send),
+  `ThreadRepository.cs:35-43` (`RecipientsOfAsync` yields an empty recipient list),
+  `MessageRepository.cs:74-81` (asks `grant.TenantId != tenantId` while the filter asserts `==`, so provably
+  empty).
+  **Status: not settled.** The Conversations integration suite cannot execute in this worktree —
+  all 17 tests fail at fixture startup in 1ms with
+  `DllNotFoundException: Microsoft.Data.SqlClient.SNI.dll ... The filename or extension is too long (0x800700CE)`,
+  a Windows MAX_PATH limit on this deep worktree path. That is an environment failure and is evidence of
+  nothing about the code.
+  **Fix:** run this suite from a shorter path (or with long paths enabled) to settle it first. If confirmed,
+  serve participant/counterparty lookups from `ConversationsPrivilegedDbContext`, or keep the grant conditions
+  inlined in the parent filters as before. Plan §4.7 deletes `GetByParticipantsAsync` and `CounterpartTenantId`
+  anyway, but the candidate as frozen ships these call sites live.
+
+- [ ] **R22 — medium — the permission catalog grants Staff a permission it can never exercise.**
+  Every principal grant is issued tenant-wide (`membershipId: null` at `ConcertEntity.cs:98`,
+  `ApplicationEntity.cs:65`, `InvoiceEntity.cs:81`, `ThreadEntity.cs:43`), and the `AssignedResources` arm
+  requires `grant.MembershipId == ActiveMembershipId`. The only member-grant issuer is
+  `ConcertEntity.AssignMember` (Summary + Operations). So Staff/Door/Sound read nothing anywhere except a
+  concert explicitly assigned to them — yet `PermissionCatalog.cs:78-83` gives Staff `MessagesRead` and
+  `MessagesSend`, which no conversation grant can ever satisfy.
+  **Fix:** either issue member-assignment grants on the conversation alongside the concert assignment, or
+  remove the message permissions from the assigned-audience roles until P1 has a path that makes them usable.
+  Whichever way, the catalog should not assert a capability the predicate forbids.
+
+- [ ] **R23 — low — the settlement succeeded/failed processors now disagree on the same condition.**
+  `SettlementPaymentProcessor.cs:48-53` throws for an outcome naming an unknown concert;
+  `SettlementPaymentFailedProcessor.cs:38-43` logs and records the inbox receipt for the identical condition.
+  Same event family, opposite poison policy: one dead-letters and needs an operator, the other consumes
+  silently. The throw does reach durable retry (Service Bus abandons with backoff and dead-letters at
+  `MaxDeliveryCount`; the outbox dispatcher records a bounded failure), and no receipt is written on that path
+  — both verified.
+  **Fix:** pick one policy for an unresolvable target across both processors, and distinguish "concert does not
+  exist" from "operation mismatch" in the message so a dead-lettered entry is actionable.
+
+**Dropped by the parent, with reason.** The persistence lens reported `IMembershipReadRepository` as a
+misnamed cross-module persistence contract. Plan §4.9's naming inventory mandates that exact name and §4.1
+pre-answers the objection: *"The Read qualifier names the narrower interface's mutability; it does not
+introduce another repository implementation or a different tenancy stance."* An intentional change against a
+rule the plan overrode is not a finding.
+
+**Cleared — checked and found correct.** Recording these so they are not re-derived:
+
+- **`AudienceFor(permission)` is re-evaluated per query execution, not frozen into the cached model.** This was
+  the parent's largest stated doubt. EF rewrites a closure whose static type is assignable-from the context
+  type into a per-execution `__ef_filter__` parameter; both halves of the predicate satisfy that
+  (`ResourceAccessExpressions.cs:18` takes `IHasResourceAccessContext`; the per-module members capture the
+  concrete context). Corroborated in-repo: `TenantFilters.cs:21-25` uses the identical interface-typed capture
+  and is exercised by multi-tenant integration suites on one shared host that would fail under a first-caller
+  freeze. Reasoned from EF's documented behaviour, not executed — a test running the same query shape from two
+  memberships in one process is still owed.
+- **Predicate grouping, member/tenant audience separation, cross-scope isolation and null-caller denial** are
+  all correct in all four contexts; `.And` wraps whole bodies in one `AndAlso`, so it adds no precedence hazard.
+- **The incarnation check is complete** — all four columns compared on one `MembershipAuthority` row, and the
+  view's aliases match the entity. `Memberships` has no soft-delete column and `(TenantId, UserId)` is unique,
+  so a rejoin necessarily has a new `Id`.
+- **Filter direction is one-way**; no grant filter navigates back through its parent.
+- **The `ExecutionScope` machinery is fully removed** — zero remaining production references, no orphaned
+  registration, and no endpoint lost an authorization attribute while surviving.
+- **Seeding is sound**: seeders write only their own aggregates through the production entity path,
+  `UseSeedingSupport` is present on every privileged context a seeder writes through, and keeping
+  `MigrateAsync` on the filtered context is correct. `SeedIfEmptyAsync` now reads true row counts, which is a
+  fix, not a regression.
+- **Inbox receipt and outbox rows land on one context** in all four payment processors. The split between the
+  settlement transaction and the receipt transaction is pre-existing (the candidate changed only the context
+  type) and is dropped as out of scope.
+
+**Verification run for this pass.** Solution build clean. Unit + architecture tiers: 0 failed across 14
+assemblies — but see R4: that count silently excludes `Concertable.B2B.Authorization.UnitTests`. Tenant
+integration: 80/83, the 3 owned by F19/F14. Lifecycle `ConcertPostingLifecycleTests`: **2 failed** (R20).
+Conversations integration: **blocked by environment**, not run (R21). Application, Booking, Concert, Venue,
+Artist, Admin and Process integration tiers: not run.
+
+**Pass judgment:** `changes-requested`. Two critical findings are reachable in production (R2, R20), one
+critical finding makes the candidate's headline feature silently non-functional (R1), and the verification
+this candidate was committed on was narrower than reported (R4).
