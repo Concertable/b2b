@@ -239,7 +239,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
 
-        var operationId = application.AcceptanceOperationId ?? Guid.NewGuid();
+        var operationId = application.BeginAcceptance();
         var venueSignature = eSignature.ToSignature(
             userId, timeProvider.GetUtcNow().UtcDateTime, clientContext.IpAddress, clientContext.UserAgent);
         var snapshot = new ApplicationAcceptanceSnapshot(
@@ -270,7 +270,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 deal.Terms));
         var acceptedApplication = new AcceptedApplication(snapshot);
 
-        application.BeginAcceptance(operationId);
         if (application.Accept(acceptedApplication).TryGetError(out var transitionError))
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);

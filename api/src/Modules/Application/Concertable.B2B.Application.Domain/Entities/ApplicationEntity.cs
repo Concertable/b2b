@@ -49,7 +49,7 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         ArtistTenantId = artistTenantId;
     }
 
-    public Guid BeginAcceptance() => BeginAcceptance(Guid.NewGuid());
+    public Guid BeginAcceptance() => AcceptanceOperationId ??= Guid.NewGuid();
 
     public Guid BeginAcceptance(Guid operationId)
     {
