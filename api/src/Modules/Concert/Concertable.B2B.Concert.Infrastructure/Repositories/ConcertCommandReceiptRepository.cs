@@ -5,20 +5,35 @@ using Microsoft.EntityFrameworkCore;
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
 internal sealed class ConcertCommandReceiptRepository
-    : GuidRepository<ConcertCommandReceipt>, IConcertCommandReceiptRepository
+    : GuidPrivilegedRepository<ConcertCommandReceipt>, IConcertCommandReceiptRepository
 {
-    private readonly ConcertDbContext context;
+    private readonly ConcertPrivilegedDbContext context;
 
-    public ConcertCommandReceiptRepository(ConcertDbContext context) : base(context)
+    public ConcertCommandReceiptRepository(ConcertPrivilegedDbContext context) : base(context)
     {
         this.context = context;
     }
 
-    public Task<ConcertCommandReceipt?> GetByTenantIdAndOperationAndRequestIdAsync(
-        Guid issuedByTenantId, string operation, Guid requestId, CancellationToken ct = default) =>
-        context.ConcertCommandReceipts.SingleOrDefaultAsync(
+    public void Add(ConcertCommandReceipt receipt) =>
+        context.ConcertCommandReceipts.Add(receipt);
+
+    public async Task<ConcertCommandReceipt?> GetByTenantIdAndOperationAndRequestIdForUpdateAsync(
+        Guid issuedByTenantId,
+        string operation,
+        Guid requestId,
+        CancellationToken ct = default)
+    {
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            SELECT 1
+            FROM concert.ConcertCommandReceipts WITH (UPDLOCK, HOLDLOCK)
+            WHERE IssuedByTenantId = {issuedByTenantId}
+              AND Operation = {operation}
+              AND RequestId = {requestId}
+            """, ct);
+        return await context.ConcertCommandReceipts.SingleOrDefaultAsync(
             receipt => receipt.IssuedByTenantId == issuedByTenantId
                        && receipt.Operation == operation
                        && receipt.RequestId == requestId,
             ct);
+    }
 }

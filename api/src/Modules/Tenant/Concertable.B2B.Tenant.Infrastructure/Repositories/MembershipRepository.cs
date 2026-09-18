@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 
 internal sealed class MembershipRepository : Repository<TenantMembershipEntity>, IMembershipRepository,
-    IMembershipReadRepository, IMembershipAuthorityFence
+    IMembershipReadRepository, IMembershipAuthorityFence, ITenantCommandFacts
 {
     private readonly TenantDbContext context;
     private readonly CommandTransactionAccessor transactions;
@@ -62,6 +62,78 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
             && authority.PermissionVersion == expected.PermissionVersion
                 ? authority
                 : null;
+    }
+
+    public async Task<TenantCommandFacts?> ResolveAsync(
+        MembershipSnapshot expectedActor,
+        Guid targetTenantId,
+        Guid? targetMembershipId = null,
+        CancellationToken ct = default)
+    {
+        var transaction = transactions.Current
+            ?? throw new InvalidOperationException("Tenant command facts require an active command transaction.");
+        await transaction.EnlistAsync(context, ct);
+
+        foreach (var tenantId in new[] { expectedActor.TenantId, targetTenantId }.Distinct().Order())
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                 SELECT 1
+                 FROM tenant.Tenants WITH (HOLDLOCK)
+                 WHERE Id = {tenantId}
+                 """,
+                ct);
+        }
+
+        IEnumerable<Guid> membershipIds = targetMembershipId is { } targetId
+            ? new[] { expectedActor.MembershipId, targetId }.Distinct().Order()
+            : [expectedActor.MembershipId];
+        foreach (var membershipId in membershipIds)
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                 SELECT 1
+                 FROM tenant.Memberships WITH (HOLDLOCK)
+                 WHERE Id = {membershipId}
+                 """,
+                ct);
+        }
+
+        var actor = await context.Memberships
+            .Where(membership =>
+                membership.Id == expectedActor.MembershipId
+                && membership.TenantId == expectedActor.TenantId
+                && membership.UserId == expectedActor.UserId)
+            .Select(membership => new MembershipSnapshot(
+                membership.Id,
+                membership.TenantId,
+                membership.UserId,
+                membership.Role,
+                membership.PermissionVersion))
+            .SingleOrDefaultAsync(ct);
+        if (actor is null
+            || actor.Role != expectedActor.Role
+            || actor.PermissionVersion != expectedActor.PermissionVersion)
+            return null;
+
+        var targetTenantExists = await context.Tenants.AnyAsync(tenant => tenant.Id == targetTenantId, ct);
+        MembershipSnapshot? targetMembership = null;
+        if (targetMembershipId is { } membershipIdValue)
+        {
+            targetMembership = await context.Memberships
+                .Where(membership =>
+                    membership.Id == membershipIdValue
+                    && membership.TenantId == targetTenantId)
+                .Select(membership => new MembershipSnapshot(
+                    membership.Id,
+                    membership.TenantId,
+                    membership.UserId,
+                    membership.Role,
+                    membership.PermissionVersion))
+                .SingleOrDefaultAsync(ct);
+        }
+
+        return new TenantCommandFacts(actor, targetTenantExists, targetMembership);
     }
 
     public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(

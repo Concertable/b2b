@@ -66,6 +66,8 @@ internal sealed class ApplicationMapper : IApplicationMapper
 
             return new ApplicationDto(
                 application.Id,
+                application.VenueTenantId,
+                application.ArtistTenantId,
                 artist,
                 new OpportunitySummary(
                     opportunity.Id,

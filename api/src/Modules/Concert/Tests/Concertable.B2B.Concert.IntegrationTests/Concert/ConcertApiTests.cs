@@ -88,32 +88,32 @@ public sealed class ConcertApiTests : IAsyncLifetime
     #region Update
 
     [Fact]
-    public async Task Update_WhenAnotherUpdateWinsTheRace_ReturnsConflictAndPreservesWinner()
+    public async Task ConcurrentUpdates_SerializeToCompleteResults()
     {
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
         var client = CreateOwningVenueClient(concert.VenueId);
         var competitor = CreateOwningVenueClient(concert.VenueId);
-        HttpResponseMessage? winnerResponse = null;
-        fixture.ArmConcertConflict(async () =>
-        {
-            winnerResponse = await competitor.PutAsync(
-                $"/api/concert/{concert.Id}",
-                BuildPostRequest(name: "Winner"));
-        });
+        var responses = await RaceAsync(
+            () => client.PutAsync($"/api/concert/{concert.Id}", BuildPostRequest(name: "First")),
+            () => competitor.PutAsync($"/api/concert/{concert.Id}", BuildPostRequest(name: "Second")));
+
+        foreach (var response in responses)
+            await response.ShouldBe(HttpStatusCode.OK);
+        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
+        Assert.Contains(persisted.Name, new[] { "First", "Second" });
+    }
+
+    [Fact]
+    public async Task Update_ShouldReturn403_WhenCallerIsNotVenuePrincipal()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
         var response = await client.PutAsync(
             $"/api/concert/{concert.Id}",
-            BuildPostRequest(name: "Loser"));
+            BuildPostRequest(name: "Foreign update"));
 
-        Assert.NotNull(winnerResponse);
-        await winnerResponse.ShouldBe(HttpStatusCode.OK);
-        await response.ShouldBe(HttpStatusCode.Conflict);
-        var problem = await response.Content.ReadAsync<ProblemDetails>();
-        Assert.NotNull(problem);
-        Assert.Equal("concert.update.superseded", problem.Extensions["code"]?.ToString());
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
-        var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
-        Assert.Equal("Winner", persisted.Name);
+        await response.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     #endregion
@@ -134,9 +134,9 @@ public sealed class ConcertApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Post_ShouldReturn403_WhenNotVenueManager()
+    public async Task Post_ShouldReturn403_WhenCallerIsNotVenuePrincipal()
     {
-        var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
         var request = BuildPostRequest();
 
         var response = await client.PutAsync(
@@ -181,4 +181,22 @@ public sealed class ConcertApiTests : IAsyncLifetime
     }
 
     #endregion
+
+    private static async Task<HttpResponseMessage[]> RaceAsync(
+        Func<Task<HttpResponseMessage>> first,
+        Func<Task<HttpResponseMessage>> second)
+    {
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<HttpResponseMessage> RunAsync(Func<Task<HttpResponseMessage>> request)
+        {
+            await start.Task;
+            return await request();
+        }
+
+        var firstTask = RunAsync(first);
+        var secondTask = RunAsync(second);
+        start.SetResult();
+        return await Task.WhenAll(firstTask, secondTask);
+    }
 }

@@ -25,57 +25,57 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(TenantPermission.ApplicationsDecide)]
     [HttpGet("opportunity/{id}")]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>>> GetAllByOpportunityId(int id)
+    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetAllByOpportunityId(int id)
     {
         var result = await applicationService.GetByOpportunityIdAsync(id);
-        return (await result.MapAsync(mapper.ToVenueResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.ApplicationsSubmit)]
     [EnableRateLimiting(RateLimitPolicies.Apply)]
     [HttpPost("{opportunityId}")]
-    public async Task<ActionResult<ApplicationResponse<ArtistApplicationActions>>> Apply(
+    public async Task<ActionResult<ApplicationResponse>> Apply(
         int opportunityId,
         [FromBody] ApplyRequest request,
         CancellationToken ct)
     {
         var result = await applicationService.ApplyAsync(opportunityId, request.ESignature, ct);
-        var response = await result.MapAsync(mapper.ToArtistResponseAsync);
+        var response = await result.MapAsync(mapper.ToResponseAsync);
         return response.ToCreatedOrProblem(application => $"/api/application/{application.Id}");
     }
 
     [HttpGet("artist/pending")]
     [HasPermission(TenantPermission.ApplicationsSubmit)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>>> GetPendingForArtist()
+    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetPendingForArtist()
     {
         var result = await applicationService.GetPendingForArtistAsync();
-        return (await result.MapAsync(mapper.ToArtistResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
     }
 
     [HttpGet("artist/recently-denied")]
     [HasPermission(TenantPermission.ApplicationsSubmit)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>>> GetRecentDeniedForArtist()
+    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetRecentDeniedForArtist()
     {
         var result = await applicationService.GetRecentDeniedForArtistAsync();
-        return (await result.MapAsync(mapper.ToArtistResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
     }
 
     [HttpGet("venue/current")]
     [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HasPermission(TenantPermission.OperationsView)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>>> GetPendingForCurrentVenue()
+    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetPendingForCurrentVenue()
     {
         var result = await applicationService.GetPendingForCurrentVenueAsync();
-        return (await result.MapAsync(mapper.ToVenueResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
     }
 
     [HttpGet("artist/current")]
     [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
     [HasPermission(TenantPermission.OperationsView)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>>> GetCurrentForCurrentArtist()
+    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetCurrentForCurrentArtist()
     {
         var result = await applicationService.GetCurrentForCurrentArtistAsync();
-        return (await result.MapAsync(mapper.ToArtistResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.OperationsView)]

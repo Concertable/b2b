@@ -6,13 +6,13 @@
 - Branch: `Refactor/PartyFoundationLegacyBindings`
 - Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
 - Prior implementation head: `f6ecc9bf` (P1 slices 1-3)
-- Current checkpoint: P1 4.3 Application, Booking and Concert cancellation policy implemented and locally verified
+- Current checkpoint: P1 4.3 command policy complete and locally verified
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Delivery gate: do not push or merge; the user authorized local P1 implementation and commits only.
 
 ## Current state
 
-P1 implementation is active on this branch. Slices 1-4 and the Application, Booking and Concert cancellation portions of 4.3 are implemented.
+P1 implementation is active on this branch. Slices 1-4 and the complete shipped mutation surface in 4.3 are implemented.
 Application apply, accept, reject, cancel and withdraw now execute through the root command transaction with
 locked current-membership authority, exact Proposal grants, privileged mutation repositories and a final
 post-flush authority check. Payment verification and its Booking handlers join the same root transaction,
@@ -21,6 +21,15 @@ Booking cancellation now admits either accepted principal under `bookings.cancel
 grant, using the same locked membership/resource/final-validation sequence.
 Concert cancellation now admits either current principal under `concerts.manage` and the exact Operations
 grant, using the privileged Concert stance, locked Concert/grant rows and final post-flush validation.
+Concert edit/post/door revenue, summary sharing and member assignment now use the same root command,
+locked membership/resource/grant evidence and post-flush authority validation. Summary-share request
+receipts and newly issued grants are staged explicitly in the privileged command context. Concurrent
+same-request shares replay one recorded grant.
+
+`ApplicationSide` and its venue/artist response variants are deleted. Application responses now expose
+one operation-specific action set derived independently from principal identity and the exact permission
+for decide, submit and terms-read operations. No shipped Concert check-in command exists in P1, so there
+was no mutation surface to migrate for that reserved permission.
 
 Provider-real Application transition races now serialize to one successful transition and one conflict. The
 cross-module rollback probe reaches the Booking failure and proves that Application, Booking, Concert and
@@ -88,35 +97,45 @@ Tenant deletion removes owned activity rows first.
   locks Concert and Operations grants, and revalidates authority after flush.
 - Concert cancellation races now run as concurrent provider-backed requests for duplicate cancellation and
   against settlement reservation.
+- Concert update/post use `concerts.ops.edit` plus the venue Operations grant; door revenue uses
+  `concerts.declare_door_revenue` plus venue Operations and Finance grants.
+- Concert summary share/revoke and member assignment/removal use `resources.share`, principal Summary
+  entitlement, enlisted recipient/member facts, complete ACL locks and final authority validation.
+- Durable share receipts are locked after the Concert ACL and replay the recorded response; provider-real
+  concurrent same-request tests prove one grant is issued.
+- New access grants and command receipts are explicitly staged as added children in the privileged context,
+  avoiding EF treating client-keyed children as updates.
+- Deleted `ApplicationSide`, generic response variants and the unrelated-tenant venue fallback. One action
+  response computes each link from the corresponding principal and permission policy.
 
 ## Next steps
 
 Continue in this order. Each slice ends with a solution build, unit/architecture gate and local commit.
 
-1. **4.3 — finish command policy on every mutation.** Migrate Concert edit/post/door
-   revenue/check-in, Concert summary sharing and member assignment. Delete
-   `ApplicationSide`; compute actions per exact operation.
-2. **4.2 completion — exact-scope reads.** Remove financial/proposal fields from summaries, split Summary,
+1. **4.2 completion — exact-scope reads.** Remove financial/proposal fields from summaries, split Summary,
    Operations, Terms and Finance routes and permission checks, delete generic private-detail endpoints, and
    separate financial dashboards.
-3. **4.7 — Conversation.** Complete `Thread` → `Conversation`, address create/send by `ConversationId`, add
+2. **4.7 — Conversation.** Complete `Thread` → `Conversation`, address create/send by `ConversationId`, add
    request receipts, immutable initial audience, message sequence, monotonic read position, Tenant display
    projections and safe delivery.
-4. **4.8/4.9 — neutral lifecycle and clients.** Finish `TenantBusinessActivity`, neutral onboarding,
+3. **4.8/4.9 — neutral lifecycle and clients.** Finish `TenantBusinessActivity`, neutral onboarding,
    contact/activity administration, invitation role policy, deletion and admin verification contracts, then
    implement the real Business web/mobile journeys and tenant-switch isolation.
-5. **4.10 — qualification.** Replace textual resource-filter tests with model/provider coverage and run every
+4. **4.10 — qualification.** Replace textual resource-filter tests with model/provider coverage and run every
    module integration tier, provider race/revocation cases, workers, contract/invoice access, external summary
    denial, browser and native evidence. Run the canonical review over the completed P1 candidate.
 
 ## Verification at the current checkpoint
 
-- `dotnet build Concertable.B2B.slnx --no-restore`: passed, 0 errors; three existing warnings.
+- `dotnet build Concertable.B2B.slnx --no-restore`: passed, 0 errors; four existing warnings.
 - DataAccess Unit tier: 5 passed.
 - Architecture tier: 24 passed. The new DataAccess tests now carry the Unit assembly trait and a direct
   Reunion reference, satisfying CI ownership checks.
-- Concert unit tier: 94 passed after replacing two synthetic cancellation-conflict cases with provider-real
-  integration races.
+- Concert unit tier: 90 passed after deleting obsolete ordinary-context mutation mocks.
+- Concert summary sharing/member-assignment integration tier: 4 passed, including artist-principal sharing,
+  outsider denial, durable replay, concurrent same-request issuance and assignment removal.
+- Application exact-action integration cases: 9 passed under the short artifact root, covering independent
+  decision/submission actions, cancellation/withdrawal transitions and terms-link visibility.
 - Concert cancellation integration tier: 9 passed, including both-principal authority, outsider denial,
   duplicate cancellation and cancellation/settlement serialization.
 - `ConcertDoorSplitApiTests`: 8 passed through fresh reserve/complete command scopes, covering provider

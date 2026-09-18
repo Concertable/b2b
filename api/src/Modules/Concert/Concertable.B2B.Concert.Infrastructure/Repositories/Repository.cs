@@ -15,8 +15,11 @@ internal abstract class GuidRepository<TEntity>(ConcertDbContext context)
     : Repository<TEntity, Guid>(context)
     where TEntity : class, IGuidEntity;
 
+internal abstract class GuidPrivilegedRepository<TEntity>(ConcertPrivilegedDbContext context)
+    : Repository<TEntity, Guid>(context)
+    where TEntity : class, IGuidEntity;
+
 internal abstract class TenantScopedRepository<TEntity>(ConcertDbContext context, ITenantContext tenant)
     : TenantScopedRepository<TEntity, int>(context, tenant)
     where TEntity : class, IIdEntity, ITenantScoped;
-
 

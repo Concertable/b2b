@@ -222,6 +222,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             ?? throw new InvalidOperationException($"Venue {opportunity.VenueId} disappeared during apply.");
         return new ApplicationDto(
             application.Id,
+            application.VenueTenantId,
+            application.ArtistTenantId,
             artistSummary,
             new OpportunitySummary(
                 opportunity.Id,

@@ -64,13 +64,12 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Declare_ShouldReturn403_WhenCallerIsArtist()
+    public async Task Declare_ShouldReturn403_WhenCallerIsNotVenuePrincipal()
     {
-        // Declaring the door take is a venue decision; the artist lacks the permission.
-        var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
-        var response = await artistClient.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
+        var response = await client.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concertId);

@@ -204,7 +204,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         var appId = fixture.SeedState.FlatFeeApp.Id;
         var beforeResponse = await client.GetAsync($"/api/application/{appId}");
         await beforeResponse.ShouldBe(HttpStatusCode.OK);
-        var before = await beforeResponse.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
+        var before = await beforeResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Pending, before!.Status);
         Assert.NotNull(before.Actions.Accept);
         Assert.NotNull(before.Actions.Decline);
@@ -217,7 +217,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
         await rejectResponse.ShouldBe(HttpStatusCode.NoContent);
         var afterResponse = await client.GetAsync($"/api/application/{appId}");
         await afterResponse.ShouldBe(HttpStatusCode.OK);
-        var after = await afterResponse.Content.ReadAsync<ApplicationResponse<VenueApplicationActions>>();
+        var after = await afterResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Rejected, after!.Status);
         Assert.Null(after.Actions.Accept);
         Assert.Null(after.Actions.Decline);
@@ -233,7 +233,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
 
         var beforeResponse = await artist.GetAsync($"/api/Application/{appId}");
         await beforeResponse.ShouldBe(HttpStatusCode.OK);
-        var before = await beforeResponse.Content.ReadAsync<ApplicationResponse<ArtistApplicationActions>>();
+        var before = await beforeResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.NotNull(before!.Actions.Withdraw);
 
         var rejectResponse = await venue.PostAsync($"/api/Application/{appId}/reject", (object?)null);
@@ -241,7 +241,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
 
         var afterResponse = await artist.GetAsync($"/api/Application/{appId}");
         await afterResponse.ShouldBe(HttpStatusCode.OK);
-        var after = await afterResponse.Content.ReadAsync<ApplicationResponse<ArtistApplicationActions>>();
+        var after = await afterResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Null(after!.Actions.Withdraw);
     }
 

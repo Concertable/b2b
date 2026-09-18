@@ -72,15 +72,11 @@ internal sealed class ApplicationService : IApplicationService
         this.commandExecutor = commandExecutor;
     }
 
-    public Task<Result<ApplicationDetailsDto, ApplicationError>> GetByIdAsync(int id) =>
+    public Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id) =>
         applicationRepository.GetByIdAsync(id)
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
-            .MapAsync(async application => new ApplicationDetailsDto(
-                await mapper.ToDtoAsync(application),
-                application.ArtistTenantId == tenantContext.TenantId
-                    ? ApplicationSide.Artist
-                    : ApplicationSide.Venue));
+            .MapAsync(application => mapper.ToDtoAsync(application));
 
     public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id)
     {

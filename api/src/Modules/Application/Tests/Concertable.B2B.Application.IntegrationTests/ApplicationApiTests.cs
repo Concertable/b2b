@@ -75,7 +75,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     #region Get
 
     [Fact]
-    public async Task GetById_AsVenueParty_ReturnsVenueShapedActions()
+    public async Task GetById_AsVenuePrincipal_ReturnsDecisionActions()
     {
         var application = fixture.SeedState.FlatFeeApp;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -91,7 +91,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetById_AsArtistParty_ReturnsArtistShapedActions()
+    public async Task GetById_AsArtistPrincipal_ReturnsSubmissionActions()
     {
         var application = fixture.SeedState.FlatFeeApp;
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);

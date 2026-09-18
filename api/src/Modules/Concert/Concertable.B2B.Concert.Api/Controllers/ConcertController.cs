@@ -163,19 +163,25 @@ internal sealed class ConcertController : ControllerBase
     }
 
     [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
-    [HasPermission(TenantPermission.ConcertsManage)]
+    [HasPermission(TenantPermission.ConcertsOpsEdit)]
     [HttpPut("{id}")]
-    public async Task<ActionResult<ConcertUpdateResponse>> Update(int id, [FromBody] UpdateConcertRequest request)
+    public async Task<ActionResult<ConcertUpdateResponse>> Update(
+        int id,
+        [FromBody] UpdateConcertRequest request,
+        CancellationToken ct)
     {
-        return (await concertService.UpdateAsync(id, request)).ToOkOrProblem();
+        return (await concertService.UpdateAsync(id, request, ct)).ToOkOrProblem();
     }
 
     [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
-    [HasPermission(TenantPermission.ConcertsManage)]
+    [HasPermission(TenantPermission.ConcertsOpsEdit)]
     [HttpPut("post/{id}")]
-    public async Task<IActionResult> Post(int id, [FromBody] UpdateConcertRequest request)
+    public async Task<IActionResult> Post(
+        int id,
+        [FromBody] UpdateConcertRequest request,
+        CancellationToken ct)
     {
-        return (await concertService.PostAsync(id, request)).ToNoContentOrProblem();
+        return (await concertService.PostAsync(id, request, ct)).ToNoContentOrProblem();
     }
 
     [HasPermission(TenantPermission.ConcertsManage)]
@@ -186,10 +192,13 @@ internal sealed class ConcertController : ControllerBase
     }
 
     [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
-    [HasPermission(TenantPermission.ConcertsManage)]
+    [HasPermission(TenantPermission.ConcertsDeclareDoorRevenue)]
     [HttpPost("{id}/door-revenue")]
-    public async Task<IActionResult> DeclareDoorRevenue(int id, [FromBody] DoorRevenueRequest request)
+    public async Task<IActionResult> DeclareDoorRevenue(
+        int id,
+        [FromBody] DoorRevenueRequest request,
+        CancellationToken ct)
     {
-        return (await concertService.DeclareDoorRevenueAsync(id, request.DoorRevenue)).ToNoContentOrProblem();
+        return (await concertService.DeclareDoorRevenueAsync(id, request.DoorRevenue, ct)).ToNoContentOrProblem();
     }
 }

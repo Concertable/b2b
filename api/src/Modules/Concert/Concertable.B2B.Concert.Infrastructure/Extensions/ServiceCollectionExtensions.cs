@@ -85,7 +85,9 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IInvoiceSequenceRepository, InvoiceSequenceRepository>();
 
             // Services
-            services.AddScoped<IConcertService, ConcertService>();
+            services.AddScoped<ConcertService>();
+            services.AddScoped<IConcertService>(provider =>
+                provider.GetRequiredService<ConcertService>());
             services.AddScoped<ConcertWorkflow>();
             services.AddScoped<IConcertWorkflow>(provider =>
                 provider.GetRequiredService<ConcertWorkflow>());

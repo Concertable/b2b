@@ -176,7 +176,7 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         return new Success();
     }
 
-    public UnitResult<ConcertMemberAssignmentError> AssignMember(
+    public Result<IReadOnlyList<ConcertAccessGrant>, ConcertMemberAssignmentError> AssignMember(
         Guid actorTenantId, Guid membershipId, Guid membershipTenantId, DateTime at)
     {
         if (!IsPrincipal(actorTenantId) || membershipTenantId != actorTenantId)
@@ -188,9 +188,10 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
                 && grant.RevokedAt == null))
             return new ConcertMemberAssignmentError.AlreadyAssigned();
 
+        var grants = new List<ConcertAccessGrant>();
         foreach (var scope in new[] { ConcertAccessScope.Summary, ConcertAccessScope.Operations })
         {
-            accessGrants.Add(ConcertAccessGrant.Issue(
+            var grant = ConcertAccessGrant.Issue(
                 Id,
                 actorTenantId,
                 membershipId,
@@ -198,11 +199,13 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
                 issuedByTenantId: actorTenantId,
                 issuedByUserId: null,
                 ResourceGrantKind.MemberAssignment,
-                at));
+                at);
+            accessGrants.Add(grant);
+            grants.Add(grant);
         }
 
         AccessVersion++;
-        return new Success();
+        return grants;
     }
 
     public UnitResult<ConcertMemberAssignmentError> RemoveMemberAssignment(

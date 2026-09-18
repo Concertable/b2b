@@ -5,6 +5,8 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IConcertCommandReceiptRepository : IRepository<ConcertCommandReceipt, Guid>
 {
-    Task<ConcertCommandReceipt?> GetByTenantIdAndOperationAndRequestIdAsync(
+    void Add(ConcertCommandReceipt receipt);
+
+    Task<ConcertCommandReceipt?> GetByTenantIdAndOperationAndRequestIdForUpdateAsync(
         Guid issuedByTenantId, string operation, Guid requestId, CancellationToken ct = default);
 }

@@ -80,9 +80,12 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<IUnitOfWork>(),
             TimeProvider.System,
             Mock.Of<IConcertCommandReceiptRepository>(),
-            Mock.Of<ITenantModule>(),
+            Mock.Of<ITenantCommandFacts>(),
             Mock.Of<ITenantContext>(),
             Mock.Of<IMembershipContext>(),
+            Mock.Of<IMembershipAuthorityFence>(),
+            Mock.Of<IPermissionCatalog>(),
+            Mock.Of<ICommandExecutor>(),
             Mock.Of<IResourceAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());
     }

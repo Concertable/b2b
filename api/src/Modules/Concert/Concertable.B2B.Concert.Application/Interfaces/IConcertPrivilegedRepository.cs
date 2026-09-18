@@ -8,11 +8,15 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IConcertPrivilegedRepository : IRepository<ConcertEntity>
 {
+    void AddAccessGrants(IEnumerable<ConcertAccessGrant> grants);
+
     Task<ConcertEntity?> GetByIdForUpdateAsync(int concertId, CancellationToken ct = default);
 
     Task<ConcertEntity?> GetByBookingIdAsync(int bookingId, CancellationToken ct = default);
 
     Task<ConcertEntity?> GetWithGrantsByIdAsync(int concertId, CancellationToken ct = default);
+
+    Task<ConcertEntity?> GetWithGrantsByIdForUpdateAsync(int concertId, CancellationToken ct = default);
 
     Task<ConcertAccessIdentity?> GetIdentityByIdForUpdateAsync(int concertId, CancellationToken ct = default);
 
@@ -21,6 +25,27 @@ internal interface IConcertPrivilegedRepository : IRepository<ConcertEntity>
         CancellationToken ct = default);
 
     Task<bool> CanManageAsync(
+        int concertId,
+        MembershipSnapshot actor,
+        ResourceAudience audience,
+        DateTime at,
+        CancellationToken ct = default);
+
+    Task<bool> CanOperateAsync(
+        int concertId,
+        MembershipSnapshot actor,
+        ResourceAudience audience,
+        DateTime at,
+        CancellationToken ct = default);
+
+    Task<bool> CanDeclareDoorRevenueAsync(
+        int concertId,
+        MembershipSnapshot actor,
+        ResourceAudience audience,
+        DateTime at,
+        CancellationToken ct = default);
+
+    Task<bool> CanShareAsync(
         int concertId,
         MembershipSnapshot actor,
         ResourceAudience audience,

@@ -5,21 +5,12 @@ using System.Text.Json.Serialization;
 
 namespace Concertable.B2B.Application.Api.Responses;
 
-[JsonDerivedType(typeof(ApplicationResponse<VenueApplicationActions>))]
-[JsonDerivedType(typeof(ApplicationResponse<ArtistApplicationActions>))]
-internal record ApplicationResponse(
-    int Id,
-    ArtistSummary Artist,
-    OpportunitySummaryResponse Opportunity,
-    ApplicationStatus Status);
-
-internal sealed record ApplicationResponse<TActions>(
+internal sealed record ApplicationResponse(
     int Id,
     ArtistSummary Artist,
     OpportunitySummaryResponse Opportunity,
     ApplicationStatus Status,
-    TActions Actions)
-    : ApplicationResponse(Id, Artist, Opportunity, Status);
+    ApplicationActions Actions);
 
 internal sealed record OpportunitySummaryResponse(
     int Id,
@@ -30,13 +21,10 @@ internal sealed record OpportunitySummaryResponse(
     IReadOnlyList<Genre> Genres,
     DealDto Deal);
 
-internal sealed record VenueApplicationActions(
+internal sealed record ApplicationActions(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ActionLink? Accept,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ActionLink? Checkout,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ActionLink? Decline,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ActionLink? Cancel,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ActionLink? Contract);
-
-internal sealed record ArtistApplicationActions(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ActionLink? Withdraw,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ActionLink? Contract);
