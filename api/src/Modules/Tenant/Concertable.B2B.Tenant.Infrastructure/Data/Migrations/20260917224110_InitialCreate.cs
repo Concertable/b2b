@@ -223,9 +223,6 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 column: "TenantId",
                 unique: true);
 
-            /* Tenant owns membership rows; a resource module re-checks the acting membership incarnation
-               inside the same statement that reads its resource, and reads it through this view so no module
-               maps a writable table it does not own. */
             migrationBuilder.Sql("""
                 CREATE VIEW tenant.MembershipAuthority AS
                 SELECT Id AS MembershipId, TenantId, UserId, PermissionVersion

@@ -3,12 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Data;
 
-/// <summary>
-/// The Artist module's stance for work no human is acting in: the same mapping as
-/// <see cref="ArtistDbContext"/>, with neither the owning-tenant filter nor the tenant write fence, because
-/// this stance exists precisely to read and write rows belonging to many tenants. Only seed factories and
-/// this module's own system work may inject it.
-/// </summary>
+/// <summary>The unfiltered, unfenced stance for work no human is acting in. See <see cref="ArtistDbContext"/>.</summary>
 internal sealed class ArtistPrivilegedDbContext(
     DbContextOptions<ArtistPrivilegedDbContext> options,
     ArtistConfigurationProvider provider)

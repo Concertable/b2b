@@ -1,4 +1,4 @@
-namespace Concertable.B2B.Authorization.Contracts;
+﻿namespace Concertable.B2B.Authorization.Contracts;
 
 /// <summary>
 /// The active membership for the current B2B request — the authority source for permission checks. A
@@ -8,7 +8,6 @@ namespace Concertable.B2B.Authorization.Contracts;
 /// </summary>
 public interface IMembershipContext
 {
-    /// <summary>The resolved membership; <see langword="null"/> when the caller has none in the active tenant.</summary>
     MembershipSnapshot? Membership { get; }
 
     bool HasPermission(string permission);

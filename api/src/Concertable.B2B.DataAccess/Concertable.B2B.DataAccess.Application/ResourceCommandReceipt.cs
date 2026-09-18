@@ -1,18 +1,9 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.DataAccess.Application;
 
-/// <summary>
-/// What a protected command already decided for one caller-supplied request identity. A retry of the same
-/// request returns the recorded outcome instead of acting twice; the same identity carrying a different
-/// payload is a conflict, because the caller is no longer asking the question it was answered.
-/// <para>
-/// Each owning module declares its own receipt table over its own operations: a receipt is only meaningful
-/// beside the rows the command wrote, and it commits with them.
-/// </para>
-/// </summary>
 public abstract class ResourceCommandReceipt : IGuidEntity
 {
     protected ResourceCommandReceipt() { }

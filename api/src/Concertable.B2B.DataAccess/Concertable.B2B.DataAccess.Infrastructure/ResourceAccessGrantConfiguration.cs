@@ -1,4 +1,4 @@
-using Concertable.B2B.DataAccess.Application;
+﻿using Concertable.B2B.DataAccess.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -35,10 +35,8 @@ public abstract class ResourceAccessGrantConfiguration<TGrant, TScope> : IEntity
         builder.HasIndex(g => new { g.TenantId, g.Scope, g.ResourceId, g.MembershipId })
             .HasFilter($"[{nameof(ResourceAccessGrant<TScope>.RevokedAt)}] IS NULL");
 
-        /* Uniqueness is per issuer and kind: each principal owns its own disclosure, so revoking one issuer's
-           share leaves another issuer's and the recipient's own principal entitlement alone. Two explicit rules
-           rather than one over a nullable column, because SQL Server treats NULLs as equal in a unique index
-           and a single index would let one member-specific grant block every other member's. */
+        /* Two rules rather than one over a nullable column: SQL Server treats NULLs as equal in a unique
+           index, so a single index would let one member-specific grant block every other member's. */
         builder.HasIndex(g => new { g.ResourceId, g.TenantId, g.Scope, g.Kind, g.IssuedByTenantId })
             .IsUnique()
             .HasFilter(

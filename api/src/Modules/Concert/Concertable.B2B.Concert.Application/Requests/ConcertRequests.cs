@@ -1,9 +1,5 @@
 ﻿namespace Concertable.B2B.Concert.Application.Requests;
 
-/// <summary>
-/// The scope is not a parameter: a summary share discloses the summary and nothing else. Widening it is a
-/// consent design, not another value on this request.
-/// </summary>
 internal sealed record ShareConcertSummaryRequest
 {
     public Guid RequestId { get; init; }

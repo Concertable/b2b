@@ -58,8 +58,6 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     private readonly List<ConcertAccessGrant> accessGrants = [];
     public IReadOnlyList<ConcertAccessGrant> AccessGrants => accessGrants;
 
-    /// <summary>Changes whenever this concert's grants change, so a share or assignment command can state the
-    /// access state it decided against and fail rather than act on a superseded one.</summary>
     public long AccessVersion { get; private set; }
 
     private readonly EventRaiser events = new();
@@ -143,8 +141,8 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         return grant;
     }
 
-    /* Expiry cannot live in the unique index's filter, so a reissue retires the expired row first. The caller
-       flushes between the two, inside the one transaction, or the insert collides with the row it replaces. */
+    // Retire before reissue: the caller must flush between the two or the insert collides with the row it
+    // replaces, because expiry cannot live in the unique index's filter.
     public void RevokeExpiredSummaryShares(
         Guid issuerTenantId, Guid recipientTenantId, Guid? recipientMembershipId, DateTime at)
     {

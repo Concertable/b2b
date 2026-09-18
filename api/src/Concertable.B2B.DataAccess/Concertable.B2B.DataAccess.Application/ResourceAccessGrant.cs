@@ -1,4 +1,4 @@
-using Concertable.Kernel;
+﻿using Concertable.Kernel;
 
 namespace Concertable.B2B.DataAccess.Application;
 
@@ -6,11 +6,6 @@ namespace Concertable.B2B.DataAccess.Application;
 /// One tenant's access to one resource, at one scope. Each owning module declares its own grant entity over
 /// its own scope vocabulary, because the resource foreign key is real and module-local; this base carries only
 /// the audience, validity and provenance every grant family shares.
-/// <para>
-/// A row with a <see cref="MembershipId"/> narrows the tenant audience to that one membership incarnation, and
-/// still requires it to be current. It is sufficient on its own: pairing it with a tenant-wide row would
-/// disclose the same resource to every other member.
-/// </para>
 /// </summary>
 public abstract class ResourceAccessGrant<TScope> : IGuidEntity
     where TScope : struct, Enum
@@ -25,7 +20,6 @@ public abstract class ResourceAccessGrant<TScope> : IGuidEntity
     /// <summary>The tenant the resource is disclosed to.</summary>
     public Guid TenantId { get; protected set; }
 
-    /// <summary>When set, only this membership of <see cref="TenantId"/> may read the resource.</summary>
     public Guid? MembershipId { get; protected set; }
 
     public TScope Scope { get; protected set; }

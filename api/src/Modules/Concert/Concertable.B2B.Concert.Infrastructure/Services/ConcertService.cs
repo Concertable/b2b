@@ -326,8 +326,7 @@ internal sealed class ConcertService : IConcertService
 
         var decidedAt = resourceAccess.UtcNow;
 
-        /* An expired issuance still occupies the unique active row, so it is retired and flushed before its
-           replacement is inserted, both inside this one transaction. */
+        // Flush required between retire and reissue; see ConcertEntity.RevokeExpiredSummaryShares.
         concert.RevokeExpiredSummaryShares(
             actor.TenantId, request.RecipientTenantId, request.RecipientMembershipId, decidedAt);
         await unitOfWork.SaveChangesAsync(ct);

@@ -7,15 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
 /// <summary>
-/// The stance for a module whose rows are reached through resource access grants rather than through an
-/// ownership column: a row is visible to a membership holding a live grant on it at the audience its own
-/// permission reaches. The single-owner stance, where the row names its one owning tenant, stays on
-/// <see cref="TenantScopedDbContext"/>, and a context may declare both.
-/// <para>
-/// Each entity's grant filter is declared in the owning context's <c>ApplyTenantFilters</c> against that
-/// context's own grant set. It is deliberately not derived from a marker: which resources are reached by
-/// grant is a per-entity product decision, and the filter has to name the grant family it reads.
-/// </para>
+/// The stance for a module whose rows are reached through resource access grants rather than an ownership
+/// column. The single-owner stance stays on <see cref="TenantScopedDbContext"/>; a context may declare both.
 /// </summary>
 public abstract class ResourceScopedDbContext : TenantScopedDbContext, IHasResourceAccessContext
 {

@@ -1,10 +1,7 @@
-namespace Concertable.B2B.Authorization.Contracts;
+﻿namespace Concertable.B2B.Authorization.Contracts;
 
-/// <summary>
-/// One membership incarnation as authorization needs it. <see cref="MembershipId"/> is part of the identity:
-/// a removed and rejoined member is a different membership, so a request resolved against the old one denies
-/// even when its role and version happen to match.
-/// </summary>
+/// <summary>One membership incarnation. A rejoined member is a different MembershipId, so a request resolved
+/// against the old one denies even when role and version match.</summary>
 public sealed record MembershipSnapshot(
     Guid MembershipId,
     Guid TenantId,

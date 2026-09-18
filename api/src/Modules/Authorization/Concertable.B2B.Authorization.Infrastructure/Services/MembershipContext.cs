@@ -29,10 +29,6 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
 
     public Guid? TenantId => Membership?.TenantId;
 
-    /// <summary>
-    /// Always false. Nothing about this process makes a caller trusted: work with no human behind it uses a
-    /// privileged context of its own rather than a wider reading of the request's.
-    /// </summary>
     public bool IsHost => false;
 
     public bool HasPermission(string permission) =>

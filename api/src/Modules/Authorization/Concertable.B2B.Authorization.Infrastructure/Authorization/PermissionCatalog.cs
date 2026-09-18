@@ -1,12 +1,9 @@
-using System.Collections.Frozen;
+﻿using System.Collections.Frozen;
 
 namespace Concertable.B2B.Authorization.Infrastructure.Authorization;
 
-/// <summary>
-/// Role to permissions, with no tenant type in the lookup. What a business is — a venue operator, an artist,
-/// a promoter, or none of those — is eligibility for particular work, decided by the owning operation against
-/// the tenant's active business activities; it is not a second authority axis over the role bundle.
-/// </summary>
+/// <summary>Role to permissions. What a business is, is eligibility decided by the owning operation, not a
+/// second authority axis over the role bundle.</summary>
 internal sealed class PermissionCatalog : IPermissionCatalog
 {
     private static readonly FrozenDictionary<TenantRole, FrozenSet<string>> ByRole =

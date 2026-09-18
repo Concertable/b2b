@@ -3,11 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Data;
 
-/// <summary>
-/// The Venue module's stance for work no human is acting in: the same mapping as
-/// <see cref="VenueDbContext"/>, with neither the owning-tenant filter nor the tenant write fence. Only seed
-/// factories and this module's own system work may inject it.
-/// </summary>
+/// <summary>The unfiltered, unfenced stance for work no human is acting in. See <see cref="VenueDbContext"/>.</summary>
 internal sealed class VenuePrivilegedDbContext(
     DbContextOptions<VenuePrivilegedDbContext> options,
     VenueConfigurationProvider provider)

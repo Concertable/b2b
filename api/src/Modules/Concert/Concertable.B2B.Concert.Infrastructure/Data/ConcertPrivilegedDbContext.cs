@@ -6,13 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
 
-/// <summary>
-/// The Concert module's stance for work no human is acting in: the same mapping as
-/// <see cref="ConcertDbContext"/> with no resource filter, so completion, settlement, invoicing and a payment
-/// outcome act on the rows they own rather than on whatever a request happens to disclose. Only this module's
-/// privileged repositories and seed factories may inject it; the name grants nothing to anyone who cannot
-/// already resolve it.
-/// </summary>
+/// <summary>The unfiltered, unfenced stance for work no human is acting in. See <see cref="ConcertDbContext"/>.</summary>
 internal sealed class ConcertPrivilegedDbContext(
     DbContextOptions<ConcertPrivilegedDbContext> options,
     ConcertConfigurationProvider provider)

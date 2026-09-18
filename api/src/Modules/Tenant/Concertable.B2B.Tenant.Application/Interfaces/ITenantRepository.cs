@@ -17,7 +17,6 @@ internal interface ITenantRepository : IRepository<TenantEntity, Guid>
         TenantBusinessProfileKind kind,
         CancellationToken ct = default);
 
-    /// <summary>Removes the tenant's own business-activity rows. They are restricted, not cascading, because
-    /// nothing else may delete them; the tenant's own deletion is the one act that may.</summary>
+    // Restricted, not cascading: the tenant's own deletion is the one act that may remove these.
     Task RemoveBusinessProfilesByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }
