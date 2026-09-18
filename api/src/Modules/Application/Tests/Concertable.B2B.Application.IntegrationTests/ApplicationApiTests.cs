@@ -266,118 +266,54 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     #region Accept
 
     [Fact]
-    public async Task Accept_WhenRejectWinsTheRace_ReturnsConflictAndLeavesTheApplicationRejected()
+    public async Task AcceptAndReject_WhenConcurrent_SerializeToOneTransition()
     {
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmApplicationConflict(async () =>
-        {
-            var winner = await competitor.PostAsync($"/api/application/{applicationId}/reject");
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
-
-        var accept = await venue.PostAsync(
-            $"/api/application/{applicationId}/accept",
-            new { eSignature = new { signatoryName = "Test Signatory" } });
-
-        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.superseded");
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
-        Assert.Equal(
-            ApplicationState.Rejected,
-            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
-    }
-
-    [Fact]
-    public async Task Reject_WhenAcceptWinsTheRace_ReturnsConflictAndLeavesTheApplicationAccepted()
-    {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
-        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmApplicationConflict(async () =>
-        {
-            var winner = await competitor.PostAsync(
+        var responses = await RaceAsync(
+            () => venue.PostAsync(
                 $"/api/application/{applicationId}/accept",
-                new { eSignature = new { signatoryName = "Test Signatory" } });
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
+                new { eSignature = new { signatoryName = "Test Signatory" } }),
+            () => competitor.PostAsync($"/api/application/{applicationId}/reject"));
 
-        var reject = await venue.PostAsync($"/api/application/{applicationId}/reject");
-
-        await AssertProblemCodeAsync(reject, HttpStatusCode.Conflict, "application.reject.superseded");
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
-        Assert.Equal(
-            ApplicationState.Accepted,
-            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+        AssertSerialized(responses);
+        var state = (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State;
+        Assert.True(state is ApplicationState.Accepted or ApplicationState.Rejected);
     }
 
     [Fact]
-    public async Task Accept_WhenCancellationWinsTheRace_ReturnsConflictAndLeavesTheApplicationCancelled()
+    public async Task AcceptAndCancel_WhenConcurrent_SerializeToOneTransition()
     {
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmApplicationConflict(async () =>
-        {
-            var winner = await competitor.PostAsync($"/api/application/{applicationId}/cancel");
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
-
-        var accept = await venue.PostAsync(
-            $"/api/application/{applicationId}/accept",
-            new { eSignature = new { signatoryName = "Test Signatory" } });
-
-        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.superseded");
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
-        Assert.Equal(
-            ApplicationState.Cancelled,
-            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
-    }
-
-    [Fact]
-    public async Task Cancel_WhenAcceptWinsTheRace_ReturnsConflict()
-    {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
-        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmApplicationConflict(async () =>
-        {
-            var winner = await competitor.PostAsync(
+        var responses = await RaceAsync(
+            () => venue.PostAsync(
                 $"/api/application/{applicationId}/accept",
-                new { eSignature = new { signatoryName = "Test Signatory" } });
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
+                new { eSignature = new { signatoryName = "Test Signatory" } }),
+            () => competitor.PostAsync($"/api/application/{applicationId}/cancel"));
 
-        var cancel = await venue.PostAsync($"/api/application/{applicationId}/cancel");
-
-        await AssertProblemCodeAsync(cancel, HttpStatusCode.Conflict, "application.cancel.superseded");
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
-        Assert.Equal(
-            ApplicationState.Accepted,
-            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+        AssertSerialized(responses);
+        var state = (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State;
+        Assert.True(state is ApplicationState.Accepted or ApplicationState.Cancelled);
     }
 
     [Fact]
-    public async Task Accept_WhenWithdrawWinsTheRace_ReturnsConflictAndLeavesTheApplicationWithdrawn()
+    public async Task AcceptAndWithdraw_WhenConcurrent_SerializeToOneTransition()
     {
         var applicationId = fixture.SeedState.FlatFeeApp.Id;
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        fixture.ArmApplicationConflict(async () =>
-        {
-            var winner = await artist.PostAsync($"/api/application/{applicationId}/withdraw");
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
+        var responses = await RaceAsync(
+            () => venue.PostAsync(
+                $"/api/application/{applicationId}/accept",
+                new { eSignature = new { signatoryName = "Test Signatory" } }),
+            () => artist.PostAsync($"/api/application/{applicationId}/withdraw"));
 
-        var accept = await venue.PostAsync(
-            $"/api/application/{applicationId}/accept",
-            new { eSignature = new { signatoryName = "Test Signatory" } });
-
-        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.superseded");
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
-        Assert.Equal(
-            ApplicationState.Withdrawn,
-            (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+        AssertSerialized(responses);
+        var state = (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State;
+        Assert.True(state is ApplicationState.Accepted or ApplicationState.Withdrawn);
     }
 
     [Fact]
@@ -387,17 +323,24 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var checkout = await client.PostAsync($"/api/application/{applicationId}/checkout");
         await checkout.ShouldBe(HttpStatusCode.OK);
-        fixture.ArmApplicationConflict(() => fixture.PaymentSimulator.SendWebhookAsync());
-
-        var accept = await client.PostAsync(
-            $"/api/application/{applicationId}/accept",
-            new
-            {
-                eSignature = new { signatoryName = "Test Signatory" }
-            });
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var webhook = Task.Run(async () =>
+        {
+            await start.Task;
+            await fixture.PaymentSimulator.SendWebhookAsync();
+        });
+        var acceptance = Task.Run(async () =>
+        {
+            await start.Task;
+            return await client.PostAsync(
+                $"/api/application/{applicationId}/accept",
+                new { eSignature = new { signatoryName = "Test Signatory" } });
+        });
+        start.SetResult();
+        await webhook;
+        var accept = await acceptance;
 
         await accept.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(
             ApplicationState.Accepted,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
@@ -422,27 +365,21 @@ public sealed class ApplicationApiTests : IAsyncLifetime
 
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmApplicationConflict(async () =>
-        {
-            var winner = await competitor.PostAsync(
+        var responses = await RaceAsync(
+            () => venue.PostAsync(
+                $"/api/application/{loserApplicationId}/accept",
+                new { eSignature = new { signatoryName = "Test Signatory" } }),
+            () => competitor.PostAsync(
                 $"/api/application/{winnerApplicationId}/accept",
-                new { eSignature = new { signatoryName = "Test Signatory" } });
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
+                new { eSignature = new { signatoryName = "Test Signatory" } }));
 
-        var accept = await venue.PostAsync(
-            $"/api/application/{loserApplicationId}/accept",
-            new { eSignature = new { signatoryName = "Test Signatory" } });
-
-        // No rowversion conflict is forced here: the rival acceptance closes the opportunity, so the loser
-        // reads the loss on its eligibility gate before it ever writes.
-        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.duplicate");
-        Assert.Equal(
-            ApplicationState.Accepted,
-            (await fixture.Applications.SingleAsync(value => value.Id == winnerApplicationId)).State);
-        Assert.Equal(
-            ApplicationState.Rejected,
-            (await fixture.Applications.SingleAsync(value => value.Id == loserApplicationId)).State);
+        AssertSerialized(responses);
+        var states = await fixture.Applications
+            .Where(value => value.Id == winnerApplicationId || value.Id == loserApplicationId)
+            .Select(value => value.State)
+            .ToListAsync();
+        Assert.Equal(1, states.Count(state => state == ApplicationState.Accepted));
+        Assert.Equal(1, states.Count(state => state == ApplicationState.Rejected));
     }
 
     [Fact]
@@ -456,13 +393,13 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Accept_ShouldReturn404_WhenCalledByDifferentVenueManager()
+    public async Task Accept_ShouldReturn403_WhenCalledByDifferentVenueManager()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
         var response = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
-        await response.ShouldBe(HttpStatusCode.NotFound);
+        await response.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     #endregion
@@ -484,6 +421,29 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     #endregion
+
+    private static async Task<HttpResponseMessage[]> RaceAsync(
+        Func<Task<HttpResponseMessage>> first,
+        Func<Task<HttpResponseMessage>> second)
+    {
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<HttpResponseMessage> RunAsync(Func<Task<HttpResponseMessage>> request)
+        {
+            await start.Task;
+            return await request();
+        }
+
+        var firstTask = RunAsync(first);
+        var secondTask = RunAsync(second);
+        start.SetResult();
+        return await Task.WhenAll(firstTask, secondTask);
+    }
+
+    private static void AssertSerialized(IEnumerable<HttpResponseMessage> responses) =>
+        Assert.Equal(
+            [HttpStatusCode.NoContent, HttpStatusCode.Conflict],
+            responses.Select(response => response.StatusCode).Order().ToArray());
 
     private static async Task AssertProblemCodeAsync(
         HttpResponseMessage response,

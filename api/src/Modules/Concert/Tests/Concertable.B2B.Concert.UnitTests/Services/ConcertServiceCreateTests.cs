@@ -19,7 +19,7 @@ namespace Concertable.B2B.Concert.UnitTests;
 public sealed class ConcertServiceCreateTests
 {
     private readonly ConfirmedBookingSnapshot booking;
-    private readonly Mock<IConcertRepository> repository;
+    private readonly Mock<IConcertPrivilegedRepository> repository;
     private readonly ConcertService service;
     private ConcertEntity? addedConcert;
 
@@ -44,7 +44,8 @@ public sealed class ConcertServiceCreateTests
             Name = "Venue",
             About = "About"
         };
-        repository = new Mock<IConcertRepository>();
+        repository = new Mock<IConcertPrivilegedRepository>();
+        var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
         var artists = new Mock<IArtistReadModelRepository>();
         var venues = new Mock<IVenueReadModelRepository>();
         repository
@@ -60,8 +61,13 @@ public sealed class ConcertServiceCreateTests
         venues
             .Setup(value => value.GetByTenantIdAsync(venueTenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(venue);
+        unitOfWork
+            .Setup(value => value.ExecuteAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()))
+            .Returns((Func<Task> action, CancellationToken _) => action());
         service = new ConcertService(
+            Mock.Of<IConcertRepository>(),
             repository.Object,
+            unitOfWork.Object,
             Mock.Of<IConcertReadRepository>(),
             Mock.Of<IInvoiceRepository>(),
             Mock.Of<IConcertValidator>(),

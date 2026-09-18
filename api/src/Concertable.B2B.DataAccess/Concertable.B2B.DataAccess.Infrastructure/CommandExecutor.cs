@@ -12,6 +12,22 @@ internal sealed class CommandExecutor(
         Func<TService, CancellationToken, Task<TResult>> command,
         CancellationToken ct = default)
         where TService : notnull
+        => await ExecuteCoreAsync(command, null, null, ct);
+
+    public async Task<TResult> ExecuteAsync<TService, TResult>(
+        Func<TService, CancellationToken, Task<TResult>> command,
+        Func<TService, TResult, CancellationToken, Task<bool>> validateAuthority,
+        Func<TResult> authorityFailure,
+        CancellationToken ct = default)
+        where TService : notnull
+        => await ExecuteCoreAsync(command, validateAuthority, authorityFailure, ct);
+
+    private async Task<TResult> ExecuteCoreAsync<TService, TResult>(
+        Func<TService, CancellationToken, Task<TResult>> command,
+        Func<TService, TResult, CancellationToken, Task<bool>>? validateAuthority,
+        Func<TResult>? authorityFailure,
+        CancellationToken ct)
+        where TService : notnull
     {
         var options = new DbContextOptionsBuilder()
             .UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure())
@@ -35,9 +51,8 @@ internal sealed class CommandExecutor(
                     ct);
                 accessor.Current = transaction;
 
-                var result = await command(
-                    services.GetRequiredService<TService>(),
-                    ct);
+                var service = services.GetRequiredService<TService>();
+                var result = await command(service, ct);
                 if (CommandOutcome.IsFailure(result))
                     transaction.MarkFailed();
 
@@ -49,6 +64,13 @@ internal sealed class CommandExecutor(
 
                 await transaction.FlushAsync(ct);
                 await transaction.ValidateAuthorityAsync(ct);
+                if (validateAuthority is not null
+                    && !await validateAuthority(service, result, ct))
+                {
+                    await transaction.RollbackAsync(ct);
+                    return (authorityFailure
+                        ?? throw new InvalidOperationException("An authority failure result is required."))();
+                }
                 await transaction.CommitAsync(ct);
                 return result;
             }

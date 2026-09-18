@@ -31,6 +31,8 @@ public sealed class ConcertServiceTests
         IConcertValidator? validator = null) =>
         new(
             repository.Object,
+            Mock.Of<IConcertPrivilegedRepository>(),
+            Mock.Of<IPrivilegedOutboxUnitOfWorkBehavior>(),
             Mock.Of<IConcertReadRepository>(),
             Mock.Of<IInvoiceRepository>(),
             validator ?? Mock.Of<IConcertValidator>(),
@@ -117,6 +119,8 @@ public sealed class ConcertServiceTests
         tenantContext.SetupGet(context => context.IsHost).Returns(true);
         var service = new ConcertService(
             repository.Object,
+            Mock.Of<IConcertPrivilegedRepository>(),
+            Mock.Of<IPrivilegedOutboxUnitOfWorkBehavior>(),
             Mock.Of<IConcertReadRepository>(),
             Mock.Of<IInvoiceRepository>(),
             Mock.Of<IConcertValidator>(),
@@ -157,6 +161,8 @@ public sealed class ConcertServiceTests
         tenantContext.SetupGet(context => context.IsHost).Returns(true);
         var service = new ConcertService(
             repository.Object,
+            Mock.Of<IConcertPrivilegedRepository>(),
+            Mock.Of<IPrivilegedOutboxUnitOfWorkBehavior>(),
             Mock.Of<IConcertReadRepository>(),
             Mock.Of<IInvoiceRepository>(),
             Mock.Of<IConcertValidator>(),

@@ -1,16 +1,14 @@
 using Concertable.B2B.Application.Application.Mappers;
-using Concertable.Kernel.Exceptions;
-
 namespace Concertable.B2B.Application.Infrastructure.Services.Payment;
 
 internal sealed class PaymentVerificationRecorder : IPaymentVerificationRecorder
 {
-    private readonly IApplicationRepository applicationRepository;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly IApplicationPrivilegedRepository applicationRepository;
+    private readonly IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior;
 
     public PaymentVerificationRecorder(
-        IApplicationRepository applicationRepository,
-        IUnitOfWorkBehavior unitOfWorkBehavior)
+        IApplicationPrivilegedRepository applicationRepository,
+        IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.applicationRepository = applicationRepository;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
@@ -19,15 +17,11 @@ internal sealed class PaymentVerificationRecorder : IPaymentVerificationRecorder
     public Task RecordAsync(VerifyPayment payment, CancellationToken ct = default) =>
         unitOfWorkBehavior.ExecuteAsync(async () =>
         {
-            var application = await applicationRepository
-                .GetByIdAsync(payment.ApplicationId, ct)
-                .OrNotFound();
+            var application = await applicationRepository.GetByIdForUpdateAsync(payment.ApplicationId, ct)
+                ?? throw new InvalidOperationException($"Application {payment.ApplicationId} was not found.");
             if (!application.RecordPaymentVerification(payment.ToPaymentVerification()))
                 return;
 
-            // The verification is stored in its own table but belongs to the application, and an acceptance
-            // in flight decides on it. Without this the acceptance commits a booking that contradicts a
-            // verification recorded after it read the row, and nothing ever confirms that booking.
             applicationRepository.MarkChanged(application);
         }, ct);
 }

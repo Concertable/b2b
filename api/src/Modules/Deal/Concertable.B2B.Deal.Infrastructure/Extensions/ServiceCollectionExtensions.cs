@@ -43,6 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDealRepository, DealRepository>();
         services.AddScoped<IDealService, DealService>();
         services.AddScoped<IDealModule, DealModule>();
+        services.AddScoped<IDealCommandFacts, DealCommandFacts>();
 
         services.AddDealStrategies();
 

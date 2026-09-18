@@ -16,5 +16,13 @@ internal sealed class BookingPrivilegedRepository(BookingPrivilegedDbContext con
             .Include(booking => booking.Contract)
             .SingleOrDefaultAsync(booking => booking.Id == bookingId, ct);
 
+    public Task<int?> GetIdByApplicationIdAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        context.Bookings
+            .Where(booking => booking.ApplicationId == applicationId)
+            .Select(booking => (int?)booking.Id)
+            .SingleOrDefaultAsync(ct);
+
     public Task SaveChangesAsync(CancellationToken ct = default) => context.SaveChangesAsync(ct);
 }

@@ -205,6 +205,8 @@ internal sealed class ApplicationService : IApplicationService
         {
             return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
                 (service, token) => service.WithdrawCommandAsync(applicationId, actor, token),
+                (service, _, token) => service.ValidateSubmitAuthorityAsync(applicationId, actor, token),
+                () => new WithdrawApplicationError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception)
@@ -227,6 +229,8 @@ internal sealed class ApplicationService : IApplicationService
         {
             return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
                 (service, token) => service.RejectCommandAsync(applicationId, actor, token),
+                (service, _, token) => service.ValidateDecideAuthorityAsync(applicationId, actor, token),
+                () => new RejectApplicationError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception)
@@ -249,6 +253,8 @@ internal sealed class ApplicationService : IApplicationService
         {
             return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
                 (service, token) => service.CancelCommandAsync(applicationId, actor, token),
+                (service, _, token) => service.ValidateDecideAuthorityAsync(applicationId, actor, token),
+                () => new CancelApplicationError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception)
@@ -312,7 +318,7 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Withdraw().TryGetError(out var transitionError))
             return new WithdrawApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Withdrawn);
-        await notifier.WithdrawnAsync(applicationId);
+        await notifier.WithdrawnAsync(application);
         return new Success();
     }
 
@@ -350,7 +356,7 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Reject().TryGetError(out var transitionError))
             return new RejectApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Rejected);
-        await notifier.RejectedAsync(applicationId);
+        await notifier.RejectedAsync(application);
         return new Success();
     }
 
@@ -388,7 +394,7 @@ internal sealed class ApplicationService : IApplicationService
         if (application.Cancel().TryGetError(out var transitionError))
             return new CancelApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.ApplicationCancelled);
-        await notifier.CancelledAsync(applicationId);
+        await notifier.CancelledAsync(application);
         return new Success();
     }
 
@@ -423,5 +429,41 @@ internal sealed class ApplicationService : IApplicationService
     {
         var result = await eligibility.CanAcceptAsync(application, ct);
         return result.TryGetError(out var error) ? error : new Success();
+    }
+
+    private async Task<bool> ValidateSubmitAuthorityAsync(
+        int applicationId,
+        MembershipSnapshot expectedActor,
+        CancellationToken ct)
+    {
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+            return false;
+
+        return await privilegedRepository.CanSubmitAsync(
+            applicationId,
+            actor,
+            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsSubmit),
+            timeProvider.GetUtcNow().UtcDateTime,
+            ct);
+    }
+
+    private async Task<bool> ValidateDecideAuthorityAsync(
+        int applicationId,
+        MembershipSnapshot expectedActor,
+        CancellationToken ct)
+    {
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            return false;
+
+        return await privilegedRepository.CanDecideAsync(
+            applicationId,
+            actor,
+            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+            timeProvider.GetUtcNow().UtcDateTime,
+            ct);
     }
 }

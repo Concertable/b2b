@@ -247,5 +247,17 @@ public sealed class ConcertWorkflowTests
             CancellationToken ct = default)
             where TService : notnull =>
             command((TService)(object)settlementService, ct);
+
+        public async Task<TResult> ExecuteAsync<TService, TResult>(
+            Func<TService, CancellationToken, Task<TResult>> command,
+            Func<TService, TResult, CancellationToken, Task<bool>> validateAuthority,
+            Func<TResult> authorityFailure,
+            CancellationToken ct = default)
+            where TService : notnull
+        {
+            var service = (TService)(object)settlementService;
+            var result = await command(service, ct);
+            return await validateAuthority(service, result, ct) ? result : authorityFailure();
+        }
     }
 }

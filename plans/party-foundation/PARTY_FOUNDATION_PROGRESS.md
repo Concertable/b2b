@@ -6,20 +6,21 @@
 - Branch: `Refactor/PartyFoundationLegacyBindings`
 - Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
 - Prior implementation head: `f6ecc9bf` (P1 slices 1-3)
-- Current checkpoint: P1 slice 4 implemented and locally verified
+- Current checkpoint: P1 4.3 Application command policy implemented and locally verified
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Delivery gate: do not push or merge; the user authorized local P1 implementation and commits only.
 
 ## Current state
 
-P1 implementation is active on this branch. Slices 1-4 are implemented. Slice 4 replaces the
-request-wide SQL connection with an explicit command transaction, moves settlement reserve and completion
-through fresh retry scopes, and keeps ordinary reads independently connected. The build, unit and
-architecture gates are green, as are the focused settlement transaction cases.
+P1 implementation is active on this branch. Slices 1-4 and the Application portion of 4.3 are implemented.
+Application apply, accept, reject, cancel and withdraw now execute through the root command transaction with
+locked current-membership authority, exact Proposal grants, privileged mutation repositories and a final
+post-flush authority check. Payment verification and its Booking handlers join the same root transaction,
+and module-owned artist, opportunity, deal and venue command facts enlist their privileged contexts.
 
-The next failing provider case is the expected 4.3 boundary: application acceptance reads through a filtered
-mutation repository and returns `ApplicationNotFound` before reaching the cross-module rollback scenario.
-That is the first command-policy migration target, not a 4.5 transaction failure.
+Provider-real Application transition races now serialize to one successful transition and one conflict. The
+cross-module rollback probe reaches the Booking failure and proves that Application, Booking, Concert and
+outbound-message changes roll back together.
 
 ## Completed slices
 
@@ -62,14 +63,25 @@ Tenant deletion removes owned activity rows first.
 - Settlement outcome processors now keep inbox evidence, Concert mutation, invoice/activity work and outbox
   insertion inside one privileged transaction; unknown targets and operations fail without a receipt.
 
+### 4.3 — Application command policy
+
+- Added enlisted command-fact ports for Artist, Opportunity, Deal and Venue so Application commands do not
+  call ordinary module facades inside the root transaction.
+- Apply, accept, reject, cancel and withdraw fence current membership, require their exact permission and
+  Proposal grant, lock Application resources and grants, and revalidate authority after the final flush.
+- The command executor can return a typed closed failure when final authority is no longer valid, rolling the
+  entire transaction back before commit.
+- Payment verification uses the privileged Application stance, while Booking verification handlers resolve
+  and mutate through their privileged repository and workflow in the same command transaction.
+- Save-interceptor race simulations were replaced with concurrent HTTP requests against the real provider.
+
 ## Next steps
 
 Continue in this order. Each slice ends with a solution build, unit/architecture gate and local commit.
 
-1. **4.3 — command policy on every mutation.** Add the locked membership/tenant authority fence, exact
-   operation grant checks and privileged resource repositories. Migrate Application accept/reject/cancel,
-   apply/withdraw, Booking cancellation, Concert edit/post/door revenue/check-in/cancel, Concert summary
-   sharing and member assignment. Delete `ApplicationSide`; compute actions per exact operation.
+1. **4.3 — finish command policy on every mutation.** Migrate Booking cancellation, Concert
+   edit/post/door revenue/check-in/cancel, Concert summary sharing and member assignment. Delete
+   `ApplicationSide`; compute actions per exact operation.
 2. **4.2 completion — exact-scope reads.** Remove financial/proposal fields from summaries, split Summary,
    Operations, Terms and Finance routes and permission checks, delete generic private-detail endpoints, and
    separate financial dashboards.
@@ -83,18 +95,19 @@ Continue in this order. Each slice ends with a solution build, unit/architecture
    module integration tier, provider race/revocation cases, workers, contract/invoice access, external summary
    denial, browser and native evidence. Run the canonical review over the completed P1 candidate.
 
-## Verification at slice 4
+## Verification at the current checkpoint
 
 - `dotnet build Concertable.B2B.slnx --no-restore`: passed, 0 errors; three existing warnings.
 - DataAccess Unit tier: 5 passed.
 - Architecture tier: 24 passed. The new DataAccess tests now carry the Unit assembly trait and a direct
   Reunion reference, satisfying CI ownership checks.
-- Concert workflow unit tests: 8 passed.
+- Concert unit tier: 96 passed.
 - `ConcertDoorSplitApiTests`: 8 passed through fresh reserve/complete command scopes, covering provider
   operation reuse, persistence interruption, duplicate outcomes and invoice completion.
+- Application integration tier: 74 passed, including provider-real accept/reject, accept/cancel,
+  accept/withdraw and competing-acceptance races.
 - Cross-module rollback probe
-  `CaptureSuccess_WhenBookingSaveFails_RollsBackBookingConcertAndOutboundMessages`: currently stops at
-  Application acceptance with the known 4.3 filtered-mutation `404 ApplicationNotFound`.
+  `CaptureSuccess_WhenBookingSaveFails_RollsBackBookingConcertAndOutboundMessages`: passed.
 
 Still required before a P1 completion claim: every module integration tier, provider race and revocation
 ordering coverage, workers, contract/invoice reads, external-summary denial, real browser/native evidence and
